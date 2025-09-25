@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Blackjack — ARIA ARCADE</title>
+<style>
+  :root{
+    --felt:#0e4d37;            /* table background */
+    --felt-dark:#0a3a2a;
+    --line:#154f40;
+    --card:#fff;
+    --shadow:0 14px 30px rgba(0,0,0,.35);
+    --accent:#ffd13b;          /* primary button */
+    --accent-2:#161a24;        /* secondary button */
+    --text:#e9f1ee;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;
+    color:var(--text); background:#0b1020; display:grid; place-items:center;
+  }
+  .table{
+    position:relative; width:min(1100px, 96vw); aspect-ratio: 16/9;
+    background: radial-gradient(120% 90% at 50% -15%, #208b6e 0, var(--felt) 32%, var(--felt-dark) 95%);
+    border-radius:28px; box-shadow: var(--shadow);
+    overflow:hidden; border:6px solid #0c3024;
+  }
+  .table::after{
+    content:""; position:absolute; inset:20px;
+    border:2px dashed rgba(255,255,255,.15); border-radius:22px; pointer-events:none;
+  }
+  header{
+    position:absolute; top:14px; left:18px; right:18px; display:flex; align-items:center; gap:.75rem;
+    z-index:3;
+  }
+  .brand{font-weight:800; letter-spacing:.08em; opacity:.9}
+  .spacer{flex:1}
+  .chip{
+    font-variant-numeric:tabular-nums;
+    background:linear-gradient(#ffe07a, #e3b312);
+    color:#2a2100; font-weight:800; padding:.45rem .7rem; border-radius:999px; box-shadow: var(--shadow);
+  }
+
+  /* Lanes */
+  .lane{ position:absolute; left:50%; transform:translateX(-50%); width:80%; }
+  .dealer.lane{ top:10%; }
+  .player.lane{ bottom:12%; }
+
+  /* Card */
+  .card{
+    width:96px; height:136px; border-radius:12px; background:var(--card);
+    box-shadow: var(--shadow); position:absolute; transition: transform .4s ease, top .4s ease, left .4s ease, opacity .3s ease;
+    display:grid; place-items:center; overflow:hidden;
+  }
+  @media (max-width:720px){
+    .card{ width:78px; height:112px; border-radius:10px; }
+  }
+  .card .svg{ width:94%; height:94%; }
+  .back{
+    background:repeating-linear-gradient(45deg, #1d2740, #1d2740 10px, #2b3a66 10px, #2b3a66 20px);
+    border:3px solid #e5e9f6; position:absolute; inset:0; border-radius:12px;
+  }
+
+  /* Spots where cards settle */
+  .spot{ position:relative; height:150px; }
+  @media (max-width:720px){ .spot{ height:120px; } }
+
+  /* Labels */
+  .label{
+    position:absolute; left:50%; transform:translateX(-50%);
+    text-align:center; text-shadow:0 2px 8px rgba(0,0,0,.5);
+  }
+  .label.dealer{ top:4%; font-weight:700; opacity:.9 }
+  .label.player{ bottom:6%; font-weight:700; opacity:.95 }
+  .total{ font-size:1.05rem; opacity:.9 }
+
+  /* Controls */
+  .controls{
+    position:absolute; left:50%; transform:translateX(-50%);
+    bottom:3%; display:flex; gap:.6rem; z-index:3; flex-wrap:wrap; justify-content:center;
+  }
+  button{
+    appearance:none; border:0; border-radius:14px; padding:.9rem 1.2rem;
+    font-weight:800; box-shadow: var(--shadow); cursor:pointer; transition: transform .05s ease, filter .2s ease, opacity .2s ease;
+  }
+  button:active{ transform:translateY(1px) scale(.99) }
+  .primary{ background:var(--accent); color:#1a1400 }
+  .ghost{ background:var(--accent-2); color:#e9ecf5; border:1px solid rgba(255,255,255,.1) }
+  .muted{ opacity:.6; pointer-events:none }
+
+  /* Toast / status */
+  .status{
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    font-size:1.6rem; font-weight:800; letter-spacing:.02em; text-align:center;
+    text-shadow:0 3px 30px rgba(0,0,0,.55); opacity:0; transition:opacity .2s ease;
+    pointer-events:none; max-width:80%;
+  }
+  .status.show{ opacity:1 }
+
+  /* Exit link */
+  .back-link{
+    position:absolute; top:16px; right:20px; z-index:4; display:inline-flex; align-items:center;
+    gap:.4rem; font-size:.95rem; text-decoration:none; font-weight:600; color:var(--text);
+    background:rgba(0,0,0,.35); padding:.45rem .8rem; border-radius:999px; transition:background .2s ease, transform .2s ease;
+  }
+  .back-link:hover{ background:rgba(0,0,0,.55); transform:translateY(-1px); }
+</style>
+</head>
+<body>
+  <a class="back-link" href="index.html">← Back to portfolio</a>
+  <div class="table" id="table">
+    <header>
+      <div class="brand">BLACKJACK • ARIA ARCADE</div>
+      <div class="spacer"></div>
+      <div class="chip">Bank: <span id="bank">1000</span></div>
+    </header>
+
+    <div class="label dealer">Dealer • <span class="total" id="dealerTotal">0</span></div>
+    <div class="lane dealer">
+      <div class="spot" id="dealerSpot"></div>
+    </div>
+
+    <div class="label player">You • <span class="total" id="playerTotal">0</span></div>
+    <div class="lane player">
+      <div class="spot" id="playerSpot"></div>
+    </div>
+
+    <div class="status" id="status"></div>
+
+    <div class="controls" id="controls">
+      <button class="primary" id="btnDeal">Deal</button>
+      <button class="primary muted" id="btnHit">Hit</button>
+      <button class="ghost muted" id="btnStand">Stand</button>
+      <button class="ghost" id="btnNew">New Shoe</button>
+    </div>
+  </div>
+
+<script>
+/* ---------- Card + Deck ---------- */
+const SUITS = ["♠","♥","♦","♣"];      // Spade, Heart, Diamond, Club
+const RANKS = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
+
+function buildShoe(decks=6){
+  const shoe=[];
+  for(let d=0; d<decks; d++){
+    for(const s of SUITS){
+      for(const r of RANKS){
+        shoe.push({suit:s, rank:r});
+      }
+    }
+  }
+  // Fisher-Yates
+  for(let i=shoe.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [shoe[i], shoe[j]]=[shoe[j], shoe[i]];
+  }
+  return shoe;
+}
+let shoe = buildShoe(6);
+
+/* ---------- Values ---------- */
+function cardValue(card){
+  if(card.rank==="A") return 11;
+  if(["K","Q","J"].includes(card.rank)) return 10;
+  return parseInt(card.rank,10);
+}
+function handValue(cards){
+  let sum = 0, aces = 0;
+  for(const c of cards){
+    sum += cardValue(c);
+    if(c.rank==="A") aces++;
+  }
+  while(sum>21 && aces>0){ sum -= 10; aces--; } // Ace as 1
+  return sum;
+}
+
+/* ---------- SVG Renderer (fast, no external assets) ---------- */
+function suitColor(s){ return (s==="♥"||s==="♦") ? "#d64545" : "#1f2a44"; }
+function renderSVG(card){
+  const s = suitColor(card.suit);
+  const rank = card.rank;
+  return `
+  <svg class="svg" viewBox="0 0 250 350" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${rank} ${card.suit}">
+    <defs>
+      <filter id="innerShadow" x="-50%" y="-50%" width="200%" height="200%">
+        <feOffset dx="0" dy="2" />
+        <feGaussianBlur stdDeviation="2" result="offblur"/>
+        <feComposite in="SourceGraphic" in2="offblur" operator="arithmetic" k2="-1" k3="1"/>
+      </filter>
+    </defs>
+    <rect x="4" y="4" rx="22" ry="22" width="242" height="342" fill="#ffffff" filter="url(#innerShadow)"/>
+    <rect x="8" y="8" rx="18" ry="18" width="234" height="334" fill="#ffffff"/>
+    <g fill="${s}">
+      <text x="22" y="40" font-size="44" font-family="ui-monospace, Menlo, Consolas, monospace">${rank}</text>
+      <text x="22" y="76" font-size="44">${card.suit}</text>
+      <text x="228" y="340" font-size="44" text-anchor="end" transform="rotate(180,228,340)">${rank}</text>
+      <text x="228" y="304" font-size="44" text-anchor="end" transform="rotate(180,228,304)">${card.suit}</text>
+      <text x="125" y="205" font-size="120" text-anchor="middle" dominant-baseline="middle" opacity=".9">${card.suit}</text>
+    </g>
+  </svg>`;
+}
+
+/* ---------- DOM helpers ---------- */
+const dealerSpot = document.getElementById('dealerSpot');
+const playerSpot = document.getElementById('playerSpot');
+const dealerTotal = document.getElementById('dealerTotal');
+const playerTotal = document.getElementById('playerTotal');
+const statusEl = document.getElementById('status');
+const btnDeal = document.getElementById('btnDeal');
+const btnHit = document.getElementById('btnHit');
+const btnStand = document.getElementById('btnStand');
+const btnNew = document.getElementById('btnNew');
+
+function setButtons(state){
+  const on = (el, ok)=> el.classList.toggle('muted', !ok);
+  switch(state){
+    case 'deal': on(btnDeal,true); on(btnHit,false); on(btnStand,false); break;
+    case 'player': on(btnDeal,false); on(btnHit,true); on(btnStand,true); break;
+    case 'lock': on(btnDeal,false); on(btnHit,false); on(btnStand,false); break;
+  }
+}
+
+/* ---------- Game State ---------- */
+let player=[], dealer=[], bank=1000;
+
+function showStatus(msg, ms=1100){
+  statusEl.textContent = msg;
+  statusEl.classList.add('show');
+  setTimeout(()=>statusEl.classList.remove('show'), ms);
+}
+function clearSpots(){
+  dealerSpot.innerHTML=''; playerSpot.innerHTML='';
+  dealerTotal.textContent='0'; playerTotal.textContent='0';
+}
+function drawCard(toHand, toSpot, faceDown=false){
+  const card = shoe.pop();
+  toHand.push(card);
+  // create card element
+  const el = document.createElement('div'); el.className='card';
+  el.style.left = '50%'; el.style.top = '45%'; el.style.transform = 'translate(-50%,-50%) rotate(5deg)';
+  if(faceDown){
+    el.innerHTML = `<div class="back"></div>`;
+  }else{
+    el.innerHTML = renderSVG(card);
+  }
+  // destination position
+  const idx = toSpot.children.length;
+  const x = 20 + idx*28;
+  const y = 6 + idx*2;
+  toSpot.appendChild(el);
+  // animate
+  requestAnimationFrame(()=>{
+    el.style.left = `${x}px`;
+    el.style.top = `${y}px`;
+    el.style.transform = `translate(0,0) rotate(${[-3,-1,1,3][idx%4]}deg)`;
+  });
+  return card;
+}
+function flipDealerHole(){
+  const cardEl = dealerSpot.children[1]; // hole card is second
+  if(cardEl){
+    cardEl.innerHTML = renderSVG(dealer[1]);
+  }
+}
+
+/* ---------- Rounds ---------- */
+function updateTotals(hideDealerHole){
+  dealerTotal.textContent = hideDealerHole ? cardValue(dealer[0]) + " +" : handValue(dealer);
+  playerTotal.textContent = handValue(player);
+}
+function deal(){
+  clearSpots();
+  if(shoe.length < 40){ shoe = buildShoe(6); showStatus("Shuffling…", 800); }
+  player=[]; dealer=[];
+  drawCard(dealer, dealerSpot, false);
+  drawCard(dealer, dealerSpot, true);    // hole
+  drawCard(player, playerSpot, false);
+  drawCard(player, playerSpot, false);
+  updateTotals(true);
+  setButtons('player');
+
+  // Natural checks
+  if(handValue(player)===21){
+    setButtons('lock');
+    setTimeout(()=>{
+      flipDealerHole(); updateTotals(false);
+      const dv = handValue(dealer);
+      if(dv===21){ showStatus("Push — both Blackjack"); }
+      else{ bank+=150; showStatus("Blackjack! +150"); }
+      document.getElementById('bank').textContent = bank;
+      setButtons('deal');
+    }, 550);
+  }
+}
+
+function playerHit(){
+  drawCard(player, playerSpot, false);
+  const pv = handValue(player);
+  updateTotals(true);
+  if(pv>21){
+    setButtons('lock');
+    setTimeout(()=>{ flipDealerHole(); updateTotals(false); showStatus("Bust!"); setButtons('deal'); }, 450);
+    bank -= 100; document.getElementById('bank').textContent = bank;
+  }
+}
+function playerStand(){
+  setButtons('lock');
+  flipDealerHole(); updateTotals(false);
+
+  // Dealer draws to 17 (soft 17 hits)
+  const draw = ()=>{
+    const dv = handValue(dealer);
+    if(dv<17 || (dv===17 && dealer.some(c=>c.rank==="A") && handValue(dealer)===17)){ // hit on soft 17
+      setTimeout(()=>{ drawCard(dealer, dealerSpot, false); updateTotals(false); draw(); }, 420);
+    }else{
+      resolve();
+    }
+  };
+  draw();
+}
+function resolve(){
+  const pv = handValue(player), dv = handValue(dealer);
+  let msg="";
+  if(dv>21){ bank += 100; msg = "Dealer busts — You win +100"; }
+  else if(pv>dv){ bank += 100; msg = "You win +100"; }
+  else if(pv<dv){ bank -= 100; msg = "You lose -100"; }
+  else { msg = "Push"; }
+  document.getElementById('bank').textContent = bank;
+  showStatus(msg);
+  setButtons('deal');
+}
+
+/* ---------- Wire up ---------- */
+btnDeal.addEventListener('click', deal);
+btnHit.addEventListener('click', ()=> !btnHit.classList.contains('muted') && playerHit());
+btnStand.addEventListener('click', ()=> !btnStand.classList.contains('muted') && playerStand());
+btnNew.addEventListener('click', ()=>{ shoe = buildShoe(6); showStatus("New shoe ready", 700) ; });
+
+setButtons('deal'); // initial state
+</script>
+</body>
+</html>
