@@ -67,13 +67,36 @@
   .spot{ position:relative; height:150px; }
   @media (max-width:720px){ .spot{ height:120px; } }
 
+  .players-area{
+    position:absolute; left:50%; transform:translateX(-50%);
+    bottom:7%; width:86%; display:flex; justify-content:center;
+    gap:1.8rem; flex-wrap:wrap;
+  }
+  .player-seat{
+    position:relative; display:flex; flex-direction:column; align-items:center;
+    min-width:160px;
+  }
+  .player-seat .spot{ width:160px; }
+  .player-meta{
+    margin-top:.55rem; text-align:center; text-shadow:0 2px 8px rgba(0,0,0,.5);
+  }
+  .player-name{ font-weight:700; letter-spacing:.04em; }
+  .player-total{ font-size:.95rem; opacity:.9; margin-top:.2rem; }
+  .player-seat.me .player-name{ color:var(--accent); }
+  .player-seat.active .player-name,
+  .player-seat.active .player-total{ color:var(--accent); }
+  @media (max-width:720px){
+    .players-area{ bottom:6%; gap:1.2rem; }
+    .player-seat{ min-width:130px; }
+    .player-seat .spot{ width:130px; }
+  }
+
   /* Labels */
   .label{
     position:absolute; left:50%; transform:translateX(-50%);
     text-align:center; text-shadow:0 2px 8px rgba(0,0,0,.5);
   }
   .label.dealer{ top:4%; font-weight:700; opacity:.9 }
-  .label.player{ bottom:6%; font-weight:700; opacity:.95 }
   .total{ font-size:1.05rem; opacity:.9 }
 
   /* Controls */
@@ -86,6 +109,7 @@
     font-weight:800; box-shadow: var(--shadow); cursor:pointer; transition: transform .05s ease, filter .2s ease, opacity .2s ease;
   }
   button:active{ transform:translateY(1px) scale(.99) }
+  button:disabled{ opacity:.45; pointer-events:none; }
   .primary{ background:var(--accent); color:#1a1400 }
   .ghost{ background:var(--accent-2); color:#e9ecf5; border:1px solid rgba(255,255,255,.1) }
   .muted{ opacity:.6; pointer-events:none }
@@ -121,6 +145,8 @@
   }
   .lobby-card h2{ font-size:1.8rem; margin:0; letter-spacing:.04em; }
   .lobby-card p{ margin:0; opacity:.85; line-height:1.4; }
+  .name-field{ display:grid; gap:.45rem; text-align:left; }
+  .name-field label{ font-weight:600; font-size:.95rem; opacity:.85; }
   .lobby-actions{ display:grid; gap:.8rem; }
   .lobby .ghost{ background:rgba(255,255,255,.08); color:var(--text); border:1px solid rgba(255,255,255,.18); box-shadow:none; }
   .lobby .ghost:hover{ background:rgba(255,255,255,.14); }
@@ -133,10 +159,11 @@
   }
   .lobby input{
     appearance:none; border-radius:16px; border:1px solid rgba(255,255,255,.18);
-    padding:.85rem 1rem; background:rgba(0,0,0,.35); color:var(--text); font-size:1.05rem; text-transform:uppercase;
-    text-align:center; letter-spacing:.18em;
+    padding:.85rem 1rem; background:rgba(0,0,0,.35); color:var(--text); font-size:1.05rem;
   }
   .lobby input:focus{ outline:2px solid rgba(255,209,59,.55); outline-offset:3px; }
+  .lobby input.code-input{ text-transform:uppercase; text-align:center; letter-spacing:.18em; }
+  .lobby input.name-input{ text-transform:none; letter-spacing:.04em; text-align:left; }
 </style>
 </head>
 <body>
@@ -144,7 +171,11 @@
   <div class="lobby" id="lobby">
     <div class="lobby-card" id="lobbyMain">
       <h2>Blackjack Lounge</h2>
-      <p>Select how you'd like to play.</p>
+      <p>Pick a display name and choose how you'd like to play.</p>
+      <div class="name-field">
+        <label for="playerNameInput">Display name</label>
+        <input type="text" id="playerNameInput" class="name-input" maxlength="16" autocomplete="off" placeholder="Enter your name" />
+      </div>
       <div class="lobby-actions">
         <button class="primary" id="btnSingleplayer">Singleplayer</button>
         <button class="ghost" id="btnMultiplayer">Multiplayer</button>
@@ -169,7 +200,7 @@
     <div class="lobby-card hidden" id="joinCard">
       <h2>Join a Table</h2>
       <p>Enter the code from your host.</p>
-      <input type="text" id="joinCodeInput" maxlength="12" autocomplete="off" placeholder="CODE" />
+      <input type="text" id="joinCodeInput" class="code-input" maxlength="12" autocomplete="off" placeholder="CODE" />
       <div class="lobby-actions">
         <button class="primary" id="btnJoinConfirm">Join Table</button>
         <button class="secondary back-action" data-target="multiplayerCard">Back</button>
@@ -188,10 +219,7 @@
       <div class="spot" id="dealerSpot"></div>
     </div>
 
-    <div class="label player">You • <span class="total" id="playerTotal">0</span></div>
-    <div class="lane player">
-      <div class="spot" id="playerSpot"></div>
-    </div>
+    <div class="players-area" id="playersArea"></div>
 
     <div class="status" id="status"></div>
 
@@ -206,7 +234,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
   import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-analytics.js";
-  import { getDatabase, ref, onValue, update, onDisconnect } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js";
+  import { getDatabase, ref, onValue, update, onDisconnect, get } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js";
 
   /* ---------- Card + Deck ---------- */
   const SUITS = ["♠","♥","♦","♣"];      // Spade, Heart, Diamond, Club
@@ -273,9 +301,8 @@
 
   /* ---------- DOM helpers ---------- */
   const dealerSpot = document.getElementById('dealerSpot');
-  const playerSpot = document.getElementById('playerSpot');
   const dealerTotal = document.getElementById('dealerTotal');
-  const playerTotal = document.getElementById('playerTotal');
+  const playersArea = document.getElementById('playersArea');
   const statusEl = document.getElementById('status');
   const btnDeal = document.getElementById('btnDeal');
   const btnHit = document.getElementById('btnHit');
@@ -287,6 +314,7 @@
   const multiplayerCard = document.getElementById('multiplayerCard');
   const hostCard = document.getElementById('hostCard');
   const joinCard = document.getElementById('joinCard');
+  const playerNameInput = document.getElementById('playerNameInput');
   const hostCodeEl = document.getElementById('hostCode');
   const joinCodeInput = document.getElementById('joinCodeInput');
   const btnSingle = document.getElementById('btnSingleplayer');
@@ -302,6 +330,36 @@
       case 'deal': on(btnDeal,true); on(btnHit,false); on(btnStand,false); break;
       case 'player': on(btnDeal,false); on(btnHit,true); on(btnStand,true); break;
       default: on(btnDeal,false); on(btnHit,false); on(btnStand,false); break;
+    }
+  }
+
+  function updateLobbyButtons(){
+    const ready = !!nameIsValid;
+    if(btnHost) btnHost.disabled = !ready;
+    if(btnJoin) btnJoin.disabled = !ready;
+    if(btnHostStart) btnHostStart.disabled = !ready;
+    if(btnJoinConfirm) btnJoinConfirm.disabled = !ready;
+  }
+
+  function setPlayerDisplayName(raw){
+    const sanitized = sanitizePlayerName(raw);
+    nameIsValid = !!sanitized;
+    playerName = sanitized || fallbackName;
+    if(playerNameInput && playerNameInput.value !== sanitized){
+      playerNameInput.value = sanitized;
+    }
+    if(nameIsValid && typeof localStorage !== 'undefined'){
+      try{ localStorage.setItem('blackjackPlayerName', playerName); }
+      catch(err){ console.warn('Failed to store name', err); }
+    }
+    const me = tableState.players[clientId];
+    if(me){
+      me.name = playerName;
+    }
+    updateLobbyButtons();
+    renderTable();
+    if(isMultiplayer && tablePath){
+      commitRound({ includeDealer:false, includePlayer:true, includeShoe:false });
     }
   }
 
@@ -362,8 +420,23 @@
   const db = getDatabase(app);
   const rootRef = ref(db);
 
+  const MAX_PLAYERS = 4;
   const clientId = (crypto && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2));
-  const playerName = `Player ${clientId.slice(0,4).toUpperCase()}`;
+  const fallbackName = `Player ${clientId.slice(0,4).toUpperCase()}`;
+  let playerName = fallbackName;
+  let nameIsValid = true;
+
+  if(typeof localStorage !== 'undefined'){
+    try{
+      const storedName = localStorage.getItem('blackjackPlayerName');
+      const sanitized = sanitizePlayerName(storedName);
+      if(sanitized){
+        playerName = sanitized;
+      }
+    }catch(err){
+      console.warn('Could not load stored name', err);
+    }
+  }
 
   let roomId = null;
   let isMultiplayer = false;
@@ -461,6 +534,7 @@
         status: 'online'
       };
     }
+    tableState.players[clientId].name = playerName;
     if(!tableState.state.banks){
       tableState.state.banks = {};
     }
@@ -479,17 +553,59 @@
 
   function renderTable(){
     const state = tableState.state || defaultState;
-    const me = tableState.players[clientId] || { hand: [], bank: 1000, name: playerName };
+    const me = getPlayerEntry();
     const dealerHand = Array.isArray(tableState.dealer) ? tableState.dealer : [];
-    const playerHand = Array.isArray(me.hand) ? me.hand : [];
 
     renderHand(dealerHand, dealerSpot, { hideHole: !!state.hideDealerHole });
-    renderHand(playerHand, playerSpot);
+
+    if(playersArea){
+      playersArea.innerHTML = '';
+      const entries = Object.entries(tableState.players || {});
+      if(!entries.some(([id]) => id === clientId)){
+        entries.unshift([clientId, me]);
+      }
+      entries.sort((a, b)=>{
+        if(a[0] === clientId) return -1;
+        if(b[0] === clientId) return 1;
+        const nameA = sanitizePlayerName(a[1]?.name) || '';
+        const nameB = sanitizePlayerName(b[1]?.name) || '';
+        return nameA.localeCompare(nameB);
+      });
+      const limited = entries.slice(0, MAX_PLAYERS);
+      limited.forEach(([id, info])=>{
+        const seat = document.createElement('div');
+        seat.className = 'player-seat';
+        if(id === clientId) seat.classList.add('me');
+        if(state.phase === 'player' && state.activePlayer === id){
+          seat.classList.add('active');
+        }
+        const spot = document.createElement('div');
+        spot.className = 'spot';
+        const hand = Array.isArray(info?.hand) ? info.hand : [];
+        renderHand(hand, spot);
+        seat.appendChild(spot);
+
+        const meta = document.createElement('div');
+        meta.className = 'player-meta';
+        const fallbackLabel = `Player ${String(id).slice(0,4).toUpperCase()}`;
+        const displayName = sanitizePlayerName(info?.name) || (id === clientId ? playerName : fallbackLabel);
+        const nameEl = document.createElement('div');
+        nameEl.className = 'player-name';
+        nameEl.textContent = displayName;
+        const totalEl = document.createElement('div');
+        totalEl.className = 'player-total';
+        const totalValue = hand.length ? handValue(hand) : '—';
+        totalEl.textContent = `Total: ${totalValue}`;
+        meta.appendChild(nameEl);
+        meta.appendChild(totalEl);
+        seat.appendChild(meta);
+        playersArea.appendChild(seat);
+      });
+    }
 
     dealerTotal.textContent = state.hideDealerHole && dealerHand.length
       ? `${cardValue(dealerHand[0])} +`
       : handValue(dealerHand);
-    playerTotal.textContent = handValue(playerHand);
 
     const bankValue = typeof state.banks?.[clientId] === 'number'
       ? state.banks[clientId]
@@ -724,6 +840,15 @@
     }));
   }
 
+  function sanitizePlayerName(value){
+    if(!value) return '';
+    return String(value)
+      .replace(/[^a-zA-Z0-9 _-]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 16);
+  }
+
   function sanitizeRoomCode(value){
     const cleaned = String(value || '').replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
     if(!cleaned) return '';
@@ -759,7 +884,7 @@
     knownPlayers = new Set();
     resetLocalTable();
     const me = getPlayerEntry();
-    me.name = 'You';
+    me.name = playerName;
     me.bank = 1000;
     me.hand = [];
     me.status = 'solo';
@@ -774,10 +899,22 @@
     renderTable();
   }
 
-  function startMultiplayer(code, { host=false }={}){
+  async function startMultiplayer(code, { host=false }={}){
     const sanitized = sanitizeRoomCode(code);
-    if(!sanitized) return;
+    if(!sanitized) return false;
+    if(!nameIsValid){
+      playerNameInput?.focus();
+      return false;
+    }
+    const previousPath = tablePath;
+    const wasMultiplayer = isMultiplayer;
     detachListeners();
+    if(wasMultiplayer && previousPath){
+      const cleanup = {};
+      cleanup[`${previousPath}/players/${clientId}`] = null;
+      cleanup[`${previousPath}/state/banks/${clientId}`] = null;
+      update(rootRef, cleanup).catch(()=>{});
+    }
     resetLocalTable();
     isMultiplayer = true;
     roomId = sanitized;
@@ -792,24 +929,53 @@
 
     if(host){
       const now = Date.now();
-      update(rootRef, {
-        [`${tablePath}/shoe`]: null,
-        [`${tablePath}/dealer`]: null,
-        [`${tablePath}/players`]: null,
-        [`${tablePath}/state`]: { ...defaultState, updatedBy: clientId, updatedAt: now }
-      }).catch(err=>console.warn('Failed to prepare room', err));
+      try{
+        await update(rootRef, {
+          [`${tablePath}/shoe`]: null,
+          [`${tablePath}/dealer`]: null,
+          [`${tablePath}/players`]: null,
+          [`${tablePath}/state`]: { ...defaultState, updatedBy: clientId, updatedAt: now }
+        });
+      }catch(err){
+        console.warn('Failed to prepare room', err);
+      }
     }
 
     attachListeners();
-    joinTable();
+    renderTable();
+    const joined = await joinTable({ skipCapacityCheck: host });
+    if(!joined){
+      startSingleplayer();
+      return false;
+    }
     setButtons('deal');
     renderTable();
+    return true;
   }
 
-  function joinTable(){
-    if(!isMultiplayer || !tablePath) return;
+  async function joinTable({ skipCapacityCheck=false }={}){
+    if(!isMultiplayer || !tablePath) return true;
     const me = getPlayerEntry();
+    me.name = playerName;
     const now = Date.now();
+    if(!tableState.state.banks){
+      tableState.state.banks = {};
+    }
+    tableState.state.banks[clientId] = me.bank ?? 1000;
+
+    if(!skipCapacityCheck && playersRef){
+      try{
+        const snapshot = await get(playersRef);
+        const existing = snapshot.val() || {};
+        if(!existing[clientId] && Object.keys(existing).length >= MAX_PLAYERS){
+          showStatus('Table is full', 1600);
+          return false;
+        }
+      }catch(err){
+        console.warn('Failed to verify table capacity', err);
+      }
+    }
+
     const updates = {};
     updates[`${tablePath}/players/${clientId}`] = {
       ...me,
@@ -817,15 +983,18 @@
       updatedBy: clientId,
       updatedAt: now
     };
-    if(!tableState.state.banks){
-      tableState.state.banks = {};
-    }
-    tableState.state.banks[clientId] = me.bank ?? 1000;
     updates[`${tablePath}/state/banks/${clientId}`] = tableState.state.banks[clientId];
     updates[`${tablePath}/state/updatedBy`] = clientId;
     updates[`${tablePath}/state/updatedAt`] = now;
-    update(rootRef, updates).catch(err=>console.warn('Failed to join table', err));
-    onDisconnect(presenceRef).remove().catch(()=>{});
+
+    try{
+      await update(rootRef, updates);
+      onDisconnect(presenceRef).remove().catch(()=>{});
+      return true;
+    }catch(err){
+      console.warn('Failed to join table', err);
+      return false;
+    }
   }
 
   const lobbyCards = { lobbyMain, multiplayerCard, hostCard, joinCard };
@@ -851,6 +1020,22 @@
     });
   });
 
+  if(playerNameInput){
+    const initialValue = sanitizePlayerName(playerName) || playerName;
+    playerNameInput.value = initialValue;
+    playerNameInput.addEventListener('input', ()=>{
+      const sanitized = sanitizePlayerName(playerNameInput.value);
+      if(playerNameInput.value !== sanitized){
+        playerNameInput.value = sanitized;
+      }
+      setPlayerDisplayName(sanitized);
+    });
+    playerNameInput.addEventListener('blur', ()=>{
+      setPlayerDisplayName(playerNameInput.value);
+    });
+  }
+  setPlayerDisplayName(playerName);
+
   btnSingle.addEventListener('click', ()=>{
     startSingleplayer();
     closeLobby();
@@ -861,36 +1046,60 @@
   });
 
   btnHost.addEventListener('click', ()=>{
+    if(!nameIsValid){
+      playerNameInput?.focus();
+      return;
+    }
     const code = generateRoomCode();
     hostCodeEl.textContent = code;
     hostCodeEl.dataset.code = code;
     showLobbyCard('hostCard');
   });
 
-  btnHostStart.addEventListener('click', ()=>{
+  btnHostStart.addEventListener('click', async ()=>{
+    if(!nameIsValid){
+      playerNameInput?.focus();
+      return;
+    }
     const code = hostCodeEl.dataset.code || hostCodeEl.textContent || '';
     if(!code) return;
-    startMultiplayer(code, { host: true });
-    closeLobby();
+    const joined = await startMultiplayer(code, { host: true });
+    if(joined){
+      closeLobby();
+    }else{
+      openLobby('hostCard');
+    }
   });
 
   btnJoin.addEventListener('click', ()=>{
+    if(!nameIsValid){
+      playerNameInput?.focus();
+      return;
+    }
     joinCodeInput.value = '';
     showLobbyCard('joinCard');
     setTimeout(()=> joinCodeInput.focus(), 50);
   });
 
-  function requestJoin(){
+  async function requestJoin(){
     const code = sanitizeRoomCode(joinCodeInput.value);
     if(!code){
       joinCodeInput.focus();
       return;
     }
-    startMultiplayer(code);
-    closeLobby();
+    if(!nameIsValid){
+      playerNameInput?.focus();
+      return;
+    }
+    const joined = await startMultiplayer(code);
+    if(joined){
+      closeLobby();
+    }else{
+      openLobby('joinCard');
+    }
   }
 
-  btnJoinConfirm.addEventListener('click', requestJoin);
+  btnJoinConfirm.addEventListener('click', ()=>{ requestJoin(); });
   joinCodeInput.addEventListener('input', ()=>{
     joinCodeInput.value = sanitizeRoomCode(joinCodeInput.value);
   });
@@ -908,8 +1117,14 @@
 
   const initialCode = sanitizeRoomCode(window.location.hash.replace('#',''));
   if(initialCode){
-    startMultiplayer(initialCode);
-    closeLobby();
+    startMultiplayer(initialCode)
+      .then(joined=>{
+        if(joined){
+          closeLobby();
+        }else{
+          openLobby('joinCard');
+        }
+      });
   }else{
     startSingleplayer();
     openLobby('lobbyMain');
