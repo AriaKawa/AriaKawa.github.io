@@ -220,6 +220,7 @@
       <h2>Host a Table</h2>
       <p>Share this code with friends so they can join.</p>
       <div class="code-display" id="hostCode">----</div>
+      <button class="ghost" id="btnCopyCode">Copy code</button>
       <button class="primary" id="btnHostStart">Enter Table</button>
       <button class="secondary back-action" data-target="multiplayerCard">Back</button>
     </div>
@@ -350,6 +351,7 @@
   const hostCard = document.getElementById('hostCard');
   const joinCard = document.getElementById('joinCard');
   const hostCodeEl = document.getElementById('hostCode');
+  const btnCopyCode = document.getElementById('btnCopyCode');
   const joinCodeInput = document.getElementById('joinCodeInput');
   const btnSingle = document.getElementById('btnSingleplayer');
   const btnMultiplayer = document.getElementById('btnMultiplayer');
@@ -357,6 +359,8 @@
   const btnJoin = document.getElementById('btnJoin');
   const btnHostStart = document.getElementById('btnHostStart');
   const btnJoinConfirm = document.getElementById('btnJoinConfirm');
+  const copyButtonDefaultLabel = btnCopyCode ? btnCopyCode.textContent : '';
+  let copyButtonResetTimer = null;
 
   function setButtons(state){
     const on = (el, ok)=> el.classList.toggle('muted', !ok);
@@ -379,6 +383,39 @@
         renderTable();
       }
     }, ms);
+  }
+
+  async function copyTextToClipboard(text){
+    if(!text) return false;
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      try{
+        await navigator.clipboard.writeText(text);
+        return true;
+      }catch(err){
+        console.warn('Clipboard API failed, falling back', err);
+      }
+    }
+    try{
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-9999px';
+      document.body.appendChild(textarea);
+      const selection = document.getSelection();
+      const previousRange = selection && selection.rangeCount ? selection.getRangeAt(0) : null;
+      textarea.select();
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textarea);
+      if(previousRange){
+        selection.removeAllRanges();
+        selection.addRange(previousRange);
+      }
+      return successful;
+    }catch(err){
+      console.warn('Fallback clipboard copy failed', err);
+      return false;
+    }
   }
 
   function normalizeCards(list){
@@ -1206,6 +1243,11 @@
     const code = generateRoomCode();
     hostCodeEl.textContent = code;
     hostCodeEl.dataset.code = code;
+    if(btnCopyCode){
+      clearTimeout(copyButtonResetTimer);
+      copyButtonResetTimer = null;
+      btnCopyCode.textContent = copyButtonDefaultLabel || 'Copy code';
+    }
     showLobbyCard('hostCard');
   });
 
@@ -1242,6 +1284,22 @@
       requestJoin();
     }
   });
+
+  if(btnCopyCode){
+    btnCopyCode.addEventListener('click', async ()=>{
+      const code = (hostCodeEl.dataset.code || hostCodeEl.textContent || '').trim();
+      if(!code || !/[^-]/.test(code)){
+        return;
+      }
+      const success = await copyTextToClipboard(code);
+      btnCopyCode.blur();
+      btnCopyCode.textContent = success ? 'Copied!' : 'Press Ctrl+C to copy';
+      clearTimeout(copyButtonResetTimer);
+      copyButtonResetTimer = setTimeout(()=>{
+        btnCopyCode.textContent = copyButtonDefaultLabel || 'Copy code';
+      }, success ? 1600 : 2600);
+    });
+  }
 
   btnDeal.addEventListener('click', ()=> startDeal());
   btnHit.addEventListener('click', ()=> !btnHit.classList.contains('muted') && playerHit());
