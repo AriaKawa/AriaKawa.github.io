@@ -56,7 +56,11 @@
   /* Lanes */
   .lane{ position:absolute; left:50%; transform:translateX(-50%); width:80%; }
   .dealer.lane{ top:10%; }
-  .player.lane{ bottom:12%; }
+  .player.lane{
+    bottom:12%;
+    display:flex;
+    justify-content:center;
+  }
   .lane.others{
     bottom:36%;
     display:flex;
@@ -80,9 +84,18 @@
     backdrop-filter:blur(6px);
     -webkit-backdrop-filter:blur(6px);
   }
+  .player-seat.main{
+    margin:0 auto;
+  }
+  .player-seat.main .seat-label{
+    margin-top:.35rem;
+  }
   .player-seat .spot{ width:100%; }
   .player-seat.active{
     box-shadow:0 0 18px rgba(255,209,59,.35), inset 0 0 0 2px rgba(255,209,59,.6);
+  }
+  .player-seat.active .seat-name{
+    color:var(--accent);
   }
 
   .seat-label{
@@ -249,9 +262,15 @@
 
     <div class="lane others hidden" id="othersLane"></div>
 
-    <div class="label player">You • <span class="total" id="playerTotal">0</span></div>
     <div class="lane player">
-      <div class="spot" id="playerSpot"></div>
+      <div class="player-seat main" id="playerSeat">
+        <div class="spot" id="playerSpot"></div>
+        <div class="seat-label">
+          <div class="seat-name" id="playerName">You</div>
+          <div class="seat-total" id="playerTotalLabel">Waiting for deal</div>
+          <div class="seat-bank" id="playerBankLabel">Bank: 1000</div>
+        </div>
+      </div>
     </div>
 
     <div class="status" id="status"></div>
@@ -335,8 +354,11 @@
   /* ---------- DOM helpers ---------- */
   const dealerSpot = document.getElementById('dealerSpot');
   const playerSpot = document.getElementById('playerSpot');
+  const playerSeat = document.getElementById('playerSeat');
+  const playerNameLabel = document.getElementById('playerName');
+  const playerTotalLabel = document.getElementById('playerTotalLabel');
+  const playerBankLabel = document.getElementById('playerBankLabel');
   const dealerTotal = document.getElementById('dealerTotal');
-  const playerTotal = document.getElementById('playerTotal');
   const othersLane = document.getElementById('othersLane');
   const statusEl = document.getElementById('status');
   const turnIndicator = document.getElementById('turnIndicator');
@@ -704,12 +726,27 @@
     dealerTotal.textContent = state.hideDealerHole && dealerHand.length
       ? `${cardValue(dealerHand[0])} +`
       : handValue(dealerHand);
-    playerTotal.textContent = handValue(playerHand);
+
+    if(playerNameLabel){
+      playerNameLabel.textContent = me.name || playerName;
+    }
+    if(playerTotalLabel){
+      playerTotalLabel.textContent = playerHand.length
+        ? `Total: ${handValue(playerHand)}`
+        : 'Waiting for deal';
+    }
+    if(playerSeat){
+      const isActive = state.phase === 'player' && state.activePlayer === clientId;
+      playerSeat.classList.toggle('active', isActive);
+    }
 
     const bankValue = typeof state.banks?.[clientId] === 'number'
       ? state.banks[clientId]
       : (typeof me.bank === 'number' ? me.bank : 1000);
     bankEl.textContent = bankValue;
+    if(playerBankLabel){
+      playerBankLabel.textContent = `Bank: ${bankValue}`;
+    }
 
     if(transientStatus && Date.now() < transientStatus.until){
       statusEl.textContent = transientStatus.message;
