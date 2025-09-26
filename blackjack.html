@@ -56,19 +56,25 @@
   /* Lanes */
   .lane{ position:absolute; left:50%; transform:translateX(-50%); width:80%; }
   .dealer.lane{ top:10%; }
-  .player.lane{ bottom:12%; }
-  .lane.others{
-    bottom:36%;
-    display:flex;
-    justify-content:center;
-    gap:1.3rem;
-    flex-wrap:wrap;
+
+  .player-grid{
+    position:absolute;
+    left:50%;
+    transform:translateX(-50%);
+    bottom:3.5%;
+    width:88%;
+    display:grid;
+    grid-template-columns:repeat(4, minmax(0,1fr));
+    justify-items:center;
+    align-items:end;
+    gap:1.1rem;
     padding:0 1rem;
   }
 
   .player-seat{
     position:relative;
-    width:180px;
+    width:100%;
+    max-width:190px;
     display:flex;
     flex-direction:column;
     align-items:center;
@@ -80,6 +86,11 @@
     backdrop-filter:blur(6px);
     -webkit-backdrop-filter:blur(6px);
   }
+  .player-seat.vacant{
+    opacity:.55;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.05);
+  }
+  .player-seat.vacant .seat-label{ opacity:.7; }
   .player-seat .spot{ width:100%; }
   .player-seat.active{
     box-shadow:0 0 18px rgba(255,209,59,.35), inset 0 0 0 2px rgba(255,209,59,.6);
@@ -120,8 +131,9 @@
   @media (max-width:720px){ .spot{ height:120px; } }
 
   @media (max-width:720px){
-    .lane.others{ bottom:38%; gap:.8rem; }
-    .player-seat{ width:150px; padding:.5rem .35rem .7rem; }
+    .player-grid{ bottom:4%; gap:.8rem; width:94%; }
+    .player-seat{ max-width:160px; padding:.5rem .35rem .7rem; }
+    .controls{ bottom:26%; }
   }
 
   /* Labels */
@@ -130,13 +142,13 @@
     text-align:center; text-shadow:0 2px 8px rgba(0,0,0,.5);
   }
   .label.dealer{ top:4%; font-weight:700; opacity:.9 }
-  .label.player{ bottom:6%; font-weight:700; opacity:.95 }
+  .label.player{ display:none; }
   .total{ font-size:1.05rem; opacity:.9 }
 
   /* Controls */
   .controls{
     position:absolute; left:50%; transform:translateX(-50%);
-    bottom:3%; display:flex; gap:.6rem; z-index:3; flex-wrap:wrap; justify-content:center;
+    bottom:20%; display:flex; gap:.6rem; z-index:3; flex-wrap:wrap; justify-content:center;
   }
   button{
     appearance:none; border:0; border-radius:14px; padding:.9rem 1.2rem;
@@ -247,11 +259,39 @@
       <div class="spot" id="dealerSpot"></div>
     </div>
 
-    <div class="lane others hidden" id="othersLane"></div>
-
-    <div class="label player">You • <span class="total" id="playerTotal">0</span></div>
-    <div class="lane player">
-      <div class="spot" id="playerSpot"></div>
+    <div class="player-grid" id="playerGrid">
+      <div class="player-seat" data-player-slot="0">
+        <div class="spot"></div>
+        <div class="seat-label">
+          <div class="seat-name">Open seat</div>
+          <div class="seat-total">Waiting for player</div>
+          <div class="seat-bank"></div>
+        </div>
+      </div>
+      <div class="player-seat self-seat" data-player-slot="1" data-self="true">
+        <div class="spot" id="playerSpot"></div>
+        <div class="seat-label">
+          <div class="seat-name">You</div>
+          <div class="seat-total">Total: <span class="seat-total-value" id="playerTotal">0</span></div>
+          <div class="seat-bank">Bank: <span id="playerBankSeat">1000</span></div>
+        </div>
+      </div>
+      <div class="player-seat" data-player-slot="2">
+        <div class="spot"></div>
+        <div class="seat-label">
+          <div class="seat-name">Open seat</div>
+          <div class="seat-total">Waiting for player</div>
+          <div class="seat-bank"></div>
+        </div>
+      </div>
+      <div class="player-seat" data-player-slot="3">
+        <div class="spot"></div>
+        <div class="seat-label">
+          <div class="seat-name">Open seat</div>
+          <div class="seat-total">Waiting for player</div>
+          <div class="seat-bank"></div>
+        </div>
+      </div>
     </div>
 
     <div class="status" id="status"></div>
@@ -337,7 +377,22 @@
   const playerSpot = document.getElementById('playerSpot');
   const dealerTotal = document.getElementById('dealerTotal');
   const playerTotal = document.getElementById('playerTotal');
-  const othersLane = document.getElementById('othersLane');
+  const playerGrid = document.getElementById('playerGrid');
+  const seatMap = playerGrid
+    ? Array.from(playerGrid.querySelectorAll('.player-seat')).map(node => ({
+        slot: Number(node.dataset.playerSlot ?? Number.MAX_SAFE_INTEGER),
+        isSelf: node.dataset.self === 'true',
+        root: node,
+        spot: node.querySelector('.spot'),
+        nameEl: node.querySelector('.seat-name'),
+        totalEl: node.querySelector('.seat-total'),
+        bankEl: node.querySelector('.seat-bank')
+      }))
+    : [];
+  const selfSeat = seatMap.find(seat => seat?.isSelf);
+  const remoteSeats = seatMap
+    .filter(seat => !seat.isSelf)
+    .sort((a, b) => a.slot - b.slot);
   const statusEl = document.getElementById('status');
   const turnIndicator = document.getElementById('turnIndicator');
   const btnDeal = document.getElementById('btnDeal');
@@ -345,6 +400,7 @@
   const btnStand = document.getElementById('btnStand');
   const btnNew = document.getElementById('btnNew');
   const bankEl = document.getElementById('bank');
+  const playerBankSeat = document.getElementById('playerBankSeat');
   const lobby = document.getElementById('lobby');
   const lobbyMain = document.getElementById('lobbyMain');
   const multiplayerCard = document.getElementById('multiplayerCard');
@@ -611,59 +667,86 @@
   }
 
   function renderOtherPlayers(state){
-    if(!othersLane) return;
-    const entries = Object.entries(tableState.players || {})
-      .filter(([id]) => id !== clientId)
+    if(!remoteSeats.length) return;
+
+    remoteSeats.forEach(seat => {
+      if(seat.spot){
+        renderHand([], seat.spot);
+      }
+      if(seat.nameEl){
+        seat.nameEl.textContent = 'Open seat';
+      }
+      if(seat.totalEl){
+        seat.totalEl.textContent = 'Waiting for player';
+      }
+      if(seat.bankEl){
+        seat.bankEl.textContent = 'Bank: —';
+      }
+      if(seat.root){
+        seat.root.classList.remove('active');
+        seat.root.classList.add('vacant');
+      }
+    });
+
+    const players = tableState.players || {};
+    let orderedIds = Array.isArray(state.turnOrder) ? state.turnOrder.slice() : [];
+    if(!orderedIds.length){
+      orderedIds = computeTurnOrder();
+    }
+    const seen = new Set();
+    const entries = [];
+
+    for(const id of orderedIds){
+      if(id === clientId) continue;
+      const info = players[id];
+      if(info){
+        entries.push([id, info]);
+        seen.add(id);
+      }
+    }
+
+    Object.entries(players)
+      .filter(([id]) => id !== clientId && !seen.has(id))
       .sort((a, b) => {
+        const joinedA = a[1]?.joinedAt ?? 0;
+        const joinedB = b[1]?.joinedAt ?? 0;
+        if(joinedA && joinedB && joinedA !== joinedB){
+          return joinedA - joinedB;
+        }
         const nameA = (a[1]?.name || '').toLowerCase();
         const nameB = (b[1]?.name || '').toLowerCase();
-        if(nameA && nameB && nameA !== nameB){
-          return nameA.localeCompare(nameB);
-        }
-        return a[0].localeCompare(b[0]);
+        return nameA.localeCompare(nameB);
+      })
+      .forEach(entry => {
+        entries.push(entry);
+        seen.add(entry[0]);
       });
 
-    othersLane.innerHTML = '';
-    othersLane.classList.toggle('hidden', entries.length === 0);
-
-    for(const [id, info] of entries){
-      const seat = document.createElement('div');
-      seat.className = 'player-seat';
-      if(state.activePlayer === id){
-        seat.classList.add('active');
-      }
-
-      const spot = document.createElement('div');
-      spot.className = 'spot';
-      seat.appendChild(spot);
+    entries.forEach(([id, info], index) => {
+      const seat = remoteSeats[index];
+      if(!seat) return;
 
       const hand = Array.isArray(info?.hand) ? info.hand : [];
-      renderHand(hand, spot);
-
-      const label = document.createElement('div');
-      label.className = 'seat-label';
-
-      const nameEl = document.createElement('div');
-      nameEl.className = 'seat-name';
-      nameEl.textContent = info?.name || `Player ${id.slice(0,4).toUpperCase()}`;
-      label.appendChild(nameEl);
-
-      const totalEl = document.createElement('div');
-      totalEl.className = 'seat-total';
-      totalEl.textContent = hand.length ? `Total: ${handValue(hand)}` : 'Waiting for deal';
-      label.appendChild(totalEl);
-
+      if(seat.spot){
+        renderHand(hand, seat.spot);
+      }
+      if(seat.nameEl){
+        seat.nameEl.textContent = info?.name || `Player ${id.slice(0,4).toUpperCase()}`;
+      }
+      if(seat.totalEl){
+        seat.totalEl.textContent = hand.length ? `Total: ${handValue(hand)}` : 'Waiting for deal';
+      }
       const bankValue = typeof state.banks?.[id] === 'number'
         ? state.banks[id]
         : (typeof info?.bank === 'number' ? info.bank : 1000);
-      const bankEl = document.createElement('div');
-      bankEl.className = 'seat-bank';
-      bankEl.textContent = `Bank: ${bankValue}`;
-      label.appendChild(bankEl);
-
-      seat.appendChild(label);
-      othersLane.appendChild(seat);
-    }
+      if(seat.bankEl){
+        seat.bankEl.textContent = `Bank: ${bankValue}`;
+      }
+      if(seat.root){
+        seat.root.classList.toggle('active', state.activePlayer === id);
+        seat.root.classList.remove('vacant');
+      }
+    });
   }
 
   function isMyTurn(){
@@ -699,6 +782,10 @@
 
     renderHand(dealerHand, dealerSpot, { hideHole: !!state.hideDealerHole });
     renderHand(playerHand, playerSpot);
+    if(selfSeat && selfSeat.root){
+      selfSeat.root.classList.toggle('active', state.activePlayer === clientId);
+      selfSeat.root.classList.remove('vacant');
+    }
     renderOtherPlayers(state);
 
     dealerTotal.textContent = state.hideDealerHole && dealerHand.length
@@ -710,6 +797,9 @@
       ? state.banks[clientId]
       : (typeof me.bank === 'number' ? me.bank : 1000);
     bankEl.textContent = bankValue;
+    if(playerBankSeat){
+      playerBankSeat.textContent = bankValue;
+    }
 
     if(transientStatus && Date.now() < transientStatus.until){
       statusEl.textContent = transientStatus.message;
