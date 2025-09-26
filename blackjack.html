@@ -42,6 +42,16 @@
     background:linear-gradient(#ffe07a, #e3b312);
     color:#2a2100; font-weight:800; padding:.45rem .7rem; border-radius:999px; box-shadow: var(--shadow);
   }
+  .turn-indicator{
+    background:rgba(0,0,0,.35);
+    padding:.45rem .9rem;
+    border-radius:999px;
+    font-weight:700;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+    font-size:.82rem;
+    box-shadow:0 6px 16px rgba(0,0,0,.18);
+  }
 
   /* Lanes */
   .lane{ position:absolute; left:50%; transform:translateX(-50%); width:80%; }
@@ -227,6 +237,7 @@
     <header>
       <div class="brand">BLACKJACK • FRIENDS LOUNGE</div>
       <div class="spacer"></div>
+      <div class="turn-indicator hidden" id="turnIndicator">Waiting</div>
       <div class="chip">Bank: <span id="bank">1000</span></div>
     </header>
 
@@ -327,6 +338,7 @@
   const playerTotal = document.getElementById('playerTotal');
   const othersLane = document.getElementById('othersLane');
   const statusEl = document.getElementById('status');
+  const turnIndicator = document.getElementById('turnIndicator');
   const btnDeal = document.getElementById('btnDeal');
   const btnHit = document.getElementById('btnHit');
   const btnStand = document.getElementById('btnStand');
@@ -453,7 +465,9 @@
     hideDealerHole: false,
     banks: {},
     status: '',
-    statusUntil: 0
+    statusUntil: 0,
+    turnOrder: [],
+    currentTurnIndex: 0
   };
 
   const tableState = {
@@ -467,7 +481,7 @@
     return (cards || []).map(card=>({suit:card.suit, rank:card.rank}));
   }
 
-  function commitRound({includeDealer=true, includePlayer=true, includeShoe=true}={}){
+  function commitRound({includeDealer=true, includePlayer=true, includeShoe=true, includeState=true, extraPlayers=null}={}){
     if(!isMultiplayer || !tablePath){
       renderTable();
       return Promise.resolve();
@@ -496,11 +510,25 @@
         updatedAt: now
       };
     }
-    updates[`${tablePath}/state`] = {
-      ...tableState.state,
-      updatedBy: clientId,
-      updatedAt: now
-    };
+    if(extraPlayers && typeof extraPlayers === 'object'){
+      for(const [id, info] of Object.entries(extraPlayers)){
+        if(!info) continue;
+        if(id === clientId && includePlayer) continue;
+        updates[`${tablePath}/players/${id}`] = {
+          ...info,
+          hand: cloneCards(info.hand),
+          updatedBy: clientId,
+          updatedAt: now
+        };
+      }
+    }
+    if(includeState){
+      updates[`${tablePath}/state`] = {
+        ...tableState.state,
+        updatedBy: clientId,
+        updatedAt: now
+      };
+    }
     return update(rootRef, updates);
   }
 
@@ -529,8 +557,12 @@
         name: playerName,
         bank: tableState.state.banks?.[clientId] ?? 1000,
         hand: [],
-        status: 'online'
+        status: isMultiplayer ? 'online' : 'solo',
+        joinedAt: Date.now(),
+        roundResult: null
       };
+    }else if(!tableState.players[clientId].joinedAt){
+      tableState.players[clientId].joinedAt = Date.now();
     }
     if(!tableState.state.banks){
       tableState.state.banks = {};
@@ -604,6 +636,24 @@
     return true;
   }
 
+  let autoBlackjackTimer = null;
+
+  function computeTurnOrder(){
+    const entries = Object.entries(tableState.players || {});
+    if(!entries.length){
+      return [clientId];
+    }
+    entries.sort(([,a],[,b])=>{
+      const av = a?.joinedAt ?? a?.updatedAt ?? 0;
+      const bv = b?.joinedAt ?? b?.updatedAt ?? 0;
+      if(av === bv){
+        return (a?.name || '').localeCompare(b?.name || '');
+      }
+      return av - bv;
+    });
+    return entries.map(([id])=>id);
+  }
+
   function renderTable(){
     const state = tableState.state || defaultState;
     const me = tableState.players[clientId] || { hand: [], bank: 1000, name: playerName };
@@ -635,12 +685,41 @@
       statusEl.classList.remove('show');
     }
 
+    const playerCount = Object.keys(tableState.players || {}).length;
     if(state.phase === 'waiting'){
       setButtons('deal');
     }else if(state.phase === 'player' && state.activePlayer === clientId){
       setButtons('player');
     }else{
       setButtons('lock');
+    }
+
+    if(playerCount > 1){
+      if(state.phase === 'player' && state.activePlayer){
+        const active = tableState.players[state.activePlayer] || {};
+        const label = state.activePlayer === clientId ? 'Your turn' : `${active.name || 'Player'}'s turn`;
+        turnIndicator.textContent = label;
+        turnIndicator.classList.remove('hidden');
+      }else if(state.phase === 'dealer'){
+        turnIndicator.textContent = "Dealer's turn";
+        turnIndicator.classList.remove('hidden');
+      }else{
+        turnIndicator.textContent = 'Waiting for next round';
+        turnIndicator.classList.remove('hidden');
+      }
+    }else{
+      turnIndicator.classList.add('hidden');
+    }
+
+    if(autoBlackjackTimer){
+      clearTimeout(autoBlackjackTimer);
+      autoBlackjackTimer = null;
+    }
+    if(state.phase === 'player' && state.activePlayer === clientId){
+      autoBlackjackTimer = setTimeout(()=>{
+        autoBlackjackTimer = null;
+        checkAutoBlackjack();
+      }, 120);
     }
   }
 
@@ -649,45 +728,107 @@
     tableState.state.statusUntil = Date.now() + duration;
   }
 
-  function handleBlackjack(playerHand, dealerHand){
-    const pv = handValue(playerHand);
-    const dv = handValue(dealerHand);
-    if(pv !== 21) return false;
+  function checkAutoBlackjack(){
+    if(tableState.state.phase !== 'player' || tableState.state.activePlayer !== clientId) return;
     const me = getPlayerEntry();
+    if(me.roundResult === 'blackjack') return;
+    const hand = me.hand || [];
+    if(handValue(hand) !== 21) return;
+    applyBlackjackForCurrent();
+  }
+
+  function applyBlackjackForCurrent(){
+    const dealerHand = tableState.dealer || [];
+    const me = getPlayerEntry();
+    const dv = handValue(dealerHand);
     let bank = tableState.state.banks[clientId] ?? me.bank ?? 1000;
+    let message = '';
     if(dv === 21){
-      shareStatus('Push — both Blackjack', 1500);
+      message = me.name === 'You'
+        ? 'Push — both Blackjack'
+        : `${me.name || 'Player'} pushes with Blackjack`;
     }else{
       bank += 150;
-      shareStatus('Blackjack! +150', 1500);
+      message = me.name === 'You'
+        ? 'Blackjack! +150'
+        : `${me.name || 'Player'} Blackjack! +150`;
     }
-    tableState.state.phase = 'waiting';
-    tableState.state.activePlayer = null;
-    tableState.state.hideDealerHole = false;
     tableState.state.banks[clientId] = bank;
     me.bank = bank;
-    return true;
+    me.roundResult = 'blackjack';
+    shareStatus(message, 1500);
+    const hasNext = finishTurn(clientId);
+    commitRound();
+    renderTable();
+    if(!hasNext){
+      dealerPlay();
+    }
   }
 
   function resolveRound(){
-    const me = getPlayerEntry();
-    const playerHand = me.hand || [];
     const dealerHand = tableState.dealer || [];
-    const pv = handValue(playerHand);
     const dv = handValue(dealerHand);
-    let bank = tableState.state.banks[clientId] ?? me.bank ?? 1000;
-    let msg = '';
-    if(dv>21){ bank += 100; msg = 'Dealer busts — You win +100'; }
-    else if(pv>dv){ bank += 100; msg = 'You win +100'; }
-    else if(pv<dv){ bank -= 100; msg = 'You lose -100'; }
-    else { msg = 'Push'; }
+    const banks = tableState.state.banks || {};
+    const extraPlayers = {};
+    let myMessage = '';
+    const multiplePlayers = Object.keys(tableState.players || {}).length > 1;
+
+    for(const [id, player] of Object.entries(tableState.players || {})){
+      if(!player) continue;
+      const result = player.roundResult;
+      const hand = player.hand || [];
+      let bank = typeof banks[id] === 'number' ? banks[id] : (typeof player.bank === 'number' ? player.bank : 1000);
+      let message = '';
+
+      const displayName = player.name || 'Player';
+      const isYou = displayName === 'You';
+
+      if(result === 'blackjack'){
+        message = isYou ? 'Blackjack!' : `${displayName} Blackjack!`;
+      }else if(result === 'bust'){
+        message = isYou ? 'You bust' : `${displayName} busts`;
+      }else{
+        const pv = handValue(hand);
+        if(dv > 21 || pv > dv){
+          bank += 100;
+          message = isYou ? 'You win +100' : `${displayName} wins +100`;
+          player.roundResult = 'win';
+        }else if(pv < dv){
+          bank -= 100;
+          message = isYou ? 'You lose -100' : `${displayName} loses -100`;
+          player.roundResult = 'lose';
+        }else{
+          message = isYou ? 'You push' : `${displayName} pushes`;
+          player.roundResult = 'push';
+        }
+        banks[id] = bank;
+        player.bank = bank;
+      }
+
+      if(id !== clientId){
+        extraPlayers[id] = player;
+      }else{
+        myMessage = message;
+      }
+    }
+
+    tableState.state.banks = banks;
     tableState.state.phase = 'waiting';
     tableState.state.activePlayer = null;
     tableState.state.hideDealerHole = false;
-    tableState.state.banks[clientId] = bank;
-    me.bank = bank;
-    shareStatus(msg, 1500);
-    commitRound();
+    tableState.state.turnOrder = [];
+    tableState.state.currentTurnIndex = 0;
+
+    const sharedMessage = multiplePlayers ? 'Round complete' : (myMessage || 'Round complete');
+    const duration = multiplePlayers ? 1400 : 1500;
+    tableState.state.status = sharedMessage;
+    tableState.state.statusUntil = Date.now() + duration;
+    if(multiplePlayers && myMessage){
+      showStatus(myMessage, duration);
+    }
+
+    const commitOptions = { includePlayer: !!tableState.players[clientId], extraPlayers: Object.keys(extraPlayers).length ? extraPlayers : null };
+    commitRound(commitOptions);
     renderTable();
   }
 
@@ -711,29 +852,90 @@
     draw();
   }
 
+  function finishTurn(playerId){
+    const state = tableState.state;
+    let order = Array.isArray(state.turnOrder) ? state.turnOrder.slice() : [];
+    if(!order.length){
+      order = computeTurnOrder();
+      state.turnOrder = order;
+    }
+    let currentIndex = order.indexOf(playerId);
+    if(currentIndex === -1){
+      currentIndex = state.currentTurnIndex || 0;
+    }
+    for(let nextIndex = currentIndex + 1; nextIndex < order.length; nextIndex++){
+      const nextId = order[nextIndex];
+      const nextPlayer = tableState.players[nextId];
+      if(!nextPlayer) continue;
+      if(nextPlayer.roundResult === 'blackjack' || nextPlayer.roundResult === 'bust') continue;
+      const hasHand = Array.isArray(nextPlayer.hand) && nextPlayer.hand.length;
+      if(!hasHand) continue;
+      state.currentTurnIndex = nextIndex;
+      state.activePlayer = nextId;
+      state.phase = 'player';
+      state.hideDealerHole = true;
+      return true;
+    }
+    state.currentTurnIndex = order.length;
+    state.activePlayer = null;
+    state.phase = 'dealer';
+    state.hideDealerHole = false;
+    return false;
+  }
+
   function startDeal(){
     if(tableState.state.phase !== 'waiting' || !isMyTurn()) return;
-    const me = getPlayerEntry();
-    me.hand = [];
-    tableState.dealer = [];
-
     ensureShoe();
+
+    const players = tableState.players || {};
+    const order = computeTurnOrder();
+    if(!order.includes(clientId)){
+      order.unshift(clientId);
+    }
+
+    const playersToWrite = {};
+
     tableState.dealer = [drawFromShoe(), drawFromShoe()];
-    me.hand = [drawFromShoe(), drawFromShoe()];
+
+    for(const id of order){
+      const existing = players[id] || {};
+      const hand = [drawFromShoe(), drawFromShoe()];
+      const updated = {
+        ...existing,
+        hand,
+        roundResult: null,
+        status: isMultiplayer ? 'online' : (existing.status || 'solo')
+      };
+      if(typeof updated.bank !== 'number'){
+        updated.bank = tableState.state.banks?.[id] ?? 1000;
+      }
+      if(!updated.joinedAt){
+        updated.joinedAt = Date.now();
+      }
+      tableState.players[id] = updated;
+      playersToWrite[id] = updated;
+      if(!tableState.state.banks){
+        tableState.state.banks = {};
+      }
+      if(typeof tableState.state.banks[id] !== 'number'){
+        tableState.state.banks[id] = updated.bank;
+      }
+    }
 
     tableState.state.phase = 'player';
-    tableState.state.activePlayer = clientId;
+    tableState.state.activePlayer = order[0];
+    tableState.state.turnOrder = order;
+    tableState.state.currentTurnIndex = 0;
     tableState.state.hideDealerHole = true;
     tableState.state.status = '';
     tableState.state.statusUntil = 0;
 
-    if(handleBlackjack(me.hand, tableState.dealer)){
-      commitRound();
-      renderTable();
-      return;
+    const extraPlayers = { ...playersToWrite };
+    if(extraPlayers[clientId]){
+      delete extraPlayers[clientId];
     }
 
-    commitRound();
+    commitRound({ includePlayer: !!tableState.players[clientId], extraPlayers: Object.keys(extraPlayers).length ? extraPlayers : null });
     renderTable();
   }
 
@@ -750,10 +952,16 @@
       bank -= 100;
       tableState.state.banks[clientId] = bank;
       me.bank = bank;
-      tableState.state.phase = 'waiting';
-      tableState.state.activePlayer = null;
-      tableState.state.hideDealerHole = false;
-      shareStatus('Bust!', 1500);
+      me.roundResult = 'bust';
+      const bustMsgName = me.name === 'You' ? 'You bust' : `${me.name || 'Player'} busts`;
+      shareStatus(bustMsgName, 1500);
+      const hasNext = finishTurn(clientId);
+      commitRound();
+      renderTable();
+      if(!hasNext){
+        dealerPlay();
+      }
+      return;
     }
     commitRound();
     renderTable();
@@ -761,13 +969,16 @@
 
   function playerStand(){
     if(tableState.state.phase !== 'player' || tableState.state.activePlayer !== clientId) return;
-    tableState.state.phase = 'dealer';
-    tableState.state.hideDealerHole = false;
+    const me = getPlayerEntry();
+    me.roundResult = 'stand';
     tableState.state.status = '';
     tableState.state.statusUntil = 0;
+    const hasNext = finishTurn(clientId);
     commitRound();
     renderTable();
-    dealerPlay();
+    if(!hasNext){
+      dealerPlay();
+    }
   }
 
   function newShoe(){
@@ -891,12 +1102,15 @@
     me.bank = 1000;
     me.hand = [];
     me.status = 'solo';
+    me.roundResult = null;
     tableState.state.banks[clientId] = me.bank;
     tableState.state.phase = 'waiting';
     tableState.state.activePlayer = null;
     tableState.state.hideDealerHole = false;
     tableState.state.status = '';
     tableState.state.statusUntil = 0;
+    tableState.state.turnOrder = [];
+    tableState.state.currentTurnIndex = 0;
     window.location.hash = '';
     setButtons('deal');
     renderTable();
