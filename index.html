@@ -3,16 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aria's Friend Projects</title>
+    <title>Aria &amp; Friends Project Hub</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --pink: #f9c9ff;
-            --pink-soft: rgba(249, 201, 255, 0.6);
-            --blue: #a7d8ff;
-            --lavender: #d6d8ff;
-            --text: #2c2149;
-            --card: rgba(255, 255, 255, 0.42);
-            --card-border: rgba(255, 255, 255, 0.62);
+            --bg: linear-gradient(135deg, #ffe7ff 0%, #f8c7ff 30%, #bce0ff 68%, #d5c9ff 100%);
+            --card: rgba(255, 255, 255, 0.72);
+            --card-soft: rgba(255, 255, 255, 0.55);
+            --card-border: rgba(255, 255, 255, 0.4);
+            --text: #2b1f47;
+            --muted: rgba(43, 31, 71, 0.68);
+            --accent: #ff93cf;
+            --accent-soft: rgba(255, 147, 207, 0.18);
         }
 
         * {
@@ -25,89 +29,338 @@
             min-height: 100vh;
             font-family: "Poppins", "Inter", "Segoe UI", system-ui, sans-serif;
             color: var(--text);
-            background: linear-gradient(135deg, #fff3ff 0%, var(--pink) 35%, #b8e6ff 68%, #ffe6f7 100%);
+            background: var(--bg);
             display: flex;
-            align-items: center;
             justify-content: center;
-            padding: clamp(2rem, 4vw, 5rem);
+            padding: clamp(1.5rem, 4vw, 3.5rem);
         }
 
-        main {
+        .hub {
             width: min(1100px, 100%);
             display: grid;
-            gap: clamp(1.2rem, 2vw, 2rem);
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: clamp(1.8rem, 3vw, 2.6rem);
         }
 
-        .card {
-            position: relative;
-            min-height: 180px;
-            padding: clamp(1.8rem, 3vw, 2.6rem);
-            border-radius: 24px;
-            background: var(--card);
-            border: 1px solid var(--card-border);
-            backdrop-filter: blur(18px);
-            -webkit-backdrop-filter: blur(18px);
-            box-shadow: 0 24px 40px rgba(44, 33, 73, 0.15);
+        nav {
             display: flex;
-            align-items: flex-end;
-            text-decoration: none;
-            color: inherit;
-            transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+            align-items: center;
+            justify-content: space-between;
+            padding: clamp(1.1rem, 2vw, 1.4rem) clamp(1.4rem, 3vw, 2.2rem);
+            background: var(--card);
+            border-radius: 20px;
+            border: 1px solid var(--card-border);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            box-shadow: 0 20px 40px rgba(43, 31, 71, 0.2);
         }
 
-        .card::after {
-            content: "";
-            position: absolute;
-            inset: 18px;
-            border-radius: 18px;
-            border: 1px dashed rgba(255, 255, 255, 0.28);
-            pointer-events: none;
-        }
-
-        .card:hover,
-        .card:focus-visible {
-            transform: translateY(-6px);
-            background: rgba(255, 255, 255, 0.58);
-            box-shadow: 0 30px 55px rgba(44, 33, 73, 0.22);
-        }
-
-        h2 {
-            font-size: clamp(1.25rem, 2.4vw, 1.6rem);
-            letter-spacing: 0.06em;
+        .brand {
+            font-weight: 700;
+            letter-spacing: 0.08em;
             text-transform: uppercase;
         }
 
-        @media (max-width: 600px) {
-            body {
-                padding: 2.5rem 1.4rem;
+        .nav-links {
+            display: flex;
+            gap: clamp(0.7rem, 2vw, 1.5rem);
+            list-style: none;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text);
+            font-weight: 500;
+            font-size: 0.95rem;
+            padding: 0.35rem 0.65rem;
+            border-radius: 999px;
+            transition: background 0.3s ease, transform 0.2s ease;
+        }
+
+        .nav-links a:hover,
+        .nav-links a:focus-visible {
+            background: var(--accent-soft);
+            transform: translateY(-1px);
+        }
+
+        main {
+            display: grid;
+            gap: clamp(1.6rem, 3vw, 2.4rem);
+        }
+
+        section {
+            padding: clamp(1.8rem, 3vw, 2.8rem);
+            background: var(--card);
+            border-radius: 28px;
+            border: 1px solid var(--card-border);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            box-shadow: 0 20px 40px rgba(43, 31, 71, 0.15);
+        }
+
+        .hero {
+            display: grid;
+            gap: clamp(1rem, 2vw, 1.6rem);
+        }
+
+        .hero h1 {
+            font-size: clamp(2.1rem, 5vw, 3.2rem);
+            line-height: 1.1;
+            text-transform: none;
+        }
+
+        .hero p {
+            font-size: clamp(1rem, 2.4vw, 1.2rem);
+            max-width: 52ch;
+            color: var(--muted);
+        }
+
+        .muted {
+            color: var(--muted);
+        }
+
+        .cta-row {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            padding: 0.85rem 1.4rem;
+            border-radius: 999px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 12px 24px rgba(255, 147, 207, 0.25);
+        }
+
+        .btn.primary {
+            background: linear-gradient(135deg, #ff93cf, #ffd6ff);
+            color: #2b163b;
+        }
+
+        .btn.secondary {
+            background: rgba(255, 255, 255, 0.85);
+            color: var(--text);
+            box-shadow: 0 10px 24px rgba(43, 31, 71, 0.12);
+        }
+
+        .btn:hover,
+        .btn:focus-visible {
+            transform: translateY(-2px);
+        }
+
+        .updates ul {
+            list-style: none;
+            display: grid;
+            gap: 0.75rem;
+        }
+
+        .updates li {
+            padding: 0.85rem 1.1rem;
+            background: rgba(255, 255, 255, 0.55);
+            border-radius: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .updates time {
+            font-size: 0.8rem;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .projects-grid {
+            display: grid;
+            gap: clamp(1.1rem, 2vw, 1.6rem);
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        }
+
+        .project-card {
+            position: relative;
+            min-height: 170px;
+            padding: 1.6rem;
+            border-radius: 24px;
+            background: rgba(255, 255, 255, 0.65);
+            border: 1px solid rgba(255, 255, 255, 0.45);
+            display: grid;
+            gap: 0.75rem;
+            text-decoration: none;
+            color: inherit;
+            transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+        }
+
+        .project-card:hover,
+        .project-card:focus-visible {
+            transform: translateY(-6px);
+            background: rgba(255, 255, 255, 0.82);
+            box-shadow: 0 24px 50px rgba(43, 31, 71, 0.22);
+        }
+
+        .project-card span {
+            font-size: 0.82rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .project-card h3 {
+            font-size: 1.35rem;
+        }
+
+        .project-card p {
+            color: var(--muted);
+            font-size: 0.95rem;
+        }
+
+        .contact {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .contact-info {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        .contact-info a {
+            padding: 0.65rem 1rem;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.72);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            text-decoration: none;
+            color: inherit;
+            font-weight: 500;
+        }
+
+        footer {
+            text-align: center;
+            font-size: 0.85rem;
+            color: rgba(43, 31, 71, 0.6);
+            padding-bottom: 0.3rem;
+        }
+
+        @media (max-width: 768px) {
+            nav {
+                flex-direction: column;
+                gap: 0.8rem;
+                text-align: center;
             }
-            .card {
-                min-height: 150px;
+
+            .nav-links {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            section {
+                padding: clamp(1.5rem, 4vw, 2rem);
             }
         }
     </style>
 </head>
 <body>
-    <main>
-        <a class="card" href="blackjack.html">
-            <h2>Blackjack</h2>
-        </a>
-        <div class="card">
-            <h2>Project Two</h2>
-        </div>
-        <div class="card">
-            <h2>Project Three</h2>
-        </div>
-        <div class="card">
-            <h2>Project Four</h2>
-        </div>
-        <div class="card">
-            <h2>Project Five</h2>
-        </div>
-        <div class="card">
-            <h2>Project Six</h2>
-        </div>
-    </main>
+    <div class="hub">
+        <nav>
+            <div class="brand">Aria &amp; Friends Hub</div>
+            <ul class="nav-links">
+                <li><a href="#home">Home</a></li>
+                <li><a href="#updates">Updates</a></li>
+                <li><a href="#projects">Projects</a></li>
+                <li><a href="blackjack.html">Blackjack</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+        </nav>
+
+        <main>
+            <section id="home" class="hero">
+                <h1>Welcome to our chill little project lounge.</h1>
+                <p>Catch the latest experiments, games, and goofy ideas Aria is tinkering with for the friend group. Dive in, hang out, and let me know what we should build next.</p>
+                <div class="cta-row">
+                    <a class="btn primary" href="#projects">Jump to projects</a>
+                    <a class="btn secondary" href="#updates">See what's new</a>
+                </div>
+            </section>
+
+            <section id="updates" class="updates">
+                <h2>Fresh updates for the crew</h2>
+                <p class="muted">Quick notes on what just landed or what's still brewing.</p>
+                <ul>
+                    <li>
+                        <time datetime="2024-05-10">May 10</time>
+                        <strong>Blackjack table got a glow-up.</strong>
+                        <span>New felt, smoother animations, and easier controls. Let me know if the dealer is too spicy.</span>
+                    </li>
+                    <li>
+                        <time datetime="2024-04-27">Apr 27</time>
+                        <strong>Brainstorm board added.</strong>
+                        <span>We jotted down ideas for the rhythm game and snack tracker. Drop more in the group chat!</span>
+                    </li>
+                    <li>
+                        <time datetime="2024-04-01">Apr 1</time>
+                        <strong>Hub redesign launch.</strong>
+                        <span>Everything lives here now so you don't have to hunt links in pinned messages.</span>
+                    </li>
+                </ul>
+            </section>
+
+            <section id="projects">
+                <h2>Project line-up</h2>
+                <p class="muted">Live builds and placeholders waiting for your chaotic suggestions.</p>
+                <div class="projects-grid">
+                    <a class="project-card" href="blackjack.html">
+                        <span>Live</span>
+                        <h3>Blackjack Lounge</h3>
+                        <p>Classic 21 with a neon felt vibe. Test your luck and try not to roast the dealer too hard.</p>
+                    </a>
+                    <div class="project-card">
+                        <span>Brewing</span>
+                        <h3>Rhythm Reactor</h3>
+                        <p>Music mini-game idea. Thinking osu! meets memory match. Needs tracks and chart ideas.</p>
+                    </div>
+                    <div class="project-card">
+                        <span>Brewing</span>
+                        <h3>Snack Tracker</h3>
+                        <p>Keep tabs on who owes snacks for movie night. Tally IOUs and favorite treats.</p>
+                    </div>
+                    <div class="project-card">
+                        <span>Reserved</span>
+                        <h3>Mystery Slot</h3>
+                        <p>Pitch me something weird. The stranger the better—extra points for chaos.</p>
+                    </div>
+                    <div class="project-card">
+                        <span>Reserved</span>
+                        <h3>Co-op Challenge</h3>
+                        <p>A scoreboard for whatever game we're obsessed with next. Maybe weekly dares?</p>
+                    </div>
+                    <div class="project-card">
+                        <span>Reserved</span>
+                        <h3>Secret Arcade</h3>
+                        <p>Hidden page for mini toys, inside jokes, and easter eggs. Unlock ideas welcome.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="contact" class="contact">
+                <h2>Ping Aria</h2>
+                <p class="muted">Found a bug? Want your project featured? Hit me up using whatever channel you vibe with.</p>
+                <div class="contact-info">
+                    <a href="mailto:aria@example.com">Email</a>
+                    <a href="https://discordapp.com/users/aria" target="_blank" rel="noreferrer">Discord</a>
+                    <a href="https://instagram.com/aria" target="_blank" rel="noreferrer">Insta</a>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            Made with love, caffeine, and too many pastel gradients.
+        </footer>
+    </div>
 </body>
 </html>
