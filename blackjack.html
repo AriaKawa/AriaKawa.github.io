@@ -137,215 +137,137 @@
     </div>
   </div>
 
-<script>
-/* ---------- Card + Deck ---------- */
-const SUITS = ["♠","♥","♦","♣"];      // Spade, Heart, Diamond, Club
-const RANKS = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
-
-function buildShoe(decks=6){
-  const shoe=[];
-  for(let d=0; d<decks; d++){
-    for(const s of SUITS){
-      for(const r of RANKS){
-        shoe.push({suit:s, rank:r});
-      }
-    }
-  }
-  // Fisher-Yates
-  for(let i=shoe.length-1;i>0;i--){
-    const j=Math.floor(Math.random()*(i+1));
-    [shoe[i], shoe[j]]=[shoe[j], shoe[i]];
-  }
-  return shoe;
-}
-let shoe = buildShoe(6);
-
-/* ---------- Values ---------- */
-function cardValue(card){
-  if(card.rank==="A") return 11;
-  if(["K","Q","J"].includes(card.rank)) return 10;
-  return parseInt(card.rank,10);
-}
-function handValue(cards){
-  let sum = 0, aces = 0;
-  for(const c of cards){
-    sum += cardValue(c);
-    if(c.rank==="A") aces++;
-  }
-  while(sum>21 && aces>0){ sum -= 10; aces--; } // Ace as 1
-  return sum;
-}
-
-/* ---------- SVG Renderer (fast, no external assets) ---------- */
-function suitColor(s){ return (s==="♥"||s==="♦") ? "#d64545" : "#1f2a44"; }
-function renderSVG(card){
-  const s = suitColor(card.suit);
-  const rank = card.rank;
-  return `
-  <svg class="svg" viewBox="0 0 250 350" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${rank} ${card.suit}">
-    <defs>
-      <filter id="innerShadow" x="-50%" y="-50%" width="200%" height="200%">
-        <feOffset dx="0" dy="2" />
-        <feGaussianBlur stdDeviation="2" result="offblur"/>
-        <feComposite in="SourceGraphic" in2="offblur" operator="arithmetic" k2="-1" k3="1"/>
-      </filter>
-    </defs>
-    <rect x="4" y="4" rx="22" ry="22" width="242" height="342" fill="#ffffff" filter="url(#innerShadow)"/>
-    <rect x="8" y="8" rx="18" ry="18" width="234" height="334" fill="#ffffff"/>
-    <g fill="${s}">
-      <text x="22" y="40" font-size="44" font-family="ui-monospace, Menlo, Consolas, monospace">${rank}</text>
-      <text x="22" y="76" font-size="44">${card.suit}</text>
-      <text x="228" y="340" font-size="44" text-anchor="end" transform="rotate(180,228,340)">${rank}</text>
-      <text x="228" y="304" font-size="44" text-anchor="end" transform="rotate(180,228,304)">${card.suit}</text>
-      <text x="125" y="205" font-size="120" text-anchor="middle" dominant-baseline="middle" opacity=".9">${card.suit}</text>
-    </g>
-  </svg>`;
-}
-
-/* ---------- DOM helpers ---------- */
-const dealerSpot = document.getElementById('dealerSpot');
-const playerSpot = document.getElementById('playerSpot');
-const dealerTotal = document.getElementById('dealerTotal');
-const playerTotal = document.getElementById('playerTotal');
-const statusEl = document.getElementById('status');
-const btnDeal = document.getElementById('btnDeal');
-const btnHit = document.getElementById('btnHit');
-const btnStand = document.getElementById('btnStand');
-const btnNew = document.getElementById('btnNew');
-
-function setButtons(state){
-  const on = (el, ok)=> el.classList.toggle('muted', !ok);
-  switch(state){
-    case 'deal': on(btnDeal,true); on(btnHit,false); on(btnStand,false); break;
-    case 'player': on(btnDeal,false); on(btnHit,true); on(btnStand,true); break;
-    case 'lock': on(btnDeal,false); on(btnHit,false); on(btnStand,false); break;
-  }
-}
-
-/* ---------- Game State ---------- */
-let player=[], dealer=[], bank=1000;
-
-function showStatus(msg, ms=1100){
-  statusEl.textContent = msg;
-  statusEl.classList.add('show');
-  setTimeout(()=>statusEl.classList.remove('show'), ms);
-}
-function clearSpots(){
-  dealerSpot.innerHTML=''; playerSpot.innerHTML='';
-  dealerTotal.textContent='0'; playerTotal.textContent='0';
-}
-function drawCard(toHand, toSpot, faceDown=false){
-  const card = shoe.pop();
-  toHand.push(card);
-  // create card element
-  const el = document.createElement('div'); el.className='card';
-  el.style.left = '50%'; el.style.top = '45%'; el.style.transform = 'translate(-50%,-50%) rotate(5deg)';
-  if(faceDown){
-    el.innerHTML = `<div class="back"></div>`;
-  }else{
-    el.innerHTML = renderSVG(card);
-  }
-  // destination position
-  const idx = toSpot.children.length;
-  const x = 20 + idx*28;
-  const y = 6 + idx*2;
-  toSpot.appendChild(el);
-  // animate
-  requestAnimationFrame(()=>{
-    el.style.left = `${x}px`;
-    el.style.top = `${y}px`;
-    el.style.transform = `translate(0,0) rotate(${[-3,-1,1,3][idx%4]}deg)`;
-  });
-  return card;
-}
-function flipDealerHole(){
-  const cardEl = dealerSpot.children[1]; // hole card is second
-  if(cardEl){
-    cardEl.innerHTML = renderSVG(dealer[1]);
-  }
-}
-
-/* ---------- Rounds ---------- */
-function updateTotals(hideDealerHole){
-  dealerTotal.textContent = hideDealerHole ? cardValue(dealer[0]) + " +" : handValue(dealer);
-  playerTotal.textContent = handValue(player);
-}
-function deal(){
-  clearSpots();
-  if(shoe.length < 40){ shoe = buildShoe(6); showStatus("Shuffling…", 800); }
-  player=[]; dealer=[];
-  drawCard(dealer, dealerSpot, false);
-  drawCard(dealer, dealerSpot, true);    // hole
-  drawCard(player, playerSpot, false);
-  drawCard(player, playerSpot, false);
-  updateTotals(true);
-  setButtons('player');
-
-  // Natural checks
-  if(handValue(player)===21){
-    setButtons('lock');
-    setTimeout(()=>{
-      flipDealerHole(); updateTotals(false);
-      const dv = handValue(dealer);
-      if(dv===21){ showStatus("Push — both Blackjack"); }
-      else{ bank+=150; showStatus("Blackjack! +150"); }
-      document.getElementById('bank').textContent = bank;
-      setButtons('deal');
-    }, 550);
-  }
-}
-
-function playerHit(){
-  drawCard(player, playerSpot, false);
-  const pv = handValue(player);
-  updateTotals(true);
-  if(pv>21){
-    setButtons('lock');
-    setTimeout(()=>{ flipDealerHole(); updateTotals(false); showStatus("Bust!"); setButtons('deal'); }, 450);
-    bank -= 100; document.getElementById('bank').textContent = bank;
-  }
-}
-function playerStand(){
-  setButtons('lock');
-  flipDealerHole(); updateTotals(false);
-
-  // Dealer draws to 17 (soft 17 hits)
-  const draw = ()=>{
-    const dv = handValue(dealer);
-    if(dv<17 || (dv===17 && dealer.some(c=>c.rank==="A") && handValue(dealer)===17)){ // hit on soft 17
-      setTimeout(()=>{ drawCard(dealer, dealerSpot, false); updateTotals(false); draw(); }, 420);
-    }else{
-      resolve();
-    }
-  };
-  draw();
-}
-function resolve(){
-  const pv = handValue(player), dv = handValue(dealer);
-  let msg="";
-  if(dv>21){ bank += 100; msg = "Dealer busts — You win +100"; }
-  else if(pv>dv){ bank += 100; msg = "You win +100"; }
-  else if(pv<dv){ bank -= 100; msg = "You lose -100"; }
-  else { msg = "Push"; }
-  document.getElementById('bank').textContent = bank;
-  showStatus(msg);
-  setButtons('deal');
-}
-
-/* ---------- Wire up ---------- */
-btnDeal.addEventListener('click', deal);
-btnHit.addEventListener('click', ()=> !btnHit.classList.contains('muted') && playerHit());
-btnStand.addEventListener('click', ()=> !btnStand.classList.contains('muted') && playerStand());
-btnNew.addEventListener('click', ()=>{ shoe = buildShoe(6); showStatus("New shoe ready", 700) ; });
-
-setButtons('deal'); // initial state
-</script>
-
-<!-- Firebase configuration -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
   import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-analytics.js";
+  import { getDatabase, ref, onValue, update, onDisconnect } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js";
 
+  /* ---------- Card + Deck ---------- */
+  const SUITS = ["♠","♥","♦","♣"];      // Spade, Heart, Diamond, Club
+  const RANKS = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
+
+  function buildShoe(decks=6){
+    const shoe=[];
+    for(let d=0; d<decks; d++){
+      for(const s of SUITS){
+        for(const r of RANKS){
+          shoe.push({suit:s, rank:r});
+        }
+      }
+    }
+    for(let i=shoe.length-1;i>0;i--){
+      const j=Math.floor(Math.random()*(i+1));
+      [shoe[i], shoe[j]]=[shoe[j], shoe[i]];
+    }
+    return shoe;
+  }
+
+  /* ---------- Values ---------- */
+  function cardValue(card){
+    if(!card) return 0;
+    if(card.rank==="A") return 11;
+    if(["K","Q","J"].includes(card.rank)) return 10;
+    return parseInt(card.rank,10);
+  }
+  function handValue(cards){
+    let sum = 0, aces = 0;
+    for(const c of cards){
+      sum += cardValue(c);
+      if(c.rank==="A") aces++;
+    }
+    while(sum>21 && aces>0){ sum -= 10; aces--; }
+    return sum;
+  }
+
+  /* ---------- SVG Renderer ---------- */
+  function suitColor(s){ return (s==="♥"||s==="♦") ? "#d64545" : "#1f2a44"; }
+  function renderSVG(card){
+    const s = suitColor(card.suit);
+    const rank = card.rank;
+    return `
+    <svg class="svg" viewBox="0 0 250 350" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${rank} ${card.suit}">
+      <defs>
+        <filter id="innerShadow" x="-50%" y="-50%" width="200%" height="200%">
+          <feOffset dx="0" dy="2" />
+          <feGaussianBlur stdDeviation="2" result="offblur"/>
+          <feComposite in="SourceGraphic" in2="offblur" operator="arithmetic" k2="-1" k3="1"/>
+        </filter>
+      </defs>
+      <rect x="4" y="4" rx="22" ry="22" width="242" height="342" fill="#ffffff" filter="url(#innerShadow)"/>
+      <rect x="8" y="8" rx="18" ry="18" width="234" height="334" fill="#ffffff"/>
+      <g fill="${s}">
+        <text x="22" y="40" font-size="44" font-family="ui-monospace, Menlo, Consolas, monospace">${rank}</text>
+        <text x="22" y="76" font-size="44">${card.suit}</text>
+        <text x="228" y="340" font-size="44" text-anchor="end" transform="rotate(180,228,340)">${rank}</text>
+        <text x="228" y="304" font-size="44" text-anchor="end" transform="rotate(180,228,304)">${card.suit}</text>
+        <text x="125" y="205" font-size="120" text-anchor="middle" dominant-baseline="middle" opacity=".9">${card.suit}</text>
+      </g>
+    </svg>`;
+  }
+
+  /* ---------- DOM helpers ---------- */
+  const dealerSpot = document.getElementById('dealerSpot');
+  const playerSpot = document.getElementById('playerSpot');
+  const dealerTotal = document.getElementById('dealerTotal');
+  const playerTotal = document.getElementById('playerTotal');
+  const statusEl = document.getElementById('status');
+  const btnDeal = document.getElementById('btnDeal');
+  const btnHit = document.getElementById('btnHit');
+  const btnStand = document.getElementById('btnStand');
+  const btnNew = document.getElementById('btnNew');
+  const bankEl = document.getElementById('bank');
+
+  function setButtons(state){
+    const on = (el, ok)=> el.classList.toggle('muted', !ok);
+    switch(state){
+      case 'deal': on(btnDeal,true); on(btnHit,false); on(btnStand,false); break;
+      case 'player': on(btnDeal,false); on(btnHit,true); on(btnStand,true); break;
+      default: on(btnDeal,false); on(btnHit,false); on(btnStand,false); break;
+    }
+  }
+
+  let transientStatus = null;
+  function showStatus(msg, ms=1100){
+    transientStatus = { message: msg, until: Date.now() + ms };
+    statusEl.textContent = msg;
+    statusEl.classList.add('show');
+    setTimeout(()=>{
+      if(transientStatus && Date.now() >= transientStatus.until){
+        transientStatus = null;
+        statusEl.classList.remove('show');
+        renderTable();
+      }
+    }, ms);
+  }
+
+  function normalizeCards(list){
+    if(Array.isArray(list)){
+      return list.filter(Boolean).map(card=>({suit:card.suit, rank:card.rank}));
+    }
+    if(!list || typeof list !== 'object') return [];
+    return Object.keys(list)
+      .map(Number)
+      .sort((a,b)=>a-b)
+      .map(key=>list[key])
+      .filter(Boolean)
+      .map(card=>({suit:card.suit, rank:card.rank}));
+  }
+
+  function renderHand(hand, spot, {hideHole=false}={}){
+    spot.innerHTML='';
+    hand.forEach((card, idx)=>{
+      const el = document.createElement('div');
+      el.className='card';
+      const faceDown = hideHole && idx===1;
+      el.innerHTML = faceDown ? '<div class="back"></div>' : renderSVG(card);
+      el.style.left = `${20 + idx*28}px`;
+      el.style.top = `${6 + idx*2}px`;
+      el.style.transform = `translate(0,0) rotate(${[-3,-1,1,3][idx%4]}deg)`;
+      spot.appendChild(el);
+    });
+  }
+
+  /* ---------- Firebase ---------- */
   const firebaseConfig = {
     apiKey: "AIzaSyDRniZatGeylxphjHQadYjucOcirNBRIdk",
     authDomain: "multiplayer-640ec.firebaseapp.com",
@@ -358,13 +280,379 @@ setButtons('deal'); // initial state
   };
 
   const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  const roomId = window.location.hash.replace('#','') || 'default';
+  const tablePath = `tables/${roomId}`;
+  const rootRef = ref(db);
+  const shoeRef = ref(db, `${tablePath}/shoe`);
+  const dealerRef = ref(db, `${tablePath}/dealer`);
+  const playersRef = ref(db, `${tablePath}/players`);
+  const stateRef = ref(db, `${tablePath}/state`);
+
+  const clientId = (crypto && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2));
+  const playerName = `Player ${clientId.slice(0,4).toUpperCase()}`;
+  const presenceRef = ref(db, `${tablePath}/players/${clientId}`);
+
+  const defaultState = {
+    phase: 'waiting',
+    activePlayer: null,
+    hideDealerHole: false,
+    banks: {},
+    status: '',
+    statusUntil: 0
+  };
+
+  const tableState = {
+    shoe: [],
+    dealer: [],
+    players: {},
+    state: { ...defaultState }
+  };
+
+  function cloneCards(cards){
+    return (cards || []).map(card=>({suit:card.suit, rank:card.rank}));
+  }
+
+  function commitRound({includeDealer=true, includePlayer=true, includeShoe=true}={}){
+    const now = Date.now();
+    const updates = {};
+    if(includeShoe){
+      updates[`${tablePath}/shoe`] = {
+        cards: cloneCards(tableState.shoe),
+        updatedBy: clientId,
+        updatedAt: now
+      };
+    }
+    if(includeDealer){
+      updates[`${tablePath}/dealer`] = {
+        hand: cloneCards(tableState.dealer),
+        updatedBy: clientId,
+        updatedAt: now
+      };
+    }
+    if(includePlayer && tableState.players[clientId]){
+      updates[`${tablePath}/players/${clientId}`] = {
+        ...tableState.players[clientId],
+        hand: cloneCards(tableState.players[clientId].hand),
+        updatedBy: clientId,
+        updatedAt: now
+      };
+    }
+    updates[`${tablePath}/state`] = {
+      ...tableState.state,
+      updatedBy: clientId,
+      updatedAt: now
+    };
+    return update(rootRef, updates);
+  }
+
+  function ensureShoe(){
+    if(!Array.isArray(tableState.shoe) || tableState.shoe.length === 0){
+      tableState.shoe = buildShoe(6);
+      return;
+    }
+    if(tableState.shoe.length < 40){
+      showStatus('Shuffling…', 800);
+      tableState.shoe = buildShoe(6);
+    }
+  }
+
+  function drawFromShoe(){
+    ensureShoe();
+    const shoe = tableState.shoe;
+    const card = shoe.pop();
+    tableState.shoe = shoe;
+    return card;
+  }
+
+  function getPlayerEntry(){
+    if(!tableState.players[clientId]){
+      tableState.players[clientId] = {
+        name: playerName,
+        bank: tableState.state.banks?.[clientId] ?? 1000,
+        hand: [],
+        status: 'online'
+      };
+    }
+    if(!tableState.state.banks){
+      tableState.state.banks = {};
+    }
+    if(typeof tableState.state.banks[clientId] !== 'number'){
+      tableState.state.banks[clientId] = tableState.players[clientId].bank ?? 1000;
+    }
+    return tableState.players[clientId];
+  }
+
+  function isMyTurn(){
+    const { phase, activePlayer } = tableState.state;
+    if(phase === 'waiting') return true;
+    if(activePlayer && activePlayer !== clientId) return false;
+    return true;
+  }
+
+  function renderTable(){
+    const state = tableState.state || defaultState;
+    const me = tableState.players[clientId] || { hand: [], bank: 1000, name: playerName };
+    const dealerHand = Array.isArray(tableState.dealer) ? tableState.dealer : [];
+    const playerHand = Array.isArray(me.hand) ? me.hand : [];
+
+    renderHand(dealerHand, dealerSpot, { hideHole: !!state.hideDealerHole });
+    renderHand(playerHand, playerSpot);
+
+    dealerTotal.textContent = state.hideDealerHole && dealerHand.length
+      ? `${cardValue(dealerHand[0])} +`
+      : handValue(dealerHand);
+    playerTotal.textContent = handValue(playerHand);
+
+    const bankValue = typeof state.banks?.[clientId] === 'number'
+      ? state.banks[clientId]
+      : (typeof me.bank === 'number' ? me.bank : 1000);
+    bankEl.textContent = bankValue;
+
+    if(transientStatus && Date.now() < transientStatus.until){
+      statusEl.textContent = transientStatus.message;
+      statusEl.classList.add('show');
+    }else if(state.status){
+      const visible = !state.statusUntil || state.statusUntil > Date.now();
+      statusEl.textContent = state.status;
+      statusEl.classList.toggle('show', visible);
+    }else{
+      statusEl.classList.remove('show');
+    }
+
+    if(state.phase === 'waiting'){
+      setButtons('deal');
+    }else if(state.phase === 'player' && state.activePlayer === clientId){
+      setButtons('player');
+    }else{
+      setButtons('lock');
+    }
+  }
+
+  function shareStatus(msg, duration=1400){
+    tableState.state.status = msg;
+    tableState.state.statusUntil = Date.now() + duration;
+  }
+
+  function handleBlackjack(playerHand, dealerHand){
+    const pv = handValue(playerHand);
+    const dv = handValue(dealerHand);
+    if(pv !== 21) return false;
+    const me = getPlayerEntry();
+    let bank = tableState.state.banks[clientId] ?? me.bank ?? 1000;
+    if(dv === 21){
+      shareStatus('Push — both Blackjack', 1500);
+    }else{
+      bank += 150;
+      shareStatus('Blackjack! +150', 1500);
+    }
+    tableState.state.phase = 'waiting';
+    tableState.state.activePlayer = null;
+    tableState.state.hideDealerHole = false;
+    tableState.state.banks[clientId] = bank;
+    me.bank = bank;
+    return true;
+  }
+
+  function resolveRound(){
+    const me = getPlayerEntry();
+    const playerHand = me.hand || [];
+    const dealerHand = tableState.dealer || [];
+    const pv = handValue(playerHand);
+    const dv = handValue(dealerHand);
+    let bank = tableState.state.banks[clientId] ?? me.bank ?? 1000;
+    let msg = '';
+    if(dv>21){ bank += 100; msg = 'Dealer busts — You win +100'; }
+    else if(pv>dv){ bank += 100; msg = 'You win +100'; }
+    else if(pv<dv){ bank -= 100; msg = 'You lose -100'; }
+    else { msg = 'Push'; }
+    tableState.state.phase = 'waiting';
+    tableState.state.activePlayer = null;
+    tableState.state.hideDealerHole = false;
+    tableState.state.banks[clientId] = bank;
+    me.bank = bank;
+    shareStatus(msg, 1500);
+    commitRound();
+    renderTable();
+  }
+
+  function dealerPlay(){
+    const draw = ()=>{
+      const dealerHand = tableState.dealer || [];
+      const dv = handValue(dealerHand);
+      const hasAce = dealerHand.some(c=>c.rank === 'A');
+      const shouldHit = dv < 17 || (dv === 17 && hasAce && handValue(dealerHand) === 17);
+      if(shouldHit){
+        setTimeout(()=>{
+          tableState.dealer = [...dealerHand, drawFromShoe()];
+          commitRound();
+          renderTable();
+          draw();
+        }, 420);
+      }else{
+        resolveRound();
+      }
+    };
+    draw();
+  }
+
+  function startDeal(){
+    if(tableState.state.phase !== 'waiting' || !isMyTurn()) return;
+    const me = getPlayerEntry();
+    me.hand = [];
+    tableState.dealer = [];
+
+    ensureShoe();
+    tableState.dealer = [drawFromShoe(), drawFromShoe()];
+    me.hand = [drawFromShoe(), drawFromShoe()];
+
+    tableState.state.phase = 'player';
+    tableState.state.activePlayer = clientId;
+    tableState.state.hideDealerHole = true;
+    tableState.state.status = '';
+    tableState.state.statusUntil = 0;
+
+    if(handleBlackjack(me.hand, tableState.dealer)){
+      commitRound();
+      renderTable();
+      return;
+    }
+
+    commitRound();
+    renderTable();
+  }
+
+  function playerHit(){
+    if(tableState.state.phase !== 'player' || tableState.state.activePlayer !== clientId) return;
+    const me = getPlayerEntry();
+    me.hand = [...(me.hand||[]), drawFromShoe()];
+    tableState.state.status = '';
+    tableState.state.statusUntil = 0;
+
+    const total = handValue(me.hand);
+    if(total > 21){
+      let bank = tableState.state.banks[clientId] ?? me.bank ?? 1000;
+      bank -= 100;
+      tableState.state.banks[clientId] = bank;
+      me.bank = bank;
+      tableState.state.phase = 'waiting';
+      tableState.state.activePlayer = null;
+      tableState.state.hideDealerHole = false;
+      shareStatus('Bust!', 1500);
+    }
+    commitRound();
+    renderTable();
+  }
+
+  function playerStand(){
+    if(tableState.state.phase !== 'player' || tableState.state.activePlayer !== clientId) return;
+    tableState.state.phase = 'dealer';
+    tableState.state.hideDealerHole = false;
+    tableState.state.status = '';
+    tableState.state.statusUntil = 0;
+    commitRound();
+    renderTable();
+    dealerPlay();
+  }
+
+  function newShoe(){
+    tableState.shoe = buildShoe(6);
+    shareStatus('New shoe ready', 700);
+    commitRound({ includeDealer:false, includePlayer:false, includeShoe:true });
+    renderTable();
+  }
+
+  let knownPlayers = new Set();
+
+  onValue(shoeRef, snapshot=>{
+    const data = snapshot.val();
+    if(data && data.updatedBy === clientId) return;
+    if(data && data.cards){
+      tableState.shoe = normalizeCards(data.cards);
+    }
+    renderTable();
+  });
+
+  onValue(dealerRef, snapshot=>{
+    const data = snapshot.val();
+    if(data && data.updatedBy === clientId) return;
+    tableState.dealer = normalizeCards(data?.hand);
+    renderTable();
+  });
+
+  onValue(playersRef, snapshot=>{
+    const data = snapshot.val() || {};
+    const previousPlayers = { ...tableState.players };
+    const currentIds = new Set(Object.keys(data));
+    for(const id of currentIds){
+      if(!knownPlayers.has(id) && id !== clientId){
+        showStatus(`${data[id]?.name || 'Player'} joined`, 1000);
+      }
+    }
+    for(const id of knownPlayers){
+      if(!currentIds.has(id) && id !== clientId){
+        const name = previousPlayers[id]?.name || 'Player';
+        showStatus(`${name} left`, 1000);
+      }
+    }
+    knownPlayers = currentIds;
+    const parsed = {};
+    for(const [id, info] of Object.entries(data)){
+      parsed[id] = {
+        ...info,
+        hand: normalizeCards(info.hand)
+      };
+    }
+    tableState.players = parsed;
+    renderTable();
+  });
+
+  onValue(stateRef, snapshot=>{
+    const data = snapshot.val();
+    if(data && data.updatedBy === clientId) return;
+    tableState.state = { ...defaultState, ...(data || {}) };
+    if(!tableState.state.banks) tableState.state.banks = {};
+    renderTable();
+  });
+
+  function joinTable(){
+    const me = getPlayerEntry();
+    const now = Date.now();
+    const updates = {};
+    updates[`${tablePath}/players/${clientId}`] = {
+      ...me,
+      hand: cloneCards(me.hand),
+      updatedBy: clientId,
+      updatedAt: now
+    };
+    if(!tableState.state.banks){
+      tableState.state.banks = {};
+    }
+    tableState.state.banks[clientId] = me.bank ?? 1000;
+    updates[`${tablePath}/state/banks/${clientId}`] = tableState.state.banks[clientId];
+    updates[`${tablePath}/state/updatedBy`] = clientId;
+    updates[`${tablePath}/state/updatedAt`] = now;
+    update(rootRef, updates).catch(err=>console.warn('Failed to join table', err));
+    onDisconnect(presenceRef).remove().catch(()=>{});
+  }
+
+  btnDeal.addEventListener('click', ()=> startDeal());
+  btnHit.addEventListener('click', ()=> !btnHit.classList.contains('muted') && playerHit());
+  btnStand.addEventListener('click', ()=> !btnStand.classList.contains('muted') && playerStand());
+  btnNew.addEventListener('click', ()=> newShoe());
+
+  setButtons('deal');
+  renderTable();
+  joinTable();
+
   isSupported()
     .then((supported) => {
       if (supported) {
         getAnalytics(app);
       }
     })
-    .catch((err) => console.warn("Firebase analytics not supported", err));
+    .catch((err) => console.warn('Firebase analytics not supported', err));
 </script>
 </body>
 </html>
