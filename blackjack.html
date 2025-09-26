@@ -294,13 +294,15 @@
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
 
-  try {
-    if (await analyticsIsSupported()) {
-      getAnalytics(app);
-    }
-  } catch (err) {
-    console.warn("Analytics not available", err);
-  }
+  analyticsIsSupported()
+    .then(supported => {
+      if (supported) {
+        getAnalytics(app);
+      }
+    })
+    .catch(err => {
+      console.warn("Analytics not available", err);
+    });
 
   const SUITS = ["♠","♥","♦","♣"];
   const RANKS = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
@@ -668,6 +670,10 @@
     }
   }
 
+  function scheduleCleanup(removeHostedGame) {
+    cleanupRemote(removeHostedGame).catch(() => {});
+  }
+
   function deal() {
     clearSpots();
     if (shoe.length < 40) {
@@ -979,6 +985,9 @@
     showStatus("New shoe ready", 700);
     if (isHost) broadcastState();
   });
+
+  window.addEventListener("beforeunload", () => scheduleCleanup(isHost));
+  window.addEventListener("pagehide", () => scheduleCleanup(isHost));
 </script>
 </body>
 </html>
