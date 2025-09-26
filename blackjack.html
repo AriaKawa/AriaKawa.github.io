@@ -106,10 +106,76 @@
     background:rgba(0,0,0,.35); padding:.45rem .8rem; border-radius:999px; transition:background .2s ease, transform .2s ease;
   }
   .back-link:hover{ background:rgba(0,0,0,.55); transform:translateY(-1px); }
+
+  .hidden{ display:none !important; }
+
+  .lobby{
+    position:fixed; inset:0; z-index:10; display:flex; align-items:center; justify-content:center;
+    background:rgba(6,12,24,.8); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
+    padding:1.5rem;
+  }
+  .lobby-card{
+    background:rgba(13,27,44,.92); border:1px solid rgba(255,255,255,.08); border-radius:26px;
+    box-shadow:var(--shadow); padding:clamp(1.6rem,4vw,2.6rem); width:min(420px,94vw);
+    display:grid; gap:1.1rem; text-align:center;
+  }
+  .lobby-card h2{ font-size:1.8rem; margin:0; letter-spacing:.04em; }
+  .lobby-card p{ margin:0; opacity:.85; line-height:1.4; }
+  .lobby-actions{ display:grid; gap:.8rem; }
+  .lobby .ghost{ background:rgba(255,255,255,.08); color:var(--text); border:1px solid rgba(255,255,255,.18); box-shadow:none; }
+  .lobby .ghost:hover{ background:rgba(255,255,255,.14); }
+  .lobby .secondary{ background:rgba(0,0,0,.35); color:var(--text); border:1px solid rgba(255,255,255,.15); box-shadow:none; }
+  .lobby .secondary:hover{ background:rgba(0,0,0,.5); }
+  .lobby .back-action{ font-size:.9rem; font-weight:600; padding:.6rem .9rem; justify-self:center; }
+  .code-display{
+    font-size:2rem; letter-spacing:.24em; font-weight:800; text-transform:uppercase;
+    padding:.8rem 1.2rem; border-radius:22px; background:rgba(0,0,0,.38); border:1px solid rgba(255,255,255,.18);
+  }
+  .lobby input{
+    appearance:none; border-radius:16px; border:1px solid rgba(255,255,255,.18);
+    padding:.85rem 1rem; background:rgba(0,0,0,.35); color:var(--text); font-size:1.05rem; text-transform:uppercase;
+    text-align:center; letter-spacing:.18em;
+  }
+  .lobby input:focus{ outline:2px solid rgba(255,209,59,.55); outline-offset:3px; }
 </style>
 </head>
 <body>
   <a class="back-link" href="index.html">← Back to the friend hub</a>
+  <div class="lobby" id="lobby">
+    <div class="lobby-card" id="lobbyMain">
+      <h2>Blackjack Lounge</h2>
+      <p>Select how you'd like to play.</p>
+      <div class="lobby-actions">
+        <button class="primary" id="btnSingleplayer">Singleplayer</button>
+        <button class="ghost" id="btnMultiplayer">Multiplayer</button>
+      </div>
+    </div>
+    <div class="lobby-card hidden" id="multiplayerCard">
+      <h2>Multiplayer</h2>
+      <p>Invite friends with a shared table code.</p>
+      <div class="lobby-actions">
+        <button class="primary" id="btnHost">Host</button>
+        <button class="ghost" id="btnJoin">Join</button>
+      </div>
+      <button class="secondary back-action" data-target="lobbyMain">Back</button>
+    </div>
+    <div class="lobby-card hidden" id="hostCard">
+      <h2>Host a Table</h2>
+      <p>Share this code with friends so they can join.</p>
+      <div class="code-display" id="hostCode">----</div>
+      <button class="primary" id="btnHostStart">Enter Table</button>
+      <button class="secondary back-action" data-target="multiplayerCard">Back</button>
+    </div>
+    <div class="lobby-card hidden" id="joinCard">
+      <h2>Join a Table</h2>
+      <p>Enter the code from your host.</p>
+      <input type="text" id="joinCodeInput" maxlength="12" autocomplete="off" placeholder="CODE" />
+      <div class="lobby-actions">
+        <button class="primary" id="btnJoinConfirm">Join Table</button>
+        <button class="secondary back-action" data-target="multiplayerCard">Back</button>
+      </div>
+    </div>
+  </div>
   <div class="table" id="table">
     <header>
       <div class="brand">BLACKJACK • FRIENDS LOUNGE</div>
@@ -216,6 +282,19 @@
   const btnStand = document.getElementById('btnStand');
   const btnNew = document.getElementById('btnNew');
   const bankEl = document.getElementById('bank');
+  const lobby = document.getElementById('lobby');
+  const lobbyMain = document.getElementById('lobbyMain');
+  const multiplayerCard = document.getElementById('multiplayerCard');
+  const hostCard = document.getElementById('hostCard');
+  const joinCard = document.getElementById('joinCard');
+  const hostCodeEl = document.getElementById('hostCode');
+  const joinCodeInput = document.getElementById('joinCodeInput');
+  const btnSingle = document.getElementById('btnSingleplayer');
+  const btnMultiplayer = document.getElementById('btnMultiplayer');
+  const btnHost = document.getElementById('btnHost');
+  const btnJoin = document.getElementById('btnJoin');
+  const btnHostStart = document.getElementById('btnHostStart');
+  const btnJoinConfirm = document.getElementById('btnJoinConfirm');
 
   function setButtons(state){
     const on = (el, ok)=> el.classList.toggle('muted', !ok);
@@ -281,18 +360,21 @@
 
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
-
-  const roomId = window.location.hash.replace('#','') || 'default';
-  const tablePath = `tables/${roomId}`;
   const rootRef = ref(db);
-  const shoeRef = ref(db, `${tablePath}/shoe`);
-  const dealerRef = ref(db, `${tablePath}/dealer`);
-  const playersRef = ref(db, `${tablePath}/players`);
-  const stateRef = ref(db, `${tablePath}/state`);
 
   const clientId = (crypto && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2));
   const playerName = `Player ${clientId.slice(0,4).toUpperCase()}`;
-  const presenceRef = ref(db, `${tablePath}/players/${clientId}`);
+
+  let roomId = null;
+  let isMultiplayer = false;
+  let tablePath = '';
+  let shoeRef = null;
+  let dealerRef = null;
+  let playersRef = null;
+  let stateRef = null;
+  let presenceRef = null;
+  let unsubscribers = [];
+  let knownPlayers = new Set();
 
   const defaultState = {
     phase: 'waiting',
@@ -315,6 +397,10 @@
   }
 
   function commitRound({includeDealer=true, includePlayer=true, includeShoe=true}={}){
+    if(!isMultiplayer || !tablePath){
+      renderTable();
+      return Promise.resolve();
+    }
     const now = Date.now();
     const updates = {};
     if(includeShoe){
@@ -563,60 +649,165 @@
     renderTable();
   }
 
-  let knownPlayers = new Set();
+  function resetLocalTable(){
+    tableState.shoe = [];
+    tableState.dealer = [];
+    tableState.players = {};
+    tableState.state = { ...defaultState, banks: {} };
+  }
 
-  onValue(shoeRef, snapshot=>{
-    const data = snapshot.val();
-    if(data && data.updatedBy === clientId) return;
-    if(data && data.cards){
-      tableState.shoe = normalizeCards(data.cards);
-    }
-    renderTable();
-  });
-
-  onValue(dealerRef, snapshot=>{
-    const data = snapshot.val();
-    if(data && data.updatedBy === clientId) return;
-    tableState.dealer = normalizeCards(data?.hand);
-    renderTable();
-  });
-
-  onValue(playersRef, snapshot=>{
-    const data = snapshot.val() || {};
-    const previousPlayers = { ...tableState.players };
-    const currentIds = new Set(Object.keys(data));
-    for(const id of currentIds){
-      if(!knownPlayers.has(id) && id !== clientId){
-        showStatus(`${data[id]?.name || 'Player'} joined`, 1000);
+  function detachListeners(){
+    unsubscribers.forEach(unsub => {
+      try {
+        unsub && unsub();
+      } catch (err) {
+        console.warn('Failed to detach listener', err);
       }
-    }
-    for(const id of knownPlayers){
-      if(!currentIds.has(id) && id !== clientId){
-        const name = previousPlayers[id]?.name || 'Player';
-        showStatus(`${name} left`, 1000);
-      }
-    }
-    knownPlayers = currentIds;
-    const parsed = {};
-    for(const [id, info] of Object.entries(data)){
-      parsed[id] = {
-        ...info,
-        hand: normalizeCards(info.hand)
-      };
-    }
-    tableState.players = parsed;
-    renderTable();
-  });
+    });
+    unsubscribers = [];
+  }
 
-  onValue(stateRef, snapshot=>{
-    const data = snapshot.val();
-    if(data && data.updatedBy === clientId) return;
-    tableState.state = { ...defaultState, ...(data || {}) };
-    if(!tableState.state.banks) tableState.state.banks = {};
+  function attachListeners(){
+    if(!isMultiplayer) return;
+    detachListeners();
+    if(!shoeRef || !dealerRef || !playersRef || !stateRef) return;
+
+    unsubscribers.push(onValue(shoeRef, snapshot=>{
+      const data = snapshot.val();
+      if(data && data.updatedBy === clientId) return;
+      if(data && data.cards){
+        tableState.shoe = normalizeCards(data.cards);
+      }
+      renderTable();
+    }));
+
+    unsubscribers.push(onValue(dealerRef, snapshot=>{
+      const data = snapshot.val();
+      if(data && data.updatedBy === clientId) return;
+      tableState.dealer = normalizeCards(data?.hand);
+      renderTable();
+    }));
+
+    unsubscribers.push(onValue(playersRef, snapshot=>{
+      const data = snapshot.val() || {};
+      const previousPlayers = { ...tableState.players };
+      const currentIds = new Set(Object.keys(data));
+      for(const id of currentIds){
+        if(!knownPlayers.has(id) && id !== clientId){
+          showStatus(`${data[id]?.name || 'Player'} joined`, 1000);
+        }
+      }
+      for(const id of knownPlayers){
+        if(!currentIds.has(id) && id !== clientId){
+          const name = previousPlayers[id]?.name || 'Player';
+          showStatus(`${name} left`, 1000);
+        }
+      }
+      knownPlayers = currentIds;
+      const parsed = {};
+      for(const [id, info] of Object.entries(data)){
+        parsed[id] = {
+          ...info,
+          hand: normalizeCards(info.hand)
+        };
+      }
+      tableState.players = parsed;
+      renderTable();
+    }));
+
+    unsubscribers.push(onValue(stateRef, snapshot=>{
+      const data = snapshot.val();
+      if(data && data.updatedBy === clientId) return;
+      tableState.state = { ...defaultState, ...(data || {}) };
+      if(!tableState.state.banks) tableState.state.banks = {};
+      renderTable();
+    }));
+  }
+
+  function sanitizeRoomCode(value){
+    const cleaned = String(value || '').replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
+    if(!cleaned) return '';
+    if(cleaned.length <= 5){
+      return cleaned.toUpperCase();
+    }
+    return cleaned.toLowerCase();
+  }
+
+  function generateRoomCode(){
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = '';
+    for(let i=0; i<5; i++){
+      code += chars[Math.floor(Math.random()*chars.length)];
+    }
+    return code;
+  }
+
+  function startSingleplayer(){
+    const previousPath = tablePath;
+    const wasMultiplayer = isMultiplayer;
+    detachListeners();
+    if(wasMultiplayer && previousPath){
+      const cleanup = {};
+      cleanup[`${previousPath}/players/${clientId}`] = null;
+      cleanup[`${previousPath}/state/banks/${clientId}`] = null;
+      update(rootRef, cleanup).catch(()=>{});
+    }
+    isMultiplayer = false;
+    roomId = null;
+    tablePath = '';
+    shoeRef = dealerRef = playersRef = stateRef = presenceRef = null;
+    knownPlayers = new Set();
+    resetLocalTable();
+    const me = getPlayerEntry();
+    me.name = 'You';
+    me.bank = 1000;
+    me.hand = [];
+    me.status = 'solo';
+    tableState.state.banks[clientId] = me.bank;
+    tableState.state.phase = 'waiting';
+    tableState.state.activePlayer = null;
+    tableState.state.hideDealerHole = false;
+    tableState.state.status = '';
+    tableState.state.statusUntil = 0;
+    window.location.hash = '';
+    setButtons('deal');
     renderTable();
-  });
+  }
+
+  function startMultiplayer(code, { host=false }={}){
+    const sanitized = sanitizeRoomCode(code);
+    if(!sanitized) return;
+    detachListeners();
+    resetLocalTable();
+    isMultiplayer = true;
+    roomId = sanitized;
+    tablePath = `tables/${roomId}`;
+    shoeRef = ref(db, `${tablePath}/shoe`);
+    dealerRef = ref(db, `${tablePath}/dealer`);
+    playersRef = ref(db, `${tablePath}/players`);
+    stateRef = ref(db, `${tablePath}/state`);
+    presenceRef = ref(db, `${tablePath}/players/${clientId}`);
+    knownPlayers = new Set();
+    window.location.hash = roomId;
+
+    if(host){
+      const now = Date.now();
+      update(rootRef, {
+        [`${tablePath}/shoe`]: null,
+        [`${tablePath}/dealer`]: null,
+        [`${tablePath}/players`]: null,
+        [`${tablePath}/state`]: { ...defaultState, updatedBy: clientId, updatedAt: now }
+      }).catch(err=>console.warn('Failed to prepare room', err));
+    }
+
+    attachListeners();
+    joinTable();
+    setButtons('deal');
+    renderTable();
+  }
 
   function joinTable(){
+    if(!isMultiplayer || !tablePath) return;
     const me = getPlayerEntry();
     const now = Date.now();
     const updates = {};
@@ -637,14 +828,92 @@
     onDisconnect(presenceRef).remove().catch(()=>{});
   }
 
+  const lobbyCards = { lobbyMain, multiplayerCard, hostCard, joinCard };
+
+  function showLobbyCard(id){
+    Object.values(lobbyCards).forEach(card => card.classList.add('hidden'));
+    const target = lobbyCards[id] || lobbyMain;
+    target.classList.remove('hidden');
+  }
+
+  function closeLobby(){
+    lobby.classList.add('hidden');
+  }
+
+  function openLobby(id='lobbyMain'){
+    lobby.classList.remove('hidden');
+    showLobbyCard(id);
+  }
+
+  lobby.querySelectorAll('.back-action').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      showLobbyCard(btn.dataset.target || 'lobbyMain');
+    });
+  });
+
+  btnSingle.addEventListener('click', ()=>{
+    startSingleplayer();
+    closeLobby();
+  });
+
+  btnMultiplayer.addEventListener('click', ()=>{
+    showLobbyCard('multiplayerCard');
+  });
+
+  btnHost.addEventListener('click', ()=>{
+    const code = generateRoomCode();
+    hostCodeEl.textContent = code;
+    hostCodeEl.dataset.code = code;
+    showLobbyCard('hostCard');
+  });
+
+  btnHostStart.addEventListener('click', ()=>{
+    const code = hostCodeEl.dataset.code || hostCodeEl.textContent || '';
+    if(!code) return;
+    startMultiplayer(code, { host: true });
+    closeLobby();
+  });
+
+  btnJoin.addEventListener('click', ()=>{
+    joinCodeInput.value = '';
+    showLobbyCard('joinCard');
+    setTimeout(()=> joinCodeInput.focus(), 50);
+  });
+
+  function requestJoin(){
+    const code = sanitizeRoomCode(joinCodeInput.value);
+    if(!code){
+      joinCodeInput.focus();
+      return;
+    }
+    startMultiplayer(code);
+    closeLobby();
+  }
+
+  btnJoinConfirm.addEventListener('click', requestJoin);
+  joinCodeInput.addEventListener('input', ()=>{
+    joinCodeInput.value = sanitizeRoomCode(joinCodeInput.value);
+  });
+  joinCodeInput.addEventListener('keydown', event=>{
+    if(event.key === 'Enter'){
+      event.preventDefault();
+      requestJoin();
+    }
+  });
+
   btnDeal.addEventListener('click', ()=> startDeal());
   btnHit.addEventListener('click', ()=> !btnHit.classList.contains('muted') && playerHit());
   btnStand.addEventListener('click', ()=> !btnStand.classList.contains('muted') && playerStand());
   btnNew.addEventListener('click', ()=> newShoe());
 
-  setButtons('deal');
-  renderTable();
-  joinTable();
+  const initialCode = sanitizeRoomCode(window.location.hash.replace('#',''));
+  if(initialCode){
+    startMultiplayer(initialCode);
+    closeLobby();
+  }else{
+    startSingleplayer();
+    openLobby('lobbyMain');
+  }
 
   isSupported()
     .then((supported) => {
