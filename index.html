@@ -3,617 +3,364 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Your Name - Portfolio</title>
+    <title>Aria &amp; Friends Project Hub</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg: linear-gradient(135deg, #ffe7ff 0%, #f8c7ff 30%, #bce0ff 68%, #d5c9ff 100%);
+            --card: rgba(255, 255, 255, 0.72);
+            --card-soft: rgba(255, 255, 255, 0.55);
+            --card-border: rgba(255, 255, 255, 0.4);
+            --text: #2b1f47;
+            --muted: rgba(43, 31, 71, 0.68);
+            --accent: #ff93cf;
+            --accent-soft: rgba(255, 147, 207, 0.18);
+        }
+
         * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #fff;
-            overflow-x: hidden;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px;
-        }
-
-        /* Navigation */
-        nav {
-            position: fixed;
-            top: 0;
-            width: 100%;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            z-index: 1000;
-            transition: all 0.3s ease;
-        }
-
-        nav.scrolled {
-            background: rgba(0, 0, 0, 0.8);
-        }
-
-        .nav-container {
+            min-height: 100vh;
+            font-family: "Poppins", "Inter", "Segoe UI", system-ui, sans-serif;
+            color: var(--text);
+            background: var(--bg);
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem 2rem;
+            justify-content: center;
+            padding: clamp(1.5rem, 4vw, 3.5rem);
         }
 
-        .logo {
-            font-size: 1.5rem;
-            font-weight: bold;
-            background: linear-gradient(45deg, #ff6b6b, #feca57);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+        .hub {
+            width: min(1100px, 100%);
+            display: grid;
+            gap: clamp(1.8rem, 3vw, 2.6rem);
+        }
+
+        nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: clamp(1.1rem, 2vw, 1.4rem) clamp(1.4rem, 3vw, 2.2rem);
+            background: var(--card);
+            border-radius: 20px;
+            border: 1px solid var(--card-border);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            box-shadow: 0 20px 40px rgba(43, 31, 71, 0.2);
+        }
+
+        .brand {
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
         }
 
         .nav-links {
             display: flex;
+            gap: clamp(0.7rem, 2vw, 1.5rem);
             list-style: none;
-            gap: 2rem;
         }
 
         .nav-links a {
-            color: #fff;
             text-decoration: none;
-            transition: all 0.3s ease;
-            position: relative;
+            color: var(--text);
+            font-weight: 500;
+            font-size: 0.95rem;
+            padding: 0.35rem 0.65rem;
+            border-radius: 999px;
+            transition: background 0.3s ease, transform 0.2s ease;
         }
 
-        .nav-links a:hover {
-            transform: translateY(-2px);
+        .nav-links a:hover,
+        .nav-links a:focus-visible {
+            background: var(--accent-soft);
+            transform: translateY(-1px);
         }
 
-        .nav-links a::after {
-            content: '';
-            position: absolute;
-            bottom: -5px;
-            left: 0;
-            width: 0;
-            height: 2px;
-            background: linear-gradient(45deg, #ff6b6b, #feca57);
-            transition: width 0.3s ease;
+        main {
+            display: grid;
+            gap: clamp(1.6rem, 3vw, 2.4rem);
         }
 
-        .nav-links a:hover::after {
-            width: 100%;
+        section {
+            padding: clamp(1.8rem, 3vw, 2.8rem);
+            background: var(--card);
+            border-radius: 28px;
+            border: 1px solid var(--card-border);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            box-shadow: 0 20px 40px rgba(43, 31, 71, 0.15);
         }
 
-        /* Hero Section */
         .hero {
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            position: relative;
-        }
-
-        .hero-content {
-            animation: fadeInUp 1s ease-out;
+            display: grid;
+            gap: clamp(1rem, 2vw, 1.6rem);
         }
 
         .hero h1 {
-            font-size: clamp(3rem, 8vw, 6rem);
-            margin-bottom: 1rem;
-            background: linear-gradient(45deg, #ff6b6b, #feca57, #48cae4);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: glow 2s ease-in-out infinite alternate;
+            font-size: clamp(2.1rem, 5vw, 3.2rem);
+            line-height: 1.1;
+            text-transform: none;
         }
 
         .hero p {
-            font-size: 1.5rem;
-            margin-bottom: 2rem;
-            opacity: 0.9;
+            font-size: clamp(1rem, 2.4vw, 1.2rem);
+            max-width: 52ch;
+            color: var(--muted);
         }
 
-        .cta-button {
-            display: inline-block;
-            padding: 15px 40px;
-            background: linear-gradient(45deg, #ff6b6b, #feca57);
-            color: #fff;
-            text-decoration: none;
-            border-radius: 50px;
-            font-weight: bold;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
+        .muted {
+            color: var(--muted);
         }
 
-        .cta-button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 30px rgba(255, 107, 107, 0.4);
-        }
-
-        .cta-button::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-            transition: left 0.5s;
-        }
-
-        .cta-button:hover::before {
-            left: 100%;
-        }
-
-        /* Floating Elements */
-        .floating-element {
-            position: absolute;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.1);
-            animation: float 6s ease-in-out infinite;
-        }
-
-        .floating-element:nth-child(1) {
-            width: 80px;
-            height: 80px;
-            top: 20%;
-            left: 10%;
-            animation-delay: 0s;
-        }
-
-        .floating-element:nth-child(2) {
-            width: 120px;
-            height: 120px;
-            top: 60%;
-            right: 10%;
-            animation-delay: 2s;
-        }
-
-        .floating-element:nth-child(3) {
-            width: 60px;
-            height: 60px;
-            bottom: 20%;
-            left: 20%;
-            animation-delay: 4s;
-        }
-
-        /* About Section */
-        .about {
-            padding: 5rem 0;
-            background: rgba(0, 0, 0, 0.2);
-        }
-
-        .about-content {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 4rem;
-            align-items: center;
-        }
-
-        .about-text h2 {
-            font-size: 3rem;
-            margin-bottom: 2rem;
-            background: linear-gradient(45deg, #ff6b6b, #feca57);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .about-text p {
-            font-size: 1.2rem;
-            line-height: 1.8;
-            margin-bottom: 1.5rem;
-        }
-
-        .skills {
+        .cta-row {
             display: flex;
-            flex-wrap: wrap;
             gap: 1rem;
-            margin-top: 2rem;
+            flex-wrap: wrap;
         }
 
-        .skill-tag {
-            padding: 0.5rem 1rem;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 25px;
-            font-size: 0.9rem;
-            transition: all 0.3s ease;
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            padding: 0.85rem 1.4rem;
+            border-radius: 999px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 12px 24px rgba(255, 147, 207, 0.25);
         }
 
-        .skill-tag:hover {
-            background: rgba(255, 107, 107, 0.3);
+        .btn.primary {
+            background: linear-gradient(135deg, #ff93cf, #ffd6ff);
+            color: #2b163b;
+        }
+
+        .btn.secondary {
+            background: rgba(255, 255, 255, 0.85);
+            color: var(--text);
+            box-shadow: 0 10px 24px rgba(43, 31, 71, 0.12);
+        }
+
+        .btn:hover,
+        .btn:focus-visible {
             transform: translateY(-2px);
         }
 
-        .about-image {
-            position: relative;
+        .updates ul {
+            list-style: none;
+            display: grid;
+            gap: 0.75rem;
         }
 
-        .image-placeholder {
-            width: 100%;
-            height: 400px;
-            background: linear-gradient(45deg, rgba(255, 107, 107, 0.3), rgba(254, 202, 87, 0.3));
-            border-radius: 20px;
+        .updates li {
+            padding: 0.85rem 1.1rem;
+            background: rgba(255, 255, 255, 0.55);
+            border-radius: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.35);
             display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            flex-direction: column;
+            gap: 0.25rem;
         }
 
-        /* Projects Section */
-        .projects {
-            padding: 5rem 0;
-        }
-
-        .projects h2 {
-            text-align: center;
-            font-size: 3rem;
-            margin-bottom: 3rem;
-            background: linear-gradient(45deg, #ff6b6b, #feca57);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+        .updates time {
+            font-size: 0.8rem;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: var(--muted);
         }
 
         .projects-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
+            gap: clamp(1.1rem, 2vw, 1.6rem);
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
         }
 
         .project-card {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            padding: 2rem;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            transition: all 0.3s ease;
             position: relative;
-            overflow: hidden;
+            min-height: 170px;
+            padding: 1.6rem;
+            border-radius: 24px;
+            background: rgba(255, 255, 255, 0.65);
+            border: 1px solid rgba(255, 255, 255, 0.45);
+            display: grid;
+            gap: 0.75rem;
+            text-decoration: none;
+            color: inherit;
+            transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
         }
 
-        .project-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        .project-card:hover,
+        .project-card:focus-visible {
+            transform: translateY(-6px);
+            background: rgba(255, 255, 255, 0.82);
+            box-shadow: 0 24px 50px rgba(43, 31, 71, 0.22);
+        }
+
+        .project-card span {
+            font-size: 0.82rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--muted);
         }
 
         .project-card h3 {
-            font-size: 1.5rem;
-            margin-bottom: 1rem;
-            color: #feca57;
+            font-size: 1.35rem;
         }
 
         .project-card p {
-            line-height: 1.6;
-            margin-bottom: 1.5rem;
+            color: var(--muted);
+            font-size: 0.95rem;
         }
 
-        .project-links {
-            display: flex;
+        .contact {
+            display: grid;
             gap: 1rem;
         }
 
-        .project-link {
-            padding: 0.5rem 1rem;
-            background: linear-gradient(45deg, #ff6b6b, #feca57);
-            color: #fff;
-            text-decoration: none;
-            border-radius: 25px;
-            font-size: 0.9rem;
-            transition: all 0.3s ease;
-        }
-
-        .project-link:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
-        }
-
-        /* Contact Section */
-        .contact {
-            padding: 5rem 0;
-            background: rgba(0, 0, 0, 0.2);
-            text-align: center;
-        }
-
-        .contact h2 {
-            font-size: 3rem;
-            margin-bottom: 2rem;
-            background: linear-gradient(45deg, #ff6b6b, #feca57);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .contact-links {
+        .contact-info {
             display: flex;
-            justify-content: center;
-            gap: 2rem;
-            margin-top: 2rem;
+            flex-wrap: wrap;
+            gap: 0.75rem;
         }
 
-        .contact-link {
-            display: inline-block;
-            padding: 1rem 2rem;
-            background: rgba(255, 255, 255, 0.1);
-            color: #fff;
+        .contact-info a {
+            padding: 0.65rem 1rem;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.72);
+            border: 1px solid rgba(255, 255, 255, 0.5);
             text-decoration: none;
-            border-radius: 50px;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: inherit;
+            font-weight: 500;
         }
 
-        .contact-link:hover {
-            background: linear-gradient(45deg, #ff6b6b, #feca57);
-            transform: translateY(-3px);
-            box-shadow: 0 10px 30px rgba(255, 107, 107, 0.4);
+        footer {
+            text-align: center;
+            font-size: 0.85rem;
+            color: rgba(43, 31, 71, 0.6);
+            padding-bottom: 0.3rem;
         }
 
-        /* Animations */
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(50px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes glow {
-            from {
-                text-shadow: 0 0 20px rgba(255, 107, 107, 0.5);
-            }
-            to {
-                text-shadow: 0 0 30px rgba(254, 202, 87, 0.8);
-            }
-        }
-
-        @keyframes float {
-            0%, 100% {
-                transform: translateY(0px);
-            }
-            50% {
-                transform: translateY(-20px);
-            }
-        }
-
-        /* Mobile Responsive */
         @media (max-width: 768px) {
-            .nav-links {
-                display: none;
-            }
-
-            .about-content {
-                grid-template-columns: 1fr;
-            }
-
-            .contact-links {
+            nav {
                 flex-direction: column;
-                align-items: center;
+                gap: 0.8rem;
+                text-align: center;
             }
 
-            .hero h1 {
-                font-size: 3rem;
+            .nav-links {
+                flex-wrap: wrap;
+                justify-content: center;
             }
 
-            .floating-element {
-                display: none;
+            section {
+                padding: clamp(1.5rem, 4vw, 2rem);
             }
         }
     </style>
 </head>
 <body>
-    <!-- Navigation -->
-    <nav id="navbar">
-        <div class="nav-container">
-            <div class="logo">Your Name</div>
+    <div class="hub">
+        <nav>
+            <div class="brand">Aria &amp; Friends Hub</div>
             <ul class="nav-links">
                 <li><a href="#home">Home</a></li>
-                <li><a href="#about">About</a></li>
+                <li><a href="#updates">Updates</a></li>
                 <li><a href="#projects">Projects</a></li>
                 <li><a href="blackjack.html">Blackjack</a></li>
                 <li><a href="#contact">Contact</a></li>
             </ul>
-        </div>
-    </nav>
+        </nav>
 
-    <!-- Hero Section -->
-    <section id="home" class="hero">
-        <div class="floating-element"></div>
-        <div class="floating-element"></div>
-        <div class="floating-element"></div>
-        
-        <div class="hero-content">
-            <h1>Hello, I'm a Developer</h1>
-            <p>Creating amazing digital experiences with passion and precision</p>
-            <a href="#projects" class="cta-button">View My Work</a>
-        </div>
-    </section>
+        <main>
+            <section id="home" class="hero">
+                <h1>Welcome to our chill little project lounge.</h1>
+                <p>Catch the latest experiments, games, and goofy ideas Aria is tinkering with for the friend group. Dive in, hang out, and let me know what we should build next.</p>
+                <div class="cta-row">
+                    <a class="btn primary" href="#projects">Jump to projects</a>
+                    <a class="btn secondary" href="#updates">See what's new</a>
+                </div>
+            </section>
 
-    <!-- About Section -->
-    <section id="about" class="about">
-        <div class="container">
-            <div class="about-content">
-                <div class="about-text">
-                    <h2>About Me</h2>
-                    <p>I'm a passionate developer who loves creating beautiful, functional, and user-friendly applications. With expertise in modern web technologies, I bring ideas to life through clean code and innovative solutions.</p>
-                    <p>When I'm not coding, you can find me exploring new technologies, contributing to open-source projects, or sharing knowledge with the developer community.</p>
-                    <div class="skills">
-                        <span class="skill-tag">JavaScript</span>
-                        <span class="skill-tag">React</span>
-                        <span class="skill-tag">Node.js</span>
-                        <span class="skill-tag">Python</span>
-                        <span class="skill-tag">CSS/SASS</span>
-                        <span class="skill-tag">Git</span>
+            <section id="updates" class="updates">
+                <h2>Fresh updates for the crew</h2>
+                <p class="muted">Quick notes on what just landed or what's still brewing.</p>
+                <ul>
+                    <li>
+                        <time datetime="2024-05-10">May 10</time>
+                        <strong>Blackjack table got a glow-up.</strong>
+                        <span>New felt, smoother animations, and easier controls. Let me know if the dealer is too spicy.</span>
+                    </li>
+                    <li>
+                        <time datetime="2024-04-27">Apr 27</time>
+                        <strong>Brainstorm board added.</strong>
+                        <span>We jotted down ideas for the rhythm game and snack tracker. Drop more in the group chat!</span>
+                    </li>
+                    <li>
+                        <time datetime="2024-04-01">Apr 1</time>
+                        <strong>Hub redesign launch.</strong>
+                        <span>Everything lives here now so you don't have to hunt links in pinned messages.</span>
+                    </li>
+                </ul>
+            </section>
+
+            <section id="projects">
+                <h2>Project line-up</h2>
+                <p class="muted">Live builds and placeholders waiting for your chaotic suggestions.</p>
+                <div class="projects-grid">
+                    <a class="project-card" href="blackjack.html">
+                        <span>Live</span>
+                        <h3>Blackjack Lounge</h3>
+                        <p>Classic 21 with a neon felt vibe. Test your luck and try not to roast the dealer too hard.</p>
+                    </a>
+                    <div class="project-card">
+                        <span>Brewing</span>
+                        <h3>Rhythm Reactor</h3>
+                        <p>Music mini-game idea. Thinking osu! meets memory match. Needs tracks and chart ideas.</p>
+                    </div>
+                    <div class="project-card">
+                        <span>Brewing</span>
+                        <h3>Snack Tracker</h3>
+                        <p>Keep tabs on who owes snacks for movie night. Tally IOUs and favorite treats.</p>
+                    </div>
+                    <div class="project-card">
+                        <span>Reserved</span>
+                        <h3>Mystery Slot</h3>
+                        <p>Pitch me something weird. The stranger the better—extra points for chaos.</p>
+                    </div>
+                    <div class="project-card">
+                        <span>Reserved</span>
+                        <h3>Co-op Challenge</h3>
+                        <p>A scoreboard for whatever game we're obsessed with next. Maybe weekly dares?</p>
+                    </div>
+                    <div class="project-card">
+                        <span>Reserved</span>
+                        <h3>Secret Arcade</h3>
+                        <p>Hidden page for mini toys, inside jokes, and easter eggs. Unlock ideas welcome.</p>
                     </div>
                 </div>
-                <div class="about-image">
-                    <div class="image-placeholder">Your Photo Here</div>
+            </section>
+
+            <section id="contact" class="contact">
+                <h2>Ping Aria</h2>
+                <p class="muted">Found a bug? Want your project featured? Hit me up using whatever channel you vibe with.</p>
+                <div class="contact-info">
+                    <a href="mailto:aria@example.com">Email</a>
+                    <a href="https://discordapp.com/users/aria" target="_blank" rel="noreferrer">Discord</a>
+                    <a href="https://instagram.com/aria" target="_blank" rel="noreferrer">Insta</a>
                 </div>
-            </div>
-        </div>
-    </section>
+            </section>
+        </main>
 
-    <!-- Projects Section -->
-    <section id="projects" class="projects">
-        <div class="container">
-            <h2>Featured Projects</h2>
-            <div class="projects-grid">
-                <div class="project-card">
-                    <h3>Project One</h3>
-                    <p>A full-stack web application built with React and Node.js. Features user authentication, real-time updates, and responsive design.</p>
-                    <div class="project-links">
-                        <a href="#" class="project-link">Live Demo</a>
-                        <a href="#" class="project-link">GitHub</a>
-                    </div>
-                </div>
-                <div class="project-card">
-                    <h3>Project Two</h3>
-                    <p>Mobile-first progressive web app with offline functionality. Built using modern JavaScript frameworks and service workers.</p>
-                    <div class="project-links">
-                        <a href="#" class="project-link">Live Demo</a>
-                        <a href="#" class="project-link">GitHub</a>
-                    </div>
-                </div>
-                <div class="project-card">
-                    <h3>Project Three</h3>
-                    <p>Data visualization dashboard using D3.js and Python backend. Interactive charts and real-time data processing.</p>
-                    <div class="project-links">
-                        <a href="#" class="project-link">Live Demo</a>
-                        <a href="#" class="project-link">GitHub</a>
-                    </div>
-                </div>
-                <div class="project-card">
-                    <h3>ARIA Arcade &mdash; Blackjack</h3>
-                    <p>A casino-inspired Blackjack table with fluid animations, SVG-rendered cards, and adaptive controls for desktop and mobile play.</p>
-                    <div class="project-links">
-                        <a href="blackjack.html" class="project-link">Play Blackjack</a>
-                        <a href="https://github.com/AriaKawa/AriaKawa.github.io" class="project-link" target="_blank">Source</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Contact Section -->
-    <section id="contact" class="contact">
-        <div class="container">
-            <h2>Let's Connect</h2>
-            <p>I'm always open to discussing new opportunities and interesting projects.</p>
-            <div class="contact-links">
-                <a href="mailto:your.email@example.com" class="contact-link">Email</a>
-                <a href="https://github.com/yourusername" class="contact-link" target="_blank">GitHub</a>
-                <a href="https://linkedin.com/in/yourprofile" class="contact-link" target="_blank">LinkedIn</a>
-                <a href="https://twitter.com/yourhandle" class="contact-link" target="_blank">Twitter</a>
-            </div>
-        </div>
-    </section>
-
-    <script>
-        // Smooth scrolling for navigation links
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
-                }
-            });
-        });
-
-        // Navbar background change on scroll
-        window.addEventListener('scroll', () => {
-            const navbar = document.getElementById('navbar');
-            if (window.scrollY > 100) {
-                navbar.classList.add('scrolled');
-            } else {
-                navbar.classList.remove('scrolled');
-            }
-        });
-
-        // Intersection Observer for animations
-        const observerOptions = {
-            threshold: 0.1,
-            rootMargin: '0px 0px -50px 0px'
-        };
-
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.style.opacity = '1';
-                    entry.target.style.transform = 'translateY(0)';
-                }
-            });
-        }, observerOptions);
-
-        // Observe all sections for scroll animations
-        document.querySelectorAll('.about, .projects, .contact').forEach(section => {
-            section.style.opacity = '0';
-            section.style.transform = 'translateY(50px)';
-            section.style.transition = 'all 0.8s ease-out';
-            observer.observe(section);
-        });
-
-        // Parallax effect for floating elements
-        window.addEventListener('scroll', () => {
-            const scrolled = window.pageYOffset;
-            document.querySelectorAll('.floating-element').forEach((element, index) => {
-                const speed = (index + 1) * 0.5;
-                element.style.transform = `translateY(${scrolled * speed}px)`;
-            });
-        });
-
-        // Add click effects to buttons
-        document.querySelectorAll('.cta-button, .project-link, .contact-link').forEach(button => {
-            button.addEventListener('click', function(e) {
-                const ripple = document.createElement('span');
-                const rect = this.getBoundingClientRect();
-                const size = Math.max(rect.width, rect.height);
-                const x = e.clientX - rect.left - size / 2;
-                const y = e.clientY - rect.top - size / 2;
-                
-                ripple.style.width = ripple.style.height = size + 'px';
-                ripple.style.left = x + 'px';
-                ripple.style.top = y + 'px';
-                ripple.classList.add('ripple');
-                
-                this.appendChild(ripple);
-                
-                setTimeout(() => {
-                    ripple.remove();
-                }, 600);
-            });
-        });
-    </script>
-
-    <style>
-        .ripple {
-            position: absolute;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.4);
-            transform: scale(0);
-            animation: ripple-animation 0.6s linear;
-            pointer-events: none;
-        }
-
-        @keyframes ripple-animation {
-            to {
-                transform: scale(4);
-                opacity: 0;
-            }
-        }
-    </style>
+        <footer>
+            Made with love, caffeine, and too many pastel gradients.
+        </footer>
+    </div>
 </body>
 </html>
