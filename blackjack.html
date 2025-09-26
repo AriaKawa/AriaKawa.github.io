@@ -64,7 +64,8 @@
   }
 
   /* Spots where cards settle */
-  .spot{ position:relative; height:150px; }
+  .spot{ position:relative; height:150px; display:flex; justify-content:center; }
+  .hand{ position:relative; min-height:100%; }
   @media (max-width:720px){ .spot{ height:120px; } }
 
   /* Labels */
@@ -334,16 +335,37 @@
 
   function renderHand(hand, spot, {hideHole=false}={}){
     spot.innerHTML='';
+    const fan = document.createElement('div');
+    fan.className = 'hand';
+    spot.appendChild(fan);
+
+    if(!hand.length) return;
+
+    let cardWidth = 96;
+    let cardHeight = 136;
+
     hand.forEach((card, idx)=>{
       const el = document.createElement('div');
       el.className='card';
       const faceDown = hideHole && idx===1;
       el.innerHTML = faceDown ? '<div class="back"></div>' : renderSVG(card);
+      fan.appendChild(el);
+
+      if(idx===0){
+        const rect = el.getBoundingClientRect();
+        if(rect.width) cardWidth = rect.width;
+        if(rect.height) cardHeight = rect.height;
+      }
+
       el.style.left = `${20 + idx*28}px`;
       el.style.top = `${6 + idx*2}px`;
       el.style.transform = `translate(0,0) rotate(${[-3,-1,1,3][idx%4]}deg)`;
-      spot.appendChild(el);
     });
+
+    const spread = (hand.length - 1) * 28;
+    const totalWidth = cardWidth + spread + 40;
+    fan.style.width = `${Math.max(totalWidth, cardWidth)}px`;
+    fan.style.height = `${cardHeight + 12}px`;
   }
 
   /* ---------- Firebase ---------- */
