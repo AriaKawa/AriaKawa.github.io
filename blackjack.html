@@ -47,6 +47,47 @@
   .lane{ position:absolute; left:50%; transform:translateX(-50%); width:80%; }
   .dealer.lane{ top:10%; }
   .player.lane{ bottom:12%; }
+  .lane.others{
+    bottom:36%;
+    display:flex;
+    justify-content:center;
+    gap:1.3rem;
+    flex-wrap:wrap;
+    padding:0 1rem;
+  }
+
+  .player-seat{
+    position:relative;
+    width:180px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:.4rem;
+    padding:.6rem .4rem .8rem;
+    border-radius:18px;
+    background:rgba(0,0,0,.2);
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.07);
+    backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);
+  }
+  .player-seat .spot{ width:100%; }
+  .player-seat.active{
+    box-shadow:0 0 18px rgba(255,209,59,.35), inset 0 0 0 2px rgba(255,209,59,.6);
+  }
+
+  .seat-label{
+    text-align:center;
+    text-shadow:0 2px 8px rgba(0,0,0,.55);
+    font-weight:600;
+    display:grid;
+    gap:.2rem;
+  }
+  .seat-name{ font-size:1rem; letter-spacing:.02em; }
+  .seat-total, .seat-bank{
+    font-size:.85rem;
+    opacity:.85;
+    font-weight:500;
+  }
 
   /* Card */
   .card{
@@ -66,6 +107,11 @@
   /* Spots where cards settle */
   .spot{ position:relative; height:150px; }
   @media (max-width:720px){ .spot{ height:120px; } }
+
+  @media (max-width:720px){
+    .lane.others{ bottom:38%; gap:.8rem; }
+    .player-seat{ width:150px; padding:.5rem .35rem .7rem; }
+  }
 
   /* Labels */
   .label{
@@ -188,6 +234,8 @@
       <div class="spot" id="dealerSpot"></div>
     </div>
 
+    <div class="lane others hidden" id="othersLane"></div>
+
     <div class="label player">You • <span class="total" id="playerTotal">0</span></div>
     <div class="lane player">
       <div class="spot" id="playerSpot"></div>
@@ -276,6 +324,7 @@
   const playerSpot = document.getElementById('playerSpot');
   const dealerTotal = document.getElementById('dealerTotal');
   const playerTotal = document.getElementById('playerTotal');
+  const othersLane = document.getElementById('othersLane');
   const statusEl = document.getElementById('status');
   const btnDeal = document.getElementById('btnDeal');
   const btnHit = document.getElementById('btnHit');
@@ -470,6 +519,62 @@
     return tableState.players[clientId];
   }
 
+  function renderOtherPlayers(state){
+    if(!othersLane) return;
+    const entries = Object.entries(tableState.players || {})
+      .filter(([id]) => id !== clientId)
+      .sort((a, b) => {
+        const nameA = (a[1]?.name || '').toLowerCase();
+        const nameB = (b[1]?.name || '').toLowerCase();
+        if(nameA && nameB && nameA !== nameB){
+          return nameA.localeCompare(nameB);
+        }
+        return a[0].localeCompare(b[0]);
+      });
+
+    othersLane.innerHTML = '';
+    othersLane.classList.toggle('hidden', entries.length === 0);
+
+    for(const [id, info] of entries){
+      const seat = document.createElement('div');
+      seat.className = 'player-seat';
+      if(state.activePlayer === id){
+        seat.classList.add('active');
+      }
+
+      const spot = document.createElement('div');
+      spot.className = 'spot';
+      seat.appendChild(spot);
+
+      const hand = Array.isArray(info?.hand) ? info.hand : [];
+      renderHand(hand, spot);
+
+      const label = document.createElement('div');
+      label.className = 'seat-label';
+
+      const nameEl = document.createElement('div');
+      nameEl.className = 'seat-name';
+      nameEl.textContent = info?.name || `Player ${id.slice(0,4).toUpperCase()}`;
+      label.appendChild(nameEl);
+
+      const totalEl = document.createElement('div');
+      totalEl.className = 'seat-total';
+      totalEl.textContent = hand.length ? `Total: ${handValue(hand)}` : 'Waiting for deal';
+      label.appendChild(totalEl);
+
+      const bankValue = typeof state.banks?.[id] === 'number'
+        ? state.banks[id]
+        : (typeof info?.bank === 'number' ? info.bank : 1000);
+      const bankEl = document.createElement('div');
+      bankEl.className = 'seat-bank';
+      bankEl.textContent = `Bank: ${bankValue}`;
+      label.appendChild(bankEl);
+
+      seat.appendChild(label);
+      othersLane.appendChild(seat);
+    }
+  }
+
   function isMyTurn(){
     const { phase, activePlayer } = tableState.state;
     if(phase === 'waiting') return true;
@@ -485,6 +590,7 @@
 
     renderHand(dealerHand, dealerSpot, { hideHole: !!state.hideDealerHole });
     renderHand(playerHand, playerSpot);
+    renderOtherPlayers(state);
 
     dealerTotal.textContent = state.hideDealerHole && dealerHand.length
       ? `${cardValue(dealerHand[0])} +`
