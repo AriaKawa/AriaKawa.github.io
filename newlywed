@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Newlywed Game (Friends Edition)</title>
+  <style>
+    :root{
+      --bg:#0b1220; --panel:#121a2b; --muted:#7c8aa5; --text:#e8eeff; --acc:#6ea8fe; --acc2:#a8ffcf; --warn:#ffd166; --bad:#ff6b6b;
+      --br:18px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;}
+    body{margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial; background:linear-gradient(160deg,#0b1220 0%, #0f1730 40%, #0b1220 100%); color:var(--text);}
+    .wrap{max-width:1100px; margin:0 auto; padding:24px;}
+    h1{font-size:clamp(28px,4vw,40px); margin:8px 0 4px; letter-spacing:.5px}
+    .sub{color:var(--muted); margin:0 0 18px;}
+    .grid{display:grid; gap:16px}
+    .cols-2{grid-template-columns: repeat(2, minmax(0,1fr));}
+    @media(max-width:900px){.cols-2{grid-template-columns:1fr}}
+    .card{background:rgba(18,26,43,.9); border:1px solid rgba(255,255,255,.06); border-radius:var(--br); padding:16px 16px 18px; box-shadow:0 10px 30px rgba(0,0,0,.35)}
+    .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+    input, select, button, textarea{background:#0e1527; color:var(--text); border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:10px 12px; font-size:16px; outline:none}
+    input::placeholder, textarea::placeholder{color:#9aa7bf}
+    button{background:linear-gradient(180deg,#1a63ff,#0940cf); border:none; cursor:pointer; transition:transform .05s ease;}
+    button.secondary{background:#0e1527; border:1px solid rgba(255,255,255,.14)}
+    button:active{transform:translateY(1px)}
+    .muted{color:var(--muted)}
+    .badge{display:inline-block; font-size:12px; padding:3px 8px; border-radius:999px; background:#0e1527; border:1px solid rgba(255,255,255,.1); color:#b7c3de}
+    .couple{padding:10px; border-radius:12px; background:rgba(255,255,255,.03); border:1px dashed rgba(255,255,255,.1)}
+    .couple h4{margin:0 0 6px}
+    .score{font-weight:700; font-variant-numeric:tabular-nums}
+    .timer{font-size:34px; font-weight:800; letter-spacing:1px}
+    .question{font-size:22px; margin:6px 0 10px}
+    .answerBox{width:100%; min-height:44px}
+    .divider{height:1px; background:linear-gradient(90deg, transparent, rgba(255,255,255,.16), transparent); margin:14px 0}
+    .notice{background:rgba(255,209,102,.12); border:1px solid rgba(255,209,102,.35); color:#ffe7ab; padding:10px 12px; border-radius:12px}
+    .good{color:var(--acc2)}
+    .bad{color:var(--bad)}
+    .pill{display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; border:1px solid rgba(255,255,255,.1); background:rgba(255,255,255,.04)}
+    .tiny{font-size:12px}
+    .hostOnly{display:none}
+    .monospace{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace}
+    .code{padding:8px 10px; border-radius:10px; background:#0e1527; border:1px solid rgba(255,255,255,.12)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Newlywed Game <span class="muted">(Friends Edition)</span></h1>
+    <p class="sub">Create a room, join as a couple, then play rounds of questions. Each couple tries to <b>match answers</b>. Matches earn points ✨</p>
+
+    <!-- AUTH / ROOM -->
+    <div class="grid cols-2">
+      <section class="card" id="authCard">
+        <h3>1) Your Details</h3>
+        <div class="grid" style="grid-template-columns:1fr 160px; gap:10px">
+          <input id="playerName" placeholder="Your name (e.g., Lucas)" maxlength="20"/>
+          <button id="saveNameBtn">Save</button>
+        </div>
+        <p class="tiny muted" id="yourIdNote"></p>
+        <div class="divider"></div>
+        <h3>2) Room</h3>
+        <div class="row">
+          <button id="createRoomBtn">Create Room</button>
+          <input id="roomCodeInput" class="monospace" placeholder="Enter CODE to join" maxlength="8"/>
+          <button id="joinRoomBtn" class="secondary">Join</button>
+        </div>
+        <p class="tiny muted">Share the code with friends. One person should be Host.</p>
+        <div class="notice" style="margin-top:12px">
+          <b>Firebase setup required</b>: add your web app keys in the <span class="monospace">firebaseConfig</span> object inside this file. This uses Firestore. No backend needed.
+        </div>
+      </section>
+
+      <!-- LOBBY / COUPLES -->
+      <section class="card" id="lobbyCard" style="display:none">
+        <div class="row" style="justify-content:space-between; align-items:flex-start">
+          <div>
+            <div class="row" style="gap:8px">
+              <h3 style="margin:0">Lobby</h3>
+              <span class="badge">Room <span id="roomCodeLabel" class="monospace">—</span></span>
+              <span class="badge hostOnly" id="hostBadge">You are Host</span>
+            </div>
+            <p class="tiny muted" id="statusText">Waiting for couples…</p>
+          </div>
+          <div class="hostOnly">
+            <button id="startGameBtn">Start Game</button>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+        <div class="grid cols-2">
+          <div>
+            <h4 style="margin:6px 0">Create / Join Couple</h4>
+            <div class="row" style="gap:8px">
+              <input id="coupleName" placeholder="Couple name (e.g., Team Clover)" maxlength="24"/>
+              <button id="joinCoupleBtn">Join Couple</button>
+            </div>
+            <p class="tiny muted">A couple holds exactly two players. The first creates it, the second joins it.</p>
+            <div class="divider"></div>
+            <div id="youAreIn"></div>
+          </div>
+
+          <div>
+            <h4 style="margin:6px 0">Couples in Room</h4>
+            <div id="coupleList"></div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- GAME PANEL -->
+    <section class="card" id="gameCard" style="display:none; margin-top:16px">
+      <div class="row" style="justify-content:space-between; align-items:flex-end">
+        <div>
+          <div class="row" style="gap:8px; align-items:center">
+            <h3 style="margin:0">Round <span id="roundNum">1</span></h3>
+            <span class="badge">Room <span id="roomCodeLabel2" class="monospace">—</span></span>
+          </div>
+          <div class="question" id="questionText">—</div>
+        </div>
+        <div style="text-align:right">
+          <div class="timer" id="timer">00</div>
+          <div class="tiny muted">seconds left</div>
+        </div>
+      </div>
+
+      <div class="grid cols-2" style="margin-top:10px">
+        <div>
+          <h4 style="margin:0 0 8px">Your Answer</h4>
+          <textarea id="answerInput" class="answerBox" placeholder="Type your answer…"></textarea>
+          <div class="row" style="margin-top:8px">
+            <button id="lockBtn">Lock Answer</button>
+            <span id="lockState" class="pill tiny">Not locked</span>
+          </div>
+        </div>
+        <div>
+          <h4 style="margin:0 0 8px">Scoreboard</h4>
+          <div id="scoreTable"></div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+      <div class="row" style="justify-content:space-between">
+        <div class="hostOnly row" style="gap:8px">
+          <button id="revealBtn" class="secondary">Reveal & Score</button>
+          <button id="nextBtn">Next Question</button>
+        </div>
+        <div class="row tiny" id="phaseNote"></div>
+      </div>
+
+      <div id="revealPanel" style="display:none; margin-top:12px">
+        <h4 style="margin:0 0 8px">Reveal</h4>
+        <div id="revealList"></div>
+      </div>
+    </section>
+
+    <section class="card" id="howTo" style="margin-top:16px">
+      <h3>How it works</h3>
+      <ol>
+        <li>One person <b>Creates Room</b> and becomes Host. Share the code.</li>
+        <li>Everyone enters a name, enters the room code, and chooses a <b>Couple name</b>. Each couple fits two people.</li>
+        <li>Host clicks <b>Start Game</b>. A question appears with a countdown. Type and lock your answer before time runs out.</li>
+        <li>Host clicks <b>Reveal & Score</b> to see answers. If a couple’s answers match (case-insensitive), they get a point.</li>
+        <li>Host clicks <b>Next Question</b> to continue. Have fun ✨</li>
+      </ol>
+      <p class="tiny muted">Tip: you can customize the built-in question set inside the <span class="monospace">DEFAULT_QUESTIONS</span> array in this file.</p>
+    </section>
+
+    <section class="card" style="margin-top:16px">
+      <h3>Firebase Setup (one-time)</h3>
+      <p>Replace the <span class="monospace">firebaseConfig</span> placeholder below with your own web app credentials from the Firebase Console (Project Settings → General → Your apps → Web app).</p>
+      <div class="code monospace tiny">
+        const firebaseConfig = { apiKey:"…", authDomain:"…", projectId:"…", appId:"…" }
+      </div>
+      <p class="tiny muted">This file uses Firestore with very simple public reads/writes for friendly play. For wider sharing, add security rules.</p>
+    </section>
+  </div>
+
+  <!-- Firebase (Modular v10) -->
+  <script type="module">
+    // ============================
+    // 🔧 1) Firebase Init
+    // ============================
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot, collection, addDoc, serverTimestamp, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      // ⛳ TODO: paste your Firebase web app config here
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      projectId: "YOUR_PROJECT",
+      appId: "YOUR_APP_ID"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // ============================
+    // 🧠 2) Local state
+    // ============================
+    const state = {
+      me: { id: localStorage.getItem('nw_me_id') || crypto.randomUUID(), name: localStorage.getItem('nw_me_name') || '' },
+      roomCode: null,
+      isHost: false,
+      couple: null, // { name, players: [] }
+      unsubGame: null,
+      gameDocRef: null,
+      currentGame: null,
+      timerInterval: null,
+      locked: false,
+      myAnswer: ''
+    };
+    localStorage.setItem('nw_me_id', state.me.id);
+
+    // UI helpers
+    const $ = sel => document.querySelector(sel);
+    const el = (tag, cls, html) => { const e=document.createElement(tag); if(cls) e.className=cls; if(html!==undefined) e.innerHTML = html; return e };
+
+    // Elements
+    const playerNameInput = $('#playerName');
+    const saveNameBtn = $('#saveNameBtn');
+    const yourIdNote = $('#yourIdNote');
+    const createRoomBtn = $('#createRoomBtn');
+    const roomCodeInput = $('#roomCodeInput');
+    const joinRoomBtn = $('#joinRoomBtn');
+
+    const lobbyCard = $('#lobbyCard');
+    const roomCodeLabel = $('#roomCodeLabel');
+    const roomCodeLabel2 = $('#roomCodeLabel2');
+    const hostBadge = $('#hostBadge');
+    const startGameBtn = $('#startGameBtn');
+    const coupleNameInput = $('#coupleName');
+    const joinCoupleBtn = $('#joinCoupleBtn');
+    const coupleList = $('#coupleList');
+    const youAreIn = $('#youAreIn');
+    const statusText = $('#statusText');
+
+    const gameCard = $('#gameCard');
+    const roundNum = $('#roundNum');
+    const questionText = $('#questionText');
+    const timerEl = $('#timer');
+    const answerInput = $('#answerInput');
+    const lockBtn = $('#lockBtn');
+    const lockState = $('#lockState');
+    const revealBtn = $('#revealBtn');
+    const nextBtn = $('#nextBtn');
+    const revealPanel = $('#revealPanel');
+    const revealList = $('#revealList');
+    const scoreTable = $('#scoreTable');
+    const phaseNote = $('#phaseNote');
+
+    // Name bootstrap
+    playerNameInput.value = state.me.name;
+    yourIdNote.textContent = `Your ID: ${state.me.id}`;
+
+    saveNameBtn.onclick = () => {
+      const n = playerNameInput.value.trim();
+      if(!n) return alert('Enter a name');
+      state.me.name = n; localStorage.setItem('nw_me_name', n);
+      alert(`Saved as ${n}`);
+    };
+
+    // ============================
+    // ❓ 3) Questions (edit these!)
+    // ============================
+    const DEFAULT_QUESTIONS = [
+      "What is their go-to comfort food?",
+      "What movie have they rewatched the most?",
+      "If they could teleport anywhere right now, where would they go?",
+      "What song would they choose for karaoke?",
+      "Who takes longer to get ready?",
+      "What is their most irrational fear?",
+      "What was their first job?",
+      "What is their favorite holiday?",
+      "What would they name a pet dragon?",
+      "Which friend would they call in an emergency?",
+      "What game are they secretly cracked at?",
+      "Morning person or night owl?",
+      "What’s a smell that makes them nostalgic?",
+      "What’s their dream weekend?",
+      "What’s a food they’ll never eat?"
+    ];
+
+    // ============================
+    // 🧾 4) Firestore shapes
+    // ============================
+    // game doc: games/{roomCode}
+    // {
+    //   code, hostId, createdAt, status: 'lobby'|'round'|'reveal'|'ended',
+    //   round: number, question: string, timerEndsAt: number|null,
+    //   questions: string[],
+    //   couples: { [coupleName]: { players: { [playerId]: {name} }, score:number } },
+    //   answers: { [round]: { [playerId]: { name, couple, text, locked:boolean } } }
+    // }
+
+    function codeGen(){
+      const s = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // avoid O/0/1/I
+      let out=''; for(let i=0;i<6;i++) out += s[Math.floor(Math.random()*s.length)];
+      return out;
+    }
+
+    // ============================
+    // 🏠 5) Room: create / join
+    // ============================
+    createRoomBtn.onclick = async () => {
+      if(!state.me.name) return alert('Save your name first');
+      const code = codeGen();
+      const ref = doc(db,'games',code);
+      const payload = {
+        code, hostId: state.me.id, createdAt: Date.now(), status:'lobby', round:0, question:null, timerEndsAt:null,
+        questio
