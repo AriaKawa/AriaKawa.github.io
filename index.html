@@ -64,6 +64,90 @@
             overflow: hidden;
         }
 
+        .header-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        .account-area {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .account-button {
+            appearance: none;
+            border: none;
+            background: rgba(147, 198, 255, 0.12);
+            color: var(--accent-blue);
+            border-radius: 999px;
+            padding: 0.45rem 1.1rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            letter-spacing: 0.02em;
+            cursor: pointer;
+            transition: background 0.25s ease, transform 0.25s ease;
+        }
+
+        .account-button:hover,
+        .account-button:focus-visible {
+            background: rgba(147, 198, 255, 0.24);
+            transform: translateY(-1px);
+            outline: none;
+        }
+
+        .account-button.is-active {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-pink));
+            color: #140827;
+        }
+
+        .account-menu {
+            position: absolute;
+            top: calc(100% + 0.6rem);
+            right: 0;
+            background: rgba(13, 8, 32, 0.95);
+            border: 1px solid rgba(147, 198, 255, 0.18);
+            border-radius: var(--radius-sm);
+            padding: 0.95rem;
+            display: grid;
+            gap: 0.75rem;
+            width: min(240px, 70vw);
+            box-shadow: 0 25px 60px rgba(5, 3, 17, 0.65);
+            z-index: 20;
+        }
+
+        .account-greeting {
+            margin: 0;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .account-greeting strong {
+            color: var(--accent-lavender);
+        }
+
+        .account-action {
+            appearance: none;
+            border: none;
+            border-radius: var(--radius-sm);
+            padding: 0.6rem 1rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-pink));
+            color: #140827;
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        .account-action:hover,
+        .account-action:focus-visible {
+            transform: translateY(-1px);
+            box-shadow: 0 20px 35px rgba(247, 167, 218, 0.28);
+            outline: none;
+        }
+
         .page-header::after {
             content: "";
             position: absolute;
@@ -276,9 +360,139 @@
             padding-bottom: 0.5rem;
         }
 
+        .auth-backdrop {
+            position: fixed;
+            inset: 0;
+            display: none;
+            place-items: center;
+            background: rgba(5, 3, 17, 0.76);
+            backdrop-filter: blur(18px);
+            z-index: 40;
+            padding: 1.5rem;
+        }
+
+        .auth-backdrop.is-visible {
+            display: grid;
+        }
+
+        .auth-dialog {
+            width: min(420px, 100%);
+            background: linear-gradient(160deg, rgba(21, 13, 40, 0.95), rgba(9, 6, 24, 0.92));
+            border: 1px solid rgba(147, 198, 255, 0.25);
+            border-radius: var(--radius-lg);
+            box-shadow: 0 35px 70px rgba(5, 3, 17, 0.8);
+            padding: 2.2rem;
+            display: grid;
+            gap: 1.4rem;
+        }
+
+        .auth-dialog h2 {
+            font-size: 1.6rem;
+            margin: 0;
+        }
+
+        .auth-dialog p {
+            margin: 0;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .auth-form {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .auth-field {
+            display: grid;
+            gap: 0.45rem;
+        }
+
+        .auth-field label {
+            font-size: 0.85rem;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: var(--accent-blue);
+        }
+
+        .auth-field input {
+            width: 100%;
+            padding: 0.75rem 0.9rem;
+            border-radius: var(--radius-sm);
+            border: 1px solid rgba(147, 198, 255, 0.24);
+            background: rgba(12, 7, 28, 0.65);
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            transition: border 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .auth-field input:focus {
+            outline: none;
+            border-color: rgba(247, 167, 218, 0.7);
+            box-shadow: 0 0 0 3px rgba(247, 167, 218, 0.2);
+        }
+
+        .auth-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+        }
+
+        .auth-button {
+            appearance: none;
+            border: none;
+            border-radius: var(--radius-sm);
+            padding: 0.7rem 1.3rem;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        .auth-button.secondary {
+            background: rgba(147, 198, 255, 0.12);
+            color: var(--accent-blue);
+        }
+
+        .auth-button.primary {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-pink));
+            color: #140827;
+            box-shadow: 0 18px 32px rgba(147, 198, 255, 0.28);
+        }
+
+        .auth-button:hover,
+        .auth-button:focus-visible {
+            transform: translateY(-1px);
+            outline: none;
+        }
+
+        .auth-button.primary:hover,
+        .auth-button.primary:focus-visible {
+            box-shadow: 0 22px 40px rgba(247, 167, 218, 0.32);
+        }
+
         @media (max-width: 720px) {
             body {
                 padding: clamp(1.2rem, 6vw, 2rem);
+            }
+
+            .header-bar {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1.4rem;
+            }
+
+            .account-area {
+                width: 100%;
+            }
+
+            .account-button {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .account-menu {
+                position: static;
+                width: 100%;
             }
 
             .card-top {
@@ -291,7 +505,18 @@
 <body>
     <main class="page">
         <header class="page-header">
-            <span class="eyebrow">Aria &amp; Friends</span>
+            <div class="header-bar">
+                <span class="eyebrow">Aria &amp; Friends</span>
+                <div class="account-area">
+                    <button class="account-button" type="button" aria-haspopup="true" aria-expanded="false">
+                        Sign in
+                    </button>
+                    <div class="account-menu" role="menu" hidden>
+                        <p class="account-greeting">Signed in as <strong class="account-name">Guest</strong></p>
+                        <button class="account-action" type="button" data-action="sign-out">Sign out</button>
+                    </div>
+                </div>
+            </div>
             <h1>Project Vault</h1>
             <p class="lede">A curated gallery of the experiments, games, and ideas we are shaping for the crew. Dive straight into what's live and peek at what's brewing next.</p>
             <div class="header-meta">
@@ -366,6 +591,29 @@
         </footer>
     </main>
 
+    <div class="auth-backdrop" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+        <div class="auth-dialog">
+            <div>
+                <h2 id="auth-title">Welcome back</h2>
+                <p>Sign in to sync your favorite projects and keep tabs on new drops.</p>
+            </div>
+            <form class="auth-form" id="auth-form">
+                <div class="auth-field">
+                    <label for="display-name">Display name</label>
+                    <input id="display-name" name="displayName" type="text" autocomplete="name" required placeholder="Sylveon Fan" maxlength="32">
+                </div>
+                <div class="auth-field">
+                    <label for="email">Email</label>
+                    <input id="email" name="email" type="email" autocomplete="email" required placeholder="you@example.com">
+                </div>
+                <div class="auth-actions">
+                    <button class="auth-button secondary" type="button" data-action="cancel">Cancel</button>
+                    <button class="auth-button primary" type="submit">Sign in</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
         import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-analytics.js";
@@ -389,6 +637,191 @@
                 }
             })
             .catch((err) => console.warn("Firebase analytics not supported", err));
+
+        const accountKey = "ak-project-vault-account";
+        const accountButton = document.querySelector(".account-button");
+        const accountMenu = document.querySelector(".account-menu");
+        const accountName = document.querySelector(".account-name");
+        const accountArea = document.querySelector(".account-area");
+        const authBackdrop = document.querySelector(".auth-backdrop");
+        const authForm = document.querySelector("#auth-form");
+
+        if (
+            accountButton &&
+            accountMenu &&
+            accountName &&
+            accountArea &&
+            authBackdrop &&
+            authForm
+        ) {
+            const cancelAuthButton = authForm.querySelector('[data-action="cancel"]');
+            const signOutButton = accountMenu.querySelector('[data-action="sign-out"]');
+            const nameInput = authForm.querySelector('#display-name');
+            const emailInput = authForm.querySelector('#email');
+
+            let menuOpen = false;
+            let activeAccount = null;
+            let storageAvailable = true;
+
+            let storedAccount = null;
+            try {
+                storedAccount = window.localStorage.getItem(accountKey);
+            } catch (error) {
+                storageAvailable = false;
+                console.warn("Account storage unavailable", error);
+            }
+
+            if (storedAccount) {
+                try {
+                    activeAccount = JSON.parse(storedAccount);
+                } catch (error) {
+                    console.warn("Unable to parse stored account", error);
+                    if (storageAvailable) {
+                        window.localStorage.removeItem(accountKey);
+                    }
+                }
+            }
+
+            const persistAccount = (account) => {
+                if (!storageAvailable) return;
+                try {
+                    if (account) {
+                        window.localStorage.setItem(accountKey, JSON.stringify(account));
+                    } else {
+                        window.localStorage.removeItem(accountKey);
+                    }
+                } catch (error) {
+                    storageAvailable = false;
+                    console.warn("Unable to persist account", error);
+                }
+            };
+
+            const closeMenu = () => {
+                if (!menuOpen) return;
+                accountMenu.hidden = true;
+                accountButton.setAttribute("aria-expanded", "false");
+                accountButton.classList.remove("is-active");
+                menuOpen = false;
+            };
+
+            const openMenu = () => {
+                accountMenu.hidden = false;
+                accountButton.setAttribute("aria-expanded", "true");
+                accountButton.classList.add("is-active");
+                menuOpen = true;
+            };
+
+            const openAuthModal = () => {
+                authBackdrop.classList.add("is-visible");
+                closeMenu();
+                if (activeAccount && nameInput && emailInput) {
+                    nameInput.value = activeAccount.name;
+                    emailInput.value = activeAccount.email;
+                }
+                if (nameInput) {
+                    requestAnimationFrame(() => {
+                        nameInput.focus();
+                    });
+                }
+            };
+
+            const closeAuthModal = () => {
+                authBackdrop.classList.remove("is-visible");
+                authForm.reset();
+                accountButton.focus();
+            };
+
+            const getGreetingName = (name) => {
+                if (!name) return "Friend";
+                const trimmed = name.trim();
+                if (!trimmed.includes(" ")) {
+                    return trimmed;
+                }
+                return trimmed.split(" ")[0];
+            };
+
+            const updateAccountUI = () => {
+                if (activeAccount) {
+                    const greetingName = getGreetingName(activeAccount.name);
+                    accountName.textContent = activeAccount.name;
+                    accountButton.textContent = `Hi, ${greetingName}`;
+                    accountButton.dataset.state = "signed-in";
+                    accountButton.setAttribute("aria-expanded", menuOpen ? "true" : "false");
+                } else {
+                    accountName.textContent = "Guest";
+                    accountButton.textContent = "Sign in";
+                    accountButton.dataset.state = "signed-out";
+                    accountButton.classList.remove("is-active");
+                    accountButton.setAttribute("aria-expanded", "false");
+                    accountMenu.hidden = true;
+                    menuOpen = false;
+                }
+            };
+
+            updateAccountUI();
+
+            accountButton.addEventListener("click", () => {
+                if (accountButton.dataset.state === "signed-in") {
+                    if (menuOpen) {
+                        closeMenu();
+                    } else {
+                        openMenu();
+                    }
+                } else {
+                    openAuthModal();
+                }
+            });
+
+            document.addEventListener("click", (event) => {
+                if (!menuOpen) return;
+                if (!accountArea.contains(event.target)) {
+                    closeMenu();
+                }
+            });
+
+            document.addEventListener("keydown", (event) => {
+                if (event.key === "Escape") {
+                    if (authBackdrop.classList.contains("is-visible")) {
+                        closeAuthModal();
+                    }
+                    closeMenu();
+                }
+            });
+
+            authBackdrop.addEventListener("click", (event) => {
+                if (event.target === authBackdrop) {
+                    closeAuthModal();
+                }
+            });
+
+            cancelAuthButton?.addEventListener("click", () => {
+                closeAuthModal();
+            });
+
+            authForm.addEventListener("submit", (event) => {
+                event.preventDefault();
+                const formData = new FormData(authForm);
+                const name = formData.get("displayName").trim();
+                const email = formData.get("email").trim().toLowerCase();
+
+                if (!name || !email) {
+                    return;
+                }
+
+                activeAccount = { name, email };
+                persistAccount(activeAccount);
+                updateAccountUI();
+                closeAuthModal();
+            });
+
+            signOutButton?.addEventListener("click", () => {
+                persistAccount(null);
+                activeAccount = null;
+                updateAccountUI();
+            });
+        } else {
+            console.warn("Account UI failed to initialize.");
+        }
     </script>
 </body>
 </html>
