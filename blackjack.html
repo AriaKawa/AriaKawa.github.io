@@ -19,17 +19,19 @@
   html,body{height:100%}
   body{
     margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;
-    color:var(--text); background:#0b1020; display:grid; place-items:center;
+    color:var(--text); background:#0b1020;
+    min-height:100%; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:1.6rem; padding:2.4rem 0;
   }
   .table{
-    position:relative; width:min(1100px, 96vw); aspect-ratio: 16/9;
-    background: radial-gradient(120% 90% at 50% -15%, #208b6e 0, var(--felt) 32%, var(--felt-dark) 95%);
-    border-radius:28px; box-shadow: var(--shadow);
+    position:relative; width:min(1100px, 96vw); aspect-ratio: 2 / 1;
+    background: radial-gradient(160% 120% at 50% -20%, #229a78 0, var(--felt) 38%, var(--felt-dark) 96%);
+    border-radius:36px 36px 520px 520px; box-shadow: var(--shadow);
     overflow:hidden; border:6px solid #0c3024;
   }
   .table::after{
-    content:""; position:absolute; inset:20px;
-    border:2px dashed rgba(255,255,255,.15); border-radius:22px; pointer-events:none;
+    content:""; position:absolute; inset:24px 24px 46px;
+    border:2px dashed rgba(255,255,255,.15); border-radius:26px 26px 480px 480px; pointer-events:none;
   }
   header{
     position:absolute; top:14px; left:18px; right:18px; display:flex; align-items:center; gap:.75rem;
@@ -54,30 +56,29 @@
   }
 
   /* Lanes */
-  .lane{ position:absolute; left:50%; transform:translateX(-50%); width:80%; }
-  .dealer.lane{ top:10%; }
+  .lane{ position:absolute; left:50%; transform:translateX(-50%); width:78%; }
+  .dealer.lane{ top:12%; }
   .lane.seats{
-    bottom:7%;
-    width:86%;
-    display:grid;
-    grid-template-columns:repeat(4, minmax(0, 1fr));
-    gap:1.1rem;
-    align-items:end;
-    justify-items:center;
-    padding:0 1.4rem;
+    bottom:-6%;
+    width:92%;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
   }
 
   .seat-wrapper{
     display:flex;
     justify-content:center;
     align-items:flex-end;
-    min-height:190px;
-    width:100%;
+    min-height:220px;
+    width:22%;
+    pointer-events:auto;
+    transform-origin:bottom center;
   }
-  .seat-wrapper.slot-0{ justify-self:start; }
-  .seat-wrapper.slot-1{ justify-self:center; }
-  .seat-wrapper.slot-2{ justify-self:center; }
-  .seat-wrapper.slot-3{ justify-self:end; }
+  .seat-wrapper.slot-0{ --slot-rotation:12deg; transform:translateY(-14%) rotate(var(--slot-rotation)); }
+  .seat-wrapper.slot-1{ --slot-rotation:4deg; transform:translateY(-22%) rotate(var(--slot-rotation)); }
+  .seat-wrapper.slot-2{ --slot-rotation:-4deg; transform:translateY(-22%) rotate(var(--slot-rotation)); }
+  .seat-wrapper.slot-3{ --slot-rotation:-12deg; transform:translateY(-14%) rotate(var(--slot-rotation)); }
 
   .player-seat{
     position:relative;
@@ -85,13 +86,14 @@
     display:flex;
     flex-direction:column;
     align-items:center;
-    gap:.4rem;
+    gap:.45rem;
     padding:.6rem .4rem .8rem;
     border-radius:18px;
-    background:rgba(0,0,0,.2);
+    background:rgba(5,18,18,.38);
     box-shadow:inset 0 0 0 1px rgba(255,255,255,.07);
     backdrop-filter:blur(6px);
     -webkit-backdrop-filter:blur(6px);
+    transform:rotate(calc(var(--slot-rotation, 0) * -1));
   }
   .player-seat .spot{ width:100%; }
   .player-seat.active{
@@ -109,50 +111,22 @@
     gap:.2rem;
   }
   .seat-name{ font-size:1rem; letter-spacing:.02em; }
-  .seat-total, .seat-bank{
+  .seat-total{
     font-size:.85rem;
     opacity:.85;
     font-weight:500;
   }
-  .seat-bet{
-    font-size:.85rem;
-    opacity:.85;
-    font-weight:600;
-  }
-  .bet-controls{
-    display:flex;
-    align-items:center;
-    gap:.4rem;
-    margin-top:.35rem;
-    flex-wrap:wrap;
-    justify-content:center;
-  }
-  .bet-controls .bet-display{
+  .seat-status{
+    font-size:.75rem;
     font-weight:700;
-    font-variant-numeric:tabular-nums;
-    letter-spacing:.02em;
-  }
-  .bet-button{
-    padding:.35rem .65rem;
-    border-radius:12px;
-    min-width:0;
-    line-height:1;
-  }
-  .bet-controls .confirm-button{
-    flex:1 1 100%;
-    margin-top:.1rem;
-  }
-  .seat-confirmation{
-    font-size:.78rem;
-    opacity:.8;
-    font-weight:600;
     text-transform:uppercase;
     letter-spacing:.04em;
+    padding:.15rem .5rem;
+    border-radius:999px;
+    background:rgba(0,0,0,.35);
+    opacity:.85;
   }
-  .seat-confirmation.ready{
-    color:var(--accent);
-    opacity:1;
-  }
+  .seat-status.ready{ color:var(--accent); background:rgba(255,209,59,.18); opacity:1; }
 
   /* Card */
   .card{
@@ -175,8 +149,8 @@
   @media (max-width:720px){ .spot{ height:120px; } }
 
   @media (max-width:720px){
-    .lane.seats{ bottom:8%; gap:.7rem; padding:0 .8rem; }
-    .seat-wrapper{ min-height:150px; }
+    .lane.seats{ bottom:-10%; }
+    .seat-wrapper{ min-height:170px; }
     .player-seat{ width:150px; padding:.5rem .35rem .7rem; }
   }
 
@@ -254,6 +228,72 @@
   }
   .lobby input:focus{ outline:2px solid rgba(255,209,59,.55); outline-offset:3px; }
   .lobby input.invalid{ outline:2px solid rgba(214,69,69,.7); outline-offset:3px; }
+
+  .bet-panel{
+    width:min(1100px, 96vw);
+    display:flex;
+    flex-wrap:wrap;
+    gap:1rem;
+    justify-content:center;
+    background:rgba(5,14,24,.72);
+    border:1px solid rgba(255,255,255,.08);
+    box-shadow:var(--shadow);
+    padding:1.1rem 1.5rem;
+    border-radius:26px;
+  }
+  .bet-card{
+    min-width:220px;
+    display:grid;
+    gap:.35rem;
+    background:rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:20px;
+    padding:.9rem 1rem;
+    text-align:center;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);
+  }
+  .bet-card.own{ border-color:rgba(255,209,59,.45); box-shadow:0 0 0 1px rgba(255,209,59,.25), inset 0 0 0 1px rgba(255,255,255,.08); }
+  .bet-name{
+    font-weight:700;
+    letter-spacing:.04em;
+    font-size:1rem;
+    text-transform:uppercase;
+  }
+  .bet-line{
+    font-size:.9rem;
+    opacity:.85;
+  }
+  .bet-card .seat-confirmation{
+    font-size:.78rem;
+    opacity:.85;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+  }
+  .bet-card .seat-confirmation.ready{ color:var(--accent); opacity:1; }
+  .bet-controls{
+    display:flex;
+    align-items:center;
+    gap:.4rem;
+    margin-top:.4rem;
+    flex-wrap:wrap;
+    justify-content:center;
+  }
+  .bet-controls .bet-display{
+    font-weight:700;
+    font-variant-numeric:tabular-nums;
+    letter-spacing:.02em;
+  }
+  .bet-button{
+    padding:.35rem .65rem;
+    border-radius:12px;
+    min-width:0;
+    line-height:1;
+  }
+  .bet-controls .confirm-button{
+    flex:1 1 100%;
+    margin-top:.1rem;
+  }
 </style>
 </head>
 <body>
@@ -319,6 +359,8 @@
       <button class="ghost" id="btnNew">New Shoe</button>
     </div>
   </div>
+
+  <div class="bet-panel" id="betPanel"></div>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
@@ -391,6 +433,7 @@
   /* ---------- DOM helpers ---------- */
   const dealerSpot = document.getElementById('dealerSpot');
   const playersLane = document.getElementById('playersLane');
+  const betPanel = document.getElementById('betPanel');
   const dealerTotal = document.getElementById('dealerTotal');
   const statusEl = document.getElementById('status');
   const turnIndicator = document.getElementById('turnIndicator');
@@ -859,6 +902,9 @@
 
     const seatsToRender = entries.slice(0, SEAT_CLASSES.length);
     playersLane.innerHTML = '';
+    if(betPanel){
+      betPanel.innerHTML = '';
+    }
 
     SEAT_CLASSES.forEach((slotClass, index)=>{
       const wrapper = document.createElement('div');
@@ -897,76 +943,107 @@
         const bankValue = typeof state.banks?.[id] === 'number'
           ? state.banks[id]
           : (typeof info?.bank === 'number' ? info.bank : 1000);
-        const bankLabel = document.createElement('div');
-        bankLabel.className = 'seat-bank';
-        bankLabel.textContent = `Bank: ${bankValue}`;
-        label.appendChild(bankLabel);
 
         const betValue = getBetForPlayer(id);
-        const betLabel = document.createElement('div');
-        betLabel.className = 'seat-bet';
-        betLabel.textContent = `Bet: ${betValue}`;
-        label.appendChild(betLabel);
 
-        const confirmLabel = document.createElement('div');
-        confirmLabel.className = 'seat-confirmation';
+        const statusBadge = document.createElement('div');
+        statusBadge.className = 'seat-status';
         if(state.phase === 'waiting'){
           if(confirmed){
-            confirmLabel.textContent = 'Ready';
-            confirmLabel.classList.add('ready');
+            statusBadge.textContent = 'Ready';
+            statusBadge.classList.add('ready');
           }else{
-            confirmLabel.textContent = 'Waiting';
+            statusBadge.textContent = 'Waiting';
           }
         }else{
-          confirmLabel.textContent = 'In round';
+          statusBadge.textContent = 'In round';
         }
-        label.appendChild(confirmLabel);
+        label.appendChild(statusBadge);
 
         seat.appendChild(label);
 
-        if(id === clientId){
-          const controls = document.createElement('div');
-          controls.className = 'bet-controls';
-
-          const decreaseBtn = document.createElement('button');
-          decreaseBtn.type = 'button';
-          decreaseBtn.className = 'bet-button ghost';
-          decreaseBtn.textContent = '−';
-          decreaseBtn.dataset.betAction = 'decrease';
-          decreaseBtn.dataset.playerId = id;
-
-          const betDisplay = document.createElement('div');
-          betDisplay.className = 'bet-display';
-          betDisplay.textContent = betValue;
-
-          const increaseBtn = document.createElement('button');
-          increaseBtn.type = 'button';
-          increaseBtn.className = 'bet-button primary';
-          increaseBtn.textContent = '+';
-          increaseBtn.dataset.betAction = 'increase';
-          increaseBtn.dataset.playerId = id;
-
-          const canAdjustBet = state.phase === 'waiting';
-          decreaseBtn.classList.toggle('muted', !canAdjustBet || betValue <= MIN_BET);
-          increaseBtn.classList.toggle('muted', !canAdjustBet || betValue >= MAX_BET);
-
-          const confirmBtn = document.createElement('button');
-          confirmBtn.type = 'button';
-          confirmBtn.className = 'bet-button primary confirm-button';
-          confirmBtn.textContent = confirmed ? 'Ready' : 'Confirm Bet';
-          confirmBtn.dataset.betAction = 'confirm';
-          confirmBtn.dataset.playerId = id;
-          const canConfirm = canAdjustBet && !confirmed;
-          confirmBtn.classList.toggle('muted', !canConfirm);
-
-          controls.appendChild(decreaseBtn);
-          controls.appendChild(betDisplay);
-          controls.appendChild(increaseBtn);
-          controls.appendChild(confirmBtn);
-          seat.appendChild(controls);
-        }
-
         wrapper.appendChild(seat);
+
+        if(betPanel){
+          const betCard = document.createElement('div');
+          betCard.className = 'bet-card';
+          if(id === clientId){
+            betCard.classList.add('own');
+          }
+
+          const betName = document.createElement('div');
+          betName.className = 'bet-name';
+          betName.textContent = info?.name || `Player ${id.slice(0,4).toUpperCase()}`;
+          betCard.appendChild(betName);
+
+          const bankLine = document.createElement('div');
+          bankLine.className = 'bet-line';
+          bankLine.textContent = `Bank: ${bankValue}`;
+          betCard.appendChild(bankLine);
+
+          const betLine = document.createElement('div');
+          betLine.className = 'bet-line';
+          betLine.textContent = `Bet: ${betValue}`;
+          betCard.appendChild(betLine);
+
+          const confirmLabel = document.createElement('div');
+          confirmLabel.className = 'seat-confirmation';
+          if(state.phase === 'waiting'){
+            if(confirmed){
+              confirmLabel.textContent = 'Ready';
+              confirmLabel.classList.add('ready');
+            }else{
+              confirmLabel.textContent = 'Waiting';
+            }
+          }else{
+            confirmLabel.textContent = 'In round';
+          }
+          betCard.appendChild(confirmLabel);
+
+          if(id === clientId){
+            const controls = document.createElement('div');
+            controls.className = 'bet-controls';
+
+            const decreaseBtn = document.createElement('button');
+            decreaseBtn.type = 'button';
+            decreaseBtn.className = 'bet-button ghost';
+            decreaseBtn.textContent = '−';
+            decreaseBtn.dataset.betAction = 'decrease';
+            decreaseBtn.dataset.playerId = id;
+
+            const betDisplay = document.createElement('div');
+            betDisplay.className = 'bet-display';
+            betDisplay.textContent = betValue;
+
+            const increaseBtn = document.createElement('button');
+            increaseBtn.type = 'button';
+            increaseBtn.className = 'bet-button primary';
+            increaseBtn.textContent = '+';
+            increaseBtn.dataset.betAction = 'increase';
+            increaseBtn.dataset.playerId = id;
+
+            const canAdjustBet = state.phase === 'waiting';
+            decreaseBtn.classList.toggle('muted', !canAdjustBet || betValue <= MIN_BET);
+            increaseBtn.classList.toggle('muted', !canAdjustBet || betValue >= MAX_BET);
+
+            const confirmBtn = document.createElement('button');
+            confirmBtn.type = 'button';
+            confirmBtn.className = 'bet-button primary confirm-button';
+            confirmBtn.textContent = confirmed ? 'Ready' : 'Confirm Bet';
+            confirmBtn.dataset.betAction = 'confirm';
+            confirmBtn.dataset.playerId = id;
+            const canConfirm = canAdjustBet && !confirmed;
+            confirmBtn.classList.toggle('muted', !canConfirm);
+
+            controls.appendChild(decreaseBtn);
+            controls.appendChild(betDisplay);
+            controls.appendChild(increaseBtn);
+            controls.appendChild(confirmBtn);
+            betCard.appendChild(controls);
+          }
+
+          betPanel.appendChild(betCard);
+        }
       }else{
         wrapper.classList.add('empty');
       }
@@ -1732,8 +1809,8 @@
   btnStand.addEventListener('click', ()=> !btnStand.classList.contains('muted') && playerStand());
   btnNew.addEventListener('click', ()=> newShoe());
 
-  if(playersLane){
-    playersLane.addEventListener('click', event=>{
+  if(betPanel){
+    betPanel.addEventListener('click', event=>{
       const button = event.target.closest('[data-bet-action]');
       if(!button) return;
       if(button.dataset.playerId !== clientId) return;
