@@ -159,6 +159,99 @@
   .mpJoin input{ flex:1 1 120px; min-width:0; }
   .mpNotice{ font-size:.85rem; color:var(--muted); }
 
+  .summaryGrid{
+    display:grid; gap:14px; margin-top:16px;
+    grid-template-columns:repeat(auto-fit, minmax(260px,1fr));
+  }
+  .summaryCard{
+    background:rgba(9,14,26,.72);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:18px;
+    padding:16px 18px;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.03);
+    display:flex; flex-direction:column; gap:12px;
+  }
+  .summaryHeader{ display:flex; justify-content:space-between; align-items:center; font-size:.85rem; text-transform:uppercase; letter-spacing:.12em; color:var(--muted); }
+  .summaryMeta{ font-size:.78rem; letter-spacing:.08em; color:var(--muted); opacity:.85; }
+
+  .playerList{ display:flex; flex-direction:column; gap:10px; }
+  .playerRow{
+    position:relative;
+    padding:12px 14px;
+    border-radius:14px;
+    background:rgba(12,18,32,.78);
+    border:1px solid rgba(255,255,255,.04);
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.02);
+    display:flex; flex-direction:column; gap:10px;
+  }
+  .playerRow.you{ border-color:rgba(255,209,59,.45); box-shadow:0 0 0 1px rgba(255,209,59,.25); }
+  .playerRow.ghost{ opacity:.7; }
+  .playerRowTop{ display:flex; justify-content:space-between; gap:12px; align-items:center; }
+  .playerIdentity{ display:flex; gap:10px; align-items:center; min-width:0; }
+  .playerAvatar{
+    width:40px; height:40px; border-radius:50%;
+    display:grid; place-items:center;
+    font-weight:700; letter-spacing:.04em; color:#0c101c;
+    background:linear-gradient(135deg, rgba(255,255,255,.25), rgba(255,255,255,0));
+    position:relative; isolation:isolate;
+  }
+  .playerAvatar::after{
+    content:""; position:absolute; inset:0; border-radius:inherit;
+    background:var(--avatar-color, #2e3757); z-index:-1;
+  }
+  .playerInfo{ min-width:0; }
+  .playerName{ font-weight:700; letter-spacing:.02em; font-size:1rem; }
+  .playerMeta{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-top:2px; font-size:.75rem; color:var(--muted); }
+  .playerBadges{ display:flex; flex-wrap:wrap; gap:4px; }
+  .playerBadge{
+    padding:.15rem .45rem; border-radius:999px; font-size:.7rem; font-weight:700;
+    letter-spacing:.08em; text-transform:uppercase;
+    border:1px solid rgba(255,255,255,.12); color:var(--muted);
+    background:rgba(18,26,42,.75);
+  }
+  .playerBadge.you{ color:#111; background:linear-gradient(135deg,#ffe775,#ffbf24 70%,#ff8b24); border-color:rgba(255,255,255,.2); }
+  .playerBadge.host{ color:#fff; background:linear-gradient(135deg,#506bff,#2c3d8a); border-color:rgba(255,255,255,.18); }
+  .playerBadge.ghost{ background:rgba(140,149,171,.2); color:rgba(208,215,230,.9); border-color:rgba(255,255,255,.08); }
+  .playerTotals{ text-align:right; min-width:92px; }
+  .playerTotals strong{ display:block; font-size:1.05rem; }
+  .playerTotals span{ display:block; font-size:.78rem; color:var(--muted); letter-spacing:.05em; }
+  .playerBreakdown{ display:flex; flex-wrap:wrap; gap:6px; }
+  .playerBreakdown--empty{ color:var(--muted); font-size:.78rem; }
+  .ratPill{
+    display:inline-flex; align-items:center; gap:6px; padding:.25rem .55rem;
+    border-radius:999px; font-size:.78rem; letter-spacing:.03em;
+    background:rgba(255,255,255,.05);
+    border:1px solid rgba(255,255,255,.08);
+  }
+  .ratPill::before{
+    content:""; width:10px; height:10px; border-radius:50%; background:var(--rat-color,#ffd13b);
+  }
+
+  .ratTotals{ display:flex; flex-direction:column; gap:10px; }
+  .ratRow{
+    position:relative; overflow:hidden; border-radius:12px; padding:10px 12px;
+    background:rgba(12,18,32,.72); border:1px solid rgba(255,255,255,.05);
+  }
+  .ratRow.has-bets{ border-color:rgba(255,209,59,.32); }
+  .ratProgress{
+    position:absolute; inset:0; background:linear-gradient(135deg, rgba(255,209,59,.24), rgba(255,209,59,.05));
+    opacity:.9;
+  }
+  .ratRowInner{ position:relative; display:flex; justify-content:space-between; gap:12px; align-items:center; }
+  .ratInfo{ display:flex; gap:10px; align-items:center; font-weight:600; letter-spacing:.03em; }
+  .ratInfo .ratSwatch{ width:14px; height:14px; border-radius:4px; box-shadow:0 0 0 1px rgba(255,255,255,.35); }
+  .ratNumbers{ text-align:right; }
+  .ratAmount{ display:block; font-weight:700; font-size:1rem; }
+  .ratMeta{ display:block; font-size:.78rem; color:var(--muted); letter-spacing:.05em; }
+
+  .emptyState{ padding:14px; border-radius:12px; border:1px dashed rgba(255,255,255,.12); text-align:center; font-size:.82rem; color:var(--muted); background:rgba(9,14,26,.35); }
+
+  .bettorOwner{ margin-top:6px; font-size:.75rem; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+  .ownerLabel{ font-weight:600; letter-spacing:.03em; }
+  .ownerBadges{ display:flex; flex-wrap:wrap; gap:4px; }
+
+  tbody tr.mine{ border:1px solid rgba(255,209,59,.35); box-shadow:0 16px 28px rgba(255,209,59,.1); }
+
   table{ width:100%; border-collapse:separate; border-spacing:0 10px; font-variant-numeric:tabular-nums; }
   th, td{ text-align:left; padding:.65rem .9rem; }
   th{ color:var(--muted); font-weight:700; font-size:.85rem; text-transform:uppercase; letter-spacing:.08em; }
@@ -208,6 +301,16 @@
           <button class="btn secondary" id="btnConfirmJoin" type="button">Join</button>
         </div>
         <div class="mpNotice" id="mpNotice">You are playing solo.</div>
+      </div>
+      <div class="summaryGrid">
+        <div class="summaryCard">
+          <div class="summaryHeader">Players <span class="summaryMeta" id="playerCount">—</span></div>
+          <div class="playerList" id="playerList"></div>
+        </div>
+        <div class="summaryCard">
+          <div class="summaryHeader">Rat Pool <span class="summaryMeta" id="poolMeta">—</span></div>
+          <div class="ratTotals" id="ratTotals"></div>
+        </div>
       </div>
       <h2>Betting</h2>
       <div class="grid">
@@ -296,6 +399,7 @@ const closeBetsBtn = document.getElementById('closeBets');
 const resetBtn = document.getElementById('reset');
 const bettorInput = document.getElementById('bettor');
 const amountInput = document.getElementById('amount');
+let players = {};
 
 const soloBtn = document.getElementById('btnSolo');
 const hostBtn = document.getElementById('btnHostRoom');
@@ -307,6 +411,10 @@ const roomInfo = document.getElementById('roomInfo');
 const roomCodeEl = document.getElementById('roomCode');
 const copyRoomBtn = document.getElementById('btnCopyRoom');
 const mpNotice = document.getElementById('mpNotice');
+const playerListEl = document.getElementById('playerList');
+const ratTotalsEl = document.getElementById('ratTotals');
+const playerCountEl = document.getElementById('playerCount');
+const poolMetaEl = document.getElementById('poolMeta');
 
 function fmt(n){ return '$'+Number(n).toLocaleString(undefined,{minimumFractionDigits:0}); }
 function pot(){ return bets.reduce((a,b)=>a+Number(b.amount||0),0); }
@@ -331,11 +439,15 @@ function redrawBets(){
     });
     for(const b of sorted){
       const tr = document.createElement('tr');
+      if(b.owner === clientId){
+        tr.classList.add('mine');
+      }
       const removeCell = canRemoveBet(b)
         ? `<button class="btn secondary" data-remove="${b.id}" style="padding:.4rem .6rem">×</button>`
         : '—';
+      const ownerDetail = formatOwnerMeta(b.owner);
       tr.innerHTML = `
-        <td>${escapeHTML(b.name||'—')}</td>
+        <td>${escapeHTML(b.name||'—')}${ownerDetail}</td>
         <td>${ratName(b.ratId)}</td>
         <td class="right">${fmt(b.amount)}</td>
         <td class="right">${removeCell}</td>`;
@@ -343,9 +455,163 @@ function redrawBets(){
     }
   }
   potEl.textContent = fmt(pot());
+  renderSummaries();
 }
 function escapeHTML(s){ return (s??'').replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",""":"&quot;","'":"&#039;"}[m])); }
 function ratName(id){ return RAT_DATA.find(r=>r.id===id)?.name || id; }
+function ratColor(id){ return RAT_DATA.find(r=>r.id===id)?.color || '#ffd13b'; }
+function getLocalPlayerName(){ return bettorInput.value.trim() || playerName || 'You'; }
+function defaultPlayerName(id){
+  if(id === clientId) return getLocalPlayerName();
+  if(!id) return 'Player';
+  const tail = String(id).slice(-4).toUpperCase();
+  return `Player ${tail}`;
+}
+function playerInitials(name){
+  if(!name) return '?';
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if(!words.length) return '?';
+  if(words.length === 1) return words[0].slice(0,2).toUpperCase();
+  return (words[0][0] + words[words.length-1][0]).toUpperCase();
+}
+function avatarColorFor(id=''){
+  let hash = 0;
+  for(let i=0;i<id.length;i++){
+    hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
+  }
+  const hue = hash % 360;
+  return `hsl(${hue}, 62%, 45%)`;
+}
+function computeOwnerStats(){
+  const stats = {};
+  for(const bet of bets){
+    const owner = bet.owner || 'anon';
+    const amount = Number(bet.amount) || 0;
+    if(!stats[owner]){
+      stats[owner] = { total:0, count:0, rats:{} };
+    }
+    stats[owner].total += amount;
+    stats[owner].count += 1;
+    stats[owner].rats[bet.ratId] = (stats[owner].rats[bet.ratId] || 0) + amount;
+  }
+  return stats;
+}
+function formatBetCount(count){
+  return count === 1 ? '1 bet' : `${count || 0} bets`;
+}
+function playerDisplayInfo(ownerId){
+  const info = players?.[ownerId];
+  const name = ownerId === clientId
+    ? getLocalPlayerName()
+    : (info?.name?.trim() || defaultPlayerName(ownerId));
+  return {
+    id: ownerId,
+    name,
+    isHost: !!info?.isHost,
+    you: ownerId === clientId,
+    ghost: isMultiplayer && !!ownerId && !info
+  };
+}
+function formatOwnerMeta(ownerId){
+  if(!ownerId) return '';
+  const info = playerDisplayInfo(ownerId);
+  const badges = [];
+  if(info.you) badges.push('<span class="playerBadge you">You</span>');
+  if(info.isHost) badges.push('<span class="playerBadge host">Host</span>');
+  if(info.ghost) badges.push('<span class="playerBadge ghost">Offline</span>');
+  return `<div class="bettorOwner"><span class="ownerLabel">${escapeHTML(info.name)}</span>${badges.length ? `<span class="ownerBadges">${badges.join('')}</span>` : ''}</div>`;
+}
+function renderSummaries(){
+  renderPlayerList();
+  renderRatTotals();
+}
+function renderPlayerList(){
+  if(!playerListEl) return;
+  const ownerStats = computeOwnerStats();
+  let entries = [];
+  if(isMultiplayer){
+    const activeEntries = Object.entries(players || {}).filter(([,value])=>value);
+    entries = activeEntries.map(([id,value])=>({ id, data:value, stats: ownerStats[id] || { total:0, count:0, rats:{} } }));
+    for(const ownerId of Object.keys(ownerStats)){
+      if(!entries.find(e=>e.id===ownerId)){
+        entries.push({ id: ownerId, data: null, stats: ownerStats[ownerId] });
+      }
+    }
+    if(!entries.find(e=>e.id===clientId)){
+      entries.push({ id: clientId, data: { name: getLocalPlayerName(), isHost }, stats: ownerStats[clientId] || { total:0, count:0, rats:{} } });
+    }
+  }else{
+    entries = [{ id: clientId, data: { name: getLocalPlayerName(), isHost:true }, stats: ownerStats[clientId] || { total: pot(), count: bets.length, rats:{} } }];
+  }
+  entries.sort((a,b)=>{
+    const aInfo = playerDisplayInfo(a.id);
+    const bInfo = playerDisplayInfo(b.id);
+    if(aInfo.you !== bInfo.you){ return aInfo.you ? -1 : 1; }
+    if(aInfo.isHost !== bInfo.isHost){ return bInfo.isHost ? 1 : -1; }
+    const aTotal = a.stats?.total || 0;
+    const bTotal = b.stats?.total || 0;
+    if(bTotal !== aTotal) return bTotal - aTotal;
+    return aInfo.name.localeCompare(bInfo.name);
+  });
+  const count = entries.length;
+  if(playerCountEl){
+    playerCountEl.textContent = count ? (count === 1 ? '1 player' : `${count} players`) : 'No players';
+  }
+  if(!count){
+    playerListEl.innerHTML = `<div class="emptyState">No players yet.</div>`;
+    return;
+  }
+  playerListEl.innerHTML = entries.map(entry=>{
+    const info = playerDisplayInfo(entry.id);
+    const total = entry.stats?.total || 0;
+    const countText = formatBetCount(entry.stats?.count || 0);
+    const breakdownEntries = Object.entries(entry.stats?.rats || {}).filter(([,amt])=>amt>0).sort((a,b)=>b[1]-a[1]).slice(0,4);
+    const breakdown = breakdownEntries.length
+      ? `<div class="playerBreakdown">${breakdownEntries.map(([rid,amt])=>`<span class="ratPill" style="--rat-color:${ratColor(rid)}">${escapeHTML(ratName(rid))} <span>${fmt(amt)}</span></span>`).join('')}</div>`
+      : `<div class="playerBreakdown playerBreakdown--empty">No bets yet.</div>`;
+    const badges = [];
+    if(info.you) badges.push('<span class="playerBadge you">You</span>');
+    if(info.isHost) badges.push('<span class="playerBadge host">Host</span>');
+    if(info.ghost) badges.push('<span class="playerBadge ghost">Offline</span>');
+    const metaText = entry.stats?.count ? formatBetCount(entry.stats.count) : 'No bets yet';
+    const metaContent = `${badges.length ? `<span class="playerBadges">${badges.join('')}</span>` : ''}<span>${metaText}</span>`;
+    return `<div class="playerRow${info.you ? ' you' : ''}${info.ghost ? ' ghost' : ''}">
+      <div class="playerRowTop">
+        <div class="playerIdentity">
+          <div class="playerAvatar" style="--avatar-color:${avatarColorFor(entry.id)}">${escapeHTML(playerInitials(info.name))}</div>
+          <div class="playerInfo">
+            <div class="playerName">${escapeHTML(info.name)}</div>
+            <div class="playerMeta">${metaContent}</div>
+          </div>
+        </div>
+        <div class="playerTotals">
+          <strong>${fmt(total)}</strong>
+          <span>${countText}</span>
+        </div>
+      </div>
+      ${breakdown}
+    </div>`;
+  }).join('');
+}
+function renderRatTotals(){
+  if(!ratTotalsEl) return;
+  const totalPot = pot();
+  if(poolMetaEl){
+    poolMetaEl.textContent = totalPot ? `${fmt(totalPot)} total` : 'No bets yet';
+  }
+  const rows = RAT_DATA.map(r=>{
+    const amount = totalOn(r.id);
+    const count = bets.filter(b=>b.ratId===r.id).length;
+    const share = totalPot ? Math.round((amount/totalPot)*100) : 0;
+    const barPct = totalPot ? Math.max(6, (amount/totalPot)*100) : 0;
+    const progress = amount > 0 ? `<div class="ratProgress" style="width:${Math.min(barPct,100)}%"></div>` : '';
+    const metaParts = [];
+    metaParts.push(count ? formatBetCount(count) : 'No bets');
+    if(share) metaParts.push(`${share}% of pot`);
+    return `<div class="ratRow${amount ? ' has-bets' : ''}">${progress}<div class="ratRowInner"><div class="ratInfo"><span class="ratSwatch" style="background:${ratColor(r.id)}"></span><span>${escapeHTML(r.name)}</span></div><div class="ratNumbers"><span class="ratAmount">${fmt(amount)}</span><span class="ratMeta">${metaParts.join(' • ')}</span></div></div></div>`;
+  }).join('');
+  ratTotalsEl.innerHTML = rows || `<div class="emptyState">No bets yet.</div>`;
+}
 
 addBetBtn.addEventListener('click', ()=>{
   if(isMultiplayer && remoteState.status !== 'open'){ statusEl.textContent = 'Betting is closed.'; return; }
@@ -490,8 +756,10 @@ function endRace(options={}){
     const payout = b.ratId===winner.id ? (b.amount / totalOnWin) * p : 0;
     const net = payout - b.amount;
     const tr = document.createElement('tr');
+    if(b.owner === clientId){ tr.classList.add('mine'); }
+    const ownerDetail = formatOwnerMeta(b.owner);
     tr.innerHTML = `
-      <td>${escapeHTML(b.name||'—')}</td>
+      <td>${escapeHTML(b.name||'—')}${ownerDetail}</td>
       <td>${ratName(b.ratId)}</td>
       <td class="right">${fmt(b.amount)}</td>
       <td class="right ${payout? 'ok':''}">${payout? fmt(Math.round(payout)) : '$0'}</td>
@@ -675,6 +943,7 @@ let gamePath = '';
 let betsRef = null;
 let stateRef = null;
 let presenceRef = null;
+let playersRef = null;
 let unsubscribers = [];
 let remoteState = { status:'open', countdownDuration:2100 };
 
@@ -686,12 +955,28 @@ function rememberPlayerName(name){
   }
 }
 
+function syncPresenceName(name){
+  if(!isMultiplayer || !gamePath) return;
+  const clean = (name || '').trim() || getLocalPlayerName() || 'Player';
+  const now = Date.now();
+  const payload = {};
+  payload[`${gamePath}/players/${clientId}/name`] = clean;
+  payload[`${gamePath}/players/${clientId}/lastSeen`] = now;
+  update(rootRef, payload).catch(()=>{});
+}
+
+bettorInput.addEventListener('input', ()=>{
+  renderSummaries();
+});
+
 bettorInput.addEventListener('blur', ()=>{
   const value = bettorInput.value.trim();
   if(value){
     playerName = value;
     rememberPlayerName(value);
   }
+  renderSummaries();
+  syncPresenceName(value);
 });
 
 function sanitizeRoomCode(value){
@@ -721,12 +1006,16 @@ function detachListeners(){
   }
   betsRef = null;
   stateRef = null;
+  playersRef = null;
+  players = {};
+  renderSummaries();
 }
 
 function attachListeners(){
   if(!gamePath) return;
   betsRef = ref(db, `${gamePath}/bets`);
   stateRef = ref(db, `${gamePath}/state`);
+  playersRef = ref(db, `${gamePath}/players`);
   unsubscribers.push(onValue(betsRef, snapshot=>{
     const data = snapshot.val() || {};
     bets = Object.values(data);
@@ -737,6 +1026,12 @@ function attachListeners(){
     if(data && data.updatedBy === clientId) return;
     remoteState = { status:'open', countdownDuration:2100, ...(data||{}) };
     handleNetworkState(remoteState);
+  }));
+  unsubscribers.push(onValue(playersRef, snapshot=>{
+    const raw = snapshot.val() || {};
+    const filtered = Object.fromEntries(Object.entries(raw).filter(([,value])=>value));
+    players = filtered;
+    renderSummaries();
   }));
 }
 
@@ -804,6 +1099,7 @@ function startSolo(){
   roomId = null;
   gamePath = '';
   bets = [];
+  players = { [clientId]: { name: getLocalPlayerName(), isHost:true } };
   redrawBets();
   resultRows.innerHTML = `<tr><td colspan="5" style="color:var(--muted)">No results yet.</td></tr>`;
   statusEl.textContent = 'Place your bets.';
@@ -811,6 +1107,7 @@ function startSolo(){
   toggleBetUI(false);
   window.location.hash = '';
   updateModeUI();
+  renderSummaries();
 }
 
 async function hostStartRace(){
@@ -901,6 +1198,8 @@ function joinRoom(code, { host=false }={}){
   bets = [];
   redrawBets();
   resultRows.innerHTML = `<tr><td colspan="5" style="color:var(--muted)">No results yet.</td></tr>`;
+  players = { [clientId]: { name: getLocalPlayerName(), isHost: host } };
+  renderSummaries();
   remoteState = { status:'open', countdownDuration:2100 };
   window.location.hash = roomId;
   updateModeUI();
@@ -931,6 +1230,7 @@ function joinRoom(code, { host=false }={}){
     update(rootRef, initPayload).catch(err=>console.warn('Failed to prepare room', err));
   }
   toggleBetUI(false);
+  syncPresenceName(bettorInput.value);
 }
 
 function showJoinControls(show){
