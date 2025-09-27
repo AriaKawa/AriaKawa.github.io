@@ -40,14 +40,18 @@
   }
   .back-nav__icon{font-size:1.05rem; line-height:1;}
   .table{
-    position:relative; width:min(1100px, 96vw); aspect-ratio: 16/9;
-    background: radial-gradient(120% 90% at 50% -15%, #208b6e 0, var(--felt) 32%, var(--felt-dark) 95%);
-    border-radius:28px; box-shadow: var(--shadow);
+    position:relative; width:min(1100px, 96vw);
+    height:clamp(460px, 62vw, 640px);
+    background: radial-gradient(140% 110% at 50% -20%, #2aa784 0, #1b7157 35%, var(--felt) 60%, var(--felt-dark) 98%);
+    border-radius:0 0 520px 520px / 0 0 100% 100%;
+    box-shadow: var(--shadow);
     overflow:hidden; border:6px solid #0c3024;
   }
   .table::after{
-    content:""; position:absolute; inset:20px;
-    border:2px dashed rgba(255,255,255,.15); border-radius:22px; pointer-events:none;
+    content:""; position:absolute; inset:20px 32px 26px;
+    border:2px dashed rgba(255,255,255,.15);
+    border-radius:0 0 480px 480px / 0 0 95% 95%;
+    pointer-events:none;
   }
   header{
     position:absolute; top:14px; left:18px; right:18px; display:flex; align-items:center; gap:.75rem;
@@ -72,30 +76,32 @@
   }
 
   /* Lanes */
-  .lane{ position:absolute; left:50%; transform:translateX(-50%); width:80%; }
-  .dealer.lane{ top:10%; }
+  .lane{ position:absolute; left:50%; transform:translateX(-50%); width:86%; }
+  .dealer.lane{ top:8%; }
   .lane.seats{
-    bottom:7%;
-    width:86%;
-    display:grid;
-    grid-template-columns:repeat(4, minmax(0, 1fr));
-    gap:1.1rem;
-    align-items:end;
-    justify-items:center;
-    padding:0 1.4rem;
+    position:absolute;
+    bottom:0;
+    left:50%;
+    transform:translateX(-50%);
+    width:92%;
+    height:62%;
+    max-width:900px;
   }
 
   .seat-wrapper{
+    position:absolute;
     display:flex;
     justify-content:center;
     align-items:flex-end;
     min-height:190px;
-    width:100%;
+    width:180px;
+    transform:translate(-50%, 0);
+    transform-origin:bottom center;
   }
-  .seat-wrapper.slot-0{ justify-self:start; }
-  .seat-wrapper.slot-1{ justify-self:center; }
-  .seat-wrapper.slot-2{ justify-self:center; }
-  .seat-wrapper.slot-3{ justify-self:end; }
+  .seat-wrapper.slot-0{ left:18%; bottom:18%; }
+  .seat-wrapper.slot-1{ left:40%; bottom:8%; }
+  .seat-wrapper.slot-2{ left:60%; bottom:8%; }
+  .seat-wrapper.slot-3{ left:82%; bottom:18%; }
 
   .player-seat{
     position:relative;
@@ -193,8 +199,12 @@
   @media (max-width:720px){ .spot{ height:120px; } }
 
   @media (max-width:720px){
-    .lane.seats{ bottom:8%; gap:.7rem; padding:0 .8rem; }
-    .seat-wrapper{ min-height:150px; }
+    .lane.seats{ height:60%; max-width:100%; }
+    .seat-wrapper{ width:150px; min-height:150px; }
+    .seat-wrapper.slot-0{ left:20%; bottom:20%; }
+    .seat-wrapper.slot-1{ left:42%; bottom:10%; }
+    .seat-wrapper.slot-2{ left:58%; bottom:10%; }
+    .seat-wrapper.slot-3{ left:80%; bottom:20%; }
     .player-seat{ width:150px; padding:.5rem .35rem .7rem; }
   }
 
@@ -204,7 +214,7 @@
     text-align:center; text-shadow:0 2px 8px rgba(0,0,0,.5);
   }
   .label.dealer{ top:4%; font-weight:700; opacity:.9 }
-  .label.player{ bottom:6%; font-weight:700; opacity:.95 }
+  .label.player{ bottom:22%; font-weight:700; opacity:.95 }
   .total{ font-size:1.05rem; opacity:.9 }
 
   /* Controls */
@@ -331,7 +341,6 @@
     <div class="controls" id="controls">
       <button class="primary muted" id="btnHit">Hit</button>
       <button class="ghost muted" id="btnStand">Stand</button>
-      <button class="ghost" id="btnNew">New Shoe</button>
     </div>
   </div>
 
@@ -427,7 +436,6 @@
   const turnIndicator = document.getElementById('turnIndicator');
   const btnHit = document.getElementById('btnHit');
   const btnStand = document.getElementById('btnStand');
-  const btnNew = document.getElementById('btnNew');
   const bankEl = document.getElementById('bank');
   const lobby = document.getElementById('lobby');
   const lobbyMain = document.getElementById('lobbyMain');
@@ -1394,13 +1402,6 @@
     }
   }
 
-  function newShoe(){
-    tableState.shoe = buildShoe(6);
-    shareStatus('New shoe ready', 700);
-    commitRound({ includeDealer:false, includePlayer:false, includeShoe:true });
-    renderTable();
-  }
-
   function resetLocalTable(){
     tableState.shoe = [];
     tableState.dealer = [];
@@ -1761,7 +1762,6 @@
 
   btnHit.addEventListener('click', ()=> !btnHit.classList.contains('muted') && playerHit());
   btnStand.addEventListener('click', ()=> !btnStand.classList.contains('muted') && playerStand());
-  btnNew.addEventListener('click', ()=> newShoe());
 
   if(playersLane){
     playersLane.addEventListener('click', event=>{
