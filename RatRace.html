@@ -212,14 +212,7 @@
   .lobby input.invalid{ outline:2px solid rgba(239,71,111,.7); outline-offset:3px; }
 
   .mpCard{
-    background:rgba(10,16,30,.65);
-    border:1px solid rgba(255,255,255,.08);
-    border-radius:16px;
-    padding:14px 16px;
-    box-shadow:inset 0 0 0 1px rgba(255,255,255,.04);
-    margin-bottom:18px;
-    display:grid;
-    gap:10px;
+    display:none;
   }
   .mpRow{ display:flex; flex-wrap:wrap; gap:8px; }
   .mpHostActions .btn{ min-width:150px; }
@@ -232,7 +225,7 @@
   .mpNotice{ font-size:.85rem; color:var(--muted); }
 
   .summaryGrid{
-    display:grid; gap:14px; margin-top:16px;
+    display:grid; gap:14px; margin-top:0;
     grid-template-columns:repeat(auto-fit, minmax(260px,1fr));
   }
   .summaryCard{
@@ -305,6 +298,7 @@
     background:rgba(12,18,32,.72); border:1px solid rgba(255,255,255,.05);
   }
   .ratRow.has-bets{ border-color:rgba(255,209,59,.32); }
+  .ratRow.selected{ border-color:rgba(255,209,59,.45); box-shadow:0 0 0 1px rgba(255,209,59,.25); }
   .ratProgress{
     position:absolute; inset:0; background:linear-gradient(135deg, rgba(255,209,59,.24), rgba(255,209,59,.05));
     opacity:.9;
@@ -312,9 +306,23 @@
   .ratRowInner{ position:relative; display:flex; justify-content:space-between; gap:12px; align-items:center; }
   .ratInfo{ display:flex; gap:10px; align-items:center; font-weight:600; letter-spacing:.03em; }
   .ratInfo .ratSwatch{ width:14px; height:14px; border-radius:4px; box-shadow:0 0 0 1px rgba(255,255,255,.35); }
-  .ratNumbers{ text-align:right; }
+  .ratNumbers{ text-align:right; display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
   .ratAmount{ display:block; font-weight:700; font-size:1rem; }
   .ratMeta{ display:block; font-size:.78rem; color:var(--muted); letter-spacing:.05em; }
+  .ratBetButton{
+    appearance:none; border-radius:999px; border:1px solid rgba(255,255,255,.16);
+    background:rgba(255,255,255,.08); color:var(--text);
+    font-size:.75rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+    padding:.35rem .8rem; cursor:pointer; transition:transform .18s ease, box-shadow .18s ease, background .18s ease;
+  }
+  .ratBetButton:hover,
+  .ratBetButton:focus-visible{
+    outline:none; transform:translateY(-1px);
+    background:rgba(255,255,255,.16); box-shadow:0 12px 20px rgba(0,0,0,.32);
+  }
+  .ratBetButton:disabled{
+    opacity:.55; cursor:not-allowed; transform:none; box-shadow:none; background:rgba(255,255,255,.08);
+  }
 
   .emptyState{ padding:14px; border-radius:12px; border:1px dashed rgba(255,255,255,.12); text-align:center; font-size:.82rem; color:var(--muted); background:rgba(9,14,26,.35); }
 
@@ -445,8 +453,6 @@
       </div>
       <div style="display:flex; gap:8px; margin:.8rem 0 1rem">
         <button class="btn" id="addBet">Add Bet</button>
-        <button class="btn secondary" id="closeBets">Close Bets & Start</button>
-        <button class="btn secondary" id="reset">New Race</button>
       </div>
 
       <table>
@@ -552,10 +558,9 @@ let bets = []; // {id, name, ratId, amount, owner, createdAt}
 const betRows = document.getElementById('betRows');
 const resultRows = document.getElementById('resultRows');
 const addBetBtn = document.getElementById('addBet');
-const closeBetsBtn = document.getElementById('closeBets');
-const resetBtn = document.getElementById('reset');
 const bettorInput = document.getElementById('bettor');
 const amountInput = document.getElementById('amount');
+let quickBetRatId = sel ? sel.value : null;
 let players = {};
 let isMultiplayer = false;
 let isHost = false;
@@ -569,9 +574,14 @@ let unsubscribers = [];
 let remoteState = { status:'open', countdownDuration:2100 };
 let mpMode = 'solo';
 let pendingHostCode = '';
+let betUiLocked = false;
 const CLIENT_STORAGE_KEY = 'ratRaceClientId';
 const NAME_STORAGE_KEY = 'ratRacePlayerName';
 let playerName = '';
+const AUTO_START_DELAY = 2500;
+const AUTO_REOPEN_DELAY = 6000;
+let autoStartTimer = null;
+let autoReopenTimer = null;
 try{
   const stored = localStorage.getItem(NAME_STORAGE_KEY);
   if(stored){
@@ -721,6 +731,7 @@ function redrawBets(){
   }
   potEl.textContent = fmt(pot());
   renderSummaries();
+  updateAutoStartState();
 }
 function escapeHTML(value){
   const str = value ?? '';
@@ -872,8 +883,9 @@ function renderRatTotals(){
   if(!ratTotalsEl) return;
   const totalPot = pot();
   if(poolMetaEl){
-    poolMetaEl.textContent = totalPot ? `${fmt(totalPot)} total` : 'No bets yet';
+    poolMetaEl.textContent = totalPot ? `${fmt(totalPot)} total` : 'No bets yet — select a rat below.';
   }
+  const bettingLocked = betUiLocked || (isMultiplayer && remoteState.status !== 'open');
   const rows = RAT_DATA.map(r=>{
     const amount = totalOn(r.id);
     const count = bets.filter(b=>b.ratId===r.id).length;
@@ -883,9 +895,158 @@ function renderRatTotals(){
     const metaParts = [];
     metaParts.push(count ? formatBetCount(count) : 'No bets');
     if(share) metaParts.push(`${share}% of pot`);
-    return `<div class="ratRow${amount ? ' has-bets' : ''}">${progress}<div class="ratRowInner"><div class="ratInfo"><span class="ratSwatch" style="background:${ratColor(r.id)}"></span><span>${escapeHTML(r.name)}</span></div><div class="ratNumbers"><span class="ratAmount">${fmt(amount)}</span><span class="ratMeta">${metaParts.join(' • ')}</span></div></div></div>`;
+    const ratLabel = escapeHTML(r.name);
+    const selectedClass = quickBetRatId === r.id ? ' selected' : '';
+    const title = bettingLocked ? 'Betting is closed' : `Bet on ${ratLabel}`;
+    return `<div class="ratRow${amount ? ' has-bets' : ''}${selectedClass}" data-rat="${r.id}">${progress}<div class="ratRowInner"><div class="ratInfo"><span class="ratSwatch" style="background:${ratColor(r.id)}"></span><span>${ratLabel}</span></div><div class="ratNumbers"><span class="ratAmount">${fmt(amount)}</span><span class="ratMeta">${metaParts.join(' • ')}</span><button class="ratBetButton" type="button" data-bet-rat="${r.id}" aria-label="Bet on ${ratLabel}" title="${title}"${bettingLocked ? ' disabled' : ''}>Bet</button></div></div></div>`;
   }).join('');
   ratTotalsEl.innerHTML = rows || `<div class="emptyState">No bets yet.</div>`;
+}
+
+if(sel){
+  sel.addEventListener('change', ()=>{
+    quickBetRatId = sel.value || null;
+    renderRatTotals();
+  });
+}
+
+if(ratTotalsEl){
+  ratTotalsEl.addEventListener('click', (event)=>{
+    const button = event.target.closest('[data-bet-rat]');
+    if(!button || button.disabled) return;
+    const ratId = button.dataset.betRat;
+    if(!ratId) return;
+    quickBetRatId = ratId;
+    renderRatTotals();
+    if(sel){
+      sel.value = ratId;
+    }
+    if(amountInput){
+      amountInput.focus();
+      amountInput.select();
+    }
+    const canUpdateStatus = (!isMultiplayer || (remoteState?.status ?? 'open') === 'open') && !racing && !finished;
+    if(canUpdateStatus){
+      statusEl.classList.remove('countdown');
+      statusEl.textContent = `Bet on ${ratName(ratId)}. Enter amount below.`;
+    }
+  });
+}
+
+function cancelAutoStart(){
+  if(autoStartTimer){
+    clearTimeout(autoStartTimer);
+    autoStartTimer = null;
+  }
+}
+
+async function triggerAutoStart(){
+  cancelAutoStart();
+  if(isMultiplayer){
+    if(!isHost || remoteState.status !== 'open' || !bets.length){
+      return;
+    }
+    cancelAutoReopen();
+    await hostStartRace();
+  }else{
+    if(!bets.length || racing || finished){
+      return;
+    }
+    toggleBetUI(true);
+    const startTime = Date.now();
+    await startCountdown({ startTime });
+    if(!bets.length){
+      toggleBetUI(false);
+      return;
+    }
+    cancelAutoReopen();
+    startRace();
+  }
+}
+
+function scheduleAutoStart(){
+  if(betUiLocked || !bets.length){
+    cancelAutoStart();
+    return;
+  }
+  if(isMultiplayer){
+    if(!isHost || remoteState.status !== 'open'){
+      cancelAutoStart();
+      return;
+    }
+  }else{
+    if(racing || finished){
+      cancelAutoStart();
+      return;
+    }
+  }
+  cancelAutoStart();
+  statusEl.classList.remove('countdown');
+  statusEl.textContent = 'Race starting soon…';
+  autoStartTimer = setTimeout(()=>{
+    autoStartTimer = null;
+    triggerAutoStart();
+  }, AUTO_START_DELAY);
+}
+
+function cancelAutoReopen(){
+  if(autoReopenTimer){
+    clearTimeout(autoReopenTimer);
+    autoReopenTimer = null;
+  }
+}
+
+function scheduleAutoReopen(options={}){
+  if(options.triggeredByNetwork){
+    return;
+  }
+  if(isMultiplayer && !isHost){
+    return;
+  }
+  cancelAutoReopen();
+  autoReopenTimer = setTimeout(()=>{
+    autoReopenTimer = null;
+    if(isMultiplayer){
+      hostResetRace({ preserveResults:true });
+    }else{
+      openNextSoloRound();
+    }
+  }, AUTO_REOPEN_DELAY);
+}
+
+function openNextSoloRound(){
+  cancelAutoStart();
+  cancelAutoReopen();
+  bets = [];
+  redrawBets();
+  resetRacePositions();
+  statusEl.classList.remove('countdown');
+  statusEl.textContent = 'Place your bets.';
+  toggleBetUI(false);
+}
+
+function updateAutoStartState(){
+  if(betUiLocked){
+    cancelAutoStart();
+    return;
+  }
+  if(!bets.length && !racing){
+    statusEl.classList.remove('countdown');
+    statusEl.textContent = 'Place your bets.';
+  }
+  if(isMultiplayer){
+    if(isHost && remoteState.status === 'open' && bets.length && !racing){
+      scheduleAutoStart();
+    }else{
+      cancelAutoStart();
+    }
+  }else{
+    if(bets.length && !racing && !finished){
+      scheduleAutoStart();
+    }else{
+      cancelAutoStart();
+    }
+  }
 }
 
 addBetBtn.addEventListener('click', ()=>{
@@ -1025,6 +1186,7 @@ function endRace(options={}){
     tr.innerHTML = `<td colspan="5">No one bet on ${winner.name}. House keeps the ${fmt(p)} pot.</td>`;
     resultRows.appendChild(tr);
     postWinnerToNetwork(winner.id, options);
+    scheduleAutoReopen(options);
     return;
   }
   for(const b of bets){
@@ -1043,45 +1205,22 @@ function endRace(options={}){
     resultRows.appendChild(tr);
   }
   postWinnerToNetwork(winner.id, options);
+  scheduleAutoReopen(options);
 }
 
 /* ============== Controls ============== */
-closeBetsBtn.addEventListener('click', async ()=>{
-  if(isMultiplayer){
-    if(!isHost){ statusEl.textContent = 'Waiting for the host to start.'; return; }
-    if(!bets.length){ statusEl.textContent = 'Place at least one bet.'; return; }
-    await hostStartRace();
-  }else{
-    if(!bets.length){ statusEl.textContent = 'Place at least one bet.'; return; }
-    toggleBetUI(true);
-    const startTime = Date.now();
-    await startCountdown({ startTime });
-    startRace();
-  }
-});
-
-resetBtn.addEventListener('click', ()=>{
-  if(isMultiplayer){
-    if(!isHost) return;
-    hostResetRace();
-  }else{
-    bets = []; redrawBets();
-    resultRows.innerHTML = `<tr><td colspan="5" style="color:var(--muted)">No results yet.</td></tr>`;
-    statusEl.textContent = 'Place your bets.';
-    toggleBetUI(false);
-    resetRacePositions();
-  }
-});
-
 function toggleBetUI(lock){
+  betUiLocked = !!lock;
   addBetBtn.classList.toggle('muted', lock);
   addBetBtn.disabled = lock;
-  closeBetsBtn.classList.toggle('muted', lock || (isMultiplayer && !isHost));
-  closeBetsBtn.disabled = lock || (isMultiplayer && !isHost);
-  resetBtn.classList.toggle('muted', isMultiplayer && !isHost);
-  resetBtn.disabled = isMultiplayer && !isHost;
   for(const el of [bettorInput, sel, amountInput]){
     el.disabled = lock;
+  }
+  renderRatTotals();
+  if(lock){
+    cancelAutoStart();
+  }else{
+    updateAutoStartState();
   }
 }
 
@@ -1403,7 +1542,6 @@ function setMpMode(mode){
 function updateModeUI(){
   if(isMultiplayer){
     setMpMode('room');
-    closeBetsBtn.textContent = isHost ? 'Close Bets & Start' : 'Waiting for Host';
     toggleBetUI(remoteState.status !== 'open');
   }else{
     if(mpMode === 'room'){
@@ -1411,7 +1549,6 @@ function updateModeUI(){
     }else{
       updateNotice();
     }
-    closeBetsBtn.textContent = 'Close Bets & Start';
     toggleBetUI(false);
   }
 }
@@ -1422,10 +1559,13 @@ function startSolo(){
   isHost = false;
   roomId = null;
   gamePath = '';
+  cancelAutoStart();
+  cancelAutoReopen();
   bets = [];
   players = { [clientId]: { name: getLocalPlayerName(), isHost:true } };
   redrawBets();
   resultRows.innerHTML = `<tr><td colspan="5" style="color:var(--muted)">No results yet.</td></tr>`;
+  statusEl.classList.remove('countdown');
   statusEl.textContent = 'Place your bets.';
   resetRacePositions();
   toggleBetUI(false);
@@ -1490,26 +1630,32 @@ function postWinnerToNetwork(winnerId, options={}){
   });
 }
 
-function hostResetRace(){
+function hostResetRace({ preserveResults=false }={}){
   if(!isHost || !gamePath) return;
+  cancelAutoStart();
+  cancelAutoReopen();
   bets = [];
   redrawBets();
-  resultRows.innerHTML = `<tr><td colspan="5" style="color:var(--muted)">No results yet.</td></tr>`;
-  resetRacePositions();
+  if(!preserveResults){
+    resultRows.innerHTML = `<tr><td colspan="5" style="color:var(--muted)">No results yet.</td></tr>`;
+  }
   const now = Date.now();
-  const payload = {};
-  payload[`${gamePath}/bets`] = null;
-  payload[`${gamePath}/state`] = {
+  const statePayload = {
     status:'open',
     winnerId:null,
     countdownDuration:2100,
     updatedBy: clientId,
     updatedAt: now,
-    resetResults:true
+    resetResults: !preserveResults
   };
+  const payload = {};
+  payload[`${gamePath}/bets`] = null;
+  payload[`${gamePath}/state`] = statePayload;
   update(rootRef, payload).catch(err=>{
     console.warn('Failed to reset race', err);
   });
+  remoteState = { ...remoteState, ...statePayload };
+  handleNetworkState(statePayload);
 }
 
 function joinRoom(code, { host=false }={}){
@@ -1520,9 +1666,13 @@ function joinRoom(code, { host=false }={}){
   isHost = host;
   roomId = sanitized;
   gamePath = `ratRaces/${roomId}`;
+  cancelAutoStart();
+  cancelAutoReopen();
   bets = [];
   redrawBets();
   resultRows.innerHTML = `<tr><td colspan="5" style="color:var(--muted)">No results yet.</td></tr>`;
+  statusEl.classList.remove('countdown');
+  statusEl.textContent = 'Place your bets.';
   players = { [clientId]: { name: getLocalPlayerName(), isHost: host } };
   renderSummaries();
   remoteState = { status:'open', countdownDuration:2100 };
