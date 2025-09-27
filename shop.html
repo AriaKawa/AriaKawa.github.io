@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aria &amp; Friends Project Vault</title>
+    <title>Tailor's Shop</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -29,7 +29,8 @@
             box-sizing: border-box;
         }
 
-        html, body {
+        html,
+        body {
             margin: 0;
             padding: 0;
         }
@@ -47,11 +48,22 @@
             padding: clamp(1.6rem, 4vw, 3.5rem);
         }
 
-        .back-nav {
+        .top-actions {
             position: fixed;
             top: clamp(0.9rem, 2vw, 1.6rem);
+            left: clamp(0.9rem, 2vw, 1.6rem);
             right: clamp(0.9rem, 2vw, 1.6rem);
-            z-index: 40;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: clamp(0.8rem, 2vw, 1.4rem);
+            z-index: 60;
+        }
+
+        .back-nav {
+            position: static;
+            margin-right: auto;
         }
 
         .back-nav__button {
@@ -82,27 +94,6 @@
         .back-nav__icon {
             font-size: 1.1rem;
             line-height: 1;
-        }
-
-        .top-actions {
-            position: fixed;
-            top: clamp(0.9rem, 2vw, 1.6rem);
-            left: clamp(0.9rem, 2vw, 1.6rem);
-            right: clamp(0.9rem, 2vw, 1.6rem);
-            display: flex;
-            justify-content: flex-end;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: clamp(0.8rem, 2vw, 1.4rem);
-            z-index: 60;
-        }
-
-        .top-actions .back-nav {
-            position: static;
-            top: auto;
-            right: auto;
-            z-index: auto;
-            margin-right: auto;
         }
 
         .currency-display {
@@ -288,20 +279,38 @@
             border-color: rgba(241, 118, 159, 0.55);
         }
 
-        .page {
-            width: min(1200px, 100%);
+        .shop-page {
+            width: min(1100px, 100%);
             display: grid;
-            grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-            gap: clamp(2.2rem, 4vw, 3.4rem);
+            gap: clamp(2rem, 5vw, 3.2rem);
+        }
+
+        .shop-header {
+            display: grid;
+            gap: 0.6rem;
+        }
+
+        .shop-content {
+            display: grid;
+            grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+            gap: clamp(1.8rem, 4vw, 2.8rem);
             align-items: start;
         }
 
-        .games-panel {
+        .avatar-card {
             display: grid;
-            gap: clamp(1.2rem, 3vw, 2.4rem);
-            justify-items: start;
-            align-content: start;
-            text-align: left;
+            gap: 1.4rem;
+            padding: clamp(1.8rem, 3.6vw, 2.6rem);
+            border-radius: var(--radius-lg);
+            background: linear-gradient(150deg, rgba(21, 13, 40, 0.88), rgba(7, 5, 20, 0.94));
+            border: 1px solid rgba(147, 198, 255, 0.18);
+            box-shadow: var(--shadow-strong);
+            width: 100%;
+        }
+
+        .avatar-card h2 {
+            margin: 0;
+            font-size: clamp(1.6rem, 3.6vw, 2.2rem);
         }
 
         .panel-title {
@@ -313,37 +322,6 @@
             margin: 0;
             max-width: 52ch;
             color: var(--text-muted);
-        }
-
-        .games-panel .panel-description {
-            text-align: left;
-        }
-
-        .games-panel .project-grid {
-            width: min(560px, 100%);
-            margin-left: 0;
-            margin-right: auto;
-        }
-
-        .avatar-panel {
-            display: flex;
-            justify-content: center;
-        }
-
-        .avatar-card {
-            display: grid;
-            gap: 1.4rem;
-            padding: clamp(1.8rem, 3.6vw, 2.6rem);
-            border-radius: var(--radius-lg);
-            background: linear-gradient(150deg, rgba(21, 13, 40, 0.88), rgba(7, 5, 20, 0.94));
-            border: 1px solid rgba(147, 198, 255, 0.18);
-            box-shadow: var(--shadow-strong);
-            width: min(420px, 100%);
-        }
-
-        .avatar-card h2 {
-            margin: 0;
-            font-size: clamp(1.6rem, 3.6vw, 2.2rem);
         }
 
         .avatar-preview {
@@ -377,380 +355,103 @@
             display: inline;
         }
 
-        .avatar-actions {
+        .shop-catalog {
+            padding: clamp(1.8rem, 3vw, 2.4rem);
+            border-radius: var(--radius-lg);
+            background: linear-gradient(150deg, rgba(21, 13, 40, 0.88), rgba(7, 5, 20, 0.94));
+            border: 1px solid rgba(147, 198, 255, 0.18);
+            box-shadow: var(--shadow-strong);
+            display: grid;
+            gap: 1.4rem;
+        }
+
+        .shop-catalog__header {
+            display: grid;
+            gap: 0.35rem;
+        }
+
+        .shop-catalog__header h2 {
+            margin: 0;
+            font-size: clamp(1.4rem, 3vw, 1.9rem);
+        }
+
+        .shop-catalog__hint {
+            margin: 0;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .shop-grid {
             display: grid;
             gap: 1rem;
         }
 
-        .closet-summary {
-            margin: 0;
-            font-size: 0.9rem;
-            color: var(--text-muted);
-        }
-
-        .avatar-closet {
-            position: relative;
-            display: grid;
-            gap: 0.6rem;
-            align-items: start;
-        }
-
-        .closet-toggle {
-            appearance: none;
-            border: 1px solid rgba(147, 198, 255, 0.28);
-            background: linear-gradient(135deg, rgba(31, 21, 58, 0.82), rgba(11, 7, 27, 0.88));
-            color: var(--text-primary);
-            border-radius: 999px;
-            padding: 0.55rem 1.1rem;
-            font-weight: 600;
-            letter-spacing: 0.02em;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.45rem;
-            cursor: pointer;
-            box-shadow: 0 18px 32px rgba(5, 3, 17, 0.45);
-            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-        }
-
-        .closet-toggle:hover,
-        .closet-toggle:focus-visible {
-            transform: translateY(-1px);
-            border-color: rgba(247, 167, 218, 0.5);
-            box-shadow: 0 24px 42px rgba(5, 3, 17, 0.55);
-            outline: none;
-        }
-
-        .closet-menu {
-            position: absolute;
-            top: calc(100% + 0.75rem);
-            left: 0;
-            min-width: min(320px, 80vw);
-            padding: 1rem;
-            border-radius: var(--radius-lg);
-            background: linear-gradient(150deg, rgba(19, 12, 38, 0.95), rgba(8, 5, 20, 0.98));
-            border: 1px solid rgba(147, 198, 255, 0.22);
-            box-shadow: var(--shadow-strong);
-            display: grid;
-            gap: 0.8rem;
-            opacity: 0;
-            transform: translateY(-6px);
-            pointer-events: none;
-            transition: opacity 0.2s ease, transform 0.2s ease;
-            z-index: 50;
-        }
-
-        .avatar-closet.is-open .closet-menu {
-            opacity: 1;
-            transform: translateY(0);
-            pointer-events: auto;
-        }
-
-        .closet-menu[hidden] {
-            display: none;
-        }
-
-        .closet-menu__heading {
-            margin: 0;
-            font-size: 0.85rem;
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
-            color: var(--text-muted);
-        }
-
-        .closet-menu__empty {
-            margin: 0;
-            font-size: 0.85rem;
-            color: var(--text-muted);
-        }
-
-        .closet-menu__list {
-            list-style: none;
-            margin: 0;
-            padding: 0;
-            display: grid;
-            gap: 0.6rem;
-        }
-
-        .closet-item {
-            display: grid;
-            gap: 0.4rem;
-            padding: 0.6rem 0.75rem;
-            border-radius: calc(var(--radius-sm) - 4px);
-            background: rgba(9, 6, 22, 0.55);
+        .shop-item {
+            border-radius: var(--radius-sm);
+            padding: 1rem 1.1rem;
+            background: rgba(18, 10, 45, 0.65);
             border: 1px solid rgba(147, 198, 255, 0.18);
-        }
-
-        .closet-item.is-selected {
-            border-color: rgba(247, 167, 218, 0.45);
-            box-shadow: 0 16px 26px rgba(247, 167, 218, 0.18);
-        }
-
-        .closet-item__body {
             display: grid;
-            gap: 0.25rem;
-        }
-
-        .closet-item__name {
-            font-weight: 600;
-        }
-
-        .closet-item__description {
-            margin: 0;
-            color: var(--text-muted);
-            font-size: 0.85rem;
-        }
-
-        .closet-item__footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
             gap: 0.75rem;
-            flex-wrap: wrap;
+            transition: border-color 0.25s ease, transform 0.25s ease;
         }
 
-        .closet-item__status {
-            font-size: 0.8rem;
+        .shop-item.is-owned {
+            border-color: rgba(247, 167, 218, 0.35);
+        }
+
+        .shop-item.is-selected {
+            box-shadow: 0 16px 28px rgba(247, 167, 218, 0.22);
+            transform: translateY(-3px);
+        }
+
+        .shop-item__header {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
+        .shop-item__header h3 {
+            margin: 0;
+            font-size: 1.05rem;
+        }
+
+        .shop-item__header span {
+            font-size: 0.85rem;
             color: var(--text-muted);
         }
 
-        .closet-item__action {
+        .shop-item__status {
+            margin: 0;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .shop-item__action {
             appearance: none;
             border: none;
             border-radius: 999px;
-            padding: 0.4rem 0.9rem;
+            padding: 0.55rem 1.2rem;
             font-weight: 600;
             letter-spacing: 0.02em;
             cursor: pointer;
             color: var(--text-primary);
             background: linear-gradient(135deg, rgba(147, 198, 255, 0.22), rgba(247, 167, 218, 0.28));
-            box-shadow: 0 14px 26px rgba(147, 198, 255, 0.18);
+            box-shadow: 0 18px 32px rgba(147, 198, 255, 0.18);
             transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
         }
 
-        .closet-item__action:disabled {
+        .shop-item__action:disabled {
             opacity: 0.6;
             cursor: default;
             box-shadow: none;
         }
 
-        .closet-item__action:not(:disabled):hover,
-        .closet-item__action:not(:disabled):focus-visible {
+        .shop-item__action:not(:disabled):hover,
+        .shop-item__action:not(:disabled):focus-visible {
             transform: translateY(-2px);
-            box-shadow: 0 22px 34px rgba(247, 167, 218, 0.28);
+            box-shadow: 0 24px 40px rgba(247, 167, 218, 0.28);
             outline: none;
-        }
-
-        .avatar-shop-link {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.45rem;
-            padding: 0.65rem 1.1rem;
-            border-radius: var(--radius-sm);
-            font-weight: 600;
-            letter-spacing: 0.02em;
-            text-decoration: none;
-            color: #110720;
-            background: linear-gradient(135deg, var(--accent-blue), var(--accent-pink));
-            box-shadow: 0 18px 32px rgba(147, 198, 255, 0.28);
-            transition: transform 0.25s ease, box-shadow 0.25s ease;
-        }
-
-        .avatar-shop-link:hover,
-        .avatar-shop-link:focus-visible {
-            transform: translateY(-2px);
-            box-shadow: 0 24px 40px rgba(247, 167, 218, 0.32);
-            outline: none;
-        }
-
-        .page-header::after {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(circle at top right, rgba(247, 167, 218, 0.25), transparent 55%);
-            pointer-events: none;
-            mix-blend-mode: screen;
-        }
-
-        .eyebrow {
-            letter-spacing: 0.3em;
-            text-transform: uppercase;
-            font-size: 0.78rem;
-            color: var(--accent-blue);
-        }
-
-        h1 {
-            font-size: clamp(2.4rem, 6vw, 3.6rem);
-            line-height: 1.05;
-            margin: 0;
-        }
-
-        .lede {
-            font-size: clamp(1rem, 2.2vw, 1.2rem);
-            color: var(--text-muted);
-            max-width: 52ch;
-        }
-
-        .header-meta {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.75rem;
-        }
-
-        .meta-chip {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
-            padding: 0.4rem 0.9rem;
-            border-radius: 999px;
-            font-size: 0.85rem;
-            background: rgba(147, 198, 255, 0.12);
-            color: var(--accent-blue);
-        }
-
-        h2 {
-            margin: 0;
-            font-size: clamp(1.6rem, 3.6vw, 2.4rem);
-        }
-
-        .project-grid {
-            display: grid;
-            gap: clamp(1.3rem, 2.6vw, 1.9rem);
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-        }
-
-        .project-card {
-            position: relative;
-            display: grid;
-            gap: 1.1rem;
-            padding: clamp(1.6rem, 3vw, 2.2rem);
-            border-radius: var(--radius-lg);
-            background: var(--card-gradient);
-            border: 1px solid transparent;
-            background-clip: padding-box, border-box;
-            background-origin: border-box;
-            background-image: var(--card-gradient), var(--border-gradient);
-            box-shadow: var(--shadow-strong);
-            transition: transform 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
-        }
-
-        .project-card::after {
-            content: "";
-            position: absolute;
-            inset: 0;
-            border-radius: inherit;
-            background: linear-gradient(160deg, rgba(147, 198, 255, 0.18), rgba(247, 167, 218, 0.08));
-            opacity: 0;
-            transition: opacity 0.35s ease;
-            pointer-events: none;
-        }
-
-        .project-card:hover,
-        .project-card:focus-within {
-            transform: translateY(-6px);
-            box-shadow: 0 40px 80px rgba(5, 3, 17, 0.85);
-        }
-
-        .project-card:hover::after,
-        .project-card:focus-within::after {
-            opacity: 1;
-        }
-
-        .card-top {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 0.75rem;
-            flex-wrap: wrap;
-        }
-
-        .status {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.4rem;
-            padding: 0.35rem 0.85rem;
-            border-radius: 999px;
-            font-size: 0.75rem;
-            letter-spacing: 0.18em;
-            text-transform: uppercase;
-            font-weight: 600;
-            background: linear-gradient(120deg, var(--accent-blue), var(--accent-pink));
-            color: #140827;
-        }
-
-        .tag {
-            padding: 0.35rem 0.7rem;
-            border-radius: 999px;
-            font-size: 0.8rem;
-            color: var(--accent-lavender);
-            background: rgba(194, 183, 255, 0.16);
-        }
-
-        .project-card h3 {
-            margin: 0;
-            font-size: 1.45rem;
-        }
-
-        .project-card p {
-            margin: 0;
-            color: var(--text-muted);
-            font-size: 0.98rem;
-            line-height: 1.55;
-        }
-
-        .project-meta {
-            display: grid;
-            gap: 0.35rem;
-            font-size: 0.82rem;
-            color: rgba(188, 180, 218, 0.85);
-        }
-
-        .project-meta span {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
-        }
-
-        .project-meta time {
-            color: var(--accent-blue);
-        }
-
-        .cta,
-        .cta.disabled {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.45rem;
-            margin-top: 0.4rem;
-            padding: 0.75rem 1.2rem;
-            border-radius: var(--radius-sm);
-            font-weight: 600;
-            font-size: 0.95rem;
-            text-decoration: none;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        .cta {
-            color: #110720;
-            background: linear-gradient(135deg, var(--accent-blue), var(--accent-pink));
-            box-shadow: 0 18px 32px rgba(147, 198, 255, 0.28);
-        }
-
-        .cta:hover,
-        .cta:focus-visible {
-            transform: translateY(-3px);
-            box-shadow: 0 22px 40px rgba(247, 167, 218, 0.32);
-        }
-
-        .cta.disabled {
-            color: var(--text-muted);
-            background: rgba(147, 198, 255, 0.12);
-            border: 1px solid rgba(147, 198, 255, 0.22);
-            cursor: default;
-            box-shadow: none;
-            pointer-events: none;
         }
 
         footer {
@@ -760,23 +461,9 @@
             padding-bottom: 0.5rem;
         }
 
-
         @media (max-width: 960px) {
-            .page {
+            .shop-content {
                 grid-template-columns: 1fr;
-            }
-
-            .games-panel {
-                justify-items: center;
-                text-align: center;
-            }
-
-            .games-panel .project-grid {
-                width: 100%;
-            }
-
-            .avatar-panel {
-                justify-content: center;
             }
         }
 
@@ -795,20 +482,15 @@
             .account-menu__dropdown {
                 min-width: min(260px, 82vw);
             }
-
-            .card-top {
-                flex-direction: column;
-                align-items: flex-start;
-            }
         }
     </style>
 </head>
 <body>
     <div class="top-actions">
-        <div class="back-nav" role="navigation" aria-label="Return home">
+        <div class="back-nav" role="navigation" aria-label="Return to vault">
             <button type="button" class="back-nav__button" data-home="index.html" onclick="handleBack(event)">
                 <span class="back-nav__icon" aria-hidden="true">&#8962;</span>
-                <span class="back-nav__text">Home</span>
+                <span class="back-nav__text">Back to vault</span>
             </button>
         </div>
         <div
@@ -862,55 +544,17 @@
             </div>
         </div>
     </div>
-    <main class="page">
-        <section class="games-panel">
-            <h1 class="panel-title">Game Vault</h1>
-            <p class="panel-description">Pick a game from the collection and jump straight into the fun.</p>
-            <div class="project-grid">
-                <article class="project-card" data-status="live">
-                    <div class="card-top">
-                        <span class="status">Live</span>
-                        <span class="tag">Game</span>
-                    </div>
-                    <h3>Blackjack Lounge</h3>
-                    <a class="cta" href="blackjack.html">Launch table</a>
-                </article>
-
-                <article class="project-card" data-status="brewing">
-                    <div class="card-top">
-                        <span class="status">Brewing</span>
-                        <span class="tag">Rhythm</span>
-                    </div>
-                    <h3>Rhythm Reactor</h3>
-                    <span class="cta disabled">Stay tuned</span>
-                </article>
-
-                <article class="project-card" data-status="live">
-                    <div class="card-top">
-                        <span class="status">Live</span>
-                        <span class="tag">Game</span>
-                    </div>
-                    <h3>Rat Race</h3>
-                    <a class="cta" href="RatRace.html">Enter race</a>
-                </article>
-
-                <article class="project-card" data-status="reserved">
-                    <div class="card-top">
-                        <span class="status">Reserved</span>
-                        <span class="tag">Wildcard</span>
-                    </div>
-                    <h3>Mystery Slot</h3>
-                    <span class="cta disabled">Accepting ideas</span>
-                </article>
-            </div>
-        </section>
-
-        <aside class="avatar-panel">
+    <main class="shop-page">
+        <header class="shop-header">
+            <h1 class="panel-title">Tailor's shop</h1>
+            <p class="panel-description">Pick out new looks and unlock them with your vault coins.</p>
+        </header>
+        <div class="shop-content">
             <div class="avatar-card" data-avatar-card>
-                <h2 id="avatar-title">Customize your avatar</h2>
-                <p class="panel-description">Choose an outfit for your rat companion before you head into a game.</p>
-                <div class="avatar-preview" aria-describedby="avatar-title">
-                    <div class="rat-avatar" data-outfit="classic" aria-live="polite">
+                <h2>Preview</h2>
+                <p class="panel-description" data-shop-summary>Currently wearing: Cozy Classic</p>
+                <div class="avatar-preview" aria-live="polite">
+                    <div class="rat-avatar" data-outfit="classic">
                         <svg viewBox="0 0 220 280" role="img" aria-label="Armored standing rat avatar illustration">
                             <defs>
                                 <linearGradient id="rat-fur" x1="15%" y1="5%" x2="85%" y2="95%">
@@ -990,43 +634,16 @@
                         </svg>
                     </div>
                 </div>
-                <div class="avatar-actions">
-                    <p class="closet-summary" data-current-outfit>Currently wearing: Cozy Classic</p>
-                    <div class="avatar-closet" data-avatar-closet>
-                        <button
-                            type="button"
-                            class="closet-toggle"
-                            data-closet-toggle
-                            aria-haspopup="true"
-                            aria-expanded="false"
-                            aria-controls="avatar-closet-menu"
-                        >
-                            <span aria-hidden="true">🧥</span>
-                            Closet
-                        </button>
-                        <div
-                            class="closet-menu"
-                            data-closet-menu
-                            id="avatar-closet-menu"
-                            role="menu"
-                            aria-label="Owned outfits"
-                            hidden
-                        >
-                            <p class="closet-menu__heading">Owned outfits</p>
-                            <p class="closet-menu__empty" data-closet-empty hidden>
-                                Unlock new looks in the shop to fill your closet.
-                            </p>
-                            <ul class="closet-menu__list" data-closet-list></ul>
-                        </div>
-                    </div>
-                    <a class="avatar-shop-link" href="shop.html">Visit tailor's shop</a>
-                </div>
+                <p class="panel-description">Owned outfits stay synced across every page.</p>
             </div>
-        </aside>
-
-        <footer>
-            Crafted with stardust gradients and a dash of Sylveon charm. Ping Aria for collab ideas.
-        </footer>
+            <section class="shop-catalog" aria-labelledby="shop-title">
+                <div class="shop-catalog__header">
+                    <h2 id="shop-title">Available outfits</h2>
+                    <p class="shop-catalog__hint">Unlock a new look and equip it instantly.</p>
+                </div>
+                <div class="shop-grid" data-shop-grid></div>
+            </section>
+        </div>
     </main>
 
     <script>
@@ -1080,47 +697,29 @@
                 return;
             }
 
-            const storageKey = 'ak-account-profile';
+            const storageKey = 'ak-account';
             let storageAvailable = true;
-            let isOpen = false;
             let account = null;
+            let isOpen = false;
 
-            function normalizeName(value) {
+            const normalizeName = (value) => {
                 if (typeof value !== 'string') {
                     return '';
                 }
 
-                return value.replace(/\s+/g, ' ').trim();
-            }
+                return value.trim().slice(0, 40);
+            };
 
-            function getInitial(name) {
-                const normalized = normalizeName(name);
-                if (!normalized) {
+            const getInitial = (value) => {
+                if (!value) {
                     return 'G';
                 }
 
-                return normalized.charAt(0).toUpperCase();
-            }
+                const trimmed = value.trim();
+                return trimmed ? trimmed.charAt(0).toUpperCase() : 'G';
+            };
 
-            function updateUI() {
-                const isSignedIn = Boolean(account && account.name);
-                menu.dataset.state = isSignedIn ? 'signed-in' : 'signed-out';
-                avatar.textContent = isSignedIn ? getInitial(account.name) : 'G';
-                nameEl.textContent = isSignedIn ? account.name : 'Guest';
-
-                const statusText = isSignedIn ? 'Signed in' : 'Signed out';
-                statusEl.textContent = storageAvailable ? statusText : `${statusText} • not saved`;
-
-                signInButton.hidden = isSignedIn;
-                signOutButton.hidden = !isSignedIn;
-
-                const ariaLabel = isSignedIn
-                    ? `Open account menu for ${account.name}`
-                    : 'Open account menu. You are signed out.';
-                trigger.setAttribute('aria-label', ariaLabel);
-            }
-
-            function loadAccount() {
+            const loadAccount = () => {
                 if (!storageAvailable) {
                     return null;
                 }
@@ -1144,9 +743,9 @@
                 }
 
                 return null;
-            }
+            };
 
-            function persistAccount(value) {
+            const persistAccount = (value) => {
                 if (!storageAvailable) {
                     return;
                 }
@@ -1162,6 +761,24 @@
                     console.warn('Unable to persist account state', error);
                     updateUI();
                 }
+            };
+
+            function updateUI() {
+                const isSignedIn = Boolean(account && account.name);
+                menu.dataset.state = isSignedIn ? 'signed-in' : 'signed-out';
+                avatar.textContent = isSignedIn ? getInitial(account.name) : 'G';
+                nameEl.textContent = isSignedIn ? account.name : 'Guest';
+
+                const statusText = isSignedIn ? 'Signed in' : 'Signed out';
+                statusEl.textContent = storageAvailable ? statusText : `${statusText} • not saved`;
+
+                signInButton.hidden = isSignedIn;
+                signOutButton.hidden = !isSignedIn;
+
+                const ariaLabel = isSignedIn
+                    ? `Open account menu for ${account.name}`
+                    : 'Open account menu. You are signed out.';
+                trigger.setAttribute('aria-label', ariaLabel);
             }
 
             function closeMenu(options = {}) {
@@ -1325,70 +942,17 @@
 
         const avatarCard = document.querySelector('[data-avatar-card]');
         const avatarPreview = avatarCard?.querySelector('.rat-avatar') ?? null;
-        const closet = avatarCard?.querySelector('[data-avatar-closet]') ?? null;
-        const closetToggle = closet?.querySelector('[data-closet-toggle]') ?? null;
-        const closetMenu = closet?.querySelector('[data-closet-menu]') ?? null;
-        const closetList = closet?.querySelector('[data-closet-list]') ?? null;
-        const closetEmpty = closet?.querySelector('[data-closet-empty]') ?? null;
-        const currentOutfitLabel = avatarCard?.querySelector('[data-current-outfit]') ?? null;
+        const shopSummary = avatarCard?.querySelector('[data-shop-summary]') ?? null;
+        const shopGrid = document.querySelector('[data-shop-grid]');
         const currencyDisplay = document.querySelector('[data-currency-balance]');
         const currencyAmount = currencyDisplay?.querySelector('[data-currency-amount]') ?? null;
 
-        if (!avatarCard || !avatarPreview || !closet || !closetToggle || !closetMenu || !closetList || !currentOutfitLabel) {
+        if (!avatarCard || !avatarPreview || !shopGrid || !shopSummary) {
             if (currencyAmount) {
                 currencyAmount.textContent = '—';
             }
             return;
         }
-
-        const outfitById = new Map(outfits.map((outfit) => [outfit.id, outfit]));
-        const closetEntries = new Map();
-
-        outfits.forEach((outfit) => {
-            const item = document.createElement('li');
-            item.className = 'closet-item';
-            item.dataset.outfit = outfit.id;
-
-            const body = document.createElement('div');
-            body.className = 'closet-item__body';
-
-            const name = document.createElement('span');
-            name.className = 'closet-item__name';
-            name.textContent = outfit.name;
-            body.appendChild(name);
-
-            if (outfit.description) {
-                const description = document.createElement('p');
-                description.className = 'closet-item__description';
-                description.textContent = outfit.description;
-                body.appendChild(description);
-            }
-
-            const footer = document.createElement('div');
-            footer.className = 'closet-item__footer';
-
-            const status = document.createElement('span');
-            status.className = 'closet-item__status';
-            status.setAttribute('data-closet-status', '');
-            footer.appendChild(status);
-
-            const action = document.createElement('button');
-            action.type = 'button';
-            action.className = 'closet-item__action';
-            action.setAttribute('data-closet-action', '');
-            action.textContent = 'Wear';
-            footer.appendChild(action);
-
-            item.appendChild(body);
-            item.appendChild(footer);
-            closetList.appendChild(item);
-
-            closetEntries.set(outfit.id, {
-                element: item,
-                status,
-                button: action
-            });
-        });
 
         const outfitStorageKey = 'ak-avatar-outfit';
         const walletStorageKey = 'ak-wallet-coins';
@@ -1401,7 +965,52 @@
         let coins = defaultCoins;
         let ownedOutfits = new Set(defaultOwnedOutfits);
         let currentOutfit = defaultOutfit;
-        let closetIsOpen = false;
+
+        const outfitById = new Map(outfits.map((outfit) => [outfit.id, outfit]));
+        const shopEntries = new Map();
+
+        outfits.forEach((outfit) => {
+            const price = Number.isFinite(outfit.price) && outfit.price >= 0 ? outfit.price : 0;
+            const item = document.createElement('article');
+            item.className = 'shop-item';
+            item.dataset.outfit = outfit.id;
+            item.dataset.price = String(price);
+            item.setAttribute('data-shop-item', '');
+
+            const header = document.createElement('div');
+            header.className = 'shop-item__header';
+
+            const title = document.createElement('h3');
+            title.textContent = outfit.name;
+            header.appendChild(title);
+
+            if (outfit.description) {
+                const detail = document.createElement('span');
+                detail.textContent = outfit.description;
+                header.appendChild(detail);
+            }
+
+            const status = document.createElement('p');
+            status.className = 'shop-item__status';
+            status.setAttribute('data-shop-status', '');
+
+            const action = document.createElement('button');
+            action.type = 'button';
+            action.className = 'shop-item__action';
+            action.setAttribute('data-shop-action', '');
+
+            item.appendChild(header);
+            item.appendChild(status);
+            item.appendChild(action);
+            shopGrid.appendChild(item);
+
+            shopEntries.set(outfit.id, {
+                element: item,
+                status,
+                button: action,
+                price
+            });
+        });
 
         function loadCoins() {
             if (!storageAvailable) {
@@ -1528,171 +1137,110 @@
             return next;
         }
 
-        function updateCurrentOutfitSummary() {
+        function updateSummary() {
             const details = outfitById.get(currentOutfit) ?? outfitById.get(defaultOutfit);
             const fallback = outfitById.get(defaultOutfit)?.name ?? 'Cozy Classic';
-            currentOutfitLabel.textContent = `Currently wearing: ${details?.name ?? fallback}`;
+            shopSummary.textContent = `Currently wearing: ${details?.name ?? fallback}`;
         }
 
-        function updateClosetUI() {
-            let ownedCount = 0;
-
-            closetEntries.forEach((entry, outfitId) => {
+        function updateShopUI() {
+            shopEntries.forEach((entry, outfitId) => {
                 const owned = ownedOutfits.has(outfitId);
-                entry.element.hidden = !owned;
-                entry.element.classList.toggle('is-selected', currentOutfit === outfitId);
+                const isEquipped = currentOutfit === outfitId;
+                const { element, status, button, price } = entry;
 
-                if (!owned) {
-                    return;
+                element.classList.toggle('is-owned', owned);
+                element.classList.toggle('is-selected', isEquipped);
+
+                if (status) {
+                    if (!owned) {
+                        if (price === 0) {
+                            status.textContent = 'Included.';
+                        } else if (price > coins) {
+                            const short = Math.max(0, price - coins);
+                            status.textContent = `Costs ${price} coin${price === 1 ? '' : 's'}. You're ${short} coin${short === 1 ? '' : 's'} short.`;
+                        } else {
+                            status.textContent = `Costs ${price} coin${price === 1 ? '' : 's'}.`;
+                        }
+                    } else {
+                        status.textContent = isEquipped
+                            ? 'Currently wearing this look.'
+                            : 'Owned.';
+                    }
                 }
 
-                ownedCount += 1;
-
-                if (entry.status) {
-                    entry.status.textContent = currentOutfit === outfitId ? 'Currently wearing' : 'Owned';
-                }
-
-                if (entry.button) {
-                    entry.button.disabled = currentOutfit === outfitId;
-                    entry.button.textContent = currentOutfit === outfitId ? 'Equipped' : 'Wear';
+                if (button) {
+                    if (!owned) {
+                        const lacksCoins = price > coins;
+                        const priceText = price === 0 ? 'Unlock' : `Buy for ${price} coin${price === 1 ? '' : 's'}`;
+                        if (lacksCoins && price > 0) {
+                            const short = Math.max(0, price - coins);
+                            button.textContent = `Need ${short} more coin${short === 1 ? '' : 's'}`;
+                        } else {
+                            button.textContent = priceText;
+                        }
+                        button.disabled = lacksCoins && price > 0;
+                    } else {
+                        button.disabled = isEquipped;
+                        button.textContent = isEquipped ? 'Equipped' : 'Wear';
+                    }
                 }
             });
-
-            if (closetEmpty) {
-                closetEmpty.hidden = ownedCount > 0;
-            }
-
-            const disabled = ownedCount === 0;
-            closetToggle.disabled = disabled;
-            closetToggle.setAttribute('aria-disabled', disabled ? 'true' : 'false');
         }
 
-        function openCloset() {
-            if (closetIsOpen) {
-                return;
-            }
-
-            closetIsOpen = true;
-            closet.classList.add('is-open');
-            closetMenu.hidden = false;
-            closetToggle.setAttribute('aria-expanded', 'true');
-
-            document.addEventListener('pointerdown', handlePointerDown, true);
-            document.addEventListener('keydown', handleClosetKeydown, true);
-
-            const focusable = closetMenu.querySelector('[data-closet-action]:not([disabled])');
-            if (focusable instanceof HTMLElement) {
-                window.requestAnimationFrame(() => {
-                    focusable.focus();
-                });
-            }
-        }
-
-        function closeCloset(options = {}) {
-            const { focusToggle = false } = options;
-
-            if (!closetIsOpen) {
-                if (focusToggle) {
-                    closetToggle.focus();
-                }
-                return;
-            }
-
-            closetIsOpen = false;
-            closet.classList.remove('is-open');
-            closetMenu.hidden = true;
-            closetToggle.setAttribute('aria-expanded', 'false');
-            document.removeEventListener('pointerdown', handlePointerDown, true);
-            document.removeEventListener('keydown', handleClosetKeydown, true);
-
-            if (focusToggle) {
-                closetToggle.focus();
-            }
-        }
-
-        function handlePointerDown(event) {
-            if (!closet.contains(event.target)) {
-                closeCloset();
-            }
-        }
-
-        function handleClosetKeydown(event) {
-            if (!closetIsOpen) {
-                return;
-            }
-
-            if (event.key === 'Escape') {
-                event.preventDefault();
-                closeCloset({ focusToggle: true });
-                return;
-            }
-
-            if (event.key === 'Tab') {
-                const focusable = Array.from(
-                    closetMenu.querySelectorAll('[data-closet-action]:not([disabled])')
-                );
-
-                if (focusable.length === 0) {
-                    return;
-                }
-
-                const first = focusable[0];
-                const last = focusable[focusable.length - 1];
-
-                if (!event.shiftKey && document.activeElement === last) {
-                    event.preventDefault();
-                    first.focus();
-                } else if (event.shiftKey && document.activeElement === first) {
-                    event.preventDefault();
-                    last.focus();
-                }
-            }
-        }
-
-        closetToggle.addEventListener('click', () => {
-            if (closetIsOpen) {
-                closeCloset();
-            } else {
-                openCloset();
-            }
-        });
-
-        closetToggle.addEventListener('keydown', (event) => {
-            if (event.key === 'ArrowDown') {
-                event.preventDefault();
-                openCloset();
-            }
-        });
-
-        closetList.addEventListener('click', (event) => {
+        shopGrid.addEventListener('click', (event) => {
             const button = event.target instanceof HTMLElement
-                ? event.target.closest('[data-closet-action]')
+                ? event.target.closest('[data-shop-action]')
                 : null;
 
             if (!(button instanceof HTMLButtonElement)) {
                 return;
             }
 
-            const item = button.closest('.closet-item');
+            const item = button.closest('[data-shop-item]');
             if (!item) {
                 return;
             }
 
             const outfit = item.dataset.outfit;
-            if (!outfit || !ownedOutfits.has(outfit)) {
+            if (!outfit) {
                 return;
             }
 
-            if (currentOutfit === outfit) {
-                closeCloset({ focusToggle: true });
+            const entry = shopEntries.get(outfit);
+            if (!entry) {
                 return;
             }
+
+            const price = entry.price ?? 0;
+
+            if (ownedOutfits.has(outfit)) {
+                if (currentOutfit === outfit) {
+                    return;
+                }
+
+                const applied = applyOutfit(outfit);
+                persistOutfit(applied);
+                updateSummary();
+                updateShopUI();
+                return;
+            }
+
+            if (price > coins) {
+                updateShopUI();
+                return;
+            }
+
+            coins = Math.max(0, coins - price);
+            ownedOutfits.add(outfit);
+            persistCoins(coins);
+            persistOwnedOutfits(ownedOutfits);
 
             const applied = applyOutfit(outfit);
             persistOutfit(applied);
-            updateClosetUI();
-            updateCurrentOutfitSummary();
-            closeCloset({ focusToggle: true });
+            updateCurrencyUI();
+            updateSummary();
+            updateShopUI();
         });
 
         coins = loadCoins();
@@ -1708,9 +1256,8 @@
         }
 
         updateCurrencyUI();
-        updateClosetUI();
-        updateCurrentOutfitSummary();
-        closeCloset();
+        updateSummary();
+        updateShopUI();
 
         window.addEventListener('storage', (event) => {
             if (!event) {
@@ -1720,17 +1267,18 @@
             if (event.key === walletStorageKey) {
                 coins = loadCoins();
                 updateCurrencyUI();
+                updateShopUI();
             } else if (event.key === ownedStorageKey) {
                 ownedOutfits = loadOwnedOutfits();
-                updateClosetUI();
+                updateShopUI();
             } else if (event.key === outfitStorageKey) {
                 const next = applyOutfit(loadOutfit());
                 if (!ownedOutfits.has(next)) {
                     ownedOutfits.add(next);
                     persistOwnedOutfits(ownedOutfits);
                 }
-                updateCurrentOutfitSummary();
-                updateClosetUI();
+                updateSummary();
+                updateShopUI();
             }
         });
     </script>
