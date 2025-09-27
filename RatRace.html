@@ -152,6 +152,8 @@
     gap:10px;
   }
   .mpRow{ display:flex; flex-wrap:wrap; gap:8px; }
+  .mpHostActions .btn{ min-width:150px; }
+  .mpJoinActions{ justify-content:flex-end; }
   .mpRoom{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; font-size:.9rem; }
   .mpRoomCode{ font-weight:700; letter-spacing:.08em; background:rgba(255,255,255,.08); padding:.35rem .65rem; border-radius:10px; }
   .mpJoin{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
@@ -284,8 +286,8 @@
 
     <!-- PANEL -->
     <div class="panel">
-      <div class="mpCard">
-        <div class="mpRow">
+      <div class="mpCard" id="mpCard">
+        <div class="mpRow" id="mpButtonRow">
           <button class="btn secondary" id="btnSolo" type="button">Solo</button>
           <button class="btn secondary" id="btnHostRoom" type="button">Host Room</button>
           <button class="btn secondary" id="btnJoinRoom" type="button">Join Room</button>
@@ -295,10 +297,17 @@
           <span class="mpRoomCode" id="roomCode">—</span>
           <button class="btn secondary small" id="btnCopyRoom" type="button">Copy Code</button>
         </div>
+        <div class="mpRow mpHostActions" id="hostActions" hidden>
+          <button class="btn" id="btnConfirmHost" type="button">Create Room</button>
+          <button class="btn secondary" id="btnCancelHost" type="button">Back</button>
+        </div>
         <div class="mpJoin" id="joinControls" hidden>
           <label for="joinCode">Room Code</label>
           <input id="joinCode" type="text" placeholder="ABCDE" maxlength="12" autocomplete="off" />
           <button class="btn secondary" id="btnConfirmJoin" type="button">Join</button>
+        </div>
+        <div class="mpRow mpJoinActions" id="joinActions" hidden>
+          <button class="btn secondary" id="btnCancelJoin" type="button">Back</button>
         </div>
         <div class="mpNotice" id="mpNotice">You are playing solo.</div>
       </div>
@@ -411,6 +420,13 @@ const roomInfo = document.getElementById('roomInfo');
 const roomCodeEl = document.getElementById('roomCode');
 const copyRoomBtn = document.getElementById('btnCopyRoom');
 const mpNotice = document.getElementById('mpNotice');
+const mpCardEl = document.getElementById('mpCard');
+const mpButtonRow = document.getElementById('mpButtonRow');
+const hostActions = document.getElementById('hostActions');
+const hostConfirmBtn = document.getElementById('btnConfirmHost');
+const hostCancelBtn = document.getElementById('btnCancelHost');
+const joinActions = document.getElementById('joinActions');
+const joinCancelBtn = document.getElementById('btnCancelJoin');
 const playerListEl = document.getElementById('playerList');
 const ratTotalsEl = document.getElementById('ratTotals');
 const playerCountEl = document.getElementById('playerCount');
@@ -946,6 +962,8 @@ let presenceRef = null;
 let playersRef = null;
 let unsubscribers = [];
 let remoteState = { status:'open', countdownDuration:2100 };
+let mpMode = 'solo';
+let pendingHostCode = '';
 
 function rememberPlayerName(name){
   try{
@@ -1070,25 +1088,99 @@ function handleNetworkState(state){
       }
     }
   }
+  updateNotice();
+}
+
+function updateNotice(){
+  if(mpNotice){
+    if(mpMode === 'hostPrompt'){
+      mpNotice.textContent = 'Share this code with friends. Create the room when you\'re ready.';
+    }else if(mpMode === 'joinPrompt'){
+      mpNotice.textContent = 'Enter a room code to join a friend.';
+    }else if(isMultiplayer){
+      const code = roomId || '—';
+      mpNotice.textContent = isHost
+        ? `Hosting room ${code}. Share the code with friends.`
+        : `Joined room ${code}. Place your bets!`;
+    }else{
+      mpNotice.textContent = 'You are playing solo.';
+    }
+  }
+}
+
+function setMpMode(mode){
+  mpMode = mode;
+  if(mpCardEl){
+    mpCardEl.dataset.mode = mode;
+  }
+  if(mode === 'room'){
+    if(mpButtonRow) mpButtonRow.hidden = false;
+    if(hostActions) hostActions.hidden = true;
+    if(joinControls) joinControls.hidden = true;
+    if(joinActions) joinActions.hidden = true;
+    if(roomInfo) roomInfo.hidden = false;
+    if(roomCodeEl) roomCodeEl.textContent = roomId || '—';
+    if(copyRoomBtn) copyRoomBtn.textContent = 'Copy Code';
+    hostBtn.disabled = true;
+    hostBtn.classList.add('muted');
+    joinBtn.disabled = true;
+    joinBtn.classList.add('muted');
+  }else if(mode === 'hostPrompt'){
+    if(!pendingHostCode){ pendingHostCode = generateRoomCode(); }
+    if(mpButtonRow) mpButtonRow.hidden = true;
+    if(hostActions) hostActions.hidden = false;
+    if(joinControls) joinControls.hidden = true;
+    if(joinActions) joinActions.hidden = true;
+    if(roomInfo){
+      roomInfo.hidden = false;
+      if(roomCodeEl) roomCodeEl.textContent = pendingHostCode;
+    }
+    if(copyRoomBtn) copyRoomBtn.textContent = 'Copy Code';
+    hostBtn.disabled = false;
+    hostBtn.classList.remove('muted');
+    joinBtn.disabled = false;
+    joinBtn.classList.remove('muted');
+  }else if(mode === 'joinPrompt'){
+    pendingHostCode = '';
+    if(mpButtonRow) mpButtonRow.hidden = true;
+    if(hostActions) hostActions.hidden = true;
+    if(joinControls) joinControls.hidden = false;
+    if(joinActions) joinActions.hidden = false;
+    if(roomInfo) roomInfo.hidden = true;
+    hostBtn.disabled = false;
+    hostBtn.classList.remove('muted');
+    joinBtn.disabled = false;
+    joinBtn.classList.remove('muted');
+    joinCodeInput.value = '';
+    setTimeout(()=> joinCodeInput.focus(), 50);
+  }else{
+    pendingHostCode = '';
+    if(mpButtonRow) mpButtonRow.hidden = false;
+    if(hostActions) hostActions.hidden = true;
+    if(joinControls) joinControls.hidden = true;
+    if(joinActions) joinActions.hidden = true;
+    if(!isMultiplayer && roomInfo) roomInfo.hidden = true;
+    hostBtn.disabled = false;
+    hostBtn.classList.remove('muted');
+    joinBtn.disabled = false;
+    joinBtn.classList.remove('muted');
+  }
+  updateNotice();
 }
 
 function updateModeUI(){
-  if(!isMultiplayer){
-    mpNotice.textContent = 'You are playing solo.';
-    roomInfo.hidden = true;
-    joinControls.hidden = true;
+  if(isMultiplayer){
+    setMpMode('room');
+    closeBetsBtn.textContent = isHost ? 'Close Bets & Start' : 'Waiting for Host';
+    toggleBetUI(remoteState.status !== 'open');
+  }else{
+    if(mpMode === 'room'){
+      setMpMode('solo');
+    }else{
+      updateNotice();
+    }
     closeBetsBtn.textContent = 'Close Bets & Start';
     toggleBetUI(false);
-  }else{
-    const code = roomId || '—';
-    mpNotice.textContent = isHost
-      ? `Hosting room ${code}. Share the code with friends.`
-      : `Joined room ${code}. Place your bets!`;
-    roomInfo.hidden = false;
-    roomCodeEl.textContent = code;
-    closeBetsBtn.textContent = isHost ? 'Close Bets & Start' : 'Waiting for Host';
-    joinControls.hidden = true;
-    toggleBetUI(remoteState.status !== 'open');
   }
 }
 
@@ -1106,6 +1198,7 @@ function startSolo(){
   resetRacePositions();
   toggleBetUI(false);
   window.location.hash = '';
+  setMpMode('solo');
   updateModeUI();
   renderSummaries();
 }
@@ -1202,6 +1295,7 @@ function joinRoom(code, { host=false }={}){
   renderSummaries();
   remoteState = { status:'open', countdownDuration:2100 };
   window.location.hash = roomId;
+  setMpMode('room');
   updateModeUI();
   attachListeners();
   const now = Date.now();
@@ -1231,24 +1325,56 @@ function joinRoom(code, { host=false }={}){
   }
   toggleBetUI(false);
   syncPresenceName(bettorInput.value);
+  pendingHostCode = '';
 }
 
 function showJoinControls(show){
-  joinControls.hidden = !show;
   if(show){
-    joinCodeInput.value = '';
-    setTimeout(()=> joinCodeInput.focus(), 50);
+    setMpMode('joinPrompt');
+  }else if(!isMultiplayer){
+    setMpMode('solo');
   }
 }
 
 soloBtn.addEventListener('click', ()=> startSolo());
 hostBtn.addEventListener('click', ()=>{
-  const code = generateRoomCode();
-  joinRoom(code, { host:true });
+  if(isMultiplayer){
+    setMpMode('room');
+    return;
+  }
+  pendingHostCode = generateRoomCode();
+  setMpMode('hostPrompt');
 });
+if(hostConfirmBtn){
+  hostConfirmBtn.addEventListener('click', ()=>{
+    if(isMultiplayer){
+      setMpMode('room');
+      return;
+    }
+    if(!pendingHostCode){
+      pendingHostCode = generateRoomCode();
+    }
+    joinRoom(pendingHostCode, { host:true });
+    pendingHostCode = '';
+  });
+}
+if(hostCancelBtn){
+  hostCancelBtn.addEventListener('click', ()=>{
+    setMpMode(isMultiplayer ? 'room' : 'solo');
+  });
+}
 joinBtn.addEventListener('click', ()=>{
+  if(isMultiplayer){
+    setMpMode('room');
+    return;
+  }
   showJoinControls(true);
 });
+if(joinCancelBtn){
+  joinCancelBtn.addEventListener('click', ()=>{
+    setMpMode(isMultiplayer ? 'room' : 'solo');
+  });
+}
 
 joinConfirmBtn.addEventListener('click', ()=>{
   const code = sanitizeRoomCode(joinCodeInput.value);
