@@ -108,6 +108,7 @@
     align-items:center;
     min-height:clamp(140px, 20vw, 200px);
     max-width:200px;
+    overflow:visible;
   }
   .player-spot::before{
     content:"";
@@ -253,7 +254,24 @@
 
   /* Spots where cards settle */
   .spot{ position:relative; width:100%; height:100%; display:flex; justify-content:center; align-items:center; z-index:1; }
-  .hand{ position:relative; min-height:100%; display:flex; justify-content:center; align-items:flex-end; gap:clamp(.8rem, 2.4vw, 1.8rem); padding:0 12px; }
+  .hand{
+    position:relative;
+    min-height:100%;
+    display:flex;
+    justify-content:center;
+    align-items:flex-end;
+    gap:clamp(.45rem, 1.6vw, 1rem);
+    padding:0 12px;
+    overflow:visible;
+  }
+  .player-spot .hand{
+    transform-origin:center calc(100% + 60px);
+    transition:transform .4s ease;
+  }
+  .player-spot.slot-0 .hand{ transform:rotate(-18deg); }
+  .player-spot.slot-1 .hand{ transform:rotate(-8deg); }
+  .player-spot.slot-2 .hand{ transform:rotate(8deg); }
+  .player-spot.slot-3 .hand{ transform:rotate(18deg); }
   @media (max-width:720px){ .spot{ height:120px; } }
 
   @media (max-width:720px){
@@ -274,6 +292,7 @@
     .player-spot.slot-1,
     .player-spot.slot-2,
     .player-spot.slot-3{ transform:none; }
+    .player-spot .hand{ transform:none; transform-origin:center bottom; }
     .player-seat{ width:150px; padding:.5rem .35rem .7rem; }
   }
 
@@ -677,6 +696,7 @@
     const fan = document.createElement('div');
     fan.className = 'hand';
     spot.appendChild(fan);
+    const playerSpot = spot.closest('.player-spot');
 
     if(!hand.length) return;
 
@@ -701,7 +721,8 @@
       el.style.transform = `translateY(${-lift}px) rotate(${angle}deg)`;
     });
 
-    fan.style.height = `${cardHeight + 12}px`;
+    const heightBuffer = playerSpot ? 48 : 12;
+    fan.style.height = `${cardHeight + heightBuffer}px`;
   }
 
   /* ---------- Firebase ---------- */
