@@ -195,6 +195,24 @@
     display:grid;
     gap:.2rem;
   }
+  .seat-result{
+    font-size:.78rem;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    font-weight:700;
+    opacity:.92;
+  }
+  .seat-result.win,
+  .seat-result.blackjack{
+    color:#4ade80;
+  }
+  .seat-result.bust,
+  .seat-result.lose{
+    color:#f87171;
+  }
+  .seat-result.push{
+    color:#fbbf24;
+  }
   .seat-name{ font-size:1rem; letter-spacing:.02em; }
   .seat-total, .seat-bank{
     font-size:.85rem;
@@ -1196,6 +1214,24 @@
 
         const label = document.createElement('div');
         label.className = 'seat-label';
+
+        const resultKey = state.phase === 'waiting'
+          ? String(info?.roundResult || '').toLowerCase()
+          : '';
+        if(resultKey){
+          const resultMap = {
+            blackjack: 'Blackjack!',
+            bust: 'Bust',
+            win: 'Win',
+            lose: 'Lose',
+            push: 'Push'
+          };
+          const resultText = resultMap[resultKey] || (resultKey.charAt(0).toUpperCase() + resultKey.slice(1));
+          const resultEl = document.createElement('div');
+          resultEl.className = `seat-result ${resultKey}`.trim();
+          resultEl.textContent = resultText;
+          label.appendChild(resultEl);
+        }
 
         const nameEl = document.createElement('div');
         nameEl.className = 'seat-name';
