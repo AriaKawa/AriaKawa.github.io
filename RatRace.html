@@ -195,21 +195,42 @@
     white-space:nowrap;
   }
 
-  .track-ring{ fill:url(#trackFill); stroke:rgba(52,28,14,.65); stroke-width:8; }
-  .track-highlight{ fill:url(#trackHighlight); }
-  .track-infield{ fill:url(#infieldGradient); }
-  .lane-boundary path{
+  .track-border,
+  .track-fill,
+  .track-glow,
+  .track-texture{
     fill:none;
-    stroke:rgba(255,244,222,.2);
-    stroke-width:4;
-    stroke-dasharray:18 16;
-    opacity:.7;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+  }
+  .track-border{
+    stroke:url(#trackEdge);
+    stroke-width:190;
+    opacity:.8;
+  }
+  .track-fill{
+    stroke:url(#trackFill);
+    stroke-width:150;
+    filter:drop-shadow(0 26px 46px rgba(0,0,0,.45));
+  }
+  .track-glow{
+    stroke:url(#trackGlow);
+    stroke-width:190;
+    opacity:.25;
+    filter:blur(18px);
+  }
+  .track-texture{
+    stroke:rgba(255,244,222,.18);
+    stroke-width:10;
+    stroke-dasharray:28 36;
+    stroke-linecap:round;
+    opacity:.55;
   }
   .lane-guide{ fill:none; stroke:transparent; }
   .finish-line{
     stroke:#fdfdf8;
-    stroke-width:10;
-    stroke-dasharray:18 12;
+    stroke-width:14;
+    stroke-dasharray:22 16;
     stroke-linecap:round;
     filter:drop-shadow(0 10px 16px rgba(0,0,0,.55));
   }
@@ -437,7 +458,7 @@
   </div>
   <div class="lobby" id="lobby">
     <div class="lobby-card" id="lobbyMain">
-      <h2>Rat Track Lounge</h2>
+      <h2>Rat Maze Lounge</h2>
       <p>Select how you'd like to play.</p>
       <div class="lobby-actions">
         <button class="primary" id="btnSingleplayer" type="button">Singleplayer</button>
@@ -477,7 +498,7 @@
     <div class="board">
       <section class="track-card" id="trackCard">
         <div class="track-viewport" id="trackViewport">
-          <svg id="trackSvg" viewBox="0 0 1200 640" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Rat race track"></svg>
+          <svg id="trackSvg" viewBox="0 0 1200 640" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Rat maze track"></svg>
           <div class="rat-layer" id="ratLayer"></div>
         </div>
         <header>
@@ -614,94 +635,39 @@ const trackViewport = document.getElementById('trackViewport');
 
 const VIEWBOX_WIDTH = 1200;
 const VIEWBOX_HEIGHT = 640;
-const TRACK_GEOM = {
-  cx: 600,
-  cy: 320,
-  outerRx: 520,
-  outerRy: 220,
-  innerRx: 300,
-  innerRy: 140,
-};
+const MAZE_PATH = 'M 90 120 L 420 120 L 420 220 L 260 220 L 260 320 L 620 320 L 620 420 L 320 420 L 320 520 L 760 520 L 760 440 L 980 440 L 980 580 L 1120 580';
+const FINISH_LINE = { x: 1080, y1: 580, y2: 500 };
 
 const laneCount = RAT_DATA.length;
-const laneSpacingX = laneCount ? (TRACK_GEOM.outerRx - TRACK_GEOM.innerRx) / laneCount : 0;
-const laneSpacingY = laneCount ? (TRACK_GEOM.outerRy - TRACK_GEOM.innerRy) / laneCount : 0;
-
-function ellipsePath(rx, ry, sweep=1){
-  const { cx, cy } = TRACK_GEOM;
-  return `M ${cx - rx} ${cy} a ${rx} ${ry} 0 1 ${sweep} ${rx * 2} 0 a ${rx} ${ry} 0 1 ${sweep} ${-rx * 2} 0`;
-}
-function closedEllipsePath(rx, ry, sweep=1){
-  return `${ellipsePath(rx, ry, sweep)} Z`;
-}
-function trackRingPath(){
-  return `${closedEllipsePath(TRACK_GEOM.outerRx, TRACK_GEOM.outerRy, 1)} ${closedEllipsePath(TRACK_GEOM.innerRx, TRACK_GEOM.innerRy, 0)}`;
-}
-function laneRadii(index){
-  if(!laneCount){
-    return { rx: TRACK_GEOM.innerRx, ry: TRACK_GEOM.innerRy };
-  }
-  const rx = TRACK_GEOM.outerRx - (index + 0.5) * laneSpacingX;
-  const ry = TRACK_GEOM.outerRy - (index + 0.5) * laneSpacingY;
-  return { rx, ry };
-}
-function clampEllipseRadius(value){
-  return Math.max(40, value);
-}
+const laneOffsetStep = 32;
 function buildTrackSvg(){
   if(!trackSvg) return;
 
-  const highlightPath = closedEllipsePath(
-    clampEllipseRadius(TRACK_GEOM.outerRx - 40),
-    clampEllipseRadius(TRACK_GEOM.outerRy - 36),
-    1
-  );
-  const infieldPath = closedEllipsePath(
-    clampEllipseRadius(TRACK_GEOM.innerRx - 38),
-    clampEllipseRadius(TRACK_GEOM.innerRy - 44),
-    1
-  );
-
-  let boundaryMarkup = '';
-  for(let i=1;i<laneCount;i++){
-    const rx = TRACK_GEOM.outerRx - i * laneSpacingX;
-    const ry = TRACK_GEOM.outerRy - i * laneSpacingY;
-    boundaryMarkup += `<path d="${closedEllipsePath(rx, ry, 1)}" />`;
-  }
-
-  const guideMarkup = RAT_DATA.map((r, index) => {
-    const { rx, ry } = laneRadii(index);
-    return `<path class="lane-guide" id="lanePath-${r.id}" d="${closedEllipsePath(rx, ry, 1)}" />`;
-  }).join('');
-
-  const finishX = TRACK_GEOM.cx + TRACK_GEOM.innerRx + laneSpacingX * 0.5;
-  const finishTop = TRACK_GEOM.cy - (TRACK_GEOM.outerRy - 32);
-  const finishBottom = TRACK_GEOM.cy + (TRACK_GEOM.outerRy - 32);
+  const guideMarkup = RAT_DATA.map((r) => `<path class="lane-guide" id="lanePath-${r.id}" d="${MAZE_PATH}" />`).join('');
 
   trackSvg.innerHTML = `
     <defs>
-      <radialGradient id="trackHighlight" cx="50%" cy="38%" r="68%">
-        <stop offset="0%" stop-color="rgba(255,242,214,.45)" />
-        <stop offset="55%" stop-color="rgba(255,205,135,.12)" />
-        <stop offset="100%" stop-color="rgba(120,70,32,0)" />
-      </radialGradient>
       <linearGradient id="trackFill" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" stop-color="#c0864c" />
-        <stop offset="65%" stop-color="#8a542c" />
-        <stop offset="100%" stop-color="#5c351b" />
+        <stop offset="0%" stop-color="#d8a56a" />
+        <stop offset="55%" stop-color="#b0733c" />
+        <stop offset="100%" stop-color="#724424" />
       </linearGradient>
-      <linearGradient id="infieldGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" stop-color="#2e5a46" />
-        <stop offset="100%" stop-color="#173a2b" />
+      <linearGradient id="trackEdge" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stop-color="#402818" />
+        <stop offset="100%" stop-color="#1f140c" />
+      </linearGradient>
+      <linearGradient id="trackGlow" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stop-color="rgba(255,205,135,.55)" />
+        <stop offset="100%" stop-color="rgba(255,125,44,0)" />
       </linearGradient>
     </defs>
     <g>
-      <path class="track-ring" d="${trackRingPath()}" fill-rule="evenodd" />
-      <path class="track-highlight" d="${highlightPath}" />
-      <path class="track-infield" d="${infieldPath}" />
-      <g class="lane-boundary">${boundaryMarkup}</g>
+      <path class="track-glow" d="${MAZE_PATH}" />
+      <path class="track-border" d="${MAZE_PATH}" />
+      <path class="track-fill" d="${MAZE_PATH}" />
+      <path class="track-texture" d="${MAZE_PATH}" />
       <g class="lane-guides" aria-hidden="true">${guideMarkup}</g>
-      <line class="finish-line" x1="${finishX}" y1="${finishTop}" x2="${finishX}" y2="${finishBottom}" />
+      <path class="finish-line" d="M ${FINISH_LINE.x} ${FINISH_LINE.y1} L ${FINISH_LINE.x} ${FINISH_LINE.y2}" />
     </g>
   `;
 }
@@ -746,7 +712,9 @@ const rats = RAT_DATA.map((r, index) => {
   const halfWidth = el.offsetWidth / 2 || 80;
   const halfHeight = el.offsetHeight / 2 || 60;
 
-  return { ...r, el, art, tag, pathEl, pathLength, halfWidth, halfHeight, x:0, v:0, baseSpeed:0, wobbleAmp:0, wobblePeriod:160, wobblePhase:0 };
+  const laneOffset = (index - (laneCount - 1) / 2) * laneOffsetStep;
+
+  return { ...r, el, art, tag, pathEl, pathLength, halfWidth, halfHeight, laneOffset, x:0, v:0, baseSpeed:0, wobbleAmp:0, wobblePeriod:160, wobblePhase:0 };
 });
 
 for(const r of rats){
@@ -770,7 +738,12 @@ function positionRat(r, distance=0){
   const dx = pos.x - prev.x;
   const dy = pos.y - prev.y;
   const angle = Math.atan2(dy, dx);
-  r.el.style.transform = `translate(${pos.x - (r.halfWidth||80)}px, ${pos.y - (r.halfHeight||60)}px)`;
+  const laneOffset = r.laneOffset || 0;
+  const nx = -Math.sin(angle);
+  const ny = Math.cos(angle);
+  const offsetX = pos.x + nx * laneOffset;
+  const offsetY = pos.y + ny * laneOffset;
+  r.el.style.transform = `translate(${offsetX - (r.halfWidth||80)}px, ${offsetY - (r.halfHeight||60)}px)`;
   r.art.style.transform = `rotate(${angle}rad)`;
 }
 
