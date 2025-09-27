@@ -229,8 +229,39 @@
     flex:1 1 100%;
     margin-top:.1rem;
   }
-  .bet-controls .quick-button{
+  .bet-controls .auto-bet-toggle{
     flex:1 1 100%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:.45rem;
+    padding:.35rem .65rem;
+    border-radius:12px;
+    border:1px solid rgba(255,255,255,.18);
+    background:rgba(255,255,255,.06);
+    font-weight:600;
+    letter-spacing:.01em;
+    cursor:pointer;
+    transition:background .18s ease, border-color .18s ease;
+  }
+  .bet-controls .auto-bet-toggle.active{
+    background:rgba(34,197,94,.2);
+    border-color:rgba(34,197,94,.45);
+  }
+  .bet-controls .auto-bet-toggle:not(.active):hover{
+    background:rgba(255,255,255,.12);
+    border-color:rgba(255,255,255,.28);
+  }
+  .bet-controls .auto-bet-toggle.active:hover{
+    background:rgba(34,197,94,.28);
+    border-color:rgba(34,197,94,.55);
+  }
+  .bet-controls .auto-bet-toggle input{
+    width:1.05rem;
+    height:1.05rem;
+  }
+  .bet-controls .auto-bet-toggle .auto-bet-label{
+    font-size:.85rem;
   }
   .seat-confirmation{
     font-size:.78rem;
@@ -589,8 +620,11 @@
   const MAX_BET = 90;
   const BET_STEP = 10;
   const LAST_BET_STORAGE_KEY = 'blackjackLastConfirmedBet';
+  const AUTO_BET_STORAGE_KEY = 'blackjackAutoBetEnabled';
   let cachedLastConfirmedBet = null;
   let hasLoadedLastConfirmedBet = false;
+  let cachedAutoBetEnabled = false;
+  let hasLoadedAutoBetPreference = false;
 
   function sanitizePlayerName(value){
     if(value == null) return '';
@@ -868,6 +902,39 @@
     return normalized;
   }
 
+  function loadAutoBetPreference(){
+    if(hasLoadedAutoBetPreference) return cachedAutoBetEnabled;
+    hasLoadedAutoBetPreference = true;
+    try{
+      const stored = localStorage.getItem(AUTO_BET_STORAGE_KEY);
+      if(typeof stored === 'string'){
+        const trimmed = stored.trim().toLowerCase();
+        cachedAutoBetEnabled = trimmed === '1' || trimmed === 'true';
+        return cachedAutoBetEnabled;
+      }
+    }catch(err){
+      console.debug('Unable to access auto bet preference', err);
+    }
+    cachedAutoBetEnabled = false;
+    return cachedAutoBetEnabled;
+  }
+
+  function isAutoBetEnabled(){
+    return hasLoadedAutoBetPreference ? cachedAutoBetEnabled : loadAutoBetPreference();
+  }
+
+  function setAutoBetEnabled(value){
+    const enabled = !!value;
+    cachedAutoBetEnabled = enabled;
+    hasLoadedAutoBetPreference = true;
+    try{
+      localStorage.setItem(AUTO_BET_STORAGE_KEY, enabled ? '1' : '0');
+    }catch(err){
+      console.debug('Unable to persist auto bet preference', err);
+    }
+    return enabled;
+  }
+
   function ensureBetsMap(){
     if(!tableState.state.bets){
       tableState.state.bets = {};
@@ -1046,6 +1113,14 @@
     return entries;
   }
 
+  function getAutoBetAmount(){
+    const lastBet = getLastConfirmedBet();
+    if(Number.isFinite(lastBet)){
+      return lastBet;
+    }
+    return MIN_BET;
+  }
+
   function adjustMyBet(delta){
     if(tableState.state.phase !== 'waiting') return;
     const current = getBetForPlayer(clientId);
@@ -1067,12 +1142,11 @@
     renderTable();
   }
 
-  function applyQuickBet(){
+  function applyAutoBet(){
     if(tableState.state.phase !== 'waiting') return;
-    const lastBet = getLastConfirmedBet();
-    if(!Number.isFinite(lastBet)) return;
-    setBetForPlayer(clientId, lastBet);
-    storeLastConfirmedBet(lastBet);
+    const amount = getAutoBetAmount();
+    setBetForPlayer(clientId, amount);
+    storeLastConfirmedBet(amount);
     setBetConfirmed(clientId, true);
     commitRound({ includeDealer:false, includePlayer:false, includeShoe:false, includeState:true });
     renderTable();
@@ -1189,13 +1263,22 @@
           decreaseBtn.classList.toggle('muted', !canAdjustBet || betValue <= MIN_BET);
           increaseBtn.classList.toggle('muted', !canAdjustBet || betValue >= MAX_BET);
 
-          const quickBetValue = getLastConfirmedBet();
-          const quickBtn = document.createElement('button');
-          quickBtn.type = 'button';
-          quickBtn.className = 'bet-button ghost quick-button';
-          quickBtn.textContent = Number.isFinite(quickBetValue) ? `Quick Bet (${quickBetValue})` : 'Quick Bet';
-          quickBtn.dataset.betAction = 'quick';
-          quickBtn.dataset.playerId = id;
+          const autoBetAmount = getAutoBetAmount();
+          const autoToggle = document.createElement('label');
+          autoToggle.className = 'auto-bet-toggle';
+          const autoCheckbox = document.createElement('input');
+          autoCheckbox.type = 'checkbox';
+          autoCheckbox.dataset.betAction = 'auto-toggle';
+          autoCheckbox.dataset.playerId = id;
+          autoCheckbox.checked = isAutoBetEnabled();
+          autoCheckbox.disabled = !canAdjustBet;
+          const autoText = document.createElement('span');
+          autoText.className = 'auto-bet-label';
+          autoText.textContent = `Auto Bet (${autoBetAmount})`;
+          autoToggle.appendChild(autoCheckbox);
+          autoToggle.appendChild(autoText);
+          autoToggle.classList.toggle('active', isAutoBetEnabled());
+          autoToggle.classList.toggle('muted', !canAdjustBet);
 
           const confirmBtn = document.createElement('button');
           confirmBtn.type = 'button';
@@ -1206,13 +1289,10 @@
           const canConfirm = canAdjustBet && !confirmed;
           confirmBtn.classList.toggle('muted', !canConfirm);
 
-          const canQuickBet = canAdjustBet && !confirmed && Number.isFinite(quickBetValue);
-          quickBtn.classList.toggle('muted', !canQuickBet);
-
           controls.appendChild(decreaseBtn);
           controls.appendChild(betDisplay);
           controls.appendChild(increaseBtn);
-          controls.appendChild(quickBtn);
+          controls.appendChild(autoToggle);
           controls.appendChild(confirmBtn);
           seat.appendChild(controls);
         }
@@ -1266,6 +1346,13 @@
     if(!entries.length) return true;
     const [firstId] = entries[0];
     return firstId === clientId;
+  }
+
+  function maybeApplyAutoBet(){
+    if(tableState.state.phase !== 'waiting') return;
+    if(!isAutoBetEnabled()) return;
+    if(isBetConfirmed(clientId)) return;
+    applyAutoBet();
   }
 
   function maybeStartAutoDeal(){
@@ -1331,6 +1418,7 @@
     }
 
     if(state.phase === 'waiting'){
+      maybeApplyAutoBet();
       maybeStartAutoDeal();
     }
 
@@ -1982,16 +2070,29 @@
       if(!button) return;
       if(button.dataset.playerId !== clientId) return;
       if(tableState.state.phase !== 'waiting') return;
-      event.preventDefault();
       const action = button.dataset.betAction;
+      if(action === 'auto-toggle') return;
+      event.preventDefault();
       if(action === 'increase'){
         adjustMyBet(BET_STEP);
       }else if(action === 'decrease'){
         adjustMyBet(-BET_STEP);
       }else if(action === 'confirm'){
         confirmMyBet();
-      }else if(action === 'quick'){
-        applyQuickBet();
+      }
+    });
+    playersLane.addEventListener('change', event=>{
+      const control = event.target.closest('[data-bet-action]');
+      if(!control) return;
+      if(control.dataset.playerId !== clientId) return;
+      if(control.dataset.betAction !== 'auto-toggle') return;
+      if(tableState.state.phase !== 'waiting') return;
+      const checked = !!event.target.checked;
+      setAutoBetEnabled(checked);
+      if(checked){
+        applyAutoBet();
+      }else{
+        renderTable();
       }
     });
   }
