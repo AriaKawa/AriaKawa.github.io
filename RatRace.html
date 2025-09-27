@@ -557,6 +557,43 @@ const resetBtn = document.getElementById('reset');
 const bettorInput = document.getElementById('bettor');
 const amountInput = document.getElementById('amount');
 let players = {};
+let isMultiplayer = false;
+let isHost = false;
+let roomId = null;
+let gamePath = '';
+let betsRef = null;
+let stateRef = null;
+let presenceRef = null;
+let playersRef = null;
+let unsubscribers = [];
+let remoteState = { status:'open', countdownDuration:2100 };
+let mpMode = 'solo';
+let pendingHostCode = '';
+const CLIENT_STORAGE_KEY = 'ratRaceClientId';
+const NAME_STORAGE_KEY = 'ratRacePlayerName';
+let playerName = '';
+try{
+  const stored = localStorage.getItem(NAME_STORAGE_KEY);
+  if(stored){
+    playerName = stored;
+    bettorInput.value = stored;
+  }
+} catch(err){
+  console.debug('Unable to access stored name', err);
+}
+
+const clientId = (()=>{
+  try{
+    const existing = localStorage.getItem(CLIENT_STORAGE_KEY);
+    if(existing) return existing;
+    const id = generateId();
+    localStorage.setItem(CLIENT_STORAGE_KEY, id);
+    return id;
+  }catch(err){
+    return generateId();
+  }
+})();
+
 
 const lobbyEl = document.getElementById('lobby');
 const lobbyMainCard = document.getElementById('lobbyMain');
@@ -685,7 +722,17 @@ function redrawBets(){
   potEl.textContent = fmt(pot());
   renderSummaries();
 }
-function escapeHTML(s){ return (s??'').replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",""":"&quot;","'":"&#039;"}[m])); }
+function escapeHTML(value){
+  const str = value ?? '';
+  const map = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  };
+  return String(str).replace(/[&<>"']/g, (match) => map[match]);
+}
 function ratName(id){ return RAT_DATA.find(r=>r.id===id)?.name || id; }
 function ratColor(id){ return RAT_DATA.find(r=>r.id===id)?.color || '#ffd13b'; }
 function getLocalPlayerName(){ return bettorInput.value.trim() || playerName || 'You'; }
@@ -1139,43 +1186,6 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const rootRef = ref(db);
 
-const CLIENT_STORAGE_KEY = 'ratRaceClientId';
-const NAME_STORAGE_KEY = 'ratRacePlayerName';
-let playerName = '';
-try{
-  const stored = localStorage.getItem(NAME_STORAGE_KEY);
-  if(stored){
-    playerName = stored;
-    bettorInput.value = stored;
-  }
-} catch(err){
-  console.debug('Unable to access stored name', err);
-}
-
-const clientId = (()=>{
-  try{
-    const existing = localStorage.getItem(CLIENT_STORAGE_KEY);
-    if(existing) return existing;
-    const id = generateId();
-    localStorage.setItem(CLIENT_STORAGE_KEY, id);
-    return id;
-  }catch(err){
-    return generateId();
-  }
-})();
-
-let isMultiplayer = false;
-let isHost = false;
-let roomId = null;
-let gamePath = '';
-let betsRef = null;
-let stateRef = null;
-let presenceRef = null;
-let playersRef = null;
-let unsubscribers = [];
-let remoteState = { status:'open', countdownDuration:2100 };
-let mpMode = 'solo';
-let pendingHostCode = '';
 
 function rememberPlayerName(name){
   try{
