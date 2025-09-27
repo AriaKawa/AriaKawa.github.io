@@ -703,6 +703,7 @@
     fan.className = 'hand';
     spot.appendChild(fan);
     const playerSpot = spot.closest('.player-spot');
+    const isPlayerFan = Boolean(playerSpot);
 
     if(!hand.length) return;
 
@@ -724,10 +725,24 @@
       const angle = angleSequence[Math.min(idx, angleSequence.length - 1)];
       const center = (hand.length - 1) / 2;
       const lift = Math.max(0, 10 - Math.abs(idx - center) * 6);
-      el.style.transform = `translateY(${-lift}px) rotate(${angle}deg)`;
+      if(isPlayerFan){
+        const spreadStep = 18 - Math.min(hand.length, 6);
+        const offset = (idx - center) * Math.max(10, spreadStep);
+        const transforms = [];
+        if(offset !== 0){
+          transforms.push(`translateX(${offset}px)`);
+        }
+        if(lift !== 0){
+          transforms.push(`translateY(${-lift}px)`);
+        }
+        transforms.push('rotate(0deg)');
+        el.style.transform = transforms.join(' ');
+      }else{
+        el.style.transform = `translateY(${-lift}px) rotate(${angle}deg)`;
+      }
     });
 
-    const heightBuffer = playerSpot ? 48 : 12;
+    const heightBuffer = isPlayerFan ? 48 : 12;
     fan.style.height = `${cardHeight + heightBuffer}px`;
   }
 
