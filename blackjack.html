@@ -207,10 +207,14 @@
   }
   .lobby input{
     appearance:none; border-radius:16px; border:1px solid rgba(255,255,255,.18);
-    padding:.85rem 1rem; background:rgba(0,0,0,.35); color:var(--text); font-size:1.05rem; text-transform:uppercase;
-    text-align:center; letter-spacing:.18em;
+    padding:.85rem 1rem; background:rgba(0,0,0,.35); color:var(--text); font-size:1.05rem;
+    text-transform:none; letter-spacing:.02em; text-align:left;
+  }
+  .lobby input.code-input{
+    text-transform:uppercase; letter-spacing:.18em; text-align:center;
   }
   .lobby input:focus{ outline:2px solid rgba(255,209,59,.55); outline-offset:3px; }
+  .lobby input.invalid{ outline:2px solid rgba(214,69,69,.7); outline-offset:3px; }
 </style>
 </head>
 <body>
@@ -235,7 +239,8 @@
     </div>
     <div class="lobby-card hidden" id="hostCard">
       <h2>Host a Table</h2>
-      <p>Share this code with friends so they can join.</p>
+      <p>Choose a name and share this code with friends so they can join.</p>
+      <input type="text" id="hostNameInput" class="name-input" maxlength="24" autocomplete="name" placeholder="Your name" spellcheck="false" />
       <div class="code-display" id="hostCode">----</div>
       <button class="ghost" id="btnCopyCode">Copy code</button>
       <button class="primary" id="btnHostStart">Enter Table</button>
@@ -243,8 +248,9 @@
     </div>
     <div class="lobby-card hidden" id="joinCard">
       <h2>Join a Table</h2>
-      <p>Enter the code from your host.</p>
-      <input type="text" id="joinCodeInput" maxlength="12" autocomplete="off" placeholder="CODE" />
+      <p>Enter your name and the code from your host.</p>
+      <input type="text" id="joinNameInput" class="name-input" maxlength="24" autocomplete="name" placeholder="Your name" spellcheck="false" />
+      <input type="text" id="joinCodeInput" class="code-input" maxlength="12" autocomplete="off" placeholder="CODE" />
       <div class="lobby-actions">
         <button class="primary" id="btnJoinConfirm">Join Table</button>
         <button class="secondary back-action" data-target="multiplayerCard">Back</button>
@@ -362,7 +368,9 @@
   const joinCard = document.getElementById('joinCard');
   const hostCodeEl = document.getElementById('hostCode');
   const btnCopyCode = document.getElementById('btnCopyCode');
+  const hostNameInput = document.getElementById('hostNameInput');
   const joinCodeInput = document.getElementById('joinCodeInput');
+  const joinNameInput = document.getElementById('joinNameInput');
   const btnSingle = document.getElementById('btnSingleplayer');
   const btnMultiplayer = document.getElementById('btnMultiplayer');
   const btnHost = document.getElementById('btnHost');
@@ -371,6 +379,53 @@
   const btnJoinConfirm = document.getElementById('btnJoinConfirm');
   const copyButtonDefaultLabel = btnCopyCode ? btnCopyCode.textContent : '';
   let copyButtonResetTimer = null;
+
+  function sanitizePlayerName(value){
+    if(value == null) return '';
+    return String(value)
+      .replace(/[\r\n\t]+/g, ' ')
+      .replace(/\s{2,}/g, ' ')
+      .trim()
+      .slice(0, 24);
+  }
+
+  function rememberPlayerName(name){
+    try{
+      localStorage.setItem(NAME_STORAGE_KEY, name);
+    }catch(err){
+      console.debug('Unable to persist player name', err);
+    }
+  }
+
+  function setPlayerName(name){
+    const sanitized = sanitizePlayerName(name);
+    if(!sanitized) return false;
+    playerName = sanitized;
+    rememberPlayerName(playerName);
+    if(hostNameInput && document.activeElement !== hostNameInput){
+      hostNameInput.value = playerName;
+    }
+    if(joinNameInput && document.activeElement !== joinNameInput){
+      joinNameInput.value = playerName;
+    }
+    if(tableState.players[clientId]){
+      tableState.players[clientId].name = playerName;
+    }
+    return true;
+  }
+
+  function flagInvalidInput(input){
+    if(!input) return;
+    input.classList.add('invalid');
+    setTimeout(()=> input.classList.remove('invalid'), 1600);
+  }
+
+  if(hostNameInput){
+    hostNameInput.value = playerName;
+  }
+  if(joinNameInput){
+    joinNameInput.value = playerName;
+  }
 
   function setButtons(state){
     const on = (el, ok)=> el.classList.toggle('muted', !ok);
@@ -493,7 +548,18 @@
   const rootRef = ref(db);
 
   const clientId = (crypto && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2));
-  const playerName = `Player ${clientId.slice(0,4).toUpperCase()}`;
+  const NAME_STORAGE_KEY = 'blackjackPlayerName';
+  const defaultPlayerName = `Player ${clientId.slice(0,4).toUpperCase()}`;
+  let playerName = defaultPlayerName;
+  try{
+    const stored = localStorage.getItem(NAME_STORAGE_KEY);
+    const sanitized = sanitizePlayerName(stored);
+    if(sanitized){
+      playerName = sanitized;
+    }
+  }catch(err){
+    console.debug('Unable to access stored player name', err);
+  }
 
   let roomId = null;
   let isMultiplayer = false;
@@ -608,8 +674,11 @@
         joinedAt: Date.now(),
         roundResult: null
       };
-    }else if(!tableState.players[clientId].joinedAt){
-      tableState.players[clientId].joinedAt = Date.now();
+    }else{
+      tableState.players[clientId].name = playerName;
+      if(!tableState.players[clientId].joinedAt){
+        tableState.players[clientId].joinedAt = Date.now();
+      }
     }
     if(!tableState.state.banks){
       tableState.state.banks = {};
@@ -1170,7 +1239,7 @@
     knownPlayers = new Set();
     resetLocalTable();
     const me = getPlayerEntry();
-    me.name = 'You';
+    me.name = playerName || 'You';
     me.bank = 1000;
     me.hand = [];
     me.status = 'solo';
@@ -1278,29 +1347,68 @@
     const code = generateRoomCode();
     hostCodeEl.textContent = code;
     hostCodeEl.dataset.code = code;
+    if(hostNameInput){
+      hostNameInput.value = playerName;
+      hostNameInput.classList.remove('invalid');
+    }
     if(btnCopyCode){
       clearTimeout(copyButtonResetTimer);
       copyButtonResetTimer = null;
       btnCopyCode.textContent = copyButtonDefaultLabel || 'Copy code';
     }
     showLobbyCard('hostCard');
+    setTimeout(()=>{
+      if(hostNameInput){
+        hostNameInput.focus();
+        hostNameInput.select();
+      }
+    }, 50);
   });
 
   btnHostStart.addEventListener('click', ()=>{
     const code = hostCodeEl.dataset.code || hostCodeEl.textContent || '';
     if(!code) return;
+    if(hostNameInput){
+      const name = sanitizePlayerName(hostNameInput.value);
+      if(!name){
+        flagInvalidInput(hostNameInput);
+        hostNameInput.focus();
+        return;
+      }
+      setPlayerName(name);
+    }
     startMultiplayer(code, { host: true });
     closeLobby();
   });
 
   btnJoin.addEventListener('click', ()=>{
     joinCodeInput.value = '';
+    if(joinNameInput){
+      joinNameInput.value = playerName;
+      joinNameInput.classList.remove('invalid');
+    }
     showLobbyCard('joinCard');
-    setTimeout(()=> joinCodeInput.focus(), 50);
+    setTimeout(()=>{
+      if(joinNameInput){
+        joinNameInput.focus();
+        joinNameInput.select();
+      }else{
+        joinCodeInput.focus();
+      }
+    }, 50);
   });
 
   function requestJoin(){
     const code = sanitizeRoomCode(joinCodeInput.value);
+    if(joinNameInput){
+      const name = sanitizePlayerName(joinNameInput.value);
+      if(!name){
+        flagInvalidInput(joinNameInput);
+        joinNameInput.focus();
+        return;
+      }
+      setPlayerName(name);
+    }
     if(!code){
       joinCodeInput.focus();
       return;
@@ -1310,6 +1418,15 @@
   }
 
   btnJoinConfirm.addEventListener('click', requestJoin);
+  if(hostNameInput){
+    hostNameInput.addEventListener('input', ()=> hostNameInput.classList.remove('invalid'));
+    hostNameInput.addEventListener('keydown', event=>{
+      if(event.key === 'Enter'){
+        event.preventDefault();
+        btnHostStart.click();
+      }
+    });
+  }
   joinCodeInput.addEventListener('input', ()=>{
     joinCodeInput.value = sanitizeRoomCode(joinCodeInput.value);
   });
@@ -1319,6 +1436,15 @@
       requestJoin();
     }
   });
+  if(joinNameInput){
+    joinNameInput.addEventListener('input', ()=> joinNameInput.classList.remove('invalid'));
+    joinNameInput.addEventListener('keydown', event=>{
+      if(event.key === 'Enter'){
+        event.preventDefault();
+        joinCodeInput.focus();
+      }
+    });
+  }
 
   if(btnCopyCode){
     btnCopyCode.addEventListener('click', async ()=>{
