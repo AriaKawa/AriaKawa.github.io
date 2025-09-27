@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>NA Conquest — ARIA ARCADE</title>
+<style>
+  :root{
+    --bg:#0b1020;
+    --felt:#0e4d37;
+    --felt2:#0a3a2a;
+    --line:rgba(255,255,255,.12);
+    --text:#e9eef6;
+    --muted:#a8b1c2;
+    --neutral:#8390a3;
+    --p1:#ffd13b;     /* you */
+    --ai1:#ea6b6b;   /* AI red */
+    --ai2:#5fb0ff;   /* AI blue */
+    --ai3:#78d38a;   /* AI green */
+    --shadow:0 18px 40px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:system-ui,Segoe UI,Inter,Roboto,Arial,sans-serif;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .wrap{ width:min(1200px,96vw); margin:18px auto; display:grid; gap:14px; grid-template-columns: 1fr 320px; }
+  @media (max-width:1000px){ .wrap{ grid-template-columns: 1fr; } }
+
+  .board{
+    position:relative; aspect-ratio: 16/9; border-radius:22px; overflow:hidden;
+    background: radial-gradient(130% 95% at 50% -15%, #1e8e73 0, var(--felt) 34%, var(--felt2) 96%);
+    border:6px solid #0c3024; box-shadow:var(--shadow);
+  }
+  .board::after{ content:""; position:absolute; inset:16px; border:2px dashed var(--line); border-radius:16px; pointer-events:none; }
+  canvas{ position:absolute; inset:0; width:100%; height:100%; display:block; }
+
+  .hud{
+    position:absolute; left:12px; right:12px; top:8px;
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    background:linear-gradient(180deg,rgba(0,0,0,.00),rgba(0,0,0,.25));
+    padding:6px 8px; border-radius:12px;
+  }
+  .stat{ background:rgba(0,0,0,.35); padding:.35rem .6rem; border-radius:999px; backdrop-filter: blur(2px); font-weight:800 }
+  .btn{ appearance:none; border:0; border-radius:12px; padding:.6rem .8rem; font-weight:800; cursor:pointer; box-shadow:var(--shadow) }
+  .btn.primary{ background:var(--p1); color:#1a1500 }
+  .btn.ghost{ background:#161a25; color:#dce4f6; border:1px solid rgba(255,255,255,.12) }
+  .ctrl{ display:flex; align-items:center; gap:8px; background:#121829; padding:.45rem .6rem; border-radius:12px; border:1px solid rgba(255,255,255,.08) }
+  .ctrl label{ color:var(--muted); font-size:.85rem }
+  input[type=range]{ accent-color:var(--p1) }
+
+  .legend{ position:absolute; bottom:8px; left:12px; display:flex; gap:10px; font-size:.9rem; opacity:.9 }
+  .legend span{ display:inline-flex; align-items:center; gap:6px; }
+  .dot{ width:14px; height:14px; border-radius:50% }
+
+  .side{
+    background:linear-gradient(180deg,#151a29,#0e1422); border:1px solid rgba(255,255,255,.08);
+    border-radius:18px; padding:12px 14px; box-shadow:var(--shadow)
+  }
+  h2{ margin:.2rem 0 .6rem; font-size:1.05rem; letter-spacing:.03em; opacity:.9 }
+  .log{ max-height:260px; overflow:auto; font-size:.92rem; background:#0b1020; border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:.6rem }
+  .log p{ margin:.3rem 0; color:var(--muted) }
+  .win{ color:#78d38a; font-weight:800 }
+  .lose{ color:#ea6b6b; font-weight:800 }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="board">
+      <div class="hud">
+        <button id="btnStart" class="btn primary">Start</button>
+        <button id="btnReset" class="btn ghost">Reset</button>
+        <div class="ctrl"><label>Send %</label><input id="sendPct" type="range" min="10" max="100" step="10" value="50"><span id="sendPctVal">50%</span></div>
+        <div class="ctrl"><label>AIs</label><input id="aiCount" type="range" min="0" max="3" step="1" value="2"><span id="aiVal">2</span></div>
+        <div class="stat" id="owned">You: 0</div>
+        <div class="stat" id="total">Nodes: 0</div>
+        <div class="stat" id="speed">1x</div>
+      </div>
+      <canvas id="c"></canvas>
+      <div class="legend">
+        <span><i class="dot" style="background:var(--p1)"></i> You</span>
+        <span><i class="dot" style="background:var(--ai1)"></i> AI1</span>
+        <span><i class="dot" style="background:var(--ai2)"></i> AI2</span>
+        <span><i class="dot" style="background:var(--ai3)"></i> AI3</span>
+        <span><i class="dot" style="background:var(--neutral)"></i> Neutral</span>
+      </div>
+    </div>
+
+    <div class="side">
+      <h2>How to play</h2>
+      <p>Click one of your circles, then click a target to send <strong>Send %</strong> of its troops. Capture all nodes to win. AIs are weak but opportunistic.</p>
+      <h2>Events</h2>
+      <div class="log" id="log"></div>
+    </div>
+  </div>
+
+<script>
+/* =================== Data & Setup =================== */
+const US = ["AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT","VA","WA","WV","WI","WY","DC","PR","GU","VI","AS","MP"];
+const CA = ["BC","AB","SK","MB","ON","QC","NB","NS","PE","NL","YT","NT","NU"];
+const MX = Array.from({length:32}, (_,i)=>"MX"+(i+1)); // placeholder tokens for 32 states (names not shown in UI)
+
+const COLORS = {
+  neutral: getCSS('--neutral'),
+  p1:      getCSS('--p1'),
+  ai1:     getCSS('--ai1'),
+  ai2:     getCSS('--ai2'),
+  ai3:     getCSS('--ai3')
+};
+const OWNERS = ["neutral","p1","ai1","ai2","ai3"];
+
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let W=0,H=0, DPR=window.devicePixelRatio||1;
+function resize(){ const r=canvas.getBoundingClientRect(); W=Math.floor(r.width*DPR); H=Math.floor(r.height*DPR); canvas.width=W; canvas.height=H; }
+resize(); addEventListener('resize', resize);
+
+function getCSS(varName){ return getComputedStyle(document.documentElement).getPropertyValue(varName).trim(); }
+function rng(seed){ // simple LCG for reproducibility
+  let s = seed>>>0; return ()=> (s = (1103515245*s + 12345) & 0x7fffffff) / 0x80000000;
+}
+
+const ui = {
+  btnStart: document.getElementById('btnStart'),
+  btnReset: document.getElementById('btnReset'),
+  sendPct:  document.getElementById('sendPct'),
+  sendVal:  document.getElementById('sendPctVal'),
+  aiRange:  document.getElementById('aiCount'),
+  aiVal:    document.getElementById('aiVal'),
+  owned:    document.getElementById('owned'),
+  total:    document.getElementById('total'),
+  speed:    document.getElementById('speed'),
+  log:      document.getElementById('log')
+};
+ui.sendPct.addEventListener('input', ()=> ui.sendVal.textContent = ui.sendPct.value+"%");
+ui.aiRange.addEventListener('input', ()=> ui.aiVal.textContent = ui.aiRange.value);
+
+/* =================== World Gen =================== */
+const world = {
+  nodes: [],   // {id, x,y, r, owner, troops, rate, band}
+  fleets: [],  // {from,to,owner,amount, x,y, vx,vy, t}
+  running:false, speed:1, selected:null, rng:rng(1337), tick:0,
+  aiCount: 2
+};
+ui.aiVal.textContent = world.aiCount;
+
+function createWorld(){
+  world.nodes = []; world.fleets=[]; world.selected=null; world.tick=0;
+
+  // Bands: Canada top, US mid, Mexico bottom (positions are abstract, names hidden)
+  const all = [
+    ...CA.map(k=>({code:k, band:'CA'})),
+    ...US.map(k=>({code:k, band:'US'})),
+    ...MX.map(k=>({code:k, band:'MX'}))
+  ];
+  const N = all.length; // 101
+  const bands = {
+    CA:{y0:0.10, y1:0.32, minR:14, maxR:18},
+    US:{y0:0.35, y1:0.70, minR:14, maxR:19},
+    MX:{y0:0.72, y1:0.90, minR:13, maxR:17}
+  };
+
+  // lay out nodes with jitter + collision avoidance
+  const rnd = world.rng;
+  function place(band){
+    const bx = 0.08, bw=0.84; // keep margins
+    const by0 = bands[band].y0, by1=bands[band].y1;
+    const r = bands[band];
+    return {
+      x: (bx + rnd()*bw)*W,
+      y: ((by0 + rnd()*(by1-by0))*H),
+      r: (r.minR + rnd()*(r.maxR-r.minR))
+    };
+  }
+
+  for(const reg of all){
+    let p = place(reg.band);
+    // push apart if overlapping existing
+    for(let tries=0; tries<400; tries++){
+      let overlap=false;
+      for(const n of world.nodes){
+        const dx=n.x-p.x, dy=n.y-p.y, dist=Math.hypot(dx,dy), min=n.r+p.r+8;
+        if(dist<min){
+          overlap=true;
+          p.x += (dx/dist||(rnd()-.5)) * (min-dist)*0.5;
+          p.y += (dy/dist||(rnd()-.5)) * (min-dist)*0.5;
+          p.x = Math.min(W*0.92, Math.max(W*0.08, p.x));
+          p.y = Math.min(H*0.92, Math.max(H*0.08, p.y));
+        }
+      }
+      if(!overlap) break;
+    }
+    const neutralTroops = 5 + Math.floor(rnd()*8);
+    const rate = 0.35 + rnd()*0.35; // troops/sec
+    world.nodes.push({ id:reg.code, band:reg.band, ...p, owner:"neutral", troops:neutralTroops, rate, cap:999 });
+  }
+
+  // assign player & AI starting nodes
+  pickStart("p1", 3);
+  const AIs = ["ai1","ai2","ai3"];
+  world.aiCount = parseInt(ui.aiRange.value,10);
+  for(let i=0;i<world.aiCount;i++) pickStart(AIs[i], 2);
+
+  function pickStart(owner, count){
+    const options = world.nodes.filter(n=>n.owner==="neutral").sort(()=>rnd()-.5);
+    for(let i=0;i<count && options[i]; i++){
+      const n = options[i];
+      n.owner = owner;
+      n.troops = 25 + Math.floor(rnd()*10);
+      n.rate *= owner==="p1" ? 1.0 : 0.85; // AIs a bit weaker
+    }
+  }
+
+  ui.total.textContent = "Nodes: "+world.nodes.length;
+  updateOwned();
+  log("New map generated. Nodes: "+world.nodes.length);
+}
+
+/* =================== Drawing =================== */
+function draw(){
+  ctx.clearRect(0,0,W,H);
+
+  // optional subtle grid/lines
+  ctx.save();
+  ctx.globalAlpha=0.06; ctx.strokeStyle="#ffffff"; ctx.lineWidth=1;
+  for(let x=W*0.08; x<=W*0.92; x+=60*DPR){ ctx.beginPath(); ctx.moveTo(x,H*0.08); ctx.lineTo(x,H*0.92); ctx.stroke(); }
+  for(let y=H*0.08; y<=H*0.92; y+=60*DPR){ ctx.beginPath(); ctx.moveTo(W*0.08,y); ctx.lineTo(W*0.92,y); ctx.stroke(); }
+  ctx.restore();
+
+  // fleets under nodes
+  for(const f of world.fleets){
+    const col = COLORS[f.owner];
+    const ang = Math.atan2(f.vy,f.vx);
+    const size = 8*DPR + Math.min(12*DPR, Math.log2(f.amount+2)*2);
+    drawTriangle(f.x, f.y, ang, size, col);
+  }
+
+  // nodes
+  for(const n of world.nodes){
+    const col = COLORS[n.owner] || COLORS.neutral;
+    // halo if selected
+    if(world.selected && world.selected.id===n.id){
+      ctx.beginPath(); ctx.arc(n.x,n.y,n.r+7*DPR,0,Math.PI*2);
+      ctx.fillStyle="rgba(255,255,255,.15)"; ctx.fill();
+    }
+    // bubble
+    ctx.beginPath(); ctx.arc(n.x,n.y,n.r,0,Math.PI*2);
+    ctx.fillStyle=col; ctx.fill();
+    // ring
+    ctx.lineWidth=2*DPR; ctx.strokeStyle="rgba(0,0,0,.35)"; ctx.stroke();
+
+    // troop number
+    const t = Math.floor(n.troops);
+    ctx.fillStyle="#0b1020"; ctx.font = `${Math.max(11*DPR, n.r*0.8)}px system-ui,Segoe UI,Inter`;
+    ctx.textAlign="center"; ctx.textBaseline="middle";
+    ctx.fillText(String(t), n.x, n.y+1*DPR);
+  }
+}
+
+function drawTriangle(x,y,ang,size,color){
+  const s=size, h=s*1.2;
+  ctx.save(); ctx.translate(x,y); ctx.rotate(ang);
+  ctx.beginPath();
+  ctx.moveTo(-s*0.8, -s*0.6);
+  ctx.lineTo(-s*0.8,  s*0.6);
+  ctx.lineTo(h,0);
+  ctx.closePath();
+  ctx.fillStyle=color; ctx.fill();
+  ctx.restore();
+}
+
+/* =================== Game Loop =================== */
+let last=0;
+function step(ts){
+  if(!world.running){ draw(); requestAnimationFrame(step); return; }
+  if(!last) last = ts;
+  const dt = Math.min(0.05, (ts-last)/1000) * world.speed; // cap
+  last = ts;
+
+  world.tick += dt;
+
+  // production
+  for(const n of world.nodes){
+    const mult = n.owner==="neutral" ? 0.30 : 1.0;
+    n.troops = Math.min(n.cap, n.troops + n.rate*mult*dt);
+  }
+
+  // fleets move
+  for(let i=world.fleets.length-1; i>=0; i--){
+    const f = world.fleets[i];
+    f.x += f.vx * dt; f.y += f.vy * dt;
+    const dx=f.tx-f.x, dy=f.ty-f.y;
+    if(dx*dx+dy*dy <= (f.arriveDist*f.arriveDist)){
+      arrive(f); world.fleets.splice(i,1);
+    }
+  }
+
+  // AI (weak, slow cadence)
+  aiThink(dt);
+
+  draw();
+  checkWin();
+  requestAnimationFrame(step);
+}
+
+/* =================== Combat & Orders =================== */
+function send(from, to, pct){
+  if(!from || !to || from.id===to.id) return;
+  if(from.owner!=="p1") return; // player only (AIs handled in ai code)
+  const amount = Math.floor(from.troops * pct);
+  if(amount<=0) return;
+  from.troops -= amount;
+  spawnFleet(from, to, amount, from.owner);
+}
+
+function spawnFleet(from, to, amount, owner){
+  const dx=to.x-from.x, dy=to.y-from.y, dist=Math.hypot(dx,dy)||1;
+  const speed = 240*DPR; // px/sec
+  const vx = dx/dist*speed, vy = dy/dist*speed;
+  const startX = from.x + (dx/dist)*(from.r+6*DPR);
+  const startY = from.y + (dy/dist)*(from.r+6*DPR);
+  world.fleets.push({
+    from:from.id, to:to.id, owner, amount,
+    x:startX, y:startY, vx, vy, tx:to.x, ty:to.y, arriveDist:to.r+6*DPR
+  });
+}
+
+function arrive(f){
+  const to = world.nodes.find(n=>n.id===f.to);
+  if(!to) return;
+  if(to.owner===f.owner){
+    to.troops += f.amount;
+  }else{
+    to.troops -= f.amount;
+    if(to.troops < 0){
+      // capture
+      to.owner = f.owner;
+      to.troops = Math.abs(to.troops);
+      log(`${label(f.owner)} captured a node.`);
+      updateOwned();
+    }
+  }
+}
+
+function label(owner){
+  return owner==="p1"?"You": owner.toUpperCase();
+}
+
+/* =================== Input =================== */
+canvas.addEventListener('mousedown', e=>{
+  const p = point(e);
+  const hit = findNode(p.x, p.y);
+  if(!hit){
+    world.selected=null; return;
+  }
+  if(hit.owner==="p1"){ world.selected = hit; }
+  else if(world.selected){
+    // send to enemy/neutral
+    const pct = parseInt(ui.sendPct.value,10)/100;
+    send(world.selected, hit, pct);
+  }
+});
+canvas.addEventListener('mouseup', e=>{
+  const p = point(e);
+  const hit = findNode(p.x, p.y);
+  if(hit && world.selected && hit.id!==world.selected.id){
+    const pct = parseInt(ui.sendPct.value,10)/100;
+    send(world.selected, hit, pct);
+  }
+});
+
+function point(e){ const r=canvas.getBoundingClientRect(); return { x:(e.clientX-r.left)*DPR, y:(e.clientY-r.top)*DPR }; }
+function findNode(x,y){
+  for(let i=world.nodes.length-1;i>=0;i--){
+    const n=world.nodes[i]; const dx=x-n.x, dy=y-n.y;
+    if(dx*dx+dy*dy <= (n.r*n.r)) return n;
+  }
+  return null;
+}
+
+/* =================== AI (weak) =================== */
+const aiTimers = { ai1:0, ai2:0, ai3:0 };
+function aiThink(dt){
+  for(const ai of ["ai1","ai2","ai3"].slice(0,world.aiCount)){
+    aiTimers[ai] = (aiTimers[ai]||0) - dt;
+    if(aiTimers[ai] > 0) continue;
+    aiTimers[ai] = 2.5 + world.rng()*3.0; // slow cadence
+
+    const my = world.nodes.filter(n=>n.owner===ai);
+    if(!my.length) continue;
+    // choose strongest source
+    const src = my.reduce((a,b)=> (a.troops>b.troops?a:b));
+    if(src.troops < 10) continue;
+
+    // prefer nearest neutral or weakest enemy node
+    const targets = world.nodes.filter(n=>n.id!==src.id && n.owner!==ai);
+    if(!targets.length) continue;
+    targets.sort((a,b)=>{
+      const score = (t)=> t.owner==="neutral" ? (t.troops+5) : (t.troops*1.6);
+      const da = Math.hypot(a.x-src.x, a.y-src.y) + score(a)*6;
+      const db = Math.hypot(b.x-src.x, b.y-src.y) + score(b)*6;
+      return da-db;
+    });
+    const tgt = targets[0];
+    const sendPct = 0.35 + world.rng()*0.15; // timid
+    const amount = Math.floor(src.troops*sendPct);
+    if(amount>0){
+      src.troops -= amount;
+      spawnFleet(src, tgt, amount, ai);
+    }
+  }
+}
+
+/* =================== Win Check & UI =================== */
+function updateOwned(){
+  const mine = world.nodes.filter(n=>n.owner==="p1").length;
+  ui.owned.textContent = "You: "+mine;
+}
+
+function checkWin(){
+  const owners = new Set(world.nodes.map(n=>n.owner));
+  if(owners.size===1 && owners.has("p1")){
+    world.running=false;
+    log("You conquered North America! 🎉", true);
+  }
+}
+
+function log(msg, win=false){
+  const p=document.createElement('p'); p.innerHTML = win? `<span class="win">${msg}</span>` : msg;
+  ui.log.appendChild(p); ui.log.scrollTop = ui.log.scrollHeight;
+}
+
+/* =================== Controls =================== */
+ui.btnStart.addEventListener('click', ()=>{
+  world.running = !world.running;
+  ui.btnStart.textContent = world.running ? "Pause" : "Resume";
+});
+ui.btnReset.addEventListener('click', ()=>{
+  createWorld(); draw();
+  ui.btnStart.textContent = "Start";
+  world.running = false;
+});
+ui.speed.addEventListener('click', ()=>{
+  world.speed = world.speed===1 ? 2 : world.speed===2 ? 4 : 1;
+  ui.speed.textContent = world.speed+"x";
+});
+
+/* =================== Multiplayer Hooks (optional) =================== */
+/* 
+  To add Firebase later:
+  - Call `exportState()` and write to Firestore (rooms/{roomId}).
+  - Listen with onSnapshot and call `applyRemote(diff)` for incoming moves.
+  Below are placeholders you can wire up.
+*/
+function exportState(){
+  return {
+    nodes: world.nodes.map(n=>({id:n.id, owner:n.owner, troops:+n.troops.toFixed(2)})),
+    fleets: world.fleets.map(f=>({from:f.from, to:f.to, owner:f.owner, amount:f.amount}))
+  };
+}
+function applyRemote(action){
+  // action could be {type:'order', from:'CA', to:'US', amount:12, owner:'p1'}
+  if(action?.type==='order'){
+    const from = world.nodes.find(n=>n.id===action.from);
+    const to   = world.nodes.find(n=>n.id===action.to);
+    if(from && to && from.owner===action.owner){
+      const amt = Math.min(action.amount, Math.floor(from.troops));
+      from.troops -= amt; spawnFleet(from,to,amt,action.owner);
+    }
+  }
+}
+
+/* =================== Boot =================== */
+createWorld();
+requestAnimationFrame(step);
+</script>
+</body>
+</html>
