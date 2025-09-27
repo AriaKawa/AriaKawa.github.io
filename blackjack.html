@@ -85,6 +85,10 @@
   /* Lanes */
   .lane{ position:absolute; left:50%; transform:translateX(-50%); width:86%; }
   .dealer.lane{ top:8%; }
+  .dealer.lane .spot{
+    justify-content:center;
+    align-items:flex-start;
+  }
   .lane.player-spots{
     position:absolute;
     bottom:22%;
@@ -737,8 +741,18 @@
 
     const stackHeight = cardHeight + (hand.length - 1) * verticalStep;
     const stackWidth = cardWidth + (hand.length - 1) * horizontalStep;
+    const isDealer = spot && (spot.id === 'dealerSpot' || spot.classList.contains('dealer-spot'));
+
     fan.style.minHeight = `${stackHeight}px`;
     fan.style.minWidth = `${stackWidth}px`;
+
+    if(isDealer){
+      fan.style.width = `${stackWidth}px`;
+      fan.style.margin = '0 auto';
+    }else{
+      fan.style.removeProperty('width');
+      fan.style.removeProperty('margin');
+    }
   }
 
   /* ---------- Firebase ---------- */
