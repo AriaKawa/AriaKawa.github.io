@@ -112,7 +112,7 @@
             border-radius: var(--radius-sm);
             padding: 0.95rem;
             display: grid;
-            gap: 0.75rem;
+            gap: 0.95rem;
             width: min(240px, 70vw);
             box-shadow: 0 25px 60px rgba(5, 3, 17, 0.65);
             z-index: 20;
@@ -146,6 +146,97 @@
             transform: translateY(-1px);
             box-shadow: 0 20px 35px rgba(247, 167, 218, 0.28);
             outline: none;
+        }
+
+        .avatar-editor {
+            border-radius: var(--radius-sm);
+            background: rgba(19, 12, 42, 0.72);
+            border: 1px solid rgba(147, 198, 255, 0.14);
+            padding: 0.75rem;
+            display: grid;
+            gap: 0.75rem;
+        }
+
+        .avatar-heading {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+        }
+
+        .avatar-preview {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle at top, rgba(147, 198, 255, 0.18), transparent 65%);
+            border-radius: var(--radius-sm);
+            padding: 0.5rem;
+        }
+
+        .rat-avatar {
+            width: 110px;
+            height: 110px;
+        }
+
+        .rat-avatar svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .rat-avatar [data-layer="outfit"] {
+            display: none;
+        }
+
+        .rat-avatar[data-outfit="classic"] .outfit-classic,
+        .rat-avatar[data-outfit="hoodie"] .outfit-hoodie,
+        .rat-avatar[data-outfit="adventurer"] .outfit-adventurer {
+            display: inline;
+        }
+
+        .avatar-options {
+            display: grid;
+            gap: 0.4rem;
+            margin: 0;
+            border: none;
+            padding: 0;
+        }
+
+        .avatar-options legend {
+            font-size: 0.75rem;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 0.3rem;
+        }
+
+        .avatar-option {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            align-items: center;
+            gap: 0.45rem;
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            background: rgba(9, 6, 22, 0.55);
+            border: 1px solid transparent;
+            border-radius: calc(var(--radius-sm) - 4px);
+            padding: 0.35rem 0.55rem;
+            cursor: pointer;
+            transition: border-color 0.2s ease, background 0.2s ease;
+        }
+
+        .avatar-option input {
+            accent-color: var(--accent-blue);
+        }
+
+        .avatar-option:hover,
+        .avatar-option:focus-within {
+            border-color: rgba(147, 198, 255, 0.4);
+            background: rgba(9, 6, 22, 0.75);
         }
 
         .page-header::after {
@@ -513,6 +604,68 @@
                     </button>
                     <div class="account-menu" role="menu" hidden>
                         <p class="account-greeting">Signed in as <strong class="account-name">Guest</strong></p>
+                        <div class="avatar-editor" data-avatar-editor hidden>
+                            <div class="avatar-heading">
+                                <span>Avatar</span>
+                                <span>Rat style</span>
+                            </div>
+                            <div class="avatar-preview">
+                                <div class="rat-avatar" data-outfit="classic">
+                                    <svg viewBox="0 0 140 140" role="img" aria-label="Rat avatar illustration">
+                                        <defs>
+                                            <linearGradient id="rat-fur" x1="0%" x2="100%" y1="0%" y2="100%">
+                                                <stop offset="0%" stop-color="#c7c3d9"></stop>
+                                                <stop offset="100%" stop-color="#9c97b2"></stop>
+                                            </linearGradient>
+                                            <linearGradient id="rat-ear" x1="0%" x2="100%" y1="0%" y2="100%">
+                                                <stop offset="0%" stop-color="#f7b4d2"></stop>
+                                                <stop offset="100%" stop-color="#f48cbf"></stop>
+                                            </linearGradient>
+                                        </defs>
+                                        <g fill="none" fill-rule="evenodd">
+                                            <g transform="translate(20 15)">
+                                                <ellipse cx="50" cy="82" rx="42" ry="28" fill="url(#rat-fur)"></ellipse>
+                                                <circle cx="50" cy="45" r="34" fill="url(#rat-fur)"></circle>
+                                                <path d="M93 82c12 6 16 14 12 20s-14 4-26-2" stroke="#f2aac9" stroke-width="6" stroke-linecap="round"></path>
+                                                <ellipse cx="26" cy="16" rx="14" ry="18" fill="url(#rat-ear)" transform="rotate(-20 26 16)"></ellipse>
+                                                <ellipse cx="74" cy="16" rx="14" ry="18" fill="url(#rat-ear)" transform="rotate(20 74 16)"></ellipse>
+                                                <circle cx="38" cy="46" r="6" fill="#2f1d3e"></circle>
+                                                <circle cx="62" cy="46" r="6" fill="#2f1d3e"></circle>
+                                                <path d="M50 60c4 0 8 3 8 6s-4 4-8 4-8-1-8-4 4-6 8-6z" fill="#f5d3de"></path>
+                                            </g>
+                                            <g data-layer="outfit" class="outfit-classic">
+                                                <path d="M40 106c6-18 20-26 30-26s24 8 30 26H40z" fill="#7f9cff" stroke="#c7d6ff" stroke-width="3" stroke-linejoin="round"></path>
+                                                <circle cx="70" cy="98" r="4" fill="#f5f3ff"></circle>
+                                            </g>
+                                            <g data-layer="outfit" class="outfit-hoodie">
+                                                <path d="M32 108c4-22 18-34 38-34s34 12 38 34H32z" fill="#6d55b9" stroke="#9e84ff" stroke-width="3" stroke-linejoin="round"></path>
+                                                <path d="M44 66c8-10 16-12 26-12s18 2 26 12c4 6 6 16 4 20-2 4-12 10-30 10s-28-6-30-10c-2-4 0-14 4-20z" fill="#7563d1" opacity="0.85"></path>
+                                            </g>
+                                            <g data-layer="outfit" class="outfit-adventurer">
+                                                <path d="M36 110l8-26h52l8 26H36z" fill="#f0a95d" stroke="#ffcf90" stroke-width="3" stroke-linejoin="round"></path>
+                                                <path d="M50 84l6-16h28l6 16z" fill="#d98946"></path>
+                                                <path d="M48 86h44l-4 12H52z" fill="#b86f32"></path>
+                                            </g>
+                                        </g>
+                                    </svg>
+                                </div>
+                            </div>
+                            <fieldset class="avatar-options">
+                                <legend>Outfit</legend>
+                                <label class="avatar-option">
+                                    <input type="radio" name="avatar-outfit" value="classic" checked>
+                                    Cozy Classic
+                                </label>
+                                <label class="avatar-option">
+                                    <input type="radio" name="avatar-outfit" value="hoodie">
+                                    Midnight Hoodie
+                                </label>
+                                <label class="avatar-option">
+                                    <input type="radio" name="avatar-outfit" value="adventurer">
+                                    Adventurer Cape
+                                </label>
+                            </fieldset>
+                        </div>
                         <button class="account-action" type="button" data-action="sign-out">Sign out</button>
                     </div>
                 </div>
@@ -658,10 +811,56 @@
             const signOutButton = accountMenu.querySelector('[data-action="sign-out"]');
             const nameInput = authForm.querySelector('#display-name');
             const emailInput = authForm.querySelector('#email');
+            const avatarEditor = accountMenu.querySelector('[data-avatar-editor]');
+            const avatarPreview = avatarEditor?.querySelector('.rat-avatar') ?? null;
+            const outfitInputs = avatarEditor
+                ? Array.from(avatarEditor.querySelectorAll('input[name="avatar-outfit"]'))
+                : [];
 
             let menuOpen = false;
             let activeAccount = null;
             let storageAvailable = true;
+
+            const defaultAvatar = { outfit: "classic" };
+
+            const normalizeAccount = (account) => {
+                if (!account) return null;
+                const normalized = { ...account };
+                normalized.avatar = {
+                    ...defaultAvatar,
+                    ...(account.avatar || {}),
+                };
+                return normalized;
+            };
+
+            const getActiveAvatar = () => {
+                if (!activeAccount) {
+                    return { ...defaultAvatar };
+                }
+                return {
+                    ...defaultAvatar,
+                    ...(activeAccount.avatar || {}),
+                };
+            };
+
+            const updateAvatarUI = () => {
+                if (!avatarPreview || !avatarEditor) return;
+                if (!activeAccount) {
+                    avatarPreview.dataset.outfit = defaultAvatar.outfit;
+                    avatarEditor.hidden = true;
+                    outfitInputs.forEach((input) => {
+                        input.checked = input.value === defaultAvatar.outfit;
+                    });
+                    return;
+                }
+
+                const avatar = getActiveAvatar();
+                avatarEditor.hidden = false;
+                avatarPreview.dataset.outfit = avatar.outfit;
+                outfitInputs.forEach((input) => {
+                    input.checked = input.value === avatar.outfit;
+                });
+            };
 
             let storedAccount = null;
             try {
@@ -673,7 +872,7 @@
 
             if (storedAccount) {
                 try {
-                    activeAccount = JSON.parse(storedAccount);
+                    activeAccount = normalizeAccount(JSON.parse(storedAccount));
                 } catch (error) {
                     console.warn("Unable to parse stored account", error);
                     if (storageAvailable) {
@@ -686,7 +885,11 @@
                 if (!storageAvailable) return;
                 try {
                     if (account) {
-                        window.localStorage.setItem(accountKey, JSON.stringify(account));
+                        const normalized = normalizeAccount(account);
+                        if (normalized) {
+                            activeAccount = normalized;
+                        }
+                        window.localStorage.setItem(accountKey, JSON.stringify(normalized));
                     } else {
                         window.localStorage.removeItem(accountKey);
                     }
@@ -747,6 +950,7 @@
                     accountButton.textContent = `Hi, ${greetingName}`;
                     accountButton.dataset.state = "signed-in";
                     accountButton.setAttribute("aria-expanded", menuOpen ? "true" : "false");
+                    updateAvatarUI();
                 } else {
                     accountName.textContent = "Guest";
                     accountButton.textContent = "Sign in";
@@ -755,10 +959,29 @@
                     accountButton.setAttribute("aria-expanded", "false");
                     accountMenu.hidden = true;
                     menuOpen = false;
+                    updateAvatarUI();
                 }
             };
 
             updateAccountUI();
+
+            outfitInputs.forEach((input) => {
+                input.addEventListener("change", (event) => {
+                    if (!activeAccount) return;
+                    const target = event.target;
+                    if (!(target instanceof HTMLInputElement) || !target.checked) return;
+                    const outfit = target.value;
+                    activeAccount = normalizeAccount({
+                        ...activeAccount,
+                        avatar: {
+                            ...getActiveAvatar(),
+                            outfit,
+                        },
+                    });
+                    persistAccount(activeAccount);
+                    updateAvatarUI();
+                });
+            });
 
             accountButton.addEventListener("click", () => {
                 if (accountButton.dataset.state === "signed-in") {
@@ -808,7 +1031,7 @@
                     return;
                 }
 
-                activeAccount = { name, email };
+                activeAccount = normalizeAccount({ name, email });
                 persistAccount(activeAccount);
                 updateAccountUI();
                 closeAuthModal();
