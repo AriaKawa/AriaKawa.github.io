@@ -256,25 +256,29 @@
   }
 
   /* Spots where cards settle */
-  .spot{ position:relative; width:100%; height:100%; display:flex; justify-content:center; align-items:center; z-index:1; }
+  .spot{
+    position:relative;
+    width:100%;
+    height:100%;
+    display:flex;
+    justify-content:flex-end;
+    align-items:flex-start;
+    padding:12px;
+    z-index:1;
+  }
   .hand{
     position:relative;
-    min-height:100%;
-    display:flex;
-    justify-content:center;
-    align-items:flex-end;
-    gap:0;
-    padding:0 12px;
+    width:100%;
+    min-height:140px;
+    display:block;
     overflow:visible;
   }
-  .player-spot .hand{
-    transform-origin:center calc(100% + 60px);
-    transition:transform .4s ease;
+  .hand .card{
+    position:absolute;
+    top:0;
+    right:0;
+    transform:none !important;
   }
-  .player-spot.slot-0 .hand{ transform:rotate(-18deg); }
-  .player-spot.slot-1 .hand{ transform:rotate(-8deg); }
-  .player-spot.slot-2 .hand{ transform:rotate(8deg); }
-  .player-spot.slot-3 .hand{ transform:rotate(18deg); }
   @media (max-width:720px){ .spot{ height:120px; } }
 
   @media (max-width:720px){
@@ -295,7 +299,8 @@
     .player-spot.slot-1,
     .player-spot.slot-2,
     .player-spot.slot-3{ transform:none; }
-    .player-spot .hand{ transform:none; transform-origin:center bottom; }
+    .spot{ justify-content:center; align-items:center; padding:0; }
+    .hand{ min-height:120px; }
     .player-seat{ width:150px; padding:.5rem .35rem .7rem; }
   }
 
@@ -702,27 +707,13 @@
     const fan = document.createElement('div');
     fan.className = 'hand';
     spot.appendChild(fan);
-    const playerSpot = spot.closest('.player-spot');
-    const isPlayerFan = Boolean(playerSpot);
-    let fanAngle = 0;
-    if(playerSpot){
-      const slotFanAngles = {
-        'slot-0': -18,
-        'slot-1': -8,
-        'slot-2': 8,
-        'slot-3': 18
-      };
-      for(const cls of playerSpot.classList){
-        if(slotFanAngles.hasOwnProperty(cls)){
-          fanAngle = slotFanAngles[cls];
-          break;
-        }
-      }
-    }
 
     if(!hand.length) return;
 
+    let cardWidth = 86;
     let cardHeight = 136;
+    let horizontalStep = 28;
+    let verticalStep = 20;
 
     hand.forEach((card, idx)=>{
       const el = document.createElement('div');
@@ -733,34 +724,21 @@
 
       if(idx===0){
         const rect = el.getBoundingClientRect();
+        if(rect.width) cardWidth = rect.width;
         if(rect.height) cardHeight = rect.height;
+        horizontalStep = Math.round(Math.max(20, cardWidth * 0.32));
+        verticalStep = Math.round(Math.max(12, cardHeight * 0.18));
       }
 
-      const center = (hand.length - 1) / 2;
-      const playerLift = Math.max(0, 6 - Math.abs(idx - center) * 3);
-      if(isPlayerFan){
-        const spacing = Math.max(16, 28 - Math.min(hand.length, 6) * 2);
-        const offset = (idx - center) * spacing;
-        const transforms = [];
-        if(offset !== 0){
-          transforms.push(`translateX(${offset}px)`);
-        }
-        if(playerLift !== 0){
-          transforms.push(`translateY(${-playerLift}px)`);
-        }
-        transforms.push(`rotate(${-fanAngle}deg)`);
-        el.style.transform = transforms.join(' ');
-        el.style.zIndex = String(10 + idx);
-      }else{
-        const angleSequence = [-6, -3, -1, 1, 3, 6];
-        const angle = angleSequence[Math.min(idx, angleSequence.length - 1)];
-        const lift = Math.max(0, 10 - Math.abs(idx - center) * 6);
-        el.style.transform = `translateY(${-lift}px) rotate(${angle}deg)`;
-      }
+      el.style.top = `${idx * verticalStep}px`;
+      el.style.right = `${idx * horizontalStep}px`;
+      el.style.zIndex = String(100 + idx);
     });
 
-    const heightBuffer = isPlayerFan ? 48 : 12;
-    fan.style.height = `${cardHeight + heightBuffer}px`;
+    const stackHeight = cardHeight + (hand.length - 1) * verticalStep;
+    const stackWidth = cardWidth + (hand.length - 1) * horizontalStep;
+    fan.style.minHeight = `${stackHeight}px`;
+    fan.style.minWidth = `${stackWidth}px`;
   }
 
   /* ---------- Firebase ---------- */
