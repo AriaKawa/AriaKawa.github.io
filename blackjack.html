@@ -225,6 +225,9 @@
     flex:1 1 100%;
     margin-top:.1rem;
   }
+  .bet-controls .quick-button{
+    flex:1 1 100%;
+  }
   .seat-confirmation{
     font-size:.78rem;
     opacity:.8;
@@ -576,6 +579,9 @@
   const MIN_BET = 10;
   const MAX_BET = 90;
   const BET_STEP = 10;
+  const LAST_BET_STORAGE_KEY = 'blackjackLastConfirmedBet';
+  let cachedLastConfirmedBet = null;
+  let hasLoadedLastConfirmedBet = false;
 
   function sanitizePlayerName(value){
     if(value == null) return '';
@@ -800,6 +806,44 @@
     return Math.min(MAX_BET, Math.max(MIN_BET, stepped));
   }
 
+  function loadLastConfirmedBet(){
+    if(hasLoadedLastConfirmedBet) return cachedLastConfirmedBet;
+    hasLoadedLastConfirmedBet = true;
+    try{
+      const stored = localStorage.getItem(LAST_BET_STORAGE_KEY);
+      if(typeof stored === 'string'){
+        const trimmed = stored.trim();
+        if(trimmed){
+          const numeric = Number(trimmed);
+          if(Number.isFinite(numeric)){
+            cachedLastConfirmedBet = normalizeBet(numeric);
+            return cachedLastConfirmedBet;
+          }
+        }
+      }
+    }catch(err){
+      console.debug('Unable to access stored bet', err);
+    }
+    cachedLastConfirmedBet = null;
+    return cachedLastConfirmedBet;
+  }
+
+  function getLastConfirmedBet(){
+    return hasLoadedLastConfirmedBet ? cachedLastConfirmedBet : loadLastConfirmedBet();
+  }
+
+  function storeLastConfirmedBet(value){
+    const normalized = normalizeBet(value);
+    cachedLastConfirmedBet = normalized;
+    hasLoadedLastConfirmedBet = true;
+    try{
+      localStorage.setItem(LAST_BET_STORAGE_KEY, String(normalized));
+    }catch(err){
+      console.debug('Unable to persist last bet', err);
+    }
+    return normalized;
+  }
+
   function ensureBetsMap(){
     if(!tableState.state.bets){
       tableState.state.bets = {};
@@ -992,6 +1036,19 @@
   function confirmMyBet(){
     if(tableState.state.phase !== 'waiting') return;
     if(isBetConfirmed(clientId)) return;
+    const betValue = getBetForPlayer(clientId);
+    storeLastConfirmedBet(betValue);
+    setBetConfirmed(clientId, true);
+    commitRound({ includeDealer:false, includePlayer:false, includeShoe:false, includeState:true });
+    renderTable();
+  }
+
+  function applyQuickBet(){
+    if(tableState.state.phase !== 'waiting') return;
+    const lastBet = getLastConfirmedBet();
+    if(!Number.isFinite(lastBet)) return;
+    setBetForPlayer(clientId, lastBet);
+    storeLastConfirmedBet(lastBet);
     setBetConfirmed(clientId, true);
     commitRound({ includeDealer:false, includePlayer:false, includeShoe:false, includeState:true });
     renderTable();
@@ -1108,6 +1165,14 @@
           decreaseBtn.classList.toggle('muted', !canAdjustBet || betValue <= MIN_BET);
           increaseBtn.classList.toggle('muted', !canAdjustBet || betValue >= MAX_BET);
 
+          const quickBetValue = getLastConfirmedBet();
+          const quickBtn = document.createElement('button');
+          quickBtn.type = 'button';
+          quickBtn.className = 'bet-button ghost quick-button';
+          quickBtn.textContent = Number.isFinite(quickBetValue) ? `Quick Bet (${quickBetValue})` : 'Quick Bet';
+          quickBtn.dataset.betAction = 'quick';
+          quickBtn.dataset.playerId = id;
+
           const confirmBtn = document.createElement('button');
           confirmBtn.type = 'button';
           confirmBtn.className = 'bet-button primary confirm-button';
@@ -1117,9 +1182,13 @@
           const canConfirm = canAdjustBet && !confirmed;
           confirmBtn.classList.toggle('muted', !canConfirm);
 
+          const canQuickBet = canAdjustBet && !confirmed && Number.isFinite(quickBetValue);
+          quickBtn.classList.toggle('muted', !canQuickBet);
+
           controls.appendChild(decreaseBtn);
           controls.appendChild(betDisplay);
           controls.appendChild(increaseBtn);
+          controls.appendChild(quickBtn);
           controls.appendChild(confirmBtn);
           seat.appendChild(controls);
         }
@@ -1897,6 +1966,8 @@
         adjustMyBet(-BET_STEP);
       }else if(action === 'confirm'){
         confirmMyBet();
+      }else if(action === 'quick'){
+        applyQuickBet();
       }
     });
   }
