@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Rat Races — ARIA ARCADE</title>
+<style>
+  :root{
+    --bg:#0b1020;        /* site navy */
+    --felt:#0e4d37;      /* track */
+    --felt-dark:#0a3a2a;
+    --lane:#145a46;
+    --line:rgba(255,255,255,.16);
+    --card:#151a29;
+    --text:#e8eef6;
+    --muted:#a9b4c7;
+    --accent:#ffd13b;
+    --accent2:#2b3350;
+    --win:#63d471;
+    --lose:#ef476f;
+    --shadow:0 14px 30px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family:system-ui,Segoe UI,Inter,Roboto,Arial,sans-serif;
+    color:var(--text); background:var(--bg); display:flex; min-height:100dvh; align-items:center; justify-content:center;
+  }
+  .wrap{
+    width:min(1200px,96vw); margin:32px auto; display:grid; gap:18px;
+    grid-template-columns: 1.2fr .9fr; align-items:start;
+  }
+  @media (max-width:900px){ .wrap{ grid-template-columns: 1fr; } }
+
+  /* Track */
+  .track{
+    position:relative; aspect-ratio: 16/9; border-radius:24px; overflow:hidden;
+    background: radial-gradient(120% 90% at 50% -20%, #1f8f73 0, var(--felt) 32%, var(--felt-dark) 95%);
+    border:6px solid #0c3024; box-shadow:var(--shadow);
+  }
+  .track::after{ content:""; position:absolute; inset:18px; border:2px dashed var(--line); border-radius:18px; }
+  .lanes{ position:absolute; inset:26px 26px 74px 26px; display:grid; gap:10px; }
+  .lane{ position:relative; background:linear-gradient(90deg, rgba(255,255,255,.06) 0 8px, transparent 8px) repeat-x; background-size:32px 100%;
+         border:1px solid rgba(255,255,255,.08); border-radius:12px; }
+  .finish{
+    position:absolute; top:26px; bottom:74px; right:26px; width:8px;
+    background: repeating-linear-gradient(180deg, #fff 0 12px, #222 12px 24px);
+    box-shadow:inset 0 0 0 2px rgba(0,0,0,.35);
+    border-radius:4px;
+  }
+
+  /* Rat */
+  .rat{
+    position:absolute; left:0; top:50%; transform:translate(0,-50%);
+    width:120px; height:60px; display:grid; place-items:center; pointer-events:none;
+    filter: drop-shadow(0 8px 12px rgba(0,0,0,.35));
+  }
+  .nameTag{
+    position:absolute; left:8px; top:6px; background:rgba(0,0,0,.35); padding:.15rem .5rem;
+    font-size:.8rem; border-radius:999px; backdrop-filter: blur(2px);
+  }
+
+  /* HUD */
+  header{
+    display:flex; gap:10px; align-items:center; justify-content:space-between; padding:8px 14px;
+    position:absolute; left:0; right:0; bottom:0; height:64px;
+    background:linear-gradient(180deg, rgba(0,0,0,0) 0, rgba(0,0,0,.25) 28%, rgba(0,0,0,.35) 100%);
+  }
+  .status{
+    font-weight:800; letter-spacing:.02em; text-shadow:0 3px 16px rgba(0,0,0,.5);
+  }
+  .status.countdown{ font-size:1.4rem; }
+  .pill{ background:var(--accent); color:#1a1600; border-radius:999px; padding:.35rem .7rem; font-weight:800; }
+  .legend{ display:flex; gap:10px; opacity:.9; font-size:.9rem; }
+  .legend span{ display:inline-flex; gap:6px; align-items:center; }
+
+  /* Betting Panel */
+  .panel{
+    background:linear-gradient(180deg,#151a29,#0e1422); border:1px solid rgba(255,255,255,.08);
+    border-radius:18px; padding:16px; box-shadow:var(--shadow);
+  }
+  .panel h2{ margin:.2rem 0 1rem; font-size:1.1rem; letter-spacing:.05em; opacity:.9 }
+  .grid{ display:grid; gap:10px; grid-template-columns: 1fr 1fr 1fr; }
+  @media (max-width:900px){ .grid{ grid-template-columns: 1fr; } }
+  .field{ display:flex; gap:8px; align-items:center; }
+  .field label{ width:88px; color:var(--muted); font-size:.9rem; }
+  input[type="text"], input[type="number"], select{
+    width:100%; background:#0c1020; color:var(--text); border:1px solid rgba(255,255,255,.12);
+    border-radius:10px; padding:.6rem .7rem; outline:none;
+  }
+  .btn{
+    appearance:none; border:0; border-radius:12px; padding:.8rem 1rem; cursor:pointer; font-weight:800;
+    color:#121013; background:var(--accent); box-shadow:var(--shadow);
+  }
+  .btn.secondary{ background:var(--accent2); color:#e9eef6; border:1px solid rgba(255,255,255,.12) }
+  .btn.muted{ opacity:.6; pointer-events:none }
+
+  table{ width:100%; border-collapse:separate; border-spacing:0 6px; font-variant-numeric:tabular-nums; }
+  th, td{ text-align:left; padding:.55rem .7rem; }
+  th{ color:var(--muted); font-weight:700; font-size:.85rem }
+  tbody tr{ background:#0c1020; border:1px solid rgba(255,255,255,.08) }
+  tbody tr td:first-child{ border-top-left-radius:10px; border-bottom-left-radius:10px }
+  tbody tr td:last-child{ border-top-right-radius:10px; border-bottom-right-radius:10px }
+  .right{ text-align:right }
+  .ok{ color:var(--win); font-weight:800 }
+  .bad{ color:var(--lose); font-weight:800 }
+
+  .note{ font-size:.9rem; color:var(--muted); margin-top:.5rem }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <!-- TRACK -->
+    <div class="track" id="track">
+      <div class="lanes" id="lanes"></div>
+      <div class="finish"></div>
+
+      <header>
+        <div class="status" id="status">Place your bets.</div>
+        <div class="legend">
+          <span><span class="pill" id="pot">$0</span> pot</span>
+          <span>Min bet $1</span>
+        </div>
+      </header>
+    </div>
+
+    <!-- PANEL -->
+    <div class="panel">
+      <h2>Betting</h2>
+      <div class="grid">
+        <div class="field"><label for="bettor">Bettor</label><input id="bettor" type="text" placeholder="Name (optional)"></div>
+        <div class="field"><label for="rat">Rat</label>
+          <select id="rat"></select>
+        </div>
+        <div class="field"><label for="amount">Amount</label><input id="amount" type="number" min="1" step="1" value="10"></div>
+      </div>
+      <div style="display:flex; gap:8px; margin:.8rem 0 1rem">
+        <button class="btn" id="addBet">Add Bet</button>
+        <button class="btn secondary" id="closeBets">Close Bets & Start</button>
+        <button class="btn secondary" id="reset">New Race</button>
+      </div>
+
+      <table>
+        <thead><tr><th>Bettor</th><th>Rat</th><th class="right">Amount</th><th class="right">Remove</th></tr></thead>
+        <tbody id="betRows"></tbody>
+      </table>
+
+      <div class="note">
+        Payouts are pari-mutuel: winners split the pot in proportion to their bet. If nobody bet the winning rat, the house keeps the pot (😼).
+      </div>
+
+      <h2 style="margin-top:1.2rem">Results</h2>
+      <table>
+        <thead><tr><th>Bettor</th><th>Rat</th><th class="right">Bet</th><th class="right">Payout</th><th class="right">Net</th></tr></thead>
+        <tbody id="resultRows"><tr><td colspan="5" style="color:var(--muted)">No results yet.</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+<script>
+/* ============== Setup rats & lanes ============== */
+const RAT_DATA = [
+  { id:'r1', name:'Whisker', color:'#b9c2cc' },
+  { id:'r2', name:'Nibble',  color:'#cdbfb2' },
+  { id:'r3', name:'Shadow',  color:'#9aa6b2' },
+  { id:'r4', name:'Cheddar', color:'#d8b04f' },
+  { id:'r5', name:'Squeaks', color:'#c59ab2' },
+];
+
+const lanes = document.getElementById('lanes');
+const statusEl = document.getElementById('status');
+const potEl = document.getElementById('pot');
+lanes.style.gridTemplateRows = `repeat(${RAT_DATA.length}, 1fr)`;
+
+// build lanes + rats
+const rats = RAT_DATA.map((r, idx) => {
+  const lane = document.createElement('div');
+  lane.className = 'lane';
+  lane.dataset.rat = r.id;
+  lanes.appendChild(lane);
+
+  const rat = document.createElement('div');
+  rat.className = 'rat';
+  rat.innerHTML = ratSVG(r.color);
+  lane.appendChild(rat);
+
+  const tag = document.createElement('div');
+  tag.className = 'nameTag';
+  tag.textContent = r.name;
+  lane.appendChild(tag);
+
+  return { ...r, lane, el:rat, x:0, v:0 };
+});
+
+// selection dropdown
+const sel = document.getElementById('rat');
+for(const r of RAT_DATA){
+  const o = document.createElement('option');
+  o.value = r.id; o.textContent = r.name;
+  sel.appendChild(o);
+}
+
+/* ============== Betting state ============== */
+let bets = []; // {id, name, ratId, amount}
+const betRows = document.getElementById('betRows');
+const resultRows = document.getElementById('resultRows');
+
+function fmt(n){ return '$'+Number(n).toLocaleString(undefined,{minimumFractionDigits:0}); }
+function pot(){ return bets.reduce((a,b)=>a+Number(b.amount||0),0); }
+function totalOn(rid){ return bets.filter(b=>b.ratId===rid).reduce((a,b)=>a+Number(b.amount),0); }
+
+function redrawBets(){
+  betRows.innerHTML = '';
+  if(!bets.length){
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td colspan="4" style="color:var(--muted)">No bets yet.</td>`;
+    betRows.appendChild(tr);
+  }else{
+    for(const b of bets){
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${escapeHTML(b.name||'—')}</td>
+        <td>${ratName(b.ratId)}</td>
+        <td class="right">${fmt(b.amount)}</td>
+        <td class="right"><button class="btn secondary" data-remove="${b.id}" style="padding:.4rem .6rem">×</button></td>`;
+      betRows.appendChild(tr);
+    }
+  }
+  potEl.textContent = fmt(pot());
+}
+function escapeHTML(s){ return (s??'').replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m])); }
+function ratName(id){ return RAT_DATA.find(r=>r.id===id)?.name || id; }
+
+document.getElementById('addBet').addEventListener('click', ()=>{
+  const name = document.getElementById('bettor').value.trim();
+  const ratId = document.getElementById('rat').value;
+  const amount = Math.max(1, Math.floor(Number(document.getElementById('amount').value||0)));
+  bets.push({ id:crypto.randomUUID(), name, ratId, amount });
+  redrawBets();
+});
+betRows.addEventListener('click', (e)=>{
+  const id = e.target?.dataset?.remove;
+  if(!id) return;
+  bets = bets.filter(b=>b.id!==id);
+  redrawBets();
+});
+
+/* ============== Race engine ============== */
+let racing = false, finished = false, animId = 0, winner = null;
+
+function resetRacePositions(){
+  for(const r of rats){ r.x = 0; r.v = 0; r.el.style.left = '0px'; }
+  winner = null; finished=false; racing=false;
+}
+resetRacePositions();
+
+async function startCountdown(){
+  statusEl.classList.add('countdown');
+  for(const n of [3,2,1]){ statusEl.textContent = `Racing in ${n}…`; await sleep(700); }
+  statusEl.textContent = 'Go!';
+  await sleep(200);
+  statusEl.classList.remove('countdown');
+}
+
+function startRace(){
+  const trackWidth = lanes.clientWidth - 26*2; // inner minus padding approx
+  const finishX = trackWidth - 140; // where nose hits finish (rat width ~120)
+  racing = true;
+
+  // each rat gets base speed and personality jitter
+  for(const r of rats){
+    r.v = 2.4 + Math.random()*0.9; // base px/frame
+    r.j = 0.25 + Math.random()*0.35; // jitter amplitude
+  }
+  const t0 = performance.now();
+  const step = (t)=>{
+    const dt = Math.min(32, t - (step.t||t)); step.t = t;
+    for(const r of rats){
+      if(finished) break;
+      const wobble = Math.sin((t - t0)/ (140 + Math.random()*120)) * r.j;
+      r.x += (r.v + wobble) * (dt/16.7);
+      if(r.x >= finishX && !winner){
+        winner = r; finished = true; racing=false;
+      }
+      r.el.style.transform = `translate(${Math.max(0, r.x)}px,-50%)`;
+    }
+    if(!finished){ animId = requestAnimationFrame(step); }
+    else { cancelAnimationFrame(animId); endRace(); }
+  };
+  animId = requestAnimationFrame(step);
+}
+
+function endRace(){
+  if(!winner){ statusEl.textContent = 'No winner?!'; return; }
+  statusEl.textContent = `Winner: ${winner.name}!`;
+  // payouts
+  const p = pot();
+  const totalOnWin = totalOn(winner.id);
+  const winners = bets.filter(b=>b.ratId===winner.id);
+  resultRows.innerHTML = '';
+  if(!winners.length){
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td colspan="5">No one bet on ${winner.name}. House keeps the ${fmt(p)} pot.</td>`;
+    resultRows.appendChild(tr);
+    return;
+  }
+  for(const b of bets){
+    const payout = b.ratId===winner.id ? (b.amount / totalOnWin) * p : 0;
+    const net = payout - b.amount;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${escapeHTML(b.name||'—')}</td>
+      <td>${ratName(b.ratId)}</td>
+      <td class="right">${fmt(b.amount)}</td>
+      <td class="right ${payout? 'ok':''}">${payout? fmt(Math.round(payout)) : '$0'}</td>
+      <td class="right ${net>0?'ok':(net<0?'bad':'')}">${net>0? '+'+fmt(Math.round(net)).slice(1): (net<0? '-'+fmt(Math.round(-net)).slice(1): '$0')}</td>
+    `;
+    resultRows.appendChild(tr);
+  }
+}
+
+/* ============== Controls ============== */
+document.getElementById('closeBets').addEventListener('click', async ()=>{
+  if(!bets.length) { statusEl.textContent = 'Place at least one bet.'; return; }
+  // Lock betting UI
+  toggleBetUI(true);
+  await startCountdown();
+  startRace();
+});
+
+document.getElementById('reset').addEventListener('click', ()=>{
+  bets = []; redrawBets();
+  resultRows.innerHTML = `<tr><td colspan="5" style="color:var(--muted)">No results yet.</td></tr>`;
+  statusEl.textContent = 'Place your bets.';
+  toggleBetUI(false);
+  resetRacePositions();
+});
+
+function toggleBetUI(lock){
+  document.getElementById('addBet').classList.toggle('muted', lock);
+  document.getElementById('closeBets').classList.toggle('muted', lock);
+  for(const el of [document.getElementById('bettor'), document.getElementById('rat'), document.getElementById('amount')]){
+    el.disabled = lock;
+  }
+}
+
+/* ============== Utilities & SVG ============== */
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+function ratSVG(color='#b9c2cc'){
+  // simple cute rat: body ellipse, head, ear, tail path.
+  return `
+  <svg viewBox="0 0 220 110" width="120" height="60" xmlns="http://www.w3.org/200/svg">
+    <defs>
+      <filter id="s" x="-50%" y="-50%" width="200%" height="200%">
+        <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="rgba(0,0,0,.35)"/>
+      </filter>
+    </defs>
+    <g filter="url(#s)">
+      <!-- tail -->
+      <path d="M10 70 C 40 90, 70 95, 100 90" fill="none" stroke="#cc8a7a" stroke-width="6" stroke-linecap="round"/>
+      <!-- body -->
+      <ellipse cx="120" cy="60" rx="58" ry="36" fill="${color}" />
+      <!-- head -->
+      <ellipse cx="170" cy="55" rx="28" ry="22" fill="${color}" />
+      <!-- ear -->
+      <circle cx="180" cy="35" r="10" fill="${shade(color, -12)}"/>
+      <!-- eye -->
+      <circle cx="182" cy="55" r="4" fill="#1e2438"/>
+      <!-- nose -->
+      <circle cx="198" cy="58" r="3.5" fill="#cc8a7a"/>
+      <!-- feet -->
+      <circle cx="135" cy="88" r="4" fill="#cc8a7a"/>
+      <circle cx="155" cy="88" r="4" fill="#cc8a7a"/>
+    </g>
+  </svg>`;
+}
+function shade(hex, amt){
+  // naive lighten/darken hex by amt (-100..100)
+  let c = hex.replace('#','');
+  if(c.length===3) c = c.split('').map(ch=>ch+ch).join('');
+  let [r,g,b]=[0,2,4].map(i=>parseInt(c.substring(i,i+2),16));
+  const adj = v => Math.max(0,Math.min(255, Math.round(v + (amt/100)*255)));
+  r=adj(r); g=adj(g); b=adj(b);
+  return '#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');
+}
+
+/* initial draw */
+redrawBets();
+</script>
+</body>
+</html>
