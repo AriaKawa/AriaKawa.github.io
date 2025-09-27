@@ -102,6 +102,38 @@
             top: auto;
             right: auto;
             z-index: auto;
+            margin-right: auto;
+        }
+
+        .currency-display {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.45rem 1rem;
+            border-radius: 999px;
+            border: 1px solid rgba(147, 198, 255, 0.35);
+            background: linear-gradient(135deg, rgba(31, 21, 58, 0.82), rgba(11, 7, 27, 0.88));
+            box-shadow: 0 20px 35px rgba(5, 3, 17, 0.45);
+            font-weight: 600;
+            letter-spacing: 0.01em;
+        }
+
+        .currency-display__icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.8rem;
+            height: 1.8rem;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, rgba(255, 243, 184, 0.95), rgba(244, 203, 78, 0.85));
+            color: #2a1647;
+            font-size: 0.95rem;
+            box-shadow: inset 0 0 6px rgba(255, 255, 255, 0.55);
+        }
+
+        .currency-display__amount {
+            font-size: 0.95rem;
+            color: var(--text-primary);
         }
 
         .sr-only {
@@ -376,6 +408,17 @@
             transition: border-color 0.2s ease, background 0.2s ease;
         }
 
+        .avatar-option.is-locked {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .avatar-option.is-locked:hover,
+        .avatar-option.is-locked:focus-within {
+            border-color: transparent;
+            background: rgba(9, 6, 22, 0.55);
+        }
+
         .avatar-option input {
             accent-color: var(--accent-blue);
         }
@@ -384,6 +427,98 @@
         .avatar-option:focus-within {
             border-color: rgba(147, 198, 255, 0.4);
             background: rgba(9, 6, 22, 0.75);
+        }
+
+        .avatar-shop {
+            margin-top: 1.75rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(147, 198, 255, 0.18);
+            display: grid;
+            gap: 1rem;
+        }
+
+        .avatar-shop h3 {
+            margin: 0;
+            font-size: 1.1rem;
+        }
+
+        .avatar-shop__description {
+            margin: 0;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .shop-grid {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .shop-item {
+            border-radius: var(--radius-sm);
+            padding: 1rem 1.1rem;
+            background: rgba(18, 10, 45, 0.65);
+            border: 1px solid rgba(147, 198, 255, 0.18);
+            display: grid;
+            gap: 0.75rem;
+            transition: border-color 0.25s ease, transform 0.25s ease;
+        }
+
+        .shop-item.is-owned {
+            border-color: rgba(247, 167, 218, 0.35);
+        }
+
+        .shop-item.is-selected {
+            box-shadow: 0 16px 28px rgba(247, 167, 218, 0.22);
+            transform: translateY(-3px);
+        }
+
+        .shop-item__header {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
+        .shop-item__header h4 {
+            margin: 0;
+            font-size: 1rem;
+        }
+
+        .shop-item__header span {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .shop-item__status {
+            margin: 0;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .shop-item__action {
+            appearance: none;
+            border: none;
+            border-radius: 999px;
+            padding: 0.55rem 1.2rem;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            cursor: pointer;
+            color: var(--text-primary);
+            background: linear-gradient(135deg, rgba(147, 198, 255, 0.22), rgba(247, 167, 218, 0.28));
+            box-shadow: 0 18px 32px rgba(147, 198, 255, 0.18);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+        }
+
+        .shop-item__action:disabled {
+            opacity: 0.6;
+            cursor: default;
+            box-shadow: none;
+        }
+
+        .shop-item__action:not(:disabled):hover,
+        .shop-item__action:not(:disabled):focus-visible {
+            transform: translateY(-2px);
+            box-shadow: 0 24px 40px rgba(247, 167, 218, 0.28);
+            outline: none;
         }
 
         .page-header::after {
@@ -633,6 +768,16 @@
                 <span class="back-nav__text">Home</span>
             </button>
         </div>
+        <div
+            class="currency-display"
+            data-currency-balance
+            aria-label="Vault coins"
+            role="status"
+            aria-live="polite"
+        >
+            <span class="currency-display__icon" aria-hidden="true">◎</span>
+            <span class="currency-display__amount" data-currency-amount>1 coin</span>
+        </div>
         <div class="account-menu" data-account-menu data-state="signed-out">
             <button
                 type="button"
@@ -817,6 +962,36 @@
                         Adventurer Cape
                     </label>
                 </fieldset>
+                <section class="avatar-shop" data-avatar-shop aria-labelledby="shop-title">
+                    <h3 id="shop-title">Tailor's shop</h3>
+                    <p class="avatar-shop__description">Spend coins to unlock fresh outfits for your vault companion.</p>
+                    <div class="shop-grid">
+                        <article class="shop-item" data-shop-item data-outfit="classic" data-price="0">
+                            <div class="shop-item__header">
+                                <h4>Cozy Classic</h4>
+                                <span>The baseline guild tunic.</span>
+                            </div>
+                            <p class="shop-item__status" data-shop-status>Included.</p>
+                            <button type="button" class="shop-item__action" data-shop-action>Equip</button>
+                        </article>
+                        <article class="shop-item" data-shop-item data-outfit="hoodie" data-price="1">
+                            <div class="shop-item__header">
+                                <h4>Midnight Hoodie</h4>
+                                <span>Urban stealth with neon trim.</span>
+                            </div>
+                            <p class="shop-item__status" data-shop-status>Costs 1 coin.</p>
+                            <button type="button" class="shop-item__action" data-shop-action>Buy</button>
+                        </article>
+                        <article class="shop-item" data-shop-item data-outfit="adventurer" data-price="2">
+                            <div class="shop-item__header">
+                                <h4>Adventurer Cape</h4>
+                                <span>Ready for future expeditions.</span>
+                            </div>
+                            <p class="shop-item__status" data-shop-status>Costs 2 coins.</p>
+                            <button type="button" class="shop-item__action" data-shop-action>Buy</button>
+                        </article>
+                    </div>
+                </section>
             </div>
         </aside>
 
@@ -1118,29 +1293,112 @@
         const outfitInputs = avatarCard
             ? Array.from(avatarCard.querySelectorAll('input[name="avatar-outfit"]'))
             : [];
+        const currencyDisplay = document.querySelector('[data-currency-balance]');
+        const currencyAmount = currencyDisplay?.querySelector('[data-currency-amount]') ?? null;
+        const shopElement = avatarCard?.querySelector('[data-avatar-shop]') ?? null;
+        const shopItems = shopElement
+            ? Array.from(shopElement.querySelectorAll('[data-shop-item]'))
+            : [];
 
         if (!avatarCard || !avatarPreview || outfitInputs.length === 0) {
             return;
         }
 
-        const storageKey = 'ak-avatar-outfit';
+        const optionElementsByValue = new Map();
+        outfitInputs.forEach((input) => {
+            if (!input.value) {
+                return;
+            }
+            const option = input.closest('.avatar-option');
+            if (option) {
+                optionElementsByValue.set(input.value, option);
+            }
+        });
+
+        const outfitStorageKey = 'ak-avatar-outfit';
+        const walletStorageKey = 'ak-wallet-coins';
+        const ownedStorageKey = 'ak-avatar-owned-outfits';
         const defaultOutfit = 'classic';
+        const defaultCoins = 1;
+        const defaultOwnedOutfits = new Set([defaultOutfit]);
+
         let storageAvailable = true;
 
-        const applyOutfit = (outfit) => {
-            avatarPreview.dataset.outfit = outfit;
-            outfitInputs.forEach((input) => {
-                input.checked = input.value === outfit;
-            });
-        };
+        const loadCoins = () => {
+            if (!storageAvailable) {
+                return defaultCoins;
+            }
 
-        const persistOutfit = (outfit) => {
-            if (!storageAvailable) return;
             try {
-                window.localStorage.setItem(storageKey, outfit);
+                const stored = window.localStorage.getItem(walletStorageKey);
+                if (!stored) {
+                    return defaultCoins;
+                }
+
+                const parsed = Number.parseInt(stored, 10);
+                if (Number.isFinite(parsed) && parsed >= 0) {
+                    return parsed;
+                }
             } catch (error) {
                 storageAvailable = false;
-                console.warn('Unable to save avatar outfit', error);
+                console.warn('Wallet state unavailable', error);
+            }
+
+            return defaultCoins;
+        };
+
+        const persistCoins = (value) => {
+            if (!storageAvailable) {
+                return;
+            }
+
+            try {
+                window.localStorage.setItem(walletStorageKey, String(value));
+            } catch (error) {
+                storageAvailable = false;
+                console.warn('Unable to save coin balance', error);
+            }
+        };
+
+        const loadOwnedOutfits = () => {
+            const owned = new Set(defaultOwnedOutfits);
+            if (!storageAvailable) {
+                return owned;
+            }
+
+            try {
+                const stored = window.localStorage.getItem(ownedStorageKey);
+                if (!stored) {
+                    return owned;
+                }
+
+                const parsed = JSON.parse(stored);
+                if (Array.isArray(parsed)) {
+                    parsed.forEach((value) => {
+                        if (typeof value === 'string' && value) {
+                            owned.add(value);
+                        }
+                    });
+                }
+            } catch (error) {
+                storageAvailable = false;
+                console.warn('Avatar shop ownership unavailable', error);
+            }
+
+            return owned;
+        };
+
+        const persistOwnedOutfits = (owned) => {
+            if (!storageAvailable) {
+                return;
+            }
+
+            try {
+                const value = JSON.stringify(Array.from(owned));
+                window.localStorage.setItem(ownedStorageKey, value);
+            } catch (error) {
+                storageAvailable = false;
+                console.warn('Unable to save owned outfits', error);
             }
         };
 
@@ -1150,7 +1408,7 @@
             }
 
             try {
-                const stored = window.localStorage.getItem(storageKey);
+                const stored = window.localStorage.getItem(outfitStorageKey);
                 if (stored) {
                     return stored;
                 }
@@ -1162,8 +1420,138 @@
             return defaultOutfit;
         };
 
-        const initialOutfit = loadOutfit();
-        applyOutfit(initialOutfit);
+        const persistOutfit = (outfit) => {
+            if (!storageAvailable) {
+                return;
+            }
+
+            try {
+                window.localStorage.setItem(outfitStorageKey, outfit);
+            } catch (error) {
+                storageAvailable = false;
+                console.warn('Unable to save avatar outfit', error);
+            }
+        };
+
+        const formatCoins = (value) => `${value} coin${value === 1 ? '' : 's'}`;
+
+        let coins = loadCoins();
+        let ownedOutfits = loadOwnedOutfits();
+        defaultOwnedOutfits.forEach((outfit) => ownedOutfits.add(outfit));
+
+        if (storageAvailable) {
+            try {
+                if (window.localStorage.getItem(walletStorageKey) === null) {
+                    persistCoins(coins);
+                }
+                if (window.localStorage.getItem(ownedStorageKey) === null) {
+                    persistOwnedOutfits(ownedOutfits);
+                }
+            } catch (error) {
+                storageAvailable = false;
+                console.warn('Unable to initialize avatar shop storage', error);
+            }
+        }
+
+        let currentOutfit = defaultOutfit;
+
+        const applyOutfit = (requested) => {
+            const next = ownedOutfits.has(requested) ? requested : defaultOutfit;
+            currentOutfit = next;
+            avatarPreview.dataset.outfit = next;
+            outfitInputs.forEach((input) => {
+                input.checked = input.value === next;
+            });
+            return next;
+        };
+
+        const updateCurrencyUI = () => {
+            if (!currencyAmount) {
+                return;
+            }
+
+            currencyAmount.textContent = formatCoins(coins);
+        };
+
+        const updateOutfitOptions = () => {
+            outfitInputs.forEach((input) => {
+                const isOwned = ownedOutfits.has(input.value);
+                input.disabled = !isOwned;
+                const option = optionElementsByValue.get(input.value);
+                if (option) {
+                    option.classList.toggle('is-locked', !isOwned);
+                    option.setAttribute('data-state', isOwned ? 'owned' : 'locked');
+                }
+            });
+        };
+
+        const readItemPrice = (item) => {
+            const price = Number.parseInt(item?.dataset?.price ?? '0', 10);
+            return Number.isFinite(price) && price >= 0 ? price : 0;
+        };
+
+        const updateShopUI = () => {
+            if (!shopItems.length) {
+                return;
+            }
+
+            shopItems.forEach((item) => {
+                const outfit = item.dataset.outfit;
+                if (!outfit) {
+                    return;
+                }
+
+                const price = readItemPrice(item);
+                const button = item.querySelector('[data-shop-action]');
+                const status = item.querySelector('[data-shop-status]');
+                const owned = ownedOutfits.has(outfit);
+                const isEquipped = currentOutfit === outfit;
+
+                item.classList.toggle('is-owned', owned);
+                item.classList.toggle('is-selected', isEquipped);
+
+                if (button instanceof HTMLButtonElement) {
+                    if (!owned) {
+                        const lacksCoins = price > coins;
+                        button.disabled = lacksCoins;
+                        const priceText = price === 0 ? 'Unlock' : `Buy for ${price} coin${price === 1 ? '' : 's'}`;
+                        const coinsShort = Math.max(0, price - coins);
+                        button.textContent = lacksCoins && price > 0
+                            ? `Need ${coinsShort} more coin${coinsShort === 1 ? '' : 's'}`
+                            : priceText;
+                    } else {
+                        button.disabled = isEquipped;
+                        button.textContent = isEquipped ? 'Equipped' : 'Equip';
+                    }
+                }
+
+                if (status instanceof HTMLElement) {
+                    if (!owned) {
+                        if (price === 0) {
+                            status.textContent = 'Included.';
+                        } else if (price > coins) {
+                            const coinsShort = Math.max(0, price - coins);
+                            status.textContent = `Costs ${price} coin${price === 1 ? '' : 's'}. You're ${coinsShort} coin${coinsShort === 1 ? '' : 's'} short.`;
+                        } else {
+                            status.textContent = `Costs ${price} coin${price === 1 ? '' : 's'}.`;
+                        }
+                    } else {
+                        status.textContent = isEquipped
+                            ? 'Currently wearing this look.'
+                            : 'Owned.';
+                    }
+                }
+            });
+        };
+
+        const storedOutfit = loadOutfit();
+        const initialOutfit = applyOutfit(storedOutfit);
+        if (initialOutfit !== storedOutfit) {
+            persistOutfit(initialOutfit);
+        }
+        updateOutfitOptions();
+        updateCurrencyUI();
+        updateShopUI();
 
         outfitInputs.forEach((input) => {
             input.addEventListener('change', (event) => {
@@ -1172,11 +1560,66 @@
                     return;
                 }
 
-                const outfit = target.value || defaultOutfit;
-                applyOutfit(outfit);
-                persistOutfit(outfit);
+                if (!ownedOutfits.has(target.value)) {
+                    updateOutfitOptions();
+                    return;
+                }
+
+                const applied = applyOutfit(target.value);
+                persistOutfit(applied);
+                updateShopUI();
             });
         });
+
+        if (shopElement) {
+            shopElement.addEventListener('click', (event) => {
+                const button = event.target instanceof HTMLElement
+                    ? event.target.closest('[data-shop-action]')
+                    : null;
+                if (!(button instanceof HTMLButtonElement)) {
+                    return;
+                }
+
+                const item = button.closest('[data-shop-item]');
+                if (!item) {
+                    return;
+                }
+
+                const outfit = item.dataset.outfit;
+                if (!outfit) {
+                    return;
+                }
+
+                const price = readItemPrice(item);
+
+                if (ownedOutfits.has(outfit)) {
+                    if (currentOutfit === outfit) {
+                        return;
+                    }
+
+                    const applied = applyOutfit(outfit);
+                    persistOutfit(applied);
+                    updateShopUI();
+                    return;
+                }
+
+                if (price > coins) {
+                    updateShopUI();
+                    return;
+                }
+
+                coins = Math.max(0, coins - price);
+                ownedOutfits.add(outfit);
+                persistCoins(coins);
+                persistOwnedOutfits(ownedOutfits);
+
+                const applied = applyOutfit(outfit);
+                persistOutfit(applied);
+                updateCurrencyUI();
+                updateOutfitOptions();
+                updateShopUI();
+            });
+        }
     </script>
 </body>
 </html>
