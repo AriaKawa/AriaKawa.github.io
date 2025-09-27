@@ -1,0 +1,717 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Auto Battler — ARIA ARCADE</title>
+<style>
+  :root{
+    --bg:#0b1020; --panel:#121829; --panel2:#0f1524; --line:rgba(255,255,255,.12);
+    --text:#e8effa; --muted:#9aa6b2; --accent:#ffd13b; --good:#78d38a; --bad:#ef6b6b;
+    --blade:#ff9f43; --ranged:#5fb0ff; --arcane:#b07cff; --heavy:#cdd66d;
+    --shadow:0 16px 40px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box} html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,Segoe UI,Inter,Roboto,Arial,sans-serif;display:flex;align-items:center;justify-content:center}
+  .wrap{width:min(1200px,96vw);margin:20px auto;display:grid;gap:14px;grid-template-columns:1fr 320px}
+  @media (max-width:1000px){.wrap{grid-template-columns:1fr}}
+  .board{position:relative;aspect-ratio:16/9;border-radius:22px;overflow:hidden;background:radial-gradient(130% 100% at 50% -10%, #1b8d73 0, #0f4f3b 35%, #0a3a2a 95%);border:6px solid #0c3024;box-shadow:var(--shadow)}
+  .board::after{content:"";position:absolute;inset:14px;border:2px dashed var(--line);border-radius:14px;pointer-events:none}
+  canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+  .hud{position:absolute;left:10px;right:10px;top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:linear-gradient(180deg,rgba(0,0,0,0),rgba(0,0,0,.28));padding:6px 8px;border-radius:12px}
+  .pill{background:rgba(0,0,0,.35);padding:.35rem .6rem;border-radius:999px;backdrop-filter:blur(2px);font-weight:800}
+  .btn{appearance:none;border:0;border-radius:12px;padding:.6rem .9rem;font-weight:800;cursor:pointer;box-shadow:var(--shadow)}
+  .btn.primary{background:var(--accent);color:#1a1400} .btn.ghost{background:#161b2a;color:#e8effa;border:1px solid var(--line)}
+  .side{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:18px;padding:12px 14px;box-shadow:var(--shadow)}
+  h2{margin:.2rem 0 .6rem;font-size:1.05rem;letter-spacing:.02em;opacity:.95}
+  .inventory{display:grid;grid-template-columns:1fr;gap:8px}
+  .card{background:#0c1020;border:1px solid var(--line);border-radius:12px;padding:.6rem .7rem}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .tags{display:flex;gap:6px;font-size:.8rem}
+  .tag{padding:.15rem .4rem;border-radius:999px;border:1px solid var(--line);opacity:.95}
+  .t-blade{background:linear-gradient(180deg,#3f2a14,#2a1d12);border-color:#704f2a;color:#ffc182}
+  .t-ranged{background:linear-gradient(180deg,#182536,#111926);border-color:#355d94;color:#abd3ff}
+  .t-arcane{background:linear-gradient(180deg,#2a1f3f,#1b1530);border-color:#6b4bb8;color:#d9c7ff}
+  .t-heavy{background:linear-gradient(180deg,#2c3114,#1d210e);border-color:#5c5f2f;color:#e5ef9a}
+  .k{font-variant-numeric:tabular-nums}
+  .hpbar{height:8px;background:#1a2236;border-radius:999px;overflow:hidden;border:1px solid var(--line)}
+  .hpbar>div{height:100%;background:linear-gradient(90deg,#63d471,#48b066)}
+  .log{max-height:220px;overflow:auto;font-size:.92rem;background:#0b1020;border:1px solid var(--line);border-radius:12px;padding:.6rem}
+  .log p{margin:.3rem 0;color:var(--muted)}
+  .overlay{position:absolute;inset:0;background:rgba(10,14,24,.65);display:flex;align-items:center;justify-content:center;padding:16px}
+  .panel{max-width:760px;width:min(96vw,760px);background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:14px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .pick{border:1px solid var(--line);border-radius:12px;padding:.75rem;background:#0c1020;cursor:pointer;transition:transform .06s ease}
+  .pick:active{transform:translateY(1px) scale(.99)}
+  .rar{font-weight:800;padding:.2rem .4rem;border-radius:6px;font-size:.8rem;border:1px solid var(--line)}
+  .rar-c{background:#1a2132} .rar-r{background:#1e2635;color:#abd3ff;border-color:#355d94} .rar-e{background:#241b3a;color:#d9c7ff;border-color:#6b4bb8}
+  .note{font-size:.9rem;color:var(--muted)}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="board">
+      <div class="hud">
+        <button id="btnPlay" class="btn primary">Start Wave</button>
+        <button id="btnSpeed" class="btn ghost">1x</button>
+        <div class="pill" id="wave">Wave 1</div>
+        <div class="pill">Gold: <span id="gold" class="k">0</span></div>
+        <div class="pill">HP: <span id="hp" class="k">0</span></div>
+        <div class="pill">DPS: <span id="dps" class="k">0</span></div>
+      </div>
+      <canvas id="cv"></canvas>
+
+      <!-- Start / Hero Select -->
+      <div id="start" class="overlay">
+        <div class="panel">
+          <h2>Choose your hero</h2>
+          <div class="grid3" id="heroChoices"></div>
+          <p class="note" style="margin-top:.6rem">Auto-battler: your hero fights automatically using equipped weapons. After each wave, pick 1 of 3 to upgrade your build.</p>
+        </div>
+      </div>
+
+      <!-- Post-wave weapon picker -->
+      <div id="picker" class="overlay" style="display:none">
+        <div class="panel">
+          <h2>Choose 1 upgrade</h2>
+          <div class="grid3" id="picks"></div>
+          <p class="note" style="margin-top:.6rem">Duplicates level up the same weapon (+damage/cooldown/extra effects). Rarities: <span class="rar rar-c">Common</span> <span class="rar rar-r">Rare</span> <span class="rar rar-e">Epic</span>.</p>
+        </div>
+      </div>
+
+      <!-- Game Over -->
+      <div id="over" class="overlay" style="display:none">
+        <div class="panel">
+          <h2>Defeat</h2>
+          <p class="note">You reached <strong id="overWave">Wave 1</strong>. Try a new build!</p>
+          <div style="display:flex;gap:8px;margin-top:.6rem">
+            <button id="btnRestart" class="btn primary">New Run</button>
+            <button id="btnCloseOver" class="btn ghost">Back</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="side">
+      <h2>Inventory</h2>
+      <div id="inv" class="inventory"></div>
+
+      <h2 style="margin-top:10px">Synergies</h2>
+      <div id="syn" class="card">
+        <div class="row"><span>Blade</span><span class="k" id="syn-blade">0</span></div>
+        <div class="row"><span>Ranged</span><span class="k" id="syn-ranged">0</span></div>
+        <div class="row"><span>Arcane</span><span class="k" id="syn-arcane">0</span></div>
+        <div class="row"><span>Heavy</span><span class="k" id="syn-heavy">0</span></div>
+        <p class="note" style="margin:.5rem 0 0">Each extra copy after the first gives a small bonus (e.g., +2% attack speed / +2% damage per stack).</p>
+      </div>
+
+      <h2 style="margin-top:10px">Event Log</h2>
+      <div id="log" class="log"></div>
+    </div>
+  </div>
+
+<script>
+/* =========================
+   Helpers
+========================= */
+const rand = (a=1,b=0)=> b+Math.random()*(a-b);
+const rint = (a,b)=> Math.floor(rand(a+1,b));
+const clamp = (v,min,max)=> Math.max(min,Math.min(max,v));
+const lerp = (a,b,t)=> a+(b-a)*t;
+const dist = (ax,ay,bx,by)=> Math.hypot(ax-bx,ay-by);
+const choice = arr => arr[Math.floor(Math.random()*arr.length)];
+const shuffle = arr => { for(let i=arr.length-1;i>0;i--){ const j=rint(i,0); [arr[i],arr[j]]=[arr[j],arr[i]] } return arr; };
+
+function log(s){ const el=document.getElementById('log'); const p=document.createElement('p'); p.textContent=s; el.appendChild(p); el.scrollTop=el.scrollHeight; }
+
+/* =========================
+   Canvas + Loop
+========================= */
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+let DPR=window.devicePixelRatio||1, W=0, H=0;
+function resize(){ const r=cv.getBoundingClientRect(); W=Math.floor(r.width*DPR); H=Math.floor(r.height*DPR); cv.width=W; cv.height=H; }
+resize(); addEventListener('resize', resize);
+
+let last=0, running=false, speed=1, dpsTrack=[];
+document.getElementById('btnSpeed').onclick = ()=>{
+  speed = speed===1?2: speed===2?4:1;
+  document.getElementById('btnSpeed').textContent = speed+"x";
+};
+
+/* =========================
+   Game State
+========================= */
+const state = {
+  wave:1, gold:0,
+  hero:null, enemies:[], projs:[], effects:[],
+  pickups:[], // reserved
+  inventory:[], // {id, lvl, tags[], apply(hero, lvl), desc(lvl), rarity}
+  synergies:{blade:0,ranged:0,arcane:0,heavy:0}
+};
+
+/* =========================
+   Heroes
+========================= */
+const HEROES = [
+  { id:'knight', name:'Knight', color:'#ffd13b', hp:220, armor:4, speed:60, baseRange:65, baseAS:0.9, baseDmg:16,
+    start:['sword'] },
+  { id:'archer', name:'Archer', color:'#5fb0ff', hp:150, armor:1, speed:80, baseRange:150, baseAS:1.1, baseDmg:12,
+    start:['bow'] },
+  { id:'mage',   name:'Mage', color:'#b07cff', hp:135, armor:0, speed:70, baseRange:130, baseAS:1.0, baseDmg:14,
+    start:['staff'] },
+];
+
+function heroCard(h){
+  const div=document.createElement('div');
+  div.className='pick';
+  div.innerHTML = `
+    <div class="row"><strong>${h.name}</strong><span class="rar rar-r">Hero</span></div>
+    <p class="note">HP ${h.hp}, Armor ${h.armor}, Range ${h.baseRange}, AS ${h.baseAS}/s</p>
+    <div class="tags"><span class="tag t-blade">Blade</span><span class="tag t-ranged">Ranged</span><span class="tag t-arcane">Arcane</span></div>
+  `;
+  div.onclick=()=> startRun(h);
+  return div;
+}
+const heroesWrap = document.getElementById('heroChoices');
+HEROES.forEach(h=> heroesWrap.appendChild(heroCard(h)));
+
+/* =========================
+   Weapons (pool)
+========================= */
+// Each weapon adds an active or passive to the hero.
+// tags affect synergies; duplicates level up.
+const WEAPON_POOL = {
+  sword:{
+    name:'Crescent Sword', tags:['blade'], rarity:'C',
+    desc:(L)=>`Melee arc for ${110+15*(L-1)}% dmg. +${(L-1)*5}% radius.`,
+    apply:(hero,L)=>{
+      hero.actives.push(makeCleave({base:hero.baseDmg*(1.1+0.15*(L-1)), radius:50*(1+0.05*(L-1)), cd:1.0, color:'#ffbb6b'}));
+    }
+  },
+  bow:{
+    name:'Longbow', tags:['ranged'], rarity:'C',
+    desc:(L)=>`Arrow for ${100+20*(L-1)}% dmg, pierce ${1+(L>2?1:0)}.`,
+    apply:(hero,L)=>{
+      hero.actives.push(makeShot({base:hero.baseDmg*(1+0.2*(L-1)), pierce:(L>=3?2:1), speed:260, cd:0.7, color:'#9fd0ff'}));
+    }
+  },
+  staff:{
+    name:'Arc Staff', tags:['arcane'], rarity:'R',
+    desc:(L)=>`Chain lightning ${2+L} jumps, ${95+15*(L-1)}% dmg.`,
+    apply:(hero,L)=>{
+      hero.actives.push(makeChain({base:hero.baseDmg*(0.95+0.15*(L-1)), jumps:2+L, range:170, cd:1.6, color:'#cbb3ff'}));
+    }
+  },
+  dagger:{
+    name:'Quick Dagger', tags:['blade'], rarity:'R',
+    desc:(L)=>`+${10+5*(L-1)}% attack speed. On-hit bleed ${5*L}% over 3s.`,
+    apply:(hero,L)=>{ hero.asMult *= 1 + (0.10 + 0.05*(L-1)); hero.onHit.push(makeBleed(0.05*L)); }
+  },
+  hammer:{
+    name:'War Hammer', tags:['heavy'], rarity:'R',
+    desc:(L)=>`Slam every ${2 - 0.2*(L-1)}s for ${130+20*(L-1)}% dmg, small stun.`,
+    apply:(hero,L)=> hero.actives.push(makeSlam({base:hero.baseDmg*(1.3+0.2*(L-1)), cd:2-0.2*(L-1), radius:55, color:'#e7e391'}))
+  },
+  spear:{
+    name:'Piercing Spear', tags:['blade','ranged'], rarity:'C',
+    desc:(L)=>`Line strike ${120+20*(L-1)}% dmg, long reach.`,
+    apply:(hero,L)=> hero.actives.push(makeLine({base:hero.baseDmg*(1.2+0.2*(L-1)), cd:1.3, len:140, color:'#ffd9a8'}))
+  },
+  shield:{
+    name:'Bulwark', tags:['heavy'], rarity:'C',
+    desc:(L)=>`+${2*L} armor. Reflect ${4*L}% melee dmg.`,
+    apply:(hero,L)=>{ hero.armor += 2*L; hero.reflect += 0.04*L; }
+  },
+  orb:{
+    name:'Arcane Orb', tags:['arcane','ranged'], rarity:'E',
+    desc:(L)=>`Orbiting orb deals ${80+20*(L-1)}% dmg on touch.`,
+    apply:(hero,L)=> hero.passives.push(makeOrb({base:hero.baseDmg*(0.8+0.2*(L-1)), radius:28, cd:0.0, color:'#a98bff'}))
+  }
+};
+const RAR_WEIGHT = {C:70,R:25,E:5};
+
+/* =========================
+   Active builders
+========================= */
+function makeCleave({base,radius,cd,color}){
+  let t=0; return {
+    cd, tick:(h,dt)=>{ t-=dt/h.asMult; if(t>0) return;
+      const e=nearestEnemy(h.x,h.y,70); if(!e) return;
+      t=cd;
+      // hit in arc
+      const ang=Math.atan2(e.y-h.y,e.x-h.x), arc=Math.PI/3;
+      for(const en of state.enemies){
+        const a=Math.atan2(en.y-h.y,en.x-h.x), dis=dist(h.x,h.y,en.x,en.y);
+        const da=Math.abs(angDiff(a,ang));
+        if(dis<radius && da<arc/2){ dealDamage(en, base, 'blade'); knockback(en, 40, a); }
+      }
+      // effect
+      state.effects.push({type:'arc',x:h.x,y:h.y,a:ang,r:radius,t:0,ttl:0.15,color});
+    }
+  };
+}
+function makeShot({base,pierce,speed,cd,color}){
+  let t=0; return {
+    cd, tick:(h,dt)=>{ t-=dt/h.asMult; if(t>0) return;
+      const e=targetEnemy(h); if(!e) return; t=cd;
+      const a=Math.atan2(e.y-h.y,e.x-h.x);
+      spawnProj({x:h.x,y:h.y, vx:Math.cos(a)*speed, vy:Math.sin(a)*speed, r:5, dmg:base, pierce, color});
+    }
+  };
+}
+function makeChain({base,jumps,range,cd,color}){
+  let t=0; return {
+    cd, tick:(h,dt)=>{ t-=dt/h.asMult; if(t>0) return;
+      const first = nearestEnemy(h.x,h.y,range); if(!first) return; t=cd;
+      let cur=first, left=jumps; const hitSet=new Set();
+      while(cur && left>0){
+        dealDamage(cur, base, 'arcane');
+        state.effects.push({type:'zap',x:h.x,y:h.y,tx:cur.x,ty:cur.y,t:0,ttl:0.12,color});
+        hitSet.add(cur);
+        // next nearest not hit
+        cur = nearestEnemy(cur.x,cur.y,range, (en)=> !hitSet.has(en));
+        left--;
+      }
+    }
+  };
+}
+function makeSlam({base,cd,radius,color}){
+  let t=0; return {
+    cd, tick:(h,dt)=>{ t-=dt/h.asMult; if(t>0) return; t=cd;
+      for(const en of state.enemies){ if(dist(h.x,h.y,en.x,en.y)<=radius){ dealDamage(en,base,'heavy'); en.stun= Math.max(en.stun||0, 0.35); } }
+      state.effects.push({type:'ring',x:h.x,y:h.y,r:radius, t:0, ttl:0.25, color});
+    }
+  };
+}
+function makeLine({base,cd,len,color}){
+  let t=0; return {
+    cd, tick:(h,dt)=>{ t-=dt/h.asMult; if(t>0) return;
+      const e=targetEnemy(h); if(!e) return; t=cd;
+      const a=Math.atan2(e.y-h.y,e.x-h.x); const nx=Math.cos(a), ny=Math.sin(a);
+      for(const en of state.enemies){
+        const px=(en.x-h.x)*nx+(en.y-h.y)*ny; const py=-(en.x-h.x)*ny+(en.y-h.y)*nx;
+        if(px>0 && px<len && Math.abs(py)<18){ dealDamage(en,base,'blade'); knockback(en, 30, a); }
+      }
+      state.effects.push({type:'line',x:h.x,y:h.y,a, len, t:0, ttl:0.12, color});
+    }
+  };
+}
+function makeOrb({base,radius,cd,color}){
+  let ang=0; return {
+    cd, tick:(h,dt)=>{ ang+=dt*2; const ox=h.x+Math.cos(ang)*42, oy=h.y+Math.sin(ang)*42;
+      for(const en of state.enemies){ if(dist(ox,oy,en.x,en.y)<radius){ dealDamage(en,base,'arcane'); } }
+      state.effects.push({type:'orb',x:ox,y:oy,r:radius,t:0,ttl:0.04,color});
+    }
+  };
+}
+function makeBleed(frac){ // on-hit DoT
+  return (en,base)=>{ en.bleed = (en.bleed||0) + base*frac; en.bleedT = 3.0; };
+}
+
+/* =========================
+   Entities
+========================= */
+function createHero(H){
+  return {
+    id:H.id, name:H.name, x:W*0.5, y:H.baseRange+70*DPR, r:12*DPR,
+    hp:H.hp, hpMax:H.hp, armor:H.armor, speed:H.speed*DPR,
+    baseDmg:H.baseDmg, baseAS:H.baseAS, asMult:1, range:H.baseRange*DPR,
+    reflect:0,
+    actives:[], passives:[], onHit:[]
+  };
+}
+function spawnEnemy(kind, x,y, scale=1){
+  // kinds: grunt, swift, archer, brute
+  const k = {
+    grunt: {hp:60, dmg:10, spd:55, arm:0, range:16, cd:1.1, color:'#e67272'},
+    swift: {hp:40, dmg:8,  spd:90, arm:0, range:14, cd:0.75, color:'#ef9b63'},
+    brute: {hp:130,dmg:14, spd:45, arm:2, range:18, cd:1.3, color:'#d8bb6b'},
+    archer:{hp:55, dmg:9,  spd:60, arm:0, range:110,cd:1.4, color:'#7ab0e8', ranged:true}
+  }[kind];
+  return {
+    kind, x,y, r:10*DPR, color:k.color,
+    hp:k.hp*scale, hpMax:k.hp*scale, armor:k.arm,
+    dmg:k.dmg*scale, speed:k.spd*DPR, range:k.range*DPR, cd:k.cd, t:rand(0,k.cd),
+    stun:0, bleed:0, bleedT:0, ranged:k.ranged||false
+  };
+}
+function spawnProj(p){ state.projs.push({ ...p, ttl:2.2 }); }
+
+/* =========================
+   Combat helpers
+========================= */
+function angDiff(a,b){ let d=a-b; while(d>Math.PI) d-=Math.PI*2; while(d<-Math.PI) d+=Math.PI*2; return d; }
+function nearestEnemy(x,y,R=9999, pred=()=>true){
+  let best=null, bd=1e9;
+  for(const e of state.enemies){ if(e.hp<=0||e.stun>9) continue; const d=dist(x,y,e.x,e.y); if(d<bd && d<=R && pred(e)){ bd=d; best=e; } }
+  return best;
+}
+function targetEnemy(h){
+  // prefer within range; else nearest
+  const e=nearestEnemy(h.x,h.y,h.range);
+  return e || nearestEnemy(h.x,h.y,9999);
+}
+function dealDamage(target, raw, tag){
+  const armor = target.armor||0;
+  const dmg = Math.max(1, raw - armor);
+  target.hp -= dmg;
+  if(target.hp<=0){ // death
+    target.hp=0; target.stun=99;
+    state.gold += 1;
+  }
+  // on-hit hooks
+  for(const fn of (state.hero.onHit||[])){ fn(target, raw); }
+  // track dps
+  dpsTrack.push({t:perf, dmg});
+}
+function knockback(en, force, ang){
+  en.x += Math.cos(ang)*force; en.y += Math.sin(ang)*force;
+}
+
+/* =========================
+   Waves
+========================= */
+function startWave(){
+  if(!state.hero) return;
+  running=true; document.getElementById('btnPlay').textContent='Fighting…';
+  log(`Wave ${state.wave} started.`);
+  // spawn ring
+  const count = Math.floor(8 + state.wave*2.4);
+  for(let i=0;i<count;i++){
+    const a = (i/count)*Math.PI*2 + rand(0.1,-0.1);
+    const R = Math.min(W,H)*0.45;
+    const x = W/2 + Math.cos(a)*R, y = H/2 + Math.sin(a)*R;
+    const k = choice(['grunt','grunt','swift','archer','brute']);
+    const scale = 1 + state.wave*0.12;
+    state.enemies.push(spawnEnemy(k, x,y, scale));
+  }
+}
+function waveClear(){
+  running=false; document.getElementById('btnPlay').textContent='Start Wave';
+  const reward = 5 + Math.floor(state.wave*1.5);
+  state.gold += reward;
+  log(`Wave ${state.wave} cleared. +${reward} gold.`);
+  // open picker
+  openPicker();
+  state.wave++;
+  updateHUD();
+}
+
+/* =========================
+   Picker / Inventory
+========================= */
+function openPicker(){
+  const el=document.getElementById('picker'); el.style.display='flex';
+  const picksEl = document.getElementById('picks'); picksEl.innerHTML='';
+  const choices = rollChoices();
+  for(const c of choices){
+    const div=document.createElement('div');
+    div.className='pick';
+    const rarClass = c.rarity==='E'?'rar-e':c.rarity==='R'?'rar-r':'rar-c';
+    const tagSpans = c.tags.map(t=>`<span class="tag t-${t}">${cap(t)}</span>`).join('');
+    div.innerHTML = `
+      <div class="row"><strong>${c.name}</strong><span class="rar ${rarClass}">${rarName(c.rarity)}</span></div>
+      <div class="tags">${tagSpans}</div>
+      <p class="note">${c.desc(nextLevelFor(c.id))}</p>
+    `;
+    div.onclick=()=>{ takeCard(c.id); el.style.display='none'; };
+    picksEl.appendChild(div);
+  }
+}
+function rarName(r){ return r==='E'?'Epic':r==='R'?'Rare':'Common'; }
+function cap(s){ return s[0].toUpperCase()+s.slice(1); }
+
+function nextLevelFor(id){
+  const have = state.inventory.find(w=>w.id===id);
+  return (have?have.lvl:0)+1;
+}
+function takeCard(id){
+  const have = state.inventory.find(w=>w.id===id);
+  if(have){ have.lvl++; applyWeapon(have); log(`Leveled ${WEAPON_POOL[id].name} to Lv ${have.lvl}.`); }
+  else{
+    const base = WEAPON_POOL[id];
+    const item = {id, lvl:1, tags:[...base.tags], rarity:base.rarity, apply:base.apply, desc:base.desc};
+    state.inventory.push(item);
+    applyWeapon(item);
+    log(`Gained ${base.name}.`);
+  }
+  rebuildInventoryUI(); rebuildSynergies();
+}
+function rollChoices(){
+  // weighted rarity, avoid giving 3 of same id
+  const ids = Object.keys(WEAPON_POOL);
+  const out=[];
+  while(out.length<3){
+    const rRoll = Math.random()*100;
+    const rar = rRoll< RAR_WEIGHT.E ? 'E' : rRoll < (RAR_WEIGHT.E+RAR_WEIGHT.R) ? 'R' : 'C';
+    const pool = ids.filter(id=> WEAPON_POOL[id].rarity===rar );
+    const pick = choice(pool);
+    if(!out.some(o=>o.id===pick)) out.push({id:pick, ...WEAPON_POOL[pick]});
+  }
+  return shuffle(out);
+}
+function applyWeapon(it){
+  // clear & re-apply all gear — simple approach
+  const h=state.hero;
+  h.actives=[]; h.passives=[]; h.onHit=[]; h.asMult=1; h.armor = h.baseArmor ?? h.armor; // preserve
+  // base re-init
+  h.armor = h.baseArmor || h.armor;
+  // apply all by current levels
+  for(const w of state.inventory){
+    WEAPON_POOL[w.id].apply(h, w.lvl);
+  }
+}
+
+/* UI: inventory + synergies */
+function rebuildInventoryUI(){
+  const inv=document.getElementById('inv'); inv.innerHTML='';
+  if(!state.inventory.length){ inv.innerHTML='<div class="card note">No weapons yet.</div>'; return; }
+  for(const it of state.inventory){
+    const base=WEAPON_POOL[it.id];
+    const tags = base.tags.map(t=>`<span class="tag t-${t}">${cap(t)}</span>`).join('');
+    const el=document.createElement('div');
+    el.className='card';
+    el.innerHTML = `
+      <div class="row"><strong>${base.name}</strong><span>Lv ${it.lvl}</span></div>
+      <div class="tags" style="margin:.35rem 0">${tags}</div>
+      <p class="note">${base.desc(it.lvl)}</p>
+    `;
+    inv.appendChild(el);
+  }
+}
+function rebuildSynergies(){
+  const syn = {blade:0,ranged:0,arcane:0,heavy:0};
+  for(const it of state.inventory){ for(const t of it.tags){ syn[t]++ } }
+  state.synergies = syn;
+  document.getElementById('syn-blade').textContent = syn.blade;
+  document.getElementById('syn-ranged').textContent = syn.ranged;
+  document.getElementById('syn-arcane').textContent = syn.arcane;
+  document.getElementById('syn-heavy').textContent = syn.heavy;
+  // apply small global bonuses for stacks beyond first
+  const stacks = (n)=> Math.max(0, n-1);
+  state.hero.asMult *= 1 + stacks(syn.blade)*0.02 + stacks(syn.ranged)*0.02;
+  // arcane: +2% dmg -> handled within actives via baseDmg scaling if you want; keep AS for simplicity
+  state.hero.armor += stacks(syn.heavy); // +1 armor per extra heavy
+}
+
+/* =========================
+   Start / Restart
+========================= */
+function startRun(Hdef){
+  // hero
+  state.wave=1; state.gold=0; state.enemies=[]; state.projs=[]; state.effects=[]; dpsTrack=[];
+  state.inventory=[]; running=false; speed=1; document.getElementById('btnSpeed').textContent='1x';
+  state.hero = createHero(Hdef);
+  state.hero.baseArmor = state.hero.armor;
+  // starter weapon(s)
+  for(const wid of Hdef.start){ takeCard(wid); }
+  // UI
+  document.getElementById('start').style.display='none';
+  document.getElementById('over').style.display='none';
+  updateHUD(); rebuildInventoryUI(); rebuildSynergies(); log(`New run as ${Hdef.name}.`);
+  // (Optional) Firebase hook: window.onRunStart?.({hero:Hdef.id});
+}
+document.getElementById('btnRestart').onclick = ()=>{ document.getElementById('start').style.display='flex'; };
+document.getElementById('btnCloseOver').onclick = ()=>{ document.getElementById('over').style.display='none'; };
+
+/* =========================
+   HUD
+========================= */
+function updateHUD(){
+  document.getElementById('wave').textContent='Wave '+state.wave;
+  document.getElementById('gold').textContent=state.gold;
+  document.getElementById('hp').textContent = state.hero? Math.ceil(state.hero.hp)+'/'+state.hero.hpMax : '0';
+}
+document.getElementById('btnPlay').onclick = ()=>{ if(running) return; startWave(); };
+
+/* =========================
+   Loop & Systems
+========================= */
+let perf=0;
+function loop(ts){
+  if(!last) last=ts;
+  const dt = Math.min(0.05, (ts-last)/1000) * speed;
+  perf += dt; last=ts;
+  step(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+function step(dt){
+  const h=state.hero; if(!h){ return; }
+
+  // hero passive ticks
+  for(const p of h.passives){ p.tick?.(h,dt); }
+  // hero actives
+  for(const a of h.actives){ a.tick?.(h,dt); }
+
+  // enemies think & move
+  for(const e of state.enemies){
+    if(e.hp<=0){ continue; }
+    // bleed
+    if(e.bleedT>0){ e.bleedT -= dt; if(e.bleedT>0){ dealDamage(e, e.bleed*dt, 'bleed'); } else e.bleed=0; }
+    // stun
+    if(e.stun>0){ e.stun -= dt; continue; }
+    // ranged vs melee
+    const dx=h.x-e.x, dy=h.y-e.y, d=Math.hypot(dx,dy)||1;
+    if(e.ranged){
+      // keep distance ~85% of range
+      const desired = e.range*0.85;
+      const dir = d>desired? 1 : (d<desired*0.8 ? -1 : 0);
+      e.x += (dx/d)*e.speed*dt*dir;
+      e.y += (dy/d)*e.speed*dt*dir;
+      e.t -= dt;
+      if(e.t<=0 && d<=e.range*1.2){ e.t=e.cd; // fire
+        const a=Math.atan2(dy,dx); spawnEProj(e.x,e.y, Math.cos(a)*240*DPR, Math.sin(a)*240*DPR, 4*DPR, e.dmg);
+      }
+    }else{
+      // walk toward hero, hit in melee
+      if(d>e.range){ e.x += (dx/d)*e.speed*dt; e.y += (dy/d)*e.speed*dt; e.t-=dt; }
+      else{ e.t-=dt; if(e.t<=0){ e.t=e.cd; hitHero(e.dmg); if(state.hero.reflect>0) dealDamage(e, e.dmg*state.hero.reflect, 'reflect'); } }
+    }
+  }
+
+  // projectiles (hero)
+  for(let i=state.projs.length-1;i>=0;i--){
+    const p=state.projs[i]; p.x+=p.vx*dt; p.y+=p.vy*dt; p.ttl-=dt;
+    // collide enemies
+    for(const e of state.enemies){
+      if(e.hp<=0) continue;
+      if(dist(p.x,p.y,e.x,e.y)<=p.r+e.r){
+        dealDamage(e, p.dmg, 'proj'); p.pierce--; if(p.pierce<=0){ state.projs.splice(i,1); break; }
+      }
+    }
+    if(p.ttl<=0) state.projs.splice(i,1);
+  }
+
+  // enemy projectiles
+  for(let i=eProjs.length-1;i>=0;i--){
+    const p=eProjs[i]; p.x+=p.vx*dt; p.y+=p.vy*dt; p.ttl-=dt;
+    if(dist(p.x,p.y,h.x,h.y)<=p.r+h.r){ hitHero(p.dmg); eProjs.splice(i,1); }
+    else if(p.ttl<=0) eProjs.splice(i,1);
+  }
+
+  // clean enemy corpses
+  state.enemies = state.enemies.filter(e=>e.hp>0);
+
+  // wave clear?
+  if(running && state.enemies.length===0){
+    waveClear();
+  }
+
+  // death?
+  if(h.hp<=0){ running=false; document.getElementById('overWave').textContent='Wave '+state.wave; document.getElementById('over').style.display='flex'; log('You were defeated.'); /* window.onRunOver?.({wave:state.wave}) */ }
+
+  updateHUD();
+}
+
+function hitHero(dmg){
+  const h=state.hero, taken=Math.max(1, dmg - h.armor);
+  h.hp -= taken; if(h.hp<0) h.hp=0;
+}
+
+const eProjs=[];
+function spawnEProj(x,y,vx,vy,r,dmg){ eProjs.push({x,y,vx,vy,r, dmg, ttl:2.2}); }
+
+/* =========================
+   Draw
+========================= */
+function draw(){
+  ctx.clearRect(0,0,W,H);
+
+  // subtle grid
+  ctx.save(); ctx.globalAlpha=0.06; ctx.strokeStyle="#ffffff"; ctx.lineWidth=1;
+  for(let x=W*0.08; x<=W*0.92; x+=60*DPR){ ctx.beginPath(); ctx.moveTo(x,H*0.08); ctx.lineTo(x,H*0.92); ctx.stroke(); }
+  for(let y=H*0.08; y<=H*0.92; y+=60*DPR){ ctx.beginPath(); ctx.moveTo(W*0.08,y); ctx.lineTo(W*0.92,y); ctx.stroke(); }
+  ctx.restore();
+
+  // effects (short-lived)
+  for(let i=state.effects.length-1;i>=0;i--){
+    const ef=state.effects[i]; ef.t += 1/60;
+    const a = 1 - (ef.t/ef.ttl);
+    if(a<=0){ state.effects.splice(i,1); continue; }
+    ctx.globalAlpha = a*0.9; ctx.fillStyle=ef.color; ctx.strokeStyle=ef.color; ctx.lineWidth=3*DPR;
+    if(ef.type==='arc'){
+      ctx.beginPath(); ctx.arc(ef.x,ef.y, ef.r, ef.a-Math.PI/3, ef.a+Math.PI/3); ctx.stroke();
+    }else if(ef.type==='ring'){
+      ctx.beginPath(); ctx.arc(ef.x,ef.y, ef.r*(ef.t/ef.ttl), 0, Math.PI*2); ctx.stroke();
+    }else if(ef.type==='line'){
+      const nx=Math.cos(ef.a), ny=Math.sin(ef.a);
+      ctx.beginPath(); ctx.moveTo(ef.x,ef.y); ctx.lineTo(ef.x+nx*ef.len, ef.y+ny*ef.len); ctx.stroke();
+    }else if(ef.type==='zap'){
+      ctx.beginPath(); ctx.moveTo(ef.x,ef.y);
+      // jagged line
+      const seg=6, dx=(ef.tx-ef.x)/seg, dy=(ef.ty-ef.y)/seg;
+      for(let s=1;s<=seg;s++){
+        const jx= (Math.random()-.5)*6*DPR, jy=(Math.random()-.5)*6*DPR;
+        ctx.lineTo(ef.x+dx*s + jx, ef.y+dy*s + jy);
+      }
+      ctx.stroke();
+    }else if(ef.type==='orb'){
+      ctx.beginPath(); ctx.arc(ef.x,ef.y, ef.r, 0, Math.PI*2); ctx.fill();
+    }
+    ctx.globalAlpha=1;
+  }
+
+  // hero
+  if(state.hero){
+    const h=state.hero;
+    drawUnit(h.x,h.y,h.r, '#ffd13b');
+    // HP ring
+    const pct = h.hp/h.hpMax;
+    drawRing(h.x,h.y,h.r+6*DPR, '#63d471', pct);
+    // DPS text (smoothed)
+    const dps = getDPS();
+    document.getElementById('dps').textContent = dps.toFixed(0);
+  }
+
+  // enemies
+  for(const e of state.enemies){
+    drawUnit(e.x,e.y,e.r, e.color);
+    // HP bar
+    const pct=e.hp/e.hpMax;
+    ctx.fillStyle='rgba(0,0,0,.5)'; ctx.fillRect(e.x-e.r, e.y-e.r-8*DPR, e.r*2, 6*DPR);
+    ctx.fillStyle='#ef6b6b'; ctx.fillRect(e.x-e.r, e.y-e.r-8*DPR, e.r*2*pct, 6*DPR);
+  }
+
+  // projectiles
+  for(const p of state.projs){ ctx.fillStyle=p.color||'#fff'; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill(); }
+  for(const p of eProjs){ ctx.fillStyle='#e8a3a3'; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill(); }
+}
+
+function drawUnit(x,y,r, color){
+  ctx.fillStyle=color; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle='rgba(0,0,0,.45)'; ctx.lineWidth=2*DPR; ctx.stroke();
+}
+function drawRing(x,y,R,color,pct){
+  ctx.strokeStyle=color; ctx.lineWidth=4*DPR; ctx.beginPath(); ctx.arc(x,y,R, -Math.PI/2, -Math.PI/2 + Math.PI*2*pct); ctx.stroke();
+}
+
+/* =========================
+   Picker / Over buttons
+========================= */
+document.getElementById('over').addEventListener('click', (e)=>{ if(e.target.id==='over') e.currentTarget.style.display='none'; });
+document.getElementById('picker').addEventListener('click', (e)=>{ if(e.target.id==='picker') e.currentTarget.style.display='none'; });
+
+/* =========================
+   DPS meter
+========================= */
+function getDPS(){
+  const windowSec=2;
+  const now=perf;
+  dpsTrack = dpsTrack.filter(x=> now-x.t <= windowSec );
+  const total = dpsTrack.reduce((a,b)=>a+b.dmg,0);
+  return total / windowSec;
+}
+
+/* =========================
+   Resize hero placement
+========================= */
+addEventListener('resize', ()=>{ if(state.hero){ state.hero.x=W/2; state.hero.y=H*0.72; } });
+
+</script>
+</body>
+</html>
