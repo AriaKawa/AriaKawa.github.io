@@ -492,40 +492,80 @@
                 <p class="panel-description">Choose an outfit for your rat companion before you head into a game.</p>
                 <div class="avatar-preview" aria-describedby="avatar-title">
                     <div class="rat-avatar" data-outfit="classic" aria-live="polite">
-                        <svg viewBox="0 0 140 140" role="img" aria-label="Rat avatar illustration">
+                        <svg viewBox="0 0 220 280" role="img" aria-label="Armored standing rat avatar illustration">
                             <defs>
-                                <linearGradient id="rat-fur" x1="0%" x2="100%" y1="0%" y2="100%">
-                                    <stop offset="0%" stop-color="#c7c3d9"></stop>
-                                    <stop offset="100%" stop-color="#9c97b2"></stop>
+                                <linearGradient id="rat-fur" x1="15%" y1="5%" x2="85%" y2="95%">
+                                    <stop offset="0%" stop-color="#d0cde6"></stop>
+                                    <stop offset="45%" stop-color="#b4afd4"></stop>
+                                    <stop offset="100%" stop-color="#8d86b2"></stop>
                                 </linearGradient>
-                                <linearGradient id="rat-ear" x1="0%" x2="100%" y1="0%" y2="100%">
-                                    <stop offset="0%" stop-color="#f7b4d2"></stop>
-                                    <stop offset="100%" stop-color="#f48cbf"></stop>
+                                <linearGradient id="rat-fur-shade" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#f0edf9" stop-opacity="0.8"></stop>
+                                    <stop offset="100%" stop-color="#726c9b" stop-opacity="0.8"></stop>
+                                </linearGradient>
+                                <linearGradient id="rat-ear" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#f9c2dc"></stop>
+                                    <stop offset="100%" stop-color="#f180ba"></stop>
+                                </linearGradient>
+                                <linearGradient id="rat-tail" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#f5aecf"></stop>
+                                    <stop offset="100%" stop-color="#e075a7"></stop>
+                                </linearGradient>
+                                <linearGradient id="classic-coat" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#99b6ff"></stop>
+                                    <stop offset="100%" stop-color="#6d7dff"></stop>
+                                </linearGradient>
+                                <linearGradient id="hoodie-body" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#7f63ff"></stop>
+                                    <stop offset="100%" stop-color="#5433e7"></stop>
+                                </linearGradient>
+                                <linearGradient id="adventurer-cloak" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#f9bb6f"></stop>
+                                    <stop offset="100%" stop-color="#cc6f29"></stop>
                                 </linearGradient>
                             </defs>
                             <g fill="none" fill-rule="evenodd">
-                                <g transform="translate(20 15)">
-                                    <ellipse cx="50" cy="82" rx="42" ry="28" fill="url(#rat-fur)"></ellipse>
-                                    <circle cx="50" cy="45" r="34" fill="url(#rat-fur)"></circle>
-                                    <path d="M93 82c12 6 16 14 12 20s-14 4-26-2" stroke="#f2aac9" stroke-width="6" stroke-linecap="round"></path>
-                                    <ellipse cx="26" cy="16" rx="14" ry="18" fill="url(#rat-ear)" transform="rotate(-20 26 16)"></ellipse>
-                                    <ellipse cx="74" cy="16" rx="14" ry="18" fill="url(#rat-ear)" transform="rotate(20 74 16)"></ellipse>
-                                    <circle cx="38" cy="46" r="6" fill="#2f1d3e"></circle>
-                                    <circle cx="62" cy="46" r="6" fill="#2f1d3e"></circle>
-                                    <path d="M50 60c4 0 8 3 8 6s-4 4-8 4-8-1-8-4 4-6 8-6z" fill="#f5d3de"></path>
+                                <ellipse cx="110" cy="248" rx="70" ry="16" fill="rgba(19, 10, 37, 0.45)"></ellipse>
+                                <path d="M166 160c32 32 30 58 10 70-20 12-46-0-58-12" stroke="url(#rat-tail)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" fill="none"></path>
+                                <g transform="translate(36 24)">
+                                    <g>
+                                        <path d="M83 66c-28-4-50 16-54 52-4 40 6 88 48 96 36 6 62-18 68-58 6-40-10-80-34-88-14-5-20 0-28-2z" fill="url(#rat-fur)"></path>
+                                        <path d="M78 68c-16 4-30 16-34 34-10 38 12 86 54 96" fill="url(#rat-fur-shade)" opacity="0.35"></path>
+                                    </g>
+                                    <g>
+                                        <ellipse cx="56" cy="36" rx="22" ry="30" fill="url(#rat-ear)" transform="rotate(-12 56 36)"></ellipse>
+                                        <ellipse cx="150" cy="34" rx="22" ry="30" fill="url(#rat-ear)" transform="rotate(12 150 34)"></ellipse>
+                                        <circle cx="104" cy="62" r="46" fill="url(#rat-fur)"></circle>
+                                        <ellipse cx="104" cy="94" rx="24" ry="18" fill="#f5d9e7"></ellipse>
+                                        <circle cx="90" cy="60" r="6" fill="#23152f"></circle>
+                                        <circle cx="122" cy="60" r="6" fill="#23152f"></circle>
+                                        <path d="M102 90c4 2 10 2 14 0" stroke="#38234d" stroke-width="4" stroke-linecap="round"></path>
+                                        <path d="M120 98c-6 4-14 4-20 0" fill="#f8b7ce"></path>
+                                        <circle cx="130" cy="92" r="4" fill="#ef769f"></circle>
+                                        <path d="M70 90c-16-4-24-10-26-14" stroke="#cf90b5" stroke-linecap="round" stroke-width="4"></path>
+                                        <path d="M138 90c16-4 24-10 26-14" stroke="#cf90b5" stroke-linecap="round" stroke-width="4"></path>
+                                    </g>
+                                    <g>
+                                        <path d="M70 140c-10-10-26-18-40-16" stroke="url(#rat-fur)" stroke-width="18" stroke-linecap="round"></path>
+                                        <path d="M140 140c10-10 26-18 40-16" stroke="url(#rat-fur)" stroke-width="18" stroke-linecap="round"></path>
+                                        <path d="M80 220c-2 14-12 22-24 24-8 2-12-6-10-12 6-18 20-34 32-40" fill="url(#rat-fur)" stroke="#786f9b" stroke-width="3" stroke-linecap="round"></path>
+                                        <path d="M132 220c2 14 12 22 24 24 8 2 12-6 10-12-6-18-20-34-32-40" fill="url(#rat-fur)" stroke="#786f9b" stroke-width="3" stroke-linecap="round"></path>
+                                    </g>
                                 </g>
                                 <g data-layer="outfit" class="outfit-classic">
-                                    <path d="M40 106c6-18 20-26 30-26s24 8 30 26H40z" fill="#7f9cff" stroke="#c7d6ff" stroke-width="3" stroke-linejoin="round"></path>
-                                    <circle cx="70" cy="98" r="4" fill="#f5f3ff"></circle>
+                                    <path d="M72 158c-12 36-10 74 6 94 20 24 54 24 74 0 16-20 18-58 6-94-6-18-22-32-44-34s-38 12-42 34z" fill="url(#classic-coat)" stroke="#d8e3ff" stroke-width="4" stroke-linejoin="round"></path>
+                                    <path d="M112 150l-10 32 20 12 20-12-10-32z" fill="#f5f7ff" opacity="0.65"></path>
+                                    <circle cx="110" cy="204" r="5" fill="#f9fcff"></circle>
                                 </g>
                                 <g data-layer="outfit" class="outfit-hoodie">
-                                    <path d="M32 108c4-22 18-34 38-34s34 12 38 34H32z" fill="#6d55b9" stroke="#9e84ff" stroke-width="3" stroke-linejoin="round"></path>
-                                    <path d="M44 66c8-10 16-12 26-12s18 2 26 12c4 6 6 16 4 20-2 4-12 10-30 10s-28-6-30-10c-2-4 0-14 4-20z" fill="#7563d1" opacity="0.85"></path>
+                                    <path d="M68 164c-8 40-4 86 18 106 18 14 48 14 66 0 22-20 26-66 18-106-4-20-22-38-50-38s-46 18-52 38z" fill="url(#hoodie-body)" stroke="#a99bff" stroke-width="4" stroke-linejoin="round"></path>
+                                    <path d="M82 150c12-16 26-22 46-22s34 6 46 22c6 8 10 22 6 32-4 8-22 18-52 18s-48-10-52-18c-4-10 0-24 6-32z" fill="#2f216a" opacity="0.35"></path>
+                                    <path d="M90 182c10 10 20 14 20 34" stroke="#d9d3ff" stroke-width="4" stroke-linecap="round"></path>
                                 </g>
                                 <g data-layer="outfit" class="outfit-adventurer">
-                                    <path d="M36 110l8-26h52l8 26H36z" fill="#f0a95d" stroke="#ffcf90" stroke-width="3" stroke-linejoin="round"></path>
-                                    <path d="M50 84l6-16h28l6 16z" fill="#d98946"></path>
-                                    <path d="M48 86h44l-4 12H52z" fill="#b86f32"></path>
+                                    <path d="M74 156c-8 16-12 52-6 86 2 12 10 24 20 32 24 18 64 8 78-24 16-38 12-82-2-110-10-20-26-26-44-26-22 0-38 12-46 42z" fill="url(#adventurer-cloak)" stroke="#ffe1b2" stroke-width="4" stroke-linejoin="round"></path>
+                                    <path d="M82 190h72l-10 26H92z" fill="#9b4a18" opacity="0.6"></path>
+                                    <path d="M104 164l10-20h28l10 20z" fill="#5f2d10" opacity="0.6"></path>
                                 </g>
                             </g>
                         </svg>
