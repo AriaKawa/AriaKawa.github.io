@@ -85,138 +85,76 @@
         }
 
         .page {
-            width: min(1100px, 100%);
+            width: min(1200px, 100%);
             display: grid;
+            grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
             gap: clamp(2.2rem, 4vw, 3.4rem);
+            align-items: start;
         }
 
-        .page-header {
+        .games-panel {
             display: grid;
-            gap: 1.2rem;
-            background: linear-gradient(150deg, rgba(21, 13, 40, 0.85), rgba(7, 5, 20, 0.92));
-            border-radius: var(--radius-lg);
-            padding: clamp(2rem, 4vw, 3rem);
-            border: 1px solid rgba(147, 198, 255, 0.18);
-            position: relative;
-            overflow: hidden;
+            gap: clamp(1.2rem, 3vw, 2.4rem);
+            justify-items: start;
+            align-content: start;
+            text-align: left;
         }
 
-        .header-bar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 1rem;
-        }
-
-        .account-area {
-            position: relative;
-            display: inline-flex;
-            align-items: center;
-        }
-
-        .account-button {
-            appearance: none;
-            border: none;
-            background: rgba(147, 198, 255, 0.12);
-            color: var(--accent-blue);
-            border-radius: 999px;
-            padding: 0.45rem 1.1rem;
-            font-weight: 600;
-            font-size: 0.9rem;
-            letter-spacing: 0.02em;
-            cursor: pointer;
-            transition: background 0.25s ease, transform 0.25s ease;
-        }
-
-        .account-button:hover,
-        .account-button:focus-visible {
-            background: rgba(147, 198, 255, 0.24);
-            transform: translateY(-1px);
-            outline: none;
-        }
-
-        .account-button.is-active {
-            background: linear-gradient(135deg, var(--accent-blue), var(--accent-pink));
-            color: #140827;
-        }
-
-        .account-menu {
-            position: absolute;
-            top: calc(100% + 0.6rem);
-            right: 0;
-            background: rgba(13, 8, 32, 0.95);
-            border: 1px solid rgba(147, 198, 255, 0.18);
-            border-radius: var(--radius-sm);
-            padding: 0.95rem;
-            display: grid;
-            gap: 0.95rem;
-            width: min(240px, 70vw);
-            box-shadow: 0 25px 60px rgba(5, 3, 17, 0.65);
-            z-index: 20;
-        }
-
-        .account-greeting {
+        .panel-title {
             margin: 0;
-            font-size: 0.85rem;
+            font-size: clamp(2rem, 5vw, 3rem);
+        }
+
+        .panel-description {
+            margin: 0;
+            max-width: 52ch;
             color: var(--text-muted);
         }
 
-        .account-greeting strong {
-            color: var(--accent-lavender);
+        .games-panel .panel-description {
+            text-align: left;
         }
 
-        .account-action {
-            appearance: none;
-            border: none;
-            border-radius: var(--radius-sm);
-            padding: 0.6rem 1rem;
-            font-weight: 600;
-            font-size: 0.9rem;
-            cursor: pointer;
-            background: linear-gradient(135deg, var(--accent-blue), var(--accent-pink));
-            color: #140827;
-            transition: transform 0.25s ease, box-shadow 0.25s ease;
+        .games-panel .project-grid {
+            width: min(560px, 100%);
+            margin-left: 0;
+            margin-right: auto;
         }
 
-        .account-action:hover,
-        .account-action:focus-visible {
-            transform: translateY(-1px);
-            box-shadow: 0 20px 35px rgba(247, 167, 218, 0.28);
-            outline: none;
-        }
-
-        .avatar-editor {
-            border-radius: var(--radius-sm);
-            background: rgba(19, 12, 42, 0.72);
-            border: 1px solid rgba(147, 198, 255, 0.14);
-            padding: 0.75rem;
-            display: grid;
-            gap: 0.75rem;
-        }
-
-        .avatar-heading {
+        .avatar-panel {
             display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 0.5rem;
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: var(--text-muted);
+            justify-content: center;
+        }
+
+        .avatar-card {
+            display: grid;
+            gap: 1.4rem;
+            padding: clamp(1.8rem, 3.6vw, 2.6rem);
+            border-radius: var(--radius-lg);
+            background: linear-gradient(150deg, rgba(21, 13, 40, 0.88), rgba(7, 5, 20, 0.94));
+            border: 1px solid rgba(147, 198, 255, 0.18);
+            box-shadow: var(--shadow-strong);
+            width: min(420px, 100%);
+        }
+
+        .avatar-card h2 {
+            margin: 0;
+            font-size: clamp(1.6rem, 3.6vw, 2.2rem);
         }
 
         .avatar-preview {
             display: flex;
             align-items: center;
             justify-content: center;
-            background: radial-gradient(circle at top, rgba(147, 198, 255, 0.18), transparent 65%);
-            border-radius: var(--radius-sm);
-            padding: 0.5rem;
+            background: radial-gradient(circle at top, rgba(147, 198, 255, 0.25), transparent 65%);
+            border-radius: var(--radius-lg);
+            padding: clamp(1.2rem, 3vw, 1.8rem);
+            border: 1px solid rgba(147, 198, 255, 0.2);
         }
 
         .rat-avatar {
-            width: 110px;
-            height: 110px;
+            width: clamp(180px, 28vw, 240px);
+            height: clamp(180px, 28vw, 240px);
         }
 
         .rat-avatar svg {
@@ -321,25 +259,9 @@
             color: var(--accent-blue);
         }
 
-        .projects {
-            display: grid;
-            gap: clamp(1.5rem, 3vw, 2.4rem);
-        }
-
-        .section-heading {
-            display: grid;
-            gap: 0.75rem;
-        }
-
         h2 {
             margin: 0;
             font-size: clamp(1.6rem, 3.6vw, 2.4rem);
-        }
-
-        .section-heading p {
-            margin: 0;
-            color: var(--text-muted);
-            max-width: 60ch;
         }
 
         .project-grid {
@@ -488,139 +410,29 @@
             padding-bottom: 0.5rem;
         }
 
-        .auth-backdrop {
-            position: fixed;
-            inset: 0;
-            display: none;
-            place-items: center;
-            background: rgba(5, 3, 17, 0.76);
-            backdrop-filter: blur(18px);
-            z-index: 40;
-            padding: 1.5rem;
-        }
 
-        .auth-backdrop.is-visible {
-            display: grid;
-        }
+        @media (max-width: 960px) {
+            .page {
+                grid-template-columns: 1fr;
+            }
 
-        .auth-dialog {
-            width: min(420px, 100%);
-            background: linear-gradient(160deg, rgba(21, 13, 40, 0.95), rgba(9, 6, 24, 0.92));
-            border: 1px solid rgba(147, 198, 255, 0.25);
-            border-radius: var(--radius-lg);
-            box-shadow: 0 35px 70px rgba(5, 3, 17, 0.8);
-            padding: 2.2rem;
-            display: grid;
-            gap: 1.4rem;
-        }
+            .games-panel {
+                justify-items: center;
+                text-align: center;
+            }
 
-        .auth-dialog h2 {
-            font-size: 1.6rem;
-            margin: 0;
-        }
+            .games-panel .project-grid {
+                width: 100%;
+            }
 
-        .auth-dialog p {
-            margin: 0;
-            color: var(--text-muted);
-            font-size: 0.95rem;
-        }
-
-        .auth-form {
-            display: grid;
-            gap: 1rem;
-        }
-
-        .auth-field {
-            display: grid;
-            gap: 0.45rem;
-        }
-
-        .auth-field label {
-            font-size: 0.85rem;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-            color: var(--accent-blue);
-        }
-
-        .auth-field input {
-            width: 100%;
-            padding: 0.75rem 0.9rem;
-            border-radius: var(--radius-sm);
-            border: 1px solid rgba(147, 198, 255, 0.24);
-            background: rgba(12, 7, 28, 0.65);
-            color: var(--text-primary);
-            font-size: 0.95rem;
-            transition: border 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .auth-field input:focus {
-            outline: none;
-            border-color: rgba(247, 167, 218, 0.7);
-            box-shadow: 0 0 0 3px rgba(247, 167, 218, 0.2);
-        }
-
-        .auth-actions {
-            display: flex;
-            justify-content: flex-end;
-            gap: 0.75rem;
-        }
-
-        .auth-button {
-            appearance: none;
-            border: none;
-            border-radius: var(--radius-sm);
-            padding: 0.7rem 1.3rem;
-            font-weight: 600;
-            font-size: 0.95rem;
-            cursor: pointer;
-            transition: transform 0.25s ease, box-shadow 0.25s ease;
-        }
-
-        .auth-button.secondary {
-            background: rgba(147, 198, 255, 0.12);
-            color: var(--accent-blue);
-        }
-
-        .auth-button.primary {
-            background: linear-gradient(135deg, var(--accent-blue), var(--accent-pink));
-            color: #140827;
-            box-shadow: 0 18px 32px rgba(147, 198, 255, 0.28);
-        }
-
-        .auth-button:hover,
-        .auth-button:focus-visible {
-            transform: translateY(-1px);
-            outline: none;
-        }
-
-        .auth-button.primary:hover,
-        .auth-button.primary:focus-visible {
-            box-shadow: 0 22px 40px rgba(247, 167, 218, 0.32);
+            .avatar-panel {
+                justify-content: center;
+            }
         }
 
         @media (max-width: 720px) {
             body {
                 padding: clamp(1.2rem, 6vw, 2rem);
-            }
-
-            .header-bar {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 1.4rem;
-            }
-
-            .account-area {
-                width: 100%;
-            }
-
-            .account-button {
-                width: 100%;
-                justify-content: center;
-            }
-
-            .account-menu {
-                position: static;
-                width: 100%;
             }
 
             .card-top {
@@ -638,84 +450,9 @@
         </button>
     </div>
     <main class="page">
-        <header class="page-header">
-            <div class="header-bar">
-                <span class="eyebrow">Aria &amp; Friends</span>
-                <div class="account-area">
-                    <button class="account-button" type="button" aria-haspopup="true" aria-expanded="false">
-                        Sign in
-                    </button>
-                    <div class="account-menu" role="menu" hidden>
-                        <p class="account-greeting">Signed in as <strong class="account-name">Guest</strong></p>
-                        <div class="avatar-editor" data-avatar-editor hidden>
-                            <div class="avatar-heading">
-                                <span>Avatar</span>
-                                <span>Rat style</span>
-                            </div>
-                            <div class="avatar-preview">
-                                <div class="rat-avatar" data-outfit="classic">
-                                    <svg viewBox="0 0 140 140" role="img" aria-label="Rat avatar illustration">
-                                        <defs>
-                                            <linearGradient id="rat-fur" x1="0%" x2="100%" y1="0%" y2="100%">
-                                                <stop offset="0%" stop-color="#c7c3d9"></stop>
-                                                <stop offset="100%" stop-color="#9c97b2"></stop>
-                                            </linearGradient>
-                                            <linearGradient id="rat-ear" x1="0%" x2="100%" y1="0%" y2="100%">
-                                                <stop offset="0%" stop-color="#f7b4d2"></stop>
-                                                <stop offset="100%" stop-color="#f48cbf"></stop>
-                                            </linearGradient>
-                                        </defs>
-                                        <g fill="none" fill-rule="evenodd">
-                                            <g transform="translate(20 15)">
-                                                <ellipse cx="50" cy="82" rx="42" ry="28" fill="url(#rat-fur)"></ellipse>
-                                                <circle cx="50" cy="45" r="34" fill="url(#rat-fur)"></circle>
-                                                <path d="M93 82c12 6 16 14 12 20s-14 4-26-2" stroke="#f2aac9" stroke-width="6" stroke-linecap="round"></path>
-                                                <ellipse cx="26" cy="16" rx="14" ry="18" fill="url(#rat-ear)" transform="rotate(-20 26 16)"></ellipse>
-                                                <ellipse cx="74" cy="16" rx="14" ry="18" fill="url(#rat-ear)" transform="rotate(20 74 16)"></ellipse>
-                                                <circle cx="38" cy="46" r="6" fill="#2f1d3e"></circle>
-                                                <circle cx="62" cy="46" r="6" fill="#2f1d3e"></circle>
-                                                <path d="M50 60c4 0 8 3 8 6s-4 4-8 4-8-1-8-4 4-6 8-6z" fill="#f5d3de"></path>
-                                            </g>
-                                            <g data-layer="outfit" class="outfit-classic">
-                                                <path d="M40 106c6-18 20-26 30-26s24 8 30 26H40z" fill="#7f9cff" stroke="#c7d6ff" stroke-width="3" stroke-linejoin="round"></path>
-                                                <circle cx="70" cy="98" r="4" fill="#f5f3ff"></circle>
-                                            </g>
-                                            <g data-layer="outfit" class="outfit-hoodie">
-                                                <path d="M32 108c4-22 18-34 38-34s34 12 38 34H32z" fill="#6d55b9" stroke="#9e84ff" stroke-width="3" stroke-linejoin="round"></path>
-                                                <path d="M44 66c8-10 16-12 26-12s18 2 26 12c4 6 6 16 4 20-2 4-12 10-30 10s-28-6-30-10c-2-4 0-14 4-20z" fill="#7563d1" opacity="0.85"></path>
-                                            </g>
-                                            <g data-layer="outfit" class="outfit-adventurer">
-                                                <path d="M36 110l8-26h52l8 26H36z" fill="#f0a95d" stroke="#ffcf90" stroke-width="3" stroke-linejoin="round"></path>
-                                                <path d="M50 84l6-16h28l6 16z" fill="#d98946"></path>
-                                                <path d="M48 86h44l-4 12H52z" fill="#b86f32"></path>
-                                            </g>
-                                        </g>
-                                    </svg>
-                                </div>
-                            </div>
-                            <fieldset class="avatar-options">
-                                <legend>Outfit</legend>
-                                <label class="avatar-option">
-                                    <input type="radio" name="avatar-outfit" value="classic" checked>
-                                    Cozy Classic
-                                </label>
-                                <label class="avatar-option">
-                                    <input type="radio" name="avatar-outfit" value="hoodie">
-                                    Midnight Hoodie
-                                </label>
-                                <label class="avatar-option">
-                                    <input type="radio" name="avatar-outfit" value="adventurer">
-                                    Adventurer Cape
-                                </label>
-                            </fieldset>
-                        </div>
-                        <button class="account-action" type="button" data-action="sign-out">Sign out</button>
-                    </div>
-                </div>
-            </div>
-        </header>
-
-        <section class="projects">
+        <section class="games-panel">
+            <h1 class="panel-title">Game Vault</h1>
+            <p class="panel-description">Pick a game from the collection and jump straight into the fun.</p>
             <div class="project-grid">
                 <article class="project-card" data-status="live">
                     <div class="card-top">
@@ -755,33 +492,73 @@
             </div>
         </section>
 
+        <aside class="avatar-panel">
+            <div class="avatar-card" data-avatar-card>
+                <h2 id="avatar-title">Customize your avatar</h2>
+                <p class="panel-description">Choose an outfit for your rat companion before you head into a game.</p>
+                <div class="avatar-preview" aria-describedby="avatar-title">
+                    <div class="rat-avatar" data-outfit="classic" aria-live="polite">
+                        <svg viewBox="0 0 140 140" role="img" aria-label="Rat avatar illustration">
+                            <defs>
+                                <linearGradient id="rat-fur" x1="0%" x2="100%" y1="0%" y2="100%">
+                                    <stop offset="0%" stop-color="#c7c3d9"></stop>
+                                    <stop offset="100%" stop-color="#9c97b2"></stop>
+                                </linearGradient>
+                                <linearGradient id="rat-ear" x1="0%" x2="100%" y1="0%" y2="100%">
+                                    <stop offset="0%" stop-color="#f7b4d2"></stop>
+                                    <stop offset="100%" stop-color="#f48cbf"></stop>
+                                </linearGradient>
+                            </defs>
+                            <g fill="none" fill-rule="evenodd">
+                                <g transform="translate(20 15)">
+                                    <ellipse cx="50" cy="82" rx="42" ry="28" fill="url(#rat-fur)"></ellipse>
+                                    <circle cx="50" cy="45" r="34" fill="url(#rat-fur)"></circle>
+                                    <path d="M93 82c12 6 16 14 12 20s-14 4-26-2" stroke="#f2aac9" stroke-width="6" stroke-linecap="round"></path>
+                                    <ellipse cx="26" cy="16" rx="14" ry="18" fill="url(#rat-ear)" transform="rotate(-20 26 16)"></ellipse>
+                                    <ellipse cx="74" cy="16" rx="14" ry="18" fill="url(#rat-ear)" transform="rotate(20 74 16)"></ellipse>
+                                    <circle cx="38" cy="46" r="6" fill="#2f1d3e"></circle>
+                                    <circle cx="62" cy="46" r="6" fill="#2f1d3e"></circle>
+                                    <path d="M50 60c4 0 8 3 8 6s-4 4-8 4-8-1-8-4 4-6 8-6z" fill="#f5d3de"></path>
+                                </g>
+                                <g data-layer="outfit" class="outfit-classic">
+                                    <path d="M40 106c6-18 20-26 30-26s24 8 30 26H40z" fill="#7f9cff" stroke="#c7d6ff" stroke-width="3" stroke-linejoin="round"></path>
+                                    <circle cx="70" cy="98" r="4" fill="#f5f3ff"></circle>
+                                </g>
+                                <g data-layer="outfit" class="outfit-hoodie">
+                                    <path d="M32 108c4-22 18-34 38-34s34 12 38 34H32z" fill="#6d55b9" stroke="#9e84ff" stroke-width="3" stroke-linejoin="round"></path>
+                                    <path d="M44 66c8-10 16-12 26-12s18 2 26 12c4 6 6 16 4 20-2 4-12 10-30 10s-28-6-30-10c-2-4 0-14 4-20z" fill="#7563d1" opacity="0.85"></path>
+                                </g>
+                                <g data-layer="outfit" class="outfit-adventurer">
+                                    <path d="M36 110l8-26h52l8 26H36z" fill="#f0a95d" stroke="#ffcf90" stroke-width="3" stroke-linejoin="round"></path>
+                                    <path d="M50 84l6-16h28l6 16z" fill="#d98946"></path>
+                                    <path d="M48 86h44l-4 12H52z" fill="#b86f32"></path>
+                                </g>
+                            </g>
+                        </svg>
+                    </div>
+                </div>
+                <fieldset class="avatar-options" aria-describedby="avatar-title">
+                    <legend>Outfit</legend>
+                    <label class="avatar-option">
+                        <input type="radio" name="avatar-outfit" value="classic" checked>
+                        Cozy Classic
+                    </label>
+                    <label class="avatar-option">
+                        <input type="radio" name="avatar-outfit" value="hoodie">
+                        Midnight Hoodie
+                    </label>
+                    <label class="avatar-option">
+                        <input type="radio" name="avatar-outfit" value="adventurer">
+                        Adventurer Cape
+                    </label>
+                </fieldset>
+            </div>
+        </aside>
+
         <footer>
             Crafted with stardust gradients and a dash of Sylveon charm. Ping Aria for collab ideas.
         </footer>
     </main>
-
-    <div class="auth-backdrop" role="dialog" aria-modal="true" aria-labelledby="auth-title">
-        <div class="auth-dialog">
-            <div>
-                <h2 id="auth-title">Welcome back</h2>
-                <p>Sign in to sync your favorite projects and keep tabs on new drops.</p>
-            </div>
-            <form class="auth-form" id="auth-form">
-                <div class="auth-field">
-                    <label for="display-name">Display name</label>
-                    <input id="display-name" name="displayName" type="text" autocomplete="name" required placeholder="Sylveon Fan" maxlength="32">
-                </div>
-                <div class="auth-field">
-                    <label for="email">Email</label>
-                    <input id="email" name="email" type="email" autocomplete="email" required placeholder="you@example.com">
-                </div>
-                <div class="auth-actions">
-                    <button class="auth-button secondary" type="button" data-action="cancel">Cancel</button>
-                    <button class="auth-button primary" type="submit">Sign in</button>
-                </div>
-            </form>
-        </div>
-    </div>
 
     <script>
         function handleBack(event) {
@@ -823,260 +600,70 @@
             })
             .catch((err) => console.warn("Firebase analytics not supported", err));
 
-        const accountKey = "ak-project-vault-account";
-        const accountButton = document.querySelector(".account-button");
-        const accountMenu = document.querySelector(".account-menu");
-        const accountName = document.querySelector(".account-name");
-        const accountArea = document.querySelector(".account-area");
-        const authBackdrop = document.querySelector(".auth-backdrop");
-        const authForm = document.querySelector("#auth-form");
+        const avatarCard = document.querySelector('[data-avatar-card]');
+        const avatarPreview = avatarCard?.querySelector('.rat-avatar') ?? null;
+        const outfitInputs = avatarCard
+            ? Array.from(avatarCard.querySelectorAll('input[name="avatar-outfit"]'))
+            : [];
 
-        if (
-            accountButton &&
-            accountMenu &&
-            accountName &&
-            accountArea &&
-            authBackdrop &&
-            authForm
-        ) {
-            const cancelAuthButton = authForm.querySelector('[data-action="cancel"]');
-            const signOutButton = accountMenu.querySelector('[data-action="sign-out"]');
-            const nameInput = authForm.querySelector('#display-name');
-            const emailInput = authForm.querySelector('#email');
-            const avatarEditor = accountMenu.querySelector('[data-avatar-editor]');
-            const avatarPreview = avatarEditor?.querySelector('.rat-avatar') ?? null;
-            const outfitInputs = avatarEditor
-                ? Array.from(avatarEditor.querySelectorAll('input[name="avatar-outfit"]'))
-                : [];
+        if (!avatarCard || !avatarPreview || outfitInputs.length === 0) {
+            return;
+        }
 
-            let menuOpen = false;
-            let activeAccount = null;
-            let storageAvailable = true;
+        const storageKey = 'ak-avatar-outfit';
+        const defaultOutfit = 'classic';
+        let storageAvailable = true;
 
-            const defaultAvatar = { outfit: "classic" };
+        const applyOutfit = (outfit) => {
+            avatarPreview.dataset.outfit = outfit;
+            outfitInputs.forEach((input) => {
+                input.checked = input.value === outfit;
+            });
+        };
 
-            const normalizeAccount = (account) => {
-                if (!account) return null;
-                const normalized = { ...account };
-                normalized.avatar = {
-                    ...defaultAvatar,
-                    ...(account.avatar || {}),
-                };
-                return normalized;
-            };
-
-            const getActiveAvatar = () => {
-                if (!activeAccount) {
-                    return { ...defaultAvatar };
-                }
-                return {
-                    ...defaultAvatar,
-                    ...(activeAccount.avatar || {}),
-                };
-            };
-
-            const updateAvatarUI = () => {
-                if (!avatarPreview || !avatarEditor) return;
-                if (!activeAccount) {
-                    avatarPreview.dataset.outfit = defaultAvatar.outfit;
-                    avatarEditor.hidden = true;
-                    outfitInputs.forEach((input) => {
-                        input.checked = input.value === defaultAvatar.outfit;
-                    });
-                    return;
-                }
-
-                const avatar = getActiveAvatar();
-                avatarEditor.hidden = false;
-                avatarPreview.dataset.outfit = avatar.outfit;
-                outfitInputs.forEach((input) => {
-                    input.checked = input.value === avatar.outfit;
-                });
-            };
-
-            let storedAccount = null;
+        const persistOutfit = (outfit) => {
+            if (!storageAvailable) return;
             try {
-                storedAccount = window.localStorage.getItem(accountKey);
+                window.localStorage.setItem(storageKey, outfit);
             } catch (error) {
                 storageAvailable = false;
-                console.warn("Account storage unavailable", error);
+                console.warn('Unable to save avatar outfit', error);
+            }
+        };
+
+        const loadOutfit = () => {
+            if (!storageAvailable) {
+                return defaultOutfit;
             }
 
-            if (storedAccount) {
-                try {
-                    activeAccount = normalizeAccount(JSON.parse(storedAccount));
-                } catch (error) {
-                    console.warn("Unable to parse stored account", error);
-                    if (storageAvailable) {
-                        window.localStorage.removeItem(accountKey);
-                    }
+            try {
+                const stored = window.localStorage.getItem(storageKey);
+                if (stored) {
+                    return stored;
                 }
+            } catch (error) {
+                storageAvailable = false;
+                console.warn('Avatar outfit storage unavailable', error);
             }
 
-            const persistAccount = (account) => {
-                if (!storageAvailable) return;
-                try {
-                    if (account) {
-                        const normalized = normalizeAccount(account);
-                        if (normalized) {
-                            activeAccount = normalized;
-                        }
-                        window.localStorage.setItem(accountKey, JSON.stringify(normalized));
-                    } else {
-                        window.localStorage.removeItem(accountKey);
-                    }
-                } catch (error) {
-                    storageAvailable = false;
-                    console.warn("Unable to persist account", error);
-                }
-            };
+            return defaultOutfit;
+        };
 
-            const closeMenu = () => {
-                if (!menuOpen) return;
-                accountMenu.hidden = true;
-                accountButton.setAttribute("aria-expanded", "false");
-                accountButton.classList.remove("is-active");
-                menuOpen = false;
-            };
+        const initialOutfit = loadOutfit();
+        applyOutfit(initialOutfit);
 
-            const openMenu = () => {
-                accountMenu.hidden = false;
-                accountButton.setAttribute("aria-expanded", "true");
-                accountButton.classList.add("is-active");
-                menuOpen = true;
-            };
-
-            const openAuthModal = () => {
-                authBackdrop.classList.add("is-visible");
-                closeMenu();
-                if (activeAccount && nameInput && emailInput) {
-                    nameInput.value = activeAccount.name;
-                    emailInput.value = activeAccount.email;
-                }
-                if (nameInput) {
-                    requestAnimationFrame(() => {
-                        nameInput.focus();
-                    });
-                }
-            };
-
-            const closeAuthModal = () => {
-                authBackdrop.classList.remove("is-visible");
-                authForm.reset();
-                accountButton.focus();
-            };
-
-            const getGreetingName = (name) => {
-                if (!name) return "Friend";
-                const trimmed = name.trim();
-                if (!trimmed.includes(" ")) {
-                    return trimmed;
-                }
-                return trimmed.split(" ")[0];
-            };
-
-            const updateAccountUI = () => {
-                if (activeAccount) {
-                    const greetingName = getGreetingName(activeAccount.name);
-                    accountName.textContent = activeAccount.name;
-                    accountButton.textContent = `Hi, ${greetingName}`;
-                    accountButton.dataset.state = "signed-in";
-                    accountButton.setAttribute("aria-expanded", menuOpen ? "true" : "false");
-                    updateAvatarUI();
-                } else {
-                    accountName.textContent = "Guest";
-                    accountButton.textContent = "Sign in";
-                    accountButton.dataset.state = "signed-out";
-                    accountButton.classList.remove("is-active");
-                    accountButton.setAttribute("aria-expanded", "false");
-                    accountMenu.hidden = true;
-                    menuOpen = false;
-                    updateAvatarUI();
-                }
-            };
-
-            updateAccountUI();
-
-            outfitInputs.forEach((input) => {
-                input.addEventListener("change", (event) => {
-                    if (!activeAccount) return;
-                    const target = event.target;
-                    if (!(target instanceof HTMLInputElement) || !target.checked) return;
-                    const outfit = target.value;
-                    activeAccount = normalizeAccount({
-                        ...activeAccount,
-                        avatar: {
-                            ...getActiveAvatar(),
-                            outfit,
-                        },
-                    });
-                    persistAccount(activeAccount);
-                    updateAvatarUI();
-                });
-            });
-
-            accountButton.addEventListener("click", () => {
-                if (accountButton.dataset.state === "signed-in") {
-                    if (menuOpen) {
-                        closeMenu();
-                    } else {
-                        openMenu();
-                    }
-                } else {
-                    openAuthModal();
-                }
-            });
-
-            document.addEventListener("click", (event) => {
-                if (!menuOpen) return;
-                if (!accountArea.contains(event.target)) {
-                    closeMenu();
-                }
-            });
-
-            document.addEventListener("keydown", (event) => {
-                if (event.key === "Escape") {
-                    if (authBackdrop.classList.contains("is-visible")) {
-                        closeAuthModal();
-                    }
-                    closeMenu();
-                }
-            });
-
-            authBackdrop.addEventListener("click", (event) => {
-                if (event.target === authBackdrop) {
-                    closeAuthModal();
-                }
-            });
-
-            cancelAuthButton?.addEventListener("click", () => {
-                closeAuthModal();
-            });
-
-            authForm.addEventListener("submit", (event) => {
-                event.preventDefault();
-                const formData = new FormData(authForm);
-                const name = formData.get("displayName").trim();
-                const email = formData.get("email").trim().toLowerCase();
-
-                if (!name || !email) {
+        outfitInputs.forEach((input) => {
+            input.addEventListener('change', (event) => {
+                const target = event.target;
+                if (!(target instanceof HTMLInputElement) || !target.checked) {
                     return;
                 }
 
-                activeAccount = normalizeAccount({ name, email });
-                persistAccount(activeAccount);
-                updateAccountUI();
-                closeAuthModal();
+                const outfit = target.value || defaultOutfit;
+                applyOutfit(outfit);
+                persistOutfit(outfit);
             });
-
-            signOutButton?.addEventListener("click", () => {
-                persistAccount(null);
-                activeAccount = null;
-                updateAccountUI();
-            });
-        } else {
-            console.warn("Account UI failed to initialize.");
-        }
+        });
     </script>
 </body>
 </html>
