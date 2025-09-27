@@ -56,19 +56,28 @@
   /* Lanes */
   .lane{ position:absolute; left:50%; transform:translateX(-50%); width:80%; }
   .dealer.lane{ top:10%; }
-  .player.lane{
-    bottom:12%;
+  .lane.seats{
+    bottom:7%;
+    width:86%;
+    display:grid;
+    grid-template-columns:repeat(4, minmax(0, 1fr));
+    gap:1.1rem;
+    align-items:end;
+    justify-items:center;
+    padding:0 1.4rem;
+  }
+
+  .seat-wrapper{
     display:flex;
     justify-content:center;
+    align-items:flex-end;
+    min-height:190px;
+    width:100%;
   }
-  .lane.others{
-    bottom:36%;
-    display:flex;
-    justify-content:center;
-    gap:1.3rem;
-    flex-wrap:wrap;
-    padding:0 1rem;
-  }
+  .seat-wrapper.slot-0{ justify-self:start; }
+  .seat-wrapper.slot-1{ justify-self:center; }
+  .seat-wrapper.slot-2{ justify-self:center; }
+  .seat-wrapper.slot-3{ justify-self:end; }
 
   .player-seat{
     position:relative;
@@ -83,12 +92,6 @@
     box-shadow:inset 0 0 0 1px rgba(255,255,255,.07);
     backdrop-filter:blur(6px);
     -webkit-backdrop-filter:blur(6px);
-  }
-  .player-seat.main{
-    margin:0 auto;
-  }
-  .player-seat.main .seat-label{
-    margin-top:.35rem;
   }
   .player-seat .spot{ width:100%; }
   .player-seat.active{
@@ -133,7 +136,8 @@
   @media (max-width:720px){ .spot{ height:120px; } }
 
   @media (max-width:720px){
-    .lane.others{ bottom:38%; gap:.8rem; }
+    .lane.seats{ bottom:8%; gap:.7rem; padding:0 .8rem; }
+    .seat-wrapper{ min-height:150px; }
     .player-seat{ width:150px; padding:.5rem .35rem .7rem; }
   }
 
@@ -260,18 +264,7 @@
       <div class="spot" id="dealerSpot"></div>
     </div>
 
-    <div class="lane others hidden" id="othersLane"></div>
-
-    <div class="lane player">
-      <div class="player-seat main" id="playerSeat">
-        <div class="spot" id="playerSpot"></div>
-        <div class="seat-label">
-          <div class="seat-name" id="playerName">You</div>
-          <div class="seat-total" id="playerTotalLabel">Waiting for deal</div>
-          <div class="seat-bank" id="playerBankLabel">Bank: 1000</div>
-        </div>
-      </div>
-    </div>
+    <div class="lane seats" id="playersLane"></div>
 
     <div class="status" id="status"></div>
 
@@ -353,13 +346,8 @@
 
   /* ---------- DOM helpers ---------- */
   const dealerSpot = document.getElementById('dealerSpot');
-  const playerSpot = document.getElementById('playerSpot');
-  const playerSeat = document.getElementById('playerSeat');
-  const playerNameLabel = document.getElementById('playerName');
-  const playerTotalLabel = document.getElementById('playerTotalLabel');
-  const playerBankLabel = document.getElementById('playerBankLabel');
+  const playersLane = document.getElementById('playersLane');
   const dealerTotal = document.getElementById('dealerTotal');
-  const othersLane = document.getElementById('othersLane');
   const statusEl = document.getElementById('status');
   const turnIndicator = document.getElementById('turnIndicator');
   const btnDeal = document.getElementById('btnDeal');
@@ -632,60 +620,93 @@
     return tableState.players[clientId];
   }
 
-  function renderOtherPlayers(state){
-    if(!othersLane) return;
-    const entries = Object.entries(tableState.players || {})
-      .filter(([id]) => id !== clientId)
-      .sort((a, b) => {
-        const nameA = (a[1]?.name || '').toLowerCase();
-        const nameB = (b[1]?.name || '').toLowerCase();
-        if(nameA && nameB && nameA !== nameB){
-          return nameA.localeCompare(nameB);
-        }
-        return a[0].localeCompare(b[0]);
-      });
+  const SEAT_CLASSES = ['slot-0','slot-1','slot-2','slot-3'];
 
-    othersLane.innerHTML = '';
-    othersLane.classList.toggle('hidden', entries.length === 0);
-
-    for(const [id, info] of entries){
-      const seat = document.createElement('div');
-      seat.className = 'player-seat';
-      if(state.activePlayer === id){
-        seat.classList.add('active');
-      }
-
-      const spot = document.createElement('div');
-      spot.className = 'spot';
-      seat.appendChild(spot);
-
-      const hand = Array.isArray(info?.hand) ? info.hand : [];
-      renderHand(hand, spot);
-
-      const label = document.createElement('div');
-      label.className = 'seat-label';
-
-      const nameEl = document.createElement('div');
-      nameEl.className = 'seat-name';
-      nameEl.textContent = info?.name || `Player ${id.slice(0,4).toUpperCase()}`;
-      label.appendChild(nameEl);
-
-      const totalEl = document.createElement('div');
-      totalEl.className = 'seat-total';
-      totalEl.textContent = hand.length ? `Total: ${handValue(hand)}` : 'Waiting for deal';
-      label.appendChild(totalEl);
-
-      const bankValue = typeof state.banks?.[id] === 'number'
-        ? state.banks[id]
-        : (typeof info?.bank === 'number' ? info.bank : 1000);
-      const bankEl = document.createElement('div');
-      bankEl.className = 'seat-bank';
-      bankEl.textContent = `Bank: ${bankValue}`;
-      label.appendChild(bankEl);
-
-      seat.appendChild(label);
-      othersLane.appendChild(seat);
+  function playerEntryComparator([idA, infoA],[idB, infoB]){
+    const joinedA = infoA?.joinedAt ?? infoA?.updatedAt ?? 0;
+    const joinedB = infoB?.joinedAt ?? infoB?.updatedAt ?? 0;
+    if(joinedA !== joinedB){
+      return joinedA - joinedB;
     }
+    const nameA = (infoA?.name || '').toLowerCase();
+    const nameB = (infoB?.name || '').toLowerCase();
+    if(nameA !== nameB){
+      return nameA.localeCompare(nameB);
+    }
+    return idA.localeCompare(idB);
+  }
+
+  function getSortedPlayerEntries(){
+    const entries = Object.entries(tableState.players || {});
+    entries.sort(playerEntryComparator);
+    return entries;
+  }
+
+  function renderSeats(state){
+    if(!playersLane) return;
+    const entries = getSortedPlayerEntries();
+    const myIndex = entries.findIndex(([id])=>id === clientId);
+    if(myIndex === -1){
+      const me = tableState.players[clientId];
+      if(me){
+        entries.push([clientId, me]);
+        entries.sort(playerEntryComparator);
+      }
+    }else if(myIndex >= SEAT_CLASSES.length){
+      const [meEntry] = entries.splice(myIndex,1);
+      entries.splice(SEAT_CLASSES.length - 1, 0, meEntry);
+    }
+
+    const seatsToRender = entries.slice(0, SEAT_CLASSES.length);
+    playersLane.innerHTML = '';
+
+    SEAT_CLASSES.forEach((slotClass, index)=>{
+      const wrapper = document.createElement('div');
+      wrapper.className = `seat-wrapper ${slotClass}`;
+      const entry = seatsToRender[index];
+      if(entry){
+        const [id, info] = entry;
+        const seat = document.createElement('div');
+        seat.className = 'player-seat';
+        if(state.activePlayer === id){
+          seat.classList.add('active');
+        }
+
+        const spot = document.createElement('div');
+        spot.className = 'spot';
+        seat.appendChild(spot);
+
+        const hand = Array.isArray(info?.hand) ? info.hand : [];
+        renderHand(hand, spot);
+
+        const label = document.createElement('div');
+        label.className = 'seat-label';
+
+        const nameEl = document.createElement('div');
+        nameEl.className = 'seat-name';
+        nameEl.textContent = info?.name || `Player ${id.slice(0,4).toUpperCase()}`;
+        label.appendChild(nameEl);
+
+        const totalEl = document.createElement('div');
+        totalEl.className = 'seat-total';
+        totalEl.textContent = hand.length ? `Total: ${handValue(hand)}` : 'Waiting for deal';
+        label.appendChild(totalEl);
+
+        const bankValue = typeof state.banks?.[id] === 'number'
+          ? state.banks[id]
+          : (typeof info?.bank === 'number' ? info.bank : 1000);
+        const bankLabel = document.createElement('div');
+        bankLabel.className = 'seat-bank';
+        bankLabel.textContent = `Bank: ${bankValue}`;
+        label.appendChild(bankLabel);
+
+        seat.appendChild(label);
+        wrapper.appendChild(seat);
+      }else{
+        wrapper.classList.add('empty');
+      }
+      playersLane.appendChild(wrapper);
+    });
   }
 
   function isMyTurn(){
@@ -698,55 +719,32 @@
   let autoBlackjackTimer = null;
 
   function computeTurnOrder(){
-    const entries = Object.entries(tableState.players || {});
+    const entries = getSortedPlayerEntries();
     if(!entries.length){
       return [clientId];
     }
-    entries.sort(([,a],[,b])=>{
-      const av = a?.joinedAt ?? a?.updatedAt ?? 0;
-      const bv = b?.joinedAt ?? b?.updatedAt ?? 0;
-      if(av === bv){
-        return (a?.name || '').localeCompare(b?.name || '');
-      }
-      return av - bv;
-    });
     return entries.map(([id])=>id);
   }
 
   function renderTable(){
     const state = tableState.state || defaultState;
-    const me = tableState.players[clientId] || { hand: [], bank: 1000, name: playerName };
+    let me = tableState.players[clientId];
+    if(!me){
+      me = getPlayerEntry();
+    }
     const dealerHand = Array.isArray(tableState.dealer) ? tableState.dealer : [];
-    const playerHand = Array.isArray(me.hand) ? me.hand : [];
 
     renderHand(dealerHand, dealerSpot, { hideHole: !!state.hideDealerHole });
-    renderHand(playerHand, playerSpot);
-    renderOtherPlayers(state);
+    renderSeats(state);
 
     dealerTotal.textContent = state.hideDealerHole && dealerHand.length
       ? `${cardValue(dealerHand[0])} +`
       : handValue(dealerHand);
 
-    if(playerNameLabel){
-      playerNameLabel.textContent = me.name || playerName;
-    }
-    if(playerTotalLabel){
-      playerTotalLabel.textContent = playerHand.length
-        ? `Total: ${handValue(playerHand)}`
-        : 'Waiting for deal';
-    }
-    if(playerSeat){
-      const isActive = state.phase === 'player' && state.activePlayer === clientId;
-      playerSeat.classList.toggle('active', isActive);
-    }
-
     const bankValue = typeof state.banks?.[clientId] === 'number'
       ? state.banks[clientId]
       : (typeof me.bank === 'number' ? me.bank : 1000);
     bankEl.textContent = bankValue;
-    if(playerBankLabel){
-      playerBankLabel.textContent = `Bank: ${bankValue}`;
-    }
 
     if(transientStatus && Date.now() < transientStatus.until){
       statusEl.textContent = transientStatus.message;
