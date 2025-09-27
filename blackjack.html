@@ -124,6 +124,8 @@
     align-items:center;
     gap:.4rem;
     margin-top:.35rem;
+    flex-wrap:wrap;
+    justify-content:center;
   }
   .bet-controls .bet-display{
     font-weight:700;
@@ -135,6 +137,21 @@
     border-radius:12px;
     min-width:0;
     line-height:1;
+  }
+  .bet-controls .confirm-button{
+    flex:1 1 100%;
+    margin-top:.1rem;
+  }
+  .seat-confirmation{
+    font-size:.78rem;
+    opacity:.8;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+  }
+  .seat-confirmation.ready{
+    color:var(--accent);
+    opacity:1;
   }
 
   /* Card */
@@ -297,7 +314,6 @@
     <div class="status" id="status"></div>
 
     <div class="controls" id="controls">
-      <button class="primary" id="btnDeal">Deal</button>
       <button class="primary muted" id="btnHit">Hit</button>
       <button class="ghost muted" id="btnStand">Stand</button>
       <button class="ghost" id="btnNew">New Shoe</button>
@@ -378,7 +394,6 @@
   const dealerTotal = document.getElementById('dealerTotal');
   const statusEl = document.getElementById('status');
   const turnIndicator = document.getElementById('turnIndicator');
-  const btnDeal = document.getElementById('btnDeal');
   const btnHit = document.getElementById('btnHit');
   const btnStand = document.getElementById('btnStand');
   const btnNew = document.getElementById('btnNew');
@@ -449,9 +464,14 @@
   function setButtons(state){
     const on = (el, ok)=> el.classList.toggle('muted', !ok);
     switch(state){
-      case 'deal': on(btnDeal,true); on(btnHit,false); on(btnStand,false); break;
-      case 'player': on(btnDeal,false); on(btnHit,true); on(btnStand,true); break;
-      default: on(btnDeal,false); on(btnHit,false); on(btnStand,false); break;
+      case 'player':
+        on(btnHit,true);
+        on(btnStand,true);
+        break;
+      default:
+        on(btnHit,false);
+        on(btnStand,false);
+        break;
     }
   }
 
@@ -604,6 +624,7 @@
     hideDealerHole: false,
     banks: {},
     bets: {},
+    confirmedBets: {},
     status: '',
     statusUntil: 0,
     turnOrder: [],
@@ -614,7 +635,7 @@
     shoe: [],
     dealer: [],
     players: {},
-    state: { ...defaultState }
+    state: { ...defaultState, banks: {}, bets: {}, confirmedBets: {} }
   };
 
   function normalizeBet(value){
@@ -629,6 +650,27 @@
       tableState.state.bets = {};
     }
     return tableState.state.bets;
+  }
+
+  function ensureConfirmedMap(){
+    if(!tableState.state.confirmedBets){
+      tableState.state.confirmedBets = {};
+    }
+    return tableState.state.confirmedBets;
+  }
+
+  function setBetConfirmed(id, value){
+    const map = ensureConfirmedMap();
+    if(value){
+      map[id] = true;
+    }else{
+      delete map[id];
+    }
+    return !!map[id];
+  }
+
+  function isBetConfirmed(id){
+    return !!tableState.state.confirmedBets && !!tableState.state.confirmedBets[id];
   }
 
   function setBetForPlayer(id, value){
@@ -787,6 +829,15 @@
     const next = normalizeBet(current + delta);
     if(next === current) return;
     setBetForPlayer(clientId, next);
+    setBetConfirmed(clientId, false);
+    commitRound({ includeDealer:false, includePlayer:false, includeShoe:false, includeState:true });
+    renderTable();
+  }
+
+  function confirmMyBet(){
+    if(tableState.state.phase !== 'waiting') return;
+    if(isBetConfirmed(clientId)) return;
+    setBetConfirmed(clientId, true);
     commitRound({ includeDealer:false, includePlayer:false, includeShoe:false, includeState:true });
     renderTable();
   }
@@ -820,6 +871,8 @@
         if(state.activePlayer === id){
           seat.classList.add('active');
         }
+
+        const confirmed = isBetConfirmed(id);
 
         const spot = document.createElement('div');
         spot.className = 'spot';
@@ -855,6 +908,20 @@
         betLabel.textContent = `Bet: ${betValue}`;
         label.appendChild(betLabel);
 
+        const confirmLabel = document.createElement('div');
+        confirmLabel.className = 'seat-confirmation';
+        if(state.phase === 'waiting'){
+          if(confirmed){
+            confirmLabel.textContent = 'Ready';
+            confirmLabel.classList.add('ready');
+          }else{
+            confirmLabel.textContent = 'Waiting';
+          }
+        }else{
+          confirmLabel.textContent = 'In round';
+        }
+        label.appendChild(confirmLabel);
+
         seat.appendChild(label);
 
         if(id === clientId){
@@ -883,9 +950,19 @@
           decreaseBtn.classList.toggle('muted', !canAdjustBet || betValue <= MIN_BET);
           increaseBtn.classList.toggle('muted', !canAdjustBet || betValue >= MAX_BET);
 
+          const confirmBtn = document.createElement('button');
+          confirmBtn.type = 'button';
+          confirmBtn.className = 'bet-button primary confirm-button';
+          confirmBtn.textContent = confirmed ? 'Ready' : 'Confirm Bet';
+          confirmBtn.dataset.betAction = 'confirm';
+          confirmBtn.dataset.playerId = id;
+          const canConfirm = canAdjustBet && !confirmed;
+          confirmBtn.classList.toggle('muted', !canConfirm);
+
           controls.appendChild(decreaseBtn);
           controls.appendChild(betDisplay);
           controls.appendChild(increaseBtn);
+          controls.appendChild(confirmBtn);
           seat.appendChild(controls);
         }
 
@@ -912,6 +989,38 @@
       return [clientId];
     }
     return entries.map(([id])=>id);
+  }
+
+  function getActivePlayerEntries(){
+    const entries = getSortedPlayerEntries();
+    if(!entries.length && tableState.players[clientId]){
+      entries.push([clientId, tableState.players[clientId]]);
+    }
+    return entries.filter(([id, info])=>{
+      if(!info) return false;
+      const status = String(info.status || '').toLowerCase();
+      return status !== 'offline';
+    });
+  }
+
+  function areAllBetsConfirmed(){
+    const entries = getActivePlayerEntries();
+    if(!entries.length) return false;
+    return entries.every(([id])=> isBetConfirmed(id));
+  }
+
+  function isAutoDealController(){
+    const entries = getActivePlayerEntries();
+    if(!entries.length) return true;
+    const [firstId] = entries[0];
+    return firstId === clientId;
+  }
+
+  function maybeStartAutoDeal(){
+    if(tableState.state.phase !== 'waiting') return;
+    if(!isAutoDealController()) return;
+    if(!areAllBetsConfirmed()) return;
+    startDeal();
   }
 
   function renderTable(){
@@ -946,12 +1055,10 @@
     }
 
     const playerCount = Object.keys(tableState.players || {}).length;
-    if(state.phase === 'waiting'){
-      setButtons('deal');
-    }else if(state.phase === 'player' && state.activePlayer === clientId){
+    if(state.phase === 'player' && state.activePlayer === clientId){
       setButtons('player');
     }else{
-      setButtons('lock');
+      setButtons('waiting');
     }
 
     if(playerCount > 1){
@@ -969,6 +1076,10 @@
       }
     }else{
       turnIndicator.classList.add('hidden');
+    }
+
+    if(state.phase === 'waiting'){
+      maybeStartAutoDeal();
     }
 
     if(autoBlackjackTimer){
@@ -1081,6 +1192,7 @@
     tableState.state.hideDealerHole = false;
     tableState.state.turnOrder = [];
     tableState.state.currentTurnIndex = 0;
+    tableState.state.confirmedBets = {};
 
     const sharedMessage = multiplePlayers ? 'Round complete' : (myMessage || 'Round complete');
     const duration = multiplePlayers ? 1400 : 1500;
@@ -1195,6 +1307,7 @@
     tableState.state.hideDealerHole = true;
     tableState.state.status = '';
     tableState.state.statusUntil = 0;
+    tableState.state.confirmedBets = {};
 
     const extraPlayers = { ...playersToWrite };
     if(extraPlayers[clientId]){
@@ -1261,7 +1374,7 @@
     tableState.shoe = [];
     tableState.dealer = [];
     tableState.players = {};
-    tableState.state = { ...defaultState, banks: {}, bets: {} };
+    tableState.state = { ...defaultState, banks: {}, bets: {}, confirmedBets: {} };
   }
 
   function detachListeners(){
@@ -1335,6 +1448,7 @@
       tableState.state = { ...defaultState, ...(data || {}) };
       if(!tableState.state.banks) tableState.state.banks = {};
       if(!tableState.state.bets) tableState.state.bets = {};
+      if(!tableState.state.confirmedBets) tableState.state.confirmedBets = {};
       renderTable();
     }));
   }
@@ -1391,8 +1505,9 @@
     tableState.state.statusUntil = 0;
     tableState.state.turnOrder = [];
     tableState.state.currentTurnIndex = 0;
+    tableState.state.confirmedBets = {};
     window.location.hash = '';
-    setButtons('deal');
+    setButtons('waiting');
     renderTable();
   }
 
@@ -1424,7 +1539,7 @@
 
     attachListeners();
     joinTable();
-    setButtons('deal');
+    setButtons('waiting');
     renderTable();
   }
 
@@ -1451,6 +1566,11 @@
     }
     tableState.state.bets[clientId] = betValue;
     updates[`${tablePath}/state/bets/${clientId}`] = betValue;
+    if(!tableState.state.confirmedBets){
+      tableState.state.confirmedBets = {};
+    }
+    delete tableState.state.confirmedBets[clientId];
+    updates[`${tablePath}/state/confirmedBets/${clientId}`] = null;
     updates[`${tablePath}/state/updatedBy`] = clientId;
     updates[`${tablePath}/state/updatedAt`] = now;
     update(rootRef, updates).catch(err=>console.warn('Failed to join table', err));
@@ -1608,7 +1728,6 @@
     });
   }
 
-  btnDeal.addEventListener('click', ()=> startDeal());
   btnHit.addEventListener('click', ()=> !btnHit.classList.contains('muted') && playerHit());
   btnStand.addEventListener('click', ()=> !btnStand.classList.contains('muted') && playerStand());
   btnNew.addEventListener('click', ()=> newShoe());
@@ -1625,6 +1744,8 @@
         adjustMyBet(BET_STEP);
       }else if(action === 'decrease'){
         adjustMyBet(-BET_STEP);
+      }else if(action === 'confirm'){
+        confirmMyBet();
       }
     });
   }
