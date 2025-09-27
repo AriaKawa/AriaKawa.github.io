@@ -21,6 +21,24 @@
     margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;
     color:var(--text); background:#0b1020; display:grid; place-items:center;
   }
+  .back-nav{
+    position:fixed; top:18px; right:18px; z-index:10;
+  }
+  .back-nav__button{
+    appearance:none; border:1px solid rgba(233,241,238,.35);
+    background:linear-gradient(135deg, rgba(14,23,36,.85), rgba(11,16,30,.92));
+    color:var(--text); border-radius:999px; display:inline-flex; align-items:center;
+    gap:.4rem; padding:.5rem 1.1rem; font-weight:700; letter-spacing:.04em; cursor:pointer;
+    box-shadow:0 18px 32px rgba(0,0,0,.35); transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+  }
+  .back-nav__button:hover,
+  .back-nav__button:focus-visible{
+    transform:translateY(-1px);
+    border-color:rgba(255,209,59,.6);
+    box-shadow:0 24px 40px rgba(0,0,0,.45);
+    outline:none;
+  }
+  .back-nav__icon{font-size:1.05rem; line-height:1;}
   .table{
     position:relative; width:min(1100px, 96vw); aspect-ratio: 16/9;
     background: radial-gradient(120% 90% at 50% -15%, #208b6e 0, var(--felt) 32%, var(--felt-dark) 95%);
@@ -212,14 +230,6 @@
   }
   .status.show{ opacity:1 }
 
-  /* Exit link */
-  .back-link{
-    position:absolute; top:16px; right:20px; z-index:4; display:inline-flex; align-items:center;
-    gap:.4rem; font-size:.95rem; text-decoration:none; font-weight:600; color:var(--text);
-    background:rgba(0,0,0,.35); padding:.45rem .8rem; border-radius:999px; transition:background .2s ease, transform .2s ease;
-  }
-  .back-link:hover{ background:rgba(0,0,0,.55); transform:translateY(-1px); }
-
   .hidden{ display:none !important; }
 
   .lobby{
@@ -257,7 +267,12 @@
 </style>
 </head>
 <body>
-  <a class="back-link" href="index.html">← Back to the friend hub</a>
+  <div class="back-nav" role="navigation" aria-label="Page navigation">
+    <button type="button" class="back-nav__button" data-home="index.html" onclick="handleBack(event)">
+      <span class="back-nav__icon" aria-hidden="true">&#8592;</span>
+      <span class="back-nav__text">Back</span>
+    </button>
+  </div>
   <div class="lobby" id="lobby">
     <div class="lobby-card" id="lobbyMain">
       <h2>Blackjack Lounge</h2>
@@ -319,6 +334,22 @@
       <button class="ghost" id="btnNew">New Shoe</button>
     </div>
   </div>
+
+  <script>
+    function handleBack(event){
+      if(event){
+        event.preventDefault();
+      }
+
+      const home = event?.currentTarget?.dataset?.home || 'index.html';
+
+      if(window.history.length > 1){
+        window.history.back();
+      }else{
+        window.location.href = home;
+      }
+    }
+  </script>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";

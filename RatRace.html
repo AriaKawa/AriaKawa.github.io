@@ -30,6 +30,24 @@
       linear-gradient(160deg, #05060d 0%, #090f1f 60%, #0c1228 100%);
     display:flex; min-height:100dvh; align-items:center; justify-content:center; padding:24px 0;
   }
+  .back-nav{
+    position:fixed; top:20px; right:22px; z-index:20;
+  }
+  .back-nav__button{
+    appearance:none; border:1px solid rgba(232,238,246,.35);
+    background:linear-gradient(135deg, rgba(18,26,45,.82), rgba(9,14,28,.92));
+    color:var(--text); border-radius:999px; display:inline-flex; align-items:center; gap:.45rem;
+    padding:.55rem 1.15rem; font-weight:700; letter-spacing:.05em; cursor:pointer;
+    box-shadow:0 20px 36px rgba(0,0,0,.4); transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+  }
+  .back-nav__button:hover,
+  .back-nav__button:focus-visible{
+    transform:translateY(-1px);
+    border-color:rgba(255,209,59,.6);
+    box-shadow:0 26px 44px rgba(0,0,0,.48);
+    outline:none;
+  }
+  .back-nav__icon{font-size:1.05rem; line-height:1;}
   .wrap{
     width:min(1240px,96vw); margin:0 auto; display:grid; gap:22px;
     grid-template-columns: 1.15fr .85fr; align-items:start;
@@ -267,6 +285,12 @@
 </style>
 </head>
 <body>
+  <div class="back-nav" role="navigation" aria-label="Page navigation">
+    <button type="button" class="back-nav__button" data-home="index.html" onclick="handleBack(event)">
+      <span class="back-nav__icon" aria-hidden="true">&#8592;</span>
+      <span class="back-nav__text">Back</span>
+    </button>
+  </div>
   <div class="wrap">
     <!-- TRACK -->
     <div class="track" id="track">
@@ -342,6 +366,22 @@
       </table>
     </div>
   </div>
+
+  <script>
+    function handleBack(event){
+      if(event){
+        event.preventDefault();
+      }
+
+      const home = event?.currentTarget?.dataset?.home || 'index.html';
+
+      if(window.history.length > 1){
+        window.history.back();
+      }else{
+        window.location.href = home;
+      }
+    }
+  </script>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";

@@ -47,6 +47,43 @@
             padding: clamp(1.6rem, 4vw, 3.5rem);
         }
 
+        .back-nav {
+            position: fixed;
+            top: clamp(0.9rem, 2vw, 1.6rem);
+            right: clamp(0.9rem, 2vw, 1.6rem);
+            z-index: 40;
+        }
+
+        .back-nav__button {
+            appearance: none;
+            border: 1px solid rgba(147, 198, 255, 0.35);
+            background: linear-gradient(135deg, rgba(31, 21, 58, 0.82), rgba(11, 7, 27, 0.88));
+            color: var(--text-primary);
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.55rem 1.2rem;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            cursor: pointer;
+            box-shadow: 0 18px 35px rgba(5, 3, 17, 0.35);
+            transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+        }
+
+        .back-nav__button:hover,
+        .back-nav__button:focus-visible {
+            transform: translateY(-1px);
+            border-color: rgba(247, 167, 218, 0.65);
+            box-shadow: 0 25px 45px rgba(5, 3, 17, 0.45);
+            outline: none;
+        }
+
+        .back-nav__icon {
+            font-size: 1.1rem;
+            line-height: 1;
+        }
+
         .page {
             width: min(1100px, 100%);
             display: grid;
@@ -594,6 +631,12 @@
     </style>
 </head>
 <body>
+    <div class="back-nav" role="navigation" aria-label="Page navigation">
+        <button type="button" class="back-nav__button" data-home="index.html" onclick="handleBack(event)">
+            <span class="back-nav__icon" aria-hidden="true">&#8592;</span>
+            <span class="back-nav__text">Back</span>
+        </button>
+    </div>
     <main class="page">
         <header class="page-header">
             <div class="header-bar">
@@ -739,6 +782,22 @@
             </form>
         </div>
     </div>
+
+    <script>
+        function handleBack(event) {
+            if (event) {
+                event.preventDefault();
+            }
+
+            const home = event?.currentTarget?.dataset?.home || "index.html";
+
+            if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                window.location.href = home;
+            }
+        }
+    </script>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
