@@ -114,6 +114,28 @@
     opacity:.85;
     font-weight:500;
   }
+  .seat-bet{
+    font-size:.85rem;
+    opacity:.85;
+    font-weight:600;
+  }
+  .bet-controls{
+    display:flex;
+    align-items:center;
+    gap:.4rem;
+    margin-top:.35rem;
+  }
+  .bet-controls .bet-display{
+    font-weight:700;
+    font-variant-numeric:tabular-nums;
+    letter-spacing:.02em;
+  }
+  .bet-button{
+    padding:.35rem .65rem;
+    border-radius:12px;
+    min-width:0;
+    line-height:1;
+  }
 
   /* Card */
   .card{
@@ -380,6 +402,10 @@
   const copyButtonDefaultLabel = btnCopyCode ? btnCopyCode.textContent : '';
   let copyButtonResetTimer = null;
 
+  const MIN_BET = 10;
+  const MAX_BET = 90;
+  const BET_STEP = 10;
+
   function sanitizePlayerName(value){
     if(value == null) return '';
     return String(value)
@@ -577,6 +603,7 @@
     activePlayer: null,
     hideDealerHole: false,
     banks: {},
+    bets: {},
     status: '',
     statusUntil: 0,
     turnOrder: [],
@@ -589,6 +616,47 @@
     players: {},
     state: { ...defaultState }
   };
+
+  function normalizeBet(value){
+    const numeric = Number(value);
+    if(!Number.isFinite(numeric)) return MIN_BET;
+    const stepped = Math.round(numeric / BET_STEP) * BET_STEP;
+    return Math.min(MAX_BET, Math.max(MIN_BET, stepped));
+  }
+
+  function ensureBetsMap(){
+    if(!tableState.state.bets){
+      tableState.state.bets = {};
+    }
+    return tableState.state.bets;
+  }
+
+  function setBetForPlayer(id, value){
+    const bet = normalizeBet(value);
+    ensureBetsMap();
+    tableState.state.bets[id] = bet;
+    if(tableState.players[id]){
+      tableState.players[id].bet = bet;
+    }
+    return bet;
+  }
+
+  function getBetForPlayer(id){
+    ensureBetsMap();
+    const stored = tableState.state.bets[id];
+    if(typeof stored === 'number' && Number.isFinite(stored)){
+      const normalized = normalizeBet(stored);
+      if(normalized !== stored){
+        tableState.state.bets[id] = normalized;
+      }
+      if(tableState.players[id]){
+        tableState.players[id].bet = normalized;
+      }
+      return normalized;
+    }
+    const fallback = tableState.players[id]?.bet;
+    return setBetForPlayer(id, typeof fallback === 'number' ? fallback : MIN_BET);
+  }
 
   function cloneCards(cards){
     return (cards || []).map(card=>({suit:card.suit, rank:card.rank}));
@@ -669,6 +737,7 @@
       tableState.players[clientId] = {
         name: playerName,
         bank: tableState.state.banks?.[clientId] ?? 1000,
+        bet: tableState.state.bets?.[clientId] ?? MIN_BET,
         hand: [],
         status: isMultiplayer ? 'online' : 'solo',
         joinedAt: Date.now(),
@@ -686,6 +755,7 @@
     if(typeof tableState.state.banks[clientId] !== 'number'){
       tableState.state.banks[clientId] = tableState.players[clientId].bank ?? 1000;
     }
+    setBetForPlayer(clientId, tableState.players[clientId].bet ?? MIN_BET);
     return tableState.players[clientId];
   }
 
@@ -709,6 +779,16 @@
     const entries = Object.entries(tableState.players || {});
     entries.sort(playerEntryComparator);
     return entries;
+  }
+
+  function adjustMyBet(delta){
+    if(tableState.state.phase !== 'waiting') return;
+    const current = getBetForPlayer(clientId);
+    const next = normalizeBet(current + delta);
+    if(next === current) return;
+    setBetForPlayer(clientId, next);
+    commitRound({ includeDealer:false, includePlayer:false, includeShoe:false, includeState:true });
+    renderTable();
   }
 
   function renderSeats(state){
@@ -769,7 +849,46 @@
         bankLabel.textContent = `Bank: ${bankValue}`;
         label.appendChild(bankLabel);
 
+        const betValue = getBetForPlayer(id);
+        const betLabel = document.createElement('div');
+        betLabel.className = 'seat-bet';
+        betLabel.textContent = `Bet: ${betValue}`;
+        label.appendChild(betLabel);
+
         seat.appendChild(label);
+
+        if(id === clientId){
+          const controls = document.createElement('div');
+          controls.className = 'bet-controls';
+
+          const decreaseBtn = document.createElement('button');
+          decreaseBtn.type = 'button';
+          decreaseBtn.className = 'bet-button ghost';
+          decreaseBtn.textContent = '−';
+          decreaseBtn.dataset.betAction = 'decrease';
+          decreaseBtn.dataset.playerId = id;
+
+          const betDisplay = document.createElement('div');
+          betDisplay.className = 'bet-display';
+          betDisplay.textContent = betValue;
+
+          const increaseBtn = document.createElement('button');
+          increaseBtn.type = 'button';
+          increaseBtn.className = 'bet-button primary';
+          increaseBtn.textContent = '+';
+          increaseBtn.dataset.betAction = 'increase';
+          increaseBtn.dataset.playerId = id;
+
+          const canAdjustBet = state.phase === 'waiting';
+          decreaseBtn.classList.toggle('muted', !canAdjustBet || betValue <= MIN_BET);
+          increaseBtn.classList.toggle('muted', !canAdjustBet || betValue >= MAX_BET);
+
+          controls.appendChild(decreaseBtn);
+          controls.appendChild(betDisplay);
+          controls.appendChild(increaseBtn);
+          seat.appendChild(controls);
+        }
+
         wrapper.appendChild(seat);
       }else{
         wrapper.classList.add('empty');
@@ -882,6 +1001,8 @@
     const dealerHand = tableState.dealer || [];
     const me = getPlayerEntry();
     const dv = handValue(dealerHand);
+    const bet = getBetForPlayer(clientId);
+    const payout = Math.round(bet * 1.5);
     let bank = tableState.state.banks[clientId] ?? me.bank ?? 1000;
     let message = '';
     if(dv === 21){
@@ -889,10 +1010,10 @@
         ? 'Push — both Blackjack'
         : `${me.name || 'Player'} pushes with Blackjack`;
     }else{
-      bank += 150;
+      bank += payout;
       message = me.name === 'You'
-        ? 'Blackjack! +150'
-        : `${me.name || 'Player'} Blackjack! +150`;
+        ? `Blackjack! +${payout}`
+        : `${me.name || 'Player'} Blackjack! +${payout}`;
     }
     tableState.state.banks[clientId] = bank;
     me.bank = bank;
@@ -920,6 +1041,7 @@
       const hand = player.hand || [];
       let bank = typeof banks[id] === 'number' ? banks[id] : (typeof player.bank === 'number' ? player.bank : 1000);
       let message = '';
+      const bet = getBetForPlayer(id);
 
       const displayName = player.name || 'Player';
       const isYou = displayName === 'You';
@@ -927,16 +1049,16 @@
       if(result === 'blackjack'){
         message = isYou ? 'Blackjack!' : `${displayName} Blackjack!`;
       }else if(result === 'bust'){
-        message = isYou ? 'You bust' : `${displayName} busts`;
+        message = isYou ? `You bust -${bet}` : `${displayName} busts -${bet}`;
       }else{
         const pv = handValue(hand);
         if(dv > 21 || pv > dv){
-          bank += 100;
-          message = isYou ? 'You win +100' : `${displayName} wins +100`;
+          bank += bet;
+          message = isYou ? `You win +${bet}` : `${displayName} wins +${bet}`;
           player.roundResult = 'win';
         }else if(pv < dv){
-          bank -= 100;
-          message = isYou ? 'You lose -100' : `${displayName} loses -100`;
+          bank -= bet;
+          message = isYou ? `You lose -${bet}` : `${displayName} loses -${bet}`;
           player.roundResult = 'lose';
         }else{
           message = isYou ? 'You push' : `${displayName} pushes`;
@@ -1041,11 +1163,13 @@
     for(const id of order){
       const existing = players[id] || {};
       const hand = [drawFromShoe(), drawFromShoe()];
+      const betValue = getBetForPlayer(id);
       const updated = {
         ...existing,
         hand,
         roundResult: null,
-        status: isMultiplayer ? 'online' : (existing.status || 'solo')
+        status: isMultiplayer ? 'online' : (existing.status || 'solo'),
+        bet: betValue
       };
       if(typeof updated.bank !== 'number'){
         updated.bank = tableState.state.banks?.[id] ?? 1000;
@@ -1061,6 +1185,7 @@
       if(typeof tableState.state.banks[id] !== 'number'){
         tableState.state.banks[id] = updated.bank;
       }
+      setBetForPlayer(id, betValue);
     }
 
     tableState.state.phase = 'player';
@@ -1090,11 +1215,14 @@
     const total = handValue(me.hand);
     if(total > 21){
       let bank = tableState.state.banks[clientId] ?? me.bank ?? 1000;
-      bank -= 100;
+      const bet = getBetForPlayer(clientId);
+      bank -= bet;
       tableState.state.banks[clientId] = bank;
       me.bank = bank;
       me.roundResult = 'bust';
-      const bustMsgName = me.name === 'You' ? 'You bust' : `${me.name || 'Player'} busts`;
+      const bustMsgName = me.name === 'You'
+        ? `You bust -${bet}`
+        : `${me.name || 'Player'} busts -${bet}`;
       shareStatus(bustMsgName, 1500);
       const hasNext = finishTurn(clientId);
       commitRound();
@@ -1133,7 +1261,7 @@
     tableState.shoe = [];
     tableState.dealer = [];
     tableState.players = {};
-    tableState.state = { ...defaultState, banks: {} };
+    tableState.state = { ...defaultState, banks: {}, bets: {} };
   }
 
   function detachListeners(){
@@ -1190,8 +1318,14 @@
           ...info,
           hand: normalizeCards(info.hand)
         };
+        if(typeof info?.bet === 'number'){
+          parsed[id].bet = normalizeBet(info.bet);
+        }
       }
       tableState.players = parsed;
+      for(const id of Object.keys(parsed)){
+        setBetForPlayer(id, parsed[id]?.bet ?? tableState.state.bets?.[id] ?? MIN_BET);
+      }
       renderTable();
     }));
 
@@ -1200,6 +1334,7 @@
       if(data && data.updatedBy === clientId) return;
       tableState.state = { ...defaultState, ...(data || {}) };
       if(!tableState.state.banks) tableState.state.banks = {};
+      if(!tableState.state.bets) tableState.state.bets = {};
       renderTable();
     }));
   }
@@ -1230,6 +1365,7 @@
       const cleanup = {};
       cleanup[`${previousPath}/players/${clientId}`] = null;
       cleanup[`${previousPath}/state/banks/${clientId}`] = null;
+      cleanup[`${previousPath}/state/bets/${clientId}`] = null;
       update(rootRef, cleanup).catch(()=>{});
     }
     isMultiplayer = false;
@@ -1241,10 +1377,13 @@
     const me = getPlayerEntry();
     me.name = playerName || 'You';
     me.bank = 1000;
+    const betValue = setBetForPlayer(clientId, me.bet ?? MIN_BET);
+    me.bet = betValue;
     me.hand = [];
     me.status = 'solo';
     me.roundResult = null;
     tableState.state.banks[clientId] = me.bank;
+    tableState.state.bets[clientId] = betValue;
     tableState.state.phase = 'waiting';
     tableState.state.activePlayer = null;
     tableState.state.hideDealerHole = false;
@@ -1292,6 +1431,8 @@
   function joinTable(){
     if(!isMultiplayer || !tablePath) return;
     const me = getPlayerEntry();
+    const betValue = getBetForPlayer(clientId);
+    me.bet = betValue;
     const now = Date.now();
     const updates = {};
     updates[`${tablePath}/players/${clientId}`] = {
@@ -1305,6 +1446,11 @@
     }
     tableState.state.banks[clientId] = me.bank ?? 1000;
     updates[`${tablePath}/state/banks/${clientId}`] = tableState.state.banks[clientId];
+    if(!tableState.state.bets){
+      tableState.state.bets = {};
+    }
+    tableState.state.bets[clientId] = betValue;
+    updates[`${tablePath}/state/bets/${clientId}`] = betValue;
     updates[`${tablePath}/state/updatedBy`] = clientId;
     updates[`${tablePath}/state/updatedAt`] = now;
     update(rootRef, updates).catch(err=>console.warn('Failed to join table', err));
@@ -1466,6 +1612,22 @@
   btnHit.addEventListener('click', ()=> !btnHit.classList.contains('muted') && playerHit());
   btnStand.addEventListener('click', ()=> !btnStand.classList.contains('muted') && playerStand());
   btnNew.addEventListener('click', ()=> newShoe());
+
+  if(playersLane){
+    playersLane.addEventListener('click', event=>{
+      const button = event.target.closest('[data-bet-action]');
+      if(!button) return;
+      if(button.dataset.playerId !== clientId) return;
+      if(tableState.state.phase !== 'waiting') return;
+      event.preventDefault();
+      const action = button.dataset.betAction;
+      if(action === 'increase'){
+        adjustMyBet(BET_STEP);
+      }else if(action === 'decrease'){
+        adjustMyBet(-BET_STEP);
+      }
+    });
+  }
 
   const initialCode = sanitizeRoomCode(window.location.hash.replace('#',''));
   if(initialCode){
