@@ -736,6 +736,9 @@
             color: #110720;
             background: linear-gradient(135deg, var(--accent-blue), var(--accent-pink));
             box-shadow: 0 18px 32px rgba(147, 198, 255, 0.28);
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
         }
 
         .cta:hover,
@@ -911,6 +914,15 @@
                     <h3>Grand War</h3>
                     <a class="cta" href="grand-war.html">Join battle</a>
                 </article>
+
+                <article class="project-card" data-status="live">
+                    <div class="card-top">
+                        <span class="status">Live</span>
+                        <span class="tag">Download</span>
+                    </div>
+                    <h3>Banana</h3>
+                    <button class="cta" type="button" data-download-banana>Download banana</button>
+                </article>
             </div>
         </section>
 
@@ -1070,6 +1082,51 @@
 
             window.location.href = home;
         }
+
+        (function setupBananaDownload() {
+            const button = document.querySelector('[data-download-banana]');
+            if (!(button instanceof HTMLButtonElement)) {
+                return;
+            }
+
+            const defaultLabel = button.textContent?.trim() || 'Download banana';
+            const downloadUrl = 'assets/banana.svg';
+            const downloadName = 'banana.svg';
+
+            button.addEventListener('click', async () => {
+                const restoreLabel = () => {
+                    button.textContent = defaultLabel;
+                    button.disabled = false;
+                };
+
+                button.disabled = true;
+                button.textContent = 'Preparing banana…';
+
+                try {
+                    const response = await fetch(downloadUrl, { cache: 'no-store' });
+                    if (!response.ok) {
+                        throw new Error(`Request failed with status ${response.status}`);
+                    }
+
+                    const blob = await response.blob();
+                    const href = URL.createObjectURL(blob);
+                    const anchor = document.createElement('a');
+                    anchor.href = href;
+                    anchor.download = downloadName;
+                    document.body.appendChild(anchor);
+                    anchor.click();
+                    anchor.remove();
+                    URL.revokeObjectURL(href);
+
+                    button.textContent = 'Banana ready!';
+                    window.setTimeout(restoreLabel, 1200);
+                } catch (error) {
+                    console.error('Unable to download banana image', error);
+                    button.textContent = 'Download failed. Try again';
+                    window.setTimeout(restoreLabel, 1800);
+                }
+            });
+        })();
 
         (function setupAccountMenu() {
             const menu = document.querySelector('[data-account-menu]');
