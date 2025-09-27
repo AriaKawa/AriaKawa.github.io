@@ -420,13 +420,6 @@
     setTimeout(()=> input.classList.remove('invalid'), 1600);
   }
 
-  if(hostNameInput){
-    hostNameInput.value = playerName;
-  }
-  if(joinNameInput){
-    joinNameInput.value = playerName;
-  }
-
   function setButtons(state){
     const on = (el, ok)=> el.classList.toggle('muted', !ok);
     switch(state){
@@ -559,6 +552,13 @@
     }
   }catch(err){
     console.debug('Unable to access stored player name', err);
+  }
+
+  if(hostNameInput){
+    hostNameInput.value = playerName;
+  }
+  if(joinNameInput){
+    joinNameInput.value = playerName;
   }
 
   let roomId = null;
