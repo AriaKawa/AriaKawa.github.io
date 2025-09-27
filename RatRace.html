@@ -77,8 +77,9 @@
   .panel{
     background:linear-gradient(180deg,#151a29,#0e1422); border:1px solid rgba(255,255,255,.08);
     border-radius:18px; padding:16px; box-shadow:var(--shadow);
+    display:flex; flex-direction:column; gap:16px;
   }
-  .panel h2{ margin:.2rem 0 1rem; font-size:1.1rem; letter-spacing:.05em; opacity:.9 }
+  .panel h2{ margin:.2rem 0 .4rem; font-size:1.1rem; letter-spacing:.05em; opacity:.9 }
   .grid{ display:grid; gap:10px; grid-template-columns: 1fr 1fr 1fr; }
   @media (max-width:900px){ .grid{ grid-template-columns: 1fr; } }
   .field{ display:flex; gap:8px; align-items:center; }
@@ -103,6 +104,39 @@
   .right{ text-align:right }
   .ok{ color:var(--win); font-weight:800 }
   .bad{ color:var(--lose); font-weight:800 }
+
+  /* Players */
+  .playersWrap{ display:flex; flex-direction:column; gap:10px; }
+  .playersWrap header{ display:flex; align-items:center; justify-content:space-between; padding:0; height:auto; background:none; position:static; gap:8px; }
+  .playersWrap header .statusTag{ font-size:.75rem; text-transform:uppercase; letter-spacing:.15em; color:var(--muted); }
+  .playerBoard{ display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:12px; }
+  .playerCard{
+    background:radial-gradient(140% 120% at 20% 20%, rgba(255,209,59,.18), rgba(21,26,41,.88));
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:16px; padding:14px; display:flex; flex-direction:column; gap:12px; position:relative;
+    transition:transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+  }
+  .playerCard:hover{ transform:translateY(-2px); border-color:rgba(255,255,255,.18); box-shadow:0 18px 26px rgba(0,0,0,.28); }
+  .playerCard.locked::after{
+    content:"Locked"; position:absolute; top:12px; right:12px; font-size:.7rem; letter-spacing:.2em;
+    color:var(--accent); font-weight:700; text-transform:uppercase;
+  }
+  .playerCard.win{ border-color:rgba(99,212,113,.65); box-shadow:0 18px 32px rgba(99,212,113,.22); }
+  .playerCard.win::before{
+    content:"Winner"; position:absolute; top:12px; right:12px; font-size:.7rem; letter-spacing:.2em;
+    color:var(--win); font-weight:800; text-transform:uppercase;
+  }
+  .playerCard.lose{ opacity:.75; }
+  .playerHeader{ display:flex; gap:12px; align-items:center; }
+  .avatar{ width:44px; height:44px; border-radius:14px; background:rgba(255,255,255,.1); display:grid; place-items:center; font-weight:800; font-size:1rem; }
+  .playerName{ font-weight:700; font-size:1.05rem; }
+  .playerMeta{ color:var(--muted); font-size:.8rem; text-transform:uppercase; letter-spacing:.12em; }
+  .playerMeta strong{ color:var(--text); font-size:.85rem; }
+  .playerBets{ display:flex; flex-direction:column; gap:8px; padding:0; margin:0; }
+  .playerBets li{ list-style:none; display:flex; align-items:center; justify-content:space-between; font-size:.9rem; }
+  .chip{ padding:.25rem .6rem; border-radius:999px; background:rgba(255,255,255,.08); font-weight:600; }
+  .playerBets .amt{ font-variant-numeric:tabular-nums; font-weight:700; }
+  .emptyState{ color:var(--muted); font-size:.9rem; text-align:center; padding:14px; border:1px dashed rgba(255,255,255,.12); border-radius:14px; }
 
   .note{ font-size:.9rem; color:var(--muted); margin-top:.5rem }
 </style>
@@ -139,6 +173,15 @@
         <button class="btn secondary" id="reset">New Race</button>
       </div>
 
+      <div class="playersWrap">
+        <header>
+          <h2 style="margin:0">Players</h2>
+          <span class="statusTag" id="lockStatus">Betting Open</span>
+        </header>
+        <div class="playerBoard" id="playerBoard"></div>
+        <div class="emptyState" id="playerEmpty">No players yet — add a bet to join the table.</div>
+      </div>
+
       <table>
         <thead><tr><th>Bettor</th><th>Rat</th><th class="right">Amount</th><th class="right">Remove</th></tr></thead>
         <tbody id="betRows"></tbody>
@@ -169,6 +212,9 @@ const RAT_DATA = [
 const lanes = document.getElementById('lanes');
 const statusEl = document.getElementById('status');
 const potEl = document.getElementById('pot');
+const playerBoard = document.getElementById('playerBoard');
+const playerEmpty = document.getElementById('playerEmpty');
+const lockStatus = document.getElementById('lockStatus');
 lanes.style.gridTemplateRows = `repeat(${RAT_DATA.length}, 1fr)`;
 
 // build lanes + rats
@@ -200,7 +246,9 @@ for(const r of RAT_DATA){
 }
 
 /* ============== Betting state ============== */
-let bets = []; // {id, name, ratId, amount}
+let bets = []; // {id, name, playerKey, ratId, amount}
+let bettingLocked = false;
+let guestCounter = 1;
 const betRows = document.getElementById('betRows');
 const resultRows = document.getElementById('resultRows');
 
@@ -226,20 +274,82 @@ function redrawBets(){
     }
   }
   potEl.textContent = fmt(pot());
+  redrawPlayerBoard();
 }
 function escapeHTML(s){ return (s??'').replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m])); }
 function ratName(id){ return RAT_DATA.find(r=>r.id===id)?.name || id; }
 
+function redrawPlayerBoard(){
+  const total = pot();
+  if(!bets.length){
+    playerBoard.innerHTML = '';
+    playerEmpty.style.display = 'block';
+    return;
+  }
+  playerEmpty.style.display = 'none';
+  const groups = Array.from(bets.reduce((map, bet)=>{
+    const key = bet.playerKey || bet.name?.toLowerCase() || bet.id;
+    if(!map.has(key)){
+      map.set(key, { name: bet.name || 'Player', bets: [], total:0 });
+    }
+    const g = map.get(key);
+    g.bets.push(bet);
+    g.total += Number(bet.amount);
+    return map;
+  }, new Map()).values()).sort((a,b)=>b.total - a.total);
+
+  const cards = groups.map(group => {
+    const share = total ? Math.round((group.total/total)*100) : 0;
+    const hasWin = finished && winner && group.bets.some(b=>b.ratId===winner.id);
+    const cardClasses = ['playerCard'];
+    if(bettingLocked && !finished) cardClasses.push('locked');
+    if(finished){ cardClasses.push(hasWin ? 'win' : 'lose'); }
+    const initials = getInitials(group.name);
+    const betList = group.bets.map(b=>`
+      <li><span class="chip">${ratName(b.ratId)}</span><span class="amt">${fmt(b.amount)}</span></li>
+    `).join('');
+    const betsLabel = `${group.bets.length} bet${group.bets.length>1?'s':''}`;
+    const shareLabel = total ? ` • ${share}% of pot` : '';
+    return `
+      <div class="${cardClasses.join(' ')}">
+        <div class="playerHeader">
+          <div class="avatar">${initials}</div>
+          <div>
+            <div class="playerName">${escapeHTML(group.name)}</div>
+            <div class="playerMeta"><strong>${fmt(group.total)}</strong> • ${betsLabel}${shareLabel}</div>
+          </div>
+        </div>
+        <ul class="playerBets">${betList}</ul>
+      </div>
+    `;
+  }).join('');
+
+  playerBoard.innerHTML = cards;
+}
+
+function getInitials(name){
+  const cleaned = (name||'').trim();
+  if(!cleaned) return '🐭';
+  const parts = cleaned.split(/\s+/).filter(Boolean);
+  const initials = parts.slice(0,2).map(w=>w[0]?.toUpperCase() || '').join('');
+  return initials || '🐭';
+}
+
 document.getElementById('addBet').addEventListener('click', ()=>{
-  const name = document.getElementById('bettor').value.trim();
+  let name = document.getElementById('bettor').value.trim();
   const ratId = document.getElementById('rat').value;
   const amount = Math.max(1, Math.floor(Number(document.getElementById('amount').value||0)));
-  bets.push({ id:crypto.randomUUID(), name, ratId, amount });
+  if(!name){
+    name = `Guest ${guestCounter++}`;
+    document.getElementById('bettor').value = name;
+  }
+  const playerKey = name.toLowerCase();
+  bets.push({ id:crypto.randomUUID(), name, playerKey, ratId, amount });
   redrawBets();
 });
 betRows.addEventListener('click', (e)=>{
   const id = e.target?.dataset?.remove;
-  if(!id) return;
+  if(!id || bettingLocked) return;
   bets = bets.filter(b=>b.id!==id);
   redrawBets();
 });
@@ -301,6 +411,7 @@ function endRace(){
     const tr = document.createElement('tr');
     tr.innerHTML = `<td colspan="5">No one bet on ${winner.name}. House keeps the ${fmt(p)} pot.</td>`;
     resultRows.appendChild(tr);
+    redrawPlayerBoard();
     return;
   }
   for(const b of bets){
@@ -316,6 +427,7 @@ function endRace(){
     `;
     resultRows.appendChild(tr);
   }
+  redrawPlayerBoard();
 }
 
 /* ============== Controls ============== */
@@ -323,6 +435,7 @@ document.getElementById('closeBets').addEventListener('click', async ()=>{
   if(!bets.length) { statusEl.textContent = 'Place at least one bet.'; return; }
   // Lock betting UI
   toggleBetUI(true);
+  statusEl.textContent = 'Bets locked!';
   await startCountdown();
   startRace();
 });
@@ -331,6 +444,7 @@ document.getElementById('reset').addEventListener('click', ()=>{
   bets = []; redrawBets();
   resultRows.innerHTML = `<tr><td colspan="5" style="color:var(--muted)">No results yet.</td></tr>`;
   statusEl.textContent = 'Place your bets.';
+  guestCounter = 1;
   toggleBetUI(false);
   resetRacePositions();
 });
@@ -341,6 +455,14 @@ function toggleBetUI(lock){
   for(const el of [document.getElementById('bettor'), document.getElementById('rat'), document.getElementById('amount')]){
     el.disabled = lock;
   }
+  bettingLocked = lock;
+  updateLockStatus();
+  redrawPlayerBoard();
+}
+
+function updateLockStatus(){
+  lockStatus.textContent = bettingLocked ? 'Bets Locked' : 'Betting Open';
+  lockStatus.style.color = bettingLocked ? 'var(--accent)' : 'var(--muted)';
 }
 
 /* ============== Utilities & SVG ============== */
@@ -385,6 +507,7 @@ function shade(hex, amt){
 }
 
 /* initial draw */
+updateLockStatus();
 redrawBets();
 </script>
 </body>
