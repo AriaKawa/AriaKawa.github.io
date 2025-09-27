@@ -159,6 +159,58 @@
 
   .btn.small{ padding:.55rem .8rem; font-size:.85rem; }
 
+  .primary,
+  .ghost,
+  .secondary{
+    appearance:none; border-radius:14px; padding:.8rem 1.05rem; font-weight:800; letter-spacing:.06em;
+    text-transform:uppercase; cursor:pointer; border:0; transition:transform .18s ease, box-shadow .18s ease, opacity .18s ease;
+  }
+  .primary{ background:linear-gradient(135deg,#ffe775,#ffbf24 65%,#ff8b24); color:#121013; box-shadow:0 16px 28px rgba(0,0,0,.4); }
+  .ghost{ background:linear-gradient(135deg,rgba(255,255,255,.12),rgba(255,255,255,.04)); color:#e9eef6; border:1px solid rgba(255,255,255,.16); box-shadow:0 16px 28px rgba(0,0,0,.35); }
+  .secondary{ background:linear-gradient(135deg,#2e3757,#1e263f); color:#e9eef6; border:1px solid rgba(255,255,255,.16); box-shadow:0 12px 22px rgba(0,0,0,.32); }
+  .primary:hover,
+  .ghost:hover,
+  .secondary:hover,
+  .primary:focus-visible,
+  .ghost:focus-visible,
+  .secondary:focus-visible{ transform:translateY(-1px); outline:none; }
+  .muted{ opacity:.6; pointer-events:none }
+
+  .hidden{ display:none !important; }
+
+  .lobby{
+    position:fixed; inset:0; z-index:40; display:flex; align-items:center; justify-content:center;
+    background:rgba(6,12,24,.82); backdrop-filter:blur(22px); -webkit-backdrop-filter:blur(22px);
+    padding:1.6rem;
+  }
+  .lobby-card{
+    background:rgba(13,27,44,.92); border:1px solid rgba(255,255,255,.08); border-radius:26px;
+    box-shadow:var(--shadow); padding:clamp(1.6rem,4vw,2.6rem); width:min(420px,94vw);
+    display:grid; gap:1.1rem; text-align:center;
+  }
+  .lobby-card h2{ font-size:1.8rem; margin:0; letter-spacing:.04em; }
+  .lobby-card p{ margin:0; opacity:.85; line-height:1.4; }
+  .lobby-actions{ display:grid; gap:.8rem; }
+  .lobby .ghost{ background:rgba(255,255,255,.12); color:var(--text); border:1px solid rgba(255,255,255,.18); box-shadow:none; }
+  .lobby .ghost:hover{ background:rgba(255,255,255,.18); }
+  .lobby .secondary{ background:rgba(0,0,0,.35); color:var(--text); border:1px solid rgba(255,255,255,.18); box-shadow:none; }
+  .lobby .secondary:hover{ background:rgba(0,0,0,.5); }
+  .lobby .back-action{ font-size:.9rem; font-weight:600; padding:.6rem .9rem; justify-self:center; }
+  .code-display{
+    font-size:2rem; letter-spacing:.24em; font-weight:800; text-transform:uppercase;
+    padding:.8rem 1.2rem; border-radius:22px; background:rgba(0,0,0,.38); border:1px solid rgba(255,255,255,.18);
+  }
+  .lobby input{
+    appearance:none; border-radius:16px; border:1px solid rgba(255,255,255,.18);
+    padding:.85rem 1rem; background:rgba(0,0,0,.35); color:var(--text); font-size:1.05rem;
+    text-transform:none; letter-spacing:.02em; text-align:left;
+  }
+  .lobby input.code-input{
+    text-transform:uppercase; letter-spacing:.18em; text-align:center;
+  }
+  .lobby input:focus{ outline:2px solid rgba(255,209,59,.55); outline-offset:3px; }
+  .lobby input.invalid{ outline:2px solid rgba(239,71,111,.7); outline-offset:3px; }
+
   .mpCard{
     background:rgba(10,16,30,.65);
     border:1px solid rgba(255,255,255,.08);
@@ -292,6 +344,44 @@
       <span class="back-nav__icon" aria-hidden="true">&#8592;</span>
       <span class="back-nav__text">Back</span>
     </button>
+  </div>
+  <div class="lobby" id="lobby">
+    <div class="lobby-card" id="lobbyMain">
+      <h2>Rat Race Lounge</h2>
+      <p>Select how you'd like to play.</p>
+      <div class="lobby-actions">
+        <button class="primary" id="btnSingleplayer" type="button">Singleplayer</button>
+        <button class="ghost" id="btnMultiplayer" type="button">Multiplayer</button>
+      </div>
+    </div>
+    <div class="lobby-card hidden" id="multiplayerCard">
+      <h2>Multiplayer</h2>
+      <p>Invite friends with a shared room code.</p>
+      <div class="lobby-actions">
+        <button class="primary" id="btnLobbyHost" type="button">Host</button>
+        <button class="ghost" id="btnLobbyJoin" type="button">Join</button>
+      </div>
+      <button class="secondary back-action" data-target="lobbyMain" type="button">Back</button>
+    </div>
+    <div class="lobby-card hidden" id="hostCard">
+      <h2>Host a Room</h2>
+      <p>Choose a name and share this code with friends.</p>
+      <input type="text" id="lobbyHostName" maxlength="24" autocomplete="name" placeholder="Your name" spellcheck="false" />
+      <div class="code-display" id="lobbyHostCode">----</div>
+      <button class="ghost" id="btnCopyLobbyCode" type="button">Copy code</button>
+      <button class="primary" id="btnLobbyHostStart" type="button">Enter Room</button>
+      <button class="secondary back-action" data-target="multiplayerCard" type="button">Back</button>
+    </div>
+    <div class="lobby-card hidden" id="joinCard">
+      <h2>Join a Room</h2>
+      <p>Enter your name and the code from your host.</p>
+      <input type="text" id="lobbyJoinName" maxlength="24" autocomplete="name" placeholder="Your name" spellcheck="false" />
+      <input type="text" id="lobbyJoinCode" class="code-input" maxlength="12" autocomplete="off" placeholder="CODE" />
+      <div class="lobby-actions">
+        <button class="primary" id="btnLobbyJoinConfirm" type="button">Join Room</button>
+        <button class="secondary back-action" data-target="multiplayerCard" type="button">Back</button>
+      </div>
+    </div>
   </div>
   <div class="wrap">
     <!-- TRACK -->
@@ -450,6 +540,55 @@ const bettorInput = document.getElementById('bettor');
 const amountInput = document.getElementById('amount');
 let players = {};
 
+const lobbyEl = document.getElementById('lobby');
+const lobbyMainCard = document.getElementById('lobbyMain');
+const lobbyMultiplayerCard = document.getElementById('multiplayerCard');
+const lobbyHostCard = document.getElementById('hostCard');
+const lobbyJoinCard = document.getElementById('joinCard');
+const lobbySingleBtn = document.getElementById('btnSingleplayer');
+const lobbyMultiplayerBtn = document.getElementById('btnMultiplayer');
+const lobbyHostBtn = document.getElementById('btnLobbyHost');
+const lobbyJoinBtn = document.getElementById('btnLobbyJoin');
+const lobbyHostStartBtn = document.getElementById('btnLobbyHostStart');
+const lobbyJoinConfirmBtn = document.getElementById('btnLobbyJoinConfirm');
+const lobbyHostNameInput = document.getElementById('lobbyHostName');
+const lobbyJoinNameInput = document.getElementById('lobbyJoinName');
+const lobbyJoinCodeInput = document.getElementById('lobbyJoinCode');
+const lobbyHostCodeEl = document.getElementById('lobbyHostCode');
+const lobbyCopyCodeBtn = document.getElementById('btnCopyLobbyCode');
+const lobbyCards = {
+  lobbyMain: lobbyMainCard,
+  multiplayerCard: lobbyMultiplayerCard,
+  hostCard: lobbyHostCard,
+  joinCard: lobbyJoinCard,
+};
+let lobbyHostCodeValue = '';
+let lobbyCopyResetTimer = null;
+
+function showLobbyCard(id){
+  Object.values(lobbyCards).forEach(card=>{
+    if(card){
+      card.classList.add('hidden');
+    }
+  });
+  const target = lobbyCards[id] || lobbyCards.lobbyMain;
+  if(target){
+    target.classList.remove('hidden');
+  }
+}
+
+function closeLobby(){
+  if(lobbyEl){
+    lobbyEl.classList.add('hidden');
+  }
+}
+
+function openLobby(id='lobbyMain'){
+  if(!lobbyEl) return;
+  lobbyEl.classList.remove('hidden');
+  showLobbyCard(id);
+}
+
 const soloBtn = document.getElementById('btnSolo');
 const hostBtn = document.getElementById('btnHostRoom');
 const joinBtn = document.getElementById('btnJoinRoom');
@@ -475,6 +614,21 @@ const poolMetaEl = document.getElementById('poolMeta');
 function fmt(n){ return '$'+Number(n).toLocaleString(undefined,{minimumFractionDigits:0}); }
 function pot(){ return bets.reduce((a,b)=>a+Number(b.amount||0),0); }
 function totalOn(rid){ return bets.filter(b=>b.ratId===rid).reduce((a,b)=>a+Number(b.amount),0); }
+
+function sanitizePlayerName(value){
+  if(value == null) return '';
+  return String(value)
+    .replace(/[\r\n\t]+/g, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim()
+    .slice(0, 24);
+}
+
+function flagInvalidInput(input){
+  if(!input) return;
+  input.classList.add('invalid');
+  setTimeout(()=>input.classList.remove('invalid'), 1600);
+}
 
 function canRemoveBet(bet){
   if(!bet) return false;
@@ -1013,6 +1167,16 @@ function rememberPlayerName(name){
   }
 }
 
+function setLocalPlayerIdentity(name){
+  const sanitized = sanitizePlayerName(name);
+  if(!sanitized) return '';
+  playerName = sanitized;
+  bettorInput.value = sanitized;
+  rememberPlayerName(sanitized);
+  renderSummaries();
+  return sanitized;
+}
+
 function syncPresenceName(name){
   if(!isMultiplayer || !gamePath) return;
   const clean = (name || '').trim() || getLocalPlayerName() || 'Player';
@@ -1376,6 +1540,179 @@ function showJoinControls(show){
   }
 }
 
+function requestLobbyJoin(){
+  const code = sanitizeRoomCode(lobbyJoinCodeInput ? lobbyJoinCodeInput.value : '');
+  if(!code){
+    if(lobbyJoinCodeInput){
+      flagInvalidInput(lobbyJoinCodeInput);
+      lobbyJoinCodeInput.focus();
+    }
+    return;
+  }
+
+  const nameInputValue = lobbyJoinNameInput ? lobbyJoinNameInput.value : playerName;
+  const name = setLocalPlayerIdentity(nameInputValue);
+  if(!name){
+    if(lobbyJoinNameInput){
+      flagInvalidInput(lobbyJoinNameInput);
+      lobbyJoinNameInput.focus();
+    }
+    return;
+  }
+
+  if(lobbyJoinCodeInput){
+    lobbyJoinCodeInput.value = code;
+  }
+
+  joinRoom(code, { host:false });
+  closeLobby();
+}
+
+if(lobbyEl){
+  lobbyEl.querySelectorAll('.back-action').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      showLobbyCard(btn.dataset.target || 'lobbyMain');
+    });
+  });
+}
+
+if(lobbySingleBtn){
+  lobbySingleBtn.addEventListener('click', ()=>{
+    startSolo();
+    closeLobby();
+  });
+}
+
+if(lobbyMultiplayerBtn){
+  lobbyMultiplayerBtn.addEventListener('click', ()=>{
+    showLobbyCard('multiplayerCard');
+  });
+}
+
+if(lobbyHostBtn){
+  lobbyHostBtn.addEventListener('click', ()=>{
+    lobbyHostCodeValue = generateRoomCode();
+    if(lobbyHostCodeEl){
+      lobbyHostCodeEl.textContent = lobbyHostCodeValue;
+      lobbyHostCodeEl.dataset.code = lobbyHostCodeValue;
+    }
+    if(lobbyHostNameInput){
+      lobbyHostNameInput.value = bettorInput.value.trim() || playerName || '';
+      lobbyHostNameInput.classList.remove('invalid');
+    }
+    if(lobbyCopyCodeBtn){
+      lobbyCopyCodeBtn.textContent = 'Copy code';
+      if(lobbyCopyResetTimer){
+        clearTimeout(lobbyCopyResetTimer);
+        lobbyCopyResetTimer = null;
+      }
+    }
+    showLobbyCard('hostCard');
+    setTimeout(()=>{
+      if(lobbyHostNameInput){
+        lobbyHostNameInput.focus();
+        lobbyHostNameInput.select();
+      }
+    }, 50);
+  });
+}
+
+if(lobbyCopyCodeBtn){
+  lobbyCopyCodeBtn.addEventListener('click', async ()=>{
+    const code = sanitizeRoomCode(lobbyHostCodeEl ? (lobbyHostCodeEl.dataset.code || lobbyHostCodeEl.textContent || '') : '');
+    if(!code) return;
+    const success = await copyTextToClipboard(code);
+    lobbyCopyCodeBtn.textContent = success ? 'Copied!' : 'Press Ctrl+C';
+    if(lobbyCopyResetTimer){
+      clearTimeout(lobbyCopyResetTimer);
+    }
+    lobbyCopyResetTimer = setTimeout(()=>{
+      lobbyCopyCodeBtn.textContent = 'Copy code';
+    }, success ? 1600 : 2600);
+  });
+}
+
+if(lobbyHostStartBtn){
+  lobbyHostStartBtn.addEventListener('click', ()=>{
+    let code = lobbyHostCodeEl ? (lobbyHostCodeEl.dataset.code || lobbyHostCodeEl.textContent || lobbyHostCodeValue) : lobbyHostCodeValue;
+    if(!code){
+      lobbyHostCodeValue = generateRoomCode();
+      if(lobbyHostCodeEl){
+        lobbyHostCodeEl.textContent = lobbyHostCodeValue;
+        lobbyHostCodeEl.dataset.code = lobbyHostCodeValue;
+      }
+      code = lobbyHostCodeValue;
+    }
+    code = sanitizeRoomCode(code);
+    if(!code){
+      return;
+    }
+
+    const name = setLocalPlayerIdentity(lobbyHostNameInput ? lobbyHostNameInput.value : playerName);
+    if(!name){
+      flagInvalidInput(lobbyHostNameInput);
+      if(lobbyHostNameInput){
+        lobbyHostNameInput.focus();
+      }
+      return;
+    }
+
+    joinRoom(code, { host:true });
+    closeLobby();
+  });
+}
+
+if(lobbyJoinBtn){
+  lobbyJoinBtn.addEventListener('click', ()=>{
+    if(lobbyJoinNameInput){
+      lobbyJoinNameInput.value = bettorInput.value.trim() || playerName || '';
+      lobbyJoinNameInput.classList.remove('invalid');
+    }
+    if(lobbyJoinCodeInput){
+      lobbyJoinCodeInput.value = '';
+      lobbyJoinCodeInput.classList.remove('invalid');
+    }
+    showLobbyCard('joinCard');
+    setTimeout(()=>{
+      if(lobbyJoinNameInput){
+        lobbyJoinNameInput.focus();
+        lobbyJoinNameInput.select();
+      }else if(lobbyJoinCodeInput){
+        lobbyJoinCodeInput.focus();
+      }
+    }, 50);
+  });
+}
+
+if(lobbyJoinConfirmBtn){
+  lobbyJoinConfirmBtn.addEventListener('click', requestLobbyJoin);
+}
+
+if(lobbyJoinCodeInput){
+  lobbyJoinCodeInput.addEventListener('input', ()=>{
+    lobbyJoinCodeInput.value = sanitizeRoomCode(lobbyJoinCodeInput.value);
+    lobbyJoinCodeInput.classList.remove('invalid');
+  });
+  lobbyJoinCodeInput.addEventListener('keydown', event=>{
+    if(event.key === 'Enter'){
+      event.preventDefault();
+      requestLobbyJoin();
+    }
+  });
+}
+
+if(lobbyHostNameInput){
+  lobbyHostNameInput.addEventListener('input', ()=>{
+    lobbyHostNameInput.classList.remove('invalid');
+  });
+}
+
+if(lobbyJoinNameInput){
+  lobbyJoinNameInput.addEventListener('input', ()=>{
+    lobbyJoinNameInput.classList.remove('invalid');
+  });
+}
+
 soloBtn.addEventListener('click', ()=> startSolo());
 hostBtn.addEventListener('click', ()=>{
   if(isMultiplayer){
@@ -1478,8 +1815,10 @@ async function copyTextToClipboard(text){
 const initialCode = sanitizeRoomCode(window.location.hash.replace('#',''));
 if(initialCode){
   joinRoom(initialCode, { host:false });
+  closeLobby();
 }else{
   startSolo();
+  openLobby('lobbyMain');
 }
 
 isSupported()
