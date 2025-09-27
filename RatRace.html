@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Horse Races — ARIA ARCADE</title>
+<title>Rat Race — ARIA ARCADE</title>
 <style>
   :root{
     --bg:#0b1020;        /* site navy */
@@ -48,96 +48,171 @@
     outline:none;
   }
   .back-nav__icon{font-size:1.05rem; line-height:1;}
-  .wrap{
-    width:min(1240px,96vw); margin:0 auto; display:grid; gap:22px;
-    grid-template-columns: 1.15fr .85fr; align-items:start;
+  .wrap{ width:100%; padding:0 18px; }
+  .board{
+    width:min(1400px,96vw);
+    margin:0 auto;
+    background:linear-gradient(145deg, rgba(30,39,66,.92), rgba(9,14,26,.88));
+    border:1px solid rgba(255,255,255,.05);
+    border-radius:34px;
+    box-shadow:0 32px 60px rgba(0,0,0,.48);
+    display:grid;
+    gap:24px;
+    grid-template-columns:minmax(0,2.15fr) minmax(0,1fr);
+    grid-template-rows:minmax(460px,1fr) auto;
+    grid-template-areas:
+      "track info"
+      "bets bets";
+    padding:28px;
   }
-  @media (max-width:1080px){ .wrap{ grid-template-columns: 1fr; max-width:680px; } }
+  @media (max-width:1200px){
+    .board{
+      grid-template-columns:minmax(0,1fr);
+      grid-template-rows:auto;
+      grid-template-areas:
+        "track"
+        "info"
+        "bets";
+    }
+  }
+  @media (max-width:720px){
+    .board{ padding:20px; border-radius:26px; gap:18px; }
+  }
 
   /* Track */
-  .track{
-    position:relative; aspect-ratio: 16/9; border-radius:32px; overflow:hidden;
+  .track-card{
+    grid-area:track;
+    position:relative;
+    border-radius:26px;
+    border:1px solid rgba(255,255,255,.06);
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.04);
+    overflow:hidden;
     background:
-      radial-gradient(160% 140% at 50% -6%, rgba(255,232,199,.22) 0%, rgba(155,106,60,.24) 42%, rgba(63,36,15,.95) 100%),
-      linear-gradient(180deg, #b57a46 0%, #7b4d27 85%);
-    border:8px solid rgba(54,32,18,.95); box-shadow:0 40px 80px rgba(0,0,0,.45);
+      radial-gradient(160% 140% at 50% -30%, rgba(255,232,189,.18) 0%, rgba(141,86,40,.38) 55%, rgba(63,36,15,.88) 100%),
+      linear-gradient(180deg, #b67a46 0%, #7f4f2c 82%);
   }
-  .track::before{
-    content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,.55) 0%, rgba(0,0,0,0) 32%);
-    pointer-events:none; z-index:2;
+  .track-card::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    background:linear-gradient(180deg, rgba(0,0,0,.45) 0%, rgba(0,0,0,0) 35%, rgba(0,0,0,.55) 100%);
+    z-index:1;
   }
-  .track::after{
-    content:""; position:absolute; inset:20px; border-radius:26px;
-    box-shadow:inset 0 0 0 2px rgba(255,255,255,.08), inset 0 -40px 60px rgba(0,0,0,.4);
-    background:
-      radial-gradient(120% 150% at 50% 120%, rgba(255,255,255,.08) 0, transparent 65%),
-      linear-gradient(180deg, rgba(255,240,220,.12) 0%, rgba(0,0,0,0) 70%);
+  .track-viewport{
+    position:relative;
+    width:100%;
+    aspect-ratio:1200/640;
+    filter:drop-shadow(0 22px 42px rgba(0,0,0,.45));
+    z-index:0;
   }
-  .lanes{
-    position:absolute; inset:36px 34px 92px 34px; display:grid; gap:12px; z-index:1;
-    filter:drop-shadow(0 18px 24px rgba(0,0,0,.35));
+  #trackSvg{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
   }
-  .lane{
-    position:relative; overflow:hidden; border-radius:18px; border:1px solid rgba(255,255,255,.08);
-    background:
-      linear-gradient(90deg, rgba(255,255,255,.3) 0 6px, transparent 6px 22px) repeat-x,
-      linear-gradient(180deg, rgba(255,244,222,.18), rgba(95,60,28,.42));
-    background-size:40px 100%, 100% 100%;
-  }
-  .lane::before{
-    content:""; position:absolute; inset:0; border-radius:inherit;
-    background:linear-gradient(180deg, rgba(255,255,255,.18) 0%, rgba(0,0,0,.28) 70%);
-    mix-blend-mode:soft-light; opacity:.5;
-  }
-  .finish{
-    position:absolute; top:36px; bottom:92px; right:40px; width:12px;
-    background:
-      linear-gradient(180deg, rgba(0,0,0,.45), rgba(0,0,0,0) 18%, rgba(0,0,0,.45) 100%),
-      repeating-linear-gradient(180deg, #fdfdf8 0 14px, #5a381f 14px 28px);
-    box-shadow:inset 0 0 0 2px rgba(0,0,0,.6), 0 12px 20px rgba(0,0,0,.45);
-    border-radius:6px;
-  }
-
-  /* Horse */
-  .rat{
-    position:absolute; left:0; top:50%; transform:translate(0,-50%);
-    width:170px; height:92px; display:grid; place-items:center; pointer-events:none;
-  }
-  .rat svg{ width:168px; height:auto; }
-  .rat svg .tail{ animation:tail-sway 1.1s ease-in-out infinite; transform-origin:56px 96px; }
-  .rat svg .body-group{ animation:body-bob .42s ease-in-out infinite; transform-origin:136px 90px; }
-  .rat svg .ear{ animation:ear-flick 2.8s ease-in-out infinite; transform-origin:220px 48px; }
-  .rat svg .mane{ animation:mane-flow 1.4s ease-in-out infinite; transform-origin:168px 48px; }
-  .rat svg .sparkle{ animation:sparkle 2s linear infinite; }
-  @keyframes body-bob{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-4px); } }
-  @keyframes tail-sway{ 0%,100%{ transform:rotate(-6deg); } 50%{ transform:rotate(12deg); } }
-  @keyframes ear-flick{ 0%,92%{ transform:rotate(0deg); } 96%{ transform:rotate(-6deg); } 100%{ transform:rotate(0deg); } }
-  @keyframes mane-flow{ 0%,100%{ transform:skewX(0deg); } 50%{ transform:skewX(-4deg); } }
-  @keyframes sparkle{ 0%{ opacity:0; transform:translate(0,0) scale(.6); }
-                       40%{ opacity:.8; transform:translate(4px,-6px) scale(1); }
-                       100%{ opacity:0; transform:translate(12px,-18px) scale(0); } }
-  .nameTag{
-    position:absolute; left:12px; top:10px; background:rgba(18,28,45,.72); padding:.18rem .65rem;
-    font-size:.78rem; letter-spacing:.04em; border-radius:999px; backdrop-filter: blur(6px);
-    box-shadow:0 6px 12px rgba(0,0,0,.35); text-transform:uppercase;
-  }
-
-  /* HUD */
-  header{
-    display:flex; gap:12px; align-items:center; justify-content:space-between; padding:14px 24px;
-    position:absolute; left:0; right:0; bottom:0; height:88px; z-index:3;
-    background:linear-gradient(180deg, rgba(0,0,0,0) 0, rgba(5,14,18,.25) 32%, rgba(3,7,10,.55) 100%);
+  .track-card header{
+    position:absolute;
+    left:24px;
+    right:24px;
+    bottom:24px;
+    display:flex;
+    gap:12px;
+    align-items:center;
+    justify-content:space-between;
+    padding:16px 20px;
+    border-radius:20px;
+    background:linear-gradient(180deg, rgba(9,14,24,.72) 0%, rgba(6,10,18,.92) 100%);
+    border:1px solid rgba(255,255,255,.08);
+    box-shadow:0 18px 36px rgba(0,0,0,.45);
+    z-index:5;
   }
   .status{
-    font-weight:800; letter-spacing:.05em; text-shadow:0 6px 20px rgba(0,0,0,.6); font-size:1.25rem;
+    font-weight:800;
+    letter-spacing:.05em;
+    text-shadow:0 6px 20px rgba(0,0,0,.6);
+    font-size:1.3rem;
   }
-  .status.countdown{ font-size:1.4rem; }
-  .pill{ background:linear-gradient(135deg, #ffe775 0%, #ffbf24 65%, #ff8b24 100%);
-    color:#1a1600; border-radius:999px; padding:.4rem .9rem; font-weight:800; box-shadow:0 8px 16px rgba(0,0,0,.35);
+  .status.countdown{ font-size:1.45rem; }
+  .pill{
+    background:linear-gradient(135deg, #ffe775 0%, #ffbf24 65%, #ff8b24 100%);
+    color:#1a1600;
+    border-radius:999px;
+    padding:.4rem .9rem;
+    font-weight:800;
+    box-shadow:0 8px 16px rgba(0,0,0,.35);
   }
   .legend{ display:flex; gap:14px; opacity:.92; font-size:.92rem; align-items:center; }
   .legend span{ display:inline-flex; gap:8px; align-items:center; background:rgba(9,14,24,.55);
     padding:.35rem .65rem; border-radius:999px; border:1px solid rgba(255,255,255,.08); }
+
+  .info-panel{ grid-area:info; display:flex; flex-direction:column; gap:18px; }
+  .info-panel .summaryGrid{ flex:1; }
+  .bets-panel{ grid-area:bets; }
+  .info-panel.panel{ padding:24px; height:100%; }
+  .bets-panel.panel{ padding:24px; }
+  @media (max-width:720px){
+    .info-panel.panel,
+    .bets-panel.panel{ padding:20px; }
+  }
+
+  .rat-layer{ position:absolute; inset:0; pointer-events:none; z-index:2; }
+  .rat{
+    position:absolute;
+    width:160px;
+    height:150px;
+    transform:translate(-9999px,-9999px);
+    pointer-events:none;
+  }
+  .rat-art{ width:160px; height:auto; transform-origin:50% 70%; }
+  .rat svg{ width:160px; height:auto; }
+  .rat svg .tail{ animation:tail-sway 1.1s ease-in-out infinite; transform-origin:60px 92px; }
+  .rat svg .body-group{ animation:body-bob .48s ease-in-out infinite; transform-origin:120px 90px; }
+  .rat svg .ear{ animation:ear-flick 2.6s ease-in-out infinite; transform-origin:188px 56px; }
+  .rat svg .mane{ animation:mane-flow 1.4s ease-in-out infinite; transform-origin:188px 92px; }
+  .rat svg .sparkle{ animation:sparkle 2s linear infinite; }
+  @keyframes body-bob{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-5px); } }
+  @keyframes tail-sway{ 0%,100%{ transform:rotate(-8deg); } 50%{ transform:rotate(10deg); } }
+  @keyframes ear-flick{ 0%,92%{ transform:rotate(0deg); } 96%{ transform:rotate(-8deg); } 100%{ transform:rotate(0deg); } }
+  @keyframes mane-flow{ 0%,100%{ transform:skewX(0deg); } 50%{ transform:skewX(-6deg); } }
+  @keyframes sparkle{ 0%{ opacity:0; transform:translate(0,0) scale(.6); }
+                       40%{ opacity:.8; transform:translate(4px,-6px) scale(1); }
+                       100%{ opacity:0; transform:translate(12px,-18px) scale(0); } }
+  .nameTag{
+    position:absolute;
+    bottom:100%;
+    left:50%;
+    transform:translate(-50%, -12px);
+    background:rgba(18,28,45,.78);
+    padding:.18rem .7rem;
+    font-size:.78rem;
+    letter-spacing:.08em;
+    border-radius:999px;
+    backdrop-filter:blur(6px);
+    box-shadow:0 6px 14px rgba(0,0,0,.38);
+    text-transform:uppercase;
+    white-space:nowrap;
+  }
+
+  .track-ring{ fill:url(#trackFill); stroke:rgba(52,28,14,.65); stroke-width:8; }
+  .track-highlight{ fill:url(#trackHighlight); }
+  .track-infield{ fill:url(#infieldGradient); }
+  .lane-boundary path{
+    fill:none;
+    stroke:rgba(255,244,222,.2);
+    stroke-width:4;
+    stroke-dasharray:18 16;
+    opacity:.7;
+  }
+  .lane-guide{ fill:none; stroke:transparent; }
+  .finish-line{
+    stroke:#fdfdf8;
+    stroke-width:10;
+    stroke-dasharray:18 12;
+    stroke-linecap:round;
+    filter:drop-shadow(0 10px 16px rgba(0,0,0,.55));
+  }
 
   /* Betting Panel */
   .panel{
@@ -229,8 +304,10 @@
   .mpNotice{ font-size:.85rem; color:var(--muted); }
 
   .summaryGrid{
-    display:grid; gap:14px; margin-top:0;
-    grid-template-columns:repeat(auto-fit, minmax(260px,1fr));
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+    margin-top:0;
   }
   .summaryCard{
     background:rgba(9,14,26,.72);
@@ -239,6 +316,7 @@
     padding:16px 18px;
     box-shadow:inset 0 0 0 1px rgba(255,255,255,.03);
     display:flex; flex-direction:column; gap:12px;
+    flex:1;
   }
   .summaryHeader{ display:flex; justify-content:space-between; align-items:center; font-size:.85rem; text-transform:uppercase; letter-spacing:.12em; color:var(--muted); }
   .summaryMeta{ font-size:.78rem; letter-spacing:.08em; color:var(--muted); opacity:.85; }
@@ -359,7 +437,7 @@
   </div>
   <div class="lobby" id="lobby">
     <div class="lobby-card" id="lobbyMain">
-      <h2>Horse Track Lounge</h2>
+      <h2>Rat Track Lounge</h2>
       <p>Select how you'd like to play.</p>
       <div class="lobby-actions">
         <button class="primary" id="btnSingleplayer" type="button">Singleplayer</button>
@@ -396,83 +474,87 @@
     </div>
   </div>
   <div class="wrap">
-    <!-- TRACK -->
-    <div class="track" id="track">
-      <div class="lanes" id="lanes"></div>
-      <div class="finish"></div>
+    <div class="board">
+      <section class="track-card" id="trackCard">
+        <div class="track-viewport" id="trackViewport">
+          <svg id="trackSvg" viewBox="0 0 1200 640" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Rat race track"></svg>
+          <div class="rat-layer" id="ratLayer"></div>
+        </div>
+        <header>
+          <div class="status" id="status">Place your bets.</div>
+          <div class="legend">
+            <span><span class="pill" id="pot">$0</span> pot</span>
+            <span>Min bet $1</span>
+          </div>
+        </header>
+      </section>
 
-      <header>
-        <div class="status" id="status">Place your bets.</div>
-        <div class="legend">
-          <span><span class="pill" id="pot">$0</span> pot</span>
-          <span>Min bet $1</span>
+      <aside class="info-panel panel">
+        <div class="mpCard" id="mpCard">
+          <div class="mpRow" id="mpButtonRow">
+            <button class="btn secondary" id="btnSolo" type="button">Solo</button>
+            <button class="btn secondary" id="btnHostRoom" type="button">Host Room</button>
+            <button class="btn secondary" id="btnJoinRoom" type="button">Join Room</button>
+          </div>
+          <div class="mpRoom" id="roomInfo" hidden>
+            <span>Room:</span>
+            <span class="mpRoomCode" id="roomCode">—</span>
+            <button class="btn secondary small" id="btnCopyRoom" type="button">Copy Code</button>
+          </div>
+          <div class="mpRow mpHostActions" id="hostActions" hidden>
+            <button class="btn" id="btnConfirmHost" type="button">Create Room</button>
+            <button class="btn secondary" id="btnCancelHost" type="button">Back</button>
+          </div>
+          <div class="mpJoin" id="joinControls" hidden>
+            <label for="joinCode">Room Code</label>
+            <input id="joinCode" type="text" placeholder="ABCDE" maxlength="12" autocomplete="off" />
+            <button class="btn secondary" id="btnConfirmJoin" type="button">Join</button>
+          </div>
+          <div class="mpRow mpJoinActions" id="joinActions" hidden>
+            <button class="btn secondary" id="btnCancelJoin" type="button">Back</button>
+          </div>
+          <div class="mpNotice" id="mpNotice">You are playing solo.</div>
         </div>
-      </header>
-    </div>
+        <div class="summaryGrid">
+          <div class="summaryCard">
+            <div class="summaryHeader">Players <span class="summaryMeta" id="playerCount">—</span></div>
+            <div class="playerList" id="playerList"></div>
+          </div>
+          <div class="summaryCard">
+            <div class="summaryHeader">Rat Pool <span class="summaryMeta" id="poolMeta">—</span></div>
+            <div class="ratTotals" id="ratTotals"></div>
+          </div>
+        </div>
+      </aside>
 
-    <!-- PANEL -->
-    <div class="panel">
-      <div class="mpCard" id="mpCard">
-        <div class="mpRow" id="mpButtonRow">
-          <button class="btn secondary" id="btnSolo" type="button">Solo</button>
-          <button class="btn secondary" id="btnHostRoom" type="button">Host Room</button>
-          <button class="btn secondary" id="btnJoinRoom" type="button">Join Room</button>
+      <section class="bets-panel panel">
+        <h2>Betting</h2>
+        <div class="grid">
+          <div class="field"><label for="bettor">Bettor</label><input id="bettor" type="text" placeholder="Name (optional)"></div>
+          <div class="field"><label for="rat">Rat</label>
+            <select id="rat"></select>
+          </div>
+          <div class="field"><label for="amount">Amount</label><input id="amount" type="number" min="1" step="1" value="10"></div>
         </div>
-        <div class="mpRoom" id="roomInfo" hidden>
-          <span>Room:</span>
-          <span class="mpRoomCode" id="roomCode">—</span>
-          <button class="btn secondary small" id="btnCopyRoom" type="button">Copy Code</button>
+        <div style="display:flex; gap:8px; margin:.8rem 0 1rem">
+          <button class="btn" id="addBet">Add Bet</button>
         </div>
-        <div class="mpRow mpHostActions" id="hostActions" hidden>
-          <button class="btn" id="btnConfirmHost" type="button">Create Room</button>
-          <button class="btn secondary" id="btnCancelHost" type="button">Back</button>
-        </div>
-        <div class="mpJoin" id="joinControls" hidden>
-          <label for="joinCode">Room Code</label>
-          <input id="joinCode" type="text" placeholder="ABCDE" maxlength="12" autocomplete="off" />
-          <button class="btn secondary" id="btnConfirmJoin" type="button">Join</button>
-        </div>
-        <div class="mpRow mpJoinActions" id="joinActions" hidden>
-          <button class="btn secondary" id="btnCancelJoin" type="button">Back</button>
-        </div>
-        <div class="mpNotice" id="mpNotice">You are playing solo.</div>
-      </div>
-      <div class="summaryGrid">
-        <div class="summaryCard">
-          <div class="summaryHeader">Players <span class="summaryMeta" id="playerCount">—</span></div>
-          <div class="playerList" id="playerList"></div>
-        </div>
-        <div class="summaryCard">
-          <div class="summaryHeader">Horse Pool <span class="summaryMeta" id="poolMeta">—</span></div>
-          <div class="ratTotals" id="ratTotals"></div>
-        </div>
-      </div>
-      <h2>Betting</h2>
-      <div class="grid">
-        <div class="field"><label for="bettor">Bettor</label><input id="bettor" type="text" placeholder="Name (optional)"></div>
-        <div class="field"><label for="rat">Horse</label>
-          <select id="rat"></select>
-        </div>
-        <div class="field"><label for="amount">Amount</label><input id="amount" type="number" min="1" step="1" value="10"></div>
-      </div>
-      <div style="display:flex; gap:8px; margin:.8rem 0 1rem">
-        <button class="btn" id="addBet">Add Bet</button>
-      </div>
 
-      <table>
-        <thead><tr><th>Bettor</th><th>Horse</th><th class="right">Amount</th><th class="right">Remove</th></tr></thead>
-        <tbody id="betRows"></tbody>
-      </table>
+        <table>
+          <thead><tr><th>Bettor</th><th>Rat</th><th class="right">Amount</th><th class="right">Remove</th></tr></thead>
+          <tbody id="betRows"></tbody>
+        </table>
 
-      <div class="note">
-        Payouts are pari-mutuel: winners split the pot in proportion to their bet. If nobody bet the winning horse, the house keeps the pot (🏇).
-      </div>
+        <div class="note">
+          Payouts are pari-mutuel: winners split the pot in proportion to their bet. If nobody bet the winning rat, the house keeps the pot (🐀).
+        </div>
 
-      <h2 style="margin-top:1.2rem">Results</h2>
-      <table>
-        <thead><tr><th>Bettor</th><th>Horse</th><th class="right">Bet</th><th class="right">Payout</th><th class="right">Net</th></tr></thead>
-        <tbody id="resultRows"><tr><td colspan="5" style="color:var(--muted)">No results yet.</td></tr></tbody>
-      </table>
+        <h2 style="margin-top:1.2rem">Results</h2>
+        <table>
+          <thead><tr><th>Bettor</th><th>Rat</th><th class="right">Bet</th><th class="right">Payout</th><th class="right">Net</th></tr></thead>
+          <tbody id="resultRows"><tr><td colspan="5" style="color:var(--muted)">No results yet.</td></tr></tbody>
+        </table>
+      </section>
     </div>
   </div>
 
@@ -515,38 +597,188 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebas
 import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-analytics.js";
 import { getDatabase, ref, onValue, update, onDisconnect } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js";
 
-/* ============== Setup horses & lanes ============== */
+/* ============== Track geometry & rats ============== */
 const RAT_DATA = [
-  { id:'r1', name:'Midnight Comet', color:'#5a4332' },
-  { id:'r2', name:'Amber Dawn',  color:'#c18852' },
-  { id:'r3', name:'Silver Tempo',  color:'#a8b7c8' },
-  { id:'r4', name:'Verdant Gale', color:'#4b6f5d' },
-  { id:'r5', name:'Crimson Charge', color:'#a24b3c' },
+  { id:'r1', name:'Midnight Gnawer', color:'#5a4332' },
+  { id:'r2', name:'Amber Nibbles',  color:'#c18852' },
+  { id:'r3', name:'Silver Whisk',  color:'#a8b7c8' },
+  { id:'r4', name:'Verdant Scurry', color:'#4b6f5d' },
+  { id:'r5', name:'Crimson Scamper', color:'#a24b3c' },
 ];
 
-const lanes = document.getElementById('lanes');
 const statusEl = document.getElementById('status');
 const potEl = document.getElementById('pot');
-lanes.style.gridTemplateRows = `repeat(${RAT_DATA.length}, 1fr)`;
+const trackSvg = document.getElementById('trackSvg');
+const ratLayer = document.getElementById('ratLayer');
+const trackViewport = document.getElementById('trackViewport');
 
-// build lanes + rats
-const rats = RAT_DATA.map((r) => {
-  const lane = document.createElement('div');
-  lane.className = 'lane';
-  lane.dataset.rat = r.id;
-  lanes.appendChild(lane);
+const VIEWBOX_WIDTH = 1200;
+const VIEWBOX_HEIGHT = 640;
+const TRACK_GEOM = {
+  cx: 600,
+  cy: 320,
+  outerRx: 520,
+  outerRy: 220,
+  innerRx: 300,
+  innerRy: 140,
+};
 
-  const rat = document.createElement('div');
-  rat.className = 'rat';
-  rat.innerHTML = ratSVG(r.color);
-  lane.appendChild(rat);
+const laneCount = RAT_DATA.length;
+const laneSpacingX = laneCount ? (TRACK_GEOM.outerRx - TRACK_GEOM.innerRx) / laneCount : 0;
+const laneSpacingY = laneCount ? (TRACK_GEOM.outerRy - TRACK_GEOM.innerRy) / laneCount : 0;
 
+function ellipsePath(rx, ry, sweep=1){
+  const { cx, cy } = TRACK_GEOM;
+  return `M ${cx - rx} ${cy} a ${rx} ${ry} 0 1 ${sweep} ${rx * 2} 0 a ${rx} ${ry} 0 1 ${sweep} ${-rx * 2} 0`;
+}
+function closedEllipsePath(rx, ry, sweep=1){
+  return `${ellipsePath(rx, ry, sweep)} Z`;
+}
+function trackRingPath(){
+  return `${closedEllipsePath(TRACK_GEOM.outerRx, TRACK_GEOM.outerRy, 1)} ${closedEllipsePath(TRACK_GEOM.innerRx, TRACK_GEOM.innerRy, 0)}`;
+}
+function laneRadii(index){
+  if(!laneCount){
+    return { rx: TRACK_GEOM.innerRx, ry: TRACK_GEOM.innerRy };
+  }
+  const rx = TRACK_GEOM.outerRx - (index + 0.5) * laneSpacingX;
+  const ry = TRACK_GEOM.outerRy - (index + 0.5) * laneSpacingY;
+  return { rx, ry };
+}
+function clampEllipseRadius(value){
+  return Math.max(40, value);
+}
+function buildTrackSvg(){
+  if(!trackSvg) return;
+
+  const highlightPath = closedEllipsePath(
+    clampEllipseRadius(TRACK_GEOM.outerRx - 40),
+    clampEllipseRadius(TRACK_GEOM.outerRy - 36),
+    1
+  );
+  const infieldPath = closedEllipsePath(
+    clampEllipseRadius(TRACK_GEOM.innerRx - 38),
+    clampEllipseRadius(TRACK_GEOM.innerRy - 44),
+    1
+  );
+
+  let boundaryMarkup = '';
+  for(let i=1;i<laneCount;i++){
+    const rx = TRACK_GEOM.outerRx - i * laneSpacingX;
+    const ry = TRACK_GEOM.outerRy - i * laneSpacingY;
+    boundaryMarkup += `<path d="${closedEllipsePath(rx, ry, 1)}" />`;
+  }
+
+  const guideMarkup = RAT_DATA.map((r, index) => {
+    const { rx, ry } = laneRadii(index);
+    return `<path class="lane-guide" id="lanePath-${r.id}" d="${closedEllipsePath(rx, ry, 1)}" />`;
+  }).join('');
+
+  const finishX = TRACK_GEOM.cx + TRACK_GEOM.innerRx + laneSpacingX * 0.5;
+  const finishTop = TRACK_GEOM.cy - (TRACK_GEOM.outerRy - 32);
+  const finishBottom = TRACK_GEOM.cy + (TRACK_GEOM.outerRy - 32);
+
+  trackSvg.innerHTML = `
+    <defs>
+      <radialGradient id="trackHighlight" cx="50%" cy="38%" r="68%">
+        <stop offset="0%" stop-color="rgba(255,242,214,.45)" />
+        <stop offset="55%" stop-color="rgba(255,205,135,.12)" />
+        <stop offset="100%" stop-color="rgba(120,70,32,0)" />
+      </radialGradient>
+      <linearGradient id="trackFill" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stop-color="#c0864c" />
+        <stop offset="65%" stop-color="#8a542c" />
+        <stop offset="100%" stop-color="#5c351b" />
+      </linearGradient>
+      <linearGradient id="infieldGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stop-color="#2e5a46" />
+        <stop offset="100%" stop-color="#173a2b" />
+      </linearGradient>
+    </defs>
+    <g>
+      <path class="track-ring" d="${trackRingPath()}" fill-rule="evenodd" />
+      <path class="track-highlight" d="${highlightPath}" />
+      <path class="track-infield" d="${infieldPath}" />
+      <g class="lane-boundary">${boundaryMarkup}</g>
+      <g class="lane-guides" aria-hidden="true">${guideMarkup}</g>
+      <line class="finish-line" x1="${finishX}" y1="${finishTop}" x2="${finishX}" y2="${finishBottom}" />
+    </g>
+  `;
+}
+
+buildTrackSvg();
+
+let viewportScaleX = 1;
+let viewportScaleY = 1;
+
+function updateViewportScale(){
+  if(!trackViewport) return;
+  const rect = trackViewport.getBoundingClientRect();
+  viewportScaleX = rect.width / VIEWBOX_WIDTH;
+  viewportScaleY = rect.height / VIEWBOX_HEIGHT;
+}
+
+updateViewportScale();
+
+const lanePathMap = new Map();
+for(const r of RAT_DATA){
+  const pathEl = trackSvg?.querySelector(`#lanePath-${r.id}`);
+  if(pathEl){
+    lanePathMap.set(r.id, pathEl);
+  }
+}
+
+const rats = RAT_DATA.map((r, index) => {
+  const el = document.createElement('div');
+  el.className = 'rat';
+  const art = document.createElement('div');
+  art.className = 'rat-art';
+  art.innerHTML = ratSVG(r.color);
+  el.appendChild(art);
   const tag = document.createElement('div');
   tag.className = 'nameTag';
   tag.textContent = r.name;
-  lane.appendChild(tag);
+  el.appendChild(tag);
+  ratLayer?.appendChild(el);
 
-  return { ...r, lane, el:rat, x:0, v:0, baseSpeed:0, wobbleAmp:0, wobblePeriod:160, wobblePhase:0 };
+  const pathEl = lanePathMap.get(r.id);
+  const pathLength = pathEl?.getTotalLength?.() || 1;
+  const halfWidth = el.offsetWidth / 2 || 80;
+  const halfHeight = el.offsetHeight / 2 || 60;
+
+  return { ...r, el, art, tag, pathEl, pathLength, halfWidth, halfHeight, x:0, v:0, baseSpeed:0, wobbleAmp:0, wobblePeriod:160, wobblePhase:0 };
+});
+
+for(const r of rats){
+  positionRat(r, 0);
+}
+
+function toViewportPoint(point){
+  return {
+    x: point.x * viewportScaleX,
+    y: point.y * viewportScaleY,
+  };
+}
+
+function positionRat(r, distance=0){
+  if(!r?.pathEl) return;
+  const clamped = Math.min(distance, r.pathLength || 1);
+  const point = r.pathEl.getPointAtLength(clamped);
+  const back = r.pathEl.getPointAtLength(Math.max(0, clamped - 6));
+  const pos = toViewportPoint(point);
+  const prev = toViewportPoint(back);
+  const dx = pos.x - prev.x;
+  const dy = pos.y - prev.y;
+  const angle = Math.atan2(dy, dx);
+  r.el.style.transform = `translate(${pos.x - (r.halfWidth||80)}px, ${pos.y - (r.halfHeight||60)}px)`;
+  r.art.style.transform = `rotate(${angle}rad)`;
+}
+
+window.addEventListener('resize', () => {
+  updateViewportScale();
+  for(const r of rats){
+    positionRat(r, r.x || 0);
+  }
 });
 
 // selection dropdown
@@ -579,8 +811,8 @@ let remoteState = { status:'open', countdownDuration:2100 };
 let mpMode = 'solo';
 let pendingHostCode = '';
 let betUiLocked = false;
-const CLIENT_STORAGE_KEY = 'horseRaceClientId';
-const NAME_STORAGE_KEY = 'horseRacePlayerName';
+const CLIENT_STORAGE_KEY = 'ratRaceClientId';
+const NAME_STORAGE_KEY = 'ratRacePlayerName';
 let playerName = '';
 const AUTO_START_DELAY = 2500;
 const AUTO_REOPEN_DELAY = 6000;
@@ -887,7 +1119,7 @@ function renderRatTotals(){
   if(!ratTotalsEl) return;
   const totalPot = pot();
   if(poolMetaEl){
-    poolMetaEl.textContent = totalPot ? `${fmt(totalPot)} total` : 'No bets yet — select a horse below.';
+    poolMetaEl.textContent = totalPot ? `${fmt(totalPot)} total` : 'No bets yet — select a rat below.';
   }
   const bettingLocked = betUiLocked || (isMultiplayer && remoteState.status !== 'open');
   const rows = RAT_DATA.map(r=>{
@@ -1105,8 +1337,7 @@ function resetRacePositions(){
     r.wobbleAmp = 0;
     r.wobblePeriod = 160;
     r.wobblePhase = 0;
-    r.el.style.left = '0px';
-    r.el.style.transform = 'translate(0px,-50%)';
+    positionRat(r, 0);
   }
   winner = null; finished=false; racing=false; currentRaceSetup=null; postedResults=false;
 }
@@ -1140,8 +1371,6 @@ async function startCountdown({ startTime=Date.now(), duration=2100 }={}){
 }
 
 function startRace(setup){
-  const trackWidth = lanes.clientWidth - 26*2; // inner minus padding approx
-  const finishX = trackWidth - 150; // where nose hits finish (horse length ~140)
   racing = true;
   finished = false;
 
@@ -1151,10 +1380,10 @@ function startRace(setup){
   const byId = new Map((configuration?.rats || []).map(cfg => [cfg.id, cfg]));
   for(const r of rats){
     const cfg = byId.get(r.id) || {};
-    r.v = cfg.baseSpeed ?? (2.4 + Math.random()*0.9);
+    r.v = cfg.baseSpeed ?? (6 + Math.random()*2.4);
     r.baseSpeed = r.v;
-    r.wobbleAmp = cfg.wobbleAmp ?? (0.25 + Math.random()*0.35);
-    r.wobblePeriod = cfg.wobblePeriod ?? (140 + Math.random()*120);
+    r.wobbleAmp = cfg.wobbleAmp ?? (0.5 + Math.random()*0.4);
+    r.wobblePeriod = cfg.wobblePeriod ?? (180 + Math.random()*140);
     r.wobblePhase = cfg.wobblePhase ?? (Math.random()*Math.PI*2);
   }
   const t0 = performance.now();
@@ -1162,16 +1391,25 @@ function startRace(setup){
     const dt = Math.min(32, t - (step.t||t)); step.t = t;
     for(const r of rats){
       if(finished) break;
-      const wobble = Math.sin(((t - t0)/ (r.wobblePeriod||160)) + (r.wobblePhase||0)) * (r.wobbleAmp||0.3);
+      const wobble = Math.sin(((t - t0)/(r.wobblePeriod||200)) + (r.wobblePhase||0)) * (r.wobbleAmp||0.4);
       r.x += (r.baseSpeed + wobble) * (dt/16.7);
-      if(r.x >= finishX && !winner){
-        winner = r; finished = true; racing=false;
+      if(r.x >= (r.pathLength || 1)){
+        r.x = r.pathLength || r.x;
+        if(!winner){
+          winner = r;
+          finished = true;
+          racing = false;
+        }
       }
-      r.el.style.transform = `translate(${Math.max(0, r.x)}px,-50%)`;
+      positionRat(r, Math.min(r.x, r.pathLength || r.x));
     }
-    if(!finished){ animId = requestAnimationFrame(step); }
-    else {
+    if(!finished){
+      animId = requestAnimationFrame(step);
+    }else{
       cancelAnimationFrame(animId);
+      for(const r of rats){
+        positionRat(r, Math.min(r.x, r.pathLength || r.x));
+      }
       endRace();
     }
   };
@@ -1242,9 +1480,9 @@ function createRaceSetup(){
   return {
     rats: RAT_DATA.map(r=>({
       id: r.id,
-      baseSpeed: 2.4 + Math.random()*0.9,
-      wobbleAmp: 0.25 + Math.random()*0.35,
-      wobblePeriod: 140 + Math.random()*120,
+      baseSpeed: 6 + Math.random()*2.8,
+      wobbleAmp: 0.5 + Math.random()*0.35,
+      wobblePeriod: 180 + Math.random()*160,
       wobblePhase: Math.random()*Math.PI*2
     }))
   };
@@ -1252,56 +1490,51 @@ function createRaceSetup(){
 
 function ratSVG(color='#b9c2cc'){
   const darker = shade(color, -32);
-  const highlight = shade(color, 20);
-  const mid = shade(color, -8);
-  const maneDark = shade(color, -45);
-  const maneLight = shade(color, -15);
-  const accent = shade(color, 36);
+  const darkest = shade(color, -46);
+  const highlight = shade(color, 26);
+  const mid = shade(color, -10);
+  const blush = shade(color, 18);
+  const innerEar = shade(color, 55);
+  const tailColor = shade(color, -55);
   const sparkle = shade(color, 55);
   const gradId = `g${Math.random().toString(36).slice(2,8)}`;
-  const headGradId = `h${Math.random().toString(36).slice(2,8)}`;
-  const legGradId = `l${Math.random().toString(36).slice(2,8)}`;
+  const bellyId = `b${Math.random().toString(36).slice(2,8)}`;
   return `
-  <svg viewBox="0 0 260 140" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Racing horse">
+  <svg viewBox="0 0 220 140" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Racing rat">
     <defs>
-      <linearGradient id="${gradId}" x1="50" y1="36" x2="212" y2="118" gradientUnits="userSpaceOnUse">
+      <linearGradient id="${gradId}" x1="54" y1="30" x2="176" y2="130" gradientUnits="userSpaceOnUse">
         <stop offset="0%" stop-color="${highlight}"/>
-        <stop offset="35%" stop-color="${color}"/>
+        <stop offset="45%" stop-color="${color}"/>
         <stop offset="100%" stop-color="${darker}"/>
       </linearGradient>
-      <linearGradient id="${headGradId}" x1="162" y1="44" x2="242" y2="94" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stop-color="${highlight}"/>
-        <stop offset="65%" stop-color="${mid}"/>
-        <stop offset="100%" stop-color="${darker}"/>
+      <linearGradient id="${bellyId}" x1="0" y1="0" x2="0" y2="120" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="${highlight}" stop-opacity=".8"/>
+        <stop offset="100%" stop-color="${mid}" stop-opacity=".55"/>
       </linearGradient>
-      <linearGradient id="${legGradId}" x1="0" y1="0" x2="0" y2="120" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stop-color="${highlight}"/>
-        <stop offset="100%" stop-color="${darker}"/>
-      </linearGradient>
-      <filter id="horseShadow" x="-60%" y="-60%" width="220%" height="220%">
+      <filter id="ratShadow" x="-60%" y="-60%" width="220%" height="220%">
         <feDropShadow dx="0" dy="12" stdDeviation="10" flood-color="rgba(0,0,0,.45)" flood-opacity="1"/>
       </filter>
     </defs>
-    <g filter="url(#horseShadow)">
-      <ellipse cx="118" cy="116" rx="82" ry="18" fill="rgba(0,0,0,.28)" opacity=".55"/>
-      <path class="tail" d="M56 96 C 24 90, 22 64, 56 50 C 78 42, 108 58, 126 70" fill="none" stroke="${maneDark}" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+    <g filter="url(#ratShadow)">
+      <ellipse cx="110" cy="118" rx="78" ry="18" fill="rgba(0,0,0,.28)" opacity=".55"/>
+      <path class="tail" d="M52 94 C 18 90, 6 70, 26 54 C 44 40, 88 46, 112 60" fill="none" stroke="${tailColor}" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
       <g class="body-group">
-        <path d="M70 78 C 74 46, 118 34, 166 46 C 206 56, 238 86, 222 112 C 206 136, 130 132, 92 120 C 58 110, 66 104, 70 78 Z" fill="url(#${gradId})"/>
-        <path class="mane" d="M148 44 C 170 30, 200 22, 216 34 C 202 46, 196 58, 190 72 C 174 62, 156 54, 140 54 Z" fill="${maneDark}"/>
-        <path class="mane" d="M154 38 C 176 22, 198 18, 214 24 C 202 32, 194 40, 188 54 L 152 50 Z" fill="${maneLight}" opacity=".75"/>
-        <path d="M186 74 C 202 54, 236 52, 244 78 C 248 94, 238 114, 214 110 C 204 108, 194 100, 188 92 Z" fill="url(#${headGradId})"/>
-        <path class="ear" d="M210 42 L226 26 L234 54 L212 56 Z" fill="${maneDark}"/>
-        <path class="ear" d="M216 36 L230 26 L236 48 L218 48 Z" fill="${maneLight}" opacity=".85"/>
-        <circle cx="222" cy="76" r="4.6" fill="#161c2c"/>
-        <circle cx="223.6" cy="74.8" r="1.5" fill="#fff" opacity=".8"/>
-        <path d="M214 88 Q226 92 238 84" stroke="${accent}" stroke-width="5" stroke-linecap="round" opacity=".7"/>
-        <path d="M172 108 Q182 120 202 114" stroke="${accent}" stroke-width="6" stroke-linecap="round" opacity=".45"/>
-        <path d="M92 102 L108 102 L100 136 L84 134 Z" fill="url(#${legGradId})"/>
-        <path d="M128 106 L146 108 L138 136 L120 134 Z" fill="url(#${legGradId})" opacity=".92"/>
-        <path d="M162 102 L180 104 L174 134 L158 132 Z" fill="url(#${legGradId})" opacity=".85"/>
-        <path d="M110 84 C 118 80, 144 80, 166 88" stroke="${accent}" stroke-width="6" stroke-linecap="round" opacity=".35"/>
-        <circle class="sparkle" cx="134" cy="52" r="3" fill="${sparkle}" opacity=".4"/>
-        <circle class="sparkle" cx="152" cy="48" r="2" fill="#fff" opacity=".6"/>
+        <path d="M64 88 C 74 46, 130 36, 174 70 C 198 88, 204 116, 174 128 C 136 144, 82 132, 58 116 C 38 104, 44 98, 64 88 Z" fill="url(#${gradId})"/>
+        <path d="M102 98 C 118 92, 146 96, 162 108 C 150 118, 126 122, 104 114 C 90 110, 92 104, 102 98 Z" fill="url(#${bellyId})" opacity=".7"/>
+        <path d="M150 82 C 168 62, 202 62, 210 84 C 214 98, 200 112, 184 110 C 172 108, 162 98, 150 90 Z" fill="${mid}"/>
+        <path d="M166 80 C 182 64, 204 66, 210 84 C 196 84, 186 92, 174 96 Z" fill="${highlight}" opacity=".6"/>
+        <path class="ear" d="M170 58 C 186 36, 210 38, 216 60 C 202 60, 192 68, 178 74 Z" fill="${blush}"/>
+        <path class="ear" d="M176 54 C 190 40, 208 42, 212 58 C 198 60, 190 66, 182 70 Z" fill="${innerEar}" opacity=".7"/>
+        <circle cx="188" cy="90" r="5.2" fill="#141924"/>
+        <circle cx="189.6" cy="88.6" r="1.6" fill="#fff" opacity=".8"/>
+        <path d="M178 104 Q 188 110 204 100" stroke="${highlight}" stroke-width="4" stroke-linecap="round" opacity=".6"/>
+        <path class="mane" d="M182 100 Q 198 100 214 94" stroke="${highlight}" stroke-width="3" stroke-linecap="round" opacity=".75"/>
+        <path class="mane" d="M182 94 Q 198 92 212 86" stroke="${highlight}" stroke-width="3" stroke-linecap="round" opacity=".55"/>
+        <path d="M94 108 L110 110 L104 136 L88 134 Z" fill="${darkest}"/>
+        <path d="M122 110 L138 112 L132 138 L116 136 Z" fill="${darkest}" opacity=".85"/>
+        <path d="M70 96 C 90 70, 132 66, 162 82" stroke="${highlight}" stroke-width="6" stroke-linecap="round" opacity=".35"/>
+        <circle class="sparkle" cx="128" cy="54" r="3" fill="${sparkle}" opacity=".45"/>
+        <circle class="sparkle" cx="146" cy="50" r="2.4" fill="#fff" opacity=".6"/>
       </g>
     </g>
   </svg>`;
@@ -1674,7 +1907,7 @@ function joinRoom(code, { host=false }={}){
   isMultiplayer = true;
   isHost = host;
   roomId = sanitized;
-  gamePath = `horseRaces/${roomId}`;
+  gamePath = `ratRaces/${roomId}`;
   cancelAutoStart();
   cancelAutoReopen();
   bets = [];
