@@ -139,6 +139,26 @@
   .btn.secondary{ background:linear-gradient(135deg,#2e3757,#1e263f); color:#e9eef6; border:1px solid rgba(255,255,255,.14) }
   .btn.muted{ opacity:.6; pointer-events:none }
 
+  .btn.small{ padding:.55rem .8rem; font-size:.85rem; }
+
+  .mpCard{
+    background:rgba(10,16,30,.65);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:16px;
+    padding:14px 16px;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.04);
+    margin-bottom:18px;
+    display:grid;
+    gap:10px;
+  }
+  .mpRow{ display:flex; flex-wrap:wrap; gap:8px; }
+  .mpRoom{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; font-size:.9rem; }
+  .mpRoomCode{ font-weight:700; letter-spacing:.08em; background:rgba(255,255,255,.08); padding:.35rem .65rem; border-radius:10px; }
+  .mpJoin{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  .mpJoin label{ font-size:.85rem; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; }
+  .mpJoin input{ flex:1 1 120px; min-width:0; }
+  .mpNotice{ font-size:.85rem; color:var(--muted); }
+
   table{ width:100%; border-collapse:separate; border-spacing:0 10px; font-variant-numeric:tabular-nums; }
   th, td{ text-align:left; padding:.65rem .9rem; }
   th{ color:var(--muted); font-weight:700; font-size:.85rem; text-transform:uppercase; letter-spacing:.08em; }
@@ -171,6 +191,24 @@
 
     <!-- PANEL -->
     <div class="panel">
+      <div class="mpCard">
+        <div class="mpRow">
+          <button class="btn secondary" id="btnSolo" type="button">Solo</button>
+          <button class="btn secondary" id="btnHostRoom" type="button">Host Room</button>
+          <button class="btn secondary" id="btnJoinRoom" type="button">Join Room</button>
+        </div>
+        <div class="mpRoom" id="roomInfo" hidden>
+          <span>Room:</span>
+          <span class="mpRoomCode" id="roomCode">—</span>
+          <button class="btn secondary small" id="btnCopyRoom" type="button">Copy Code</button>
+        </div>
+        <div class="mpJoin" id="joinControls" hidden>
+          <label for="joinCode">Room Code</label>
+          <input id="joinCode" type="text" placeholder="ABCDE" maxlength="12" autocomplete="off" />
+          <button class="btn secondary" id="btnConfirmJoin" type="button">Join</button>
+        </div>
+        <div class="mpNotice" id="mpNotice">You are playing solo.</div>
+      </div>
       <h2>Betting</h2>
       <div class="grid">
         <div class="field"><label for="bettor">Bettor</label><input id="bettor" type="text" placeholder="Name (optional)"></div>
@@ -202,7 +240,11 @@
     </div>
   </div>
 
-<script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-analytics.js";
+import { getDatabase, ref, onValue, update, onDisconnect } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js";
+
 /* ============== Setup rats & lanes ============== */
 const RAT_DATA = [
   { id:'r1', name:'Whisker', color:'#b9c2cc' },
@@ -218,7 +260,7 @@ const potEl = document.getElementById('pot');
 lanes.style.gridTemplateRows = `repeat(${RAT_DATA.length}, 1fr)`;
 
 // build lanes + rats
-const rats = RAT_DATA.map((r, idx) => {
+const rats = RAT_DATA.map((r) => {
   const lane = document.createElement('div');
   lane.className = 'lane';
   lane.dataset.rat = r.id;
@@ -234,7 +276,7 @@ const rats = RAT_DATA.map((r, idx) => {
   tag.textContent = r.name;
   lane.appendChild(tag);
 
-  return { ...r, lane, el:rat, x:0, v:0 };
+  return { ...r, lane, el:rat, x:0, v:0, baseSpeed:0, wobbleAmp:0, wobblePeriod:160, wobblePhase:0 };
 });
 
 // selection dropdown
@@ -246,13 +288,35 @@ for(const r of RAT_DATA){
 }
 
 /* ============== Betting state ============== */
-let bets = []; // {id, name, ratId, amount}
+let bets = []; // {id, name, ratId, amount, owner, createdAt}
 const betRows = document.getElementById('betRows');
 const resultRows = document.getElementById('resultRows');
+const addBetBtn = document.getElementById('addBet');
+const closeBetsBtn = document.getElementById('closeBets');
+const resetBtn = document.getElementById('reset');
+const bettorInput = document.getElementById('bettor');
+const amountInput = document.getElementById('amount');
+
+const soloBtn = document.getElementById('btnSolo');
+const hostBtn = document.getElementById('btnHostRoom');
+const joinBtn = document.getElementById('btnJoinRoom');
+const joinControls = document.getElementById('joinControls');
+const joinCodeInput = document.getElementById('joinCode');
+const joinConfirmBtn = document.getElementById('btnConfirmJoin');
+const roomInfo = document.getElementById('roomInfo');
+const roomCodeEl = document.getElementById('roomCode');
+const copyRoomBtn = document.getElementById('btnCopyRoom');
+const mpNotice = document.getElementById('mpNotice');
 
 function fmt(n){ return '$'+Number(n).toLocaleString(undefined,{minimumFractionDigits:0}); }
 function pot(){ return bets.reduce((a,b)=>a+Number(b.amount||0),0); }
 function totalOn(rid){ return bets.filter(b=>b.ratId===rid).reduce((a,b)=>a+Number(b.amount),0); }
+
+function canRemoveBet(bet){
+  if(!bet) return false;
+  if(!isMultiplayer) return true;
+  return isHost || bet.owner === clientId;
+}
 
 function redrawBets(){
   betRows.innerHTML = '';
@@ -261,84 +325,156 @@ function redrawBets(){
     tr.innerHTML = `<td colspan="4" style="color:var(--muted)">No bets yet.</td>`;
     betRows.appendChild(tr);
   }else{
-    for(const b of bets){
+    const sorted = [...bets].sort((a,b)=>{
+      if(a.createdAt && b.createdAt){ return a.createdAt - b.createdAt; }
+      return (a.name || '').localeCompare(b.name || '');
+    });
+    for(const b of sorted){
       const tr = document.createElement('tr');
+      const removeCell = canRemoveBet(b)
+        ? `<button class="btn secondary" data-remove="${b.id}" style="padding:.4rem .6rem">×</button>`
+        : '—';
       tr.innerHTML = `
         <td>${escapeHTML(b.name||'—')}</td>
         <td>${ratName(b.ratId)}</td>
         <td class="right">${fmt(b.amount)}</td>
-        <td class="right"><button class="btn secondary" data-remove="${b.id}" style="padding:.4rem .6rem">×</button></td>`;
+        <td class="right">${removeCell}</td>`;
       betRows.appendChild(tr);
     }
   }
   potEl.textContent = fmt(pot());
 }
-function escapeHTML(s){ return (s??'').replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m])); }
+function escapeHTML(s){ return (s??'').replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",""":"&quot;","'":"&#039;"}[m])); }
 function ratName(id){ return RAT_DATA.find(r=>r.id===id)?.name || id; }
 
-document.getElementById('addBet').addEventListener('click', ()=>{
-  const name = document.getElementById('bettor').value.trim();
-  const ratId = document.getElementById('rat').value;
-  const amount = Math.max(1, Math.floor(Number(document.getElementById('amount').value||0)));
-  bets.push({ id:crypto.randomUUID(), name, ratId, amount });
-  redrawBets();
+addBetBtn.addEventListener('click', ()=>{
+  if(isMultiplayer && remoteState.status !== 'open'){ statusEl.textContent = 'Betting is closed.'; return; }
+  const name = bettorInput.value.trim();
+  const ratId = sel.value;
+  const amount = Math.max(1, Math.floor(Number(amountInput.value||0)));
+  const bet = { id:generateId(), name, ratId, amount, owner:clientId, createdAt:Date.now() };
+  if(isMultiplayer){
+    if(!gamePath) return;
+    const updatePayload = {};
+    updatePayload[`${gamePath}/bets/${bet.id}`] = bet;
+    update(rootRef, updatePayload).catch(err=>{
+      console.warn('Failed to add bet', err);
+      statusEl.textContent = 'Unable to add bet right now.';
+    });
+  }else{
+    bets.push(bet);
+    redrawBets();
+  }
 });
+
 betRows.addEventListener('click', (e)=>{
   const id = e.target?.dataset?.remove;
   if(!id) return;
-  bets = bets.filter(b=>b.id!==id);
-  redrawBets();
+  const bet = bets.find(b=>b.id===id);
+  if(!bet) return;
+  if(isMultiplayer){
+    if(!canRemoveBet(bet)) return;
+    const updatePayload = {};
+    updatePayload[`${gamePath}/bets/${id}`] = null;
+    update(rootRef, updatePayload).catch(err=>{
+      console.warn('Failed to remove bet', err);
+    });
+  }else{
+    bets = bets.filter(b=>b.id!==id);
+    redrawBets();
+  }
 });
 
 /* ============== Race engine ============== */
 let racing = false, finished = false, animId = 0, winner = null;
+let countdownToken = 0;
+let currentRaceSetup = null;
+let postedResults = false;
 
 function resetRacePositions(){
-  for(const r of rats){ r.x = 0; r.v = 0; r.el.style.left = '0px'; }
-  winner = null; finished=false; racing=false;
+  for(const r of rats){
+    r.x = 0;
+    r.v = 0;
+    r.baseSpeed = 0;
+    r.wobbleAmp = 0;
+    r.wobblePeriod = 160;
+    r.wobblePhase = 0;
+    r.el.style.left = '0px';
+    r.el.style.transform = 'translate(0px,-50%)';
+  }
+  winner = null; finished=false; racing=false; currentRaceSetup=null; postedResults=false;
 }
 resetRacePositions();
 
-async function startCountdown(){
+function cancelCountdown(){ countdownToken++; statusEl.classList.remove('countdown'); }
+
+async function startCountdown({ startTime=Date.now(), duration=2100 }={}){
+  const token = ++countdownToken;
   statusEl.classList.add('countdown');
-  for(const n of [3,2,1]){ statusEl.textContent = `Racing in ${n}…`; await sleep(700); }
+  const steps = [
+    { value:3, offset:0 },
+    { value:2, offset:700 },
+    { value:1, offset:1400 }
+  ];
+  for(const step of steps){
+    const wait = startTime + step.offset - Date.now();
+    if(wait > 1) await sleep(wait);
+    if(token !== countdownToken) return;
+    const remaining = startTime + duration - Date.now();
+    if(remaining <= 0) break;
+    statusEl.textContent = `Racing in ${step.value}…`;
+  }
+  const finalWait = startTime + duration - Date.now();
+  if(finalWait > 1) await sleep(finalWait);
+  if(token !== countdownToken) return;
   statusEl.textContent = 'Go!';
   await sleep(200);
+  if(token !== countdownToken) return;
   statusEl.classList.remove('countdown');
 }
 
-function startRace(){
+function startRace(setup){
   const trackWidth = lanes.clientWidth - 26*2; // inner minus padding approx
   const finishX = trackWidth - 140; // where nose hits finish (rat width ~120)
   racing = true;
+  finished = false;
 
-  // each rat gets base speed and personality jitter
+  const configuration = setup || createRaceSetup();
+  currentRaceSetup = configuration;
+
+  const byId = new Map((configuration?.rats || []).map(cfg => [cfg.id, cfg]));
   for(const r of rats){
-    r.v = 2.4 + Math.random()*0.9; // base px/frame
-    r.j = 0.25 + Math.random()*0.35; // jitter amplitude
+    const cfg = byId.get(r.id) || {};
+    r.v = cfg.baseSpeed ?? (2.4 + Math.random()*0.9);
+    r.baseSpeed = r.v;
+    r.wobbleAmp = cfg.wobbleAmp ?? (0.25 + Math.random()*0.35);
+    r.wobblePeriod = cfg.wobblePeriod ?? (140 + Math.random()*120);
+    r.wobblePhase = cfg.wobblePhase ?? (Math.random()*Math.PI*2);
   }
   const t0 = performance.now();
   const step = (t)=>{
     const dt = Math.min(32, t - (step.t||t)); step.t = t;
     for(const r of rats){
       if(finished) break;
-      const wobble = Math.sin((t - t0)/ (140 + Math.random()*120)) * r.j;
-      r.x += (r.v + wobble) * (dt/16.7);
+      const wobble = Math.sin(((t - t0)/ (r.wobblePeriod||160)) + (r.wobblePhase||0)) * (r.wobbleAmp||0.3);
+      r.x += (r.baseSpeed + wobble) * (dt/16.7);
       if(r.x >= finishX && !winner){
         winner = r; finished = true; racing=false;
       }
       r.el.style.transform = `translate(${Math.max(0, r.x)}px,-50%)`;
     }
     if(!finished){ animId = requestAnimationFrame(step); }
-    else { cancelAnimationFrame(animId); endRace(); }
+    else {
+      cancelAnimationFrame(animId);
+      endRace();
+    }
   };
   animId = requestAnimationFrame(step);
 }
 
-function endRace(){
+function endRace(options={}){
   if(!winner){ statusEl.textContent = 'No winner?!'; return; }
   statusEl.textContent = `Winner: ${winner.name}!`;
-  // payouts
   const p = pot();
   const totalOnWin = totalOn(winner.id);
   const winners = bets.filter(b=>b.ratId===winner.id);
@@ -347,6 +483,7 @@ function endRace(){
     const tr = document.createElement('tr');
     tr.innerHTML = `<td colspan="5">No one bet on ${winner.name}. House keeps the ${fmt(p)} pot.</td>`;
     resultRows.appendChild(tr);
+    postWinnerToNetwork(winner.id, options);
     return;
   }
   for(const b of bets){
@@ -362,35 +499,70 @@ function endRace(){
     `;
     resultRows.appendChild(tr);
   }
+  postWinnerToNetwork(winner.id, options);
 }
 
 /* ============== Controls ============== */
-document.getElementById('closeBets').addEventListener('click', async ()=>{
-  if(!bets.length) { statusEl.textContent = 'Place at least one bet.'; return; }
-  // Lock betting UI
-  toggleBetUI(true);
-  await startCountdown();
-  startRace();
+closeBetsBtn.addEventListener('click', async ()=>{
+  if(isMultiplayer){
+    if(!isHost){ statusEl.textContent = 'Waiting for the host to start.'; return; }
+    if(!bets.length){ statusEl.textContent = 'Place at least one bet.'; return; }
+    await hostStartRace();
+  }else{
+    if(!bets.length){ statusEl.textContent = 'Place at least one bet.'; return; }
+    toggleBetUI(true);
+    const startTime = Date.now();
+    await startCountdown({ startTime });
+    startRace();
+  }
 });
 
-document.getElementById('reset').addEventListener('click', ()=>{
-  bets = []; redrawBets();
-  resultRows.innerHTML = `<tr><td colspan="5" style="color:var(--muted)">No results yet.</td></tr>`;
-  statusEl.textContent = 'Place your bets.';
-  toggleBetUI(false);
-  resetRacePositions();
+resetBtn.addEventListener('click', ()=>{
+  if(isMultiplayer){
+    if(!isHost) return;
+    hostResetRace();
+  }else{
+    bets = []; redrawBets();
+    resultRows.innerHTML = `<tr><td colspan="5" style="color:var(--muted)">No results yet.</td></tr>`;
+    statusEl.textContent = 'Place your bets.';
+    toggleBetUI(false);
+    resetRacePositions();
+  }
 });
 
 function toggleBetUI(lock){
-  document.getElementById('addBet').classList.toggle('muted', lock);
-  document.getElementById('closeBets').classList.toggle('muted', lock);
-  for(const el of [document.getElementById('bettor'), document.getElementById('rat'), document.getElementById('amount')]){
+  addBetBtn.classList.toggle('muted', lock);
+  addBetBtn.disabled = lock;
+  closeBetsBtn.classList.toggle('muted', lock || (isMultiplayer && !isHost));
+  closeBetsBtn.disabled = lock || (isMultiplayer && !isHost);
+  resetBtn.classList.toggle('muted', isMultiplayer && !isHost);
+  resetBtn.disabled = isMultiplayer && !isHost;
+  for(const el of [bettorInput, sel, amountInput]){
     el.disabled = lock;
   }
 }
 
 /* ============== Utilities & SVG ============== */
 function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+function generateId(){
+  if(window.crypto?.randomUUID){
+    return window.crypto.randomUUID();
+  }
+  return 'b'+Math.random().toString(36).slice(2,10)+Date.now().toString(36);
+}
+
+function createRaceSetup(){
+  return {
+    rats: RAT_DATA.map(r=>({
+      id: r.id,
+      baseSpeed: 2.4 + Math.random()*0.9,
+      wobbleAmp: 0.25 + Math.random()*0.35,
+      wobblePeriod: 140 + Math.random()*120,
+      wobblePhase: Math.random()*Math.PI*2
+    }))
+  };
+}
 
 function ratSVG(color='#b9c2cc'){
   const darker = shade(color, -25);
@@ -444,7 +616,6 @@ function ratSVG(color='#b9c2cc'){
   </svg>`;
 }
 function shade(hex, amt){
-  // naive lighten/darken hex by amt (-100..100)
   let c = hex.replace('#','');
   if(c.length===3) c = c.split('').map(ch=>ch+ch).join('');
   let [r,g,b]=[0,2,4].map(i=>parseInt(c.substring(i,i+2),16));
@@ -455,6 +626,400 @@ function shade(hex, amt){
 
 /* initial draw */
 redrawBets();
+
+/* ============== Multiplayer / Firebase ============== */
+const firebaseConfig = {
+  apiKey: "AIzaSyBN7Y6JcmhMf04ghX2KUoSHbrZMYGtSrDs",
+  authDomain: "multiplayer-640ec.firebaseapp.com",
+  databaseURL: "https://multiplayer-640ec-default-rtdb.firebaseio.com",
+  projectId: "multiplayer-640ec",
+  storageBucket: "multiplayer-640ec.firebasestorage.app",
+  messagingSenderId: "739760736627",
+  appId: "1:739760736627:web:5f7f92ea5af55f3d4dbebb",
+  measurementId: "G-S6CYR8YP69"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const rootRef = ref(db);
+
+const CLIENT_STORAGE_KEY = 'ratRaceClientId';
+const NAME_STORAGE_KEY = 'ratRacePlayerName';
+let playerName = '';
+try{
+  const stored = localStorage.getItem(NAME_STORAGE_KEY);
+  if(stored){
+    playerName = stored;
+    bettorInput.value = stored;
+  }
+} catch(err){
+  console.debug('Unable to access stored name', err);
+}
+
+const clientId = (()=>{
+  try{
+    const existing = localStorage.getItem(CLIENT_STORAGE_KEY);
+    if(existing) return existing;
+    const id = generateId();
+    localStorage.setItem(CLIENT_STORAGE_KEY, id);
+    return id;
+  }catch(err){
+    return generateId();
+  }
+})();
+
+let isMultiplayer = false;
+let isHost = false;
+let roomId = null;
+let gamePath = '';
+let betsRef = null;
+let stateRef = null;
+let presenceRef = null;
+let unsubscribers = [];
+let remoteState = { status:'open', countdownDuration:2100 };
+
+function rememberPlayerName(name){
+  try{
+    localStorage.setItem(NAME_STORAGE_KEY, name);
+  }catch(err){
+    console.debug('Unable to persist name', err);
+  }
+}
+
+bettorInput.addEventListener('blur', ()=>{
+  const value = bettorInput.value.trim();
+  if(value){
+    playerName = value;
+    rememberPlayerName(value);
+  }
+});
+
+function sanitizeRoomCode(value){
+  const cleaned = String(value || '').replace(/[^a-zA-Z0-9]/g,'').slice(0,12);
+  if(!cleaned) return '';
+  if(cleaned.length <= 5){
+    return cleaned.toUpperCase();
+  }
+  return cleaned.toLowerCase();
+}
+
+function generateRoomCode(){
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for(let i=0;i<5;i++){ code += chars[Math.floor(Math.random()*chars.length)]; }
+  return code;
+}
+
+function detachListeners(){
+  for(const unsub of unsubscribers){
+    try{ unsub(); }catch(err){ console.debug('Listener cleanup failed', err); }
+  }
+  unsubscribers = [];
+  if(presenceRef){
+    try{ onDisconnect(presenceRef).cancel(); }catch(err){ /* ignore */ }
+    presenceRef = null;
+  }
+  betsRef = null;
+  stateRef = null;
+}
+
+function attachListeners(){
+  if(!gamePath) return;
+  betsRef = ref(db, `${gamePath}/bets`);
+  stateRef = ref(db, `${gamePath}/state`);
+  unsubscribers.push(onValue(betsRef, snapshot=>{
+    const data = snapshot.val() || {};
+    bets = Object.values(data);
+    redrawBets();
+  }));
+  unsubscribers.push(onValue(stateRef, snapshot=>{
+    const data = snapshot.val();
+    if(data && data.updatedBy === clientId) return;
+    remoteState = { status:'open', countdownDuration:2100, ...(data||{}) };
+    handleNetworkState(remoteState);
+  }));
+}
+
+function handleNetworkState(state){
+  const phase = state.status || 'open';
+  if(phase === 'open'){
+    cancelCountdown();
+    statusEl.textContent = 'Place your bets.';
+    if(state.resetResults){
+      resultRows.innerHTML = `<tr><td colspan="5" style="color:var(--muted)">No results yet.</td></tr>`;
+    }
+    toggleBetUI(false);
+    resetRacePositions();
+  }else if(phase === 'countdown'){
+    toggleBetUI(true);
+    const startTime = state.countdownStartedAt || Date.now();
+    startCountdown({ startTime, duration: state.countdownDuration || 2100 });
+    currentRaceSetup = state.raceSetup || currentRaceSetup;
+  }else if(phase === 'running'){
+    toggleBetUI(true);
+    if(state.raceSetup){ currentRaceSetup = state.raceSetup; }
+    if(!racing){
+      startRace(currentRaceSetup);
+    }
+  }else if(phase === 'finished'){
+    toggleBetUI(true);
+    cancelCountdown();
+    if(state.winnerId){
+      const rat = rats.find(r=>r.id===state.winnerId);
+      if(rat){
+        winner = rat;
+        finished = true;
+        racing = false;
+        cancelAnimationFrame(animId);
+        endRace({ triggeredByNetwork:true });
+      }
+    }
+  }
+}
+
+function updateModeUI(){
+  if(!isMultiplayer){
+    mpNotice.textContent = 'You are playing solo.';
+    roomInfo.hidden = true;
+    joinControls.hidden = true;
+    closeBetsBtn.textContent = 'Close Bets & Start';
+    toggleBetUI(false);
+  }else{
+    const code = roomId || '—';
+    mpNotice.textContent = isHost
+      ? `Hosting room ${code}. Share the code with friends.`
+      : `Joined room ${code}. Place your bets!`;
+    roomInfo.hidden = false;
+    roomCodeEl.textContent = code;
+    closeBetsBtn.textContent = isHost ? 'Close Bets & Start' : 'Waiting for Host';
+    joinControls.hidden = true;
+    toggleBetUI(remoteState.status !== 'open');
+  }
+}
+
+function startSolo(){
+  detachListeners();
+  isMultiplayer = false;
+  isHost = false;
+  roomId = null;
+  gamePath = '';
+  bets = [];
+  redrawBets();
+  resultRows.innerHTML = `<tr><td colspan="5" style="color:var(--muted)">No results yet.</td></tr>`;
+  statusEl.textContent = 'Place your bets.';
+  resetRacePositions();
+  toggleBetUI(false);
+  window.location.hash = '';
+  updateModeUI();
+}
+
+async function hostStartRace(){
+  if(!isHost || !isMultiplayer || !gamePath) return;
+  const now = Date.now();
+  const setup = createRaceSetup();
+  currentRaceSetup = setup;
+  const payload = {};
+  payload[`${gamePath}/state`] = {
+    status:'countdown',
+    countdownStartedAt: now,
+    countdownDuration: 2100,
+    raceSetup: setup,
+    winnerId: null,
+    updatedBy: clientId,
+    updatedAt: now
+  };
+  try{
+    await update(rootRef, payload);
+  }catch(err){
+    console.warn('Failed to start countdown', err);
+    statusEl.textContent = 'Unable to start race.';
+    return;
+  }
+  toggleBetUI(true);
+  await startCountdown({ startTime: now });
+  const raceStart = Date.now();
+  const runningPayload = {};
+  runningPayload[`${gamePath}/state/status`] = 'running';
+  runningPayload[`${gamePath}/state/raceSetup`] = setup;
+  runningPayload[`${gamePath}/state/raceStartedAt`] = raceStart;
+  runningPayload[`${gamePath}/state/updatedBy`] = clientId;
+  runningPayload[`${gamePath}/state/updatedAt`] = raceStart;
+  try{
+    await update(rootRef, runningPayload);
+  }catch(err){
+    console.warn('Failed to announce race start', err);
+  }
+  startRace(setup);
+}
+
+function postWinnerToNetwork(winnerId, options={}){
+  if(options.triggeredByNetwork) return;
+  if(!isMultiplayer || !isHost || postedResults || !gamePath) return;
+  postedResults = true;
+  const now = Date.now();
+  const payload = {};
+  payload[`${gamePath}/state/status`] = 'finished';
+  payload[`${gamePath}/state/winnerId`] = winnerId;
+  payload[`${gamePath}/state/updatedBy`] = clientId;
+  payload[`${gamePath}/state/updatedAt`] = now;
+  update(rootRef, payload).catch(err=>{
+    console.warn('Failed to publish winner', err);
+    postedResults = false;
+  });
+}
+
+function hostResetRace(){
+  if(!isHost || !gamePath) return;
+  bets = [];
+  redrawBets();
+  resultRows.innerHTML = `<tr><td colspan="5" style="color:var(--muted)">No results yet.</td></tr>`;
+  resetRacePositions();
+  const now = Date.now();
+  const payload = {};
+  payload[`${gamePath}/bets`] = null;
+  payload[`${gamePath}/state`] = {
+    status:'open',
+    winnerId:null,
+    countdownDuration:2100,
+    updatedBy: clientId,
+    updatedAt: now,
+    resetResults:true
+  };
+  update(rootRef, payload).catch(err=>{
+    console.warn('Failed to reset race', err);
+  });
+}
+
+function joinRoom(code, { host=false }={}){
+  const sanitized = sanitizeRoomCode(code);
+  if(!sanitized) return;
+  detachListeners();
+  isMultiplayer = true;
+  isHost = host;
+  roomId = sanitized;
+  gamePath = `ratRaces/${roomId}`;
+  bets = [];
+  redrawBets();
+  resultRows.innerHTML = `<tr><td colspan="5" style="color:var(--muted)">No results yet.</td></tr>`;
+  remoteState = { status:'open', countdownDuration:2100 };
+  window.location.hash = roomId;
+  updateModeUI();
+  attachListeners();
+  const now = Date.now();
+  const presencePath = `${gamePath}/players/${clientId}`;
+  presenceRef = ref(db, presencePath);
+  const presenceData = {
+    name: bettorInput.value || playerName || 'Player',
+    isHost,
+    lastSeen: now
+  };
+  update(rootRef, { [presencePath]: presenceData }).catch(()=>{});
+  try{
+    onDisconnect(presenceRef).remove();
+  }catch(err){/* ignore */}
+  if(host){
+    const initPayload = {};
+    initPayload[`${gamePath}/bets`] = null;
+    initPayload[`${gamePath}/state`] = {
+      status:'open',
+      countdownDuration:2100,
+      winnerId:null,
+      updatedBy: clientId,
+      updatedAt: now,
+      resetResults:true
+    };
+    update(rootRef, initPayload).catch(err=>console.warn('Failed to prepare room', err));
+  }
+  toggleBetUI(false);
+}
+
+function showJoinControls(show){
+  joinControls.hidden = !show;
+  if(show){
+    joinCodeInput.value = '';
+    setTimeout(()=> joinCodeInput.focus(), 50);
+  }
+}
+
+soloBtn.addEventListener('click', ()=> startSolo());
+hostBtn.addEventListener('click', ()=>{
+  const code = generateRoomCode();
+  joinRoom(code, { host:true });
+});
+joinBtn.addEventListener('click', ()=>{
+  showJoinControls(true);
+});
+
+joinConfirmBtn.addEventListener('click', ()=>{
+  const code = sanitizeRoomCode(joinCodeInput.value);
+  if(!code){
+    joinCodeInput.focus();
+    return;
+  }
+  joinRoom(code, { host:false });
+});
+
+joinCodeInput.addEventListener('keydown', event=>{
+  if(event.key === 'Enter'){
+    event.preventDefault();
+    joinConfirmBtn.click();
+  }
+});
+
+joinCodeInput.addEventListener('input', ()=>{
+  joinCodeInput.value = sanitizeRoomCode(joinCodeInput.value);
+});
+
+if(copyRoomBtn){
+  copyRoomBtn.addEventListener('click', async ()=>{
+    if(roomInfo.hidden) return;
+    const code = roomCodeEl.textContent?.trim();
+    if(!code || code === '—') return;
+    const success = await copyTextToClipboard(code);
+    copyRoomBtn.textContent = success ? 'Copied!' : 'Press Ctrl+C';
+    setTimeout(()=>{
+      copyRoomBtn.textContent = 'Copy Code';
+    }, success ? 1600 : 2600);
+  });
+}
+
+async function copyTextToClipboard(text){
+  if(!navigator.clipboard) {
+    try{
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      const success = document.execCommand('copy');
+      document.body.removeChild(textarea);
+      return success;
+    }catch(err){
+      console.warn('Clipboard fallback failed', err);
+      return false;
+    }
+  }
+  try{
+    await navigator.clipboard.writeText(text);
+    return true;
+  }catch(err){
+    console.warn('Clipboard copy failed', err);
+    return false;
+  }
+}
+
+const initialCode = sanitizeRoomCode(window.location.hash.replace('#',''));
+if(initialCode){
+  joinRoom(initialCode, { host:false });
+}else{
+  startSolo();
+}
+
+isSupported()
+  .then((supported)=>{ if(supported){ getAnalytics(app); } })
+  .catch(err=>console.warn('Firebase analytics not supported', err));
+
 </script>
 </body>
 </html>
