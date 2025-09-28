@@ -637,6 +637,7 @@
   const MIN_BET = 10;
   const MAX_BET = 90;
   const BET_STEP = 10;
+  const ROUND_RESULT_DISPLAY_MS = 3000;
   const LAST_BET_STORAGE_KEY = 'blackjackLastConfirmedBet';
   const AUTO_BET_STORAGE_KEY = 'blackjackAutoBetEnabled';
   let cachedLastConfirmedBet = null;
@@ -1571,7 +1572,7 @@
     tableState.state.confirmedBets = {};
 
     const sharedMessage = multiplePlayers ? 'Round complete' : (myMessage || 'Round complete');
-    const duration = multiplePlayers ? 1400 : 1500;
+    const duration = ROUND_RESULT_DISPLAY_MS;
     tableState.state.status = sharedMessage;
     tableState.state.statusUntil = Date.now() + duration;
     if(multiplePlayers && myMessage){
@@ -1712,7 +1713,7 @@
       const bustMsgName = me.name === 'You'
         ? `You bust -${bet}`
         : `${me.name || 'Player'} busts -${bet}`;
-      shareStatus(bustMsgName, 1500);
+      shareStatus(bustMsgName, ROUND_RESULT_DISPLAY_MS);
       const hasNext = finishTurn(clientId);
       commitRound();
       renderTable();
