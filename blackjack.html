@@ -201,6 +201,11 @@
     text-transform:uppercase;
     font-weight:700;
     opacity:.92;
+    text-align:center;
+  }
+  .seat-result.multiplayer{
+    margin-bottom:.35rem;
+    width:100%;
   }
   .seat-result.win,
   .seat-result.blackjack{
@@ -1205,6 +1210,8 @@
   function renderSeats(state){
     if(!playersLane || !playerSpotsLane) return;
     const entries = getSortedPlayerEntries();
+    const activeEntries = getActivePlayerEntries();
+    const isMultiplayerTable = activeEntries.length > 1;
     const myIndex = entries.findIndex(([id])=>id === clientId);
     if(myIndex === -1){
       const me = tableState.players[clientId];
@@ -1252,19 +1259,19 @@
         const resultKey = reviewPhase
           ? String(info?.roundResult || '').toLowerCase()
           : '';
+        let resultEl = null;
         if(resultKey){
           const resultMap = {
             blackjack: 'Blackjack!',
-            bust: 'Bust',
+            bust: 'Busted',
             win: 'Win',
             lose: 'Lose',
             push: 'Push'
           };
           const resultText = resultMap[resultKey] || (resultKey.charAt(0).toUpperCase() + resultKey.slice(1));
-          const resultEl = document.createElement('div');
+          resultEl = document.createElement('div');
           resultEl.className = `seat-result ${resultKey}`.trim();
           resultEl.textContent = resultText;
-          label.appendChild(resultEl);
         }
 
         const nameEl = document.createElement('div');
@@ -1307,8 +1314,10 @@
 
         seat.appendChild(label);
 
+        let controls = null;
+
         if(id === clientId){
-          const controls = document.createElement('div');
+          controls = document.createElement('div');
           controls.className = 'bet-controls';
 
           const decreaseBtn = document.createElement('button');
@@ -1365,6 +1374,24 @@
           controls.appendChild(autoToggle);
           controls.appendChild(confirmBtn);
           seat.appendChild(controls);
+        }
+
+        if(resultEl){
+          if(isMultiplayerTable){
+            resultEl.classList.add('multiplayer');
+            if(id === clientId && controls){
+              seat.insertBefore(resultEl, controls);
+            }else{
+              const betTarget = label.querySelector('.seat-bet');
+              if(betTarget){
+                label.insertBefore(resultEl, betTarget);
+              }else{
+                label.appendChild(resultEl);
+              }
+            }
+          }else{
+            label.insertBefore(resultEl, label.firstChild);
+          }
         }
 
         wrapper.appendChild(seat);
