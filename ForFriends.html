@@ -33,9 +33,69 @@
     table{width:100%;border-collapse:collapse}
     td,th{padding:10px;border-bottom:1px solid #22304f;text-align:left}
     .pill{padding:4px 8px;border-radius:999px;border:1px solid #22304f}
+
+    /* Entry lobby overlay */
+    .entry-lobby{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding:1.5rem;background:rgba(9,15,28,.78);backdrop-filter:blur(22px)}
+    .entry-card{background:rgba(14,23,48,.9);border:1px solid rgba(255,255,255,.08);border-radius:26px;box-shadow:0 18px 36px rgba(0,0,0,.4);padding:clamp(1.6rem,4vw,2.6rem);width:min(420px,94vw);display:grid;gap:1.1rem;text-align:center}
+    .entry-card h2{font-size:1.8rem;margin:0;letter-spacing:.04em}
+    .entry-card p{margin:0;opacity:.85;line-height:1.45}
+    .entry-actions{display:grid;gap:.8rem}
+    .entry-lobby .ghost{background:rgba(255,255,255,.08);color:var(--ink);border:1px solid rgba(255,255,255,.18);box-shadow:none}
+    .entry-lobby .ghost:hover{background:rgba(255,255,255,.16)}
+    .entry-lobby .secondary{background:rgba(0,0,0,.35);color:var(--ink);border:1px solid rgba(255,255,255,.15);box-shadow:none}
+    .entry-lobby .secondary:hover{background:rgba(0,0,0,.5)}
+    .entry-lobby input{appearance:none;border-radius:16px;border:1px solid rgba(255,255,255,.18);padding:.85rem 1rem;background:rgba(0,0,0,.35);color:var(--ink);font-size:1.05rem;text-transform:none;letter-spacing:.02em;text-align:left}
+    .entry-lobby input:focus{outline:2px solid rgba(110,168,254,.6);outline-offset:3px}
+    .entry-lobby details{background:rgba(0,0,0,.25);border-radius:18px;padding:1rem;text-align:left;border:1px solid rgba(255,255,255,.08)}
+    .entry-lobby summary{cursor:pointer;font-weight:600}
+    .entry-lobby .back-action{font-size:.9rem;font-weight:600;padding:.6rem .9rem;justify-self:center}
+    @media (max-width:520px){.entry-card{gap:1rem;padding:1.4rem;width:100%}}
   </style>
 </head>
 <body>
+  <div class="entry-lobby" id="entryLobby">
+    <div class="entry-card" id="entryMain">
+      <h2>Know Your Friends</h2>
+      <p>Select how you'd like to play.</p>
+      <div class="entry-actions">
+        <button class="primary" id="entryBtnSingle">Singleplayer</button>
+        <button class="ghost" id="entryBtnMultiplayer">Multiplayer</button>
+      </div>
+    </div>
+    <div class="entry-card hidden" id="entrySoloCard">
+      <h2>Solo Mode</h2>
+      <p>Know Your Friends shines with a group! Gather a friend and hop into Multiplayer.</p>
+      <button class="secondary back-action" data-target="entryMain">Back</button>
+    </div>
+    <div class="entry-card hidden" id="entryMultiplayerCard">
+      <h2>Multiplayer</h2>
+      <p>Invite friends to a shared room.</p>
+      <div class="entry-actions">
+        <button class="primary" id="entryBtnHost">Host</button>
+        <button class="ghost" id="entryBtnJoin">Join</button>
+      </div>
+      <button class="secondary back-action" data-target="entryMain">Back</button>
+    </div>
+    <div class="entry-card hidden" id="entryHostCard">
+      <h2>Host a Room</h2>
+      <p>Pick a display name to create a new room and share the code.</p>
+      <input id="createName" placeholder="Your display name" />
+      <button id="createBtn" class="primary">Host New Room</button>
+      <details>
+        <summary>Firebase setup (click if needed)</summary>
+        <p class="muted">Paste your Firebase project config in the <span class="code">firebaseConfig</span> object below. This uses Firestore &amp; Anonymous Auth over CDN.</p>
+      </details>
+      <button class="secondary back-action" data-target="entryMultiplayerCard">Back</button>
+    </div>
+    <div class="entry-card hidden" id="entryJoinCard">
+      <h2>Join a Room</h2>
+      <p>Enter the name you'll display to friends and the invite code.</p>
+      <input id="joinName" placeholder="Your display name" />
+      <input id="joinCode" placeholder="Room code (e.g. 5‑letter)" />
+      <button id="joinBtn" class="primary">Join</button>
+      <button class="secondary back-action" data-target="entryMultiplayerCard">Back</button>
+    </div>
+  </div>
   <header>
     <div class="wrap row" style="justify-content:space-between">
       <div class="row" style="gap:10px">
@@ -52,40 +112,6 @@
   </header>
 
   <main class="wrap">
-    <!-- Auth & Room -->
-    <section id="gate" class="card pad">
-      <h2 class="big">Create a room or join one</h2>
-      <div class="grid">
-        <div class="card pad">
-          <h3>Create Room</h3>
-          <div class="row">
-            <input id="createName" placeholder="Your display name" />
-          </div>
-          <div class="row">
-            <button id="createBtn" class="primary">Host New Room</button>
-          </div>
-          <p class="muted">You'll be the host and control progression.</p>
-        </div>
-        <div class="card pad">
-          <h3>Join Room</h3>
-          <div class="row">
-            <input id="joinName" placeholder="Your display name" />
-          </div>
-          <div class="row">
-            <input id="joinCode" placeholder="Room code (e.g. 5‑letter)" />
-          </div>
-          <div class="row">
-            <button id="joinBtn" class="primary">Join</button>
-          </div>
-        </div>
-      </div>
-      <div class="hr"></div>
-      <details>
-        <summary>Firebase setup (click if needed)</summary>
-        <p class="muted">Paste your Firebase project config in the <span class="code">firebaseConfig</span> object below. This uses Firestore & Anonymous Auth over CDN.</p>
-      </details>
-    </section>
-
     <!-- Lobby -->
     <section id="lobby" class="card pad hidden">
       <div class="row" style="justify-content:space-between">
@@ -190,9 +216,16 @@
     const show = (id, on=true)=>{ const el = (typeof id==="string")?$(id):id; if(!el) return; el.classList.toggle("hidden", !on); };
 
     // Elements
-    const gate = '#gate', lobby = '#lobby', collect = '#collect', guess = '#guess', results = '#results';
+    const gate = '#entryLobby', lobby = '#lobby', collect = '#collect', guess = '#guess', results = '#results';
 
     const ui = {
+      entryLobby: $('#entryLobby'),
+      entryCards: Array.from($$('.entry-card')),
+      entryBtnSingle: $('#entryBtnSingle'),
+      entryBtnMultiplayer: $('#entryBtnMultiplayer'),
+      entryBtnHost: $('#entryBtnHost'),
+      entryBtnJoin: $('#entryBtnJoin'),
+      entryBackButtons: Array.from($$('.entry-lobby .back-action')),
       createName: $('#createName'), createBtn: $('#createBtn'),
       joinName: $('#joinName'), joinCode: $('#joinCode'), joinBtn: $('#joinBtn'),
       youTag: $('#youTag'), youName: $('#youName'), roomTag: $('#roomTag'), roomCode: $('#roomCode'), roomCode2: $('#roomCode2'),
@@ -203,6 +236,21 @@
       revealBlock: $('#revealBlock'), questionBlock: $('#questionBlock'), correctAnswer: $('#correctAnswer'), yourGuess: $('#yourGuess'), allGuesses: $('#allGuesses'), nextBtn: $('#nextBtn'),
       scoreTable: $('#scoreTable'), playAgainBtn: $('#playAgainBtn')
     };
+
+    function switchEntryCard(id){
+      ui.entryCards.forEach(card=>card.classList.add('hidden'));
+      const el = document.getElementById(id);
+      if(el){ el.classList.remove('hidden'); }
+    }
+
+    ui.entryBtnSingle?.addEventListener('click', ()=>switchEntryCard('entrySoloCard'));
+    ui.entryBtnMultiplayer?.addEventListener('click', ()=>switchEntryCard('entryMultiplayerCard'));
+    ui.entryBtnHost?.addEventListener('click', ()=>switchEntryCard('entryHostCard'));
+    ui.entryBtnJoin?.addEventListener('click', ()=>switchEntryCard('entryJoinCard'));
+    ui.entryBackButtons.forEach(btn=>btn.addEventListener('click', (event)=>{
+      const target = event.currentTarget.dataset.target;
+      if(target){ switchEntryCard(target); }
+    }));
 
     // =====================
     //  Game constants/state
@@ -284,6 +332,7 @@
       try { await deleteDoc(playerRef(code, me.uid)); } catch(e){}
       cleanupListeners();
       me = { uid: me.uid, name:null, room:null, isHost:false };
+      switchEntryCard('entryMain');
       show(gate,true); show(lobby,false); show(collect,false); show(guess,false); show(results,false);
       show(ui.roomTag,false); show(ui.youTag,false); show(ui.copyRoomBtn,false); show(ui.leaveBtn,false);
     }
@@ -295,6 +344,7 @@
       ui.youName.textContent = me.name; ui.roomCode.textContent = me.room; ui.roomCode2.textContent = me.room;
       show(ui.youTag,true); show(ui.roomTag,true); show(ui.copyRoomBtn,true); show(ui.leaveBtn,true);
       // screen
+      switchEntryCard('entryMain');
       show(gate,false); show(lobby,true);
       if(me.isHost) { show(ui.startBtn,true); show(ui.hostBadge,true); }
       else { show(ui.startBtn,false); show(ui.hostBadge,false); }
