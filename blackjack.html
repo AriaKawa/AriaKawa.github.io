@@ -1351,6 +1351,22 @@
   }
 
   let autoBlackjackTimer = null;
+  let roundTransitionTimer = null;
+
+  function clearRoundTransitionTimer(){
+    if(roundTransitionTimer){
+      clearTimeout(roundTransitionTimer);
+      roundTransitionTimer = null;
+    }
+  }
+
+  function scheduleRoundAdvance(callback, delay=ROUND_RESULT_DISPLAY_MS){
+    clearRoundTransitionTimer();
+    roundTransitionTimer = setTimeout(()=>{
+      roundTransitionTimer = null;
+      callback();
+    }, delay);
+  }
 
   function computeTurnOrder(){
     const entries = getSortedPlayerEntries();
@@ -1431,7 +1447,9 @@
     }
 
     const playerCount = Object.keys(tableState.players || {}).length;
-    if(state.phase === 'player' && state.activePlayer === clientId){
+    const isMyTurn = state.phase === 'player' && state.activePlayer === clientId;
+    const resolvedHand = ['blackjack', 'bust'].includes(String(me.roundResult || '').toLowerCase());
+    if(isMyTurn && !resolvedHand){
       setButtons('player');
     }else{
       setButtons('waiting');
@@ -1506,13 +1524,17 @@
     tableState.state.banks[clientId] = bank;
     me.bank = bank;
     me.roundResult = 'blackjack';
-    shareStatus(message, 1500);
-    const hasNext = finishTurn(clientId);
+    shareStatus(message, ROUND_RESULT_DISPLAY_MS);
     commitRound();
     renderTable();
-    if(!hasNext){
-      dealerPlay();
-    }
+    scheduleRoundAdvance(()=>{
+      const hasNext = finishTurn(clientId);
+      commitRound();
+      renderTable();
+      if(!hasNext){
+        dealerPlay();
+      }
+    });
   }
 
   function resolveRound(){
@@ -1714,12 +1736,16 @@
         ? `You bust -${bet}`
         : `${me.name || 'Player'} busts -${bet}`;
       shareStatus(bustMsgName, ROUND_RESULT_DISPLAY_MS);
-      const hasNext = finishTurn(clientId);
       commitRound();
       renderTable();
-      if(!hasNext){
-        dealerPlay();
-      }
+      scheduleRoundAdvance(()=>{
+        const hasNext = finishTurn(clientId);
+        commitRound();
+        renderTable();
+        if(!hasNext){
+          dealerPlay();
+        }
+      });
       return;
     }
     commitRound();
