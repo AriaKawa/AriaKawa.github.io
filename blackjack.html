@@ -1755,9 +1755,35 @@
   function playerStand(){
     if(tableState.state.phase !== 'player' || tableState.state.activePlayer !== clientId) return;
     const me = getPlayerEntry();
-    me.roundResult = 'stand';
+    const total = handValue(me.hand || []);
     tableState.state.status = '';
     tableState.state.statusUntil = 0;
+
+    if(total > 21){
+      let bank = tableState.state.banks[clientId] ?? me.bank ?? 1000;
+      const bet = getBetForPlayer(clientId);
+      bank -= bet;
+      tableState.state.banks[clientId] = bank;
+      me.bank = bank;
+      me.roundResult = 'bust';
+      const bustMsgName = me.name === 'You'
+        ? `You bust -${bet}`
+        : `${me.name || 'Player'} busts -${bet}`;
+      shareStatus(bustMsgName, ROUND_RESULT_DISPLAY_MS);
+      commitRound();
+      renderTable();
+      scheduleRoundAdvance(()=>{
+        const hasNext = finishTurn(clientId);
+        commitRound();
+        renderTable();
+        if(!hasNext){
+          dealerPlay();
+        }
+      });
+      return;
+    }
+
+    me.roundResult = 'stand';
     const hasNext = finishTurn(clientId);
     if(!hasNext){
       tableState.state.phase = 'dealer';
