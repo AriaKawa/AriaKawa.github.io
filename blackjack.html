@@ -1759,10 +1759,22 @@
     tableState.state.status = '';
     tableState.state.statusUntil = 0;
     const hasNext = finishTurn(clientId);
+    if(!hasNext){
+      tableState.state.phase = 'dealer';
+      tableState.state.hideDealerHole = false;
+      shareStatus("Dealer revealing…", ROUND_RESULT_DISPLAY_MS);
+    }
     commitRound();
     renderTable();
     if(!hasNext){
-      dealerPlay();
+      scheduleRoundAdvance(()=>{
+        if(tableState.state.phase !== 'dealer') return;
+        tableState.state.status = '';
+        tableState.state.statusUntil = 0;
+        commitRound();
+        renderTable();
+        dealerPlay();
+      }, ROUND_RESULT_DISPLAY_MS);
     }
   }
 
