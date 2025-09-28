@@ -1421,6 +1421,19 @@
     });
   }
 
+  function haveAllPresentPlayersBet(){
+    const entries = getActivePlayerEntries();
+    if(!entries.length) return false;
+    return entries.every(([id, info])=>{
+      const stateBet = tableState.state?.bets?.[id];
+      if(typeof stateBet === 'number' && Number.isFinite(stateBet) && stateBet >= MIN_BET){
+        return true;
+      }
+      const playerBet = info?.bet;
+      return typeof playerBet === 'number' && Number.isFinite(playerBet) && playerBet >= MIN_BET;
+    });
+  }
+
   function areAllBetsConfirmed(){
     const entries = getActivePlayerEntries();
     if(!entries.length) return false;
@@ -1485,6 +1498,14 @@
     const resolvedHand = ['blackjack', 'bust'].includes(String(me.roundResult || '').toLowerCase());
     if(phase === TABLE_PHASES.SUMMARY){
       setButtons('summary');
+      const now = Date.now();
+      const statusActive = (transientStatus && now < transientStatus.until)
+        || (state.status && state.statusUntil && state.statusUntil > now);
+      const waitingForBets = isMultiplayer && !haveAllPresentPlayersBet();
+      const shouldEnableNextHand = !statusActive && !waitingForBets;
+      if(btnNextHand){
+        btnNextHand.classList.toggle('muted', !shouldEnableNextHand);
+      }
     }else if(isMyTurn && !resolvedHand){
       setButtons('player');
     }else{
