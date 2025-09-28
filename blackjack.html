@@ -497,6 +497,7 @@
       <div class="controls" id="controls">
         <button class="primary muted" id="btnHit">Hit</button>
         <button class="ghost muted" id="btnStand">Stand</button>
+        <button class="primary hidden muted" id="btnNextHand">Next Hand</button>
       </div>
     </div>
 
@@ -614,6 +615,7 @@
   const turnIndicator = document.getElementById('turnIndicator');
   const btnHit = document.getElementById('btnHit');
   const btnStand = document.getElementById('btnStand');
+  const btnNextHand = document.getElementById('btnNextHand');
   const bankEl = document.getElementById('bank');
   const lobby = document.getElementById('lobby');
   const lobbyMain = document.getElementById('lobbyMain');
@@ -638,6 +640,12 @@
   const MAX_BET = 90;
   const BET_STEP = 10;
   const ROUND_RESULT_DISPLAY_MS = 3000;
+  const TABLE_PHASES = Object.freeze({
+    WAITING: 'waiting',
+    PLAYER: 'player',
+    DEALER: 'dealer',
+    SUMMARY: 'summary'
+  });
   const LAST_BET_STORAGE_KEY = 'blackjackLastConfirmedBet';
   const AUTO_BET_STORAGE_KEY = 'blackjackAutoBetEnabled';
   let cachedLastConfirmedBet = null;
@@ -685,16 +693,39 @@
     setTimeout(()=> input.classList.remove('invalid'), 1600);
   }
 
-  function setButtons(state){
-    const on = (el, ok)=> el.classList.toggle('muted', !ok);
-    switch(state){
+  function setButtons(mode){
+    const setMuted = (el, ok)=>{
+      if(!el) return;
+      el.classList.toggle('muted', !ok);
+    };
+    const setHidden = (el, hidden)=>{
+      if(!el) return;
+      el.classList.toggle('hidden', hidden);
+    };
+    switch(mode){
       case 'player':
-        on(btnHit,true);
-        on(btnStand,true);
+        setHidden(btnHit, false);
+        setHidden(btnStand, false);
+        setHidden(btnNextHand, true);
+        setMuted(btnHit, true);
+        setMuted(btnStand, true);
+        setMuted(btnNextHand, false);
+        break;
+      case 'summary':
+        setHidden(btnHit, true);
+        setHidden(btnStand, true);
+        setHidden(btnNextHand, false);
+        setMuted(btnHit, false);
+        setMuted(btnStand, false);
+        setMuted(btnNextHand, true);
         break;
       default:
-        on(btnHit,false);
-        on(btnStand,false);
+        setHidden(btnHit, false);
+        setHidden(btnStand, false);
+        setHidden(btnNextHand, true);
+        setMuted(btnHit, false);
+        setMuted(btnStand, false);
+        setMuted(btnNextHand, false);
         break;
     }
   }
@@ -857,7 +888,7 @@
   let knownPlayers = new Set();
 
   const defaultState = {
-    phase: 'waiting',
+    phase: TABLE_PHASES.WAITING,
     activePlayer: null,
     hideDealerHole: false,
     banks: {},
@@ -1141,7 +1172,7 @@
   }
 
   function adjustMyBet(delta){
-    if(tableState.state.phase !== 'waiting') return;
+    if(tableState.state.phase !== TABLE_PHASES.WAITING) return;
     const current = getBetForPlayer(clientId);
     const next = normalizeBet(current + delta);
     if(next === current) return;
@@ -1152,7 +1183,7 @@
   }
 
   function confirmMyBet(){
-    if(tableState.state.phase !== 'waiting') return;
+    if(tableState.state.phase !== TABLE_PHASES.WAITING) return;
     if(isBetConfirmed(clientId)) return;
     const betValue = getBetForPlayer(clientId);
     storeLastConfirmedBet(betValue);
@@ -1162,7 +1193,7 @@
   }
 
   function applyAutoBet(){
-    if(tableState.state.phase !== 'waiting') return;
+    if(tableState.state.phase !== TABLE_PHASES.WAITING) return;
     const amount = getAutoBetAmount();
     setBetForPlayer(clientId, amount);
     storeLastConfirmedBet(amount);
@@ -1216,7 +1247,9 @@
         const label = document.createElement('div');
         label.className = 'seat-label';
 
-        const resultKey = state.phase === 'waiting'
+        const phase = typeof state.phase === 'string' ? state.phase : TABLE_PHASES.WAITING;
+        const reviewPhase = phase === TABLE_PHASES.WAITING || phase === TABLE_PHASES.SUMMARY;
+        const resultKey = reviewPhase
           ? String(info?.roundResult || '').toLowerCase()
           : '';
         if(resultKey){
@@ -1260,7 +1293,7 @@
 
         const confirmLabel = document.createElement('div');
         confirmLabel.className = 'seat-confirmation';
-        if(state.phase === 'waiting'){
+        if(reviewPhase){
           if(confirmed){
             confirmLabel.textContent = 'Ready';
             confirmLabel.classList.add('ready');
@@ -1296,7 +1329,7 @@
           increaseBtn.dataset.betAction = 'increase';
           increaseBtn.dataset.playerId = id;
 
-          const canAdjustBet = state.phase === 'waiting';
+          const canAdjustBet = phase === TABLE_PHASES.WAITING;
           decreaseBtn.classList.toggle('muted', !canAdjustBet || betValue <= MIN_BET);
           increaseBtn.classList.toggle('muted', !canAdjustBet || betValue >= MAX_BET);
 
@@ -1345,7 +1378,7 @@
 
   function isMyTurn(){
     const { phase, activePlayer } = tableState.state;
-    if(phase === 'waiting') return true;
+    if(phase === TABLE_PHASES.WAITING) return true;
     if(activePlayer && activePlayer !== clientId) return false;
     return true;
   }
@@ -1402,14 +1435,14 @@
   }
 
   function maybeApplyAutoBet(){
-    if(tableState.state.phase !== 'waiting') return;
+    if(tableState.state.phase !== TABLE_PHASES.WAITING) return;
     if(!isAutoBetEnabled()) return;
     if(isBetConfirmed(clientId)) return;
     applyAutoBet();
   }
 
   function maybeStartAutoDeal(){
-    if(tableState.state.phase !== 'waiting') return;
+    if(tableState.state.phase !== TABLE_PHASES.WAITING) return;
     if(!isAutoDealController()) return;
     if(!areAllBetsConfirmed()) return;
     startDeal();
@@ -1417,6 +1450,7 @@
 
   function renderTable(){
     const state = tableState.state || defaultState;
+    const phase = typeof state.phase === 'string' ? state.phase : TABLE_PHASES.WAITING;
     let me = tableState.players[clientId];
     if(!me){
       me = getPlayerEntry();
@@ -1447,32 +1481,34 @@
     }
 
     const playerCount = Object.keys(tableState.players || {}).length;
-    const isMyTurn = state.phase === 'player' && state.activePlayer === clientId;
+    const isMyTurn = phase === TABLE_PHASES.PLAYER && state.activePlayer === clientId;
     const resolvedHand = ['blackjack', 'bust'].includes(String(me.roundResult || '').toLowerCase());
-    if(isMyTurn && !resolvedHand){
+    if(phase === TABLE_PHASES.SUMMARY){
+      setButtons('summary');
+    }else if(isMyTurn && !resolvedHand){
       setButtons('player');
     }else{
       setButtons('waiting');
     }
 
     if(playerCount > 1){
-      if(state.phase === 'player' && state.activePlayer){
+      if(phase === TABLE_PHASES.PLAYER && state.activePlayer){
         const active = tableState.players[state.activePlayer] || {};
         const label = state.activePlayer === clientId ? 'Your turn' : `${active.name || 'Player'}'s turn`;
         turnIndicator.textContent = label;
         turnIndicator.classList.remove('hidden');
-      }else if(state.phase === 'dealer'){
+      }else if(phase === TABLE_PHASES.DEALER){
         turnIndicator.textContent = "Dealer's turn";
         turnIndicator.classList.remove('hidden');
       }else{
-        turnIndicator.textContent = 'Waiting for next round';
+        turnIndicator.textContent = phase === TABLE_PHASES.SUMMARY ? 'Round summary' : 'Waiting for next round';
         turnIndicator.classList.remove('hidden');
       }
     }else{
       turnIndicator.classList.add('hidden');
     }
 
-    if(state.phase === 'waiting'){
+    if(phase === TABLE_PHASES.WAITING){
       maybeApplyAutoBet();
       maybeStartAutoDeal();
     }
@@ -1586,12 +1622,11 @@
     }
 
     tableState.state.banks = banks;
-    tableState.state.phase = 'waiting';
+    tableState.state.phase = TABLE_PHASES.SUMMARY;
     tableState.state.activePlayer = null;
     tableState.state.hideDealerHole = false;
     tableState.state.turnOrder = [];
     tableState.state.currentTurnIndex = 0;
-    tableState.state.confirmedBets = {};
 
     const sharedMessage = multiplePlayers ? 'Round complete' : (myMessage || 'Round complete');
     const duration = ROUND_RESULT_DISPLAY_MS;
@@ -1604,6 +1639,49 @@
     const commitOptions = { includePlayer: !!tableState.players[clientId], extraPlayers: Object.keys(extraPlayers).length ? extraPlayers : null };
     commitRound(commitOptions);
     renderTable();
+  }
+
+  function enterBettingPhase(){
+    const state = tableState.state || defaultState;
+    if(state.phase !== TABLE_PHASES.SUMMARY) return;
+
+    clearRoundTransitionTimer();
+    transientStatus = null;
+
+    tableState.state.phase = TABLE_PHASES.WAITING;
+    tableState.state.activePlayer = null;
+    tableState.state.hideDealerHole = false;
+    tableState.state.turnOrder = [];
+    tableState.state.currentTurnIndex = 0;
+    tableState.state.status = '';
+    tableState.state.statusUntil = 0;
+    tableState.state.confirmedBets = {};
+
+    tableState.dealer = [];
+
+    const extraPlayers = {};
+    for(const [id, player] of Object.entries(tableState.players || {})){
+      if(!player) continue;
+      const updated = {
+        ...player,
+        hand: [],
+        roundResult: null
+      };
+      tableState.players[id] = updated;
+      if(id !== clientId){
+        extraPlayers[id] = updated;
+      }
+    }
+
+    renderTable();
+    const commitOptions = {
+      includeDealer: true,
+      includePlayer: !!tableState.players[clientId],
+      includeShoe: false,
+      includeState: true,
+      extraPlayers: Object.keys(extraPlayers).length ? extraPlayers : null
+    };
+    commitRound(commitOptions);
   }
 
   function dealerPlay(){
@@ -1658,7 +1736,7 @@
   }
 
   function startDeal(){
-    if(tableState.state.phase !== 'waiting' || !isMyTurn()) return;
+    if(tableState.state.phase !== TABLE_PHASES.WAITING || !isMyTurn()) return;
     ensureShoe();
 
     const players = tableState.players || {};
@@ -1932,7 +2010,7 @@
     me.roundResult = null;
     tableState.state.banks[clientId] = me.bank;
     tableState.state.bets[clientId] = betValue;
-    tableState.state.phase = 'waiting';
+    tableState.state.phase = TABLE_PHASES.WAITING;
     tableState.state.activePlayer = null;
     tableState.state.hideDealerHole = false;
     tableState.state.status = '';
@@ -2164,13 +2242,17 @@
 
   btnHit.addEventListener('click', ()=> !btnHit.classList.contains('muted') && playerHit());
   btnStand.addEventListener('click', ()=> !btnStand.classList.contains('muted') && playerStand());
+  btnNextHand.addEventListener('click', ()=>{
+    if(btnNextHand.classList.contains('muted') || btnNextHand.classList.contains('hidden')) return;
+    enterBettingPhase();
+  });
 
   if(playersLane){
     playersLane.addEventListener('click', event=>{
       const button = event.target.closest('[data-bet-action]');
       if(!button) return;
       if(button.dataset.playerId !== clientId) return;
-      if(tableState.state.phase !== 'waiting') return;
+      if(tableState.state.phase !== TABLE_PHASES.WAITING) return;
       const action = button.dataset.betAction;
       if(action === 'auto-toggle') return;
       event.preventDefault();
@@ -2187,7 +2269,7 @@
       if(!control) return;
       if(control.dataset.playerId !== clientId) return;
       if(control.dataset.betAction !== 'auto-toggle') return;
-      if(tableState.state.phase !== 'waiting') return;
+      if(tableState.state.phase !== TABLE_PHASES.WAITING) return;
       const checked = !!event.target.checked;
       setAutoBetEnabled(checked);
       if(checked){
