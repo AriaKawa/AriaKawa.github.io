@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Know Your Friends</title>
+  <style>
+    :root { --bg:#0b1220; --panel:#121b2e; --ink:#e6edf6; --muted:#9fb2d1; --accent:#6ea8fe; --ok:#2ecc71; --warn:#f39c12; --danger:#e74c3c; }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;background:radial-gradient(1200px 800px at 20% -10%,#17233e 0,#0b1220 60%),var(--bg);color:var(--ink);min-height:100vh}
+    header{padding:18px 20px;border-bottom:1px solid #22304f;background:#0e1730cc;backdrop-filter: blur(4px);position:sticky;top:0}
+    .wrap{max-width:980px;margin:0 auto;padding:24px}
+    .card{background:var(--panel);border:1px solid #1c2740;border-radius:16px;box-shadow:0 8px 30px rgba(0,0,0,.25)}
+    .pad{padding:20px}
+    .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    input,button,select,textarea{background:#0e1526;border:1px solid #243455;color:var(--ink);padding:10px 12px;border-radius:12px}
+    input,select,textarea{flex:1}
+    button{cursor:pointer}
+    button.primary{background:var(--accent);border-color:#3f6cd8;color:#06102b;font-weight:700}
+    button.ghost{background:transparent}
+    button:disabled{opacity:.6;cursor:not-allowed}
+    .tag{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid #22304f;background:#0d162b;color:var(--muted);font-size:.9rem}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+    .list{display:flex;flex-wrap:wrap;gap:10px}
+    .muted{color:var(--muted)}
+    .center{text-align:center}
+    .hidden{display:none !important}
+    .big{font-size:1.2rem}
+    .code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:#0a101f;padding:4px 8px;border-radius:8px;border:1px solid #1c2740}
+    .score{font-weight:700;color:var(--ok)}
+    .hr{height:1px;background:#213152;margin:12px 0}
+    .answer-reveal{display:grid;grid-template-columns:1.2fr .8fr;gap:10px}
+    table{width:100%;border-collapse:collapse}
+    td,th{padding:10px;border-bottom:1px solid #22304f;text-align:left}
+    .pill{padding:4px 8px;border-radius:999px;border:1px solid #22304f}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap row" style="justify-content:space-between">
+      <div class="row" style="gap:10px">
+        <strong>Know Your Friends</strong>
+        <span class="tag">Firebase · Multiplayer</span>
+        <span id="youTag" class="tag hidden">You: <span id="youName"></span></span>
+        <span id="roomTag" class="tag hidden">Room: <span id="roomCode"></span></span>
+      </div>
+      <div class="row">
+        <button id="copyRoomBtn" class="ghost hidden">Copy Invite</button>
+        <button id="leaveBtn" class="ghost hidden">Leave</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <!-- Auth & Room -->
+    <section id="gate" class="card pad">
+      <h2 class="big">Create a room or join one</h2>
+      <div class="grid">
+        <div class="card pad">
+          <h3>Create Room</h3>
+          <div class="row">
+            <input id="createName" placeholder="Your display name" />
+          </div>
+          <div class="row">
+            <button id="createBtn" class="primary">Host New Room</button>
+          </div>
+          <p class="muted">You'll be the host and control progression.</p>
+        </div>
+        <div class="card pad">
+          <h3>Join Room</h3>
+          <div class="row">
+            <input id="joinName" placeholder="Your display name" />
+          </div>
+          <div class="row">
+            <input id="joinCode" placeholder="Room code (e.g. 5‑letter)" />
+          </div>
+          <div class="row">
+            <button id="joinBtn" class="primary">Join</button>
+          </div>
+        </div>
+      </div>
+      <div class="hr"></div>
+      <details>
+        <summary>Firebase setup (click if needed)</summary>
+        <p class="muted">Paste your Firebase project config in the <span class="code">firebaseConfig</span> object below. This uses Firestore & Anonymous Auth over CDN.</p>
+      </details>
+    </section>
+
+    <!-- Lobby -->
+    <section id="lobby" class="card pad hidden">
+      <div class="row" style="justify-content:space-between">
+        <h2 class="big">Lobby</h2>
+        <span id="hostBadge" class="pill hidden">You are the host</span>
+      </div>
+      <p>Share room code <span class="code" id="roomCode2"></span> or send the invite link.</p>
+      <div class="grid" id="playersList"></div>
+      <div class="hr"></div>
+      <div class="row">
+        <button id="startBtn" class="primary hidden">Start Game</button>
+        <span class="muted">All players answer the same 3 questions.</span>
+      </div>
+    </section>
+
+    <!-- Phase: Collect self answers -->
+    <section id="collect" class="card pad hidden">
+      <h2 class="big">Your Answers</h2>
+      <p class="muted">Everyone answers the same questions about themselves.</p>
+      <form id="collectForm" class="grid"></form>
+      <div class="row">
+        <button id="submitSelfBtn" class="primary">Submit My Answers</button>
+      </div>
+      <p id="collectWaiting" class="muted hidden">Submitted! Waiting for others…</p>
+    </section>
+
+    <!-- Phase: Guessing -->
+    <section id="guess" class="card pad hidden">
+      <div class="row" style="justify-content:space-between">
+        <h2 class="big">Guess the Friend</h2>
+        <span id="roundTag" class="tag"></span>
+      </div>
+      <p class="muted">Guess what <b id="targetName"></b> answered.</p>
+      <div id="questionBlock" class="card pad" style="margin:8px 0 14px">
+        <div id="questionText" class="big"></div>
+        <div class="row" style="margin-top:10px">
+          <input id="guessInput" placeholder="Your guess" />
+          <button id="submitGuessBtn" class="primary">Submit Guess</button>
+        </div>
+        <p id="guessWaiting" class="muted hidden">Waiting for others…</p>
+      </div>
+
+      <div id="revealBlock" class="card pad hidden">
+        <div class="answer-reveal">
+          <div>
+            <div class="muted">Correct answer</div>
+            <div id="correctAnswer" class="big"></div>
+          </div>
+          <div>
+            <div class="muted">Your guess</div>
+            <div id="yourGuess" class="big"></div>
+          </div>
+        </div>
+        <div class="hr"></div>
+        <div>
+          <div class="muted">Everyone's guesses</div>
+          <div id="allGuesses" class="list"></div>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <button id="nextBtn" class="primary hidden">Next</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Results -->
+    <section id="results" class="card pad hidden">
+      <h2 class="big">Final Scores</h2>
+      <table id="scoreTable"></table>
+      <div class="row" style="margin-top:12px">
+        <button id="playAgainBtn" class="primary">Play Again (same room)</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Firebase SDKs -->
+  <script type="module">
+    // =====================
+    //  Firebase bootstrap
+    // =====================
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc, onSnapshot, updateDoc, arrayUnion, serverTimestamp, collection, addDoc, query, where, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      // TODO: Replace with your config
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // ===============
+    //  DOM helpers
+    // ===============
+    const $ = (sel)=>document.querySelector(sel);
+    const $$ = (sel)=>document.querySelectorAll(sel);
+    const show = (id, on=true)=>{ const el = (typeof id==="string")?$(id):id; if(!el) return; el.classList.toggle("hidden", !on); };
+
+    // Elements
+    const gate = '#gate', lobby = '#lobby', collect = '#collect', guess = '#guess', results = '#results';
+
+    const ui = {
+      createName: $('#createName'), createBtn: $('#createBtn'),
+      joinName: $('#joinName'), joinCode: $('#joinCode'), joinBtn: $('#joinBtn'),
+      youTag: $('#youTag'), youName: $('#youName'), roomTag: $('#roomTag'), roomCode: $('#roomCode'), roomCode2: $('#roomCode2'),
+      copyRoomBtn: $('#copyRoomBtn'), leaveBtn: $('#leaveBtn'), playersList: $('#playersList'),
+      startBtn: $('#startBtn'), hostBadge: $('#hostBadge'),
+      collectForm: $('#collectForm'), submitSelfBtn: $('#submitSelfBtn'), collectWaiting: $('#collectWaiting'),
+      roundTag: $('#roundTag'), targetName: $('#targetName'), questionText: $('#questionText'), guessInput: $('#guessInput'), submitGuessBtn: $('#submitGuessBtn'), guessWaiting: $('#guessWaiting'),
+      revealBlock: $('#revealBlock'), questionBlock: $('#questionBlock'), correctAnswer: $('#correctAnswer'), yourGuess: $('#yourGuess'), allGuesses: $('#allGuesses'), nextBtn: $('#nextBtn'),
+      scoreTable: $('#scoreTable'), playAgainBtn: $('#playAgainBtn')
+    };
+
+    // =====================
+    //  Game constants/state
+    // =====================
+    const SHARED_QUESTIONS = [
+      "What’s your go‑to comfort food?",
+      "Which city would you most love to visit next?",
+      "What’s a movie you can rewatch forever?"
+    ];
+
+    const STATE = { lobby: 'lobby', collect: 'collect', guess: 'guess', results: 'results' };
+
+    let me = { uid:null, name:null, room:null, isHost:false };
+    let gameDocUnsub = null; let playersUnsub = null; let guessesUnsub = null;
+
+    // ===============
+    //  Utilities
+    // ===============
+    const randomCode = (len=5)=> Array.from(crypto.getRandomValues(new Uint8Array(len))).map(n=>"abcdefghijklmnopqrstuvwxyz"[n%26]).join('').toUpperCase();
+    const norm = (s)=> (s||'').trim().toLowerCase();
+
+    const roomRef = (code)=> doc(db,'games', code);
+    const playerRef = (code, uid)=> doc(db,'games', code, 'players', uid);
+    const guessesCol = (code)=> collection(db,'games', code, 'guesses'); // one doc per (round)
+
+    // =====================
+    //  Auth lifecycle
+    // =====================
+    onAuthStateChanged(auth, async (user)=>{
+      if(!user){ await signInAnonymously(auth); return; }
+      me.uid = user.uid;
+    });
+
+    // =====================
+    //  Room flow
+    // =====================
+    ui.createBtn.onclick = async ()=>{
+      const name = ui.createName.value.trim(); if(!name) return alert('Enter a name');
+      me.name = name; const code = randomCode(5);
+      const ref = roomRef(code);
+      await setDoc(ref, {
+        createdAt: serverTimestamp(),
+        state: STATE.lobby,
+        hostId: me.uid,
+        code,
+        questions: SHARED_QUESTIONS,
+        currentTargetIndex: 0,
+        currentQuestionIndex: 0,
+        reveal: false // whether to show answers for current step
+      });
+      await setDoc(playerRef(code, me.uid), { name, joinedAt: serverTimestamp(), score: 0, isHost:true, submitted:false, answers:{} });
+      me.room = code; me.isHost = true;
+      postJoin();
+    };
+
+    ui.joinBtn.onclick = async ()=>{
+      const name = ui.joinName.value.trim(); const code = ui.joinCode.value.trim().toUpperCase();
+      if(!name || !code) return alert('Enter name & room code');
+      const ref = roomRef(code); const snap = await getDoc(ref);
+      if(!snap.exists()) return alert('Room not found');
+      const data = snap.data(); if(data.state!==STATE.lobby) return alert('Game already started');
+      me.name = name; me.room = code; me.isHost = (data.hostId===me.uid);
+      await setDoc(playerRef(code, me.uid), { name, joinedAt: serverTimestamp(), score:0, isHost: me.isHost, submitted:false, answers:{} });
+      postJoin();
+    };
+
+    async function leaveRoom(){
+      if(!me.room) return;
+      const code = me.room;
+      try { await deleteDoc(playerRef(code, me.uid)); } catch(e){}
+      cleanupListeners();
+      me = { uid: me.uid, name:null, room:null, isHost:false };
+      show(gate,true); show(lobby,false); show(collect,false); show(guess,false); show(results,false);
+      show(ui.roomTag,false); show(ui.youTag,false); show(ui.copyRoomBtn,false); show(ui.leaveBtn,false);
+    }
+
+    ui.leaveBtn.onclick = leaveRoom;
+
+    function postJoin(){
+      // header tags
+      ui.youName.textContent = me.name; ui.roomCode.textContent = me.room; ui.roomCode2.textContent = me.room;
+      show(ui.youTag,true); show(ui.roomTag,true); show(ui.copyRoomBtn,true); show(ui.leaveBtn,true);
+      // screen
+      show(gate,false); show(lobby,true);
+      if(me.isHost) { show(ui.startBtn,true); show(ui.hostBadge,true); }
+      else { show(ui.startBtn,false); show(ui.hostBadge,false); }
+      // listeners
+      attachGameListeners();
+    }
+
+    ui.copyRoomBtn.onclick = async ()=>{
+      const url = `${location.origin}${location.pathname}?room=${me.room}`;
+      await navigator.clipboard.writeText(url);
+      ui.copyRoomBtn.textContent = 'Copied!'; setTimeout(()=>ui.copyRoomBtn.textContent='Copy Invite',1200);
+    };
+
+    // =====================
+    //  Listeners
+    // =====================
+    async function attachGameListeners(){
+      const gref = roomRef(me.room);
+      gameDocUnsub = onSnapshot(gref, (snap)=>{
+        if(!snap.exists()) return;
+        const g = snap.data();
+        // phase routing
+        if(g.state===STATE.lobby){ show(lobby,true); show(collect,false); show(guess,false); show(results,false); }
+        if(g.state===STATE.collect){ renderCollect(g); }
+        if(g.state===STATE.guess){ renderGuess(g); }
+        if(g.state===STATE.results){ renderResults(); }
+      });
+
+      const pref = collection(db,'games', me.room, 'players');
+      playersUnsub = onSnapshot(pref, (qs)=>{
+        const players = [];
+        qs.forEach(d=>players.push({id:d.id, ...d.data()}));
+        renderPlayers(players);
+      });
+    }
+
+    function cleanupListeners(){ gameDocUnsub && gameDocUnsub(); playersUnsub && playersUnsub(); guessesUnsub && guessesUnsub(); }
+
+    // =====================
+    //  Lobby & Start
+    // =====================
+    function renderPlayers(players){
+      ui.playersList.innerHTML = '';
+      players.sort((a,b)=> (a.joinedAt?.seconds||0)-(b.joinedAt?.seconds||0));
+      players.forEach(p=>{
+        const el = document.createElement('div'); el.className='card pad';
+        el.innerHTML = `<div class="row" style="justify-content:space-between"><div><b>${p.name}</b></div><span class="muted">${p.isHost?'Host':'Player'}</span></div>`;
+        ui.playersList.appendChild(el);
+      });
+      // host start enabled only if 2+ players
+      if(me.isHost){ ui.startBtn.disabled = players.length<2; }
+    }
+
+    ui.startBtn.onclick = async ()=>{
+      if(!me.isHost) return;
+      // move to collect phase & clear prior
+      await updateDoc(roomRef(me.room), { state: STATE.collect, currentTargetIndex:0, currentQuestionIndex:0, reveal:false });
+      // reset players
+      const pref = collection(db,'games', me.room, 'players');
+      const qs = await getDocs(pref);
+      for(const d of qs.docs){ await updateDoc(d.ref, { score:0, submitted:false, answers:{} }); }
+      // wipe guesses
+      const gcol = guessesCol(me.room); const gqs = await getDocs(gcol); for(const d of gqs.docs){ await deleteDoc(d.ref); }
+    };
+
+    // =====================
+    //  Phase: Collect
+    // =====================
+    function renderCollect(game){
+      show(lobby,false); show(collect,true); show(guess,false); show(results,false);
+      // build form once
+      if(!ui.collectForm.dataset.ready){
+        ui.collectForm.innerHTML = '';
+        game.questions.forEach((q,i)=>{
+          const w = document.createElement('div'); w.className='card pad';
+          w.innerHTML = `<label class="muted">Q${i+1}</label><div style="margin:6px 0 8px" class="big">${q}</div><input data-q="${i}" placeholder="Your answer" />`;
+          ui.collectForm.appendChild(w);
+        });
+        ui.collectForm.dataset.ready = '1';
+      }
+    }
+
+    ui.submitSelfBtn.onclick = async ()=>{
+      const inputs = [...ui.collectForm.querySelectorAll('input[data-q]')];
+      const answers = {}; inputs.forEach(inp=> answers[inp.dataset.q] = inp.value.trim());
+      // simple validate
+      for(let i=0;i<inputs.length;i++){ if(!answers[i]) return alert('Please answer all questions'); }
+      await updateDoc(playerRef(me.room, me.uid), { answers, submitted:true });
+      show(ui.collectWaiting,true);
+      ui.submitSelfBtn.disabled = true;
+      // if host – check if all submitted then move forward
+      maybeAdvanceFromCollect();
+    };
+
+    async function maybeAdvanceFromCollect(){
+      if(!me.isHost) return;
+      const pref = collection(db,'games', me.room, 'players');
+      const qs = await getDocs(pref); let all = true; qs.forEach(d=>{ if(!d.data().submitted) all=false; });
+      if(all){ await updateDoc(roomRef(me.room), { state: STATE.guess, currentTargetIndex:0, currentQuestionIndex:0, reveal:false }); }
+    }
+
+    // =====================
+    //  Phase: Guess
+    // =====================
+    function docIdForRound(targetId, qIndex){ return `${targetId}__Q${qIndex}`; }
+
+    function assignGuessesListener(code, targetId, qIndex){
+      guessesUnsub && guessesUnsub();
+      guessesUnsub = onSnapshot(doc(db,'games', code, 'guesses', docIdForRound(targetId, qIndex)), (snap)=>{
+        const data = snap.data(); if(!data) return;
+        renderReveal(data);
+      });
+    }
+
+    async function submitGuess(code, targetId, qIndex, guess){
+      const roundRef = doc(db,'games', code, 'guesses', docIdForRound(targetId,qIndex));
+      const roundSnap = await getDoc(roundRef);
+      const payload = { createdAt: serverTimestamp(), targetId, qIndex };
+      const field = `guesses.${me.uid}`;
+      if(roundSnap.exists()){
+        await updateDoc(roundRef, { [field]: guess, ...payload });
+      } else {
+        await setDoc(roundRef, { [field]: guess, ...payload });
+      }
+    }
+
+    async function revealAndScore(game, players){
+      if(!me.isHost) return;
+      const target = players[game.currentTargetIndex]; const qIdx = game.currentQuestionIndex;
+      const roundRef = doc(db,'games', game.code, 'guesses', docIdForRound(target.id,qIdx));
+      const r = await getDoc(roundRef); const round = r.data() || { guesses:{} };
+      const correct = (target.answers||{})[qIdx];
+      const targetId = target.id;
+      // score: +1 for exact (case/trim-insensitive)
+      for(const [uid, guess] of Object.entries(round.guesses||{})){
+        if(uid===targetId) continue; // shouldn't happen; target never guesses about self
+        if(norm(guess)===norm(correct)){
+          await updateDoc(playerRef(game.code, uid), { score: (round[`award_${uid}`]?arrayUnion(1):arrayUnion(1)) });
+        }
+      }
+      // Above arrayUnion is a quick write; we will recompute scoreboard client-side.
+      await updateDoc(roomRef(game.code), { reveal:true });
+    }
+
+    async function nextStep(game, players){
+      if(!me.isHost) return;
+      const totalTargets = players.length;
+      let t = game.currentTargetIndex, q = game.currentQuestionIndex, reveal=false;
+      // advance question index; then target; end -> results
+      if(q < (game.questions.length-1)){ q++; }
+      else { q = 0; t++; }
+
+      if(t >= totalTargets){
+        await updateDoc(roomRef(game.code), { state: STATE.results, reveal:false });
+        return;
+      }
+      await updateDoc(roomRef(game.code), { currentTargetIndex:t, currentQuestionIndex:q, reveal:false });
+    }
+
+    function renderGuess(game){
+      show(lobby:false); show(collect,false); show(guess,true); show(results,false);
+      ui.roundTag.textContent = `Target ${game.currentTargetIndex+1}/${/*placeholder; filled later*/ 0} · Q${game.currentQuestionIndex+1}/${game.questions.length}`;
+
+      // load players to know target
+      (async ()=>{
+        const pref = collection(db,'games', game.code, 'players');
+        const qs = await getDocs(pref);
+        const players = qs.docs.map(d=>({id:d.id,...d.data()}));
+        players.sort((a,b)=> (a.joinedAt?.seconds||0)-(b.joinedAt?.seconds||0));
+        const target = players[game.currentTargetIndex];
+        ui.roundTag.textContent = `Target ${game.currentTargetIndex+1}/${players.length} · Q${game.currentQuestionIndex+1}/${game.questions.length}`;
+        ui.targetName.textContent = target?.name || '—';
+        const question = game.questions[game.currentQuestionIndex];
+        ui.questionText.textContent = question;
+
+        // target doesn't guess; hide input for them
+        const amTarget = (target?.id === me.uid);
+        ui.guessInput.disabled = amTarget; ui.submitGuessBtn.disabled = amTarget;
+
+        // attach per-round listener
+        assignGuessesListener(game.code, target.id, game.currentQuestionIndex);
+
+        ui.submitGuessBtn.onclick = async ()=>{
+          const val = ui.guessInput.value.trim(); if(!val) return alert('Enter a guess');
+          await submitGuess(game.code, target.id, game.currentQuestionIndex, val);
+          ui.guessInput.value=''; show(ui.guessWaiting,true);
+        };
+
+        // Host: reveal/next controls appear only for host
+        show(ui.nextBtn, me.isHost);
+        ui.nextBtn.textContent = game.reveal? 'Next' : 'Reveal';
+        ui.nextBtn.onclick = async ()=>{
+          if(!me.isHost) return;
+          if(!game.reveal){ await updateDoc(roomRef(game.code), { reveal:true }); }
+          else { await nextStep(game, players); }
+        };
+      })();
+    }
+
+    function renderReveal(round){
+      // no-op until room sets reveal flag
+      onSnapshot(roomRef(me.room), (snap)=>{
+        const g = snap.data(); if(!g) return;
+        const reveal = !!g.reveal; show(ui.revealBlock, reveal); show(ui.questionBlock, !reveal);
+        ui.nextBtn.textContent = reveal? 'Next' : 'Reveal';
+        if(!reveal) return;
+        (async ()=>{
+          // need target's correct answer and all players to compute scores table for this Q
+          const pref = collection(db,'games', me.room, 'players');
+          const qs = await getDocs(pref);
+          const players = qs.docs.map(d=>({id:d.id,...d.data()}));
+          players.sort((a,b)=>(a.joinedAt?.seconds||0)-(b.joinedAt?.seconds||0));
+
+          const targetId = round.targetId; const qIndex = round.qIndex;
+          const target = players.find(p=>p.id===targetId);
+          const correct = (target?.answers||{})[qIndex] || '';
+          ui.correctAnswer.textContent = correct || '—';
+          ui.yourGuess.textContent = round.guesses?.[me.uid] ?? '—';
+
+          // build everyone list & compute score locally; update scoreboard doc field for simplicity
+          ui.allGuesses.innerHTML = '';
+          const guessEntries = Object.entries(round.guesses||{});
+          for(const [uid, text] of guessEntries){
+            const who = players.find(p=>p.id===uid);
+            const item = document.createElement('div'); item.className='tag';
+            const isRight = norm(text)===norm(correct) && uid!==targetId;
+            item.innerHTML = `<b>${who?.name||'?'}</b> — ${text||'—'} ${isRight?'<span class="score">(+1)</span>':''}`;
+            ui.allGuesses.appendChild(item);
+            if(isRight){ // optimistic UI: bump score for display purposes only
+              who.score = (who.score||0)+1;
+            }
+          }
+
+          // Persist awarded scores compactly under a per-player tally map on the round doc; host writes.
+          const awards = {}; guessEntries.forEach(([uid,text])=>{ if(uid!==targetId && norm(text)===norm(correct)) awards[uid]=1; });
+          if(me.isHost){ await updateDoc(doc(db,'games', me.room, 'guesses', docIdForRound(targetId,qIndex)), { awards }); }
+        })();
+      });
+    }
+
+    // =====================
+    //  Results
+    // =====================
+    async function renderResults(){
+      show(lobby,false); show(collect,false); show(guess,false); show(results,true);
+      const pref = collection(db,'games', me.room, 'players');
+      const qs = await getDocs(pref);
+      const players = qs.docs.map(d=>({id:d.id,...d.data()}));
+
+      // recompute final totals from awards in all rounds for canonical score
+      let totals = Object.fromEntries(players.map(p=>[p.id,0]));
+      const gqs = await getDocs(guessesCol(me.room));
+      gqs.forEach(d=>{ const aw = d.data().awards||{}; Object.entries(aw).forEach(([uid,pt])=>{ totals[uid] = (totals[uid]||0) + (pt||0); }); });
+
+      // render
+      const rows = players
+        .map(p=> ({ name:p.name, score: totals[p.id]||0 }))
+        .sort((a,b)=> b.score - a.score)
+        .map((p,i)=> `<tr><td>${i===0?'🏆':''}</td><td><b>${p.name}</b></td><td class="score">${p.score}</td></tr>`)
+        .join('');
+      ui.scoreTable.innerHTML = `<thead><tr><th></th><th>Player</th><th>Points</th></tr></thead><tbody>${rows}</tbody>`;
+    }
+
+    // =====================
+    //  Play again (same room)
+    // =====================
+    ui.playAgainBtn.onclick = async ()=>{
+      if(!me.isHost) { alert('Ask the host to start a new round.'); return; }
+      await updateDoc(roomRef(me.room), { state: STATE.lobby, currentTargetIndex:0, currentQuestionIndex:0, reveal:false });
+      // clear transient collections
+      const gqs = await getDocs(guessesCol(me.room)); for(const d of gqs.docs){ await deleteDoc(d.ref); }
+    };
+
+    // =====================
+    //  URL Join helper
+    // =====================
+    (function hydrateFromURL(){
+      const u = new URL(location.href); const r = (u.searchParams.get('room')||'').toUpperCase();
+      if(r) ui.joinCode.value = r;
+    })();
+
+    // Expose leave for safety
+    window.addEventListener('beforeunload', ()=>{ /* lightweight; server cleanup is best-effort */ });
+  </script>
+</body>
+</html>
