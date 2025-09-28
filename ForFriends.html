@@ -21,6 +21,15 @@
     button:disabled{opacity:.6;cursor:not-allowed}
     .tag{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid #22304f;background:#0d162b;color:var(--muted);font-size:.9rem}
     .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+    .slots-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:18px}
+    .slot-card{background:rgba(12,19,34,.9);border:1px solid #1c2740;border-radius:14px;padding:16px;display:grid;gap:10px;min-height:120px;position:relative}
+    .slot-card.host::after{content:"Host";position:absolute;top:12px;right:12px;font-size:.75rem;padding:4px 8px;border-radius:999px;background:rgba(110,168,254,.18);border:1px solid rgba(110,168,254,.35);color:var(--accent);font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+    .slot-label{font-size:.85rem;color:var(--muted);letter-spacing:.02em;text-transform:uppercase}
+    .slot-name{font-size:1.1rem;font-weight:600}
+    .slot-empty{opacity:.6;text-align:center;display:grid;place-items:center;font-style:italic}
+    .slot-name-input{width:100%;padding:.65rem .75rem;border-radius:12px;border:1px solid #22304f;background:#0a1324;color:var(--ink);font-weight:600;font-size:1rem}
+    .slot-name-input:focus{outline:2px solid rgba(110,168,254,.5);outline-offset:3px}
+    .slot-hint{font-size:.75rem;color:var(--muted)}
     .list{display:flex;flex-wrap:wrap;gap:10px}
     .muted{color:var(--muted)}
     .center{text-align:center}
@@ -118,8 +127,14 @@
         <h2 class="big">Lobby</h2>
         <span id="hostBadge" class="pill hidden">You are the host</span>
       </div>
-      <p>Share room code <span class="code" id="roomCode2"></span> or send the invite link.</p>
-      <div class="grid" id="playersList"></div>
+      <div class="card pad" style="margin:12px 0 0;background:rgba(10,16,29,.85);border:1px solid #1c2740">
+        <div class="slot-label">Room Code</div>
+        <div class="row" style="gap:10px;align-items:center">
+          <div class="code" id="roomCode2" style="font-size:1.3rem;letter-spacing:.18em"></div>
+          <span class="slot-hint">Share this code so friends can join.</span>
+        </div>
+      </div>
+      <div class="slots-grid" id="playersList"></div>
       <div class="hr"></div>
       <div class="row">
         <button id="startBtn" class="primary hidden">Start Game</button>
@@ -262,6 +277,7 @@
     ];
 
     const STATE = { lobby: 'lobby', collect: 'collect', guess: 'guess', results: 'results' };
+    const MAX_PLAYERS = 8;
 
     let me = { uid:null, name:null, room:null, isHost:false };
     let gameDocUnsub = null; let playersUnsub = null; let guessesUnsub = null;
@@ -321,6 +337,8 @@
       const ref = roomRef(code); const snap = await getDoc(ref);
       if(!snap.exists()) return alert('Room not found');
       const data = snap.data(); if(data.state!==STATE.lobby) return alert('Game already started');
+      const existingPlayers = await getDocs(collection(db,'games', code, 'players'));
+      if(existingPlayers.size >= MAX_PLAYERS) return alert('Room is full');
       me.name = name; me.room = code; me.isHost = (data.hostId===me.uid);
       await setDoc(playerRef(code, me.uid), { name, joinedAt: serverTimestamp(), score:0, isHost: me.isHost, submitted:false, answers:{} });
       postJoin();
@@ -396,13 +414,67 @@
     // =====================
     //  Lobby & Start
     // =====================
+    async function updateMyDisplayName(newName){
+      const trimmed = newName.trim();
+      if(!trimmed || trimmed === me.name) return;
+      me.name = trimmed;
+      ui.youName.textContent = trimmed;
+      await updateDoc(playerRef(me.room, me.uid), { name: trimmed });
+    }
+
     function renderPlayers(players){
       ui.playersList.innerHTML = '';
-      players.forEach(p=>{
-        const el = document.createElement('div'); el.className='card pad';
-        el.innerHTML = `<div class="row" style="justify-content:space-between"><div><b>${p.name}</b></div><span class="muted">${p.isHost?'Host':'Player'}</span></div>`;
-        ui.playersList.appendChild(el);
+      const slots = Array.from({ length: MAX_PLAYERS }, (_,i)=> players[i] ?? null);
+      slots.forEach((player, idx)=>{
+        const slot = document.createElement('div');
+        slot.className = 'slot-card';
+        if(player?.isHost){ slot.classList.add('host'); }
+
+        if(player){
+          const isYou = player.id === me.uid;
+          const label = document.createElement('div');
+          label.className = 'slot-label';
+          label.textContent = isYou ? `Slot ${idx+1} · You` : `Slot ${idx+1}`;
+          slot.appendChild(label);
+
+          if(isYou){
+            const input = document.createElement('input');
+            input.className = 'slot-name-input';
+            input.value = player.name || '';
+            input.placeholder = 'Enter your display name';
+            input.addEventListener('keydown', (event)=>{
+              if(event.key === 'Enter'){ event.preventDefault(); input.blur(); }
+            });
+            input.addEventListener('blur', ()=>{
+              const desired = input.value;
+              const trimmed = desired.trim();
+              if(!trimmed){ input.value = player.name || ''; return; }
+              updateMyDisplayName(trimmed).catch((err)=>console.error('Failed to update name', err));
+            });
+            slot.appendChild(input);
+            const hint = document.createElement('div');
+            hint.className = 'slot-hint';
+            hint.textContent = 'Friends will see this name.';
+            slot.appendChild(hint);
+          } else {
+            const nameEl = document.createElement('div');
+            nameEl.className = 'slot-name';
+            nameEl.textContent = player.name || '—';
+            slot.appendChild(nameEl);
+            const role = document.createElement('div');
+            role.className = 'slot-hint';
+            role.textContent = player.isHost ? 'Hosting' : 'Waiting';
+            slot.appendChild(role);
+          }
+        } else {
+          slot.classList.add('slot-empty');
+          const status = (players.length >= MAX_PLAYERS) ? 'Full' : 'Waiting for friend';
+          slot.innerHTML = `<div>Slot ${idx+1} · ${status}</div>`;
+        }
+
+        ui.playersList.appendChild(slot);
       });
+
       // host start enabled only if 2+ players
       if(me.isHost){ ui.startBtn.disabled = players.length<2; }
     }
