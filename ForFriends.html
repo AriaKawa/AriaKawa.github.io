@@ -23,6 +23,8 @@
     .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
     .slots-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:18px}
     .slot-card{background:rgba(12,19,34,.9);border:1px solid #1c2740;border-radius:14px;padding:16px;display:grid;gap:10px;min-height:120px;position:relative}
+    .slot-card.ready{border-color:rgba(46,204,113,.45);box-shadow:0 10px 34px rgba(46,204,113,.18)}
+    .slot-card.waiting{border-color:rgba(243,156,18,.28)}
     .slot-card.host::after{content:"Host";position:absolute;top:12px;right:12px;font-size:.75rem;padding:4px 8px;border-radius:999px;background:rgba(110,168,254,.18);border:1px solid rgba(110,168,254,.35);color:var(--accent);font-weight:600;letter-spacing:.04em;text-transform:uppercase}
     .slot-label{font-size:.85rem;color:var(--muted);letter-spacing:.02em;text-transform:uppercase}
     .slot-name{font-size:1.1rem;font-weight:600}
@@ -30,6 +32,12 @@
     .slot-name-input{width:100%;padding:.65rem .75rem;border-radius:12px;border:1px solid #22304f;background:#0a1324;color:var(--ink);font-weight:600;font-size:1rem}
     .slot-name-input:focus{outline:2px solid rgba(110,168,254,.5);outline-offset:3px}
     .slot-hint{font-size:.75rem;color:var(--muted)}
+    .slot-status{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px}
+    .status-text{font-size:.8rem;color:var(--muted);font-weight:600;letter-spacing:.02em;text-transform:uppercase}
+    .status-text.ready{color:var(--ok)}
+    .status-text.waiting{color:var(--warn)}
+    .ready-toggle{padding:.55rem 1.1rem;font-weight:600;border-radius:999px;cursor:pointer}
+    .ready-toggle.ready{background:rgba(46,204,113,.18);border-color:rgba(46,204,113,.45);color:var(--ok)}
     .list{display:flex;flex-wrap:wrap;gap:10px}
     .muted{color:var(--muted)}
     .center{text-align:center}
@@ -326,7 +334,7 @@
         currentQuestionIndex: 0,
         reveal: false // whether to show answers for current step
       });
-      await setDoc(playerRef(code, me.uid), { name, joinedAt: serverTimestamp(), score: 0, isHost:true, submitted:false, answers:{} });
+      await setDoc(playerRef(code, me.uid), { name, joinedAt: serverTimestamp(), score: 0, isHost:true, submitted:false, answers:{}, ready:false });
       me.room = code; me.isHost = true;
       postJoin();
     };
@@ -340,7 +348,7 @@
       const existingPlayers = await getDocs(collection(db,'games', code, 'players'));
       if(existingPlayers.size >= MAX_PLAYERS) return alert('Room is full');
       me.name = name; me.room = code; me.isHost = (data.hostId===me.uid);
-      await setDoc(playerRef(code, me.uid), { name, joinedAt: serverTimestamp(), score:0, isHost: me.isHost, submitted:false, answers:{} });
+      await setDoc(playerRef(code, me.uid), { name, joinedAt: serverTimestamp(), score:0, isHost: me.isHost, submitted:false, answers:{}, ready:false });
       postJoin();
     };
 
@@ -352,7 +360,7 @@
       me = { uid: me.uid, name:null, room:null, isHost:false };
       switchEntryCard('entryMain');
       show(gate,true); show(lobby,false); show(collect,false); show(guess,false); show(results,false);
-      show(ui.roomTag,false); show(ui.youTag,false); show(ui.copyRoomBtn,false); show(ui.leaveBtn,false);
+      show(ui.roomTag,false); show(ui.youTag,false); show(ui.copyRoomBtn,false); show(ui.leaveBtn,false); show(ui.startBtn,false); show(ui.hostBadge,false);
     }
 
     ui.leaveBtn.onclick = leaveRoom;
@@ -364,8 +372,8 @@
       // screen
       switchEntryCard('entryMain');
       show(gate,false); show(lobby,true);
-      if(me.isHost) { show(ui.startBtn,true); show(ui.hostBadge,true); }
-      else { show(ui.startBtn,false); show(ui.hostBadge,false); }
+      show(ui.hostBadge, me.isHost);
+      show(ui.startBtn,false);
       // listeners
       attachGameListeners();
     }
@@ -422,6 +430,11 @@
       await updateDoc(playerRef(me.room, me.uid), { name: trimmed });
     }
 
+    async function setMyReadyState(ready){
+      if(!me.room) return;
+      await updateDoc(playerRef(me.room, me.uid), { ready });
+    }
+
     function renderPlayers(players){
       ui.playersList.innerHTML = '';
       const slots = Array.from({ length: MAX_PLAYERS }, (_,i)=> players[i] ?? null);
@@ -431,6 +444,8 @@
         if(player?.isHost){ slot.classList.add('host'); }
 
         if(player){
+          const isReady = !!player.ready;
+          slot.classList.add(isReady ? 'ready' : 'waiting');
           const isYou = player.id === me.uid;
           const label = document.createElement('div');
           label.className = 'slot-label';
@@ -456,14 +471,37 @@
             hint.className = 'slot-hint';
             hint.textContent = 'Friends will see this name.';
             slot.appendChild(hint);
+            const statusRow = document.createElement('div');
+            statusRow.className = 'slot-status';
+            const statusText = document.createElement('div');
+            statusText.className = `status-text ${isReady?'ready':'waiting'}`;
+            statusText.textContent = `${player.isHost ? 'Host · ' : ''}${isReady ? 'Ready' : 'Not ready'}`;
+            statusRow.appendChild(statusText);
+            const readyBtn = document.createElement('button');
+            readyBtn.type = 'button';
+            readyBtn.className = `ready-toggle ${isReady?'ready':''}`;
+            readyBtn.textContent = isReady ? 'Ready ✓' : 'Ready Up';
+            readyBtn.addEventListener('click', async ()=>{
+              readyBtn.disabled = true;
+              try {
+                await setMyReadyState(!isReady);
+              } catch(err){
+                console.error('Failed to toggle ready', err);
+              } finally {
+                readyBtn.disabled = false;
+              }
+            });
+            statusRow.appendChild(readyBtn);
+            slot.appendChild(statusRow);
           } else {
             const nameEl = document.createElement('div');
             nameEl.className = 'slot-name';
             nameEl.textContent = player.name || '—';
             slot.appendChild(nameEl);
             const role = document.createElement('div');
-            role.className = 'slot-hint';
-            role.textContent = player.isHost ? 'Hosting' : 'Waiting';
+            role.className = `slot-hint status-text ${isReady?'ready':'waiting'}`;
+            const statusLabel = isReady ? 'Ready' : 'Not ready';
+            role.textContent = player.isHost ? `Host · ${statusLabel}` : statusLabel;
             slot.appendChild(role);
           }
         } else {
@@ -475,18 +513,24 @@
         ui.playersList.appendChild(slot);
       });
 
-      // host start enabled only if 2+ players
-      if(me.isHost){ ui.startBtn.disabled = players.length<2; }
+      const enoughPlayers = players.length >= 2;
+      const allReady = players.length>0 && players.every(p=>p.ready);
+      const canStart = me.isHost && enoughPlayers && allReady;
+      show(ui.startBtn, canStart);
+      ui.startBtn.disabled = !canStart;
     }
 
     ui.startBtn.onclick = async ()=>{
       if(!me.isHost) return;
+      const players = playersCache;
+      const readyToGo = players.length >= 2 && players.every(p=>p.ready);
+      if(!readyToGo){ alert('Everyone must be ready before starting.'); return; }
       // move to collect phase & clear prior
       await updateDoc(roomRef(me.room), { state: STATE.collect, currentTargetIndex:0, currentQuestionIndex:0, reveal:false });
       // reset players
       const pref = collection(db,'games', me.room, 'players');
       const qs = await getDocs(pref);
-      for(const d of qs.docs){ await updateDoc(d.ref, { score:0, submitted:false, answers:{} }); }
+      for(const d of qs.docs){ await updateDoc(d.ref, { score:0, submitted:false, answers:{}, ready:false }); }
       // wipe guesses
       const gcol = guessesCol(me.room); const gqs = await getDocs(gcol); for(const d of gqs.docs){ await deleteDoc(d.ref); }
     };
@@ -717,6 +761,9 @@
       await updateDoc(roomRef(me.room), { state: STATE.lobby, currentTargetIndex:0, currentQuestionIndex:0, reveal:false });
       // clear transient collections
       const gqs = await getDocs(guessesCol(me.room)); for(const d of gqs.docs){ await deleteDoc(d.ref); }
+      const pref = collection(db,'games', me.room, 'players');
+      const qs = await getDocs(pref);
+      for(const d of qs.docs){ await updateDoc(d.ref, { ready:false }); }
     };
 
     // =====================
