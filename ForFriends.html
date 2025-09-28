@@ -166,8 +166,8 @@
     //  Firebase bootstrap
     // =====================
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getAuth, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDoc, onSnapshot, updateDoc, arrayUnion, serverTimestamp, collection, addDoc, query, where, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc, onSnapshot, updateDoc, serverTimestamp, collection, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
       // TODO: Replace with your config
@@ -217,12 +217,21 @@
 
     let me = { uid:null, name:null, room:null, isHost:false };
     let gameDocUnsub = null; let playersUnsub = null; let guessesUnsub = null;
+    let playersCache = [];
+    let currentGameState = null;
+    let currentRoundData = null;
+    let currentRoundRef = null;
+    let lastRoundKey = null;
 
     // ===============
     //  Utilities
     // ===============
     const randomCode = (len=5)=> Array.from(crypto.getRandomValues(new Uint8Array(len))).map(n=>"abcdefghijklmnopqrstuvwxyz"[n%26]).join('').toUpperCase();
     const norm = (s)=> (s||'').trim().toLowerCase();
+    const displayText = (val)=>{
+      const raw = (val ?? '').toString().trim();
+      return raw || '—';
+    };
 
     const roomRef = (code)=> doc(db,'games', code);
     const playerRef = (code, uid)=> doc(db,'games', code, 'players', uid);
@@ -307,9 +316,16 @@
       gameDocUnsub = onSnapshot(gref, (snap)=>{
         if(!snap.exists()) return;
         const g = snap.data();
+        currentGameState = { ...g, code: me.room };
         // phase routing
-        if(g.state===STATE.lobby){ show(lobby,true); show(collect,false); show(guess,false); show(results,false); }
-        if(g.state===STATE.collect){ renderCollect(g); }
+        if(g.state===STATE.lobby){
+          currentRoundData = null; currentRoundRef = null; lastRoundKey = null;
+          show(lobby,true); show(collect,false); show(guess,false); show(results,false);
+        }
+        if(g.state===STATE.collect){
+          currentRoundData = null; currentRoundRef = null; lastRoundKey = null;
+          renderCollect(g);
+        }
         if(g.state===STATE.guess){ renderGuess(g); }
         if(g.state===STATE.results){ renderResults(); }
       });
@@ -318,7 +334,10 @@
       playersUnsub = onSnapshot(pref, (qs)=>{
         const players = [];
         qs.forEach(d=>players.push({id:d.id, ...d.data()}));
+        players.sort((a,b)=> (a.joinedAt?.seconds||0)-(b.joinedAt?.seconds||0));
+        playersCache = players;
         renderPlayers(players);
+        if(currentGameState?.state===STATE.guess){ updateGuessUI(); }
       });
     }
 
@@ -329,7 +348,6 @@
     // =====================
     function renderPlayers(players){
       ui.playersList.innerHTML = '';
-      players.sort((a,b)=> (a.joinedAt?.seconds||0)-(b.joinedAt?.seconds||0));
       players.forEach(p=>{
         const el = document.createElement('div'); el.className='card pad';
         el.innerHTML = `<div class="row" style="justify-content:space-between"><div><b>${p.name}</b></div><span class="muted">${p.isHost?'Host':'Player'}</span></div>`;
@@ -356,6 +374,7 @@
     // =====================
     function renderCollect(game){
       show(lobby,false); show(collect,true); show(guess,false); show(results,false);
+      show(ui.collectWaiting,false); ui.submitSelfBtn.disabled = false;
       // build form once
       if(!ui.collectForm.dataset.ready){
         ui.collectForm.innerHTML = '';
@@ -365,6 +384,8 @@
           ui.collectForm.appendChild(w);
         });
         ui.collectForm.dataset.ready = '1';
+      } else {
+        ui.collectForm.querySelectorAll('input[data-q]').forEach(inp=> inp.value='');
       }
     }
 
@@ -394,9 +415,11 @@
 
     function assignGuessesListener(code, targetId, qIndex){
       guessesUnsub && guessesUnsub();
-      guessesUnsub = onSnapshot(doc(db,'games', code, 'guesses', docIdForRound(targetId, qIndex)), (snap)=>{
-        const data = snap.data(); if(!data) return;
-        renderReveal(data);
+      currentRoundRef = doc(db,'games', code, 'guesses', docIdForRound(targetId, qIndex));
+      currentRoundData = null;
+      guessesUnsub = onSnapshot(currentRoundRef, (snap)=>{
+        currentRoundData = snap.data() || { targetId, qIndex, guesses:{} };
+        updateGuessUI();
       });
     }
 
@@ -412,24 +435,6 @@
       }
     }
 
-    async function revealAndScore(game, players){
-      if(!me.isHost) return;
-      const target = players[game.currentTargetIndex]; const qIdx = game.currentQuestionIndex;
-      const roundRef = doc(db,'games', game.code, 'guesses', docIdForRound(target.id,qIdx));
-      const r = await getDoc(roundRef); const round = r.data() || { guesses:{} };
-      const correct = (target.answers||{})[qIdx];
-      const targetId = target.id;
-      // score: +1 for exact (case/trim-insensitive)
-      for(const [uid, guess] of Object.entries(round.guesses||{})){
-        if(uid===targetId) continue; // shouldn't happen; target never guesses about self
-        if(norm(guess)===norm(correct)){
-          await updateDoc(playerRef(game.code, uid), { score: (round[`award_${uid}`]?arrayUnion(1):arrayUnion(1)) });
-        }
-      }
-      // Above arrayUnion is a quick write; we will recompute scoreboard client-side.
-      await updateDoc(roomRef(game.code), { reveal:true });
-    }
-
     async function nextStep(game, players){
       if(!me.isHost) return;
       const totalTargets = players.length;
@@ -439,91 +444,123 @@
       else { q = 0; t++; }
 
       if(t >= totalTargets){
+        currentRoundData = null; currentRoundRef = null;
         await updateDoc(roomRef(game.code), { state: STATE.results, reveal:false });
         return;
       }
+      currentRoundData = null; currentRoundRef = null;
       await updateDoc(roomRef(game.code), { currentTargetIndex:t, currentQuestionIndex:q, reveal:false });
     }
 
-    function renderGuess(game){
-      show(lobby:false); show(collect,false); show(guess,true); show(results,false);
-      ui.roundTag.textContent = `Target ${game.currentTargetIndex+1}/${/*placeholder; filled later*/ 0} · Q${game.currentQuestionIndex+1}/${game.questions.length}`;
-
-      // load players to know target
-      (async ()=>{
+    async function renderGuess(game){
+      show(lobby,false); show(collect,false); show(guess,true); show(results,false);
+      show(ui.guessWaiting,false);
+      if(!playersCache.length){
         const pref = collection(db,'games', game.code, 'players');
         const qs = await getDocs(pref);
-        const players = qs.docs.map(d=>({id:d.id,...d.data()}));
-        players.sort((a,b)=> (a.joinedAt?.seconds||0)-(b.joinedAt?.seconds||0));
-        const target = players[game.currentTargetIndex];
-        ui.roundTag.textContent = `Target ${game.currentTargetIndex+1}/${players.length} · Q${game.currentQuestionIndex+1}/${game.questions.length}`;
-        ui.targetName.textContent = target?.name || '—';
-        const question = game.questions[game.currentQuestionIndex];
-        ui.questionText.textContent = question;
+        playersCache = qs.docs.map(d=>({id:d.id, ...d.data()})).sort((a,b)=> (a.joinedAt?.seconds||0)-(b.joinedAt?.seconds||0));
+        if(playersCache.length){ renderPlayers(playersCache); }
+      }
+      const target = playersCache[game.currentTargetIndex];
+      if(!target) return;
 
-        // target doesn't guess; hide input for them
-        const amTarget = (target?.id === me.uid);
-        ui.guessInput.disabled = amTarget; ui.submitGuessBtn.disabled = amTarget;
+      const roundKey = `${target.id}:${game.currentQuestionIndex}`;
+      if(lastRoundKey !== roundKey){
+        lastRoundKey = roundKey;
+        ui.guessInput.value = '';
+        show(ui.guessWaiting,false);
+      }
 
-        // attach per-round listener
-        assignGuessesListener(game.code, target.id, game.currentQuestionIndex);
+      assignGuessesListener(game.code, target.id, game.currentQuestionIndex);
 
-        ui.submitGuessBtn.onclick = async ()=>{
-          const val = ui.guessInput.value.trim(); if(!val) return alert('Enter a guess');
-          await submitGuess(game.code, target.id, game.currentQuestionIndex, val);
-          ui.guessInput.value=''; show(ui.guessWaiting,true);
-        };
+      ui.submitGuessBtn.onclick = async ()=>{
+        if(target.id === me.uid || game.reveal) return;
+        const val = ui.guessInput.value.trim();
+        if(!val) return alert('Enter a guess');
+        await submitGuess(game.code, target.id, game.currentQuestionIndex, val);
+        ui.guessInput.value='';
+        show(ui.guessWaiting,true);
+      };
 
-        // Host: reveal/next controls appear only for host
-        show(ui.nextBtn, me.isHost);
-        ui.nextBtn.textContent = game.reveal? 'Next' : 'Reveal';
-        ui.nextBtn.onclick = async ()=>{
-          if(!me.isHost) return;
-          if(!game.reveal){ await updateDoc(roomRef(game.code), { reveal:true }); }
-          else { await nextStep(game, players); }
-        };
-      })();
+      ui.nextBtn.onclick = async ()=>{
+        if(!me.isHost) return;
+        if(!currentGameState) return;
+        if(!currentGameState.reveal){ await updateDoc(roomRef(currentGameState.code), { reveal:true }); }
+        else { await nextStep(currentGameState, playersCache); }
+      };
+
+      updateGuessUI();
     }
 
-    function renderReveal(round){
-      // no-op until room sets reveal flag
-      onSnapshot(roomRef(me.room), (snap)=>{
-        const g = snap.data(); if(!g) return;
-        const reveal = !!g.reveal; show(ui.revealBlock, reveal); show(ui.questionBlock, !reveal);
-        ui.nextBtn.textContent = reveal? 'Next' : 'Reveal';
-        if(!reveal) return;
-        (async ()=>{
-          // need target's correct answer and all players to compute scores table for this Q
-          const pref = collection(db,'games', me.room, 'players');
-          const qs = await getDocs(pref);
-          const players = qs.docs.map(d=>({id:d.id,...d.data()}));
-          players.sort((a,b)=>(a.joinedAt?.seconds||0)-(b.joinedAt?.seconds||0));
-
-          const targetId = round.targetId; const qIndex = round.qIndex;
-          const target = players.find(p=>p.id===targetId);
-          const correct = (target?.answers||{})[qIndex] || '';
-          ui.correctAnswer.textContent = correct || '—';
-          ui.yourGuess.textContent = round.guesses?.[me.uid] ?? '—';
-
-          // build everyone list & compute score locally; update scoreboard doc field for simplicity
-          ui.allGuesses.innerHTML = '';
-          const guessEntries = Object.entries(round.guesses||{});
-          for(const [uid, text] of guessEntries){
-            const who = players.find(p=>p.id===uid);
-            const item = document.createElement('div'); item.className='tag';
-            const isRight = norm(text)===norm(correct) && uid!==targetId;
-            item.innerHTML = `<b>${who?.name||'?'}</b> — ${text||'—'} ${isRight?'<span class="score">(+1)</span>':''}`;
-            ui.allGuesses.appendChild(item);
-            if(isRight){ // optimistic UI: bump score for display purposes only
-              who.score = (who.score||0)+1;
-            }
-          }
-
-          // Persist awarded scores compactly under a per-player tally map on the round doc; host writes.
-          const awards = {}; guessEntries.forEach(([uid,text])=>{ if(uid!==targetId && norm(text)===norm(correct)) awards[uid]=1; });
-          if(me.isHost){ await updateDoc(doc(db,'games', me.room, 'guesses', docIdForRound(targetId,qIndex)), { awards }); }
-        })();
+    async function ensureAwards(round, targetId, correct){
+      if(!me.isHost || !currentRoundRef) return;
+      const awards = {};
+      Object.entries(round.guesses || {}).forEach(([uid, text])=>{
+        if(uid!==targetId && norm(text)===norm(correct)){ awards[uid] = 1; }
       });
+      const existing = round.awards || {};
+      const sameSize = Object.keys(awards).length === Object.keys(existing).length;
+      let identical = sameSize;
+      if(identical){
+        for(const [uid,val] of Object.entries(awards)){
+          if(existing[uid] !== val){ identical = false; break; }
+        }
+        if(identical){
+          for(const uid of Object.keys(existing)){
+            if(!(uid in awards)){ identical = false; break; }
+          }
+        }
+      }
+      if(!identical){ await updateDoc(currentRoundRef, { awards }); }
+    }
+
+    function updateGuessUI(){
+      if(currentGameState?.state !== STATE.guess) return;
+      const game = currentGameState;
+      const players = playersCache;
+      if(!players.length) return;
+      const target = players[game.currentTargetIndex];
+      if(!target) return;
+
+      const question = game.questions[game.currentQuestionIndex];
+      ui.roundTag.textContent = `Target ${game.currentTargetIndex+1}/${players.length} · Q${game.currentQuestionIndex+1}/${game.questions.length}`;
+      ui.targetName.textContent = target.name || '—';
+      ui.questionText.textContent = question;
+
+      const round = currentRoundData || { guesses:{} };
+      const correct = (target.answers||{})[game.currentQuestionIndex] || '';
+      const amTarget = target.id === me.uid;
+      const myGuess = round.guesses?.[me.uid];
+
+      const waiting = !!myGuess && !game.reveal && !amTarget;
+      show(ui.guessWaiting, waiting);
+
+      ui.guessInput.disabled = amTarget || game.reveal;
+      ui.submitGuessBtn.disabled = amTarget || game.reveal;
+
+      show(ui.nextBtn, me.isHost);
+      ui.nextBtn.textContent = game.reveal ? 'Next' : 'Reveal';
+
+      if(game.reveal){
+        show(ui.revealBlock,true); show(ui.questionBlock,false);
+        ui.correctAnswer.textContent = displayText(correct);
+        ui.yourGuess.textContent = displayText(myGuess);
+        ui.allGuesses.innerHTML = '';
+        const order = new Map(players.map((p,i)=>[p.id,i]));
+        Object.entries(round.guesses || {})
+          .sort((a,b)=> (order.get(a[0]) ?? 999) - (order.get(b[0]) ?? 999))
+          .forEach(([uid, text])=>{
+            const who = players.find(p=>p.id===uid);
+            const isRight = uid!==target.id && norm(text)===norm(correct);
+            const item = document.createElement('div'); item.className='tag';
+            item.innerHTML = `<b>${who?.name||'?'}</b> — ${displayText(text)} ${isRight?'<span class="score">(+1)</span>':''}`;
+            ui.allGuesses.appendChild(item);
+          });
+        ensureAwards(round, target.id, correct).catch((err)=>console.error('Failed to persist awards', err));
+      } else {
+        show(ui.revealBlock,false); show(ui.questionBlock,true);
+        ui.allGuesses.innerHTML = '';
+      }
     }
 
     // =====================
@@ -531,6 +568,7 @@
     // =====================
     async function renderResults(){
       show(lobby,false); show(collect,false); show(guess,false); show(results,true);
+      lastRoundKey = null;
       const pref = collection(db,'games', me.room, 'players');
       const qs = await getDocs(pref);
       const players = qs.docs.map(d=>({id:d.id,...d.data()}));
