@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Auto TD Arena (Firebase)</title>
+  <style>
+    :root{--bg:#0b1220;--panel:#111a2b;--accent:#6ee7ff;--good:#70ff9f;--bad:#ff6b6b;--text:#e7f0ff}
+    *{box-sizing:border-box} body{margin:0;background:radial-gradient(1200px 800px at 70% -10%,#16233c 0%,#0b1220 50%,#0b1220 100%);color:var(--text);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial}
+    header{padding:10px 16px;border-bottom:1px solid #21304b;display:flex;gap:12px;align-items:center}
+    h1{margin:0;font-size:18px;letter-spacing:.5px}
+    #container{display:grid;grid-template-columns:340px 1fr;gap:10px;height:calc(100vh - 56px)}
+    #left{padding:10px;overflow:auto;background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01));border-right:1px solid #21304b}
+    #right{position:relative}
+    canvas{display:block;width:100%;height:100%}
+    .card{background:var(--panel);border:1px solid #21304b;border-radius:14px;padding:12px;margin-bottom:10px;box-shadow:0 6px 24px rgba(0,0,0,.25)}
+    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    input,button,select{background:#0e1626;color:var(--text);border:1px solid #2a3a57;border-radius:12px;padding:10px 12px;font-size:14px}
+    button{cursor:pointer} button.primary{background:linear-gradient(135deg,#0f243e,#0a1b31);border:1px solid #2c4f7d}
+    button:disabled{opacity:.5;cursor:not-allowed}
+    .pill{display:inline-flex;align-items:center;gap:6px;background:#0c1a2b;border:1px solid #2a3a57;border-radius:999px;padding:6px 10px}
+    .stat{display:flex;justify-content:space-between;margin:6px 0;font-variant-numeric:tabular-nums}
+    .lvl{color:var(--good)} .hp{color:#ffd36e} .dmg{color:#ffb4b4}
+    .link{opacity:.8}
+    .small{font-size:12px;opacity:.8}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+    .hr{height:1px;background:#21304b;margin:10px 0}
+    .log{font-family:ui-monospace,Consolas,monospace;font-size:12px;white-space:pre-wrap;max-height:120px;overflow:auto;background:#0b1426;padding:8px;border-radius:10px;border:1px solid #21304b}
+    .warn{color:#ffd36e}
+    .enemyBar{height:6px;background:#081425;border:1px solid #1e2b42;border-radius:999px;overflow:hidden}
+    .enemyBar>div{height:100%;background:linear-gradient(90deg,#ff7272,#ffb36b)}
+    .leader{border-left:3px solid #2b7fff}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🛡️ Auto TD Arena</h1>
+    <div style="margin-left:auto" class="small">Multiplayer (read‑only leaderboard) • Local deterministic waves</div>
+  </header>
+  <div id="container">
+    <aside id="left">
+      <div class="card">
+        <div class="row" style="justify-content:space-between">
+          <strong>Lobby</strong>
+          <span class="small link" id="lobbyIdView">(not joined)</span>
+        </div>
+        <div class="hr"></div>
+        <div class="grid2">
+          <input id="displayName" placeholder="Your name" />
+          <input id="lobbyId" placeholder="Lobby ID (e.g. cozy‑owl)" />
+        </div>
+        <div class="row" style="margin-top:8px">
+          <button id="btnCreate" class="primary">Create Lobby</button>
+          <button id="btnJoin">Join</button>
+          <button id="btnLeave" disabled>Leave</button>
+        </div>
+        <div class="hr"></div>
+        <div class="row">
+          <button id="btnReady" disabled>Ready</button>
+          <button id="btnStart" disabled>Start Game</button>
+        </div>
+        <div class="small" style="margin-top:6px">Status: <span id="status">init…</span></div>
+      </div>
+
+      <div class="card">
+        <strong>Players</strong>
+        <div id="players"></div>
+      </div>
+
+      <div class="card">
+        <strong>Hero Upgrades</strong>
+        <div class="stat"><span>Level</span><span class="lvl" id="level">1</span></div>
+        <div class="stat"><span>XP</span><span id="xp">0 / 100</span></div>
+        <div class="grid2" style="margin-top:6px">
+          <button id="upHP">+ Max HP</button>
+          <button id="upDMG">+ Damage</button>
+          <button id="upAS">+ Attack Speed</button>
+          <button id="upRNG">+ Range</button>
+        </div>
+        <div class="small" style="margin-top:8px">Upgrade cost scales with level. You earn XP by killing creeps. Your run is local; the lobby leaderboard syncs XP/level.</div>
+      </div>
+
+      <div class="card">
+        <strong>Leaderboard</strong>
+        <div id="leaderboard"></div>
+      </div>
+
+      <div class="card">
+        <strong>Log</strong>
+        <div id="log" class="log"></div>
+      </div>
+
+      <div class="card small">
+        <strong>Firebase Setup</strong>
+        <div class="hr"></div>
+        <ol>
+          <li>Create a Web App in Firebase Console and copy its config.</li>
+          <li>Paste config into <code>// TODO: paste your Firebase config here</code> below.</li>
+          <li>Enable Firestore (or switch to Realtime DB in code comments).</li>
+          <li>Host this file on GitHub Pages or any static host.</li>
+        </ol>
+      </div>
+    </aside>
+
+    <main id="right">
+      <canvas id="game"></canvas>
+      <div style="position:absolute;left:12px;bottom:12px" class="pill">HP&nbsp;<span id="hpText">100/100</span></div>
+      <div style="position:absolute;right:12px;bottom:12px" class="pill">Wave&nbsp;<span id="waveText">0</span></div>
+    </main>
+  </div>
+
+  <!-- Firebase (v10 modular CDN) -->
+  <script type="module">
+    // ===== Firebase boot =====
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+    import { getFirestore, doc, setDoc, getDoc, onSnapshot, serverTimestamp, updateDoc, collection, query, where, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+    const firebaseConfig = {
+      // TODO: paste your Firebase config here
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      projectId: "YOUR_PROJECT",
+      appId: "YOUR_APP_ID"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // ===== Simple helpers =====
+    const $ = sel => document.querySelector(sel);
+    const log = (msg) => { const el = $('#log'); el.textContent = `[${new Date().toLocaleTimeString()}] ${msg}\n` + el.textContent; }
+
+    // ===== Lobby state =====
+    let state = {
+      displayName: localStorage.getItem('displayName') || `Player${(Math.random()*100|0)}`,
+      lobbyId: localStorage.getItem('lobbyId') || '',
+      isHost: false,
+      myId: crypto.randomUUID(),
+      ready: false,
+      gameStarted: false,
+      seed: 0,
+    };
+    $('#displayName').value = state.displayName;
+    $('#lobbyId').value = state.lobbyId;
+    $('#status').textContent = 'idle';
+
+    function savePrefs(){
+      localStorage.setItem('displayName', state.displayName);
+      localStorage.setItem('lobbyId', state.lobbyId);
+    }
+
+    // Firestore paths: lobbies/{lobbyId} with subcollections players
+    async function createLobby(){
+      if(!$('#displayName').value){ alert('Enter name'); return }
+      const lobbyId = ($('#lobbyId').value || genLobbyId()).toLowerCase();
+      state.lobbyId = lobbyId; state.displayName = $('#displayName').value; savePrefs();
+      const lobbyRef = doc(db,'lobbies',lobbyId);
+      await setDoc(lobbyRef, { createdAt: serverTimestamp(), hostId: state.myId, status:'waiting', seed: Math.floor(Math.random()*1e9) }, { merge:true });
+      state.isHost = true; attachLobby(lobbyId);
+      log(`Created lobby ${lobbyId}`);
+    }
+
+    async function joinLobby(){
+      if(!$('#displayName').value || !$('#lobbyId').value){ alert('Enter name and lobby id'); return }
+      state.displayName = $('#displayName').value; state.lobbyId = $('#lobbyId').value.toLowerCase(); savePrefs();
+      const lobbyRef = doc(db,'lobbies',state.lobbyId);
+      const snap = await getDoc(lobbyRef);
+      if(!snap.exists()) { alert('Lobby does not exist'); return }
+      state.isHost = (snap.data().hostId === state.myId);
+      attachLobby(state.lobbyId);
+      log(`Joined lobby ${state.lobbyId}`);
+    }
+
+    let unsubLobby = null, unsubPlayers = null;
+    async function attachLobby(id){
+      $('#lobbyIdView').textContent = id;
+      $('#btnLeave').disabled = false;
+      $('#btnCreate').disabled = true; $('#btnJoin').disabled = true;
+      const lobbyRef = doc(db,'lobbies',id);
+      const meRef = doc(db,'lobbies',id,'players',state.myId);
+      await setDoc(meRef, { id: state.myId, name: state.displayName, ready:false, level:1, xp:0, maxHP:100, damage:10, atkSpeed:1.0, range:130, alive:true, updatedAt: serverTimestamp() }, { merge:true });
+
+      unsubLobby?.();
+      unsubLobby = onSnapshot(lobbyRef, (s)=>{
+        const data = s.data(); if(!data) return;
+        $('#status').textContent = `${data.status}`;
+        state.seed = data.seed || 0;
+        state.gameStarted = data.status==='started';
+        $('#btnStart').disabled = !(state.isHost && data.status==='ready');
+        if(data.status==='started') startGame();
+      });
+
+      unsubPlayers?.();
+      const playersEl = $('#players');
+      unsubPlayers = onSnapshot(collection(db,'lobbies',id,'players'), (qs)=>{
+        playersEl.innerHTML = '';
+        const arr = []; qs.forEach(doc=>arr.push(doc.data()));
+        renderPlayers(arr);
+        renderBoard(arr);
+      });
+
+      $('#btnReady').disabled = false;
+    }
+
+    async function leaveLobby(){
+      if(!state.lobbyId) return;
+      $('#btnLeave').disabled = true; $('#btnReady').disabled = true; $('#btnStart').disabled = true; $('#btnCreate').disabled=false; $('#btnJoin').disabled=false;
+      unsubLobby?.(); unsubPlayers?.();
+      $('#players').innerHTML = '';
+      $('#leaderboard').innerHTML = '';
+      $('#lobbyIdView').textContent = '(not joined)';
+      $('#status').textContent = 'idle';
+      state.lobbyId=''; state.isHost=false; state.gameStarted=false; stopGame();
+      log('Left lobby');
+    }
+
+    function renderPlayers(arr){
+      const playersEl = $('#players');
+      arr.sort((a,b)=> (b.level-b.level===0? b.xp-a.xp : b.level-a.level));
+      for (const p of arr){
+        const div = document.createElement('div');
+        div.className = 'pill' + (p.id===state.myId?' leader':'');
+        div.style.margin='6px 0';
+        div.innerHTML = `${p.name} • L${p.level} • XP ${p.xp}`;
+        playersEl.appendChild(div);
+      }
+    }
+
+    function renderBoard(arr){
+      const lb = $('#leaderboard'); lb.innerHTML='';
+      const sorted = [...arr].sort((a,b)=> b.level-a.level || b.xp-a.xp);
+      sorted.forEach((p,i)=>{
+        const card = document.createElement('div');
+        card.className='card';
+        card.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><div><strong>${i+1}. ${p.name}</strong></div><span class="small">L${p.level} • XP ${p.xp}</span></div>`;
+        lb.appendChild(card);
+      });
+    }
+
+    function genLobbyId(){
+      const a=['cozy','brave','fuzzy','lucky','sunny','stormy','frosty','merry','sly','swift'];
+      const b=['owl','otter','lynx','badger','walrus','eagle','panda','yak','moth','horse'];
+      return a[Math.random()*a.length|0]+'-'+b[Math.random()*b.length|0];
+    }
+
+    // ===== Buttons =====
+    $('#btnCreate').onclick = createLobby;
+    $('#btnJoin').onclick = joinLobby;
+    $('#btnLeave').onclick = leaveLobby;
+    $('#displayName').onchange = e=>{ state.displayName=e.target.value; savePrefs(); }
+    $('#lobbyId').onchange = e=>{ state.lobbyId=e.target.value; savePrefs(); }
+
+    $('#btnReady').onclick = async ()=>{
+      if(!state.lobbyId) return;
+      const meRef = doc(db,'lobbies',state.lobbyId,'players',state.myId);
+      state.ready = !state.ready;
+      await updateDoc(meRef,{ ready: state.ready, updatedAt: serverTimestamp()});
+      $('#btnReady').textContent = state.ready? 'Unready' : 'Ready';
+
+      // host checks all ready
+      if(state.isHost){
+        const q = query(collection(db,'lobbies',state.lobbyId,'players'));
+        const qs = await getDocs(q); let allReady = true;
+        qs.forEach(d=>{ const x=d.data(); if(!x.ready) allReady=false; });
+        if(allReady){
+          const lobbyRef = doc(db,'lobbies',state.lobbyId);
+          await updateDoc(lobbyRef,{ status:'ready' });
+          $('#btnStart').disabled = false;
+          log('All players ready. Host can start.');
+        }
+      }
+    }
+
+    $('#btnStart').onclick = async ()=>{
+      if(!(state.isHost && state.lobbyId)) return;
+      const lobbyRef = doc(db,'lobbies',state.lobbyId);
+      await updateDoc(lobbyRef,{ status:'started', startedAt: serverTimestamp(), seed: Math.floor(Math.random()*1e9) });
+      log('Game started!');
+    }
+
+    // ===== Game (local sim) =====
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    let W=0,H=0; const DPR = Math.min(devicePixelRatio||1, 2);
+    function resize(){ W=canvas.clientWidth; H=canvas.clientHeight; canvas.width=W*DPR; canvas.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0); }
+    addEventListener('resize', resize);
+    resize();
+
+    // Deterministic RNG per run (mulberry32)
+    function mulberry32(a){ return function(){ let t = a += 0x6D2B79F5; t = Math.imul(t ^ t>>>15, t | 1); t ^= t + Math.imul(t ^ t>>>7, t | 61); return ((t ^ t>>>14) >>> 0) / 4294967296; } }
+
+    const heroBase = { x:0, y:0, r:14, level:1, xp:0, xpTo:100, maxHP:100, hp:100, damage:10, atkSpeed:1.0, range:130, cooldown:0 };
+    let hero = JSON.parse(JSON.stringify(heroBase));
+
+    let running=false, raf=0, last=0, wave=0, rng = mulberry32(1), arenaRadius= Math.min(window.innerWidth, window.innerHeight)*0.35;
+    let enemies=[]; let bullets=[];
+
+    function resetRun(){
+      hero = JSON.parse(JSON.stringify(heroBase));
+      enemies=[]; bullets=[]; wave=0; $('#level').textContent=hero.level; setHPText(); setXPText(); $('#waveText').textContent=wave; running=true; last=performance.now();
+    }
+
+    function startGame(){
+      resetRun();
+      rng = mulberry32((state.seed||1) ^ (state.myId.split('-')[0].charCodeAt(0)||17));
+      cancelAnimationFrame(raf); last=performance.now();
+      raf = requestAnimationFrame(loop);
+    }
+    function stopGame(){ running=false; cancelAnimationFrame(raf); }
+
+    function setHPText(){ $('#hpText').textContent = `${Math.max(0,hero.hp|0)}/${hero.maxHP}`; }
+    function setXPText(){ $('#xp').textContent = `${hero.xp|0} / ${hero.xpTo}`; }
+
+    function spawnWave(){
+      wave++; $('#waveText').textContent=wave;
+      const count = 6 + wave*2;
+      for(let i=0;i<count;i++){
+        const ang = rng()*Math.PI*2;
+        const speed = 20 + rng()*20 + wave*1.2;
+        const hp = 18 + wave*6 + (rng()*8|0);
+        enemies.push({ x:0, y:0, vx:0, vy:0, ang, speed, hp, maxHP:hp, r:7+Math.min(10, wave*.2) });
+      }
+      log(`Wave ${wave} spawned (${count} creeps)`);
+    }
+
+    function shoot(dt){
+      hero.cooldown -= dt; if(hero.cooldown>0) return;
+      // find nearest
+      let best=null, bd=1e9;
+      for(const e of enemies){ const d = Math.hypot(e.x-hero.x,e.y-hero.y); if(d<bd && d<=hero.range) { bd=d; best=e; } }
+      if(!best) return;
+      hero.cooldown = Math.max(.12, 1/hero.atkSpeed);
+      const ang = Math.atan2(best.y-hero.y, best.x-hero.x);
+      bullets.push({ x:hero.x, y:hero.y, vx:Math.cos(ang)*400, vy:Math.sin(ang)*400, life:1.2, dmg: hero.damage });
+    }
+
+    function update(dt){
+      // spawn logic
+      if(enemies.length===0) spawnWave();
+
+      // enemies move toward center (hero at 0,0)
+      for(const e of enemies){
+        const ang = Math.atan2(-e.y, -e.x);
+        e.vx = Math.cos(ang)*e.speed; e.vy = Math.sin(ang)*e.speed;
+        e.x += e.vx*dt; e.y += e.vy*dt;
+        // reached hero?
+        const d = Math.hypot(e.x-hero.x,e.y-hero.y);
+        if(d < hero.r + e.r){ hero.hp -= 8; e.hp=0; }
+      }
+
+      // shooting
+      shoot(dt);
+
+      // bullets
+      for(const b of bullets){ b.x += b.vx*dt; b.y += b.vy*dt; b.life -= dt; }
+      bullets = bullets.filter(b=> b.life>0 && Math.hypot(b.x,b.y) < arenaRadius+30);
+
+      // collisions
+      for(const b of bullets){
+        for(const e of enemies){ if(e.hp<=0) continue; const d=Math.hypot(b.x-e.x,b.y-e.y); if(d < e.r+3){ e.hp -= b.dmg; b.life=0; if(e.hp<=0){ gainXP(12 + wave*2); } }}
+      }
+
+      enemies = enemies.filter(e=> e.hp>0);
+
+      // death
+      if(hero.hp<=0){ running=false; log('💀 You were defeated.'); submitStats(true); }
+
+      setHPText();
+    }
+
+    function gainXP(amount){
+      hero.xp += amount; if(hero.xp>=hero.xpTo){ hero.xp -= hero.xpTo; hero.level++; hero.xpTo = Math.floor(hero.xpTo*1.3 + 25); hero.maxHP += 10; hero.hp = hero.maxHP; $('#level').textContent=hero.level; log(`Level up! Now ${hero.level}`); submitStats(); }
+      setXPText();
+    }
+
+    function draw(){
+      ctx.clearRect(0,0,W,H);
+      ctx.save();
+      // center
+      const cx=W/2, cy=H/2; ctx.translate(cx,cy);
+      // arena circle
+      arenaRadius = Math.min(W,H)*0.38;
+      ctx.globalAlpha=.9; ctx.beginPath(); ctx.arc(0,0,arenaRadius,0,Math.PI*2); ctx.strokeStyle='#2b3f63'; ctx.lineWidth=6; ctx.stroke(); ctx.globalAlpha=1;
+
+      // hero
+      ctx.fillStyle='#6ee7ff'; ctx.beginPath(); ctx.arc(hero.x,hero.y,hero.r,0,Math.PI*2); ctx.fill();
+
+      // bullets
+      ctx.fillStyle='#f8fafc';
+      for(const b of bullets){ ctx.beginPath(); ctx.arc(b.x,b.y,3,0,Math.PI*2); ctx.fill(); }
+
+      // enemies
+      for(const e of enemies){
+        ctx.fillStyle='#ff7b7b'; ctx.beginPath(); ctx.arc(e.x,e.y,e.r,0,Math.PI*2); ctx.fill();
+        // hp bar
+        ctx.save(); ctx.translate(e.x-e.r, e.y-e.r-8); ctx.fillStyle='rgba(0,0,0,.4)'; ctx.fillRect(0,0,e.r*2,5); ctx.fillStyle='#ffd36e'; ctx.fillRect(0,0, (Math.max(0,e.hp)/e.maxHP)*(e.r*2),5); ctx.restore();
+      }
+
+      ctx.restore();
+    }
+
+    function loop(t){
+      const dt = Math.min(0.033, (t-last)/1000); last = t;
+      if(running){ update(dt); draw(); }
+      raf = requestAnimationFrame(loop);
+    }
+    raf = requestAnimationFrame(loop);
+
+    // ===== Upgrades & stat sync =====
+    const cost = ()=> Math.floor(20 + hero.level*12 + hero.level*hero.level*1.5);
+
+    async function spend(cb){
+      const c = cost();
+      if(hero.xp < c){ log(`Not enough XP (${hero.xp|0}/${c})`); return }
+      hero.xp -= c; setXPText(); cb(); submitStats();
+    }
+
+    $('#upHP').onclick = ()=> spend(()=>{ hero.maxHP += 20; hero.hp = hero.maxHP; log('+ Max HP'); });
+    $('#upDMG').onclick = ()=> spend(()=>{ hero.damage += 4; log('+ Damage'); });
+    $('#upAS').onclick = ()=> spend(()=>{ hero.atkSpeed = +(hero.atkSpeed + .2).toFixed(2); log('+ Attack Speed'); });
+    $('#upRNG').onclick = ()=> spend(()=>{ hero.range += 12; log('+ Range'); });
+
+    let submitCooldown=0;
+    async function submitStats(gameOver=false){
+      if(!state.lobbyId) return;
+      // reduce write rate
+      const now = performance.now(); if(!gameOver && now - submitCooldown < 600) return; submitCooldown = now;
+      const meRef = doc(db,'lobbies',state.lobbyId,'players',state.myId);
+      await setDoc(meRef, { id: state.myId, name: state.displayName, ready:false, level:hero.level, xp: Math.floor(hero.xp), maxHP:hero.maxHP, damage:hero.damage, atkSpeed:hero.atkSpeed, range:hero.range, alive: hero.hp>0, updatedAt: serverTimestamp() }, { merge:true });
+    }
+
+    // Kick off with defaults
+    log('Paste your Firebase config below to enable multiplayer.');
+  </script>
+</body>
+</html>
