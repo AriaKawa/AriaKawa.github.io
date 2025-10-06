@@ -28,7 +28,8 @@
       radial-gradient(circle at 20% 20%, rgba(53,104,214,.25) 0 24%, transparent 60%),
       radial-gradient(circle at 80% 10%, rgba(255,209,59,.15) 0 28%, transparent 62%),
       linear-gradient(160deg, #05060d 0%, #090f1f 60%, #0c1228 100%);
-    display:flex; min-height:100dvh; align-items:center; justify-content:center; padding:24px 0;
+    display:flex; flex-direction:column; align-items:center;
+    min-height:100dvh; padding:32px 0 40px;
   }
   .back-nav{
     position:fixed; top:20px; right:22px; z-index:20;
@@ -48,36 +49,36 @@
     outline:none;
   }
   .back-nav__icon{font-size:1.05rem; line-height:1;}
-  .wrap{ width:100%; padding:0 18px; }
+  .wrap{
+    width:100%;
+    max-width:min(1700px, 100vw);
+    padding:0 24px;
+  }
   .board{
-    width:min(1400px,96vw);
+    width:100%;
     margin:0 auto;
     background:linear-gradient(145deg, rgba(30,39,66,.92), rgba(9,14,26,.88));
     border:1px solid rgba(255,255,255,.05);
     border-radius:34px;
     box-shadow:0 32px 60px rgba(0,0,0,.48);
     display:grid;
-    gap:24px;
-    grid-template-columns:minmax(0,2.15fr) minmax(0,1fr);
-    grid-template-rows:minmax(460px,1fr) auto;
+    gap:28px;
+    grid-template-columns:minmax(0,1fr);
+    grid-template-rows:minmax(560px,1fr) auto auto;
     align-items:start;
     grid-template-areas:
-      "track info"
-      "bets bets";
-    padding:28px;
-  }
-  @media (max-width:1200px){
-    .board{
-      grid-template-columns:minmax(0,1fr);
-      grid-template-rows:auto;
-      grid-template-areas:
-        "track"
-        "info"
-        "bets";
-    }
+      "track"
+      "info"
+      "bets";
+    padding:32px;
   }
   @media (max-width:720px){
-    .board{ padding:20px; border-radius:26px; gap:18px; }
+    .board{ padding:22px; border-radius:26px; gap:20px; }
+  }
+  @media (min-width:1200px){
+    .board{
+      grid-template-rows:minmax(600px,1fr) auto auto;
+    }
   }
 
   /* Track */
