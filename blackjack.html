@@ -726,12 +726,27 @@
     SUMMARY: 'summary'
   });
   const LAST_BET_STORAGE_KEY = 'blackjackLastConfirmedBet';
-  const AUTO_BET_STORAGE_KEY = 'blackjackAutoBetEnabled';
+  const AUTO_BET_STORAGE_KEY = 'blackjackAutoBetEnabled_v2';
+  const LEGACY_AUTO_BET_STORAGE_KEYS = Object.freeze(['blackjackAutoBetEnabled']);
   const AUTO_BET_FEATURE_ENABLED = true;
   let cachedLastConfirmedBet = null;
   let hasLoadedLastConfirmedBet = false;
   let cachedAutoBetEnabled = false;
   let hasLoadedAutoBetPreference = false;
+  let hasClearedLegacyAutoBetPreference = false;
+
+  function clearLegacyAutoBetPreference(){
+    if(hasClearedLegacyAutoBetPreference) return;
+    hasClearedLegacyAutoBetPreference = true;
+    LEGACY_AUTO_BET_STORAGE_KEYS.forEach(key=>{
+      if(key === AUTO_BET_STORAGE_KEY) return;
+      try{
+        localStorage.removeItem(key);
+      }catch(err){
+        console.debug('Unable to clear legacy auto bet preference', err);
+      }
+    });
+  }
 
   function sanitizePlayerName(value){
     if(value == null) return '';
@@ -1038,6 +1053,7 @@
       hasLoadedAutoBetPreference = true;
       cachedAutoBetEnabled = false;
       try{
+        clearLegacyAutoBetPreference();
         localStorage.removeItem(AUTO_BET_STORAGE_KEY);
       }catch(err){
         console.debug('Unable to clear auto bet preference', err);
@@ -1046,6 +1062,7 @@
     }
     hasLoadedAutoBetPreference = true;
     try{
+      clearLegacyAutoBetPreference();
       const stored = localStorage.getItem(AUTO_BET_STORAGE_KEY);
       if(typeof stored === 'string'){
         const trimmed = stored.trim().toLowerCase();
@@ -1069,6 +1086,7 @@
       cachedAutoBetEnabled = false;
       hasLoadedAutoBetPreference = true;
       try{
+        clearLegacyAutoBetPreference();
         localStorage.removeItem(AUTO_BET_STORAGE_KEY);
       }catch(err){
         console.debug('Unable to clear auto bet preference', err);
@@ -1079,6 +1097,7 @@
     cachedAutoBetEnabled = enabled;
     hasLoadedAutoBetPreference = true;
     try{
+      clearLegacyAutoBetPreference();
       localStorage.setItem(AUTO_BET_STORAGE_KEY, enabled ? '1' : '0');
     }catch(err){
       console.debug('Unable to persist auto bet preference', err);
