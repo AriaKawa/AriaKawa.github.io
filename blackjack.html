@@ -1590,12 +1590,23 @@
     tableState.state.statusUntil = Date.now() + duration;
   }
 
+  function isNaturalBlackjack(hand){
+    if(!Array.isArray(hand) || hand.length !== 2) return false;
+    const [first, second] = hand;
+    const firstRank = first && first.rank;
+    const secondRank = second && second.rank;
+    return (
+      (firstRank === 'A' && cardValue(second) === 10) ||
+      (secondRank === 'A' && cardValue(first) === 10)
+    );
+  }
+
   function checkAutoBlackjack(){
     if(tableState.state.phase !== 'player' || tableState.state.activePlayer !== clientId) return;
     const me = getPlayerEntry();
     if(me.roundResult === 'blackjack') return;
     const hand = me.hand || [];
-    if(handValue(hand) !== 21) return;
+    if(!isNaturalBlackjack(hand)) return;
     applyBlackjackForCurrent();
   }
 
