@@ -759,7 +759,18 @@ function positionRat(r, distance=0){
   r.halfWidth = halfWidth;
   r.halfHeight = halfHeight;
   r.el.style.transform = `translate(${offsetX - halfWidth}px, ${offsetY - halfHeight}px)`;
-  r.art.style.transform = `rotate(${angle}rad)`;
+
+  let displayAngle = angle;
+  let flipped = false;
+  if(angle > Math.PI / 2 || angle < -Math.PI / 2){
+    displayAngle = angle - Math.PI * Math.sign(angle || 1);
+    flipped = true;
+  }
+  const transforms = [`rotate(${displayAngle}rad)`];
+  if(flipped){
+    transforms.push('scaleX(-1)');
+  }
+  r.art.style.transform = transforms.join(' ');
 }
 
 window.addEventListener('resize', () => {
