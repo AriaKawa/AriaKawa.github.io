@@ -105,7 +105,7 @@
   .track-viewport{
     position:relative;
     width:100%;
-    aspect-ratio:1200/640;
+    aspect-ratio:1200/900;
     filter:drop-shadow(0 22px 42px rgba(0,0,0,.45));
     z-index:0;
   }
@@ -501,7 +501,7 @@
     <div class="board">
       <section class="track-card" id="trackCard">
         <div class="track-viewport" id="trackViewport">
-          <svg id="trackSvg" viewBox="0 0 1200 640" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Rat maze track"></svg>
+          <svg id="trackSvg" viewBox="0 0 1200 900" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Rat maze track"></svg>
           <div class="rat-layer" id="ratLayer"></div>
         </div>
         <header>
@@ -637,9 +637,9 @@ const ratLayer = document.getElementById('ratLayer');
 const trackViewport = document.getElementById('trackViewport');
 
 const VIEWBOX_WIDTH = 1200;
-const VIEWBOX_HEIGHT = 640;
-const MAZE_PATH = 'M 80 80 L 1080 80 L 1080 160 L 200 160 L 200 220 L 1040 220 L 1040 300 L 260 300 L 260 360 L 960 360 L 960 440 L 160 440 L 160 520 L 900 520 L 900 600 L 120 600 L 120 620 L 1080 620';
-const FINISH_LINE = { x: 1080, y1: 640, y2: 540 };
+const VIEWBOX_HEIGHT = 900;
+const MAZE_PATH = 'M 120 140 C 420 120 780 120 1060 180 Q 1150 210 1040 280 L 360 280 Q 240 290 260 360 C 280 430 360 460 460 450 L 980 450 Q 1120 460 1020 540 C 940 600 820 620 680 600 L 320 560 Q 220 560 220 640 C 220 720 300 740 400 740 L 940 740 Q 1080 740 1000 790 C 940 820 840 800 720 760 L 320 700 Q 220 680 240 740 C 260 800 360 800 460 760 L 880 660 Q 1020 620 1080 700 L 1080 760';
+const FINISH_LINE = { x: 1080, y1: 860, y2: 660 };
 
 const laneCount = RAT_DATA.length;
 const laneOffsetStep = 32;
