@@ -1625,8 +1625,14 @@
     renderTable();
     scheduleRoundAdvance(()=>{
       const hasNext = finishTurn(clientId);
+      const dealerHand = tableState.dealer || [];
+      const dealerSettled = !hasNext && dealerHasSettledHand(dealerHand);
       commitRound();
       renderTable();
+      if(dealerSettled){
+        resolveRound();
+        return;
+      }
       if(!hasNext){
         dealerPlay();
       }
@@ -1780,6 +1786,20 @@
       }
     };
     draw();
+  }
+
+  function dealerHasSettledHand(hand){
+    if(!Array.isArray(hand) || hand.length < 2) return false;
+    if(hand.length === 2 && handValue(hand) === 21) return true;
+    return !dealerShouldHit(hand);
+  }
+
+  function dealerShouldHit(hand){
+    if(!Array.isArray(hand) || !hand.length) return false;
+    const total = handValue(hand);
+    const hasAce = hand.some(c=>c.rank === 'A');
+    const isSoft17 = total === 17 && hasAce;
+    return total < 17 || isSoft17;
   }
 
   function finishTurn(playerId){
