@@ -789,6 +789,9 @@ function startRun(Hdef){
   document.getElementById('over').style.display='none';
   updateHUD(); rebuildInventoryUI(); rebuildSynergies(); log(`New run as ${Hdef.name}.`);
   // (Optional) Firebase hook: window.onRunStart?.({hero:Hdef.id});
+  if(typeof window.onRunStart === 'function'){
+    window.onRunStart({hero:Hdef.id});
+  }
 }
 document.getElementById('btnRestart').onclick = ()=>{ document.getElementById('start').style.display='flex'; };
 document.getElementById('btnCloseOver').onclick = ()=>{ document.getElementById('over').style.display='none'; };
@@ -837,9 +840,9 @@ function step(dt){
   if(h.regen>0 && h.hp>0 && h.hp<h.hpMax){ h.hp = Math.min(h.hpMax, h.hp + h.regen*dt); }
 
   // hero passive ticks
-  for(const p of h.passives){ p.tick?.(h,dt); }
+  for(const p of h.passives){ if(p && typeof p.tick === 'function'){ p.tick(h,dt); } }
   // hero actives
-  for(const a of h.actives){ a.tick?.(h,dt); }
+  for(const a of h.actives){ if(a && typeof a.tick === 'function'){ a.tick(h,dt); } }
 
   // enemies think & move
   for(const e of state.enemies){
