@@ -665,7 +665,7 @@
   });
   const LAST_BET_STORAGE_KEY = 'blackjackLastConfirmedBet';
   const AUTO_BET_STORAGE_KEY = 'blackjackAutoBetEnabled';
-  const AUTO_BET_FEATURE_ENABLED = false; // Temporarily disable auto bet while manual controls are fixed
+  const AUTO_BET_FEATURE_ENABLED = true;
   let cachedLastConfirmedBet = null;
   let hasLoadedLastConfirmedBet = false;
   let cachedAutoBetEnabled = false;
@@ -1203,6 +1203,15 @@
   }
 
   function getAutoBetAmount(){
+    const currentStateBet = tableState?.state?.bets?.[clientId];
+    if(Number.isFinite(currentStateBet)){
+      return normalizeBet(currentStateBet);
+    }
+    const myEntry = tableState.players?.[clientId];
+    const playerBet = myEntry?.bet;
+    if(Number.isFinite(playerBet)){
+      return normalizeBet(playerBet);
+    }
     const lastBet = getLastConfirmedBet();
     if(Number.isFinite(lastBet)){
       return lastBet;
@@ -1397,7 +1406,7 @@
           autoToggle.classList.toggle('active', autoBetActive);
           if(autoCheckboxDisabled){
             autoToggle.classList.add('muted');
-            autoToggle.title = 'Auto Bet is currently disabled';
+            autoToggle.title = 'Auto Bet can only be changed during the betting phase';
           }else{
             autoToggle.classList.remove('muted');
             autoToggle.removeAttribute('title');
