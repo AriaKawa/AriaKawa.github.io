@@ -20,7 +20,9 @@
   canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
   .hud{position:absolute;left:10px;right:10px;top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:linear-gradient(180deg,rgba(0,0,0,0),rgba(0,0,0,.28));padding:6px 8px;border-radius:12px}
   .pill{background:rgba(0,0,0,.35);padding:.35rem .6rem;border-radius:999px;backdrop-filter:blur(2px);font-weight:800}
-  .btn{appearance:none;border:0;border-radius:12px;padding:.6rem .9rem;font-weight:800;cursor:pointer;box-shadow:var(--shadow)}
+  .btn{appearance:none;border:0;border-radius:12px;padding:.6rem .9rem;font-weight:800;cursor:pointer;box-shadow:var(--shadow);transition:transform .06s ease,filter .12s ease}
+  .btn:active{transform:translateY(1px) scale(.98)}
+  .btn[disabled]{opacity:.45;cursor:not-allowed;box-shadow:none;transform:none;filter:saturate(.2)}
   .btn.primary{background:var(--accent);color:#1a1400} .btn.ghost{background:#161b2a;color:#e8effa;border:1px solid var(--line)}
   .side{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:18px;padding:12px 14px;box-shadow:var(--shadow)}
   h2{margin:.2rem 0 .6rem;font-size:1.05rem;letter-spacing:.02em;opacity:.95}
@@ -54,6 +56,7 @@
       <div class="hud">
         <button id="btnPlay" class="btn primary">Start Wave</button>
         <button id="btnSpeed" class="btn ghost">1x</button>
+        <button id="btnHeal" class="btn ghost">Heal</button>
         <div class="pill" id="wave">Wave 1</div>
         <div class="pill">Gold: <span id="gold" class="k">0</span></div>
         <div class="pill">HP: <span id="hp" class="k">0</span></div>
@@ -75,6 +78,11 @@
         <div class="panel">
           <h2>Choose 1 upgrade</h2>
           <div class="grid3" id="picks"></div>
+          <div class="row pick-actions" style="margin-top:.5rem;gap:8px;flex-wrap:wrap">
+            <button id="btnReroll" class="btn ghost">Reroll</button>
+            <button id="btnSkip" class="btn ghost">Skip (+2 gold)</button>
+            <div class="note" id="rerollNote" style="margin-left:auto">Reroll cost: 0g</div>
+          </div>
           <p class="note" style="margin-top:.6rem">Duplicates level up the same weapon (+damage/cooldown/extra effects). Rarities: <span class="rar rar-c">Common</span> <span class="rar rar-r">Rare</span> <span class="rar rar-e">Epic</span>.</p>
         </div>
       </div>
@@ -103,7 +111,7 @@
         <div class="row"><span>Ranged</span><span class="k" id="syn-ranged">0</span></div>
         <div class="row"><span>Arcane</span><span class="k" id="syn-arcane">0</span></div>
         <div class="row"><span>Heavy</span><span class="k" id="syn-heavy">0</span></div>
-        <p class="note" style="margin:.5rem 0 0">Each extra copy after the first gives a small bonus (e.g., +2% attack speed / +2% damage per stack).</p>
+        <p class="note" style="margin:.5rem 0 0">Extra copies add synergies: Blade +2% attack speed, Ranged +2% attack speed &amp; +3% projectile speed, Arcane +3% ability damage &amp; a trickle of regen, Heavy +1 armor.</p>
       </div>
 
       <h2 style="margin-top:10px">Event Log</h2>
@@ -122,8 +130,16 @@ const lerp = (a,b,t)=> a+(b-a)*t;
 const dist = (ax,ay,bx,by)=> Math.hypot(ax-bx,ay-by);
 const choice = arr => arr[Math.floor(Math.random()*arr.length)];
 const shuffle = arr => { for(let i=arr.length-1;i>0;i--){ const j=rint(i,0); [arr[i],arr[j]]=[arr[j],arr[i]] } return arr; };
+const cap = s=> s? s[0].toUpperCase()+s.slice(1):'';
 
-function log(s){ const el=document.getElementById('log'); const p=document.createElement('p'); p.textContent=s; el.appendChild(p); el.scrollTop=el.scrollHeight; }
+function log(s){
+  const el=document.getElementById('log');
+  const p=document.createElement('p');
+  p.textContent=s;
+  el.appendChild(p);
+  while(el.children.length>80){ el.removeChild(el.firstChild); }
+  el.scrollTop=el.scrollHeight;
+}
 
 /* =========================
    Canvas + Loop
@@ -151,18 +167,25 @@ const state = {
   synergies:{blade:0,ranged:0,arcane:0,heavy:0},
   pendingSpawns:[],
   waveClock:0,
+  rerollCost:0,
+  currentChoices:[],
 };
+const HEAL_PERCENT = 0.2;
 
 /* =========================
    Heroes
 ========================= */
 const HEROES = [
   { id:'knight', name:'Knight', color:'#ffd13b', hp:220, armor:4, speed:60, baseRange:65, baseAS:0.9, baseDmg:16,
-    start:['sword'] },
+    start:['sword'], startNames:'Crescent Sword', tags:['blade','heavy'] },
   { id:'archer', name:'Archer', color:'#5fb0ff', hp:150, armor:1, speed:80, baseRange:150, baseAS:1.1, baseDmg:12,
-    start:['bow'] },
+    start:['bow'], startNames:'Longbow', tags:['ranged'] },
   { id:'mage',   name:'Mage', color:'#b07cff', hp:135, armor:0, speed:70, baseRange:130, baseAS:1.0, baseDmg:14,
-    start:['staff'] },
+    start:['staff'], startNames:'Arc Staff', tags:['arcane','ranged'] },
+  { id:'assassin', name:'Nightblade', color:'#ef6b6b', hp:160, armor:2, speed:95, baseRange:90, baseAS:1.25, baseDmg:15,
+    start:['dagger','spear'], startNames:'Quick Dagger + Piercing Spear', tags:['blade'] },
+  { id:'sentinel', name:'Sentinel', color:'#78d38a', hp:260, armor:5, speed:65, baseRange:80, baseAS:0.85, baseDmg:18,
+    start:['hammer','shield'], startNames:'War Hammer + Bulwark', tags:['heavy','blade'] },
 ];
 
 function heroCard(h){
@@ -171,13 +194,21 @@ function heroCard(h){
   div.innerHTML = `
     <div class="row"><strong>${h.name}</strong><span class="rar rar-r">Hero</span></div>
     <p class="note">HP ${h.hp}, Armor ${h.armor}, Range ${h.baseRange}, AS ${h.baseAS}/s</p>
-    <div class="tags"><span class="tag t-blade">Blade</span><span class="tag t-ranged">Ranged</span><span class="tag t-arcane">Arcane</span></div>
+    <p class="note">Starts with: ${h.startNames}</p>
+    <div class="tags">${h.tags.map(t=>`<span class="tag t-${t}">${cap(t)}</span>`).join('')}</div>
   `;
   div.onclick=()=> startRun(h);
   return div;
 }
 const heroesWrap = document.getElementById('heroChoices');
 HEROES.forEach(h=> heroesWrap.appendChild(heroCard(h)));
+
+const pickerEl = document.getElementById('picker');
+const picksEl = document.getElementById('picks');
+const rerollBtn = document.getElementById('btnReroll');
+const skipBtn = document.getElementById('btnSkip');
+const rerollNote = document.getElementById('rerollNote');
+const healBtn = document.getElementById('btnHeal');
 
 /* =========================
    Weapons (pool)
@@ -189,21 +220,21 @@ const WEAPON_POOL = {
     name:'Crescent Sword', tags:['blade'], rarity:'C',
     desc:(L)=>`Melee arc for ${110+15*(L-1)}% dmg. +${(L-1)*5}% radius.`,
     apply:(hero,L)=>{
-      hero.actives.push(makeCleave({base:hero.baseDmg*(1.1+0.15*(L-1)), radius:50*(1+0.05*(L-1)), cd:1.0, color:'#ffbb6b'}));
+      hero.actives.push(makeCleave({base:(h)=>h.baseDmg*h.dmgMult*(1.1+0.15*(L-1)), radius:50*(1+0.05*(L-1)), cd:1.0, color:'#ffbb6b'}));
     }
   },
   bow:{
     name:'Longbow', tags:['ranged'], rarity:'C',
     desc:(L)=>`Arrow for ${100+20*(L-1)}% dmg, pierce ${1+(L>2?1:0)}.`,
     apply:(hero,L)=>{
-      hero.actives.push(makeShot({base:hero.baseDmg*(1+0.2*(L-1)), pierce:(L>=3?2:1), speed:260, cd:0.7, color:'#9fd0ff'}));
+      hero.actives.push(makeShot({base:(h)=>h.baseDmg*h.dmgMult*(1+0.2*(L-1)), pierce:(L>=3?2:1), speed:()=>260, cd:0.7, color:'#9fd0ff'}));
     }
   },
   staff:{
     name:'Arc Staff', tags:['arcane'], rarity:'R',
     desc:(L)=>`Chain lightning ${2+L} jumps, ${95+15*(L-1)}% dmg.`,
     apply:(hero,L)=>{
-      hero.actives.push(makeChain({base:hero.baseDmg*(0.95+0.15*(L-1)), jumps:2+L, range:170, cd:1.6, color:'#cbb3ff'}));
+      hero.actives.push(makeChain({base:(h)=>h.baseDmg*h.dmgMult*(0.95+0.15*(L-1)), jumps:2+L, range:170, cd:1.6, color:'#cbb3ff'}));
     }
   },
   dagger:{
@@ -214,12 +245,12 @@ const WEAPON_POOL = {
   hammer:{
     name:'War Hammer', tags:['heavy'], rarity:'R',
     desc:(L)=>`Slam every ${2 - 0.2*(L-1)}s for ${130+20*(L-1)}% dmg, small stun.`,
-    apply:(hero,L)=> hero.actives.push(makeSlam({base:hero.baseDmg*(1.3+0.2*(L-1)), cd:2-0.2*(L-1), radius:55, color:'#e7e391'}))
+    apply:(hero,L)=> hero.actives.push(makeSlam({base:(h)=>h.baseDmg*h.dmgMult*(1.3+0.2*(L-1)), cd:2-0.2*(L-1), radius:55, color:'#e7e391'}))
   },
   spear:{
     name:'Piercing Spear', tags:['blade','ranged'], rarity:'C',
     desc:(L)=>`Line strike ${120+20*(L-1)}% dmg, long reach.`,
-    apply:(hero,L)=> hero.actives.push(makeLine({base:hero.baseDmg*(1.2+0.2*(L-1)), cd:1.3, len:140, color:'#ffd9a8'}))
+    apply:(hero,L)=> hero.actives.push(makeLine({base:(h)=>h.baseDmg*h.dmgMult*(1.2+0.2*(L-1)), cd:1.3, len:140, color:'#ffd9a8'}))
   },
   shield:{
     name:'Bulwark', tags:['heavy'], rarity:'C',
@@ -229,7 +260,38 @@ const WEAPON_POOL = {
   orb:{
     name:'Arcane Orb', tags:['arcane','ranged'], rarity:'E',
     desc:(L)=>`Orbiting orb deals ${80+20*(L-1)}% dmg on touch.`,
-    apply:(hero,L)=> hero.passives.push(makeOrb({base:hero.baseDmg*(0.8+0.2*(L-1)), radius:28, cd:0.0, color:'#a98bff'}))
+    apply:(hero,L)=> hero.passives.push(makeOrb({base:(h)=>h.baseDmg*h.dmgMult*(0.8+0.2*(L-1)), radius:28, cd:0.0, color:'#a98bff'}))
+  },
+  quiver:{
+    name:'Fletched Quiver', tags:['ranged'], rarity:'C',
+    desc:(L)=>`+${12*L}% projectile speed. Volley of ${2+L} arrows every ${(5-0.5*(L-1)).toFixed(1)}s.`,
+    apply:(hero,L)=>{
+      hero.projSpeedMult *= 1 + 0.12*L;
+      hero.passives.push(makeVolley({base:(h)=>h.baseDmg*h.dmgMult*(0.75+0.1*(L-1)), count:2+L, spread:0.18, speed:()=>240, cd:5-0.5*(L-1), color:'#f2f4ff'}));
+    }
+  },
+  banner:{
+    name:'Guardian Banner', tags:['heavy'], rarity:'R',
+    desc:(L)=>`+${18*L} max HP. Regenerate ${(1.5+0.5*(L-1)).toFixed(1)} HP/s.`,
+    apply:(hero,L)=>{ hero.hpMax += 18*L; hero.regen += 1.5 + 0.5*(L-1); }
+  },
+  talisman:{
+    name:'Aether Talisman', tags:['arcane'], rarity:'R',
+    desc:(L)=>`+${8+4*(L-1)}% damage. Seeker bolt every ${(4-0.4*(L-1)).toFixed(1)}s.`,
+    apply:(hero,L)=>{
+      hero.dmgMult *= 1 + (0.08 + 0.04*(L-1));
+      hero.passives.push(makeHoming({base:(h)=>h.baseDmg*h.dmgMult*(0.9+0.1*(L-1)), speed:()=>240, cd:4-0.4*(L-1), color:'#d0c4ff'}));
+    }
+  },
+  cyclone:{
+    name:'Whirling Chakram', tags:['blade','ranged'], rarity:'R',
+    desc:(L)=>`Blade storm hits nearby foes for ${90+15*(L-1)}% dmg every ${(3-0.2*(L-1)).toFixed(1)}s.`,
+    apply:(hero,L)=> hero.actives.push(makeCyclone({base:(h)=>h.baseDmg*h.dmgMult*(0.9+0.15*(L-1)), radius:68, cd:3-0.2*(L-1), color:'#ffc48a'}))
+  },
+  bombard:{
+    name:'Meteor Sigil', tags:['arcane','heavy'], rarity:'E',
+    desc:(L)=>`Call a meteor for ${180+30*(L-1)}% dmg in a wide area.`,
+    apply:(hero,L)=> hero.actives.push(makeBlast({base:(h)=>h.baseDmg*h.dmgMult*(1.8+0.3*(L-1)), radius:80, cd:5-0.4*(L-1), color:'#ffb37f'}))
   }
 };
 const RAR_WEIGHT = {C:70,R:25,E:5};
@@ -237,6 +299,8 @@ const RAR_WEIGHT = {C:70,R:25,E:5};
 /* =========================
    Active builders
 ========================= */
+const resolveVal = (val,h)=> typeof val==='function'? val(h):val;
+
 function makeCleave({base,radius,cd,color}){
   let t=0; return {
     cd, tick:(h,dt)=>{ t-=dt/h.asMult; if(t>0) return;
@@ -244,10 +308,11 @@ function makeCleave({base,radius,cd,color}){
       t=cd;
       // hit in arc
       const ang=Math.atan2(e.y-h.y,e.x-h.x), arc=Math.PI/3;
+      const dmg=resolveVal(base,h);
       for(const en of state.enemies){
         const a=Math.atan2(en.y-h.y,en.x-h.x), dis=dist(h.x,h.y,en.x,en.y);
         const da=Math.abs(angDiff(a,ang));
-        if(dis<radius && da<arc/2){ dealDamage(en, base, 'blade'); knockback(en, 40, a); }
+        if(dis<radius && da<arc/2){ dealDamage(en, dmg, 'blade'); knockback(en, 40, a); }
       }
       // effect
       state.effects.push({type:'arc',x:h.x,y:h.y,a:ang,r:radius,t:0,ttl:0.15,color});
@@ -259,7 +324,9 @@ function makeShot({base,pierce,speed,cd,color}){
     cd, tick:(h,dt)=>{ t-=dt/h.asMult; if(t>0) return;
       const e=targetEnemy(h); if(!e) return; t=cd;
       const a=Math.atan2(e.y-h.y,e.x-h.x);
-      spawnProj({x:h.x,y:h.y, vx:Math.cos(a)*speed, vy:Math.sin(a)*speed, r:5, dmg:base, pierce, color});
+      const dmg=resolveVal(base,h);
+      const spd=resolveVal(speed,h)* (h.projSpeedMult||1);
+      spawnProj({x:h.x,y:h.y, vx:Math.cos(a)*spd, vy:Math.sin(a)*spd, r:5, dmg, pierce, color});
     }
   };
 }
@@ -269,7 +336,8 @@ function makeChain({base,jumps,range,cd,color}){
       const first = nearestEnemy(h.x,h.y,range); if(!first) return; t=cd;
       let cur=first, left=jumps; const hitSet=new Set();
       while(cur && left>0){
-        dealDamage(cur, base, 'arcane');
+        const dmg=resolveVal(base,h);
+        dealDamage(cur, dmg, 'arcane');
         state.effects.push({type:'zap',x:h.x,y:h.y,tx:cur.x,ty:cur.y,t:0,ttl:0.12,color});
         hitSet.add(cur);
         // next nearest not hit
@@ -282,7 +350,8 @@ function makeChain({base,jumps,range,cd,color}){
 function makeSlam({base,cd,radius,color}){
   let t=0; return {
     cd, tick:(h,dt)=>{ t-=dt/h.asMult; if(t>0) return; t=cd;
-      for(const en of state.enemies){ if(dist(h.x,h.y,en.x,en.y)<=radius){ dealDamage(en,base,'heavy'); en.stun= Math.max(en.stun||0, 0.35); } }
+      const dmg=resolveVal(base,h);
+      for(const en of state.enemies){ if(dist(h.x,h.y,en.x,en.y)<=radius){ dealDamage(en,dmg,'heavy'); en.stun= Math.max(en.stun||0, 0.35); } }
       state.effects.push({type:'ring',x:h.x,y:h.y,r:radius, t:0, ttl:0.25, color});
     }
   };
@@ -292,9 +361,10 @@ function makeLine({base,cd,len,color}){
     cd, tick:(h,dt)=>{ t-=dt/h.asMult; if(t>0) return;
       const e=targetEnemy(h); if(!e) return; t=cd;
       const a=Math.atan2(e.y-h.y,e.x-h.x); const nx=Math.cos(a), ny=Math.sin(a);
+      const dmg=resolveVal(base,h);
       for(const en of state.enemies){
         const px=(en.x-h.x)*nx+(en.y-h.y)*ny; const py=-(en.x-h.x)*ny+(en.y-h.y)*nx;
-        if(px>0 && px<len && Math.abs(py)<18){ dealDamage(en,base,'blade'); knockback(en, 30, a); }
+        if(px>0 && px<len && Math.abs(py)<18){ dealDamage(en,dmg,'blade'); knockback(en, 30, a); }
       }
       state.effects.push({type:'line',x:h.x,y:h.y,a, len, t:0, ttl:0.12, color});
     }
@@ -303,8 +373,52 @@ function makeLine({base,cd,len,color}){
 function makeOrb({base,radius,cd,color}){
   let ang=0; return {
     cd, tick:(h,dt)=>{ ang+=dt*2; const ox=h.x+Math.cos(ang)*42, oy=h.y+Math.sin(ang)*42;
-      for(const en of state.enemies){ if(dist(ox,oy,en.x,en.y)<radius){ dealDamage(en,base,'arcane'); } }
+      const dmg=resolveVal(base,h);
+      for(const en of state.enemies){ if(dist(ox,oy,en.x,en.y)<radius){ dealDamage(en,dmg,'arcane'); } }
       state.effects.push({type:'orb',x:ox,y:oy,r:radius,t:0,ttl:0.04,color});
+    }
+  };
+}
+function makeVolley({base,count,spread,cd,speed,color}){
+  let t=0; return {
+    cd, tick:(h,dt)=>{ t-=dt/h.asMult; if(t>0) return; const target=targetEnemy(h); if(!target) return; t=cd;
+      const ang=Math.atan2(target.y-h.y,target.x-h.x);
+      const dmg=resolveVal(base,h);
+      const spd=resolveVal(speed,h)*(h.projSpeedMult||1);
+      for(let i=0;i<count;i++){
+        const off=i-(count-1)/2;
+        const a=ang + off*spread;
+        spawnProj({x:h.x,y:h.y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,r:4,dmg,pierce:1,color});
+      }
+      state.effects.push({type:'burst',x:h.x,y:h.y,a:ang,count,spread,t:0,ttl:0.2,color});
+    }
+  };
+}
+function makeHoming({base,cd,speed,color,turn=7}){
+  let t=0; return {
+    cd, tick:(h,dt)=>{ t-=dt/h.asMult; if(t>0) return; const target=targetEnemy(h); if(!target) return; t=cd;
+      const ang=Math.atan2(target.y-h.y,target.x-h.x);
+      const spd=resolveVal(speed,h)*(h.projSpeedMult||1);
+      const dmg=resolveVal(base,h);
+      spawnProj({x:h.x,y:h.y,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,r:5,dmg,pierce:1,color,homing:{turn}});
+    }
+  };
+}
+function makeCyclone({base,cd,radius,color}){
+  let t=0; return {
+    cd, tick:(h,dt)=>{ t-=dt/h.asMult; if(t>0) return; t=cd;
+      const dmg=resolveVal(base,h);
+      for(const en of state.enemies){ if(en.hp>0 && dist(h.x,h.y,en.x,en.y)<=radius){ dealDamage(en,dmg,'blade'); } }
+      state.effects.push({type:'spin',x:h.x,y:h.y,r:radius,t:0,ttl:0.28,color});
+    }
+  };
+}
+function makeBlast({base,cd,radius,color}){
+  let t=0; return {
+    cd, tick:(h,dt)=>{ t-=dt/h.asMult; if(t>0) return; const target=targetEnemy(h); if(!target) return; t=cd;
+      const dmg=resolveVal(base,h);
+      for(const en of state.enemies){ if(en.hp>0 && dist(target.x,target.y,en.x,en.y)<=radius){ dealDamage(en,dmg,'arcane'); en.stun=Math.max(en.stun||0,0.2); } }
+      state.effects.push({type:'boom',x:target.x,y:target.y,r:radius,t:0,ttl:0.32,color});
     }
   };
 }
@@ -316,11 +430,16 @@ function makeBleed(frac){ // on-hit DoT
    Entities
 ========================= */
 function createHero(H){
+  const baseRange = H.baseRange*DPR;
+  const baseSpeed = H.speed*DPR;
   return {
     id:H.id, name:H.name, x:W*0.5, y:H.baseRange+70*DPR, r:12*DPR,
-    hp:H.hp, hpMax:H.hp, armor:H.armor, speed:H.speed*DPR,
-    baseDmg:H.baseDmg, baseAS:H.baseAS, asMult:1, range:H.baseRange*DPR,
-    reflect:0,
+    hp:H.hp, hpMax:H.hp, armor:H.armor, speed:baseSpeed,
+    baseHp:H.hp, baseArmor:H.armor, baseRange, baseSpeed,
+    baseDmg:H.baseDmg, baseAS:H.baseAS, asMult:1, dmgMult:1, projSpeedMult:1,
+    range:baseRange,
+    regen:0, reflect:0,
+    waveBuffs:[],
     actives:[], passives:[], onHit:[]
   };
 }
@@ -330,16 +449,17 @@ function spawnEnemy(kind, x,y, scale=1){
     grunt: {hp:60, dmg:10, spd:55, arm:0, range:16, cd:1.1, color:'#e67272'},
     swift: {hp:40, dmg:8,  spd:90, arm:0, range:14, cd:0.75, color:'#ef9b63'},
     brute: {hp:130,dmg:14, spd:45, arm:2, range:18, cd:1.3, color:'#d8bb6b'},
-    archer:{hp:55, dmg:9,  spd:60, arm:0, range:110,cd:1.4, color:'#7ab0e8', ranged:true}
+    archer:{hp:55, dmg:9,  spd:60, arm:0, range:110,cd:1.4, color:'#7ab0e8', ranged:true},
+    shaman:{hp:75, dmg:10, spd:52, arm:0, range:150,cd:2.6, color:'#9fd37d', ranged:true, support:true}
   }[kind];
   return {
     kind, x,y, r:10*DPR, color:k.color,
     hp:k.hp*scale, hpMax:k.hp*scale, armor:k.arm,
     dmg:k.dmg*scale, speed:k.spd*DPR, range:k.range*DPR, cd:k.cd, t:rand(0,k.cd),
-    stun:0, bleed:0, bleedT:0, ranged:k.ranged||false
+    stun:0, bleed:0, bleedT:0, ranged:k.ranged||false, support:k.support||false
   };
 }
-function spawnProj(p){ state.projs.push({ ...p, ttl:2.2 }); }
+function spawnProj(p){ state.projs.push({ pierce:1, ...p, ttl:2.2, age:0 }); }
 
 /* =========================
    Combat helpers
@@ -380,7 +500,9 @@ function enemyWeightsForWave(wave){
   if(wave>=2) bag.push('swift');
   if(wave>=3) bag.push('archer');
   if(wave>=5) bag.push('brute');
+  if(wave>=6) bag.push('shaman');
   if(wave>=7) bag.push('archer','brute');
+  if(wave>=9) bag.push('shaman');
   return bag;
 }
 function planWave(wave){
@@ -423,7 +545,7 @@ function processWaveSpawns(){
   }
 }
 function startWave(){
-  if(!state.hero) return;
+  if(!state.hero || pickerEl.style.display!=='none') return;
   running=true; document.getElementById('btnPlay').textContent='Fighting…';
   state.waveClock=0;
   state.pendingSpawns = planWave(state.wave);
@@ -447,10 +569,17 @@ function waveClear(){
    Picker / Inventory
 ========================= */
 function openPicker(){
-  const el=document.getElementById('picker'); el.style.display='flex';
-  const picksEl = document.getElementById('picks'); picksEl.innerHTML='';
-  const choices = rollChoices();
-  for(const c of choices){
+  pickerEl.style.display='flex';
+  state.currentChoices = rollChoices();
+  state.rerollCost = baseRerollCost();
+  renderPickerChoices();
+  updatePickerButtons();
+}
+function rarName(r){ return r==='E'?'Epic':r==='R'?'Rare':'Common'; }
+
+function renderPickerChoices(){
+  picksEl.innerHTML='';
+  for(const c of state.currentChoices){
     const div=document.createElement('div');
     div.className='pick';
     const rarClass = c.rarity==='E'?'rar-e':c.rarity==='R'?'rar-r':'rar-c';
@@ -460,12 +589,10 @@ function openPicker(){
       <div class="tags">${tagSpans}</div>
       <p class="note">${c.desc(nextLevelFor(c.id))}</p>
     `;
-    div.onclick=()=>{ takeCard(c.id); el.style.display='none'; };
+    div.onclick=()=>{ takeCard(c.id); closePicker(); };
     picksEl.appendChild(div);
   }
 }
-function rarName(r){ return r==='E'?'Epic':r==='R'?'Rare':'Common'; }
-function cap(s){ return s[0].toUpperCase()+s.slice(1); }
 
 function nextLevelFor(id){
   const have = state.inventory.find(w=>w.id===id);
@@ -481,7 +608,29 @@ function takeCard(id){
     applyWeapon(item);
     log(`Gained ${base.name}.`);
   }
-  rebuildInventoryUI(); rebuildSynergies();
+  rebuildInventoryUI(); rebuildSynergies(); updateHUD();
+}
+function closePicker(){ pickerEl.style.display='none'; state.currentChoices=[]; picksEl.innerHTML=''; updatePickerButtons(); }
+function baseRerollCost(){ return Math.max(4, 3 + Math.floor(state.wave*0.6)); }
+function skipReward(){ return 2 + Math.floor(state.wave*0.3); }
+function healCost(){ return 5 + Math.floor((state.wave-1)*0.5); }
+function healAmount(){ return state.hero? Math.ceil(state.hero.hpMax*HEAL_PERCENT):0; }
+function updatePickerButtons(){
+  const open = pickerEl.style.display!=='none';
+  if(!open){
+    rerollBtn.textContent = 'Reroll';
+    skipBtn.textContent = 'Skip';
+    rerollBtn.disabled = true;
+    skipBtn.disabled = true;
+    rerollNote.textContent = 'Reroll cost: --';
+    return;
+  }
+  const cost=state.rerollCost;
+  rerollBtn.textContent = `Reroll (-${cost}g)`;
+  rerollBtn.disabled = state.gold < cost;
+  skipBtn.textContent = `Skip (+${skipReward()}g)`;
+  skipBtn.disabled = false;
+  rerollNote.textContent = `Reroll cost: ${cost}g`;
 }
 function rollChoices(){
   // weighted rarity, avoid giving 3 of same id
@@ -499,14 +648,58 @@ function rollChoices(){
 function applyWeapon(it){
   // clear & re-apply all gear — simple approach
   const h=state.hero;
-  h.actives=[]; h.passives=[]; h.onHit=[]; h.asMult=1; h.armor = h.baseArmor ?? h.armor; // preserve
-  // base re-init
-  h.armor = h.baseArmor || h.armor;
+  if(!h) return;
+  const wasDead = h.hp<=0;
+  const hpRatio = h.hpMax>0 ? clamp(h.hp/h.hpMax,0,1):1;
+  h.actives=[]; h.passives=[]; h.onHit=[]; h.waveBuffs=[];
+  h.asMult=1; h.dmgMult=1; h.projSpeedMult=1; h.regen=0; h.reflect=0;
+  h.range = h.baseRange; h.speed = h.baseSpeed;
+  h.armor = h.baseArmor; h.hpMax = h.baseHp;
   // apply all by current levels
   for(const w of state.inventory){
     WEAPON_POOL[w.id].apply(h, w.lvl);
   }
+  if(!wasDead){
+    const newHP = h.hpMax*hpRatio;
+    h.hp = clamp(newHP, 1, h.hpMax);
+  }else{
+    h.hp = 0;
+  }
 }
+
+rerollBtn.onclick = ()=>{
+  if(pickerEl.style.display==='none') return;
+  const cost = state.rerollCost;
+  if(state.gold < cost){ log('Not enough gold to reroll.'); return; }
+  state.gold -= cost;
+  state.rerollCost = cost + 2;
+  state.currentChoices = rollChoices();
+  renderPickerChoices();
+  updatePickerButtons();
+  updateHUD();
+  log(`Rerolled upgrade picks for ${cost} gold.`);
+};
+skipBtn.onclick = ()=>{
+  if(pickerEl.style.display==='none') return;
+  const bonus = skipReward();
+  state.gold += bonus;
+  log(`Skipped upgrade. +${bonus} gold.`);
+  closePicker();
+  updateHUD();
+};
+healBtn.onclick = ()=>{
+  if(!state.hero){ return; }
+  if(running){ log('Finish the wave before tending wounds.'); return; }
+  const cost = healCost();
+  if(state.hero.hp <= 0){ log('Too late to heal.'); return; }
+  if(state.hero.hp >= state.hero.hpMax){ log('Already at full health.'); return; }
+  if(state.gold < cost){ log('Not enough gold to heal.'); return; }
+  const heal = healAmount();
+  state.gold -= cost;
+  state.hero.hp = Math.min(state.hero.hpMax, state.hero.hp + heal);
+  log(`Spent ${cost} gold to heal ${heal} HP.`);
+  updateHUD();
+};
 
 /* UI: inventory + synergies */
 function rebuildInventoryUI(){
@@ -535,9 +728,12 @@ function rebuildSynergies(){
   document.getElementById('syn-heavy').textContent = syn.heavy;
   // apply small global bonuses for stacks beyond first
   const stacks = (n)=> Math.max(0, n-1);
-  state.hero.asMult *= 1 + stacks(syn.blade)*0.02 + stacks(syn.ranged)*0.02;
-  // arcane: +2% dmg -> handled within actives via baseDmg scaling if you want; keep AS for simplicity
-  state.hero.armor += stacks(syn.heavy); // +1 armor per extra heavy
+  const h=state.hero;
+  h.asMult *= 1 + stacks(syn.blade)*0.02 + stacks(syn.ranged)*0.02;
+  h.projSpeedMult *= 1 + stacks(syn.ranged)*0.03;
+  h.dmgMult *= 1 + stacks(syn.arcane)*0.03;
+  h.regen += stacks(syn.arcane)*0.2;
+  h.armor += stacks(syn.heavy); // +1 armor per extra heavy
 }
 
 /* =========================
@@ -549,8 +745,8 @@ function startRun(Hdef){
   state.pendingSpawns=[]; state.waveClock=0;
   state.inventory=[]; running=false; speed=1; document.getElementById('btnSpeed').textContent='1x';
   document.getElementById('btnPlay').textContent='Start Wave';
+  closePicker(); state.currentChoices=[]; state.rerollCost=0; updatePickerButtons();
   state.hero = createHero(Hdef);
-  state.hero.baseArmor = state.hero.armor;
   // starter weapon(s)
   for(const wid of Hdef.start){ takeCard(wid); }
   // UI
@@ -569,6 +765,13 @@ function updateHUD(){
   document.getElementById('wave').textContent='Wave '+state.wave;
   document.getElementById('gold').textContent=state.gold;
   document.getElementById('hp').textContent = state.hero? Math.ceil(state.hero.hp)+'/'+state.hero.hpMax : '0';
+  if(healBtn){
+    const cost = healCost();
+    const heal = state.hero? healAmount():0;
+    healBtn.textContent = `Heal ${Math.round(HEAL_PERCENT*100)}% (-${cost}g)`;
+    healBtn.disabled = !state.hero || running || state.hero.hp>=state.hero.hpMax || state.hero.hp<=0 || state.gold<cost || heal<=0;
+  }
+  updatePickerButtons();
 }
 document.getElementById('btnPlay').onclick = ()=>{ if(running) return; startWave(); };
 
@@ -594,6 +797,8 @@ function step(dt){
     processWaveSpawns();
   }
 
+  if(h.regen>0 && h.hp>0 && h.hp<h.hpMax){ h.hp = Math.min(h.hpMax, h.hp + h.regen*dt); }
+
   // hero passive ticks
   for(const p of h.passives){ p.tick?.(h,dt); }
   // hero actives
@@ -615,7 +820,16 @@ function step(dt){
       e.x += (dx/d)*e.speed*dt*dir;
       e.y += (dy/d)*e.speed*dt*dir;
       e.t -= dt;
-      if(e.t<=0 && d<=e.range*1.2){ e.t=e.cd; // fire
+      if(e.support){
+        if(e.t<=0){ e.t=e.cd;
+          const ally = nearestEnemy(e.x,e.y,e.range, (en)=> en!==e && en.hp>0 && en.hp<en.hpMax);
+          if(ally){
+            const amount = e.dmg*1.1;
+            ally.hp = Math.min(ally.hpMax, ally.hp + amount);
+            state.effects.push({type:'heal',x:ally.x,y:ally.y,r:20*DPR,t:0,ttl:0.4,color:'#78d38a'});
+          }
+        }
+      }else if(e.t<=0 && d<=e.range*1.2){ e.t=e.cd; // fire
         const a=Math.atan2(dy,dx); spawnEProj(e.x,e.y, Math.cos(a)*240*DPR, Math.sin(a)*240*DPR, 4*DPR, e.dmg);
       }
     }else{
@@ -627,7 +841,23 @@ function step(dt){
 
   // projectiles (hero)
   for(let i=state.projs.length-1;i>=0;i--){
-    const p=state.projs[i]; p.x+=p.vx*dt; p.y+=p.vy*dt; p.ttl-=dt;
+    const p=state.projs[i];
+    if(p.homing){
+      const speed=Math.hypot(p.vx,p.vy)||1;
+      const target=nearestEnemy(p.x,p.y,260);
+      if(target){
+        const desired=Math.atan2(target.y-p.y,target.x-p.x);
+        const current=Math.atan2(p.vy,p.vx);
+        const turnRate=(p.homing.turn||6)*dt;
+        let diff=angDiff(desired,current);
+        diff=clamp(diff,-turnRate,turnRate);
+        const newAng=current+diff;
+        p.vx=Math.cos(newAng)*speed;
+        p.vy=Math.sin(newAng)*speed;
+      }
+    }
+    p.x+=p.vx*dt; p.y+=p.vy*dt; p.ttl-=dt;
+    p.age = (p.age||0)+dt;
     // collide enemies
     for(const e of state.enemies){
       if(e.hp<=0) continue;
@@ -703,6 +933,34 @@ function draw(){
       ctx.stroke();
     }else if(ef.type==='orb'){
       ctx.beginPath(); ctx.arc(ef.x,ef.y, ef.r, 0, Math.PI*2); ctx.fill();
+    }else if(ef.type==='burst'){
+      const count=ef.count||3;
+      for(let b=0;b<count;b++){
+        const ang=ef.a + (b-(count-1)/2)*(ef.spread||0.2);
+        ctx.beginPath();
+        ctx.moveTo(ef.x,ef.y);
+        ctx.lineTo(ef.x+Math.cos(ang)*30*DPR*(1-ef.t/ef.ttl), ef.y+Math.sin(ang)*30*DPR*(1-ef.t/ef.ttl));
+        ctx.stroke();
+      }
+    }else if(ef.type==='spin'){
+      const prog=ef.t/ef.ttl;
+      for(let s=0;s<4;s++){
+        const start=prog*Math.PI*2 + s*(Math.PI/2);
+        ctx.beginPath();
+        ctx.arc(ef.x,ef.y, ef.r, start, start+Math.PI/3);
+        ctx.stroke();
+      }
+    }else if(ef.type==='boom'){
+      const prog=Math.max(0.2, ef.t/ef.ttl);
+      const R=ef.r*prog;
+      ctx.beginPath(); ctx.arc(ef.x,ef.y,R,0,Math.PI*2);
+      ctx.globalAlpha=a*0.35; ctx.fill();
+      ctx.globalAlpha=a; ctx.lineWidth=4*DPR; ctx.stroke();
+    }else if(ef.type==='heal'){
+      const prog=ef.t/ef.ttl;
+      ctx.beginPath(); ctx.arc(ef.x,ef.y, ef.r*prog, 0, Math.PI*2);
+      ctx.fillStyle='rgba(120,211,138,0.3)'; ctx.fill();
+      ctx.stroke();
     }
     ctx.globalAlpha=1;
   }
@@ -745,7 +1003,7 @@ function drawRing(x,y,R,color,pct){
    Picker / Over buttons
 ========================= */
 document.getElementById('over').addEventListener('click', (e)=>{ if(e.target.id==='over') e.currentTarget.style.display='none'; });
-document.getElementById('picker').addEventListener('click', (e)=>{ if(e.target.id==='picker') e.currentTarget.style.display='none'; });
+pickerEl.addEventListener('click', (e)=>{ if(e.target===pickerEl) closePicker(); });
 
 /* =========================
    DPS meter
