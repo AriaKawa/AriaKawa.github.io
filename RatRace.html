@@ -237,6 +237,12 @@
     stroke-linecap:round;
     filter:drop-shadow(0 10px 16px rgba(0,0,0,.55));
   }
+  .rat-hole{
+    fill:#04070f;
+    stroke:rgba(0,0,0,.65);
+    stroke-width:18;
+    filter:drop-shadow(0 12px 26px rgba(0,0,0,.55));
+  }
 
   /* Betting Panel */
   .panel{
@@ -501,7 +507,7 @@
     <div class="board">
       <section class="track-card" id="trackCard">
         <div class="track-viewport" id="trackViewport">
-          <svg id="trackSvg" viewBox="0 0 1200 900" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Rat maze track"></svg>
+          <svg id="trackSvg" viewBox="0 0 1200 900" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Spiral rat maze track"></svg>
           <div class="rat-layer" id="ratLayer"></div>
         </div>
         <header>
@@ -638,8 +644,9 @@ const trackViewport = document.getElementById('trackViewport');
 
 const VIEWBOX_WIDTH = 1200;
 const VIEWBOX_HEIGHT = 900;
-const MAZE_PATH = 'M 120 140 C 420 120 780 120 1060 180 Q 1150 210 1040 280 L 360 280 Q 240 290 260 360 C 280 430 360 460 460 450 L 980 450 Q 1120 460 1020 540 C 940 600 820 620 680 600 L 320 560 Q 220 560 220 640 C 220 720 300 740 400 740 L 940 740 Q 1080 740 1000 790 C 940 820 840 800 720 760 L 320 700 Q 220 680 240 740 C 260 800 360 800 460 760 L 880 660 Q 1020 620 1080 700 L 1080 760';
-const FINISH_LINE = { x: 1080, y1: 860, y2: 660 };
+const MAZE_PATH = 'M 980.0 450.0 L 973.0 509.1 L 956.9 566.0 L 932.3 619.3 L 899.8 667.8 L 860.4 710.4 L 815.0 746.0 L 765.0 773.9 L 711.6 793.5 L 656.1 804.4 L 600.0 806.4 L 544.6 799.7 L 491.3 784.5 L 441.4 761.3 L 396.0 730.7 L 356.3 693.7 L 323.1 651.2 L 297.1 604.3 L 279.0 554.3 L 268.9 502.4 L 267.1 450.0 L 273.6 398.3 L 287.9 348.6 L 309.7 302.1 L 338.3 259.9 L 373.0 223.0 L 412.7 192.2 L 456.4 168.1 L 503.0 151.4 L 551.2 142.2 L 600.0 140.7 L 648.0 146.9 L 694.1 160.3 L 737.2 180.7 L 776.3 207.4 L 810.4 239.6 L 838.8 276.5 L 860.9 317.1 L 876.2 360.3 L 884.5 404.9 L 885.7 450.0 L 879.9 494.3 L 867.2 536.8 L 848.3 576.5 L 823.5 612.4 L 793.7 643.7 L 759.6 669.7 L 722.2 689.9 L 682.5 703.8 L 641.4 711.2 L 600.0 712.1 L 559.4 706.6 L 520.5 694.8 L 484.2 677.3 L 451.5 654.5 L 423.0 627.0 L 399.4 595.8 L 381.1 561.5 L 368.6 525.2 L 362.0 487.7 L 361.4 450.0 L 366.7 413.0 L 377.6 377.7 L 393.7 344.9 L 414.6 315.3 L 439.6 289.6 L 468.1 268.4 L 499.2 252.1 L 532.1 241.0 L 566.0 235.3 L 600.0 235.0 L 633.3 240.0 L 665.0 250.0 L 694.4 264.7 L 720.8 283.7 L 743.7 306.3 L 762.5 331.9 L 776.9 359.9 L 786.5 389.4 L 791.4 419.7 L 791.4 450.0 L 786.7 479.6 L 777.6 507.7 L 764.3 533.7 L 747.2 557.0 L 727.0 577.0 L 704.2 593.4 L 679.4 605.9 L 653.3 614.1 L 626.6 618.1 L 600.0 617.9 L 574.1 613.5 L 549.6 605.2 L 527.0 593.3 L 506.9 578.2 L 489.6 560.4 L 475.6 540.4 L 465.1 518.7 L 458.3 496.0 L 455.2 472.9 L 455.7 450.0 L 459.8 427.8 L 467.3 406.9 L 477.7 387.7 L 490.9 370.7 L 506.3 356.3 L 523.5 344.7 L 542.0 336.1 L 561.2 330.7 L 580.7 328.4 L 600.0 329.3 L 618.5 333.1 L 635.8 339.7 L 651.6 348.7 L 665.4 360.0 L 677.0 373.0 L 686.2 387.4 L 692.9 402.7 L 696.9 418.5 L 698.3 434.4 L 697.1 450.0 L 693.6 464.8 L 687.9 478.6 L 680.3 490.9 L 671.0 501.6 L 660.4 510.4 L 648.8 517.1 L 636.6 521.9 L 624.2 524.5 L 611.9 525.0 L 600.0 523.6 L 588.9 520.3 L 578.7 515.5 L 569.8 509.3 L 562.3 501.9 L 556.3 493.7 L 551.9 484.9 L 549.1 475.9 L 548.0 466.9 L 548.3 458.2 L 550.0 450.0 L 600.0 450.0';
+const FINISH_LINE = { x: 980, y1: 330, y2: 570 };
+const RAT_HOLE = { cx: 600, cy: 450, r: 58 };
 
 const laneCount = RAT_DATA.length;
 const laneOffsetStep = 26;
@@ -671,6 +678,7 @@ function buildTrackSvg(){
       <path class="track-texture" d="${MAZE_PATH}" />
       <g class="lane-guides" aria-hidden="true">${guideMarkup}</g>
       <path class="finish-line" d="M ${FINISH_LINE.x} ${FINISH_LINE.y1} L ${FINISH_LINE.x} ${FINISH_LINE.y2}" />
+      <circle class="rat-hole" cx="${RAT_HOLE.cx}" cy="${RAT_HOLE.cy}" r="${RAT_HOLE.r}" />
     </g>
   `;
 }
