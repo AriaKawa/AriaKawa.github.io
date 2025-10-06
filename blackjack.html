@@ -414,6 +414,56 @@
 
   .hidden{ display:none !important; }
 
+  .waiting-overlay{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(180deg, rgba(6,12,24,.74), rgba(11,21,34,.78));
+    backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
+    z-index:4;
+    padding:1.2rem;
+    pointer-events:none;
+  }
+  .waiting-card{
+    max-width:360px; width:100%;
+    background:rgba(10,18,32,.92);
+    border-radius:24px;
+    border:1px solid rgba(255,255,255,.08);
+    box-shadow:0 24px 48px rgba(0,0,0,.45);
+    padding:clamp(1.4rem, 4vw, 2rem);
+    text-align:center;
+    display:grid;
+    gap:.75rem;
+  }
+  .waiting-card h2{
+    margin:0;
+    font-size:1.6rem;
+    letter-spacing:.04em;
+  }
+  .waiting-card p{
+    margin:0;
+    opacity:.88;
+    line-height:1.5;
+  }
+  .waiting-list{
+    margin:0;
+    padding:0;
+    list-style:none;
+    display:grid;
+    gap:.35rem;
+  }
+  .waiting-player{
+    font-weight:600;
+    letter-spacing:.03em;
+    background:rgba(255,255,255,.08);
+    border-radius:14px;
+    padding:.5rem .75rem;
+  }
+  .waiting-player.self{
+    background:rgba(255,209,59,.2);
+    border:1px solid rgba(255,209,59,.45);
+    color:var(--accent);
+  }
+
   .lobby{
     position:fixed; inset:0; z-index:10; display:flex; align-items:center; justify-content:center;
     background:rgba(6,12,24,.8); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
@@ -508,6 +558,14 @@
       </div>
 
       <div class="lane player-spots" id="playerSpotsLane"></div>
+
+      <div class="waiting-overlay hidden" id="waitingOverlay" aria-live="polite">
+        <div class="waiting-card">
+          <h2 id="waitingTitle">Waiting for bets</h2>
+          <p id="waitingSubtitle">Adjust your bet to begin.</p>
+          <ul class="waiting-list hidden" id="waitingList"></ul>
+        </div>
+      </div>
 
       <div class="status" id="status"></div>
 
@@ -650,6 +708,10 @@
   const btnJoin = document.getElementById('btnJoin');
   const btnHostStart = document.getElementById('btnHostStart');
   const btnJoinConfirm = document.getElementById('btnJoinConfirm');
+  const waitingOverlay = document.getElementById('waitingOverlay');
+  const waitingTitle = document.getElementById('waitingTitle');
+  const waitingSubtitle = document.getElementById('waitingSubtitle');
+  const waitingList = document.getElementById('waitingList');
   const copyButtonDefaultLabel = btnCopyCode ? btnCopyCode.textContent : '';
   let copyButtonResetTimer = null;
 
@@ -1447,6 +1509,73 @@
     });
   }
 
+  function getDisplayNameForPlayer(id, info){
+    if(id === clientId){
+      return info?.name || playerName || 'You';
+    }
+    if(info?.name){
+      return info.name;
+    }
+    return `Player ${id.slice(0,4).toUpperCase()}`;
+  }
+
+  function renderWaitingOverlay(state){
+    if(!waitingOverlay || !waitingTitle || !waitingSubtitle || !waitingList) return;
+    const phase = typeof state.phase === 'string' ? state.phase : TABLE_PHASES.WAITING;
+    if(phase !== TABLE_PHASES.WAITING){
+      waitingOverlay.classList.add('hidden');
+      waitingList.innerHTML = '';
+      waitingList.classList.add('hidden');
+      return;
+    }
+
+    const entries = getActivePlayerEntries();
+    const waitingEntries = entries.filter(([id])=> !isBetConfirmed(id));
+    let title = 'Waiting for bets';
+    let message = 'Adjust your bet to begin.';
+
+    if(!entries.length){
+      title = 'Waiting for players';
+      message = 'Take a seat to start playing.';
+      waitingList.classList.add('hidden');
+      waitingList.innerHTML = '';
+    }else if(waitingEntries.length === 0){
+      title = 'Bets locked in';
+      message = 'All bets confirmed. Dealing the cards…';
+      waitingList.classList.add('hidden');
+      waitingList.innerHTML = '';
+    }else{
+      const waitingOnMe = waitingEntries.some(([id])=> id === clientId);
+      if(waitingOnMe && waitingEntries.length === 1){
+        message = 'Confirm your bet to begin the round.';
+      }else if(waitingOnMe){
+        message = 'Confirm your bet and wait for everyone to be ready.';
+      }else if(waitingEntries.length === 1){
+        const [id, info] = waitingEntries[0];
+        const name = getDisplayNameForPlayer(id, info);
+        message = `Waiting for ${name} to confirm their bet.`;
+      }else{
+        message = 'Waiting for players to confirm their bets.';
+      }
+      waitingList.innerHTML = '';
+      waitingList.classList.remove('hidden');
+      waitingEntries.forEach(([id, info])=>{
+        const item = document.createElement('li');
+        item.className = 'waiting-player';
+        const name = getDisplayNameForPlayer(id, info);
+        item.textContent = id === clientId ? 'You' : name;
+        if(id === clientId){
+          item.classList.add('self');
+        }
+        waitingList.appendChild(item);
+      });
+    }
+
+    waitingTitle.textContent = title;
+    waitingSubtitle.textContent = message;
+    waitingOverlay.classList.remove('hidden');
+  }
+
   function isMyTurn(){
     const { phase, activePlayer } = tableState.state;
     if(phase === TABLE_PHASES.WAITING) return true;
@@ -1544,6 +1673,7 @@
 
     renderHand(dealerHand, dealerSpot, { hideHole: !!state.hideDealerHole });
     renderSeats(state);
+    renderWaitingOverlay(state);
 
     dealerTotal.textContent = state.hideDealerHole && dealerHand.length
       ? `${cardValue(dealerHand[0])} +`
