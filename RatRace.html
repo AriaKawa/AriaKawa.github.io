@@ -105,15 +105,123 @@
   .track-viewport{
     position:relative;
     width:100%;
-    aspect-ratio:1200/900;
+    aspect-ratio:1200/720;
     filter:drop-shadow(0 22px 42px rgba(0,0,0,.45));
     z-index:0;
+    overflow:hidden;
   }
-  #trackSvg{
+  .race-camera{
+    position:absolute;
+    top:0;
+    left:0;
+    width:var(--track-length, 2400px);
+    height:100%;
+    will-change:transform;
+  }
+  .race-stage{
+    position:absolute;
+    top:0;
+    left:0;
+    width:var(--track-length, 2400px);
+    height:100%;
+    display:flex;
+    align-items:flex-end;
+    overflow:visible;
+  }
+  .race-stage__sky,
+  .race-stage__far,
+  .race-stage__mid,
+  .race-stage__ground{
     position:absolute;
     inset:0;
-    width:100%;
+    will-change:transform;
+  }
+  .race-stage__sky{
+    background:linear-gradient(180deg, rgba(64,92,168,.85) 0%, rgba(18,26,45,.92) 65%, rgba(14,19,32,1) 100%);
+    z-index:0;
+  }
+  .race-stage__far{
+    background:linear-gradient(180deg, rgba(45,68,128,.6) 0%, rgba(26,37,72,.6) 55%, transparent 100%);
+    mask:linear-gradient(90deg, transparent 0 40px, black 80px calc(100% - 80px), transparent 100%);
+    z-index:1;
+    opacity:.6;
+  }
+  .race-stage__mid{
+    background:
+      linear-gradient(180deg, rgba(22,34,64,.7) 0%, rgba(18,26,45,0) 70%),
+      repeating-linear-gradient(90deg, rgba(42,62,112,.45) 0 120px, rgba(30,44,82,.35) 120px 240px);
+    z-index:2;
+    opacity:.75;
+  }
+  .race-stage__ground{
+    position:absolute;
+    inset:auto 0 0;
+    height:52%;
+    background:
+      linear-gradient(180deg, rgba(92,62,34,.92) 0%, rgba(74,45,22,.96) 35%, rgba(42,24,12,1) 100%);
+    border-top:1px solid rgba(255,244,222,.25);
+    z-index:3;
+    overflow:hidden;
+  }
+  .race-stage__lane-lines{
+    position:absolute;
+    inset:0;
+    background:repeating-linear-gradient(
+      to bottom,
+      transparent 0 calc(var(--lane-spacing, 90px) - 2px),
+      rgba(255,244,222,.25) calc(var(--lane-spacing, 90px) - 2px) var(--lane-spacing, 90px)
+    );
+    opacity:.65;
+  }
+  .race-stage__finish{
+    position:absolute;
+    bottom:0;
+    left:var(--finish-x, 2000px);
+    width:80px;
     height:100%;
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
+    background:
+      repeating-linear-gradient(
+        135deg,
+        rgba(255,255,255,.85) 0 16px,
+        rgba(0,0,0,.8) 16px 32px
+      );
+    border-radius:18px 18px 0 0;
+    box-shadow:0 18px 36px rgba(0,0,0,.45);
+    padding-bottom:18px;
+    transform:translateX(-50%);
+  }
+  .race-stage__finish span{
+    display:block;
+    font-weight:800;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    font-size:.75rem;
+    color:#0c101c;
+    writing-mode:vertical-rl;
+    text-shadow:0 2px 6px rgba(0,0,0,.45);
+  }
+  .race-overlay{
+    position:absolute;
+    inset:0;
+    display:grid;
+    place-items:center;
+    pointer-events:none;
+    z-index:6;
+  }
+  .race-countdown{
+    font-size:clamp(2.4rem, 6vw, 4.5rem);
+    font-weight:900;
+    letter-spacing:.2em;
+    text-transform:uppercase;
+    background:rgba(12,18,32,.65);
+    border:1px solid rgba(255,255,255,.18);
+    padding:1.2rem 2.4rem;
+    border-radius:20px;
+    backdrop-filter:blur(6px);
+    box-shadow:0 28px 60px rgba(0,0,0,.45);
   }
   .track-card header{
     position:absolute;
@@ -160,7 +268,7 @@
     .bets-panel.panel{ padding:20px; }
   }
 
-  .rat-layer{ position:absolute; inset:0; pointer-events:none; z-index:2; }
+  .rat-layer{ position:absolute; top:0; left:0; height:100%; width:100%; pointer-events:none; z-index:5; }
   .rat{
     position:absolute;
     width:116px;
@@ -196,52 +304,6 @@
     box-shadow:0 6px 14px rgba(0,0,0,.38);
     text-transform:uppercase;
     white-space:nowrap;
-  }
-
-  .track-border,
-  .track-fill,
-  .track-glow,
-  .track-texture{
-    fill:none;
-    stroke-linecap:round;
-    stroke-linejoin:round;
-  }
-  .track-border{
-    stroke:url(#trackEdge);
-    stroke-width:168;
-    opacity:.8;
-  }
-  .track-fill{
-    stroke:url(#trackFill);
-    stroke-width:132;
-    filter:drop-shadow(0 26px 46px rgba(0,0,0,.45));
-  }
-  .track-glow{
-    stroke:url(#trackGlow);
-    stroke-width:172;
-    opacity:.25;
-    filter:blur(18px);
-  }
-  .track-texture{
-    stroke:rgba(255,244,222,.18);
-    stroke-width:10;
-    stroke-dasharray:24 32;
-    stroke-linecap:round;
-    opacity:.55;
-  }
-  .lane-guide{ fill:none; stroke:transparent; }
-  .finish-line{
-    stroke:#fdfdf8;
-    stroke-width:14;
-    stroke-dasharray:22 16;
-    stroke-linecap:round;
-    filter:drop-shadow(0 10px 16px rgba(0,0,0,.55));
-  }
-  .rat-hole{
-    fill:#04070f;
-    stroke:rgba(0,0,0,.65);
-    stroke-width:18;
-    filter:drop-shadow(0 12px 26px rgba(0,0,0,.55));
   }
 
   /* Betting Panel */
@@ -507,8 +569,21 @@
     <div class="board">
       <section class="track-card" id="trackCard">
         <div class="track-viewport" id="trackViewport">
-          <svg id="trackSvg" viewBox="0 0 1200 900" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Spiral rat maze track"></svg>
-          <div class="rat-layer" id="ratLayer"></div>
+          <div class="race-camera" id="raceCamera">
+            <div class="race-stage" id="raceStage" role="img" aria-label="Side-scrolling rat race track">
+              <div class="race-stage__sky"></div>
+              <div class="race-stage__far"></div>
+              <div class="race-stage__mid"></div>
+              <div class="race-stage__ground">
+                <div class="race-stage__lane-lines" id="laneLines"></div>
+                <div class="race-stage__finish" id="finishMarker"><span>Finish</span></div>
+              </div>
+            </div>
+            <div class="rat-layer" id="ratLayer"></div>
+          </div>
+          <div class="race-overlay" id="raceOverlay">
+            <div class="race-countdown hidden" id="raceCountdown"></div>
+          </div>
         </div>
         <header>
           <div class="status" id="status">Place your bets.</div>
@@ -638,70 +713,69 @@ const RAT_DATA = [
 
 const statusEl = document.getElementById('status');
 const potEl = document.getElementById('pot');
-const trackSvg = document.getElementById('trackSvg');
-const ratLayer = document.getElementById('ratLayer');
 const trackViewport = document.getElementById('trackViewport');
+const raceCamera = document.getElementById('raceCamera');
+const raceStage = document.getElementById('raceStage');
+const parallaxFar = raceStage?.querySelector('.race-stage__far') || null;
+const parallaxMid = raceStage?.querySelector('.race-stage__mid') || null;
+const laneLinesEl = document.getElementById('laneLines');
+const raceCountdownEl = document.getElementById('raceCountdown');
+const ratLayer = document.getElementById('ratLayer');
+const finishMarker = document.getElementById('finishMarker');
 
-const VIEWBOX_WIDTH = 1200;
-const VIEWBOX_HEIGHT = 900;
-const MAZE_PATH = 'M 980.0 450.0 L 973.0 509.1 L 956.9 566.0 L 932.3 619.3 L 899.8 667.8 L 860.4 710.4 L 815.0 746.0 L 765.0 773.9 L 711.6 793.5 L 656.1 804.4 L 600.0 806.4 L 544.6 799.7 L 491.3 784.5 L 441.4 761.3 L 396.0 730.7 L 356.3 693.7 L 323.1 651.2 L 297.1 604.3 L 279.0 554.3 L 268.9 502.4 L 267.1 450.0 L 273.6 398.3 L 287.9 348.6 L 309.7 302.1 L 338.3 259.9 L 373.0 223.0 L 412.7 192.2 L 456.4 168.1 L 503.0 151.4 L 551.2 142.2 L 600.0 140.7 L 648.0 146.9 L 694.1 160.3 L 737.2 180.7 L 776.3 207.4 L 810.4 239.6 L 838.8 276.5 L 860.9 317.1 L 876.2 360.3 L 884.5 404.9 L 885.7 450.0 L 879.9 494.3 L 867.2 536.8 L 848.3 576.5 L 823.5 612.4 L 793.7 643.7 L 759.6 669.7 L 722.2 689.9 L 682.5 703.8 L 641.4 711.2 L 600.0 712.1 L 559.4 706.6 L 520.5 694.8 L 484.2 677.3 L 451.5 654.5 L 423.0 627.0 L 399.4 595.8 L 381.1 561.5 L 368.6 525.2 L 362.0 487.7 L 361.4 450.0 L 366.7 413.0 L 377.6 377.7 L 393.7 344.9 L 414.6 315.3 L 439.6 289.6 L 468.1 268.4 L 499.2 252.1 L 532.1 241.0 L 566.0 235.3 L 600.0 235.0 L 633.3 240.0 L 665.0 250.0 L 694.4 264.7 L 720.8 283.7 L 743.7 306.3 L 762.5 331.9 L 776.9 359.9 L 786.5 389.4 L 791.4 419.7 L 791.4 450.0 L 786.7 479.6 L 777.6 507.7 L 764.3 533.7 L 747.2 557.0 L 727.0 577.0 L 704.2 593.4 L 679.4 605.9 L 653.3 614.1 L 626.6 618.1 L 600.0 617.9 L 574.1 613.5 L 549.6 605.2 L 527.0 593.3 L 506.9 578.2 L 489.6 560.4 L 475.6 540.4 L 465.1 518.7 L 458.3 496.0 L 455.2 472.9 L 455.7 450.0 L 459.8 427.8 L 467.3 406.9 L 477.7 387.7 L 490.9 370.7 L 506.3 356.3 L 523.5 344.7 L 542.0 336.1 L 561.2 330.7 L 580.7 328.4 L 600.0 329.3 L 618.5 333.1 L 635.8 339.7 L 651.6 348.7 L 665.4 360.0 L 677.0 373.0 L 686.2 387.4 L 692.9 402.7 L 696.9 418.5 L 698.3 434.4 L 697.1 450.0 L 693.6 464.8 L 687.9 478.6 L 680.3 490.9 L 671.0 501.6 L 660.4 510.4 L 648.8 517.1 L 636.6 521.9 L 624.2 524.5 L 611.9 525.0 L 600.0 523.6 L 588.9 520.3 L 578.7 515.5 L 569.8 509.3 L 562.3 501.9 L 556.3 493.7 L 551.9 484.9 L 549.1 475.9 L 548.0 466.9 L 548.3 458.2 L 550.0 450.0 L 600.0 450.0';
-const FINISH_LINE = { x: 980, y1: 330, y2: 570 };
-const RAT_HOLE = { cx: 600, cy: 450, r: 58 };
-
+const TRACK_DISTANCE = 1800;
+const TRACK_START_OFFSET = 140;
+const TRACK_END_BUFFER = 220;
+const WORLD_LENGTH = TRACK_START_OFFSET + TRACK_DISTANCE + TRACK_END_BUFFER;
 const laneCount = RAT_DATA.length;
-const laneOffsetStep = 26;
-function buildTrackSvg(){
-  if(!trackSvg) return;
-
-  const guideMarkup = RAT_DATA.map((r) => `<path class="lane-guide" id="lanePath-${r.id}" d="${MAZE_PATH}" />`).join('');
-
-  trackSvg.innerHTML = `
-    <defs>
-      <linearGradient id="trackFill" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" stop-color="#d8a56a" />
-        <stop offset="55%" stop-color="#b0733c" />
-        <stop offset="100%" stop-color="#724424" />
-      </linearGradient>
-      <linearGradient id="trackEdge" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" stop-color="#402818" />
-        <stop offset="100%" stop-color="#1f140c" />
-      </linearGradient>
-      <linearGradient id="trackGlow" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" stop-color="rgba(255,205,135,.55)" />
-        <stop offset="100%" stop-color="rgba(255,125,44,0)" />
-      </linearGradient>
-    </defs>
-    <g>
-      <path class="track-glow" d="${MAZE_PATH}" />
-      <path class="track-border" d="${MAZE_PATH}" />
-      <path class="track-fill" d="${MAZE_PATH}" />
-      <path class="track-texture" d="${MAZE_PATH}" />
-      <g class="lane-guides" aria-hidden="true">${guideMarkup}</g>
-      <path class="finish-line" d="M ${FINISH_LINE.x} ${FINISH_LINE.y1} L ${FINISH_LINE.x} ${FINISH_LINE.y2}" />
-      <circle class="rat-hole" cx="${RAT_HOLE.cx}" cy="${RAT_HOLE.cy}" r="${RAT_HOLE.r}" />
-    </g>
-  `;
-}
-
-buildTrackSvg();
-
-let viewportScaleX = 1;
-let viewportScaleY = 1;
+let viewportWidth = 0;
+let viewportHeight = 0;
+let laneCenters = [];
+let cameraX = 0;
 
 function updateViewportScale(){
   if(!trackViewport) return;
   const rect = trackViewport.getBoundingClientRect();
-  viewportScaleX = rect.width / VIEWBOX_WIDTH;
-  viewportScaleY = rect.height / VIEWBOX_HEIGHT;
+  viewportWidth = rect.width;
+  viewportHeight = rect.height;
+  const groundHeight = viewportHeight * 0.52;
+  const groundTop = viewportHeight - groundHeight;
+  const spacing = laneCount ? groundHeight / (laneCount + 1) : groundHeight;
+  laneCenters = Array.from({ length: laneCount }, (_, index) => groundTop + spacing * (index + 1));
+  if(raceCamera){
+    raceCamera.style.setProperty('--track-length', `${WORLD_LENGTH}px`);
+    raceCamera.style.width = `${WORLD_LENGTH}px`;
+  }
+  if(raceStage){
+    raceStage.style.setProperty('--track-length', `${WORLD_LENGTH}px`);
+    raceStage.style.width = `${WORLD_LENGTH}px`;
+  }
+  if(ratLayer){
+    ratLayer.style.width = `${WORLD_LENGTH}px`;
+    ratLayer.style.height = '100%';
+  }
+  if(laneLinesEl){
+    laneLinesEl.style.setProperty('--lane-spacing', `${spacing}px`);
+  }
+  if(finishMarker){
+    finishMarker.style.setProperty('--finish-x', `${TRACK_START_OFFSET + TRACK_DISTANCE}px`);
+  }
 }
 
 updateViewportScale();
+setCameraX(0);
 
-const lanePathMap = new Map();
-for(const r of RAT_DATA){
-  const pathEl = trackSvg?.querySelector(`#lanePath-${r.id}`);
-  if(pathEl){
-    lanePathMap.set(r.id, pathEl);
+function setCameraX(value=0){
+  const maxOffset = Math.max(0, WORLD_LENGTH - viewportWidth);
+  cameraX = Math.min(Math.max(value, 0), maxOffset);
+  if(raceCamera){
+    raceCamera.style.transform = `translateX(${-cameraX}px)`;
+  }
+  if(parallaxFar){
+    parallaxFar.style.transform = `translateX(${cameraX * 0.25}px)`;
+  }
+  if(parallaxMid){
+    parallaxMid.style.transform = `translateX(${cameraX * 0.45}px)`;
   }
 }
 
@@ -718,63 +792,32 @@ const rats = RAT_DATA.map((r, index) => {
   el.appendChild(tag);
   ratLayer?.appendChild(el);
 
-  const pathEl = lanePathMap.get(r.id);
-  const pathLength = pathEl?.getTotalLength?.() || 1;
   const halfWidth = el.offsetWidth / 2 || 58;
   const halfHeight = el.offsetHeight / 2 || 52;
 
-  const laneOffset = (index - (laneCount - 1) / 2) * laneOffsetStep;
-
-  return { ...r, el, art, tag, pathEl, pathLength, halfWidth, halfHeight, laneOffset, x:0, v:0, baseSpeed:0, wobbleAmp:0, wobblePeriod:160, wobblePhase:0 };
+  return { ...r, el, art, tag, laneIndex:index, halfWidth, halfHeight, x:0, v:0, baseSpeed:0, wobbleAmp:0, wobblePeriod:160, wobblePhase:0, pathLength:TRACK_DISTANCE };
 });
 
 for(const r of rats){
   positionRat(r, 0);
 }
 
-function toViewportPoint(point){
-  return {
-    x: point.x * viewportScaleX,
-    y: point.y * viewportScaleY,
-  };
-}
-
 function positionRat(r, distance=0){
-  if(!r?.pathEl) return;
-  const clamped = Math.min(distance, r.pathLength || 1);
-  const point = r.pathEl.getPointAtLength(clamped);
-  const back = r.pathEl.getPointAtLength(Math.max(0, clamped - 6));
-  const pos = toViewportPoint(point);
-  const prev = toViewportPoint(back);
-  const dx = pos.x - prev.x;
-  const dy = pos.y - prev.y;
-  const angle = Math.atan2(dy, dx);
-  const laneOffset = r.laneOffset || 0;
-  const nx = -Math.sin(angle);
-  const ny = Math.cos(angle);
-  const offsetX = pos.x + nx * laneOffset;
-  const offsetY = pos.y + ny * laneOffset;
+  const clamped = Math.min(distance, TRACK_DISTANCE);
+  const worldX = TRACK_START_OFFSET + clamped;
+  const laneIndex = r.laneIndex ?? 0;
+  const laneY = laneCenters[laneIndex] ?? (viewportHeight * 0.65);
   const halfWidth = r.el.offsetWidth ? r.el.offsetWidth / 2 : (r.halfWidth || 58);
   const halfHeight = r.el.offsetHeight ? r.el.offsetHeight / 2 : (r.halfHeight || 52);
   r.halfWidth = halfWidth;
   r.halfHeight = halfHeight;
-  r.el.style.transform = `translate(${offsetX - halfWidth}px, ${offsetY - halfHeight}px)`;
-
-  let displayAngle = angle;
-  let flipped = false;
-  if(angle > Math.PI / 2 || angle < -Math.PI / 2){
-    displayAngle = angle - Math.PI * Math.sign(angle || 1);
-    flipped = true;
-  }
-  const transforms = [`rotate(${displayAngle}rad)`];
-  if(flipped){
-    transforms.push('scaleX(-1)');
-  }
-  r.art.style.transform = transforms.join(' ');
+  r.el.style.transform = `translate(${worldX - halfWidth}px, ${laneY - halfHeight}px)`;
+  r.art.style.transform = 'scaleX(1)';
 }
 
 window.addEventListener('resize', () => {
   updateViewportScale();
+  setCameraX(cameraX);
   for(const r of rats){
     positionRat(r, r.x || 0);
   }
@@ -1338,15 +1381,28 @@ function resetRacePositions(){
     r.wobblePhase = 0;
     positionRat(r, 0);
   }
+  setCameraX(0);
+  if(raceCountdownEl){
+    raceCountdownEl.classList.add('hidden');
+  }
   winner = null; finished=false; racing=false; currentRaceSetup=null; postedResults=false;
 }
 resetRacePositions();
 
-function cancelCountdown(){ countdownToken++; statusEl.classList.remove('countdown'); }
+function cancelCountdown(){
+  countdownToken++;
+  statusEl.classList.remove('countdown');
+  if(raceCountdownEl){
+    raceCountdownEl.classList.add('hidden');
+  }
+}
 
 async function startCountdown({ startTime=Date.now(), duration=2100 }={}){
   const token = ++countdownToken;
   statusEl.classList.add('countdown');
+  if(raceCountdownEl){
+    raceCountdownEl.classList.remove('hidden');
+  }
   const steps = [
     { value:3, offset:0 },
     { value:2, offset:700 },
@@ -1359,19 +1415,29 @@ async function startCountdown({ startTime=Date.now(), duration=2100 }={}){
     const remaining = startTime + duration - Date.now();
     if(remaining <= 0) break;
     statusEl.textContent = `Racing in ${step.value}…`;
+    if(raceCountdownEl){
+      raceCountdownEl.textContent = step.value;
+    }
   }
   const finalWait = startTime + duration - Date.now();
   if(finalWait > 1) await sleep(finalWait);
   if(token !== countdownToken) return;
   statusEl.textContent = 'Go!';
+  if(raceCountdownEl){
+    raceCountdownEl.textContent = 'Go!';
+  }
   await sleep(200);
   if(token !== countdownToken) return;
   statusEl.classList.remove('countdown');
+  if(raceCountdownEl){
+    raceCountdownEl.classList.add('hidden');
+  }
 }
 
 function startRace(setup){
   racing = true;
   finished = false;
+  setCameraX(0);
 
   const configuration = setup || createRaceSetup();
   currentRaceSetup = configuration;
@@ -1388,26 +1454,38 @@ function startRace(setup){
   const t0 = performance.now();
   const step = (t)=>{
     const dt = Math.min(32, t - (step.t||t)); step.t = t;
+    let leadX = 0;
     for(const r of rats){
       if(finished) break;
       const wobble = Math.sin(((t - t0)/(r.wobblePeriod||200)) + (r.wobblePhase||0)) * (r.wobbleAmp||0.4);
       r.x += (r.baseSpeed + wobble) * (dt/16.7);
-      if(r.x >= (r.pathLength || 1)){
-        r.x = r.pathLength || r.x;
+      if(r.x >= TRACK_DISTANCE){
+        r.x = TRACK_DISTANCE;
         if(!winner){
           winner = r;
           finished = true;
           racing = false;
         }
       }
-      positionRat(r, Math.min(r.x, r.pathLength || r.x));
+      positionRat(r, Math.min(r.x, TRACK_DISTANCE));
+      if(r.x > leadX) leadX = r.x;
+    }
+    if(viewportWidth > 0){
+      const worldLead = TRACK_START_OFFSET + leadX;
+      const cameraTarget = worldLead - viewportWidth * 0.55;
+      setCameraX(cameraTarget);
     }
     if(!finished){
       animId = requestAnimationFrame(step);
     }else{
       cancelAnimationFrame(animId);
       for(const r of rats){
-        positionRat(r, Math.min(r.x, r.pathLength || r.x));
+        positionRat(r, Math.min(r.x, TRACK_DISTANCE));
+      }
+      if(viewportWidth > 0){
+        const worldLead = TRACK_START_OFFSET + leadX;
+        const cameraTarget = worldLead - viewportWidth * 0.55;
+        setCameraX(cameraTarget);
       }
       endRace();
     }
