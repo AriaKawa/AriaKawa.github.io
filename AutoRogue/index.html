@@ -148,7 +148,9 @@ const state = {
   hero:null, enemies:[], projs:[], effects:[],
   pickups:[], // reserved
   inventory:[], // {id, lvl, tags[], apply(hero, lvl), desc(lvl), rarity}
-  synergies:{blade:0,ranged:0,arcane:0,heavy:0}
+  synergies:{blade:0,ranged:0,arcane:0,heavy:0},
+  pendingSpawns:[],
+  waveClock:0,
 };
 
 /* =========================
@@ -373,23 +375,65 @@ function knockback(en, force, ang){
 /* =========================
    Waves
 ========================= */
+function enemyWeightsForWave(wave){
+  const bag=['grunt','grunt','swift'];
+  if(wave>=2) bag.push('swift');
+  if(wave>=3) bag.push('archer');
+  if(wave>=5) bag.push('brute');
+  if(wave>=7) bag.push('archer','brute');
+  return bag;
+}
+function planWave(wave){
+  const total = Math.floor(7 + wave*2.6);
+  const batchSize = (wave>=6)?5: (wave>=3?4:3);
+  const interval = Math.max(0.75, 1.8 - wave*0.08);
+  const plan=[];
+  let remaining=total;
+  let t=0;
+  const pool = enemyWeightsForWave(wave);
+  while(remaining>0){
+    const spawnCount = Math.min(batchSize + rint(1,0), remaining);
+    const kinds=[];
+    for(let i=0;i<spawnCount;i++){ kinds.push(choice(pool)); }
+    plan.push({time:t, kinds});
+    remaining -= spawnCount;
+    t += interval + rand(0.4,-0.2);
+  }
+  return plan;
+}
+function spawnWaveGroup(group){
+  const scale = 1 + state.wave*0.12;
+  const counts={};
+  for(const kind of group.kinds){
+    counts[kind]=(counts[kind]||0)+1;
+    const a = rand(Math.PI*2);
+    const R = Math.min(W,H)*0.46;
+    const x = W/2 + Math.cos(a)*R;
+    const y = H/2 + Math.sin(a)*R;
+    state.enemies.push(spawnEnemy(kind, x,y, scale));
+    state.effects.push({type:'ring',x,y,r:18*DPR,t:0,ttl:0.32,color:'#ef6b6b'});
+  }
+  const desc = Object.entries(counts).map(([k,c])=>`${c} ${cap(k)}${c>1?'s':''}`).join(', ');
+  if(desc) log(`${desc} join the battle.`);
+}
+function processWaveSpawns(){
+  while(state.pendingSpawns.length && state.waveClock >= state.pendingSpawns[0].time){
+    const group = state.pendingSpawns.shift();
+    spawnWaveGroup(group);
+  }
+}
 function startWave(){
   if(!state.hero) return;
   running=true; document.getElementById('btnPlay').textContent='Fighting…';
+  state.waveClock=0;
+  state.pendingSpawns = planWave(state.wave);
   log(`Wave ${state.wave} started.`);
-  // spawn ring
-  const count = Math.floor(8 + state.wave*2.4);
-  for(let i=0;i<count;i++){
-    const a = (i/count)*Math.PI*2 + rand(0.1,-0.1);
-    const R = Math.min(W,H)*0.45;
-    const x = W/2 + Math.cos(a)*R, y = H/2 + Math.sin(a)*R;
-    const k = choice(['grunt','grunt','swift','archer','brute']);
-    const scale = 1 + state.wave*0.12;
-    state.enemies.push(spawnEnemy(k, x,y, scale));
-  }
+  processWaveSpawns();
 }
 function waveClear(){
   running=false; document.getElementById('btnPlay').textContent='Start Wave';
+  state.pendingSpawns=[];
+  state.waveClock=0;
   const reward = 5 + Math.floor(state.wave*1.5);
   state.gold += reward;
   log(`Wave ${state.wave} cleared. +${reward} gold.`);
@@ -502,7 +546,9 @@ function rebuildSynergies(){
 function startRun(Hdef){
   // hero
   state.wave=1; state.gold=0; state.enemies=[]; state.projs=[]; state.effects=[]; dpsTrack=[];
+  state.pendingSpawns=[]; state.waveClock=0;
   state.inventory=[]; running=false; speed=1; document.getElementById('btnSpeed').textContent='1x';
+  document.getElementById('btnPlay').textContent='Start Wave';
   state.hero = createHero(Hdef);
   state.hero.baseArmor = state.hero.armor;
   // starter weapon(s)
@@ -542,6 +588,11 @@ requestAnimationFrame(loop);
 
 function step(dt){
   const h=state.hero; if(!h){ return; }
+
+  if(running){
+    state.waveClock += dt;
+    processWaveSpawns();
+  }
 
   // hero passive ticks
   for(const p of h.passives){ p.tick?.(h,dt); }
@@ -598,7 +649,7 @@ function step(dt){
   state.enemies = state.enemies.filter(e=>e.hp>0);
 
   // wave clear?
-  if(running && state.enemies.length===0){
+  if(running && state.enemies.length===0 && state.pendingSpawns.length===0){
     waveClear();
   }
 
