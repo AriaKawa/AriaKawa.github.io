@@ -665,6 +665,7 @@
   });
   const LAST_BET_STORAGE_KEY = 'blackjackLastConfirmedBet';
   const AUTO_BET_STORAGE_KEY = 'blackjackAutoBetEnabled';
+  const AUTO_BET_FEATURE_ENABLED = false; // Temporarily disable auto bet while manual controls are fixed
   let cachedLastConfirmedBet = null;
   let hasLoadedLastConfirmedBet = false;
   let cachedAutoBetEnabled = false;
@@ -971,6 +972,16 @@
 
   function loadAutoBetPreference(){
     if(hasLoadedAutoBetPreference) return cachedAutoBetEnabled;
+    if(!AUTO_BET_FEATURE_ENABLED){
+      hasLoadedAutoBetPreference = true;
+      cachedAutoBetEnabled = false;
+      try{
+        localStorage.removeItem(AUTO_BET_STORAGE_KEY);
+      }catch(err){
+        console.debug('Unable to clear auto bet preference', err);
+      }
+      return cachedAutoBetEnabled;
+    }
     hasLoadedAutoBetPreference = true;
     try{
       const stored = localStorage.getItem(AUTO_BET_STORAGE_KEY);
@@ -987,10 +998,21 @@
   }
 
   function isAutoBetEnabled(){
+    if(!AUTO_BET_FEATURE_ENABLED) return false;
     return hasLoadedAutoBetPreference ? cachedAutoBetEnabled : loadAutoBetPreference();
   }
 
   function setAutoBetEnabled(value){
+    if(!AUTO_BET_FEATURE_ENABLED){
+      cachedAutoBetEnabled = false;
+      hasLoadedAutoBetPreference = true;
+      try{
+        localStorage.removeItem(AUTO_BET_STORAGE_KEY);
+      }catch(err){
+        console.debug('Unable to clear auto bet preference', err);
+      }
+      return false;
+    }
     const enabled = !!value;
     cachedAutoBetEnabled = enabled;
     hasLoadedAutoBetPreference = true;
@@ -1361,15 +1383,25 @@
           autoCheckbox.type = 'checkbox';
           autoCheckbox.dataset.betAction = 'auto-toggle';
           autoCheckbox.dataset.playerId = id;
-          autoCheckbox.checked = isAutoBetEnabled();
-          autoCheckbox.disabled = !canAdjustBet;
+          const autoBetActive = AUTO_BET_FEATURE_ENABLED && isAutoBetEnabled();
+          autoCheckbox.checked = autoBetActive;
+          const autoCheckboxDisabled = !AUTO_BET_FEATURE_ENABLED || !canAdjustBet;
+          autoCheckbox.disabled = autoCheckboxDisabled;
           const autoText = document.createElement('span');
           autoText.className = 'auto-bet-label';
-          autoText.textContent = `Auto Bet (${autoBetAmount})`;
+          autoText.textContent = AUTO_BET_FEATURE_ENABLED
+            ? `Auto Bet (${autoBetAmount})`
+            : 'Auto Bet (Unavailable)';
           autoToggle.appendChild(autoCheckbox);
           autoToggle.appendChild(autoText);
-          autoToggle.classList.toggle('active', isAutoBetEnabled());
-          autoToggle.classList.toggle('muted', !canAdjustBet);
+          autoToggle.classList.toggle('active', autoBetActive);
+          if(autoCheckboxDisabled){
+            autoToggle.classList.add('muted');
+            autoToggle.title = 'Auto Bet is currently disabled';
+          }else{
+            autoToggle.classList.remove('muted');
+            autoToggle.removeAttribute('title');
+          }
 
           const confirmBtn = document.createElement('button');
           confirmBtn.type = 'button';
@@ -1487,6 +1519,7 @@
   }
 
   function maybeApplyAutoBet(){
+    if(!AUTO_BET_FEATURE_ENABLED) return;
     if(tableState.state.phase !== TABLE_PHASES.WAITING) return;
     if(!isAutoBetEnabled()) return;
     if(isBetConfirmed(clientId)) return;
@@ -2374,6 +2407,7 @@
       }
     });
     playersLane.addEventListener('change', event=>{
+      if(!AUTO_BET_FEATURE_ENABLED) return;
       const control = event.target.closest('[data-bet-action]');
       if(!control) return;
       if(control.dataset.playerId !== clientId) return;
