@@ -391,6 +391,18 @@
   .ghost{ background:var(--accent-2); color:#e9ecf5; border:1px solid rgba(255,255,255,.1) }
   .muted{ opacity:.6; pointer-events:none }
 
+  .quick-start{
+    background:rgba(0,0,0,.55);
+    color:var(--accent);
+    border:1px solid rgba(255,209,59,.55);
+    font-size:.75rem;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    padding:.45rem .9rem;
+    border-radius:999px;
+    box-shadow:0 12px 26px rgba(0,0,0,.35);
+  }
+
   /* Toast / status */
   .status{
     position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
@@ -502,7 +514,7 @@
       <div class="controls" id="controls">
         <button class="primary muted" id="btnHit">Hit</button>
         <button class="ghost muted" id="btnStand">Stand</button>
-        <button class="primary hidden muted" id="btnNextHand">Next Hand</button>
+        <button class="quick-start hidden muted" id="btnQuickStart" title="Start the next hand immediately">Quick Start</button>
       </div>
     </div>
 
@@ -620,7 +632,7 @@
   const turnIndicator = document.getElementById('turnIndicator');
   const btnHit = document.getElementById('btnHit');
   const btnStand = document.getElementById('btnStand');
-  const btnNextHand = document.getElementById('btnNextHand');
+  const btnQuickStart = document.getElementById('btnQuickStart');
   const bankEl = document.getElementById('bank');
   const lobby = document.getElementById('lobby');
   const lobbyMain = document.getElementById('lobbyMain');
@@ -711,26 +723,26 @@
       case 'player':
         setHidden(btnHit, false);
         setHidden(btnStand, false);
-        setHidden(btnNextHand, true);
+        setHidden(btnQuickStart, true);
         setMuted(btnHit, true);
         setMuted(btnStand, true);
-        setMuted(btnNextHand, false);
+        setMuted(btnQuickStart, false);
         break;
       case 'summary':
         setHidden(btnHit, true);
         setHidden(btnStand, true);
-        setHidden(btnNextHand, false);
+        setHidden(btnQuickStart, false);
         setMuted(btnHit, false);
         setMuted(btnStand, false);
-        setMuted(btnNextHand, true);
+        setMuted(btnQuickStart, false);
         break;
       default:
         setHidden(btnHit, false);
         setHidden(btnStand, false);
-        setHidden(btnNextHand, true);
+        setHidden(btnQuickStart, true);
         setMuted(btnHit, false);
         setMuted(btnStand, false);
-        setMuted(btnNextHand, false);
+        setMuted(btnQuickStart, false);
         break;
     }
   }
@@ -1525,18 +1537,18 @@
     const resolvedHand = ['blackjack', 'bust'].includes(String(me.roundResult || '').toLowerCase());
     if(phase === TABLE_PHASES.SUMMARY){
       setButtons('summary');
-      const now = Date.now();
-      const statusActive = (transientStatus && now < transientStatus.until)
-        || (state.status && state.statusUntil && state.statusUntil > now);
-      const waitingForBets = isMultiplayer && !haveAllPresentPlayersBet();
-      const shouldEnableNextHand = !statusActive && !waitingForBets;
-      if(btnNextHand){
-        btnNextHand.classList.toggle('muted', !shouldEnableNextHand);
+      if(btnQuickStart){
+        const allowQuickStart = !isMultiplayer;
+        btnQuickStart.classList.toggle('hidden', !allowQuickStart);
+        btnQuickStart.classList.toggle('muted', !allowQuickStart);
       }
     }else if(isMyTurn && !resolvedHand){
       setButtons('player');
     }else{
       setButtons('waiting');
+      if(btnQuickStart){
+        btnQuickStart.classList.add('hidden');
+      }
     }
 
     if(playerCount > 1){
@@ -1687,6 +1699,9 @@
     const commitOptions = { includePlayer: !!tableState.players[clientId], extraPlayers: Object.keys(extraPlayers).length ? extraPlayers : null };
     commitRound(commitOptions);
     renderTable();
+    scheduleRoundAdvance(()=>{
+      enterBettingPhase();
+    });
   }
 
   function enterBettingPhase(){
@@ -1730,6 +1745,21 @@
       extraPlayers: Object.keys(extraPlayers).length ? extraPlayers : null
     };
     commitRound(commitOptions);
+  }
+
+  function quickStartNextHand(){
+    if(isMultiplayer) return;
+    clearRoundTransitionTimer();
+    if(tableState.state.phase === TABLE_PHASES.SUMMARY){
+      enterBettingPhase();
+    }
+    if(tableState.state.phase !== TABLE_PHASES.WAITING) return;
+    if(!isBetConfirmed(clientId)){
+      confirmMyBet();
+    }
+    if(tableState.state.phase === TABLE_PHASES.WAITING){
+      startDeal();
+    }
   }
 
   function dealerPlay(){
@@ -2290,9 +2320,9 @@
 
   btnHit.addEventListener('click', ()=> !btnHit.classList.contains('muted') && playerHit());
   btnStand.addEventListener('click', ()=> !btnStand.classList.contains('muted') && playerStand());
-  btnNextHand.addEventListener('click', ()=>{
-    if(btnNextHand.classList.contains('muted') || btnNextHand.classList.contains('hidden')) return;
-    enterBettingPhase();
+  btnQuickStart.addEventListener('click', ()=>{
+    if(btnQuickStart.classList.contains('muted') || btnQuickStart.classList.contains('hidden')) return;
+    quickStartNextHand();
   });
 
   if(playersLane){
