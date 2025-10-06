@@ -209,6 +209,7 @@ const rerollBtn = document.getElementById('btnReroll');
 const skipBtn = document.getElementById('btnSkip');
 const rerollNote = document.getElementById('rerollNote');
 const healBtn = document.getElementById('btnHeal');
+const playBtn = document.getElementById('btnPlay');
 
 /* =========================
    Weapons (pool)
@@ -546,14 +547,15 @@ function processWaveSpawns(){
 }
 function startWave(){
   if(!state.hero || pickerEl.style.display!=='none') return;
-  running=true; document.getElementById('btnPlay').textContent='Fighting…';
+  running=true;
+  updatePlayButton();
   state.waveClock=0;
   state.pendingSpawns = planWave(state.wave);
   log(`Wave ${state.wave} started.`);
   processWaveSpawns();
 }
 function waveClear(){
-  running=false; document.getElementById('btnPlay').textContent='Start Wave';
+  running=false;
   state.pendingSpawns=[];
   state.waveClock=0;
   const reward = 5 + Math.floor(state.wave*1.5);
@@ -574,6 +576,7 @@ function openPicker(){
   state.rerollCost = baseRerollCost();
   renderPickerChoices();
   updatePickerButtons();
+  updatePlayButton();
 }
 function rarName(r){ return r==='E'?'Epic':r==='R'?'Rare':'Common'; }
 
@@ -610,7 +613,13 @@ function takeCard(id){
   }
   rebuildInventoryUI(); rebuildSynergies(); updateHUD();
 }
-function closePicker(){ pickerEl.style.display='none'; state.currentChoices=[]; picksEl.innerHTML=''; updatePickerButtons(); }
+function closePicker(){
+  pickerEl.style.display='none';
+  state.currentChoices=[];
+  picksEl.innerHTML='';
+  updatePickerButtons();
+  updatePlayButton();
+}
 function baseRerollCost(){ return Math.max(4, 3 + Math.floor(state.wave*0.6)); }
 function skipReward(){ return 2 + Math.floor(state.wave*0.3); }
 function healCost(){ return 5 + Math.floor((state.wave-1)*0.5); }
@@ -631,6 +640,32 @@ function updatePickerButtons(){
   skipBtn.textContent = `Skip (+${skipReward()}g)`;
   skipBtn.disabled = false;
   rerollNote.textContent = `Reroll cost: ${cost}g`;
+}
+
+function updatePlayButton(){
+  if(!playBtn) return;
+  if(!state.hero){
+    playBtn.textContent = 'Select Hero';
+    playBtn.disabled = true;
+    return;
+  }
+  if(state.hero.hp <= 0){
+    playBtn.textContent = 'Defeated';
+    playBtn.disabled = true;
+    return;
+  }
+  if(running){
+    playBtn.textContent = 'Fighting…';
+    playBtn.disabled = true;
+    return;
+  }
+  if(pickerEl.style.display!=='none'){
+    playBtn.textContent = 'Choose Upgrade';
+    playBtn.disabled = true;
+    return;
+  }
+  playBtn.disabled = false;
+  playBtn.textContent = state.wave>1 ? 'Next Wave' : 'Start Wave';
 }
 function rollChoices(){
   // weighted rarity, avoid giving 3 of same id
@@ -744,9 +779,9 @@ function startRun(Hdef){
   state.wave=1; state.gold=0; state.enemies=[]; state.projs=[]; state.effects=[]; dpsTrack=[];
   state.pendingSpawns=[]; state.waveClock=0;
   state.inventory=[]; running=false; speed=1; document.getElementById('btnSpeed').textContent='1x';
-  document.getElementById('btnPlay').textContent='Start Wave';
   closePicker(); state.currentChoices=[]; state.rerollCost=0; updatePickerButtons();
   state.hero = createHero(Hdef);
+  updatePlayButton();
   // starter weapon(s)
   for(const wid of Hdef.start){ takeCard(wid); }
   // UI
@@ -772,8 +807,10 @@ function updateHUD(){
     healBtn.disabled = !state.hero || running || state.hero.hp>=state.hero.hpMax || state.hero.hp<=0 || state.gold<cost || heal<=0;
   }
   updatePickerButtons();
+  updatePlayButton();
 }
-document.getElementById('btnPlay').onclick = ()=>{ if(running) return; startWave(); };
+playBtn.onclick = ()=>{ if(running || playBtn.disabled) return; startWave(); };
+updatePlayButton();
 
 /* =========================
    Loop & Systems
