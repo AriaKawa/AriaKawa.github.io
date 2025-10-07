@@ -1611,7 +1611,6 @@
     return true;
   }
 
-  let autoBlackjackTimer = null;
   let roundTransitionTimer = null;
 
   function clearRoundTransitionTimer(){
@@ -1764,15 +1763,8 @@
       maybeStartAutoDeal();
     }
 
-    if(autoBlackjackTimer){
-      clearTimeout(autoBlackjackTimer);
-      autoBlackjackTimer = null;
-    }
     if(state.phase === 'player' && state.activePlayer === clientId){
-      autoBlackjackTimer = setTimeout(()=>{
-        autoBlackjackTimer = null;
-        checkAutoBlackjack();
-      }, 120);
+      checkAutoBlackjack();
     }
   }
 
@@ -2093,6 +2085,10 @@
 
     commitRound({ includePlayer: !!tableState.players[clientId], extraPlayers: Object.keys(extraPlayers).length ? extraPlayers : null });
     renderTable();
+
+    if(tableState.state.activePlayer === clientId){
+      checkAutoBlackjack();
+    }
   }
 
   function playerHit(){
@@ -2133,9 +2129,15 @@
   function playerStand(){
     if(tableState.state.phase !== 'player' || tableState.state.activePlayer !== clientId) return;
     const me = getPlayerEntry();
-    const total = handValue(me.hand || []);
+    const hand = Array.isArray(me.hand) ? me.hand : [];
+    const total = handValue(hand);
     tableState.state.status = '';
     tableState.state.statusUntil = 0;
+
+    if(isNaturalBlackjack(hand)){
+      applyBlackjackForCurrent();
+      return;
+    }
 
     if(total > 21){
       let bank = tableState.state.banks[clientId] ?? me.bank ?? 1000;
