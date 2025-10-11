@@ -2,150 +2,174 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Kingdom-like HTML Prototype</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Rat Kingdom — HTML Prototype</title>
 <style>
-  html, body {
-    background:#111;
-    margin:0; height:100%; overflow:hidden; color:#ddd; font-family:system-ui, sans-serif;
+  :root { color-scheme: dark; }
+  html, body { margin:0; height:100%; background:#0b0e12; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial; }
+  canvas { image-rendering: pixelated; image-rendering: crisp-edges; display:block; margin:0 auto; background:#000; border:1px solid #1a1f27; }
+  #hud {
+    position:fixed; left:12px; top:10px; color:#eaeaea; font-size:12px; line-height:1.5; user-select:none;
+    text-shadow: 0 1px 0 #000;
   }
-  #wrap {
-    display:flex; height:100%; width:100%; align-items:center; justify-content:center;
+  #hud .pill { display:inline-block; padding:4px 8px; margin:0 6px 6px 0; border-radius:10px; background:#151a22; border:1px solid #212734; }
+  #hud .gold { background:#1b1607; border-color:#362e0f; }
+  #help {
+    position:fixed; right:12px; top:10px; color:#c9d1d9; font-size:12px; max-width:46ch; padding:8px 10px; border-radius:10px; border:1px solid #1f2633; background:#10151d; opacity:.95; user-select:none;
   }
-  canvas {
-    image-rendering: pixelated;           /* crisp pixels */
-    image-rendering: crisp-edges;
-    background:#000;
-    border:1px solid #222;
+  #toast {
+    position:fixed; left:50%; transform:translateX(-50%); bottom:16px; color:#f0f6fc; font-size:12px; padding:8px 12px; background:#0f1720; border:1px solid #1e293b; border-radius:8px; opacity:0; transition:opacity .25s ease;
   }
-  .hud {
-    position:fixed; left:12px; top:10px; color:#eee; font-size:14px; line-height:1.4;
-    text-shadow:0 1px 0 #000;
-    user-select:none;
-  }
-  .hud .pill { display:inline-block; padding:4px 8px; background:#222; border-radius:8px; margin-right:6px; }
-  .help {
-    position:fixed; right:12px; top:10px; color:#ccc; font-size:12px; text-align:right; max-width:40ch;
-    background:#141414; padding:8px 10px; border-radius:8px; border:1px solid #222;
-  }
+  .show { opacity:1 !important; }
+  a { color:#83c2ff; text-decoration:none; border-bottom:1px dashed #83c2ff55; }
 </style>
 </head>
 <body>
-<div id="wrap">
-  <!-- We render at low res (320x180) then scale up for chunky pixels -->
-  <canvas id="game" width="320" height="180"></canvas>
-</div>
+<canvas id="game" width="384" height="216"></canvas>
 
-<div class="hud" id="hud"></div>
-<div class="help">
-  <strong>Controls</strong><br/>
-  A/D or ←/→: Move • Shift: Sprint<br/>
-  Space: Drop coin • E: Interact (Hire at camp)<br/>
-  1: Place wall site (1 coin) • 2: Upgrade nearby wall (2 coins)
+<div id="hud"></div>
+<div id="help">
+  <strong>Rat Kingdom (HTML Prototype)</strong><br>
+  A/D or ←/→ move • Shift sprint • 1–5 select build • <b>E</b> build • <b>R</b> upgrade • <b>F</b> toggle grid<br>
+  <b>G</b> save • <b>L</b> load • <b>M</b> multiplayer (if Firebase loaded) • <b>Esc</b> cancel
 </div>
+<div id="toast"></div>
 
 <script>
 (() => {
-  // ==== CONFIG ====
-  const VIEW_W = 320, VIEW_H = 180;      // internal resolution
-  const PIXEL_SCALE = Math.floor(Math.min(window.innerWidth/VIEW_W, window.innerHeight/VIEW_H));
-  const WORLD_LEFT = -2000, WORLD_RIGHT = 2000; // simple world bounds
-  const GROUND_Y = 130; // baseline ground level
-  const GRAVITY = 0.4;
+  // =========================
+  // Config & Constants
+  // =========================
+  const INTERNAL_W = 384, INTERNAL_H = 216;   // low-res internal buffer (16:9)
+  const WORLD_LEFT = -1800, WORLD_RIGHT = 1800;
+  const GROUND_Y = 150;
+  const GRAVITY = 0.45;
 
-  const PLAYER = {
-    x: 0, y: GROUND_Y - 12, vx: 0, vy: 0,
-    w: 18, h: 12,
-    dir: 1,
-    maxSpeed: 1.1, sprintSpeed: 1.9,
-    accel: 0.08, friction: 0.85,
-    onGround: true,
-    stamina: 100, maxStamina: 100, sprintDrain: 35/60, sprintRegen: 18/60
+  const START_GOLD = 10;
+  const SLOT_SPACING = 24;        // build slots every N pixels
+  const FRONTIER_STEP = 8 * SLOT_SPACING; // each Outpost expands territory by this
+  const WAVE_SECONDS = 45;        // time between waves
+  const ENEMY_PER_WAVE_BASE = 4;  // scales with wave
+  const ENEMY_HP_BASE = 8;        // scales with wave
+  const ENEMY_SPEED = 0.35;
+  const GOLD_DROP_MIN = 1, GOLD_DROP_MAX = 2;
+
+  const BUILD = {
+    None: 0, Wall: 1, Catapult: 2, Farm: 3, Barracks: 4, Outpost: 5
   };
 
-  let coins = 4; // start money
-  let dayTime = 0; // seconds, loops every ~120s for day/night
-  let timeScale = 1; // 1x speed
-  let dayLength = 120; // seconds for full cycle
-  let dayCount = 1;
+  const BUILD_INFO = {
+    [BUILD.Wall]:     { name:"Wall",     cost: 3,  hp: 30,  upCost:[3,5], upHP:[50,70] },
+    [BUILD.Catapult]: { name:"Catapult", cost: 6,  hp: 20,  range: 110, fireRate: 2.2, dmg: 4, upCost:[4,6], upRange:[130,150], upFR:[1.8,1.4], upDMG:[6,8], upHP:[30,40] },
+    [BUILD.Farm]:     { name:"Farm",     cost: 5,  hp: 18,  tick: 6, yield: 2, upCost:[3,4], upTick:[5,4], upYield:[3,4], upHP:[24,30] },
+    [BUILD.Barracks]: { name:"Barracks", cost: 7,  hp: 25,  spawnT: 8, maxAlly: 4, upCost:[4,6], upSpawn:[6,5], upMax:[6,8], upHP:[35,45] },
+    [BUILD.Outpost]:  { name:"Outpost",  cost: 8,  hp: 28 }
+  };
 
-  const input = { left:false, right:false, sprint:false, drop:false, interact:false, build1:false, build2:false };
-  const keys = new Map();
-
-  // Entities
-  const coinsOnGround = []; // {x,y,vy}
-  const camp = { x: 0, y: GROUND_Y, w: 28, level: 1, villagers: 0 };
-  const villagers = []; // hired: {x,y, role:'builder'|'archer', target: null}
-  const buildSites = []; // {x,y, level:0..n, type:'wall', hp,maxHp}
-  const enemies = []; // greed: {x,y, vx, targetX, hp}
-
-  // Terrain bumps (very simple noise-like ridges)
-  const ridges = [];
-  (function makeRidges(){
-    for (let i=0;i<50;i++){
-      const rx = WORLD_LEFT + Math.random()*(WORLD_RIGHT-WORLD_LEFT);
-      const h = 3 + Math.random()*8;
-      const w = 50 + Math.random()*150;
-      ridges.push({x:rx, w, h});
-    }
-  })();
-
-  // Parallax layers (just color bands/rect islands)
-  const parallaxLayers = [
-    { speed: 0.25, color:"#0a0f1a", islands:[] },
-    { speed: 0.5,  color:"#0d1322", islands:[] },
-    { speed: 0.8,  color:"#10182b", islands:[] },
-  ];
-  for (const layer of parallaxLayers){
-    for (let i=0;i<14;i++){
-      const x = WORLD_LEFT + Math.random()*(WORLD_RIGHT-WORLD_LEFT);
-      const w = 40 + Math.random()*160;
-      const h = 10 + Math.random()*40;
-      layer.islands.push({x, w, h});
-    }
-  }
-
-  // Canvas setup
-  const c = document.getElementById('game');
-  const ctx = c.getContext('2d');
+  // =========================
+  // State
+  // =========================
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
 
-  // Fit to screen with integer scale
-  function fitCanvas(){
-    const scale = Math.max(1, Math.floor(Math.min(window.innerWidth/VIEW_W, window.innerHeight/VIEW_H)));
-    c.style.width = (VIEW_W*scale) + "px";
-    c.style.height = (VIEW_H*scale) + "px";
+  // Fit canvas to window with integer scale
+  function fitCanvas() {
+    const scale = Math.max(1, Math.floor(Math.min(window.innerWidth / INTERNAL_W, window.innerHeight / INTERNAL_H)));
+    canvas.style.width = (INTERNAL_W * scale) + 'px';
+    canvas.style.height = (INTERNAL_H * scale) + 'px';
   }
   fitCanvas();
   window.addEventListener('resize', fitCanvas);
 
-  // Input
-  window.addEventListener('keydown', (e)=>{
-    keys.set(e.code, true);
-    if (["ArrowLeft","ArrowRight","Space"].includes(e.key)) e.preventDefault();
-  });
-  window.addEventListener('keyup',   (e)=>{ keys.set(e.code, false); });
+  const hud = document.getElementById('hud');
+  const toastEl = document.getElementById('toast');
 
-  function readInput(){
-    input.left      = !!(keys.get("ArrowLeft") || keys.get("KeyA"));
-    input.right     = !!(keys.get("ArrowRight")|| keys.get("KeyD"));
-    input.sprint    = !!(keys.get("ShiftLeft") || keys.get("ShiftRight"));
-    input.drop      = !!keys.get("Space");
-    input.interact  = !!keys.get("KeyE");
-    input.build1    = !!keys.get("Digit1");
-    input.build2    = !!keys.get("Digit2");
+  function toast(msg, ms=1400){ toastEl.textContent = msg; toastEl.classList.add('show'); clearTimeout(toastEl._t); toastEl._t = setTimeout(()=>toastEl.classList.remove('show'), ms); }
+
+  // Input
+  const keys = new Map();
+  const input = { left:false, right:false, sprint:false, build:false, upgrade:false, grid:false };
+  window.addEventListener('keydown', e => { keys.set(e.code, true); });
+  window.addEventListener('keyup', e => { keys.set(e.code, false); });
+
+  // Camera / Day-Night
+  let camX = 0, camY = 0;
+  let dayClock = 0, dayLength = 120; // seconds
+
+  // Player (Rat hero)
+  const rat = {
+    x: 0, y: GROUND_Y-10, vx: 0, vy: 0, w: 14, h: 10, dir: 1,
+    accel: 0.09, maxV: 1.25, sprintV: 2.0, friction: 0.83, stamina: 100, maxStamina: 100, sprintDrain: 35/60, sprintRegen: 18/60,
+    onGround: true
+  };
+
+  // Economy / Build selection
+  let gold = START_GOLD;
+  let selected = BUILD.Wall;
+  let showGrid = true;
+
+  // Territory (frontiers from camp)
+  const campX = 0;
+  let rightFrontier = 8 * SLOT_SPACING;
+  let leftFrontier  = 8 * SLOT_SPACING;
+
+  // Build slots
+  const slots = [];
+  for (let x = WORLD_LEFT; x <= WORLD_RIGHT; x += SLOT_SPACING) {
+    const gy = groundAt(x) - 1;
+    // Skip too near camp log
+    if (Math.abs(x - campX) < SLOT_SPACING*2) continue;
+    slots.push({ x, y: gy, built: null, level: 0, hp: 0, maxHp: 0, progress: 0, lastTick: 0, cooldown: 0 });
   }
 
-  // Helpers
-  function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
+  // Entities
+  const coinsOnGround = []; // {x,y,vy}
+  const allies = []; // {x,y,vx,dir,hp,maxHp,range,dmg,spd,targetId}
+  const enemies = []; // {x,y,vx,dir,hp,maxHp,spd,targetX}
+
+  // Projectiles (catapults etc.)
+  const projectiles = []; // {x,y,vx,vy,dmg,ttl}
+
+  // Waves
+  let waveNum = 0;
+  let timeToNextWave = WAVE_SECONDS;
+  let nextWaveSide = -1; // -1 left, +1 right, alternates
+
+  // Parallax background
+  const parallax = [
+    { speed: .25, color:"#0c1020", blips:randIslands(12, 30,80, 6,26) },
+    { speed: .5,  color:"#12182a", blips:randIslands(14, 30,110, 8,36) },
+    { speed: .8,  color:"#161f34", blips:randIslands(16, 30,150, 8,40) }
+  ];
+
+  function randIslands(n, wmin,wmax, hmin,hmax){
+    const arr=[];
+    for(let i=0;i<n;i++){
+      const x = WORLD_LEFT + Math.random()*(WORLD_RIGHT-WORLD_LEFT);
+      const w = wmin + Math.random()*(wmax-wmin);
+      const h = hmin + Math.random()*(hmax-hmin);
+      arr.push({x,w,h});
+    }
+    return arr;
+  }
+
+  // Terrain undulations
+  const ridges = [];
+  (function genRidges(){
+    for (let i=0;i<48;i++){
+      const rx = WORLD_LEFT + Math.random()*(WORLD_RIGHT-WORLD_LEFT);
+      const h = 2 + Math.random()*7;
+      const w = 60 + Math.random()*120;
+      ridges.push({x:rx, w, h});
+    }
+  })();
 
   function groundAt(x){
-    // baseline + ridges contribution
     let y = GROUND_Y;
     for (const r of ridges){
       const t = (x - r.x) / r.w;
       if (t > 0 && t < 1){
-        // simple hill curve
         const s = Math.sin(Math.PI * t);
         y -= s * r.h;
       }
@@ -153,355 +177,735 @@
     return y;
   }
 
-  function spawnCoin(x,y){
-    coinsOnGround.push({x, y, vy:-1.2});
+  // =========================
+  // Building helpers
+  // =========================
+  function canBuildAt(slot) {
+    // Within frontiers?
+    const withinRight = slot.x <= (campX + rightFrontier);
+    const withinLeft  = slot.x >= (campX - leftFrontier);
+    if (!(withinLeft && withinRight)) return false;
+    // Slot free?
+    if (slot.built) return false;
+    // Distance from player reasonable
+    if (Math.abs(slot.x - rat.x) > SLOT_SPACING*2.5) return false;
+    return true;
   }
 
-  function spawnEnemyWave(){
-    // simple: spawn 1-3 enemies from left or right at dusk
-    const count = 1 + Math.floor(Math.random()*3);
-    const side = Math.random()<0.5 ? WORLD_LEFT+20 : WORLD_RIGHT-20;
-    for (let i=0;i<count;i++){
-      enemies.push({
-        x: side + (Math.random()*40-20),
-        y: groundAt(side)-10,
-        vx: side<0 ? 0.4 : -0.4,
-        targetX: camp.x,
-        hp: 3
-      });
-    }
+  function buildCost(kind, level=0){
+    const bi = BUILD_INFO[kind];
+    if (!bi) return 0;
+    return level === 0 ? bi.cost : (bi.upCost ? bi.upCost[level-1]||999 : 999);
   }
 
-  // Game Logic
-  let lastTime = performance.now();
-  let acc = 0;
-  const FIXED_DT = 1000/60;
-
-  function step(dt){
-    readInput();
-
-    // Day/Night progression
-    dayTime += (dt/1000) * timeScale;
-    if (dayTime >= dayLength){
-      dayTime -= dayLength;
-      dayCount++;
-    }
-    // Trigger a wave near sunset
-    const t = dayTime/dayLength; // 0..1
-    if (t > 0.7 && t < 0.7 + (dt/1000)/dayLength){
-      spawnEnemyWave();
-    }
-
-    // Player movement
-    const targetSpeed = (input.sprint && PLAYER.stamina>0) ? PLAYER.sprintSpeed : PLAYER.maxSpeed;
-    let ax = 0;
-    if (input.left)  { ax -= PLAYER.accel; PLAYER.dir = -1; }
-    if (input.right) { ax += PLAYER.accel; PLAYER.dir =  1; }
-    PLAYER.vx += ax;
-    // clamp to target speed
-    PLAYER.vx = clamp(PLAYER.vx, -targetSpeed, targetSpeed);
-    // friction if no input
-    if (!input.left && !input.right) PLAYER.vx *= PLAYER.friction;
-
-    // stamina
-    if (input.sprint && (input.left || input.right) && Math.abs(PLAYER.vx)>PLAYER.maxSpeed*0.95){
-      PLAYER.stamina = Math.max(0, PLAYER.stamina - PLAYER.sprintDrain);
-    } else {
-      PLAYER.stamina = Math.min(PLAYER.maxStamina, PLAYER.stamina + PLAYER.sprintRegen);
-    }
-
-    // Gravity / ground stick
-    PLAYER.vy += GRAVITY;
-    let newX = clamp(PLAYER.x + PLAYER.vx*3, WORLD_LEFT+20, WORLD_RIGHT-20);
-    let groundY = groundAt(newX) - 12;
-    let newY = PLAYER.y + PLAYER.vy;
-    if (newY >= groundY){
-      newY = groundY;
-      PLAYER.vy = 0;
-      PLAYER.onGround = true;
-    } else {
-      PLAYER.onGround = false;
-    }
-    PLAYER.x = newX; PLAYER.y = newY;
-
-    // Interactions
-    if (input.drop && coins > 0){
-      coins--;
-      spawnCoin(PLAYER.x + PLAYER.dir*6, PLAYER.y-4);
-      keys.set("Space", false);
-    }
-
-    if (input.interact){
-      // hire at camp if coin is nearby on ground -> convert to villager
-      // or spend from wallet if no ground coin within camp, but have coin
-      const nearCamp = Math.abs(PLAYER.x - camp.x) < 24;
-      if (nearCamp){
-        // check ground coins first
-        let idx = coinsOnGround.findIndex(cg => Math.hypot(cg.x - camp.x, cg.y - (camp.y-6)) < 20);
-        if (idx >= 0){
-          coinsOnGround.splice(idx,1);
-          villagers.push({x:camp.x+ (Math.random()*10-5), y:groundAt(camp.x)-10, role: (Math.random()<0.5?'archer':'builder'), target:null});
-          camp.villagers++;
-        } else if (coins > 0){
-          coins--;
-          villagers.push({x:camp.x+ (Math.random()*10-5), y:groundAt(camp.x)-10, role: (Math.random()<0.5?'archer':'builder'), target:null});
-          camp.villagers++;
-        }
-      }
-      keys.set("KeyE", false);
-    }
-
-    if (input.build1){
-      // place a wall site near player if ground is clear
-      if (coins > 0){
-        const px = Math.round(PLAYER.x/8)*8;
-        // avoid placing on camp or existing site
-        if (Math.abs(px - camp.x) > 40 && !buildSites.some(b=>Math.abs(b.x-px)<16)){
-          buildSites.push({x:px, y:groundAt(px)-8, level:0, type:'wall', hp:4, maxHp:4});
-          coins--;
-        }
-      }
-      keys.set("Digit1", false);
-    }
-
-    if (input.build2){
-      // upgrade nearest wall if within range
-      let best=null, bestD=999;
-      for (const b of buildSites){
-        const d = Math.abs(b.x - PLAYER.x);
-        if (d<24 && d<bestD) { best=b; bestD = d; }
-      }
-      if (best && coins>=2){
-        best.level++;
-        best.maxHp += 2;
-        best.hp = best.maxHp;
-        coins -= 2;
-      }
-      keys.set("Digit2", false);
-    }
-
-    // Coin pickup
-    for (let i=coinsOnGround.length-1;i>=0;i--){
-      const cg = coinsOnGround[i];
-      cg.vy += 0.2;
-      cg.y += cg.vy;
-      const gy = groundAt(cg.x)-2;
-      if (cg.y > gy){ cg.y = gy; cg.vy = -cg.vy*0.25; if (Math.abs(cg.vy)<0.3) cg.vy = 0; }
-      // pickup if player overlaps
-      if (Math.abs(cg.x - PLAYER.x)<8 && Math.abs(cg.y - (PLAYER.y-4))<10){
-        coins++; coinsOnGround.splice(i,1);
-      }
-    }
-
-    // Villagers behavior
-    for (const v of villagers){
-      // simple patrol near camp; archers drift a bit, builders look for damaged walls
-      if (v.role==='archer'){
-        const target = camp.x + Math.sin((performance.now()+v.x)*0.0005)*45;
-        v.x += Math.sign(target - v.x)*0.3;
-      } else { // builder
-        let damaged = buildSites.find(b=>b.hp < b.maxHp);
-        const tx = damaged ? damaged.x : camp.x + (Math.random()<0.5?-30:30);
-        v.x += Math.sign(tx - v.x)*0.35;
-        // repair when close
-        if (damaged && Math.abs(v.x - damaged.x)<6){
-          damaged.hp = Math.min(damaged.maxHp, damaged.hp + 0.02);
-        }
-      }
-      v.y = groundAt(v.x)-10;
-    }
-
-    // Enemies
-    for (let i=enemies.length-1;i>=0;i--){
-      const e = enemies[i];
-      // Move towards camp
-      e.vx = Math.sign(camp.x - e.x)*0.35;
-      e.x += e.vx*2;
-      e.y = groundAt(e.x)-10;
-
-      // Attack nearest wall first
-      let target = null, td = Math.abs(camp.x - e.x);
-      for (const b of buildSites){
-        const d = Math.abs(b.x - e.x);
-        if (d < td && d < 18){ target = b; td = d; }
-      }
-      if (target){
-        target.hp -= 0.02;
-        if (target.hp <= 0){
-          // destroy wall
-          const idx = buildSites.indexOf(target);
-          if (idx>=0) buildSites.splice(idx,1);
-          spawnCoin(target.x, target.y-6);
-        }
-      } else {
-        // If reaches camp, steal a villager (remove) or a coin if available
-        if (Math.abs(e.x - camp.x) < 14){
-          if (camp.villagers>0 && Math.random()<0.01){
-            camp.villagers--;
-            villagers.pop();
-          } else if (coins>0 && Math.random()<0.02){
-            coins--;
-            // enemy runs away with loot
-            e.vx = (e.x<camp.x?-1:1)*2;
-            e.x += e.vx*4;
-          }
-        }
-      }
-
-      // Archers shoot if close (abstracted as damage tick)
-      for (const v of villagers){
-        if (v.role==='archer' && Math.abs(v.x - e.x)<40){
-          e.hp -= 0.02; // slow chip
-        }
-      }
-
-      if (e.hp <= 0){
-        // drop coin
-        spawnCoin(e.x, e.y-8);
-        enemies.splice(i,1);
-      }
-    }
+  function placeBuilding(slot, kind){
+    const bi = BUILD_INFO[kind];
+    slot.built = kind;
+    slot.level = 1;
+    slot.hp = bi.hp;
+    slot.maxHp = bi.hp;
+    slot.progress = 0;
+    slot.lastTick = 0;
+    slot.cooldown = 0;
   }
 
-  // Render
-  function draw(){
-    // Sky color by time (day -> dusk -> night -> dawn)
-    const t = dayTime/dayLength;
-    // interpolate between colors
-    function mix(a,b,k){
-      const ca = parseInt(a.slice(1),16), cb = parseInt(b.slice(1),16);
-      const ar=(ca>>16)&255, ag=(ca>>8)&255, ab=ca&255;
-      const br=(cb>>16)&255, bg=(cb>>8)&255, bb=cb&255;
-      const rr = Math.round(ar+(br-ar)*k), rg = Math.round(ag+(bg-ag)*k), rb = Math.round(ab+(bb-ab)*k);
-      return `rgb(${rr},${rg},${rb})`;
+  function upgradeBuilding(slot){
+    if (!slot.built) return false;
+    const bi = BUILD_INFO[slot.built];
+    if (!bi.upCost || slot.level >= 3) return false;
+    slot.level++;
+    // Apply per-type upgrades
+    if (slot.built === BUILD.Wall){
+      const idx = slot.level-2; // 0 or 1
+      slot.maxHp = (bi.upHP[idx] || slot.maxHp);
+      slot.hp = slot.maxHp;
+    } else if (slot.built === BUILD.Catapult){
+      const idx = slot.level-2;
+      const newHP = bi.upHP[idx] || slot.maxHp;
+      slot.maxHp = newHP; slot.hp = newHP;
+    } else if (slot.built === BUILD.Farm){
+      const idx = slot.level-2;
+      slot.maxHp = bi.upHP[idx] || slot.maxHp;
+      slot.hp = slot.maxHp;
+    } else if (slot.built === BUILD.Barracks){
+      const idx = slot.level-2;
+      slot.maxHp = bi.upHP[idx] || slot.maxHp;
+      slot.hp = slot.maxHp;
     }
-    // phases
-    const noon="#69b7ff", dusk="#f7a26b", night="#0a0b22", dawn="#ffd59b";
-    let sky;
-    if (t<0.25) sky = mix(dawn, noon, t/0.25);
-    else if (t<0.5) sky = mix(noon, dusk, (t-0.25)/0.25);
-    else if (t<0.75) sky = mix(dusk, night, (t-0.5)/0.25);
-    else sky = mix(night, dawn, (t-0.75)/0.25);
-
-    ctx.fillStyle = sky;
-    ctx.fillRect(0,0,VIEW_W,VIEW_H);
-
-    // Camera follows player
-    const camX = clamp(PLAYER.x - VIEW_W/2, WORLD_LEFT, WORLD_RIGHT - VIEW_W);
-    const camY = 0;
-
-    // Parallax
-    for (const layer of parallaxLayers){
-      ctx.fillStyle = layer.color;
-      for (const isl of layer.islands){
-        const lx = Math.floor((isl.x - camX) * layer.speed) % (WORLD_RIGHT - WORLD_LEFT);
-        const drawX = lx;
-        ctx.globalAlpha = 0.7;
-        ctx.fillRect(Math.floor(drawX), Math.floor(GROUND_Y - 40 - isl.h), Math.floor(isl.w), Math.floor(isl.h));
-        ctx.globalAlpha = 1;
-      }
-    }
-
-    // Ground
-    // background dirt
-    ctx.fillStyle = "#1b1e24";
-    ctx.fillRect(0, GROUND_Y, VIEW_W, VIEW_H-GROUND_Y);
-
-    // draw ground line with simple sampling
-    ctx.fillStyle = "#2a2f38";
-    for (let sx=0; sx<VIEW_W; sx++){
-      const wx = camX + sx;
-      const gy = Math.floor(groundAt(wx));
-      ctx.fillRect(sx, gy, 1, VIEW_H-gy);
-    }
-
-    // Draw camp
-    {
-      const x = Math.floor(camp.x - camX), y = Math.floor(groundAt(camp.x));
-      ctx.fillStyle = "#cc8a44"; // fire
-      // flicker
-      const f = Math.sin(performance.now()*0.02)*2;
-      ctx.fillRect(x-2, y-14 + f*0.2, 4, 6);
-      ctx.fillStyle = "#553311";
-      ctx.fillRect(x-14, y-8, 28, 6); // log
-      // flag (camp level)
-      ctx.fillStyle = "#888";
-      ctx.fillRect(x+10, y-18, 1, 10);
-      ctx.fillStyle = camp.level>1 ? "#e33" : "#777";
-      ctx.fillRect(x+11, y-18, 6, 4);
-    }
-
-    // Build sites (walls)
-    for (const b of buildSites){
-      const bx = Math.floor(b.x - camX), by = Math.floor(b.y);
-      // base
-      ctx.fillStyle = "#5e6066";
-      ctx.fillRect(bx-6, by-8, 12, 8 + b.level*2);
-      // hp bar
-      ctx.fillStyle = "#111";
-      ctx.fillRect(bx-8, by-14, 16, 3);
-      ctx.fillStyle = "#7cff7c";
-      const hpw = Math.max(0, Math.floor(16*(b.hp/b.maxHp)));
-      ctx.fillRect(bx-8, by-14, hpw, 3);
-    }
-
-    // Coins on ground
-    for (const cg of coinsOnGround){
-      const x = Math.floor(cg.x - camX), y = Math.floor(cg.y);
-      ctx.fillStyle = "#e6c74c";
-      ctx.fillRect(x-1, y-2, 3, 3);
-    }
-
-    // Villagers
-    for (const v of villagers){
-      const x = Math.floor(v.x - camX), y = Math.floor(v.y);
-      ctx.fillStyle = (v.role==='archer') ? "#44aaff" : "#aaff88";
-      ctx.fillRect(x-3, y-8, 6, 8);
-    }
-
-    // Enemies
-    for (const e of enemies){
-      const x = Math.floor(e.x - camX), y = Math.floor(e.y);
-      ctx.fillStyle = "#8c2aff";
-      ctx.fillRect(x-4, y-8, 8, 8);
-    }
-
-    // Player (rider + horse-ish block)
-    {
-      const x = Math.floor(PLAYER.x - camX), y = Math.floor(PLAYER.y);
-      ctx.fillStyle = "#d0a070"; // horse
-      ctx.fillRect(x-8, y-6, 16, 6);
-      ctx.fillStyle = "#eee"; // rider
-      ctx.fillRect(PLAYER.dir>0 ? x : x-3, y-12, 3, 6);
-    }
-
-    // HUD
-    const hud = document.getElementById('hud');
-    const phase = (t<0.25) ? "Dawn" : (t<0.5) ? "Day" : (t<0.75) ? "Dusk" : "Night";
-    hud.innerHTML = `
-      <span class="pill">Day: ${dayCount}</span>
-      <span class="pill">Phase: ${phase}</span>
-      <span class="pill">Coins: ${coins}</span>
-      <span class="pill">Villagers: ${camp.villagers}</span>
-      <span class="pill">Stamina: ${Math.round(PLAYER.stamina)}</span>
-    `;
+    return true;
   }
 
-  // Main loop (fixed step)
+  // =========================
+  // Game Loop
+  // =========================
+  let last = performance.now(), acc = 0, FIX = 1000/60;
+
   function loop(now){
-    const dt = now - lastTime;
-    lastTime = now;
-    acc += dt;
-    while (acc >= FIXED_DT){
-      step(FIXED_DT);
-      acc -= FIXED_DT;
-    }
+    const dt = now - last; last = now; acc += dt;
+    while (acc >= FIX){ step(FIX/1000); acc -= FIX; }
     draw();
     requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);
 
-})();
+  function step(dt){
+    readInput();
+
+    // Day-night tint
+    dayClock += dt;
+    if (dayClock >= dayLength) dayClock -= dayLength;
+
+    // Wave timer
+    timeToNextWave -= dt;
+    if (timeToNextWave <= 0){
+      startWave();
+      timeToNextWave = WAVE_SECONDS;
+    }
+
+    // Player move
+    const tSpeed = (input.sprint && rat.stamina>0) ? rat.sprintV : rat.maxV;
+    let ax = 0;
+    if (input.left) { ax -= rat.accel; rat.dir = -1; }
+    if (input.right){ ax += rat.accel; rat.dir =  1; }
+    rat.vx += ax;
+    rat.vx = clamp(rat.vx, -tSpeed, tSpeed);
+    if (!input.left && !input.right) rat.vx *= rat.friction;
+    if (input.sprint && (input.left||input.right) && Math.abs(rat.vx)>rat.maxV*0.95) {
+      rat.stamina = Math.max(0, rat.stamina - rat.sprintDrain);
+    } else {
+      rat.stamina = Math.min(rat.maxStamina, rat.stamina + rat.sprintRegen);
+    }
+    rat.vy += GRAVITY;
+    let nx = clamp(rat.x + rat.vx*3, WORLD_LEFT+16, WORLD_RIGHT-16);
+    let gy = groundAt(nx) - rat.h;
+    let ny = rat.y + rat.vy;
+    if (ny >= gy){ ny = gy; rat.vy = 0; rat.onGround = true; } else rat.onGround = false;
+    rat.x = nx; rat.y = ny;
+
+    // Building interactions
+    // Build (E)
+    if (input.build){
+      const slot = closestBuildableSlot();
+      if (slot && canBuildAt(slot) && selected !== BUILD.None){
+        const cost = buildCost(selected, 0);
+        if (gold >= cost){
+          gold -= cost;
+          placeBuilding(slot, selected);
+          if (selected === BUILD.Outpost){
+            // Expand frontier based on side
+            if (slot.x > campX) rightFrontier = Math.min(rightFrontier + FRONTIER_STEP, (WORLD_RIGHT - campX) - SLOT_SPACING*2);
+            else leftFrontier = Math.min(leftFrontier + FRONTIER_STEP, (campX - WORLD_LEFT) - SLOT_SPACING*2);
+            toast("Territory expanded!");
+          }
+          toast(`Built ${BUILD_INFO[selected].name}`);
+        } else {
+          toast("Not enough gold.");
+        }
+      }
+      keys.set("KeyE", false);
+      input.build = false;
+    }
+
+    // Upgrade/Repair (R)
+    if (input.upgrade){
+      const slot = closestOwnedSlot();
+      if (slot && slot.built){
+        const lvl = slot.level;
+        const cost = buildCost(slot.built, lvl);
+        if (slot.hp < slot.maxHp) {
+          const pay = Math.min(cost, gold);
+          slot.hp = clamp(slot.hp + pay*3, 0, slot.maxHp); // repair 3 hp per gold
+          gold -= pay;
+          toast("Repaired.");
+        } else if (gold >= cost){
+          if (upgradeBuilding(slot)){
+            gold -= cost;
+            toast("Upgraded to Lv" + slot.level);
+          } else {
+            toast("Max level.");
+          }
+        } else {
+          toast("Not enough gold.");
+        }
+      }
+      keys.set("KeyR", false);
+      input.upgrade = false;
+    }
+
+    // Farms produce
+    for (const s of slots){
+      if (s.built === BUILD.Farm){
+        const bi = BUILD_INFO[BUILD.Farm];
+        const tick = (s.level===1)? bi.tick : (s.level===2? bi.upTick[0] : bi.upTick[1]);
+        const yieldAmt = (s.level===1)? bi.yield : (s.level===2? bi.upYield[0] : bi.upYield[1]);
+        s.lastTick += dt;
+        if (s.lastTick >= tick){
+          s.lastTick -= tick;
+          gold += yieldAmt;
+          floatCoin(s.x, s.y-8, yieldAmt);
+        }
+      }
+      // Barracks spawn allies
+      if (s.built === BUILD.Barracks){
+        s.cooldown -= dt;
+        const bi = BUILD_INFO[BUILD.Barracks];
+        const maxAlly = (s.level===1)? bi.maxAlly : (s.level===2? bi.upMax[0] : bi.upMax[1]);
+        const spawnT  = (s.level===1)? bi.spawnT   : (s.level===2? bi.upSpawn[0] : bi.upSpawn[1]);
+        const local = allies.filter(a => Math.abs(a.x - s.x) < 140).length;
+        if (s.cooldown <= 0 && local < maxAlly){
+          s.cooldown = spawnT;
+          spawnAlly(s.x + 6*Math.sign(s.x-campX));
+        }
+      }
+      // Catapult fire
+      if (s.built === BUILD.Catapult){
+        s.cooldown -= dt;
+        const bi = BUILD_INFO[BUILD.Catapult];
+        const range = (s.level===1)? bi.range : (s.level===2? bi.upRange[0] : bi.upRange[1]);
+        const fireRate = (s.level===1)? bi.fireRate : (s.level===2? bi.upFR[0] : bi.upFR[1]);
+        const dmg = (s.level===1)? bi.dmg : (s.level===2? bi.upDMG[0] : bi.upDMG[1]);
+        if (s.cooldown <= 0){
+          const target = closestEnemyInRange(s.x, range);
+          if (target){
+            s.cooldown = fireRate;
+            fireLob(s.x, s.y-10, target, dmg);
+          }
+        }
+      }
+    }
+
+    // Allies behavior
+    for (let i=allies.length-1; i>=0; i--){
+      const a = allies[i];
+      a.vx = a.spd * a.dir;
+      // Patrol around nearest defended area (toward wave side if enemies)
+      const nearestE = closestEnemyTo(a.x, 140);
+      if (nearestE) a.dir = Math.sign(nearestE.x - a.x) || a.dir;
+      a.x += a.vx*2.0;
+      a.y = groundAt(a.x) - 8;
+      // Combat
+      if (nearestE && Math.abs(nearestE.x - a.x) < a.range){
+        // bite!
+        nearestE.hp -= a.dmg * dt * 2.2;
+      }
+      // death
+      if (a.hp <= 0) { allies.splice(i,1); }
+    }
+
+    // Enemies
+    for (let i=enemies.length-1; i>=0; i--){
+      const e = enemies[i];
+      // Move toward targetX (camp)
+      e.vx = (e.x < e.targetX) ? e.spd : -e.spd;
+      e.x += e.vx*2.0;
+      e.y = groundAt(e.x) - 8;
+
+      // Collide with walls first
+      const wall = nearestBlockingWall(e.x);
+      if (wall && Math.abs(wall.x - e.x) < 10){
+        // attack wall
+        wall.hp -= 6 * dt;
+        if (wall.hp <= 0) {
+          spawnCoinsAt(wall.x, wall.y-6, randInt(GOLD_DROP_MIN, GOLD_DROP_MAX));
+          wall.built = null; wall.level = 0; wall.hp = 0; wall.maxHp = 0; wall.cooldown = 0;
+        }
+        // enemies slow near walls
+        e.x -= e.vx*1.0*dt;
+      } else {
+        // attack camp if reached
+        if (Math.abs(e.x - campX) < 14){
+          // steal gold if any
+          if (gold>0 && Math.random()<0.015){
+            gold--; // enemy steals
+          }
+        }
+      }
+
+      // Hit by allies
+      const a = closestAllyTo(e.x, 20);
+      if (a) e.hp -= (a.dmg * dt * 2.5);
+
+      // Projectiles hit
+      // handled in projectile loop
+
+      if (e.hp <= 0){
+        spawnCoinsAt(e.x, e.y-6, randInt(GOLD_DROP_MIN, GOLD_DROP_MAX));
+        enemies.splice(i,1);
+      }
+    }
+
+    // Projectiles
+    for (let i=projectiles.length-1; i>=0; i--){
+      const p = projectiles[i];
+      p.ttl -= dt;
+      p.vy += GRAVITY*0.6;
+      p.x += p.vx; p.y += p.vy;
+      // hit ground?
+      if (p.y >= groundAt(p.x)-2){
+        // splash damage to nearest enemy
+        const target = closestEnemyTo(p.x, 18);
+        if (target) target.hp -= p.dmg;
+        projectiles.splice(i,1);
+        continue;
+      }
+      // direct hit check
+      const hit = closestEnemyToPoint(p.x, p.y, 8);
+      if (hit){ hit.hp -= p.dmg; projectiles.splice(i,1); }
+      else if (p.ttl <= 0) projectiles.splice(i,1);
+    }
+
+    // Coins on ground
+    for (let i=coinsOnGround.length-1;i>=0;i--){
+      const cg = coinsOnGround[i];
+      cg.vy += 0.2;
+      cg.y += cg.vy;
+      const gy2 = groundAt(cg.x)-2;
+      if (cg.y > gy2){ cg.y = gy2; cg.vy *= -0.2; if (Math.abs(cg.vy)<0.25) cg.vy=0; }
+      // pickup by player
+      if (Math.abs(cg.x - rat.x) < 10 && Math.abs(cg.y - (rat.y-4)) < 10){
+        gold += cg.v; coinsOnGround.splice(i,1);
+      }
+    }
+
+    // Camera
+    camX = clamp(rat.x - INTERNAL_W/2, WORLD_LEFT, WORLD_RIGHT - INTERNAL_W);
+    camY = 0;
+
+    // Multiplayer (optional; no-op if Firebase not present)
+    netStep(dt);
+  }
+
+  function readInput(){
+    input.left    = !!(keys.get("ArrowLeft")||keys.get("KeyA"));
+    input.right   = !!(keys.get("ArrowRight")||keys.get("KeyD"));
+    input.sprint  = !!(keys.get("ShiftLeft")||keys.get("ShiftRight"));
+    input.build   = !!keys.get("KeyE");
+    input.upgrade = !!keys.get("KeyR");
+    // Toggle grid
+    if (keys.get("KeyF")) { showGrid = !showGrid; keys.set("KeyF",false); }
+    // Save/Load
+    if (keys.get("KeyG")) { saveGame(); keys.set("KeyG",false); }
+    if (keys.get("KeyL")) { loadGame(); keys.set("KeyL",false); }
+    if (keys.get("Escape")) { selected = BUILD.None; keys.set("Escape",false); }
+    if (keys.get("Digit1")) { selected = BUILD.Wall; keys.set("Digit1",false); }
+    if (keys.get("Digit2")) { selected = BUILD.Catapult; keys.set("Digit2",false); }
+    if (keys.get("Digit3")) { selected = BUILD.Farm; keys.set("Digit3",false); }
+    if (keys.get("Digit4")) { selected = BUILD.Barracks; keys.set("Digit4",false); }
+    if (keys.get("Digit5")) { selected = BUILD.Outpost; keys.set("Digit5",false); }
+    if (keys.get("KeyM")) { tryStartMultiplayer(); keys.set("KeyM",false); }
+  }
+
+  // =========================
+  // Waves & Spawning
+  // =========================
+  function startWave(){
+    waveNum++;
+    nextWaveSide *= -1; // alternate
+    const count = ENEMY_PER_WAVE_BASE + Math.floor(waveNum*0.7);
+    const hp    = ENEMY_HP_BASE + Math.floor(waveNum*1.5);
+    const startX = (nextWaveSide<0)? (WORLD_LEFT+24) : (WORLD_RIGHT-24);
+    for (let i=0;i<count;i++){
+      const off = (Math.random()*120-60);
+      enemies.push({
+        x: startX + off,
+        y: groundAt(startX+off)-8,
+        vx: 0, dir: nextWaveSide, hp: hp, maxHp: hp,
+        spd: ENEMY_SPEED + Math.random()*0.1 + waveNum*0.01,
+        targetX: campX
+      });
+    }
+    toast(`Wave ${waveNum} — ${nextWaveSide<0? 'From Left':'From Right'}`);
+  }
+
+  function spawnCoinsAt(x,y,c){
+    for (let i=0;i<c;i++){
+      coinsOnGround.push({x: x+(Math.random()*8-4), y: y+(Math.random()*5-2), vy: -1.2 - Math.random()*0.6, v: 1});
+    }
+  }
+  function floatCoin(x,y,v){
+    coinsOnGround.push({x, y, vy:-0.8, v});
+  }
+
+  function spawnAlly(x){
+    allies.push({
+      x, y: groundAt(x)-8, vx:0, dir: (x>campX? -1:1), hp:12, maxHp:12,
+      range: 18, dmg: 3, spd: 0.4
+    });
+  }
+
+  function fireLob(x,y,target,dmg){
+    const dx = (target.x - x), dy = (target.y - y);
+    // crude lob
+    const t = Math.max(22, Math.min(42, Math.abs(dx)));
+    projectiles.push({ x, y, vx: dx/t, vy: (dy-(-30))/t, dmg, ttl: 4 });
+  }
+
+  // =========================
+  // Queries
+  // =========================
+  function closestBuildableSlot(){
+    let best=null, bd=99e9;
+    for (const s of slots){
+      if (!canBuildAt(s)) continue;
+      const d = Math.abs(s.x - rat.x);
+      if (d < bd){ bd=d; best=s; }
+    }
+    return best;
+  }
+  function closestOwnedSlot(){
+    let best=null, bd=24;
+    for (const s of slots){
+      if (!s.built) continue;
+      const d = Math.abs(s.x - rat.x);
+      if (d < bd){ bd=d; best=s; }
+    }
+    return best;
+  }
+  function nearestBlockingWall(x){
+    let best=null, bd=16;
+    for (const s of slots){
+      if (s.built === BUILD.Wall){
+        const d = Math.abs(s.x - x);
+        if (d < bd){ bd=d; best=s; }
+      }
+    }
+    return best;
+  }
+  function closestEnemyInRange(x,range){
+    let best=null, bd=range;
+    for (const e of enemies){
+      const d = Math.abs(e.x - x);
+      if (d < bd){ bd=d; best=e; }
+    }
+    return best;
+  }
+  function closestEnemyTo(x,range){
+    let best=null, bd=range;
+    for (const e of enemies){
+      const d = Math.abs(e.x - x);
+      if (d < bd){ bd=d; best=e; }
+    }
+    return best;
+  }
+  function closestEnemyToPoint(x,y,range){
+    let best=null, bd=range;
+    for (const e of enemies){
+      const d = Math.hypot(e.x-x, e.y-y);
+      if (d < bd){ bd=d; best=e; }
+    }
+    return best;
+  }
+  function closestAllyTo(x,range){
+    let best=null, bd=range;
+    for (const a of allies){
+      const d = Math.abs(a.x - x);
+      if (d < bd){ bd=d; best=a; }
+    }
+    return best;
+  }
+
+  // =========================
+  // Save / Load
+  // =========================
+  function snapshot(){
+    return {
+      gold, waveNum, timeToNextWave, nextWaveSide,
+      rightFrontier, leftFrontier,
+      slots: slots.map(s => ({ x:s.x, y:s.y, built:s.built, level:s.level, hp:Math.round(s.hp), maxHp:s.maxHp, lastTick:s.lastTick, cooldown:s.cooldown })),
+      rat: { x:rat.x, y:rat.y, stamina:rat.stamina }
+    };
+  }
+  function restore(state){
+    gold = state.gold ?? gold;
+    waveNum = state.waveNum ?? waveNum;
+    timeToNextWave = state.timeToNextWave ?? timeToNextWave;
+    nextWaveSide = state.nextWaveSide ?? nextWaveSide;
+    rightFrontier = state.rightFrontier ?? rightFrontier;
+    leftFrontier = state.leftFrontier ?? leftFrontier;
+    for (const s of slots){
+      const src = state.slots?.find(k => k.x===s.x);
+      if (src){
+        s.built = src.built; s.level = src.level; s.hp = src.hp; s.maxHp = src.maxHp;
+        s.lastTick = src.lastTick || 0; s.cooldown = src.cooldown || 0;
+      } else {
+        s.built = null; s.level = 0; s.hp = 0; s.maxHp = 0; s.lastTick=0; s.cooldown=0;
+      }
+    }
+    rat.x = state.rat?.x ?? rat.x; rat.y = state.rat?.y ?? rat.y; rat.stamina = state.rat?.stamina ?? rat.stamina;
+  }
+  function saveGame(){
+    localStorage.setItem("ratkingdom_save", JSON.stringify(snapshot()));
+    toast("Saved.");
+  }
+  function loadGame(){
+    const s = localStorage.getItem("ratkingdom_save");
+    if (!s) { toast("No save."); return; }
+    try { restore(JSON.parse(s)); toast("Loaded."); }
+    catch{ toast("Load failed."); }
+  }
+  // autosave occasionally
+  setInterval(()=>localStorage.setItem("ratkingdom_save", JSON.stringify(snapshot())), 5000);
+
+  // =========================
+  // Drawing
+  // =========================
+  function draw(){
+    // Sky gradient by day phase
+    const t = dayClock/dayLength;
+    const noon="#6ab7ff", dusk="#f6a26a", night="#0a0b22", dawn="#ffd59b";
+    let sky;
+    if (t<0.25) sky = mix(dawn, noon, t/0.25);
+    else if (t<0.5) sky = mix(noon, dusk, (t-0.25)/0.25);
+    else if (t<0.75) sky = mix(dusk, night, (t-0.5)/0.25);
+    else sky = mix(night, dawn, (t-0.75)/0.25);
+    fillRect(0,0,INTERNAL_W,INTERNAL_H, sky);
+
+    // Parallax
+    for (const layer of parallax){
+      ctx.fillStyle = layer.color;
+      ctx.globalAlpha = .7;
+      for (const b of layer.blips){
+        const x = Math.floor((b.x - camX) * layer.speed) % (WORLD_RIGHT - WORLD_LEFT);
+        ctx.fillRect(x, GROUND_Y - 60 - b.h, b.w, b.h);
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    // Ground fill
+    fillRect(0, GROUND_Y, INTERNAL_W, INTERNAL_H-GROUND_Y, "#1b1e24");
+
+    // Ground silhouette based on samples
+    ctx.fillStyle = "#2a2f38";
+    for (let sx=0; sx<INTERNAL_W; sx++){
+      const wx = camX + sx;
+      const gy = Math.floor(groundAt(wx));
+      ctx.fillRect(sx, gy, 1, INTERNAL_H-gy);
+    }
+
+    // Camp marker (log + banner)
+    {
+      const x = Math.floor(campX - camX), y = Math.floor(groundAt(campX));
+      fillRect(x-16, y-6, 32, 6, "#553311");
+      fillRect(x+10, y-18, 1, 12, "#888");
+      fillRect(x+11, y-18, 8, 5, (waveNum%2)? "#e33" : "#7ab");
+    }
+
+    // Slots / structures
+    const nearSlot = closestBuildableSlot();
+    for (const s of slots){
+      const sx = Math.floor(s.x - camX), sy = Math.floor(s.y);
+      // frontier masking
+      const inTerritory = (s.x <= campX + rightFrontier) && (s.x >= campX - leftFrontier);
+      if (showGrid){
+        ctx.globalAlpha = inTerritory ? 0.25 : 0.08;
+        fillRect(sx-1, sy-7, 2, 6, inTerritory ? "#95a1b3":"#555");
+        ctx.globalAlpha = 1;
+      }
+      if (s.built){
+        drawStructure(s, sx, sy);
+      }
+      // highlight buildable
+      if (s===nearSlot){
+        strokeRect(sx-6, sy-10, 12, 10, "#7cffa1");
+      }
+    }
+
+    // Coins
+    for (const cg of coinsOnGround){
+      const x = Math.floor(cg.x - camX), y = Math.floor(cg.y);
+      fillRect(x-1, y-2, 3, 3, "#e6c74c");
+    }
+
+    // Allies
+    for (const a of allies){
+      const x = Math.floor(a.x - camX), y = Math.floor(a.y);
+      fillRect(x-4, y-8, 8, 8, "#aaff88"); // body
+      // tiny hp bar
+      fillRect(x-6, y-12, 12, 2, "#111");
+      const hw = Math.max(0, Math.floor(12*(a.hp/a.maxHp)));
+      fillRect(x-6, y-12, hw, 2, "#7cff7c");
+    }
+
+    // Enemies
+    for (const e of enemies){
+      const x = Math.floor(e.x - camX), y = Math.floor(e.y);
+      fillRect(x-4, y-8, 8, 8, "#8c2aff");
+      // hp bar
+      fillRect(x-6, y-12, 12, 2, "#111");
+      const hw = Math.max(0, Math.floor(12*(e.hp/e.maxHp)));
+      fillRect(x-6, y-12, hw, 2, "#ff7699");
+    }
+
+    // Projectiles
+    for (const p of projectiles){
+      const x = Math.floor(p.x - camX), y = Math.floor(p.y);
+      fillRect(x-1, y-1, 3, 3, "#d7d0c6");
+    }
+
+    // Player
+    {
+      const x = Math.floor(rat.x - camX), y = Math.floor(rat.y);
+      // mouse/rat body
+      fillRect(x-7, y-5, 14, 5, "#d0a070");
+      // head
+      fillRect(rat.dir>0? x+4 : x-6, y-9, 6, 4, "#e6deb7");
+      // tail
+      fillRect(x-8, y-3, 6, 1, "#bd7a6f");
+    }
+
+    // HUD
+    const phase = (t<0.25) ? "Dawn" : (t<0.5) ? "Day" : (t<0.75) ? "Dusk" : "Night";
+    hud.innerHTML = `
+      <span class="pill gold">Gold: ${gold}</span>
+      <span class="pill">Wave: ${waveNum}</span>
+      <span class="pill">Next: ${Math.ceil(timeToNextWave)}s (${nextWaveSide<0?'Left':'Right'})</span>
+      <span class="pill">Territory: L ${Math.floor(leftFrontier/SLOT_SPACING)} • R ${Math.floor(rightFrontier/SLOT_SPACING)}</span>
+      <span class="pill">Stamina: ${Math.round(rat.stamina)}</span>
+      <span class="pill">Phase: ${phase}</span>
+      <span class="pill">Build: ${BUILD_INFO[selected]?.name || 'None'} (Cost ${buildCost(selected)})</span>
+    `;
+  }
+
+  function drawStructure(s, sx, sy){
+    const kind = s.built;
+    const lvl = s.level;
+    if (kind === BUILD.Wall){
+      fillRect(sx-6, sy-8, 12, 8 + (lvl-1)*2, "#6b7079");
+    } else if (kind === BUILD.Catapult){
+      // base
+      fillRect(sx-7, sy-6, 14, 6, "#6a5136");
+      // arm
+      fillRect(sx-1, sy-12, 2, 6, "#433526");
+      // level badge
+      fillRect(sx-2, sy-14, 4, 2, lvl===1 ? "#777" : (lvl===2 ? "#e0b84d" : "#d86"));
+    } else if (kind === BUILD.Farm){
+      fillRect(sx-8, sy-6, 16, 6, "#3c4a2b"); // field base
+      // crop rows
+      fillRect(sx-7, sy-7, 3, 1, "#a6c26b");
+      fillRect(sx-2, sy-7, 3, 1, "#a6c26b");
+      fillRect(sx+3, sy-7, 3, 1, "#a6c26b");
+      fillRect(sx-2, sy-10, 4, 2, lvl===1 ? "#777" : (lvl===2 ? "#e0b84d" : "#d86"));
+    } else if (kind === BUILD.Barracks){
+      fillRect(sx-9, sy-8, 18, 8, "#4f5768"); // hut
+      fillRect(sx-5, sy-13, 10, 5, "#2b313e"); // roof
+      fillRect(sx-2, sy-14, 4, 2, lvl===1 ? "#777" : (lvl===2 ? "#e0b84d" : "#d86"));
+    } else if (kind === BUILD.Outpost){
+      fillRect(sx-10, sy-10, 20, 10, "#5b5a65"); // tower
+      fillRect(sx+6, sy-18, 1, 8, "#999");
+      fillRect(sx+7, sy-18, 6, 4, "#c55");
+    }
+    // hp bar
+    fillRect(sx-10, sy-14, 20, 3, "#0b0b0b");
+    const hw = Math.max(0, Math.floor(20*(s.hp/Math.max(1,s.maxHp))));
+    fillRect(sx-10, sy-14, hw, 3, "#7cff7c");
+  }
+
+  // =========================
+  // Utilities
+  // =========================
+  function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+  function mix(a,b,k){
+    const ca=parseInt(a.slice(1),16), cb=parseInt(b.slice(1),16);
+    const ar=(ca>>16)&255, ag=(ca>>8)&255, ab=ca&255;
+    const br=(cb>>16)&255, bg=(cb>>8)&255, bb=cb&255;
+    const rr=Math.round(ar+(br-ar)*k), rg=Math.round(ag+(bg-ag)*k), rb=Math.round(ab+(bb-ab)*k);
+    return `rgb(${rr},${rg},${rb})`;
+  }
+  function fillRect(x,y,w,h,color){ ctx.fillStyle=color; ctx.fillRect(x,y,w,h); }
+  function strokeRect(x,y,w,h,color){ ctx.strokeStyle=color; ctx.strokeRect(x,y,w,h); }
+  function randInt(a,b){ return a + Math.floor(Math.random()*(b-a+1)); }
+
+  // =========================
+  // Optional Multiplayer (Firebase Stub)
+  // =========================
+  // Usage:
+  // 1) Include Firebase SDKs before this script (e.g., in <head>):
+  //    <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+  //    <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
+  // 2) Provide your config below in firebaseConfig, uncomment init lines.
+  // 3) Press M in-game to host/join a lobby (random id). Position + wave events will sync.
+  let net = {
+    enabled: false,
+    db: null,
+    roomId: null,
+    lastSend: 0,
+  };
+
+  function tryStartMultiplayer(){
+    if (!window.firebase || !firebase.apps) { toast("Firebase SDK not detected."); return; }
+    if (!net.enabled){
+      try {
+        // If no apps, initialize (configure with your own project)
+        // const firebaseConfig = { apiKey:"", authDomain:"", databaseURL:"", projectId:"", storageBucket:"", messagingSenderId:"", appId:"" };
+        // if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        net.db = firebase.database();
+        net.roomId = localStorage.getItem("ratking_room") || ("room_" + Math.random().toString(36).slice(2,8));
+        localStorage.setItem("ratking_room", net.roomId);
+        net.enabled = true;
+        subscribeRoom();
+        toast("Multiplayer: room " + net.roomId);
+      } catch (e){
+        toast("Firebase init failed.");
+        net.enabled = false;
+      }
+    } else {
+      toast("Multiplayer already on (room " + net.roomId + ")");
+    }
+  }
+
+  function subscribeRoom(){
+    if (!net.db || !net.roomId) return;
+    const ref = net.db.ref("ratking/"+net.roomId);
+    ref.on("value", snap => {
+      const data = snap.val();
+      if (!data) return;
+      // Simple merges (do not overwrite local slots if you don't want to)
+      if (typeof data.waveNum === "number" && data.waveNum > waveNum){
+        waveNum = data.waveNum;
+        timeToNextWave = data.timeToNextWave ?? timeToNextWave;
+        nextWaveSide = data.nextWaveSide ?? nextWaveSide;
+      }
+      if (data.spawn && Array.isArray(data.spawn)){
+        for (const sp of data.spawn){
+          if (sp.t === "enemy"){
+            enemies.push({
+              x: sp.x, y: groundAt(sp.x)-8, vx:0, dir: Math.sign(campX-sp.x), hp: ENEMY_HP_BASE, maxHp: ENEMY_HP_BASE, spd: ENEMY_SPEED, targetX: campX
+            });
+          }
+        }
+      }
+    });
+  }
+
+  function netStep(dt){
+    if (!net.enabled || !net.db || !net.roomId) return;
+    net.lastSend += dt;
+    if (net.lastSend >= 0.2){
+      net.lastSend = 0;
+      const ref = net.db.ref("ratking/"+net.roomId);
+      ref.update({
+        rat: { x: Math.round(rat.x), stamina: Math.round(rat.stamina) },
+        waveNum, timeToNextWave, nextWaveSide
+      }).catch(()=>{ /* ignore */ });
+    }
+  }
+
+  // =========================
+  // Boot
+  // =========================
+  // Auto-load if present; start with a couple of starting defenses for feel
+  if (localStorage.getItem("ratkingdom_save")){
+    try { restore(JSON.parse(localStorage.getItem("ratkingdom_save"))); }
+    catch {}
+  } else {
+    // starter walls
+    const sLeft = slots.find(s => !s.built && s.x < campX - SLOT_SPACING*2 && s.x > campX - SLOT_SPACING*6);
+    const sRight= slots.find(s => !s.built && s.x > campX + SLOT_SPACING*2 && s.x < campX + SLOT_SPACING*6);
+    if (sLeft) { placeBuilding(sLeft, BUILD.Wall); sLeft.level=1; sLeft.hp=sLeft.maxHp; }
+    if (sRight){ placeBuilding(sRight, BUILD.Wall); sRight.level=1; sRight.hp=sRight.maxHp; }
+  }
+
+})(); // end IIFE
 </script>
 </body>
 </html>
