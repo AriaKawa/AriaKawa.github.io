@@ -18,8 +18,75 @@
   *{box-sizing:border-box}
   html,body{height:100%}
   body{
-    margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;
-    color:var(--text); background:#0b1020; display:grid; place-items:center;
+    margin:0;
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;
+    color:var(--text);
+    background:
+      radial-gradient(160% 120% at 50% 108%, rgba(18,64,56,.85) 0%, rgba(6,18,28,.98) 55%, #040913 90%),
+      radial-gradient(120% 70% at 50% 0%, rgba(255,154,65,.28) 0%, rgba(255,120,60,.12) 25%, rgba(20,32,54,0) 60%),
+      linear-gradient(180deg, #0b1529 0%, #050916 100%);
+    min-height:100%;
+    position:relative;
+    overflow-x:hidden;
+    z-index:0;
+  }
+  body::before,
+  body::after{
+    content:"";
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    z-index:-1;
+  }
+  body::before{
+    background:
+      radial-gradient(140% 90% at 50% 105%, rgba(255,211,120,.22) 0%, rgba(255,120,60,.08) 35%, rgba(10,20,32,0) 70%),
+      linear-gradient(180deg, rgba(12,24,40,.65) 0%, rgba(6,14,26,.95) 100%);
+    opacity:.45;
+    animation: shimmer 12s ease-in-out infinite alternate;
+  }
+  body::after{
+    background:
+      radial-gradient(120% 80% at 50% -10%, rgba(120,180,255,.22) 0%, rgba(65,105,225,.08) 30%, rgba(8,18,36,0) 70%),
+      linear-gradient(130deg, rgba(40,140,220,.12), rgba(10,18,28,0) 60%);
+    mix-blend-mode:screen;
+    opacity:.28;
+    animation: shimmer 14s ease-in-out infinite alternate-reverse;
+  }
+  @keyframes shimmer{
+    0%{ opacity:.25; }
+    50%{ opacity:.55; }
+    100%{ opacity:.3; }
+  }
+  .scene{
+    position:relative;
+    display:grid;
+    place-items:center;
+    min-height:100vh;
+    padding:clamp(3rem, 6vw, 4.5rem) clamp(1.5rem, 5vw, 3rem);
+    z-index:0;
+  }
+  .table-stage{
+    position:relative;
+    width:100%;
+    display:flex;
+    justify-content:center;
+  }
+  .ambient-lights{
+    position:absolute;
+    top:48%;
+    left:50%;
+    transform:translate(-50%, -40%);
+    width:min(1300px, 140vw);
+    height:70vh;
+    background:
+      radial-gradient(40% 50% at 25% 50%, rgba(255,88,120,.55) 0%, rgba(255,88,120,0) 70%),
+      radial-gradient(45% 55% at 75% 52%, rgba(80,180,255,.6) 0%, rgba(80,180,255,0) 75%),
+      radial-gradient(70% 80% at 50% 20%, rgba(140,255,210,.38) 0%, rgba(140,255,210,0) 70%);
+    filter:blur(80px);
+    opacity:.55;
+    z-index:0;
+    pointer-events:none;
   }
   .back-nav{
     position:fixed; top:18px; right:18px; z-index:10;
@@ -40,6 +107,8 @@
   }
   .back-nav__icon{font-size:1.05rem; line-height:1;}
   .table-wrapper{
+    position:relative;
+    z-index:1;
     width:min(1100px, 96vw);
     display:flex;
     flex-direction:column;
@@ -505,6 +574,46 @@
       <span class="back-nav__text">Exit</span>
     </button>
   </div>
+  <div class="scene">
+    <div class="table-stage">
+      <div class="ambient-lights" aria-hidden="true"></div>
+      <div class="table-wrapper">
+    <div class="table" id="table">
+      <header>
+        <div class="brand">BLACKJACK • FRIENDS LOUNGE</div>
+        <div class="spacer"></div>
+        <div class="turn-indicator hidden" id="turnIndicator">Waiting</div>
+        <div class="chip">Bank: <span id="bank">1000</span></div>
+      </header>
+
+      <div class="label dealer">Dealer • <span class="total" id="dealerTotal">0</span></div>
+      <div class="lane dealer">
+        <div class="spot" id="dealerSpot"></div>
+      </div>
+
+      <div class="lane player-spots" id="playerSpotsLane"></div>
+
+      <div class="waiting-overlay hidden" id="waitingOverlay" aria-live="polite">
+        <div class="waiting-card">
+          <h2 id="waitingTitle">Waiting for bets</h2>
+          <p id="waitingSubtitle">Adjust your bet to begin.</p>
+          <ul class="waiting-list hidden" id="waitingList"></ul>
+        </div>
+      </div>
+
+      <div class="status" id="status"></div>
+
+      <div class="controls" id="controls">
+        <button class="primary muted" id="btnHit">Hit</button>
+        <button class="ghost muted" id="btnStand">Stand</button>
+        <button class="quick-start hidden muted" id="btnQuickStart" title="Start the next hand immediately">Quick Start</button>
+      </div>
+    </div>
+
+    <div class="bet-tray" id="playersLane"></div>
+      </div>
+    </div>
+  </div>
   <div class="lobby" id="lobby">
     <div class="lobby-card" id="lobbyMain">
       <h2>Blackjack Lounge</h2>
@@ -542,41 +651,6 @@
         <button class="secondary back-action" data-target="multiplayerCard">Back</button>
       </div>
     </div>
-  </div>
-  <div class="table-wrapper">
-    <div class="table" id="table">
-      <header>
-        <div class="brand">BLACKJACK • FRIENDS LOUNGE</div>
-        <div class="spacer"></div>
-        <div class="turn-indicator hidden" id="turnIndicator">Waiting</div>
-        <div class="chip">Bank: <span id="bank">1000</span></div>
-      </header>
-
-      <div class="label dealer">Dealer • <span class="total" id="dealerTotal">0</span></div>
-      <div class="lane dealer">
-        <div class="spot" id="dealerSpot"></div>
-      </div>
-
-      <div class="lane player-spots" id="playerSpotsLane"></div>
-
-      <div class="waiting-overlay hidden" id="waitingOverlay" aria-live="polite">
-        <div class="waiting-card">
-          <h2 id="waitingTitle">Waiting for bets</h2>
-          <p id="waitingSubtitle">Adjust your bet to begin.</p>
-          <ul class="waiting-list hidden" id="waitingList"></ul>
-        </div>
-      </div>
-
-      <div class="status" id="status"></div>
-
-      <div class="controls" id="controls">
-        <button class="primary muted" id="btnHit">Hit</button>
-        <button class="ghost muted" id="btnStand">Stand</button>
-        <button class="quick-start hidden muted" id="btnQuickStart" title="Start the next hand immediately">Quick Start</button>
-      </div>
-    </div>
-
-    <div class="bet-tray" id="playersLane"></div>
   </div>
 
   <script>
