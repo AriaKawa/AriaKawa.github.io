@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Kingdom-like HTML Prototype</title>
+<style>
+  html, body {
+    background:#111;
+    margin:0; height:100%; overflow:hidden; color:#ddd; font-family:system-ui, sans-serif;
+  }
+  #wrap {
+    display:flex; height:100%; width:100%; align-items:center; justify-content:center;
+  }
+  canvas {
+    image-rendering: pixelated;           /* crisp pixels */
+    image-rendering: crisp-edges;
+    background:#000;
+    border:1px solid #222;
+  }
+  .hud {
+    position:fixed; left:12px; top:10px; color:#eee; font-size:14px; line-height:1.4;
+    text-shadow:0 1px 0 #000;
+    user-select:none;
+  }
+  .hud .pill { display:inline-block; padding:4px 8px; background:#222; border-radius:8px; margin-right:6px; }
+  .help {
+    position:fixed; right:12px; top:10px; color:#ccc; font-size:12px; text-align:right; max-width:40ch;
+    background:#141414; padding:8px 10px; border-radius:8px; border:1px solid #222;
+  }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <!-- We render at low res (320x180) then scale up for chunky pixels -->
+  <canvas id="game" width="320" height="180"></canvas>
+</div>
+
+<div class="hud" id="hud"></div>
+<div class="help">
+  <strong>Controls</strong><br/>
+  A/D or ←/→: Move • Shift: Sprint<br/>
+  Space: Drop coin • E: Interact (Hire at camp)<br/>
+  1: Place wall site (1 coin) • 2: Upgrade nearby wall (2 coins)
+</div>
+
+<script>
+(() => {
+  // ==== CONFIG ====
+  const VIEW_W = 320, VIEW_H = 180;      // internal resolution
+  const PIXEL_SCALE = Math.floor(Math.min(window.innerWidth/VIEW_W, window.innerHeight/VIEW_H));
+  const WORLD_LEFT = -2000, WORLD_RIGHT = 2000; // simple world bounds
+  const GROUND_Y = 130; // baseline ground level
+  const GRAVITY = 0.4;
+
+  const PLAYER = {
+    x: 0, y: GROUND_Y - 12, vx: 0, vy: 0,
+    w: 18, h: 12,
+    dir: 1,
+    maxSpeed: 1.1, sprintSpeed: 1.9,
+    accel: 0.08, friction: 0.85,
+    onGround: true,
+    stamina: 100, maxStamina: 100, sprintDrain: 35/60, sprintRegen: 18/60
+  };
+
+  let coins = 4; // start money
+  let dayTime = 0; // seconds, loops every ~120s for day/night
+  let timeScale = 1; // 1x speed
+  let dayLength = 120; // seconds for full cycle
+  let dayCount = 1;
+
+  const input = { left:false, right:false, sprint:false, drop:false, interact:false, build1:false, build2:false };
+  const keys = new Map();
+
+  // Entities
+  const coinsOnGround = []; // {x,y,vy}
+  const camp = { x: 0, y: GROUND_Y, w: 28, level: 1, villagers: 0 };
+  const villagers = []; // hired: {x,y, role:'builder'|'archer', target: null}
+  const buildSites = []; // {x,y, level:0..n, type:'wall', hp,maxHp}
+  const enemies = []; // greed: {x,y, vx, targetX, hp}
+
+  // Terrain bumps (very simple noise-like ridges)
+  const ridges = [];
+  (function makeRidges(){
+    for (let i=0;i<50;i++){
+      const rx = WORLD_LEFT + Math.random()*(WORLD_RIGHT-WORLD_LEFT);
+      const h = 3 + Math.random()*8;
+      const w = 50 + Math.random()*150;
+      ridges.push({x:rx, w, h});
+    }
+  })();
+
+  // Parallax layers (just color bands/rect islands)
+  const parallaxLayers = [
+    { speed: 0.25, color:"#0a0f1a", islands:[] },
+    { speed: 0.5,  color:"#0d1322", islands:[] },
+    { speed: 0.8,  color:"#10182b", islands:[] },
+  ];
+  for (const layer of parallaxLayers){
+    for (let i=0;i<14;i++){
+      const x = WORLD_LEFT + Math.random()*(WORLD_RIGHT-WORLD_LEFT);
+      const w = 40 + Math.random()*160;
+      const h = 10 + Math.random()*40;
+      layer.islands.push({x, w, h});
+    }
+  }
+
+  // Canvas setup
+  const c = document.getElementById('game');
+  const ctx = c.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+
+  // Fit to screen with integer scale
+  function fitCanvas(){
+    const scale = Math.max(1, Math.floor(Math.min(window.innerWidth/VIEW_W, window.innerHeight/VIEW_H)));
+    c.style.width = (VIEW_W*scale) + "px";
+    c.style.height = (VIEW_H*scale) + "px";
+  }
+  fitCanvas();
+  window.addEventListener('resize', fitCanvas);
+
+  // Input
+  window.addEventListener('keydown', (e)=>{
+    keys.set(e.code, true);
+    if (["ArrowLeft","ArrowRight","Space"].includes(e.key)) e.preventDefault();
+  });
+  window.addEventListener('keyup',   (e)=>{ keys.set(e.code, false); });
+
+  function readInput(){
+    input.left      = !!(keys.get("ArrowLeft") || keys.get("KeyA"));
+    input.right     = !!(keys.get("ArrowRight")|| keys.get("KeyD"));
+    input.sprint    = !!(keys.get("ShiftLeft") || keys.get("ShiftRight"));
+    input.drop      = !!keys.get("Space");
+    input.interact  = !!keys.get("KeyE");
+    input.build1    = !!keys.get("Digit1");
+    input.build2    = !!keys.get("Digit2");
+  }
+
+  // Helpers
+  function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
+
+  function groundAt(x){
+    // baseline + ridges contribution
+    let y = GROUND_Y;
+    for (const r of ridges){
+      const t = (x - r.x) / r.w;
+      if (t > 0 && t < 1){
+        // simple hill curve
+        const s = Math.sin(Math.PI * t);
+        y -= s * r.h;
+      }
+    }
+    return y;
+  }
+
+  function spawnCoin(x,y){
+    coinsOnGround.push({x, y, vy:-1.2});
+  }
+
+  function spawnEnemyWave(){
+    // simple: spawn 1-3 enemies from left or right at dusk
+    const count = 1 + Math.floor(Math.random()*3);
+    const side = Math.random()<0.5 ? WORLD_LEFT+20 : WORLD_RIGHT-20;
+    for (let i=0;i<count;i++){
+      enemies.push({
+        x: side + (Math.random()*40-20),
+        y: groundAt(side)-10,
+        vx: side<0 ? 0.4 : -0.4,
+        targetX: camp.x,
+        hp: 3
+      });
+    }
+  }
+
+  // Game Logic
+  let lastTime = performance.now();
+  let acc = 0;
+  const FIXED_DT = 1000/60;
+
+  function step(dt){
+    readInput();
+
+    // Day/Night progression
+    dayTime += (dt/1000) * timeScale;
+    if (dayTime >= dayLength){
+      dayTime -= dayLength;
+      dayCount++;
+    }
+    // Trigger a wave near sunset
+    const t = dayTime/dayLength; // 0..1
+    if (t > 0.7 && t < 0.7 + (dt/1000)/dayLength){
+      spawnEnemyWave();
+    }
+
+    // Player movement
+    const targetSpeed = (input.sprint && PLAYER.stamina>0) ? PLAYER.sprintSpeed : PLAYER.maxSpeed;
+    let ax = 0;
+    if (input.left)  { ax -= PLAYER.accel; PLAYER.dir = -1; }
+    if (input.right) { ax += PLAYER.accel; PLAYER.dir =  1; }
+    PLAYER.vx += ax;
+    // clamp to target speed
+    PLAYER.vx = clamp(PLAYER.vx, -targetSpeed, targetSpeed);
+    // friction if no input
+    if (!input.left && !input.right) PLAYER.vx *= PLAYER.friction;
+
+    // stamina
+    if (input.sprint && (input.left || input.right) && Math.abs(PLAYER.vx)>PLAYER.maxSpeed*0.95){
+      PLAYER.stamina = Math.max(0, PLAYER.stamina - PLAYER.sprintDrain);
+    } else {
+      PLAYER.stamina = Math.min(PLAYER.maxStamina, PLAYER.stamina + PLAYER.sprintRegen);
+    }
+
+    // Gravity / ground stick
+    PLAYER.vy += GRAVITY;
+    let newX = clamp(PLAYER.x + PLAYER.vx*3, WORLD_LEFT+20, WORLD_RIGHT-20);
+    let groundY = groundAt(newX) - 12;
+    let newY = PLAYER.y + PLAYER.vy;
+    if (newY >= groundY){
+      newY = groundY;
+      PLAYER.vy = 0;
+      PLAYER.onGround = true;
+    } else {
+      PLAYER.onGround = false;
+    }
+    PLAYER.x = newX; PLAYER.y = newY;
+
+    // Interactions
+    if (input.drop && coins > 0){
+      coins--;
+      spawnCoin(PLAYER.x + PLAYER.dir*6, PLAYER.y-4);
+      keys.set("Space", false);
+    }
+
+    if (input.interact){
+      // hire at camp if coin is nearby on ground -> convert to villager
+      // or spend from wallet if no ground coin within camp, but have coin
+      const nearCamp = Math.abs(PLAYER.x - camp.x) < 24;
+      if (nearCamp){
+        // check ground coins first
+        let idx = coinsOnGround.findIndex(cg => Math.hypot(cg.x - camp.x, cg.y - (camp.y-6)) < 20);
+        if (idx >= 0){
+          coinsOnGround.splice(idx,1);
+          villagers.push({x:camp.x+ (Math.random()*10-5), y:groundAt(camp.x)-10, role: (Math.random()<0.5?'archer':'builder'), target:null});
+          camp.villagers++;
+        } else if (coins > 0){
+          coins--;
+          villagers.push({x:camp.x+ (Math.random()*10-5), y:groundAt(camp.x)-10, role: (Math.random()<0.5?'archer':'builder'), target:null});
+          camp.villagers++;
+        }
+      }
+      keys.set("KeyE", false);
+    }
+
+    if (input.build1){
+      // place a wall site near player if ground is clear
+      if (coins > 0){
+        const px = Math.round(PLAYER.x/8)*8;
+        // avoid placing on camp or existing site
+        if (Math.abs(px - camp.x) > 40 && !buildSites.some(b=>Math.abs(b.x-px)<16)){
+          buildSites.push({x:px, y:groundAt(px)-8, level:0, type:'wall', hp:4, maxHp:4});
+          coins--;
+        }
+      }
+      keys.set("Digit1", false);
+    }
+
+    if (input.build2){
+      // upgrade nearest wall if within range
+      let best=null, bestD=999;
+      for (const b of buildSites){
+        const d = Math.abs(b.x - PLAYER.x);
+        if (d<24 && d<bestD) { best=b; bestD = d; }
+      }
+      if (best && coins>=2){
+        best.level++;
+        best.maxHp += 2;
+        best.hp = best.maxHp;
+        coins -= 2;
+      }
+      keys.set("Digit2", false);
+    }
+
+    // Coin pickup
+    for (let i=coinsOnGround.length-1;i>=0;i--){
+      const cg = coinsOnGround[i];
+      cg.vy += 0.2;
+      cg.y += cg.vy;
+      const gy = groundAt(cg.x)-2;
+      if (cg.y > gy){ cg.y = gy; cg.vy = -cg.vy*0.25; if (Math.abs(cg.vy)<0.3) cg.vy = 0; }
+      // pickup if player overlaps
+      if (Math.abs(cg.x - PLAYER.x)<8 && Math.abs(cg.y - (PLAYER.y-4))<10){
+        coins++; coinsOnGround.splice(i,1);
+      }
+    }
+
+    // Villagers behavior
+    for (const v of villagers){
+      // simple patrol near camp; archers drift a bit, builders look for damaged walls
+      if (v.role==='archer'){
+        const target = camp.x + Math.sin((performance.now()+v.x)*0.0005)*45;
+        v.x += Math.sign(target - v.x)*0.3;
+      } else { // builder
+        let damaged = buildSites.find(b=>b.hp < b.maxHp);
+        const tx = damaged ? damaged.x : camp.x + (Math.random()<0.5?-30:30);
+        v.x += Math.sign(tx - v.x)*0.35;
+        // repair when close
+        if (damaged && Math.abs(v.x - damaged.x)<6){
+          damaged.hp = Math.min(damaged.maxHp, damaged.hp + 0.02);
+        }
+      }
+      v.y = groundAt(v.x)-10;
+    }
+
+    // Enemies
+    for (let i=enemies.length-1;i>=0;i--){
+      const e = enemies[i];
+      // Move towards camp
+      e.vx = Math.sign(camp.x - e.x)*0.35;
+      e.x += e.vx*2;
+      e.y = groundAt(e.x)-10;
+
+      // Attack nearest wall first
+      let target = null, td = Math.abs(camp.x - e.x);
+      for (const b of buildSites){
+        const d = Math.abs(b.x - e.x);
+        if (d < td && d < 18){ target = b; td = d; }
+      }
+      if (target){
+        target.hp -= 0.02;
+        if (target.hp <= 0){
+          // destroy wall
+          const idx = buildSites.indexOf(target);
+          if (idx>=0) buildSites.splice(idx,1);
+          spawnCoin(target.x, target.y-6);
+        }
+      } else {
+        // If reaches camp, steal a villager (remove) or a coin if available
+        if (Math.abs(e.x - camp.x) < 14){
+          if (camp.villagers>0 && Math.random()<0.01){
+            camp.villagers--;
+            villagers.pop();
+          } else if (coins>0 && Math.random()<0.02){
+            coins--;
+            // enemy runs away with loot
+            e.vx = (e.x<camp.x?-1:1)*2;
+            e.x += e.vx*4;
+          }
+        }
+      }
+
+      // Archers shoot if close (abstracted as damage tick)
+      for (const v of villagers){
+        if (v.role==='archer' && Math.abs(v.x - e.x)<40){
+          e.hp -= 0.02; // slow chip
+        }
+      }
+
+      if (e.hp <= 0){
+        // drop coin
+        spawnCoin(e.x, e.y-8);
+        enemies.splice(i,1);
+      }
+    }
+  }
+
+  // Render
+  function draw(){
+    // Sky color by time (day -> dusk -> night -> dawn)
+    const t = dayTime/dayLength;
+    // interpolate between colors
+    function mix(a,b,k){
+      const ca = parseInt(a.slice(1),16), cb = parseInt(b.slice(1),16);
+      const ar=(ca>>16)&255, ag=(ca>>8)&255, ab=ca&255;
+      const br=(cb>>16)&255, bg=(cb>>8)&255, bb=cb&255;
+      const rr = Math.round(ar+(br-ar)*k), rg = Math.round(ag+(bg-ag)*k), rb = Math.round(ab+(bb-ab)*k);
+      return `rgb(${rr},${rg},${rb})`;
+    }
+    // phases
+    const noon="#69b7ff", dusk="#f7a26b", night="#0a0b22", dawn="#ffd59b";
+    let sky;
+    if (t<0.25) sky = mix(dawn, noon, t/0.25);
+    else if (t<0.5) sky = mix(noon, dusk, (t-0.25)/0.25);
+    else if (t<0.75) sky = mix(dusk, night, (t-0.5)/0.25);
+    else sky = mix(night, dawn, (t-0.75)/0.25);
+
+    ctx.fillStyle = sky;
+    ctx.fillRect(0,0,VIEW_W,VIEW_H);
+
+    // Camera follows player
+    const camX = clamp(PLAYER.x - VIEW_W/2, WORLD_LEFT, WORLD_RIGHT - VIEW_W);
+    const camY = 0;
+
+    // Parallax
+    for (const layer of parallaxLayers){
+      ctx.fillStyle = layer.color;
+      for (const isl of layer.islands){
+        const lx = Math.floor((isl.x - camX) * layer.speed) % (WORLD_RIGHT - WORLD_LEFT);
+        const drawX = lx;
+        ctx.globalAlpha = 0.7;
+        ctx.fillRect(Math.floor(drawX), Math.floor(GROUND_Y - 40 - isl.h), Math.floor(isl.w), Math.floor(isl.h));
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    // Ground
+    // background dirt
+    ctx.fillStyle = "#1b1e24";
+    ctx.fillRect(0, GROUND_Y, VIEW_W, VIEW_H-GROUND_Y);
+
+    // draw ground line with simple sampling
+    ctx.fillStyle = "#2a2f38";
+    for (let sx=0; sx<VIEW_W; sx++){
+      const wx = camX + sx;
+      const gy = Math.floor(groundAt(wx));
+      ctx.fillRect(sx, gy, 1, VIEW_H-gy);
+    }
+
+    // Draw camp
+    {
+      const x = Math.floor(camp.x - camX), y = Math.floor(groundAt(camp.x));
+      ctx.fillStyle = "#cc8a44"; // fire
+      // flicker
+      const f = Math.sin(performance.now()*0.02)*2;
+      ctx.fillRect(x-2, y-14 + f*0.2, 4, 6);
+      ctx.fillStyle = "#553311";
+      ctx.fillRect(x-14, y-8, 28, 6); // log
+      // flag (camp level)
+      ctx.fillStyle = "#888";
+      ctx.fillRect(x+10, y-18, 1, 10);
+      ctx.fillStyle = camp.level>1 ? "#e33" : "#777";
+      ctx.fillRect(x+11, y-18, 6, 4);
+    }
+
+    // Build sites (walls)
+    for (const b of buildSites){
+      const bx = Math.floor(b.x - camX), by = Math.floor(b.y);
+      // base
+      ctx.fillStyle = "#5e6066";
+      ctx.fillRect(bx-6, by-8, 12, 8 + b.level*2);
+      // hp bar
+      ctx.fillStyle = "#111";
+      ctx.fillRect(bx-8, by-14, 16, 3);
+      ctx.fillStyle = "#7cff7c";
+      const hpw = Math.max(0, Math.floor(16*(b.hp/b.maxHp)));
+      ctx.fillRect(bx-8, by-14, hpw, 3);
+    }
+
+    // Coins on ground
+    for (const cg of coinsOnGround){
+      const x = Math.floor(cg.x - camX), y = Math.floor(cg.y);
+      ctx.fillStyle = "#e6c74c";
+      ctx.fillRect(x-1, y-2, 3, 3);
+    }
+
+    // Villagers
+    for (const v of villagers){
+      const x = Math.floor(v.x - camX), y = Math.floor(v.y);
+      ctx.fillStyle = (v.role==='archer') ? "#44aaff" : "#aaff88";
+      ctx.fillRect(x-3, y-8, 6, 8);
+    }
+
+    // Enemies
+    for (const e of enemies){
+      const x = Math.floor(e.x - camX), y = Math.floor(e.y);
+      ctx.fillStyle = "#8c2aff";
+      ctx.fillRect(x-4, y-8, 8, 8);
+    }
+
+    // Player (rider + horse-ish block)
+    {
+      const x = Math.floor(PLAYER.x - camX), y = Math.floor(PLAYER.y);
+      ctx.fillStyle = "#d0a070"; // horse
+      ctx.fillRect(x-8, y-6, 16, 6);
+      ctx.fillStyle = "#eee"; // rider
+      ctx.fillRect(PLAYER.dir>0 ? x : x-3, y-12, 3, 6);
+    }
+
+    // HUD
+    const hud = document.getElementById('hud');
+    const phase = (t<0.25) ? "Dawn" : (t<0.5) ? "Day" : (t<0.75) ? "Dusk" : "Night";
+    hud.innerHTML = `
+      <span class="pill">Day: ${dayCount}</span>
+      <span class="pill">Phase: ${phase}</span>
+      <span class="pill">Coins: ${coins}</span>
+      <span class="pill">Villagers: ${camp.villagers}</span>
+      <span class="pill">Stamina: ${Math.round(PLAYER.stamina)}</span>
+    `;
+  }
+
+  // Main loop (fixed step)
+  function loop(now){
+    const dt = now - lastTime;
+    lastTime = now;
+    acc += dt;
+    while (acc >= FIXED_DT){
+      step(FIXED_DT);
+      acc -= FIXED_DT;
+    }
+    draw();
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+})();
+</script>
+</body>
+</html>
