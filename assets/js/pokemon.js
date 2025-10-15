@@ -1,5 +1,5 @@
 // assets/js/pokemon.jsx
-import React2, { useEffect, useMemo, useState } from "https://esm.sh/react@18";
+import React2, { useEffect, useMemo, useRef, useState } from "https://esm.sh/react@18";
 import { createRoot } from "https://esm.sh/react-dom@18/client";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
@@ -558,6 +558,309 @@ function App() {
     ]
   }, undefined, true, undefined, this);
 }
+function OfflineMode({ onOpenHelp }) {
+  const { loading: dexLoading, error: dexError, isValid } = usePokedex();
+  const [status, setStatus] = useState("lobby");
+  const [countdown, setCountdown] = useState(null);
+  const [timeLeft, setTimeLeft] = useState(60);
+  const [input, setInput] = useState("");
+  const [feedback, setFeedback] = useState("");
+  const [entries, setEntries] = useState([]);
+  const usedNames = useRef(new Set);
+  const feedbackTimeout = useRef(null);
+  const [bestScore, setBestScore] = useState(() => {
+    try {
+      const raw = localStorage.getItem("ptb_best_score_v1");
+      const parsed = parseInt(raw ?? "", 10);
+      return Number.isNaN(parsed) ? 0 : parsed;
+    } catch (e) {
+      console.warn("Unable to read stored best score", e);
+      return 0;
+    }
+  });
+  const score = entries.length;
+  const clearFeedback = () => {
+    if (feedbackTimeout.current) {
+      clearTimeout(feedbackTimeout.current);
+      feedbackTimeout.current = null;
+    }
+    setFeedback("");
+  };
+  const pushFeedback = (msg, duration = 1000) => {
+    if (feedbackTimeout.current) {
+      clearTimeout(feedbackTimeout.current);
+    }
+    setFeedback(msg);
+    if (duration > 0) {
+      feedbackTimeout.current = setTimeout(() => {
+        feedbackTimeout.current = null;
+        setFeedback("");
+      }, duration);
+    } else {
+      feedbackTimeout.current = null;
+    }
+  };
+  useEffect(() => {
+    return () => {
+      if (feedbackTimeout.current) {
+        clearTimeout(feedbackTimeout.current);
+      }
+    };
+  }, []);
+  useEffect(() => {
+    if (status !== "countdown" || countdown == null)
+      return;
+    if (countdown <= 0) {
+      setStatus("playing");
+      setCountdown(null);
+      return;
+    }
+    const id = setTimeout(() => {
+      setCountdown((c) => c == null ? c : Math.max(0, c - 1));
+    }, 1000);
+    return () => clearTimeout(id);
+  }, [status, countdown]);
+  useEffect(() => {
+    if (status !== "playing")
+      return;
+    if (timeLeft <= 0) {
+      setStatus("ended");
+      setTimeLeft(0);
+      return;
+    }
+    const id = setTimeout(() => {
+      setTimeLeft((t) => Math.max(0, t - 1));
+    }, 1000);
+    return () => clearTimeout(id);
+  }, [status, timeLeft]);
+  useEffect(() => {
+    if (status === "ended" && score > bestScore) {
+      setBestScore(score);
+      try {
+        localStorage.setItem("ptb_best_score_v1", String(score));
+      } catch (e) {
+        console.warn("Unable to persist best score", e);
+      }
+    }
+  }, [status, score, bestScore]);
+  const resetRound = () => {
+    usedNames.current = new Set;
+    setEntries([]);
+    setInput("");
+    clearFeedback();
+    setTimeLeft(60);
+  };
+  const startRound = () => {
+    if (dexLoading || dexError || status === "countdown" || status === "playing")
+      return;
+    resetRound();
+    setCountdown(3);
+    setStatus("countdown");
+  };
+  const statusLabel = status === "countdown" ? `Starting in ${countdown ?? 0}` : status === "playing" ? `Time left ${timeLeft}s` : status === "ended" ? "Round over" : "Waiting to start";
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const guess = input.trim();
+    if (!guess)
+      return;
+    if (status !== "playing") {
+      if (status === "lobby")
+        pushFeedback("Tap start to begin your solo round!", 1400);
+      else if (status === "countdown")
+        pushFeedback("Countdown is running — get ready!", 1200);
+      else if (status === "ended")
+        pushFeedback("Round is over. Hit play again to keep going!", 1600);
+      return;
+    }
+    if (!isValid(guess)) {
+      pushFeedback("Not a valid Pokémon name!", 1200);
+      return;
+    }
+    const norm = normalizeName(guess);
+    if (usedNames.current.has(norm)) {
+      pushFeedback("Already used! Try another Pokémon.", 1400);
+      return;
+    }
+    usedNames.current.add(norm);
+    const entry = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      name: guess
+    };
+    setEntries((prev) => [entry, ...prev].slice(0, 40));
+    setInput("");
+    pushFeedback("Nice!", 600);
+  };
+  const displayedEntries = entries.slice(0, 15);
+  const canStart = !dexLoading && !dexError;
+  return /* @__PURE__ */ jsxDEV("div", {
+    style: {
+      fontFamily: "Plus Jakarta Sans, Inter, system-ui, -apple-system, sans-serif",
+      maxWidth: 960,
+      margin: "0 auto",
+      padding: 16,
+      display: "grid",
+      gap: 16
+    },
+    children: [
+      /* @__PURE__ */ jsxDEV("header", {
+        children: [
+          /* @__PURE__ */ jsxDEV("p", {
+            style: { letterSpacing: "0.35em", textTransform: "uppercase", fontSize: 12, color: "var(--accent-blue)", margin: 0 },
+            children: "Solo practice"
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsxDEV("h1", {
+            style: { fontSize: 32, fontWeight: 800, margin: "4px 0 8px" },
+            children: "Pokémon Typing Battle"
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsxDEV("p", {
+            style: { opacity: 0.8, margin: 0 },
+            children: "Warm up locally with a 60s solo sprint while you prepare your Firebase project for realtime multiplayer."
+          }, undefined, false, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      dexLoading && /* @__PURE__ */ jsxDEV("div", {
+        children: "Loading Pokédex… (first run can take a few seconds)"
+      }, undefined, false, undefined, this),
+      dexError && /* @__PURE__ */ jsxDEV("div", {
+        style: { color: "#ff6b8a" },
+        children: [
+          "Pokédex error: ",
+          dexError
+        ]
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsxDEV("section", {
+        style: { border: "1px solid rgba(147,198,255,0.25)", borderRadius: 20, padding: 20, background: "rgba(15, 9, 30, 0.75)", boxShadow: "var(--shadow-strong)", display: "grid", gap: 20 },
+        children: [
+          /* @__PURE__ */ jsxDEV("div", {
+            style: { display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center", justifyContent: "space-between" },
+            children: [
+              /* @__PURE__ */ jsxDEV("div", {
+                children: [
+                  /* @__PURE__ */ jsxDEV("div", {
+                    style: { fontSize: 12, color: "var(--text-muted)" },
+                    children: "Mode"
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsxDEV("div", {
+                    style: { fontSize: 18, fontWeight: 700 },
+                    children: "Solo sprint"
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              /* @__PURE__ */ jsxDEV("div", {
+                children: [
+                  /* @__PURE__ */ jsxDEV("div", {
+                    style: { fontSize: 12, color: "var(--text-muted)" },
+                    children: "Status"
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsxDEV("div", {
+                    style: { fontSize: 18, fontWeight: 700 },
+                    children: statusLabel
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              /* @__PURE__ */ jsxDEV("div", {
+                children: [
+                  /* @__PURE__ */ jsxDEV("div", {
+                    style: { fontSize: 12, color: "var(--text-muted)" },
+                    children: "This round"
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsxDEV("div", {
+                    style: { fontSize: 28, fontWeight: 800 },
+                    children: score
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              /* @__PURE__ */ jsxDEV("div", {
+                children: [
+                  /* @__PURE__ */ jsxDEV("div", {
+                    style: { fontSize: 12, color: "var(--text-muted)" },
+                    children: "Best streak"
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsxDEV("div", {
+                    style: { fontSize: 18, fontWeight: 700 },
+                    children: bestScore
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              (status === "lobby" || status === "ended") && /* @__PURE__ */ jsxDEV("button", {
+                onClick: startRound,
+                style: btnPrimary,
+                disabled: !canStart,
+                children: status === "ended" ? "Play again" : "Start 60s solo round"
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
+          /* @__PURE__ */ jsxDEV("div", {
+            style: { display: "grid", gap: 16 },
+            children: [
+              /* @__PURE__ */ jsxDEV("form", {
+                onSubmit: handleSubmit,
+                style: { display: "flex", flexWrap: "wrap", gap: 12 },
+                children: [
+                  /* @__PURE__ */ jsxDEV("input", {
+                    disabled: status !== "playing",
+                    value: input,
+                    onChange: (e) => setInput(e.target.value),
+                    placeholder: "Type a Pokémon and press Enter…",
+                    style: { ...inputStyle, flex: "1 1 220px", fontSize: 18 }
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsxDEV("button", {
+                    disabled: status !== "playing",
+                    style: btnSecondary,
+                    children: "Submit"
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              feedback && /* @__PURE__ */ jsxDEV("div", {
+                style: { fontWeight: 600 },
+                children: feedback
+              }, undefined, false, undefined, this),
+              status === "ended" && /* @__PURE__ */ jsxDEV("div", {
+                style: { fontSize: 16, fontWeight: 600 },
+                children: `You named ${score} unique Pokémon!`
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsxDEV("div", {
+                children: [
+                  /* @__PURE__ */ jsxDEV("h3", {
+                    style: { margin: "12px 0 8px", fontSize: 18 },
+                    children: "Recent entries"
+                  }, undefined, false, undefined, this),
+                  displayedEntries.length === 0 ? /* @__PURE__ */ jsxDEV("p", {
+                    style: { margin: 0, color: "var(--text-muted)" },
+                    children: "Your discoveries will show up here once the round starts."
+                  }, undefined, false, undefined, this) : /* @__PURE__ */ jsxDEV("ul", {
+                    style: { margin: 0, paddingLeft: 18, display: "grid", gap: 4 },
+                    children: displayedEntries.map((entry) => /* @__PURE__ */ jsxDEV("li", {
+                      children: entry.name
+                    }, entry.id, false, undefined, this))
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
+          /* @__PURE__ */ jsxDEV("div", {
+            style: { display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" },
+            children: [
+              /* @__PURE__ */ jsxDEV("span", {
+                style: { color: "var(--text-muted)" },
+                children: "Ready for realtime rooms? Configure Firebase to unlock multiplayer."
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsxDEV("button", {
+                type: "button",
+                onClick: onOpenHelp,
+                style: btnSecondary,
+                children: "View Firebase setup"
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsxDEV(Footer, {
+        me: null
+      }, undefined, false, undefined, this)
+    ]
+  }, undefined, true, undefined, this);
+}
 var inputStyle = {
   padding: "12px 14px",
   border: "1px solid rgba(147,198,255,0.25)",
@@ -656,7 +959,7 @@ service cloud.firestore {
     }, undefined, true, undefined, this)
   ]
 }, undefined, true, undefined, this);
-var SetupNotice = ({ error }) => /* @__PURE__ */ jsxDEV("div", {
+var SetupNotice = ({ error, onBack }) => /* @__PURE__ */ jsxDEV("div", {
   style: {
     fontFamily: "Plus Jakarta Sans, Inter, system-ui, -apple-system, sans-serif",
     maxWidth: 640,
@@ -714,13 +1017,23 @@ var SetupNotice = ({ error }) => /* @__PURE__ */ jsxDEV("div", {
         }, undefined, false, undefined, this),
         " before this script loads to keep secrets out of source control."
       ]
-    }, undefined, true, undefined, this)
+    }, undefined, true, undefined, this),
+    onBack && /* @__PURE__ */ jsxDEV("button", {
+      type: "button",
+      onClick: onBack,
+      style: { ...btnSecondary, justifySelf: "start" },
+      children: "Back to solo practice"
+    }, undefined, false, undefined, this)
   ]
 }, undefined, true, undefined, this);
 function Root() {
+  const [showHelp, setShowHelp] = useState(false);
   if (!firebaseReady) {
-    return /* @__PURE__ */ jsxDEV(SetupNotice, {
-      error: firebaseInitError
+    return showHelp ? /* @__PURE__ */ jsxDEV(SetupNotice, {
+      error: firebaseInitError,
+      onBack: () => setShowHelp(false)
+    }, undefined, false, undefined, this) : /* @__PURE__ */ jsxDEV(OfflineMode, {
+      onOpenHelp: () => setShowHelp(true)
     }, undefined, false, undefined, this);
   }
   return /* @__PURE__ */ jsxDEV(App, {}, undefined, false, undefined, this);
