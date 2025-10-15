@@ -21,12 +21,14 @@ import { v4 as uuidv4 } from "https://esm.sh/uuid@9";
 const fallbackUUID = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
 
 const defaultConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyDRniZatGeylxphjHQadYjucOcirNBRIdk",
+    authDomain: "multiplayer-640ec.firebaseapp.com",
+    databaseURL: "https://multiplayer-640ec-default-rtdb.firebaseio.com",
+    projectId: "multiplayer-640ec",
+    storageBucket: "multiplayer-640ec.firebasestorage.app",
+    messagingSenderId: "94914236381",
+    appId: "1:94914236381:web:55ab00cc690140180cf034",
+    measurementId: "G-V43J1S8RGF"
 };
 
 const firebaseConfig = window.POKEMON_FIREBASE_CONFIG || defaultConfig;
