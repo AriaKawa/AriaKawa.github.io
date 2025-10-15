@@ -59,6 +59,128 @@
     opacity:.22;
     mix-blend-mode:screen;
   }
+  .atmosphere{
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    overflow:hidden;
+    z-index:-2;
+  }
+  .atmosphere__orb{
+    position:absolute;
+    border-radius:50%;
+    filter:blur(0);
+    opacity:.62;
+    mix-blend-mode:screen;
+    animation:float-orb 22s ease-in-out infinite;
+  }
+  .atmosphere__orb.orb-1{
+    top:-180px;
+    left:-160px;
+    width:520px;
+    height:520px;
+    background:radial-gradient(circle at 38% 38%, rgba(255,92,148,.55), rgba(40,6,14,0) 72%);
+    animation-delay:-6s;
+  }
+  .atmosphere__orb.orb-2{
+    bottom:-200px;
+    right:-120px;
+    width:480px;
+    height:480px;
+    background:radial-gradient(circle at 65% 30%, rgba(96,197,255,.45), rgba(10,24,42,0) 70%);
+    animation-delay:-12s;
+  }
+  .atmosphere__orb.orb-3{
+    top:30%;
+    right:45%;
+    width:360px;
+    height:360px;
+    background:radial-gradient(circle at 42% 50%, rgba(255,210,92,.5), rgba(26,19,2,0) 68%);
+    animation-duration:28s;
+    animation-delay:-3s;
+  }
+  .atmosphere__shimmer{
+    position:absolute;
+    inset:-45%;
+    background:conic-gradient(from 120deg, rgba(255,209,59,.12), rgba(93,164,255,.05), rgba(255,94,148,.16), rgba(12,22,46,0));
+    filter:blur(80px);
+    opacity:.4;
+    transform:rotate(12deg);
+    animation:shimmer-rotate 36s linear infinite;
+  }
+  .atmosphere__cards{
+    position:absolute;
+    inset:0;
+  }
+  .atmosphere__card{
+    position:absolute;
+    font-size:clamp(1.6rem, 4vw, 2.8rem);
+    font-weight:700;
+    letter-spacing:.14em;
+    text-shadow:0 0 18px rgba(0,0,0,.35);
+    opacity:.3;
+    animation:suit-drift 28s linear infinite;
+  }
+  .atmosphere__card.suit-heart{
+    color:rgba(255,105,140,.6);
+    top:18%;
+    left:12%;
+    animation-delay:-4s;
+  }
+  .atmosphere__card.suit-spade{
+    color:rgba(146,170,255,.55);
+    top:62%;
+    left:24%;
+    animation-delay:-11s;
+  }
+  .atmosphere__card.suit-diamond{
+    color:rgba(255,186,120,.55);
+    top:34%;
+    right:18%;
+    animation-delay:-19s;
+  }
+  .atmosphere__card.suit-club{
+    color:rgba(108,255,210,.45);
+    bottom:14%;
+    right:28%;
+    animation-delay:-27s;
+  }
+  .atmosphere__card.suit-ace{
+    color:rgba(255,255,255,.32);
+    top:70%;
+    left:54%;
+    animation-duration:34s;
+    animation-delay:-8s;
+  }
+  @keyframes float-orb{
+    0%{ transform:translate3d(0,0,0) scale(1); }
+    40%{ transform:translate3d(0,-12px,0) scale(1.04); }
+    70%{ transform:translate3d(0,8px,0) scale(.98); }
+    100%{ transform:translate3d(0,0,0) scale(1); }
+  }
+  @keyframes shimmer-rotate{
+    0%{ transform:rotate(0deg); }
+    50%{ transform:rotate(180deg); }
+    100%{ transform:rotate(360deg); }
+  }
+  @keyframes suit-drift{
+    0%{ transform:translate3d(-6%, -4%, 0) rotate(-6deg); opacity:.22; }
+    35%{ transform:translate3d(2%, 3%, 0) rotate(4deg); opacity:.38; }
+    65%{ transform:translate3d(6%, -6%, 0) rotate(-2deg); opacity:.26; }
+    100%{ transform:translate3d(-6%, -4%, 0) rotate(-6deg); opacity:.3; }
+  }
+  @media (max-width:720px){
+    .atmosphere__orb{ opacity:.38; }
+    .atmosphere__card{ opacity:.22; }
+  }
+  @media (prefers-reduced-motion:reduce){
+    .atmosphere__orb,
+    .atmosphere__card,
+    .atmosphere__shimmer{
+      animation-duration:1ms !important;
+      animation-iteration-count:1 !important;
+    }
+  }
   .back-nav{
     position:fixed; top:18px; right:18px; z-index:10;
   }
@@ -589,6 +711,19 @@
 </style>
 </head>
 <body>
+  <div class="atmosphere" aria-hidden="true">
+    <span class="atmosphere__orb orb-1"></span>
+    <span class="atmosphere__orb orb-2"></span>
+    <span class="atmosphere__orb orb-3"></span>
+    <span class="atmosphere__shimmer"></span>
+    <div class="atmosphere__cards">
+      <span class="atmosphere__card suit-heart">♥</span>
+      <span class="atmosphere__card suit-spade">♠</span>
+      <span class="atmosphere__card suit-diamond">♦</span>
+      <span class="atmosphere__card suit-club">♣</span>
+      <span class="atmosphere__card suit-ace">A♣</span>
+    </div>
+  </div>
   <div class="back-nav" role="navigation" aria-label="Exit to main menu">
     <button type="button" class="back-nav__button" data-home="index.html" onclick="handleBack(event)">
       <span class="back-nav__icon" aria-hidden="true">&#8962;</span>
