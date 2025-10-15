@@ -409,19 +409,70 @@ function App() {
                         </div>
 
                         <aside>
-                            <h3 style={{ margin: "12px 0 8px", fontSize: 18 }}>Leaderboard</h3>
-                            <ol style={{ margin: 0, paddingLeft: 20, display: "grid", gap: 6 }}>
-                                {players.map((p) => (
-                                    <li key={p.id} style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-                                        <span>
-                                            {p.name}
-                                            {p.id === room.hostId ? " (Host)" : ""}
-                                            {p.id === playerId ? " — You" : ""}
-                                        </span>
-                                        <strong>{p.score || 0}</strong>
-                                    </li>
-                                ))}
-                            </ol>
+                            {(room?.status === "lobby" || room?.status === "countdown") && (
+                                <div style={{ display: "grid", gap: 8 }}>
+                                    <h3 style={{ margin: "12px 0 0", fontSize: 18 }}>Players in lobby</h3>
+                                    {players.length === 0 ? (
+                                        <p style={{ margin: 0, color: "var(--text-muted)", fontSize: 14 }}>
+                                            Waiting for players to join…
+                                        </p>
+                                    ) : (
+                                        <ul style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 6 }}>
+                                            {players.map((p) => (
+                                                <li key={p.id} style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                                                    <span>
+                                                        {p.name || "Mystery Trainer"}
+                                                        {p.id === room.hostId ? " (Host)" : ""}
+                                                        {p.id === playerId ? " — You" : ""}
+                                                    </span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                </div>
+                            )}
+
+                            {room?.status === "playing" && (
+                                <div style={{ display: "grid", gap: 8 }}>
+                                    <h3 style={{ margin: "12px 0 0", fontSize: 18 }}>Live leaderboard</h3>
+                                    <ol style={{ margin: 0, paddingLeft: 20, display: "grid", gap: 6 }}>
+                                        {players.map((p) => (
+                                            <li key={p.id} style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                                                <span>
+                                                    {p.name || "Mystery Trainer"}
+                                                    {p.id === room.hostId ? " (Host)" : ""}
+                                                    {p.id === playerId ? " — You" : ""}
+                                                </span>
+                                                <strong>{p.score || 0}</strong>
+                                            </li>
+                                        ))}
+                                    </ol>
+                                </div>
+                            )}
+
+                            {room?.status === "ended" && (
+                                <div style={{ display: "grid", gap: 8 }}>
+                                    <h3 style={{ margin: "12px 0 0", fontSize: 18 }}>Final scores</h3>
+                                    {players.length === 0 ? (
+                                        <p style={{ margin: 0, color: "var(--text-muted)", fontSize: 14 }}>
+                                            No one played this round.
+                                        </p>
+                                    ) : (
+                                        <ol style={{ margin: 0, paddingLeft: 20, display: "grid", gap: 6 }}>
+                                            {players.map((p) => (
+                                                <li key={p.id} style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                                                    <span>
+                                                        {p.name || "Mystery Trainer"}
+                                                        {p.id === room.hostId ? " (Host)" : ""}
+                                                        {p.id === playerId ? " — You" : ""}
+                                                    </span>
+                                                    <strong>{p.score || 0}</strong>
+                                                </li>
+                                            ))}
+                                        </ol>
+                                    )}
+                                </div>
+                            )}
                         </aside>
                     </div>
                 </section>
