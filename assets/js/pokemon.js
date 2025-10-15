@@ -526,28 +526,88 @@ function App() {
               }, undefined, true, undefined, this),
               /* @__PURE__ */ jsxDEV("aside", {
                 children: [
-                  /* @__PURE__ */ jsxDEV("h3", {
-                    style: { margin: "12px 0 8px", fontSize: 18 },
-                    children: "Leaderboard"
-                  }, undefined, false, undefined, this),
-                  /* @__PURE__ */ jsxDEV("ol", {
-                    style: { margin: 0, paddingLeft: 20, display: "grid", gap: 6 },
-                    children: players.map((p) => /* @__PURE__ */ jsxDEV("li", {
-                      style: { display: "flex", justifyContent: "space-between", gap: 12 },
-                      children: [
-                        /* @__PURE__ */ jsxDEV("span", {
+                  (room?.status === "lobby" || room?.status === "countdown") && /* @__PURE__ */ jsxDEV("div", {
+                    style: { display: "grid", gap: 8 },
+                    children: [
+                      /* @__PURE__ */ jsxDEV("h3", {
+                        style: { margin: "12px 0 0", fontSize: 18 },
+                        children: "Players in lobby"
+                      }, undefined, false, undefined, this),
+                      players.length === 0 ? /* @__PURE__ */ jsxDEV("p", {
+                        style: { margin: 0, color: "var(--text-muted)", fontSize: 14 },
+                        children: "Waiting for players to join…"
+                      }, undefined, false, undefined, this) : /* @__PURE__ */ jsxDEV("ul", {
+                        style: { margin: 0, paddingLeft: 18, display: "grid", gap: 6 },
+                        children: players.map((p) => /* @__PURE__ */ jsxDEV("li", {
+                          style: { display: "flex", justifyContent: "space-between", gap: 12 },
+                          children: /* @__PURE__ */ jsxDEV("span", {
+                            children: [
+                              p.name || "Mystery Trainer",
+                              p.id === room.hostId ? " (Host)" : "",
+                              p.id === playerId ? " — You" : ""
+                            ]
+                          }, undefined, true, undefined, this)
+                        }, p.id, true, undefined, this))
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this),
+                  room?.status === "playing" && /* @__PURE__ */ jsxDEV("div", {
+                    style: { display: "grid", gap: 8 },
+                    children: [
+                      /* @__PURE__ */ jsxDEV("h3", {
+                        style: { margin: "12px 0 0", fontSize: 18 },
+                        children: "Live leaderboard"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsxDEV("ol", {
+                        style: { margin: 0, paddingLeft: 20, display: "grid", gap: 6 },
+                        children: players.map((p) => /* @__PURE__ */ jsxDEV("li", {
+                          style: { display: "flex", justifyContent: "space-between", gap: 12 },
                           children: [
-                            p.name,
-                            p.id === room.hostId ? " (Host)" : "",
-                            p.id === playerId ? " — You" : ""
+                            /* @__PURE__ */ jsxDEV("span", {
+                              children: [
+                                p.name || "Mystery Trainer",
+                                p.id === room.hostId ? " (Host)" : "",
+                                p.id === playerId ? " — You" : ""
+                              ]
+                            }, undefined, true, undefined, this),
+                            /* @__PURE__ */ jsxDEV("strong", {
+                              children: p.score || 0
+                            }, undefined, false, undefined, this)
                           ]
-                        }, undefined, true, undefined, this),
-                        /* @__PURE__ */ jsxDEV("strong", {
-                          children: p.score || 0
-                        }, undefined, false, undefined, this)
-                      ]
-                    }, p.id, true, undefined, this))
-                  }, undefined, false, undefined, this)
+                        }, p.id, true, undefined, this))
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this),
+                  room?.status === "ended" && /* @__PURE__ */ jsxDEV("div", {
+                    style: { display: "grid", gap: 8 },
+                    children: [
+                      /* @__PURE__ */ jsxDEV("h3", {
+                        style: { margin: "12px 0 0", fontSize: 18 },
+                        children: "Final scores"
+                      }, undefined, false, undefined, this),
+                      players.length === 0 ? /* @__PURE__ */ jsxDEV("p", {
+                        style: { margin: 0, color: "var(--text-muted)", fontSize: 14 },
+                        children: "No one played this round."
+                      }, undefined, false, undefined, this) : /* @__PURE__ */ jsxDEV("ol", {
+                        style: { margin: 0, paddingLeft: 20, display: "grid", gap: 6 },
+                        children: players.map((p) => /* @__PURE__ */ jsxDEV("li", {
+                          style: { display: "flex", justifyContent: "space-between", gap: 12 },
+                          children: [
+                            /* @__PURE__ */ jsxDEV("span", {
+                              children: [
+                                p.name || "Mystery Trainer",
+                                p.id === room.hostId ? " (Host)" : "",
+                                p.id === playerId ? " — You" : ""
+                              ]
+                            }, undefined, true, undefined, this),
+                            /* @__PURE__ */ jsxDEV("strong", {
+                              children: p.score || 0
+                            }, undefined, false, undefined, this)
+                          ]
+                        }, p.id, true, undefined, this))
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this)
                 ]
               }, undefined, true, undefined, this)
             ]
