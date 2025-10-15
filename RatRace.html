@@ -306,10 +306,10 @@
   .legend span{ display:inline-flex; gap:8px; align-items:center; background:rgba(9,14,24,.55);
     padding:.35rem .65rem; border-radius:999px; border:1px solid rgba(255,255,255,.08); }
 
-  .info-panel{ grid-area:info; display:flex; flex-direction:column; gap:18px; }
+  .info-panel{ grid-area:info; display:flex; flex-direction:column; gap:18px; min-height:0; }
   .info-panel .summaryGrid{ flex:1; }
-  .bets-panel{ grid-area:bets; display:flex; flex-direction:column; gap:16px; }
-  .info-panel.panel{ padding:24px; align-self:stretch; }
+  .bets-panel{ grid-area:bets; display:flex; flex-direction:column; gap:16px; min-height:0; }
+  .info-panel.panel{ padding:24px; align-self:stretch; overflow:auto; }
   .bets-panel.panel{ padding:24px; align-self:stretch; overflow:auto; }
   @media (max-width:720px){
     .info-panel.panel,
