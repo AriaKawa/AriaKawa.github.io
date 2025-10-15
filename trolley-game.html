@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Trolley Game — Aria Arcade</title>
+    <style>
+        :root {
+            --bg: #050311;
+            --panel: rgba(18, 12, 38, 0.92);
+            --accent: #f7a7da;
+            --accent-strong: #93c6ff;
+            --text: #f5f3ff;
+            --muted: #bcb4da;
+            --shadow: 0 32px 60px rgba(5, 3, 17, 0.55);
+            --radius: 28px;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: clamp(1.5rem, 4vw, 4rem);
+            font-family: "Plus Jakarta Sans", "Inter", system-ui, -apple-system, sans-serif;
+            background:
+                radial-gradient(circle at top left, rgba(147, 198, 255, 0.22), transparent 55%),
+                radial-gradient(circle at bottom right, rgba(247, 167, 218, 0.25), transparent 60%),
+                var(--bg);
+            color: var(--text);
+        }
+
+        .layout {
+            width: min(960px, 100%);
+            background: var(--panel);
+            border-radius: var(--radius);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: var(--shadow);
+            padding: clamp(1.8rem, 4vw, 3rem);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .layout::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background: linear-gradient(140deg, rgba(147, 198, 255, 0.16), transparent 55%);
+        }
+
+        .back-nav {
+            position: absolute;
+            top: clamp(1rem, 3vw, 1.6rem);
+            right: clamp(1rem, 3vw, 1.6rem);
+        }
+
+        .back-nav__button {
+            appearance: none;
+            border: 1px solid rgba(147, 198, 255, 0.35);
+            background: linear-gradient(135deg, rgba(31, 21, 58, 0.82), rgba(11, 7, 27, 0.88));
+            color: var(--text);
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.55rem 1.2rem;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            cursor: pointer;
+            box-shadow: 0 20px 36px rgba(5, 3, 17, 0.45);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+
+        .back-nav__button:hover,
+        .back-nav__button:focus-visible {
+            transform: translateY(-1px);
+            border-color: rgba(247, 167, 218, 0.6);
+            box-shadow: 0 26px 44px rgba(5, 3, 17, 0.55);
+            outline: none;
+        }
+
+        .back-nav__icon {
+            font-size: 1.05rem;
+            line-height: 1;
+        }
+
+        header {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-bottom: clamp(1.8rem, 4vw, 2.4rem);
+        }
+
+        h1 {
+            margin: 0;
+            font-size: clamp(2rem, 5vw, 3rem);
+            letter-spacing: 0.02em;
+        }
+
+        .tagline {
+            margin: 0;
+            color: var(--muted);
+            max-width: 42ch;
+            font-size: clamp(1rem, 2.5vw, 1.15rem);
+        }
+
+        .scenario-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 22px;
+            padding: clamp(1.4rem, 4vw, 2rem);
+            display: grid;
+            gap: 1rem;
+        }
+
+        .scenario-card h2 {
+            margin: 0;
+            font-size: clamp(1.2rem, 3vw, 1.6rem);
+        }
+
+        .scenario-card p {
+            margin: 0;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+
+        .cta-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-top: 0.4rem;
+        }
+
+        .cta {
+            appearance: none;
+            border: none;
+            border-radius: 14px;
+            padding: 0.75rem 1.4rem;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            cursor: pointer;
+            color: #140827;
+            background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+            box-shadow: 0 18px 32px rgba(15, 6, 30, 0.4);
+            transition: transform 0.18s ease, box-shadow 0.18s ease;
+            text-decoration: none;
+        }
+
+        .cta:hover,
+        .cta:focus-visible {
+            transform: translateY(-1px);
+            box-shadow: 0 24px 40px rgba(15, 6, 30, 0.5);
+            outline: none;
+        }
+
+        .helper {
+            font-size: 0.9rem;
+            color: var(--muted);
+        }
+    </style>
+</head>
+<body>
+    <div class="layout">
+        <nav class="back-nav">
+            <a class="back-nav__button" href="index.html">
+                <span class="back-nav__icon" aria-hidden="true">⟵</span>
+                Back to vault
+            </a>
+        </nav>
+
+        <header>
+            <h1>Trolley Game</h1>
+            <p class="tagline">Guide your crew through impossible choices. Reveal a prompt, debate the options, and decide who (or what) stays on the tracks.</p>
+        </header>
+
+        <section class="scenario-card">
+            <h2>How to play</h2>
+            <p>Use this page as the facilitator view. Press the button below to draw a randomized trolley problem prompt. Read it aloud, give the group a timer, and let the arguments begin.</p>
+            <div class="cta-row">
+                <a class="cta" href="#" data-action="prompt">Draw a scenario</a>
+                <span class="helper">Need inspiration? Pair with a countdown timer app for dramatic decisions.</span>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        const prompts = [
+            "Five world-class scientists on one track, one world-saving AI core on the other.",
+            "A train of puppies versus a train carrying the last seed vault for Mars colony.",
+            "The villain you just defeated or the hero who might turn evil without mentorship.",
+            "A trolley full of your future selves or your present-day best friends.",
+            "A track of clones destined to cure disease or a track of artists destined to inspire billions."
+        ];
+
+        const promptButton = document.querySelector('[data-action="prompt"]');
+
+        promptButton?.addEventListener('click', (event) => {
+            event.preventDefault();
+            const randomPrompt = prompts[Math.floor(Math.random() * prompts.length)];
+            promptButton.textContent = randomPrompt;
+            promptButton.setAttribute('aria-live', 'polite');
+        });
+    </script>
+</body>
+</html>

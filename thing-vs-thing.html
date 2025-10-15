@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Thing vs Thing — Aria Arcade</title>
+    <style>
+        :root {
+            --bg: #06021a;
+            --panel: rgba(15, 10, 34, 0.94);
+            --accent: #93c6ff;
+            --accent-strong: #c2b7ff;
+            --text: #f7f5ff;
+            --muted: #bcb4da;
+            --shadow: 0 32px 60px rgba(4, 2, 16, 0.58);
+            --radius: 28px;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: clamp(1.5rem, 4vw, 4rem);
+            font-family: "Plus Jakarta Sans", "Inter", system-ui, -apple-system, sans-serif;
+            background:
+                radial-gradient(circle at top right, rgba(247, 167, 218, 0.2), transparent 55%),
+                radial-gradient(circle at bottom left, rgba(147, 198, 255, 0.2), transparent 60%),
+                var(--bg);
+            color: var(--text);
+        }
+
+        .layout {
+            width: min(960px, 100%);
+            background: var(--panel);
+            border-radius: var(--radius);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: var(--shadow);
+            padding: clamp(1.8rem, 4vw, 3rem);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .layout::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background: linear-gradient(140deg, rgba(247, 167, 218, 0.18), transparent 55%);
+        }
+
+        .back-nav {
+            position: absolute;
+            top: clamp(1rem, 3vw, 1.6rem);
+            right: clamp(1rem, 3vw, 1.6rem);
+        }
+
+        .back-nav__button {
+            appearance: none;
+            border: 1px solid rgba(147, 198, 255, 0.35);
+            background: linear-gradient(135deg, rgba(31, 21, 58, 0.82), rgba(11, 7, 27, 0.88));
+            color: var(--text);
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.55rem 1.2rem;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            cursor: pointer;
+            box-shadow: 0 20px 36px rgba(5, 3, 17, 0.45);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+
+        .back-nav__button:hover,
+        .back-nav__button:focus-visible {
+            transform: translateY(-1px);
+            border-color: rgba(147, 198, 255, 0.6);
+            box-shadow: 0 26px 44px rgba(5, 3, 17, 0.55);
+            outline: none;
+        }
+
+        .back-nav__icon {
+            font-size: 1.05rem;
+            line-height: 1;
+        }
+
+        header {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-bottom: clamp(1.8rem, 4vw, 2.4rem);
+        }
+
+        h1 {
+            margin: 0;
+            font-size: clamp(2rem, 5vw, 3rem);
+            letter-spacing: 0.02em;
+        }
+
+        .tagline {
+            margin: 0;
+            color: var(--muted);
+            max-width: 48ch;
+            font-size: clamp(1rem, 2.5vw, 1.15rem);
+        }
+
+        .versus-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 22px;
+            padding: clamp(1.4rem, 4vw, 2rem);
+            display: grid;
+            gap: 1.1rem;
+        }
+
+        .versus-card h2 {
+            margin: 0;
+            font-size: clamp(1.2rem, 3vw, 1.6rem);
+        }
+
+        .versus-card p {
+            margin: 0;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+
+        .field-row {
+            display: grid;
+            gap: 0.75rem;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        }
+
+        .field {
+            display: grid;
+            gap: 0.35rem;
+        }
+
+        label {
+            font-size: 0.9rem;
+            color: var(--muted);
+        }
+
+        input, textarea {
+            background: rgba(6, 3, 18, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 14px;
+            padding: 0.75rem 1rem;
+            color: var(--text);
+            font-size: 1rem;
+            font-family: inherit;
+            outline: none;
+        }
+
+        textarea {
+            min-height: 110px;
+            resize: vertical;
+        }
+
+        input:focus-visible,
+        textarea:focus-visible {
+            border-color: rgba(147, 198, 255, 0.6);
+            box-shadow: 0 0 0 3px rgba(147, 198, 255, 0.18);
+        }
+
+        .cta-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            align-items: center;
+        }
+
+        .cta {
+            appearance: none;
+            border: none;
+            border-radius: 14px;
+            padding: 0.75rem 1.4rem;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            cursor: pointer;
+            color: #140827;
+            background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+            box-shadow: 0 18px 32px rgba(15, 6, 30, 0.4);
+            transition: transform 0.18s ease, box-shadow 0.18s ease;
+            text-decoration: none;
+            text-align: center;
+        }
+
+        .cta:hover,
+        .cta:focus-visible {
+            transform: translateY(-1px);
+            box-shadow: 0 24px 40px rgba(15, 6, 30, 0.5);
+            outline: none;
+        }
+
+        .helper {
+            font-size: 0.9rem;
+            color: var(--muted);
+        }
+    </style>
+</head>
+<body>
+    <div class="layout">
+        <nav class="back-nav">
+            <a class="back-nav__button" href="index.html">
+                <span class="back-nav__icon" aria-hidden="true">⟵</span>
+                Back to vault
+            </a>
+        </nav>
+
+        <header>
+            <h1>Thing vs Thing</h1>
+            <p class="tagline">Spin up lightning-fast debates where two ridiculous contenders go head-to-head. Crowd votes, points tally, bragging rights secured.</p>
+        </header>
+
+        <section class="versus-card">
+            <h2>Set up a round</h2>
+            <p>Pick two challengers, establish the arena, and jot down scoring notes. Hit generate to drop a random twist that keeps the argument spicy.</p>
+
+            <div class="field-row">
+                <div class="field">
+                    <label for="contenderA">Contender A</label>
+                    <input id="contenderA" type="text" placeholder="e.g., The Moon" />
+                </div>
+                <div class="field">
+                    <label for="contenderB">Contender B</label>
+                    <input id="contenderB" type="text" placeholder="e.g., The Ocean" />
+                </div>
+            </div>
+
+            <div class="field">
+                <label for="arena">Arena / Topic</label>
+                <input id="arena" type="text" placeholder="e.g., Best vacation spot" />
+            </div>
+
+            <div class="field">
+                <label for="notes">Scoreboard notes</label>
+                <textarea id="notes" placeholder="Award points for creativity, crowd applause, or savage burns."></textarea>
+            </div>
+
+            <div class="cta-row">
+                <a class="cta" href="#" data-action="twist">Generate twist</a>
+                <span class="helper" data-last-twist>Twist will appear here. Share it with the room and start arguing!</span>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        const twists = [
+            "Loser has to DJ the afterparty using only movie soundtracks.",
+            "Each argument must include a rhyme.",
+            "Audience can shout 'objection' once to force a rebuttal.",
+            "Swap sides halfway through and keep a straight face.",
+            "Winner gets to pick the next category; loser must defend it sight unseen."
+        ];
+
+        const twistButton = document.querySelector('[data-action="twist"]');
+        const twistLabel = document.querySelector('[data-last-twist]');
+
+        twistButton?.addEventListener('click', (event) => {
+            event.preventDefault();
+            const randomTwist = twists[Math.floor(Math.random() * twists.length)];
+            twistLabel.textContent = randomTwist;
+            twistLabel.setAttribute('aria-live', 'polite');
+        });
+    </script>
+</body>
+</html>
