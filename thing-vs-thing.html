@@ -46,6 +46,100 @@
             overflow: hidden;
         }
 
+        .hidden {
+            display: none !important;
+        }
+
+        .entry-lobby {
+            position: fixed;
+            inset: 0;
+            z-index: 20;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: clamp(1.5rem, 4vw, 4rem);
+            background: rgba(6, 3, 18, 0.78);
+            backdrop-filter: blur(20px);
+        }
+
+        .entry-card {
+            width: min(420px, 96vw);
+            padding: clamp(1.6rem, 4vw, 2.6rem);
+            border-radius: 24px;
+            background: rgba(22, 16, 40, 0.92);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 26px 48px rgba(4, 2, 16, 0.58);
+            display: grid;
+            gap: 1rem;
+            text-align: center;
+        }
+
+        .entry-card h2 {
+            margin: 0;
+            font-size: clamp(1.6rem, 4vw, 2.1rem);
+            letter-spacing: 0.04em;
+        }
+
+        .entry-card p {
+            margin: 0;
+            color: var(--muted);
+            line-height: 1.45;
+        }
+
+        .entry-actions {
+            display: grid;
+            gap: 0.75rem;
+        }
+
+        .entry-card button,
+        .entry-card input {
+            appearance: none;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            background: rgba(8, 4, 22, 0.72);
+            color: var(--text);
+            padding: 0.85rem 1.1rem;
+            font-family: inherit;
+            font-size: 1rem;
+        }
+
+        .entry-card button {
+            cursor: pointer;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+        }
+
+        .entry-card button.primary {
+            background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+            color: #140827;
+            border: none;
+            box-shadow: 0 18px 36px rgba(12, 6, 28, 0.4);
+        }
+
+        .entry-card button.ghost,
+        .entry-card button.secondary {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .entry-card button.secondary {
+            justify-self: center;
+            padding-inline: 1.6rem;
+        }
+
+        .entry-card button:hover,
+        .entry-card button:focus-visible {
+            transform: translateY(-1px);
+            box-shadow: 0 22px 40px rgba(12, 6, 28, 0.5);
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.28);
+        }
+
+        .entry-card input:focus-visible {
+            outline: 2px solid rgba(147, 198, 255, 0.55);
+            outline-offset: 3px;
+        }
+
         .layout::after {
             content: "";
             position: absolute;
@@ -205,6 +299,57 @@
     </style>
 </head>
 <body>
+    <div class="entry-lobby" id="entryLobby">
+        <div class="entry-card" id="entryMain">
+            <h2>Thing vs Thing</h2>
+            <p>Choose how you want to kick off the debate.</p>
+            <div class="entry-actions">
+                <button class="primary" id="entryBtnSingle">Singleplayer</button>
+                <button class="ghost" id="entryBtnMultiplayer">Multiplayer</button>
+            </div>
+        </div>
+
+        <div class="entry-card hidden" id="entrySoloCard">
+            <h2>Solo Mode</h2>
+            <p>Set the contenders, grab a twist, and you're ready to moderate!</p>
+            <div class="entry-actions">
+                <button class="primary" id="entryBtnStartSolo">Start</button>
+                <button class="secondary" data-target="entryMain">Back</button>
+            </div>
+        </div>
+
+        <div class="entry-card hidden" id="entryMultiplayerCard">
+            <h2>Multiplayer</h2>
+            <p>Host a room to share the twist live, or join a code a friend gives you.</p>
+            <div class="entry-actions">
+                <button class="primary" id="entryBtnHost">Host</button>
+                <button class="ghost" id="entryBtnJoin">Join</button>
+            </div>
+            <button class="secondary" data-target="entryMain">Back</button>
+        </div>
+
+        <div class="entry-card hidden" id="entryHostCard">
+            <h2>Host a Room</h2>
+            <p>Pick a display name and share the room code with friends.</p>
+            <input id="createName" placeholder="Your display name" />
+            <div class="entry-actions">
+                <button class="primary" id="createBtn">Create Room</button>
+                <button class="secondary" data-target="entryMultiplayerCard">Back</button>
+            </div>
+        </div>
+
+        <div class="entry-card hidden" id="entryJoinCard">
+            <h2>Join a Room</h2>
+            <p>Enter the name you'll show and the invite code from the host.</p>
+            <input id="joinName" placeholder="Your display name" />
+            <input id="joinCode" placeholder="Room code" />
+            <div class="entry-actions">
+                <button class="primary" id="joinBtn">Join Room</button>
+                <button class="secondary" data-target="entryMultiplayerCard">Back</button>
+            </div>
+        </div>
+    </div>
+
     <div class="layout">
         <nav class="back-nav">
             <a class="back-nav__button" href="index.html">
@@ -261,6 +406,102 @@
 
         const twistButton = document.querySelector('[data-action="twist"]');
         const twistLabel = document.querySelector('[data-last-twist]');
+
+        const entryLobby = document.getElementById('entryLobby');
+        const entryCardIds = ['entryMain', 'entrySoloCard', 'entryMultiplayerCard', 'entryHostCard', 'entryJoinCard'];
+        const entryCards = entryCardIds
+            .map((id) => document.getElementById(id))
+            .filter(Boolean);
+
+        const entryButtons = {
+            single: document.getElementById('entryBtnSingle'),
+            multiplayer: document.getElementById('entryBtnMultiplayer'),
+            host: document.getElementById('entryBtnHost'),
+            join: document.getElementById('entryBtnJoin'),
+            startSolo: document.getElementById('entryBtnStartSolo'),
+            create: document.getElementById('createBtn'),
+            joinSubmit: document.getElementById('joinBtn')
+        };
+
+        const entryInputs = {
+            createName: document.getElementById('createName'),
+            joinName: document.getElementById('joinName'),
+            joinCode: document.getElementById('joinCode')
+        };
+
+        const entryBackButtons = Array.from(document.querySelectorAll('.entry-card [data-target]'));
+
+        const switchEntryCard = (id) => {
+            entryCards.forEach((card) => card.classList.add('hidden'));
+            const target = document.getElementById(id);
+            target?.classList.remove('hidden');
+        };
+
+        const hideEntryLobby = () => {
+            entryLobby?.classList.add('hidden');
+            entryLobby?.setAttribute('aria-hidden', 'true');
+        };
+
+        const randomCode = (len = 5) => {
+            const alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ';
+            let code = '';
+            for (let i = 0; i < len; i += 1) {
+                code += alphabet[Math.floor(Math.random() * alphabet.length)];
+            }
+            return code;
+        };
+
+        entryButtons.single?.addEventListener('click', () => switchEntryCard('entrySoloCard'));
+        entryButtons.multiplayer?.addEventListener('click', () => switchEntryCard('entryMultiplayerCard'));
+        entryButtons.host?.addEventListener('click', () => switchEntryCard('entryHostCard'));
+        entryButtons.join?.addEventListener('click', () => switchEntryCard('entryJoinCard'));
+
+        entryBackButtons.forEach((btn) => {
+            btn.addEventListener('click', (event) => {
+                const target = event.currentTarget.dataset.target;
+                if (target) {
+                    switchEntryCard(target);
+                }
+            });
+        });
+
+        entryButtons.startSolo?.addEventListener('click', () => {
+            hideEntryLobby();
+            twistLabel.textContent = 'Tap Generate twist to kick off your solo showdown.';
+            twistLabel.setAttribute('aria-live', 'polite');
+        });
+
+        entryButtons.create?.addEventListener('click', () => {
+            const name = entryInputs.createName?.value.trim();
+            if (!name) {
+                entryInputs.createName?.focus();
+                return;
+            }
+
+            const code = randomCode();
+            hideEntryLobby();
+            twistLabel.textContent = `Hosting lobby ${code}. ${name} leads the charge—share twists live as you play.`;
+            twistLabel.setAttribute('aria-live', 'polite');
+        });
+
+        entryButtons.joinSubmit?.addEventListener('click', () => {
+            const name = entryInputs.joinName?.value.trim();
+            const code = entryInputs.joinCode?.value.trim().toUpperCase();
+
+            if (!name) {
+                entryInputs.joinName?.focus();
+                return;
+            }
+
+            if (!code) {
+                entryInputs.joinCode?.focus();
+                return;
+            }
+
+            hideEntryLobby();
+            twistLabel.textContent = `${name} joined lobby ${code}. Keep an ear out for the host before hitting Generate twist.`;
+            twistLabel.setAttribute('aria-live', 'polite');
+        });
 
         twistButton?.addEventListener('click', (event) => {
             event.preventDefault();
