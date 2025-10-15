@@ -304,6 +304,101 @@
             text-align: left;
         }
 
+        .category-selector {
+            display: grid;
+            gap: clamp(1.2rem, 2vw, 1.8rem);
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        }
+
+        .category-button {
+            appearance: none;
+            border: 1px solid transparent;
+            border-radius: calc(var(--radius-lg) - 4px);
+            padding: clamp(1.6rem, 3vw, 2.2rem);
+            background: linear-gradient(145deg, rgba(87, 57, 196, 0.65), rgba(42, 24, 104, 0.85));
+            color: var(--text-primary);
+            box-shadow: 0 30px 45px rgba(10, 6, 27, 0.45);
+            display: flex;
+            flex-direction: column;
+            gap: 0.45rem;
+            text-align: left;
+            cursor: pointer;
+            transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+        }
+
+        .category-button:hover,
+        .category-button:focus-visible {
+            transform: translateY(-6px);
+            border-color: rgba(247, 167, 218, 0.65);
+            box-shadow: 0 40px 65px rgba(8, 4, 22, 0.55);
+            outline: none;
+        }
+
+        .category-label {
+            font-size: clamp(1.4rem, 2.5vw, 1.8rem);
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
+        .category-subtitle {
+            font-size: clamp(0.95rem, 1.6vw, 1.05rem);
+            color: var(--text-muted);
+            max-width: 24ch;
+        }
+
+        .category-view {
+            display: flex;
+            flex-direction: column;
+            gap: clamp(1.6rem, 2.5vw, 2rem);
+        }
+
+        .category-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: clamp(1rem, 2vw, 1.6rem);
+            flex-wrap: wrap;
+        }
+
+        .category-title-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        .category-title {
+            margin: 0;
+            font-size: clamp(1.35rem, 2.5vw, 1.75rem);
+        }
+
+        .category-description {
+            margin: 0;
+            color: var(--text-muted);
+            font-size: clamp(0.95rem, 1.6vw, 1.05rem);
+        }
+
+        .category-back {
+            appearance: none;
+            border: 1px solid rgba(147, 198, 255, 0.45);
+            background: linear-gradient(135deg, rgba(31, 21, 58, 0.82), rgba(11, 7, 27, 0.88));
+            color: var(--text-primary);
+            border-radius: 999px;
+            padding: 0.65rem 1.4rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .category-back:hover,
+        .category-back:focus-visible {
+            transform: translateY(-2px);
+            border-color: rgba(247, 167, 218, 0.65);
+            outline: none;
+        }
+
         .panel-title {
             margin: 0;
             font-size: clamp(2rem, 5vw, 3rem);
@@ -868,115 +963,146 @@
     <main class="page">
         <section class="games-panel">
             <h1 class="panel-title">Game Vault</h1>
-            <p class="panel-description">Pick a game from the collection and jump straight into the fun.</p>
-            <div class="project-grid">
-                <article class="project-card" data-status="live">
-                    <div class="card-top">
-                        <span class="status">Live</span>
-                        <span class="tag">Game</span>
-                    </div>
-                    <h3>Blackjack Lounge</h3>
-                    <a class="cta" href="blackjack.html">Launch table</a>
-                </article>
+            <p class="panel-description" data-panel-description>
+                Pick a game from the collection and jump straight into the fun.
+            </p>
 
-                <article class="project-card" data-status="live">
-                    <div class="card-top">
-                        <span class="status">Live</span>
-                        <span class="tag">Auto Battler</span>
-                    </div>
-                    <h3>AutoRogue</h3>
-                    <a class="cta" href="AutoRogue">Begin run</a>
-                </article>
+            <div class="category-selector" data-category-selector>
+                <button class="category-button" type="button" data-category-button="good">
+                    <span class="category-label">Good Games</span>
+                    <span class="category-subtitle">Top-tier chaos that never misses.</span>
+                </button>
+                <button class="category-button" type="button" data-category-button="bad">
+                    <span class="category-label">Bad Games</span>
+                    <span class="category-subtitle">The rest of the misfit experiments.</span>
+                </button>
+            </div>
 
-                <article class="project-card" data-status="live">
-                    <div class="card-top">
-                        <span class="status">Live</span>
-                        <span class="tag">Party</span>
+            <div class="category-view" data-category-view hidden>
+                <div class="category-header">
+                    <button class="category-back" type="button" data-category-back>
+                        <span aria-hidden="true">←</span>
+                        Back to categories
+                    </button>
+                    <div class="category-title-group">
+                        <h2 class="category-title" data-category-title>Good Games</h2>
+                        <p class="category-description" data-category-subtitle>
+                            Top-tier chaos that never misses.
+                        </p>
                     </div>
-                    <h3>Pokémon Typing Battle</h3>
-                    <a class="cta" href="pokemon.html">Start match</a>
-                </article>
+                </div>
 
-                <article class="project-card" data-status="brewing">
-                    <div class="card-top">
-                        <span class="status">Brewing</span>
-                        <span class="tag">Rhythm</span>
-                    </div>
-                    <h3>Rhythm Reactor</h3>
-                    <span class="cta disabled">Stay tuned</span>
-                </article>
+                <div class="project-grid" data-category-grid="good">
+                    <article class="project-card" data-status="live">
+                        <div class="card-top">
+                            <span class="status">Live</span>
+                            <span class="tag">Game</span>
+                        </div>
+                        <h3>Blackjack Lounge</h3>
+                        <a class="cta" href="blackjack.html">Launch table</a>
+                    </article>
 
-                <article class="project-card" data-status="live">
-                    <div class="card-top">
-                        <span class="status">Live</span>
-                        <span class="tag">Game</span>
-                    </div>
-                    <h3>Rat Race</h3>
-                    <a class="cta" href="RatRace.html">Enter race</a>
-                </article>
+                    <article class="project-card" data-status="live">
+                        <div class="card-top">
+                            <span class="status">Live</span>
+                            <span class="tag">Party</span>
+                        </div>
+                        <h3>Pokémon Typing Battle</h3>
+                        <a class="cta" href="pokemon.html">Start match</a>
+                    </article>
 
-                <article class="project-card" data-status="live">
-                    <div class="card-top">
-                        <span class="status">Live</span>
-                        <span class="tag">Dilemma</span>
-                    </div>
-                    <h3>Trolley Game</h3>
-                    <a class="cta" href="trolley-game.html">Play now</a>
-                </article>
+                    <article class="project-card" data-status="live">
+                        <div class="card-top">
+                            <span class="status">Live</span>
+                            <span class="tag">Game</span>
+                        </div>
+                        <h3>Rat Race</h3>
+                        <a class="cta" href="RatRace.html">Enter race</a>
+                    </article>
 
-                <article class="project-card" data-status="live">
-                    <div class="card-top">
-                        <span class="status">Live</span>
-                        <span class="tag">Debate</span>
-                    </div>
-                    <h3>Thing vs Thing</h3>
-                    <a class="cta" href="thing-vs-thing.html">Play now</a>
-                </article>
+                    <article class="project-card" data-status="live">
+                        <div class="card-top">
+                            <span class="status">Live</span>
+                            <span class="tag">Dilemma</span>
+                        </div>
+                        <h3>Trolley Game</h3>
+                        <a class="cta" href="trolley-game.html">Play now</a>
+                    </article>
 
-                <article class="project-card" data-status="live">
-                    <div class="card-top">
-                        <span class="status">Live</span>
-                        <span class="tag">Strategy</span>
-                    </div>
-                    <h3>Rat Kingdom</h3>
-                    <a class="cta" href="rat-kingdom.html">Play now</a>
-                </article>
+                    <article class="project-card" data-status="live">
+                        <div class="card-top">
+                            <span class="status">Live</span>
+                            <span class="tag">Debate</span>
+                        </div>
+                        <h3>Thing vs Thing</h3>
+                        <a class="cta" href="thing-vs-thing.html">Play now</a>
+                    </article>
+                </div>
 
-                <article class="project-card" data-status="live">
-                    <div class="card-top">
-                        <span class="status">Live</span>
-                        <span class="tag">Strategy</span>
-                    </div>
-                    <h3>Grand War</h3>
-                    <a class="cta" href="grand-war.html">Join battle</a>
-                </article>
+                <div class="project-grid" data-category-grid="bad" hidden>
+                    <article class="project-card" data-status="live">
+                        <div class="card-top">
+                            <span class="status">Live</span>
+                            <span class="tag">Auto Battler</span>
+                        </div>
+                        <h3>AutoRogue</h3>
+                        <a class="cta" href="AutoRogue">Begin run</a>
+                    </article>
 
-                <article class="project-card" data-status="live">
-                    <div class="card-top">
-                        <span class="status">Live</span>
-                        <span class="tag">Party</span>
-                    </div>
-                    <h3>Know Your Friends</h3>
-                    <a class="cta" href="ForFriends.html">Play now</a>
-                </article>
+                    <article class="project-card" data-status="brewing">
+                        <div class="card-top">
+                            <span class="status">Brewing</span>
+                            <span class="tag">Rhythm</span>
+                        </div>
+                        <h3>Rhythm Reactor</h3>
+                        <span class="cta disabled">Stay tuned</span>
+                    </article>
 
-                <article class="project-card" data-status="live">
-                    <div class="card-top">
-                        <span class="status">Live</span>
-                        <span class="tag">Party</span>
-                    </div>
-                    <h3>Newlywed Game</h3>
-                    <a class="cta" href="newlywed.html">Host game</a>
-                </article>
+                    <article class="project-card" data-status="live">
+                        <div class="card-top">
+                            <span class="status">Live</span>
+                            <span class="tag">Strategy</span>
+                        </div>
+                        <h3>Rat Kingdom</h3>
+                        <a class="cta" href="rat-kingdom.html">Play now</a>
+                    </article>
 
-                <article class="project-card" data-status="live">
-                    <div class="card-top">
-                        <span class="status">Live</span>
-                        <span class="tag">Download</span>
-                    </div>
-                    <h3>Banana</h3>
-                    <button class="cta" type="button" data-download-banana>Download banana</button>
-                </article>
+                    <article class="project-card" data-status="live">
+                        <div class="card-top">
+                            <span class="status">Live</span>
+                            <span class="tag">Strategy</span>
+                        </div>
+                        <h3>Grand War</h3>
+                        <a class="cta" href="grand-war.html">Join battle</a>
+                    </article>
+
+                    <article class="project-card" data-status="live">
+                        <div class="card-top">
+                            <span class="status">Live</span>
+                            <span class="tag">Party</span>
+                        </div>
+                        <h3>Know Your Friends</h3>
+                        <a class="cta" href="ForFriends.html">Play now</a>
+                    </article>
+
+                    <article class="project-card" data-status="live">
+                        <div class="card-top">
+                            <span class="status">Live</span>
+                            <span class="tag">Party</span>
+                        </div>
+                        <h3>Newlywed Game</h3>
+                        <a class="cta" href="newlywed.html">Host game</a>
+                    </article>
+
+                    <article class="project-card" data-status="live">
+                        <div class="card-top">
+                            <span class="status">Live</span>
+                            <span class="tag">Download</span>
+                        </div>
+                        <h3>Banana</h3>
+                        <button class="cta" type="button" data-download-banana>Download banana</button>
+                    </article>
+                </div>
             </div>
         </section>
 
@@ -1136,6 +1262,110 @@
 
             window.location.href = home;
         }
+
+        (function setupGameCategories() {
+            const selector = document.querySelector('[data-category-selector]');
+            const view = document.querySelector('[data-category-view]');
+            if (!selector || !view) {
+                return;
+            }
+
+            const description = document.querySelector('[data-panel-description]');
+            const defaultDescription = description?.textContent?.trim() ?? '';
+            const titleEl = view.querySelector('[data-category-title]');
+            const subtitleEl = view.querySelector('[data-category-subtitle]');
+            const backButton = view.querySelector('[data-category-back]');
+            const grids = Array.from(view.querySelectorAll('[data-category-grid]'));
+
+            const metadata = {
+                good: {
+                    title: 'Good Games',
+                    subtitle: 'Top-tier chaos that never misses.',
+                    description: 'Pick a certified banger and dive right in.'
+                },
+                bad: {
+                    title: 'Bad Games',
+                    subtitle: 'The rest of the misfit experiments.',
+                    description: 'Browse the rest of the collection—chaotic energy optional.'
+                }
+            };
+
+            function showCategory(key) {
+                if (!metadata[key]) {
+                    return;
+                }
+
+                selector.hidden = true;
+                view.hidden = false;
+
+                grids.forEach((grid) => {
+                    const isMatch = grid.getAttribute('data-category-grid') === key;
+                    grid.hidden = !isMatch;
+                });
+
+                const details = metadata[key];
+                if (titleEl) {
+                    titleEl.textContent = details.title;
+                }
+                if (subtitleEl) {
+                    subtitleEl.textContent = details.subtitle;
+                }
+                if (description) {
+                    description.textContent = details.description;
+                }
+
+                if (backButton instanceof HTMLButtonElement) {
+                    window.requestAnimationFrame(() => {
+                        backButton.focus();
+                    });
+                }
+            }
+
+            function showSelector() {
+                view.hidden = true;
+                selector.hidden = false;
+
+                grids.forEach((grid) => {
+                    grid.hidden = true;
+                });
+
+                if (description) {
+                    description.textContent = defaultDescription;
+                }
+
+                const firstButton = selector.querySelector('[data-category-button]');
+                if (firstButton instanceof HTMLButtonElement) {
+                    window.requestAnimationFrame(() => {
+                        firstButton.focus();
+                    });
+                }
+            }
+
+            selector.addEventListener('click', (event) => {
+                const button = event.target instanceof HTMLElement
+                    ? event.target.closest('[data-category-button]')
+                    : null;
+
+                if (!(button instanceof HTMLButtonElement)) {
+                    return;
+                }
+
+                const key = button.dataset.categoryButton;
+                if (!key || !metadata[key]) {
+                    return;
+                }
+
+                showCategory(key);
+            });
+
+            if (backButton instanceof HTMLButtonElement) {
+                backButton.addEventListener('click', () => {
+                    showSelector();
+                });
+            }
+
+            showSelector();
+        })();
 
         (function setupBananaDownload() {
             const button = document.querySelector('[data-download-banana]');
