@@ -29,7 +29,7 @@
       radial-gradient(circle at 80% 10%, rgba(255,209,59,.15) 0 28%, transparent 62%),
       linear-gradient(160deg, #05060d 0%, #090f1f 60%, #0c1228 100%);
     display:flex; flex-direction:column; align-items:center; justify-content:center;
-    min-height:100dvh; padding:24px clamp(18px,4vw,48px);
+    min-height:100dvh; padding:24px clamp(18px,3vw,64px);
   }
   .back-nav{
     position:fixed; top:20px; right:22px; z-index:20;
@@ -51,8 +51,8 @@
   .back-nav__icon{font-size:1.05rem; line-height:1;}
   .wrap{
     width:100%;
-    max-width:min(1960px, 96vw);
-    padding:0 clamp(18px, 4vw, 72px);
+    padding:0;
+    padding-inline:clamp(12px, 2.5vw, 56px);
   }
   .board{
     width:100%;
