@@ -75,6 +75,18 @@ var useLocalId = () => {
 };
 var nowMs = () => Date.now();
 var secondsLeft = (endsAtMs) => Math.max(0, Math.ceil((endsAtMs - nowMs()) / 1000));
+var DEFAULT_DURATION_MS = 60000;
+var DURATION_OPTIONS = [
+  { id: "60", label: "1 minute", value: 60000 },
+  { id: "120", label: "2 minutes", value: 120000 },
+  { id: "300", label: "5 minutes", value: 300000 },
+  { id: "unlimited", label: "Unlimited", value: null }
+];
+var getDurationOptionById = (id) => {
+  const found = DURATION_OPTIONS.find((opt) => opt.id === id);
+  return found || DURATION_OPTIONS[0];
+};
+var getDurationOptionByValue = (value) => DURATION_OPTIONS.find((opt) => opt.value === value);
 var usePokedex = () => {
   const [names, setNames] = useState(new Set);
   const [loading, setLoading] = useState(true);
@@ -145,7 +157,8 @@ async function createRoom(db2, roomCode, hostId) {
     createdAt: serverTimestamp(),
     hostId,
     startedAt: null,
-    endsAt: null
+    endsAt: null,
+    durationMs: DEFAULT_DURATION_MS
   });
 }
 async function joinRoom(db2, roomCode, playerId, name) {
@@ -159,20 +172,24 @@ async function joinRoom(db2, roomCode, playerId, name) {
     joinedAt: serverTimestamp()
   }, { merge: true });
 }
-async function startGame(db2, roomCode, durationMs = 60000) {
+async function startGame(db2, roomCode, durationMs = DEFAULT_DURATION_MS) {
   const roomRef = doc(db2, "rooms", roomCode);
   const startMs = Date.now() + 3000;
-  const endMs = startMs + durationMs;
+  const hasDuration = typeof durationMs === "number" && !Number.isNaN(durationMs);
+  const endMs = hasDuration ? startMs + durationMs : null;
   await updateDoc(roomRef, {
     status: "countdown",
     startedAt: startMs,
-    endsAt: endMs
+    endsAt: endMs,
+    durationMs: hasDuration ? durationMs : null
   });
   setTimeout(async () => {
     await updateDoc(roomRef, { status: "playing" });
-    setTimeout(async () => {
-      await updateDoc(roomRef, { status: "ended" });
-    }, durationMs);
+    if (hasDuration) {
+      setTimeout(async () => {
+        await updateDoc(roomRef, { status: "ended" });
+      }, durationMs);
+    }
   }, 3000);
 }
 async function submitEntry(db2, roomCode, playerId, inputName) {
@@ -185,7 +202,10 @@ async function submitEntry(db2, roomCode, playerId, inputName) {
     if (!roomSnap.exists())
       throw new Error("Room missing");
     const { status, endsAt } = roomSnap.data();
-    if (status !== "playing" || !endsAt || Date.now() > endsAt) {
+    if (status !== "playing") {
+      throw new Error("Round is not active");
+    }
+    if (endsAt && Date.now() > endsAt) {
       throw new Error("Round is not active");
     }
     const exists = await tx.get(entryRef);
@@ -213,6 +233,7 @@ function App() {
   const [entries, setEntries] = useState([]);
   const [input, setInput] = useState("");
   const [feedback, setFeedback] = useState("");
+  const [selectedDurationId, setSelectedDurationId] = useState(() => DURATION_OPTIONS[0].id);
   const roomRef = useMemo(() => roomCode ? doc(db, "rooms", roomCode) : null, [roomCode]);
   useEffect(() => {
     if (!roomRef)
@@ -246,6 +267,39 @@ function App() {
     });
     return () => unsub();
   }, [roomCode]);
+  useEffect(() => {
+    if (!room)
+      return;
+    if (room.durationMs === null) {
+      setSelectedDurationId("unlimited");
+      return;
+    }
+    if (typeof room.durationMs === "number") {
+      const preset = getDurationOptionByValue(room.durationMs);
+      if (preset) {
+        setSelectedDurationId(preset.id);
+      }
+    }
+  }, [room?.durationMs]);
+  const selectedDuration = useMemo(() => getDurationOptionById(selectedDurationId), [selectedDurationId]);
+  const startButtonLabel = useMemo(() => {
+    if (!selectedDuration)
+      return "Start round";
+    return selectedDuration.label === "Unlimited" ? "Start unlimited round" : `Start ${selectedDuration.label} round`;
+  }, [selectedDuration]);
+  const activeDurationLabel = useMemo(() => {
+    if (!room)
+      return null;
+    if (room.status === "lobby")
+      return selectedDuration?.label || null;
+    if (room.durationMs === null)
+      return "Unlimited";
+    if (typeof room.durationMs === "number") {
+      const preset = getDurationOptionByValue(room.durationMs);
+      return preset ? preset.label : `${Math.round(room.durationMs / 1000)}s`;
+    }
+    return null;
+  }, [room?.status, room?.durationMs, selectedDuration]);
   const handleCreateRoom = async () => {
     try {
       const code = (Math.random().toString(36).slice(2, 6) + Math.random().toString(36).slice(2, 6)).slice(0, 6).toUpperCase();
@@ -265,15 +319,27 @@ function App() {
       alert(e.message);
     }
   };
+  const isHost = room?.hostId === playerId;
   const handleStart = async () => {
     try {
       if (!room)
         return;
       if (room.hostId !== playerId)
         throw new Error("Only host can start");
-      await startGame(db, room.id, 60000);
+      await startGame(db, room.id, selectedDuration?.value ?? DEFAULT_DURATION_MS);
     } catch (e) {
       alert(e.message);
+    }
+  };
+  const handleDurationSelect = async (optionId) => {
+    setSelectedDurationId(optionId);
+    if (!isHost || !roomRef)
+      return;
+    const preset = getDurationOptionById(optionId);
+    try {
+      await updateDoc(roomRef, { durationMs: preset.value === null ? null : preset.value });
+    } catch (err) {
+      console.error("Failed to update round duration", err);
     }
   };
   const canType = room?.status === "playing";
@@ -316,7 +382,6 @@ function App() {
       setTimeout(() => setFeedback(""), 1000);
     }
   };
-  const isHost = room?.hostId === playerId;
   return /* @__PURE__ */ jsxDEV("div", {
     style: {
       fontFamily: "Plus Jakarta Sans, Inter, system-ui, -apple-system, sans-serif",
@@ -433,6 +498,18 @@ function App() {
                 children: [
                   /* @__PURE__ */ jsxDEV("div", {
                     style: { fontSize: 12, color: "var(--text-muted)" },
+                    children: "Round length"
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsxDEV("div", {
+                    style: { fontSize: 18, fontWeight: 700 },
+                    children: activeDurationLabel || "—"
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              /* @__PURE__ */ jsxDEV("div", {
+                children: [
+                  /* @__PURE__ */ jsxDEV("div", {
+                    style: { fontSize: 12, color: "var(--text-muted)" },
                     children: "Status"
                   }, undefined, false, undefined, this),
                   /* @__PURE__ */ jsxDEV("div", {
@@ -450,13 +527,15 @@ function App() {
                       countdown ?? 0
                     ]
                   }, undefined, true, undefined, this),
-                  room.status === "playing" && /* @__PURE__ */ jsxDEV(Fragment, {
+                  room.status === "playing" && (room.endsAt ? /* @__PURE__ */ jsxDEV(Fragment, {
                     children: [
                       "Time left ",
                       timeLeft,
                       "s"
                     ]
-                  }, undefined, true, undefined, this),
+                  }, undefined, true, undefined, this) : /* @__PURE__ */ jsxDEV(Fragment, {
+                    children: "Unlimited time"
+                  }, undefined, false, undefined, this)),
                   room.status === "ended" && /* @__PURE__ */ jsxDEV(Fragment, {
                     children: "Round over"
                   }, undefined, false, undefined, this)
@@ -465,7 +544,34 @@ function App() {
               isHost && room.status === "lobby" && /* @__PURE__ */ jsxDEV("button", {
                 onClick: handleStart,
                 style: btnPrimary,
-                children: "Start 60s round"
+                children: startButtonLabel
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
+          isHost && room.status === "lobby" && /* @__PURE__ */ jsxDEV("div", {
+            style: { display: "grid", gap: 8 },
+            children: [
+              /* @__PURE__ */ jsxDEV("div", {
+                style: { fontSize: 14, color: "var(--text-muted)" },
+                children: "Choose a round duration:"
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsxDEV("div", {
+                style: { display: "flex", flexWrap: "wrap", gap: 8 },
+                children: DURATION_OPTIONS.map((option) => /* @__PURE__ */ jsxDEV("button", {
+                  type: "button",
+                  onClick: () => handleDurationSelect(option.id),
+                  "aria-pressed": selectedDurationId === option.id,
+                  style: {
+                    ...btnSecondary,
+                    padding: "10px 16px",
+                    fontSize: 14,
+                    background: selectedDurationId === option.id ? "linear-gradient(135deg, rgba(147,198,255,0.85), rgba(247,167,218,0.8))" : "linear-gradient(135deg, rgba(31,21,58,0.85), rgba(11,7,27,0.88))",
+                    color: selectedDurationId === option.id ? "#110720" : "var(--text-primary)",
+                    border: selectedDurationId === option.id ? "1px solid rgba(247, 167, 218, 0.75)" : "1px solid rgba(147,198,255,0.32)",
+                    boxShadow: selectedDurationId === option.id ? "0 20px 36px rgba(5, 3, 17, 0.55)" : "0 18px 32px rgba(5, 3, 17, 0.45)"
+                  },
+                  children: option.label
+                }, option.id, false, undefined, this))
               }, undefined, false, undefined, this)
             ]
           }, undefined, true, undefined, this),
