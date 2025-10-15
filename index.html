@@ -29,7 +29,8 @@
             box-sizing: border-box;
         }
 
-        html, body {
+        html,
+        body {
             margin: 0;
             padding: 0;
         }
@@ -43,97 +44,26 @@
                 var(--bg-base);
             color: var(--text-primary);
             display: flex;
+            align-items: center;
             justify-content: center;
             padding: clamp(1.6rem, 4vw, 3.5rem);
         }
 
-        .back-nav {
-            position: fixed;
-            top: clamp(0.9rem, 2vw, 1.6rem);
-            right: clamp(0.9rem, 2vw, 1.6rem);
-            z-index: 40;
-        }
-
-        .back-nav__button {
-            appearance: none;
-            border: 1px solid rgba(147, 198, 255, 0.35);
-            background: linear-gradient(135deg, rgba(31, 21, 58, 0.82), rgba(11, 7, 27, 0.88));
-            color: var(--text-primary);
-            border-radius: 999px;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.45rem;
-            padding: 0.55rem 1.2rem;
-            font-weight: 600;
-            letter-spacing: 0.02em;
-            cursor: pointer;
-            box-shadow: 0 18px 35px rgba(5, 3, 17, 0.35);
-            transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
-        }
-
-        .back-nav__button:hover,
-        .back-nav__button:focus-visible {
-            transform: translateY(-1px);
-            border-color: rgba(247, 167, 218, 0.65);
-            box-shadow: 0 25px 45px rgba(5, 3, 17, 0.45);
-            outline: none;
-        }
-
-        .back-nav__icon {
-            font-size: 1.1rem;
-            line-height: 1;
-        }
-
-        .top-actions {
-            position: fixed;
-            top: clamp(0.9rem, 2vw, 1.6rem);
-            left: clamp(0.9rem, 2vw, 1.6rem);
-            right: clamp(0.9rem, 2vw, 1.6rem);
+        .page {
+            width: min(960px, 100%);
             display: flex;
-            justify-content: flex-end;
+            flex-direction: column;
             align-items: center;
-            flex-wrap: wrap;
-            gap: clamp(0.8rem, 2vw, 1.4rem);
-            z-index: 60;
+            gap: clamp(2rem, 4vw, 3rem);
         }
 
-        .top-actions .back-nav {
-            position: static;
-            top: auto;
-            right: auto;
-            z-index: auto;
-            margin-right: auto;
-        }
-
-        .currency-display {
-            display: inline-flex;
+        .games-panel {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 0.5rem;
-            padding: 0.45rem 1rem;
-            border-radius: 999px;
-            border: 1px solid rgba(147, 198, 255, 0.35);
-            background: linear-gradient(135deg, rgba(31, 21, 58, 0.82), rgba(11, 7, 27, 0.88));
-            box-shadow: 0 20px 35px rgba(5, 3, 17, 0.45);
-            font-weight: 600;
-            letter-spacing: 0.01em;
-        }
-
-        .currency-display__icon {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 1.8rem;
-            height: 1.8rem;
-            border-radius: 50%;
-            background: radial-gradient(circle at 30% 30%, rgba(255, 243, 184, 0.95), rgba(244, 203, 78, 0.85));
-            color: #2a1647;
-            font-size: 0.95rem;
-            box-shadow: inset 0 0 6px rgba(255, 255, 255, 0.55);
-        }
-
-        .currency-display__amount {
-            font-size: 0.95rem;
-            color: var(--text-primary);
+            gap: clamp(2rem, 4vw, 3rem);
+            text-align: center;
         }
 
         .sr-only {
@@ -148,165 +78,10 @@
             border: 0;
         }
 
-        .account-menu {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-
-        .account-menu__trigger {
-            appearance: none;
-            border: none;
-            background: transparent;
-            padding: 0;
-            border-radius: 999px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 20px 35px rgba(5, 3, 17, 0.45);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .account-menu__trigger:hover,
-        .account-menu__trigger:focus-visible {
-            transform: translateY(-1px);
-            box-shadow: 0 28px 45px rgba(5, 3, 17, 0.55);
-            outline: none;
-        }
-
-        .account-menu__avatar {
-            width: clamp(38px, 4vw, 44px);
-            height: clamp(38px, 4vw, 44px);
-            border-radius: 50%;
-            border: 1px solid rgba(147, 198, 255, 0.35);
-            background: linear-gradient(135deg, rgba(147, 198, 255, 0.35), rgba(247, 167, 218, 0.35));
-            color: var(--text-primary);
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 1rem;
-            letter-spacing: 0.04em;
-        }
-
-        .account-menu[data-state="signed-in"] .account-menu__avatar {
-            background: linear-gradient(135deg, var(--accent-blue), var(--accent-pink));
-            border-color: rgba(255, 255, 255, 0.45);
-            color: #140827;
-        }
-
-        .account-menu__dropdown {
-            position: absolute;
-            top: calc(100% + 0.8rem);
-            right: 0;
-            min-width: clamp(220px, 30vw, 260px);
-            padding: 1rem;
-            border-radius: var(--radius-lg);
-            background: linear-gradient(150deg, rgba(19, 12, 38, 0.95), rgba(8, 5, 20, 0.98));
-            border: 1px solid rgba(147, 198, 255, 0.22);
-            box-shadow: var(--shadow-strong);
-            opacity: 0;
-            transform: translateY(-6px);
-            pointer-events: none;
-            transition: opacity 0.2s ease, transform 0.2s ease;
-        }
-
-        .account-menu.is-open .account-menu__dropdown {
-            opacity: 1;
-            transform: translateY(0);
-            pointer-events: auto;
-        }
-
-        .account-menu__dropdown[hidden] {
-            display: none;
-        }
-
-        .account-menu__details {
-            display: flex;
-            flex-direction: column;
-            gap: 0.25rem;
-            margin-bottom: 0.75rem;
-        }
-
-        .account-menu__name {
-            font-weight: 600;
-            font-size: 1.05rem;
-        }
-
-        .account-menu__status {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-        }
-
-        .account-menu__actions {
-            display: grid;
-            gap: 0.5rem;
-        }
-
-        .account-menu__action {
-            appearance: none;
-            border: 1px solid rgba(147, 198, 255, 0.28);
-            background: rgba(147, 198, 255, 0.12);
-            color: var(--text-primary);
-            border-radius: calc(var(--radius-sm) - 4px);
-            padding: 0.55rem 0.9rem;
-            font-size: 0.9rem;
-            font-weight: 600;
-            text-align: left;
-            cursor: pointer;
-            transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
-        }
-
-        .account-menu__action:hover,
-        .account-menu__action:focus-visible {
-            border-color: rgba(247, 167, 218, 0.6);
-            background: rgba(147, 198, 255, 0.22);
-            transform: translateY(-1px);
-            outline: none;
-        }
-
-        .account-menu__action[data-account-action="signin"] {
-            background: linear-gradient(135deg, rgba(147, 198, 255, 0.28), rgba(247, 167, 218, 0.28));
-            border-color: rgba(147, 198, 255, 0.42);
-        }
-
-        .account-menu__action[data-account-action="signin"]:hover,
-        .account-menu__action[data-account-action="signin"]:focus-visible {
-            background: linear-gradient(135deg, rgba(147, 198, 255, 0.45), rgba(247, 167, 218, 0.45));
-            border-color: rgba(247, 167, 218, 0.7);
-        }
-
-        .account-menu__action[data-account-action="signout"] {
-            background: rgba(241, 118, 159, 0.12);
-            border-color: rgba(241, 118, 159, 0.35);
-        }
-
-        .account-menu__action[data-account-action="signout"]:hover,
-        .account-menu__action[data-account-action="signout"]:focus-visible {
-            background: rgba(241, 118, 159, 0.22);
-            border-color: rgba(241, 118, 159, 0.55);
-        }
-
-        .page {
-            width: min(1200px, 100%);
-            display: grid;
-            grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-            gap: clamp(2.2rem, 4vw, 3.4rem);
-            align-items: start;
-        }
-
-        .games-panel {
-            display: grid;
-            gap: clamp(1.2rem, 3vw, 2.4rem);
-            justify-items: start;
-            align-content: start;
-            text-align: left;
-        }
-
         .category-selector {
+            width: min(520px, 100%);
             display: grid;
-            gap: clamp(1.2rem, 2vw, 1.8rem);
+            gap: clamp(1.5rem, 3vw, 2.4rem);
             grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
         }
 
@@ -314,14 +89,15 @@
             appearance: none;
             border: 1px solid transparent;
             border-radius: calc(var(--radius-lg) - 4px);
-            padding: clamp(1.6rem, 3vw, 2.2rem);
+            padding: clamp(1.8rem, 4vw, 2.4rem);
             background: linear-gradient(145deg, rgba(87, 57, 196, 0.65), rgba(42, 24, 104, 0.85));
             color: var(--text-primary);
             box-shadow: 0 30px 45px rgba(10, 6, 27, 0.45);
             display: flex;
             flex-direction: column;
-            gap: 0.45rem;
-            text-align: left;
+            align-items: center;
+            gap: 0.6rem;
+            text-align: center;
             cursor: pointer;
             transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
         }
@@ -343,21 +119,23 @@
         .category-subtitle {
             font-size: clamp(0.95rem, 1.6vw, 1.05rem);
             color: var(--text-muted);
-            max-width: 24ch;
+            max-width: 26ch;
         }
 
         .category-view {
+            width: 100%;
             display: flex;
             flex-direction: column;
-            gap: clamp(1.6rem, 2.5vw, 2rem);
+            gap: clamp(1.6rem, 3vw, 2.4rem);
+            align-items: stretch;
+            text-align: left;
         }
 
         .category-header {
             display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: clamp(1rem, 2vw, 1.6rem);
-            flex-wrap: wrap;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: clamp(0.8rem, 2vw, 1.2rem);
         }
 
         .category-title-group {
@@ -397,316 +175,6 @@
             transform: translateY(-2px);
             border-color: rgba(247, 167, 218, 0.65);
             outline: none;
-        }
-
-        .panel-title {
-            margin: 0;
-            font-size: clamp(2rem, 5vw, 3rem);
-        }
-
-        .panel-description {
-            margin: 0;
-            max-width: 52ch;
-            color: var(--text-muted);
-        }
-
-        .games-panel .panel-description {
-            text-align: left;
-        }
-
-        .games-panel .project-grid {
-            width: min(560px, 100%);
-            margin-left: 0;
-            margin-right: auto;
-        }
-
-        .avatar-panel {
-            display: flex;
-            justify-content: center;
-        }
-
-        .avatar-card {
-            display: grid;
-            gap: 1.4rem;
-            padding: clamp(1.8rem, 3.6vw, 2.6rem);
-            border-radius: var(--radius-lg);
-            background: linear-gradient(150deg, rgba(21, 13, 40, 0.88), rgba(7, 5, 20, 0.94));
-            border: 1px solid rgba(147, 198, 255, 0.18);
-            box-shadow: var(--shadow-strong);
-            width: min(420px, 100%);
-        }
-
-        .avatar-card h2 {
-            margin: 0;
-            font-size: clamp(1.6rem, 3.6vw, 2.2rem);
-        }
-
-        .avatar-preview {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: radial-gradient(circle at top, rgba(147, 198, 255, 0.25), transparent 65%);
-            border-radius: var(--radius-lg);
-            padding: clamp(1.2rem, 3vw, 1.8rem);
-            border: 1px solid rgba(147, 198, 255, 0.2);
-        }
-
-        .rat-avatar {
-            width: clamp(180px, 28vw, 240px);
-            height: clamp(180px, 28vw, 240px);
-        }
-
-        .rat-avatar svg {
-            width: 100%;
-            height: 100%;
-            display: block;
-        }
-
-        .rat-avatar [data-layer="outfit"] {
-            display: none;
-        }
-
-        .rat-avatar[data-outfit="classic"] .outfit-classic,
-        .rat-avatar[data-outfit="hoodie"] .outfit-hoodie,
-        .rat-avatar[data-outfit="adventurer"] .outfit-adventurer {
-            display: inline;
-        }
-
-        .avatar-actions {
-            display: grid;
-            gap: 1rem;
-        }
-
-        .closet-summary {
-            margin: 0;
-            font-size: 0.9rem;
-            color: var(--text-muted);
-        }
-
-        .avatar-closet {
-            position: relative;
-            display: grid;
-            gap: 0.6rem;
-            align-items: start;
-        }
-
-        .closet-toggle {
-            appearance: none;
-            border: 1px solid rgba(147, 198, 255, 0.28);
-            background: linear-gradient(135deg, rgba(31, 21, 58, 0.82), rgba(11, 7, 27, 0.88));
-            color: var(--text-primary);
-            border-radius: 999px;
-            padding: 0.55rem 1.1rem;
-            font-weight: 600;
-            letter-spacing: 0.02em;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.45rem;
-            cursor: pointer;
-            box-shadow: 0 18px 32px rgba(5, 3, 17, 0.45);
-            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-        }
-
-        .closet-toggle:hover,
-        .closet-toggle:focus-visible {
-            transform: translateY(-1px);
-            border-color: rgba(247, 167, 218, 0.5);
-            box-shadow: 0 24px 42px rgba(5, 3, 17, 0.55);
-            outline: none;
-        }
-
-        .closet-menu {
-            position: absolute;
-            top: calc(100% + 0.75rem);
-            left: 0;
-            min-width: min(320px, 80vw);
-            padding: 1rem;
-            border-radius: var(--radius-lg);
-            background: linear-gradient(150deg, rgba(19, 12, 38, 0.95), rgba(8, 5, 20, 0.98));
-            border: 1px solid rgba(147, 198, 255, 0.22);
-            box-shadow: var(--shadow-strong);
-            display: grid;
-            gap: 0.8rem;
-            opacity: 0;
-            transform: translateY(-6px);
-            pointer-events: none;
-            transition: opacity 0.2s ease, transform 0.2s ease;
-            z-index: 50;
-        }
-
-        .avatar-closet.is-open .closet-menu {
-            opacity: 1;
-            transform: translateY(0);
-            pointer-events: auto;
-        }
-
-        .closet-menu[hidden] {
-            display: none;
-        }
-
-        .closet-menu__heading {
-            margin: 0;
-            font-size: 0.85rem;
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
-            color: var(--text-muted);
-        }
-
-        .closet-menu__empty {
-            margin: 0;
-            font-size: 0.85rem;
-            color: var(--text-muted);
-        }
-
-        .closet-menu__list {
-            list-style: none;
-            margin: 0;
-            padding: 0;
-            display: grid;
-            gap: 0.6rem;
-        }
-
-        .closet-item {
-            display: grid;
-            gap: 0.4rem;
-            padding: 0.6rem 0.75rem;
-            border-radius: calc(var(--radius-sm) - 4px);
-            background: rgba(9, 6, 22, 0.55);
-            border: 1px solid rgba(147, 198, 255, 0.18);
-        }
-
-        .closet-item.is-selected {
-            border-color: rgba(247, 167, 218, 0.45);
-            box-shadow: 0 16px 26px rgba(247, 167, 218, 0.18);
-        }
-
-        .closet-item__body {
-            display: grid;
-            gap: 0.25rem;
-        }
-
-        .closet-item__name {
-            font-weight: 600;
-        }
-
-        .closet-item__description {
-            margin: 0;
-            color: var(--text-muted);
-            font-size: 0.85rem;
-        }
-
-        .closet-item__footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 0.75rem;
-            flex-wrap: wrap;
-        }
-
-        .closet-item__status {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-        }
-
-        .closet-item__action {
-            appearance: none;
-            border: none;
-            border-radius: 999px;
-            padding: 0.4rem 0.9rem;
-            font-weight: 600;
-            letter-spacing: 0.02em;
-            cursor: pointer;
-            color: var(--text-primary);
-            background: linear-gradient(135deg, rgba(147, 198, 255, 0.22), rgba(247, 167, 218, 0.28));
-            box-shadow: 0 14px 26px rgba(147, 198, 255, 0.18);
-            transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
-        }
-
-        .closet-item__action:disabled {
-            opacity: 0.6;
-            cursor: default;
-            box-shadow: none;
-        }
-
-        .closet-item__action:not(:disabled):hover,
-        .closet-item__action:not(:disabled):focus-visible {
-            transform: translateY(-2px);
-            box-shadow: 0 22px 34px rgba(247, 167, 218, 0.28);
-            outline: none;
-        }
-
-        .avatar-shop-link {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.45rem;
-            padding: 0.65rem 1.1rem;
-            border-radius: var(--radius-sm);
-            font-weight: 600;
-            letter-spacing: 0.02em;
-            text-decoration: none;
-            color: #110720;
-            background: linear-gradient(135deg, var(--accent-blue), var(--accent-pink));
-            box-shadow: 0 18px 32px rgba(147, 198, 255, 0.28);
-            transition: transform 0.25s ease, box-shadow 0.25s ease;
-        }
-
-        .avatar-shop-link:hover,
-        .avatar-shop-link:focus-visible {
-            transform: translateY(-2px);
-            box-shadow: 0 24px 40px rgba(247, 167, 218, 0.32);
-            outline: none;
-        }
-
-        .page-header::after {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(circle at top right, rgba(247, 167, 218, 0.25), transparent 55%);
-            pointer-events: none;
-            mix-blend-mode: screen;
-        }
-
-        .eyebrow {
-            letter-spacing: 0.3em;
-            text-transform: uppercase;
-            font-size: 0.78rem;
-            color: var(--accent-blue);
-        }
-
-        h1 {
-            font-size: clamp(2.4rem, 6vw, 3.6rem);
-            line-height: 1.05;
-            margin: 0;
-        }
-
-        .lede {
-            font-size: clamp(1rem, 2.2vw, 1.2rem);
-            color: var(--text-muted);
-            max-width: 52ch;
-        }
-
-        .header-meta {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.75rem;
-        }
-
-        .meta-chip {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
-            padding: 0.4rem 0.9rem;
-            border-radius: 999px;
-            font-size: 0.85rem;
-            background: rgba(147, 198, 255, 0.12);
-            color: var(--accent-blue);
-        }
-
-        h2 {
-            margin: 0;
-            font-size: clamp(1.6rem, 3.6vw, 2.4rem);
         }
 
         .project-grid {
@@ -851,121 +319,29 @@
             pointer-events: none;
         }
 
-        footer {
-            text-align: center;
-            color: rgba(188, 180, 218, 0.72);
-            font-size: 0.85rem;
-            padding-bottom: 0.5rem;
-        }
-
-
-        @media (max-width: 960px) {
-            .page {
-                grid-template-columns: 1fr;
-            }
-
-            .games-panel {
-                justify-items: center;
-                text-align: center;
-            }
-
-            .games-panel .project-grid {
-                width: 100%;
-            }
-
-            .avatar-panel {
-                justify-content: center;
-            }
-        }
-
         @media (max-width: 720px) {
             body {
                 padding: clamp(1.2rem, 6vw, 2rem);
             }
 
-            .top-actions {
-                top: clamp(0.7rem, 5vw, 1.2rem);
-                left: clamp(0.7rem, 5vw, 1.2rem);
-                right: clamp(0.7rem, 5vw, 1.2rem);
-                gap: 0.75rem;
+            .category-selector {
+                grid-template-columns: 1fr;
             }
 
-            .account-menu__dropdown {
-                min-width: min(260px, 82vw);
+            .category-header {
+                align-items: stretch;
             }
 
-            .card-top {
-                flex-direction: column;
-                align-items: flex-start;
+            .category-back {
+                align-self: flex-start;
             }
         }
     </style>
 </head>
 <body>
-    <div class="top-actions">
-        <div class="back-nav" role="navigation" aria-label="Return home">
-            <button type="button" class="back-nav__button" data-home="index.html" onclick="handleBack(event)">
-                <span class="back-nav__icon" aria-hidden="true">&#8962;</span>
-                <span class="back-nav__text">Home</span>
-            </button>
-        </div>
-        <div
-            class="currency-display"
-            data-currency-balance
-            aria-label="Vault coins"
-            role="status"
-            aria-live="polite"
-        >
-            <span class="currency-display__icon" aria-hidden="true">◎</span>
-            <span class="currency-display__amount" data-currency-amount>1 coin</span>
-        </div>
-        <div class="account-menu" data-account-menu data-state="signed-out">
-            <button
-                type="button"
-                class="account-menu__trigger"
-                data-account-trigger
-                aria-haspopup="true"
-                aria-expanded="false"
-                aria-controls="account-menu-dropdown"
-            >
-                <span class="account-menu__avatar" data-account-avatar>G</span>
-                <span class="sr-only">Open account menu</span>
-            </button>
-            <div
-                class="account-menu__dropdown"
-                data-account-dropdown
-                id="account-menu-dropdown"
-                role="menu"
-                aria-label="Account options"
-                hidden
-            >
-                <div class="account-menu__details">
-                    <span class="account-menu__name" data-account-name>Guest</span>
-                    <span class="account-menu__status" data-account-status>Signed out</span>
-                </div>
-                <div class="account-menu__actions">
-                    <button type="button" class="account-menu__action" data-account-action="signin" role="menuitem">
-                        Sign in
-                    </button>
-                    <button
-                        type="button"
-                        class="account-menu__action"
-                        data-account-action="signout"
-                        role="menuitem"
-                        hidden
-                    >
-                        Sign out
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
     <main class="page">
         <section class="games-panel">
-            <h1 class="panel-title">Game Vault</h1>
-            <p class="panel-description" data-panel-description>
-                Pick a game from the collection and jump straight into the fun.
-            </p>
+            <h1 class="sr-only">Game Vault</h1>
 
             <div class="category-selector" data-category-selector>
                 <button class="category-button" type="button" data-category-button="good">
@@ -1105,164 +481,9 @@
                 </div>
             </div>
         </section>
-
-        <aside class="avatar-panel">
-            <div class="avatar-card" data-avatar-card>
-                <h2 id="avatar-title">Customize your avatar</h2>
-                <p class="panel-description">Choose an outfit for your rat companion before you head into a game.</p>
-                <div class="avatar-preview" aria-describedby="avatar-title">
-                    <div class="rat-avatar" data-outfit="classic" aria-live="polite">
-                        <svg viewBox="0 0 220 280" role="img" aria-label="Armored standing rat avatar illustration">
-                            <defs>
-                                <linearGradient id="rat-fur" x1="15%" y1="5%" x2="85%" y2="95%">
-                                    <stop offset="0%" stop-color="#d0cde6"></stop>
-                                    <stop offset="45%" stop-color="#b4afd4"></stop>
-                                    <stop offset="100%" stop-color="#8d86b2"></stop>
-                                </linearGradient>
-                                <linearGradient id="rat-fur-shade" x1="0%" y1="0%" x2="100%" y2="100%">
-                                    <stop offset="0%" stop-color="#f0edf9" stop-opacity="0.8"></stop>
-                                    <stop offset="100%" stop-color="#726c9b" stop-opacity="0.8"></stop>
-                                </linearGradient>
-                                <linearGradient id="rat-ear" x1="0%" y1="0%" x2="100%" y2="100%">
-                                    <stop offset="0%" stop-color="#f9c2dc"></stop>
-                                    <stop offset="100%" stop-color="#f180ba"></stop>
-                                </linearGradient>
-                                <linearGradient id="rat-tail" x1="0%" y1="0%" x2="100%" y2="100%">
-                                    <stop offset="0%" stop-color="#f5aecf"></stop>
-                                    <stop offset="100%" stop-color="#e075a7"></stop>
-                                </linearGradient>
-                                <linearGradient id="classic-coat" x1="0%" y1="0%" x2="100%" y2="100%">
-                                    <stop offset="0%" stop-color="#99b6ff"></stop>
-                                    <stop offset="100%" stop-color="#6d7dff"></stop>
-                                </linearGradient>
-                                <linearGradient id="hoodie-body" x1="0%" y1="0%" x2="100%" y2="100%">
-                                    <stop offset="0%" stop-color="#7f63ff"></stop>
-                                    <stop offset="100%" stop-color="#5433e7"></stop>
-                                </linearGradient>
-                                <linearGradient id="adventurer-cloak" x1="0%" y1="0%" x2="100%" y2="100%">
-                                    <stop offset="0%" stop-color="#f9bb6f"></stop>
-                                    <stop offset="100%" stop-color="#cc6f29"></stop>
-                                </linearGradient>
-                            </defs>
-                            <g fill="none" fill-rule="evenodd">
-                                <ellipse cx="110" cy="248" rx="70" ry="16" fill="rgba(19, 10, 37, 0.45)"></ellipse>
-                                <path d="M166 160c32 32 30 58 10 70-20 12-46-0-58-12" stroke="url(#rat-tail)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" fill="none"></path>
-                                <g transform="translate(36 24)">
-                                    <g>
-                                        <path d="M83 66c-28-4-50 16-54 52-4 40 6 88 48 96 36 6 62-18 68-58 6-40-10-80-34-88-14-5-20 0-28-2z" fill="url(#rat-fur)"></path>
-                                        <path d="M78 68c-16 4-30 16-34 34-10 38 12 86 54 96" fill="url(#rat-fur-shade)" opacity="0.35"></path>
-                                    </g>
-                                    <g>
-                                        <ellipse cx="56" cy="36" rx="22" ry="30" fill="url(#rat-ear)" transform="rotate(-12 56 36)"></ellipse>
-                                        <ellipse cx="150" cy="34" rx="22" ry="30" fill="url(#rat-ear)" transform="rotate(12 150 34)"></ellipse>
-                                        <circle cx="104" cy="62" r="46" fill="url(#rat-fur)"></circle>
-                                        <ellipse cx="104" cy="94" rx="24" ry="18" fill="#f5d9e7"></ellipse>
-                                        <circle cx="90" cy="60" r="6" fill="#23152f"></circle>
-                                        <circle cx="122" cy="60" r="6" fill="#23152f"></circle>
-                                        <path d="M102 90c4 2 10 2 14 0" stroke="#38234d" stroke-width="4" stroke-linecap="round"></path>
-                                        <path d="M120 98c-6 4-14 4-20 0" fill="#f8b7ce"></path>
-                                        <circle cx="130" cy="92" r="4" fill="#ef769f"></circle>
-                                        <path d="M70 90c-16-4-24-10-26-14" stroke="#cf90b5" stroke-linecap="round" stroke-width="4"></path>
-                                        <path d="M138 90c16-4 24-10 26-14" stroke="#cf90b5" stroke-linecap="round" stroke-width="4"></path>
-                                    </g>
-                                    <g>
-                                        <path d="M70 140c-10-10-26-18-40-16" stroke="url(#rat-fur)" stroke-width="18" stroke-linecap="round"></path>
-                                        <path d="M140 140c10-10 26-18 40-16" stroke="url(#rat-fur)" stroke-width="18" stroke-linecap="round"></path>
-                                        <path d="M80 220c-2 14-12 22-24 24-8 2-12-6-10-12 6-18 20-34 32-40" fill="url(#rat-fur)" stroke="#786f9b" stroke-width="3" stroke-linecap="round"></path>
-                                        <path d="M132 220c2 14 12 22 24 24 8 2 12-6 10-12-6-18-20-34-32-40" fill="url(#rat-fur)" stroke="#786f9b" stroke-width="3" stroke-linecap="round"></path>
-                                    </g>
-                                </g>
-                                <g data-layer="outfit" class="outfit-classic">
-                                    <path d="M72 158c-12 36-10 74 6 94 20 24 54 24 74 0 16-20 18-58 6-94-6-18-22-32-44-34s-38 12-42 34z" fill="url(#classic-coat)" stroke="#d8e3ff" stroke-width="4" stroke-linejoin="round"></path>
-                                    <path d="M112 150l-10 32 20 12 20-12-10-32z" fill="#f5f7ff" opacity="0.65"></path>
-                                    <circle cx="110" cy="204" r="5" fill="#f9fcff"></circle>
-                                </g>
-                                <g data-layer="outfit" class="outfit-hoodie">
-                                    <path d="M68 164c-8 40-4 86 18 106 18 14 48 14 66 0 22-20 26-66 18-106-4-20-22-38-50-38s-46 18-52 38z" fill="url(#hoodie-body)" stroke="#a99bff" stroke-width="4" stroke-linejoin="round"></path>
-                                    <path d="M82 150c12-16 26-22 46-22s34 6 46 22c6 8 10 22 6 32-4 8-22 18-52 18s-48-10-52-18c-4-10 0-24 6-32z" fill="#2f216a" opacity="0.35"></path>
-                                    <path d="M90 182c10 10 20 14 20 34" stroke="#d9d3ff" stroke-width="4" stroke-linecap="round"></path>
-                                </g>
-                                <g data-layer="outfit" class="outfit-adventurer">
-                                    <path d="M74 156c-8 16-12 52-6 86 2 12 10 24 20 32 24 18 64 8 78-24 16-38 12-82-2-110-10-20-26-26-44-26-22 0-38 12-46 42z" fill="url(#adventurer-cloak)" stroke="#ffe1b2" stroke-width="4" stroke-linejoin="round"></path>
-                                    <path d="M82 190h72l-10 26H92z" fill="#9b4a18" opacity="0.6"></path>
-                                    <path d="M104 164l10-20h28l10 20z" fill="#5f2d10" opacity="0.6"></path>
-                                </g>
-                            </g>
-                        </svg>
-                    </div>
-                </div>
-                <div class="avatar-actions">
-                    <p class="closet-summary" data-current-outfit>Currently wearing: Cozy Classic</p>
-                    <div class="avatar-closet" data-avatar-closet>
-                        <button
-                            type="button"
-                            class="closet-toggle"
-                            data-closet-toggle
-                            aria-haspopup="true"
-                            aria-expanded="false"
-                            aria-controls="avatar-closet-menu"
-                        >
-                            <span aria-hidden="true">🧥</span>
-                            Closet
-                        </button>
-                        <div
-                            class="closet-menu"
-                            data-closet-menu
-                            id="avatar-closet-menu"
-                            role="menu"
-                            aria-label="Owned outfits"
-                            hidden
-                        >
-                            <p class="closet-menu__heading">Owned outfits</p>
-                            <p class="closet-menu__empty" data-closet-empty hidden>
-                                Unlock new looks in the shop to fill your closet.
-                            </p>
-                            <ul class="closet-menu__list" data-closet-list></ul>
-                        </div>
-                    </div>
-                    <a class="avatar-shop-link" href="shop.html">Visit tailor's shop</a>
-                </div>
-            </div>
-        </aside>
-
-        <footer>
-            Crafted with stardust gradients and a dash of Sylveon charm. Ping Aria for collab ideas.
-        </footer>
     </main>
 
     <script>
-        function handleBack(event) {
-            if (event) {
-                event.preventDefault();
-            }
-
-            const home = event?.currentTarget?.dataset?.home || "index.html";
-
-            const normalizePath = (value) => {
-                const url = new URL(value, window.location.origin);
-                let path = url.pathname;
-
-                if (path.endsWith("/index.html")) {
-                    path = path.slice(0, -"/index.html".length) || "/";
-                }
-
-                if (path.endsWith("/")) {
-                    path = path.slice(0, -1) || "/";
-                }
-
-                return path || "/";
-            };
-
-            const currentPath = normalizePath(window.location.pathname || window.location.href);
-            const homePath = normalizePath(home);
-
-            if (currentPath === homePath) {
-                return;
-            }
-
-            window.location.href = home;
-        }
-
         (function setupGameCategories() {
             const selector = document.querySelector('[data-category-selector]');
             const view = document.querySelector('[data-category-view]');
@@ -1270,8 +491,6 @@
                 return;
             }
 
-            const description = document.querySelector('[data-panel-description]');
-            const defaultDescription = description?.textContent?.trim() ?? '';
             const titleEl = view.querySelector('[data-category-title]');
             const subtitleEl = view.querySelector('[data-category-subtitle]');
             const backButton = view.querySelector('[data-category-back]');
@@ -1280,13 +499,11 @@
             const metadata = {
                 good: {
                     title: 'Good Games',
-                    subtitle: 'Top-tier chaos that never misses.',
-                    description: 'Pick a certified banger and dive right in.'
+                    subtitle: 'Top-tier chaos that never misses.'
                 },
                 bad: {
                     title: 'Bad Games',
-                    subtitle: 'The rest of the misfit experiments.',
-                    description: 'Browse the rest of the collection—chaotic energy optional.'
+                    subtitle: 'The rest of the misfit experiments.'
                 }
             };
 
@@ -1310,9 +527,6 @@
                 if (subtitleEl) {
                     subtitleEl.textContent = details.subtitle;
                 }
-                if (description) {
-                    description.textContent = details.description;
-                }
 
                 if (backButton instanceof HTMLButtonElement) {
                     window.requestAnimationFrame(() => {
@@ -1328,10 +542,6 @@
                 grids.forEach((grid) => {
                     grid.hidden = true;
                 });
-
-                if (description) {
-                    description.textContent = defaultDescription;
-                }
 
                 const firstButton = selector.querySelector('[data-category-button]');
                 if (firstButton instanceof HTMLButtonElement) {
