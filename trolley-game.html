@@ -163,10 +163,152 @@
             font-size: 0.9rem;
             color: var(--muted);
         }
+
+        .session-label {
+            margin: 0;
+            font-size: 0.9rem;
+            color: var(--muted);
+        }
+
+        .session-label[data-mode="multiplayer"] {
+            color: var(--accent-strong);
+        }
+
+        .primary,
+        .ghost,
+        .secondary {
+            appearance: none;
+            border-radius: 16px;
+            padding: 0.85rem 1.1rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            cursor: pointer;
+            border: none;
+            transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+        }
+
+        .primary {
+            background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+            color: #140827;
+            box-shadow: 0 18px 32px rgba(15, 6, 30, 0.35);
+        }
+
+        .ghost {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            box-shadow: 0 18px 32px rgba(10, 3, 24, 0.35);
+        }
+
+        .secondary {
+            background: rgba(15, 10, 28, 0.68);
+            color: var(--text);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            box-shadow: 0 14px 28px rgba(0, 0, 0, 0.35);
+        }
+
+        .primary:hover,
+        .ghost:hover,
+        .secondary:hover,
+        .primary:focus-visible,
+        .ghost:focus-visible,
+        .secondary:focus-visible {
+            transform: translateY(-1px);
+            outline: none;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .lobby {
+            position: fixed;
+            inset: 0;
+            z-index: 20;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: clamp(1.5rem, 4vw, 3rem);
+            background: rgba(5, 3, 17, 0.78);
+            backdrop-filter: blur(22px);
+            -webkit-backdrop-filter: blur(22px);
+        }
+
+        .lobby-card {
+            background: rgba(13, 16, 32, 0.92);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 28px;
+            box-shadow: var(--shadow);
+            padding: clamp(1.8rem, 4vw, 2.8rem);
+            width: min(420px, 94vw);
+            display: grid;
+            gap: 1.1rem;
+            text-align: center;
+        }
+
+        .lobby-card h2 {
+            margin: 0;
+            font-size: clamp(1.6rem, 4vw, 2rem);
+            letter-spacing: 0.04em;
+        }
+
+        .lobby-card p {
+            margin: 0;
+            line-height: 1.4;
+            color: var(--muted);
+        }
+
+        .lobby-actions {
+            display: grid;
+            gap: 0.85rem;
+        }
+
+        .lobby .ghost {
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            box-shadow: none;
+        }
+
+        .lobby .ghost:hover,
+        .lobby .ghost:focus-visible {
+            background: rgba(255, 255, 255, 0.18);
+        }
+
+        .lobby .secondary {
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            box-shadow: none;
+        }
+
+        .lobby .secondary:hover,
+        .lobby .secondary:focus-visible {
+            background: rgba(0, 0, 0, 0.5);
+        }
     </style>
 </head>
 <body>
-    <div class="layout">
+    <div class="lobby" id="lobby" role="dialog" aria-modal="true">
+        <div class="lobby-card" id="lobbyMain">
+            <h2>Trolley Depot</h2>
+            <p>Select how you'd like to play.</p>
+            <div class="lobby-actions">
+                <button class="primary" type="button" data-start="solo">Singleplayer</button>
+                <button class="ghost" type="button" data-target="multiplayerCard">Multiplayer</button>
+            </div>
+        </div>
+        <div class="lobby-card hidden" id="multiplayerCard">
+            <h2>Multiplayer Prompt Mode</h2>
+            <p>Gather a crew, start a call, and reveal each dilemma together from one facilitator screen.</p>
+            <p class="helper">Want realtime lobbies like our other games? Drop in your Firebase config and the UI is ready to hook up.</p>
+            <div class="lobby-actions">
+                <button class="primary" type="button" data-start="multiplayer">Start shared session</button>
+                <button class="secondary back-action" type="button" data-target="lobbyMain">Back</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="layout" id="gameScreen" aria-hidden="true">
         <nav class="back-nav">
             <a class="back-nav__button" href="index.html">
                 <span class="back-nav__icon" aria-hidden="true">⟵</span>
@@ -177,6 +319,7 @@
         <header>
             <h1>Trolley Game</h1>
             <p class="tagline">Guide your crew through impossible choices. Reveal a prompt, debate the options, and decide who (or what) stays on the tracks.</p>
+            <p class="session-label" id="sessionLabel" data-mode="solo" hidden>Multiplayer session: share your screen so everyone stays on the same set of prompts.</p>
         </header>
 
         <section class="scenario-card">
@@ -190,6 +333,69 @@
     </div>
 
     <script>
+        const lobbyElement = document.getElementById('lobby');
+        const layout = document.getElementById('gameScreen');
+        const sessionLabel = document.getElementById('sessionLabel');
+        const lobbyCards = {};
+
+        lobbyElement?.querySelectorAll('.lobby-card').forEach((card) => {
+            if (card.id) {
+                lobbyCards[card.id] = card;
+            }
+        });
+
+        function showLobbyCard(id) {
+            Object.keys(lobbyCards).forEach((key) => {
+                const card = lobbyCards[key];
+                card.classList.add('hidden');
+            });
+            const next = lobbyCards[id];
+            next?.classList.remove('hidden');
+        }
+
+        function startMode(mode) {
+            if (lobbyElement) {
+                lobbyElement.classList.add('hidden');
+                lobbyElement.setAttribute('aria-hidden', 'true');
+            }
+            layout?.removeAttribute('aria-hidden');
+            layout?.setAttribute('data-session', mode);
+            if (sessionLabel) {
+                sessionLabel.dataset.mode = mode;
+                sessionLabel.hidden = mode !== 'multiplayer';
+            }
+
+            const actionButton = document.querySelector('[data-action="prompt"]');
+            if (actionButton instanceof HTMLElement) {
+                actionButton.focus();
+            }
+        }
+
+        if (lobbyElement) {
+            showLobbyCard('lobbyMain');
+
+            lobbyElement.addEventListener('click', (event) => {
+                const element = event.target;
+                if (!(element instanceof HTMLElement)) {
+                    return;
+                }
+
+                const targetCard = element.dataset.target;
+                if (targetCard && lobbyCards[targetCard]) {
+                    event.preventDefault();
+                    showLobbyCard(targetCard);
+                }
+            });
+
+            Array.from(lobbyElement.querySelectorAll('[data-start]')).forEach((button) => {
+                button.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    const mode = button.dataset.start === 'multiplayer' ? 'multiplayer' : 'solo';
+                    startMode(mode);
+                });
+            });
+        }
+
         const prompts = [
             "Five world-class scientists on one track, one world-saving AI core on the other.",
             "A train of puppies versus a train carrying the last seed vault for Mars colony.",
