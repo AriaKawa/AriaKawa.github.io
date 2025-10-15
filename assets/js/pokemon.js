@@ -192,13 +192,13 @@ async function submitEntry(db2, roomCode, playerId, inputName) {
     if (exists.exists()) {
       throw new Error("That Pokémon was already used!");
     }
+    const playerSnap = await tx.get(playerRef);
+    const curr = playerSnap.exists() ? playerSnap.data().score || 0 : 0;
     tx.set(entryRef, {
       name: inputName.trim(),
       playerId,
       createdAt: serverTimestamp()
     });
-    const playerSnap = await tx.get(playerRef);
-    const curr = playerSnap.exists() ? playerSnap.data().score || 0 : 0;
     tx.set(playerRef, { score: curr + 1 }, { merge: true });
   });
 }
