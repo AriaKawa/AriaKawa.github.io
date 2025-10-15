@@ -75,6 +75,50 @@
   @media (max-width:720px){
     .board{ padding:22px; border-radius:26px; gap:20px; }
   }
+
+  .board[data-view="betting"]{
+    grid-template-areas:
+      "track"
+      "info"
+      "bets";
+  }
+
+  .board[data-view="race"]{
+    grid-template-areas:
+      "track";
+    grid-template-rows:minmax(560px,1fr);
+  }
+
+  .board[data-view="race"] .info-panel,
+  .board[data-view="race"] .bets-panel{
+    display:none;
+  }
+
+  .board[data-view="betting"] .track-viewport{
+    display:none;
+  }
+
+  .board[data-view="betting"] .track-card{
+    min-height:0;
+    background:none;
+    border:none;
+    box-shadow:none;
+    position:relative;
+  }
+
+  .board[data-view="betting"] .track-card::after{
+    display:none;
+  }
+
+  .board[data-view="betting"] .track-card header{
+    position:relative;
+    left:auto;
+    right:auto;
+    bottom:auto;
+    background:linear-gradient(180deg, rgba(16,22,38,.92) 0%, rgba(10,16,28,.96) 100%);
+    border:1px solid rgba(255,255,255,.08);
+    box-shadow:0 18px 36px rgba(0,0,0,.35);
+  }
   @media (min-width:1200px){
     .board{
       grid-template-rows:minmax(600px,1fr) auto auto;
@@ -566,7 +610,7 @@
     </div>
   </div>
   <div class="wrap">
-    <div class="board">
+    <div class="board" data-view="betting">
       <section class="track-card" id="trackCard">
         <div class="track-viewport" id="trackViewport">
           <div class="race-camera" id="raceCamera">
@@ -722,6 +766,7 @@ const laneLinesEl = document.getElementById('laneLines');
 const raceCountdownEl = document.getElementById('raceCountdown');
 const ratLayer = document.getElementById('ratLayer');
 const finishMarker = document.getElementById('finishMarker');
+const boardEl = document.querySelector('.board');
 
 const TRACK_DISTANCE = 1800;
 const TRACK_START_OFFSET = 140;
@@ -732,6 +777,12 @@ let viewportWidth = 0;
 let viewportHeight = 0;
 let laneCenters = [];
 let cameraX = 0;
+
+function setScreen(view='betting'){
+  if(boardEl){
+    boardEl.dataset.view = view;
+  }
+}
 
 function updateViewportScale(){
   if(!trackViewport) return;
@@ -1301,6 +1352,7 @@ function openNextSoloRound(){
   statusEl.classList.remove('countdown');
   statusEl.textContent = 'Place your bets.';
   toggleBetUI(false);
+  setScreen('betting');
 }
 
 function updateAutoStartState(){
@@ -1399,6 +1451,7 @@ function cancelCountdown(){
 
 async function startCountdown({ startTime=Date.now(), duration=2100 }={}){
   const token = ++countdownToken;
+  setScreen('race');
   statusEl.classList.add('countdown');
   if(raceCountdownEl){
     raceCountdownEl.classList.remove('hidden');
@@ -1435,6 +1488,7 @@ async function startCountdown({ startTime=Date.now(), duration=2100 }={}){
 }
 
 function startRace(setup){
+  setScreen('race');
   racing = true;
   finished = false;
   setCameraX(0);
@@ -1496,6 +1550,7 @@ function startRace(setup){
 function endRace(options={}){
   if(!winner){ statusEl.textContent = 'No winner?!'; return; }
   statusEl.textContent = `Winner: ${winner.name}!`;
+  setScreen('betting');
   const p = pot();
   const totalOnWin = totalOn(winner.id);
   const winners = bets.filter(b=>b.ratId===winner.id);
@@ -1751,21 +1806,25 @@ function handleNetworkState(state){
     if(state.resetResults){
       resultRows.innerHTML = `<tr><td colspan="5" style="color:var(--muted)">No results yet.</td></tr>`;
     }
+    setScreen('betting');
     toggleBetUI(false);
     resetRacePositions();
   }else if(phase === 'countdown'){
     toggleBetUI(true);
+    setScreen('race');
     const startTime = state.countdownStartedAt || Date.now();
     startCountdown({ startTime, duration: state.countdownDuration || 2100 });
     currentRaceSetup = state.raceSetup || currentRaceSetup;
   }else if(phase === 'running'){
     toggleBetUI(true);
+    setScreen('race');
     if(state.raceSetup){ currentRaceSetup = state.raceSetup; }
     if(!racing){
       startRace(currentRaceSetup);
     }
   }else if(phase === 'finished'){
     toggleBetUI(true);
+    setScreen('betting');
     cancelCountdown();
     if(state.winnerId){
       const rat = rats.find(r=>r.id===state.winnerId);
@@ -1888,6 +1947,7 @@ function startSolo(){
   statusEl.textContent = 'Place your bets.';
   resetRacePositions();
   toggleBetUI(false);
+  setScreen('betting');
   window.location.hash = '';
   setMpMode('solo');
   updateModeUI();
