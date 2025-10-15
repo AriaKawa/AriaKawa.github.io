@@ -114,6 +114,29 @@
   let rightFrontier = 8 * SLOT_SPACING;
   let leftFrontier  = 8 * SLOT_SPACING;
 
+  // Terrain undulations
+  const ridges = [];
+  (function genRidges(){
+    for (let i=0;i<48;i++){
+      const rx = WORLD_LEFT + Math.random()*(WORLD_RIGHT-WORLD_LEFT);
+      const h = 2 + Math.random()*7;
+      const w = 60 + Math.random()*120;
+      ridges.push({x:rx, w, h});
+    }
+  })();
+
+  function groundAt(x){
+    let y = GROUND_Y;
+    for (const r of ridges){
+      const t = (x - r.x) / r.w;
+      if (t > 0 && t < 1){
+        const s = Math.sin(Math.PI * t);
+        y -= s * r.h;
+      }
+    }
+    return y;
+  }
+
   // Build slots
   const slots = [];
   for (let x = WORLD_LEFT; x <= WORLD_RIGHT; x += SLOT_SPACING) {
@@ -152,29 +175,6 @@
       arr.push({x,w,h});
     }
     return arr;
-  }
-
-  // Terrain undulations
-  const ridges = [];
-  (function genRidges(){
-    for (let i=0;i<48;i++){
-      const rx = WORLD_LEFT + Math.random()*(WORLD_RIGHT-WORLD_LEFT);
-      const h = 2 + Math.random()*7;
-      const w = 60 + Math.random()*120;
-      ridges.push({x:rx, w, h});
-    }
-  })();
-
-  function groundAt(x){
-    let y = GROUND_Y;
-    for (const r of ridges){
-      const t = (x - r.x) / r.w;
-      if (t > 0 && t < 1){
-        const s = Math.sin(Math.PI * t);
-        y -= s * r.h;
-      }
-    }
-    return y;
   }
 
   // =========================
