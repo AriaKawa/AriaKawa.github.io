@@ -233,6 +233,11 @@ function App() {
   const [entries, setEntries] = useState([]);
   const [input, setInput] = useState("");
   const [feedback, setFeedback] = useState("");
+  const [isCompact, setIsCompact] = useState(() => {
+    if (typeof window === "undefined")
+      return false;
+    return window.matchMedia("(max-width: 720px)").matches;
+  });
   const [selectedDurationId, setSelectedDurationId] = useState(() => DURATION_OPTIONS[0].id);
   const roomRef = useMemo(() => roomCode ? doc(db, "rooms", roomCode) : null, [roomCode]);
   useEffect(() => {
@@ -267,6 +272,22 @@ function App() {
     });
     return () => unsub();
   }, [roomCode]);
+  useEffect(() => {
+    if (typeof window === "undefined")
+      return;
+    const media = window.matchMedia("(max-width: 720px)");
+    const handleChange = (event) => setIsCompact(event.matches);
+    if (media.addEventListener)
+      media.addEventListener("change", handleChange);
+    else
+      media.addListener(handleChange);
+    return () => {
+      if (media.removeEventListener)
+        media.removeEventListener("change", handleChange);
+      else
+        media.removeListener(handleChange);
+    };
+  }, []);
   useEffect(() => {
     if (!room)
       return;
@@ -576,67 +597,21 @@ function App() {
             ]
           }, undefined, true, undefined, this),
           /* @__PURE__ */ jsxDEV("div", {
-            style: { display: "grid", gap: 20, gridTemplateColumns: "minmax(0, 3fr) minmax(0, 2fr)" },
+            style: {
+              display: "grid",
+              gap: 20,
+              gridTemplateColumns: isCompact ? "1fr" : "minmax(200px, 240px) 1fr",
+              alignItems: "start"
+            },
             children: [
-              /* @__PURE__ */ jsxDEV("div", {
-                style: { display: "grid", gap: 16 },
-                children: [
-                  /* @__PURE__ */ jsxDEV("form", {
-                    onSubmit,
-                    style: { display: "flex", flexWrap: "wrap", gap: 12 },
-                    children: [
-                      /* @__PURE__ */ jsxDEV("input", {
-                        disabled: !canType,
-                        value: input,
-                        onChange: (e) => setInput(e.target.value),
-                        placeholder: "Type a Pokémon and press Enter…",
-                        style: { ...inputStyle, flex: "1 1 220px", fontSize: 18 }
-                      }, undefined, false, undefined, this),
-                      /* @__PURE__ */ jsxDEV("button", {
-                        disabled: !canType,
-                        style: btnSecondary,
-                        children: "Submit"
-                      }, undefined, false, undefined, this)
-                    ]
-                  }, undefined, true, undefined, this),
-                  feedback && /* @__PURE__ */ jsxDEV("div", {
-                    style: { fontWeight: 600 },
-                    children: feedback
-                  }, undefined, false, undefined, this),
-                  /* @__PURE__ */ jsxDEV("div", {
-                    children: [
-                      /* @__PURE__ */ jsxDEV("h3", {
-                        style: { margin: "12px 0 8px", fontSize: 18 },
-                        children: "Recent entries"
-                      }, undefined, false, undefined, this),
-                      /* @__PURE__ */ jsxDEV("ul", {
-                        style: { margin: 0, paddingLeft: 18, display: "grid", gap: 4 },
-                        children: entries.map((e) => /* @__PURE__ */ jsxDEV("li", {
-                          style: { opacity: 0.9 },
-                          children: [
-                            e.name,
-                            " ",
-                            /* @__PURE__ */ jsxDEV("span", {
-                              style: { opacity: 0.6 },
-                              children: [
-                                "— ",
-                                players.find((p) => p.id === e.playerId)?.name || "someone"
-                              ]
-                            }, undefined, true, undefined, this)
-                          ]
-                        }, e.id, true, undefined, this))
-                      }, undefined, false, undefined, this)
-                    ]
-                  }, undefined, true, undefined, this)
-                ]
-              }, undefined, true, undefined, this),
               /* @__PURE__ */ jsxDEV("aside", {
+                style: { display: "grid", gap: 16, alignContent: "start" },
                 children: [
                   (room?.status === "lobby" || room?.status === "countdown") && /* @__PURE__ */ jsxDEV("div", {
-                    style: { display: "grid", gap: 8 },
+                    style: { ...panelStyle, display: "grid", gap: 12 },
                     children: [
                       /* @__PURE__ */ jsxDEV("h3", {
-                        style: { margin: "12px 0 0", fontSize: 18 },
+                        style: { margin: 0, fontSize: 18 },
                         children: "Players in lobby"
                       }, undefined, false, undefined, this),
                       players.length === 0 ? /* @__PURE__ */ jsxDEV("p", {
@@ -658,10 +633,10 @@ function App() {
                     ]
                   }, undefined, true, undefined, this),
                   room?.status === "playing" && /* @__PURE__ */ jsxDEV("div", {
-                    style: { display: "grid", gap: 8 },
+                    style: { ...panelStyle, display: "grid", gap: 12 },
                     children: [
                       /* @__PURE__ */ jsxDEV("h3", {
-                        style: { margin: "12px 0 0", fontSize: 18 },
+                        style: { margin: 0, fontSize: 18 },
                         children: "Live leaderboard"
                       }, undefined, false, undefined, this),
                       /* @__PURE__ */ jsxDEV("ol", {
@@ -685,10 +660,10 @@ function App() {
                     ]
                   }, undefined, true, undefined, this),
                   room?.status === "ended" && /* @__PURE__ */ jsxDEV("div", {
-                    style: { display: "grid", gap: 8 },
+                    style: { ...panelStyle, display: "grid", gap: 12 },
                     children: [
                       /* @__PURE__ */ jsxDEV("h3", {
-                        style: { margin: "12px 0 0", fontSize: 18 },
+                        style: { margin: 0, fontSize: 18 },
                         children: "Final scores"
                       }, undefined, false, undefined, this),
                       players.length === 0 ? /* @__PURE__ */ jsxDEV("p", {
@@ -715,17 +690,112 @@ function App() {
                     ]
                   }, undefined, true, undefined, this)
                 ]
+              }, undefined, true, undefined, this),
+              /* @__PURE__ */ jsxDEV("div", {
+                style: {
+                  display: "grid",
+                  gap: 16,
+                  gridTemplateRows: isCompact ? "auto auto" : "1fr auto",
+                  minHeight: isCompact ? "auto" : 320
+                },
+                children: [
+                  /* @__PURE__ */ jsxDEV("div", {
+                    style: {
+                      ...panelStyle,
+                      display: "grid",
+                      gap: 12,
+                      alignContent: "start",
+                      minHeight: isCompact ? "auto" : 240
+                    },
+                    children: [
+                      feedback && /* @__PURE__ */ jsxDEV("div", {
+                        style: {
+                          fontWeight: 600,
+                          fontSize: 14,
+                          padding: "10px 14px",
+                          borderRadius: 10,
+                          background: "rgba(147,198,255,0.14)"
+                        },
+                        children: feedback
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsxDEV("div", {
+                        children: [
+                          /* @__PURE__ */ jsxDEV("h3", {
+                            style: { margin: 0, fontSize: 18 },
+                            children: "Recent entries"
+                          }, undefined, false, undefined, this),
+                          entries.length === 0 ? /* @__PURE__ */ jsxDEV("p", {
+                            style: { margin: "8px 0 0", color: "var(--text-muted)", fontSize: 14 },
+                            children: "No entries yet. Be the first to strike!"
+                          }, undefined, false, undefined, this) : /* @__PURE__ */ jsxDEV("ul", {
+                            style: { margin: "8px 0 0", paddingLeft: 18, display: "grid", gap: 6 },
+                            children: entries.map((e) => /* @__PURE__ */ jsxDEV("li", {
+                              style: { opacity: 0.9 },
+                              children: [
+                                e.name,
+                                " ",
+                                /* @__PURE__ */ jsxDEV("span", {
+                                  style: { opacity: 0.6 },
+                                  children: [
+                                    "— ",
+                                    players.find((p) => p.id === e.playerId)?.name || "someone"
+                                  ]
+                                }, undefined, true, undefined, this)
+                              ]
+                            }, e.id, true, undefined, this))
+                          }, undefined, false, undefined, this)
+                        ]
+                      }, undefined, true, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this),
+                  /* @__PURE__ */ jsxDEV("form", {
+                    onSubmit,
+                    style: { ...panelStyle, display: "grid", gap: 12 },
+                    children: [
+                      /* @__PURE__ */ jsxDEV("label", {
+                        htmlFor: "pokemon-entry",
+                        style: {
+                          fontSize: 13,
+                          letterSpacing: "0.08em",
+                          textTransform: "uppercase",
+                          color: "var(--text-muted)",
+                          fontWeight: 700
+                        },
+                        children: "Your entry"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsxDEV("input", {
+                        id: "pokemon-entry",
+                        disabled: !canType,
+                        value: input,
+                        onChange: (e) => setInput(e.target.value),
+                        placeholder: canType ? "Type a Pokémon name…" : "Typing opens when the round starts",
+                        style: { ...inputStyle, fontSize: 18, width: "100%", padding: "14px 16px" },
+                        "aria-describedby": "entry-helper"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsxDEV("p", {
+                        id: "entry-helper",
+                        style: { margin: 0, fontSize: 12, color: "var(--text-muted)" },
+                        children: canType ? "Press Enter to lock it in." : "You can type once the host starts the round."
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this)
+                ]
               }, undefined, true, undefined, this)
             ]
-          }, undefined, true, undefined, this)
-        ]
-      }, undefined, true, undefined, this),
+          }, undefined, true, undefined, this),
       /* @__PURE__ */ jsxDEV(Footer, {
         me
       }, undefined, false, undefined, this)
     ]
   }, undefined, true, undefined, this);
 }
+var panelStyle = {
+  background: "rgba(8, 4, 22, 0.6)",
+  borderRadius: 16,
+  border: "1px solid rgba(147,198,255,0.22)",
+  padding: 16,
+  boxShadow: "0 20px 36px rgba(5, 3, 17, 0.4)"
+};
 var inputStyle = {
   padding: "12px 14px",
   border: "1px solid rgba(147,198,255,0.25)",
