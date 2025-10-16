@@ -79,47 +79,44 @@
         }
 
         .category-selector {
-            width: min(520px, 100%);
+            width: 100%;
             display: grid;
-            gap: clamp(1.5rem, 3vw, 2.4rem);
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: clamp(1.25rem, 3vw, 2rem);
+            height: clamp(300px, 60vh, 460px);
         }
 
         .category-button {
             appearance: none;
             border: 1px solid transparent;
-            border-radius: calc(var(--radius-lg) - 4px);
-            padding: clamp(1.8rem, 4vw, 2.4rem);
-            background: linear-gradient(145deg, rgba(87, 57, 196, 0.65), rgba(42, 24, 104, 0.85));
+            border-radius: calc(var(--radius-lg) - 2px);
+            background: linear-gradient(150deg, rgba(87, 57, 196, 0.75), rgba(42, 24, 104, 0.92));
             color: var(--text-primary);
-            box-shadow: 0 30px 45px rgba(10, 6, 27, 0.45);
+            box-shadow: 0 35px 55px rgba(10, 6, 27, 0.5);
             display: flex;
-            flex-direction: column;
             align-items: center;
-            gap: 0.6rem;
+            justify-content: center;
             text-align: center;
+            padding: clamp(1.2rem, 3vw, 2rem);
+            min-height: 100%;
+            font-size: clamp(1.8rem, 4.5vw, 2.6rem);
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
             cursor: pointer;
             transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
         }
 
         .category-button:hover,
         .category-button:focus-visible {
-            transform: translateY(-6px);
-            border-color: rgba(247, 167, 218, 0.65);
-            box-shadow: 0 40px 65px rgba(8, 4, 22, 0.55);
+            transform: translateY(-8px);
+            border-color: rgba(247, 167, 218, 0.7);
+            box-shadow: 0 45px 75px rgba(8, 4, 22, 0.6);
             outline: none;
         }
 
         .category-label {
-            font-size: clamp(1.4rem, 2.5vw, 1.8rem);
-            font-weight: 700;
-            letter-spacing: 0.02em;
-        }
-
-        .category-subtitle {
-            font-size: clamp(0.95rem, 1.6vw, 1.05rem);
-            color: var(--text-muted);
-            max-width: 26ch;
+            display: block;
         }
 
         .category-view {
@@ -177,107 +174,56 @@
             outline: none;
         }
 
-        .project-grid {
+        .game-grid {
             display: grid;
-            gap: clamp(1.3rem, 2.6vw, 1.9rem);
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: clamp(1.1rem, 2.5vw, 1.8rem);
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
         }
 
-        .project-card {
-            position: relative;
-            display: grid;
-            gap: 1.1rem;
-            padding: clamp(1.6rem, 3vw, 2.2rem);
+        .game-button {
+            appearance: none;
+            border: 1px solid transparent;
             border-radius: var(--radius-lg);
             background: var(--card-gradient);
-            border: 1px solid transparent;
-            background-clip: padding-box, border-box;
-            background-origin: border-box;
-            background-image: var(--card-gradient), var(--border-gradient);
+            color: var(--text-primary);
             box-shadow: var(--shadow-strong);
-            transition: transform 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
-        }
-
-        .project-card::after {
-            content: "";
-            position: absolute;
-            inset: 0;
-            border-radius: inherit;
-            background: linear-gradient(160deg, rgba(147, 198, 255, 0.18), rgba(247, 167, 218, 0.08));
-            opacity: 0;
-            transition: opacity 0.35s ease;
-            pointer-events: none;
-        }
-
-        .project-card:hover,
-        .project-card:focus-within {
-            transform: translateY(-6px);
-            box-shadow: 0 40px 80px rgba(5, 3, 17, 0.85);
-        }
-
-        .project-card:hover::after,
-        .project-card:focus-within::after {
-            opacity: 1;
-        }
-
-        .card-top {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 0.75rem;
-            flex-wrap: wrap;
-        }
-
-        .status {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 0.4rem;
-            padding: 0.35rem 0.85rem;
-            border-radius: 999px;
-            font-size: 0.75rem;
-            letter-spacing: 0.18em;
-            text-transform: uppercase;
+            padding: clamp(1.1rem, 2.8vw, 1.6rem);
+            font-size: clamp(1.05rem, 1.8vw, 1.2rem);
             font-weight: 600;
-            background: linear-gradient(120deg, var(--accent-blue), var(--accent-pink));
-            color: #140827;
+            text-decoration: none;
+            letter-spacing: 0.04em;
+            background-image: var(--card-gradient), var(--border-gradient);
+            background-clip: padding-box, border-box;
+            background-origin: border-box;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
         }
 
-        .tag {
-            padding: 0.35rem 0.7rem;
-            border-radius: 999px;
-            font-size: 0.8rem;
-            color: var(--accent-lavender);
-            background: rgba(194, 183, 255, 0.16);
+        .game-button:hover,
+        .game-button:focus-visible {
+            transform: translateY(-6px);
+            box-shadow: 0 40px 80px rgba(5, 3, 17, 0.85);
+            outline: none;
         }
 
-        .project-card h3 {
-            margin: 0;
-            font-size: 1.45rem;
+        .game-button[disabled],
+        .game-button.is-disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
         }
 
-        .project-card p {
-            margin: 0;
-            color: var(--text-muted);
-            font-size: 0.98rem;
-            line-height: 1.55;
-        }
-
-        .project-meta {
-            display: grid;
-            gap: 0.35rem;
-            font-size: 0.82rem;
-            color: rgba(188, 180, 218, 0.85);
-        }
-
-        .project-meta span {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
-        }
-
-        .project-meta time {
-            color: var(--accent-blue);
+        .game-button[disabled]:hover,
+        .game-button.is-disabled:hover,
+        .game-button[disabled]:focus-visible,
+        .game-button.is-disabled:focus-visible {
+            transform: none;
+            box-shadow: none;
+            outline: none;
         }
 
         .cta,
@@ -326,6 +272,7 @@
 
             .category-selector {
                 grid-template-columns: 1fr;
+                height: auto;
             }
 
             .category-header {
@@ -346,11 +293,9 @@
             <div class="category-selector" data-category-selector>
                 <button class="category-button" type="button" data-category-button="good">
                     <span class="category-label">Good Games</span>
-                    <span class="category-subtitle">Top-tier chaos that never misses.</span>
                 </button>
                 <button class="category-button" type="button" data-category-button="bad">
                     <span class="category-label">Bad Games</span>
-                    <span class="category-subtitle">The rest of the misfit experiments.</span>
                 </button>
             </div>
 
@@ -363,121 +308,27 @@
                     <div class="category-title-group">
                         <h2 class="category-title" data-category-title>Good Games</h2>
                         <p class="category-description" data-category-subtitle>
-                            Top-tier chaos that never misses.
+                            Pick from the certified hits.
                         </p>
                     </div>
                 </div>
 
-                <div class="project-grid" data-category-grid="good">
-                    <article class="project-card" data-status="live">
-                        <div class="card-top">
-                            <span class="status">Live</span>
-                            <span class="tag">Game</span>
-                        </div>
-                        <h3>Blackjack Lounge</h3>
-                        <a class="cta" href="blackjack.html">Launch table</a>
-                    </article>
-
-                    <article class="project-card" data-status="live">
-                        <div class="card-top">
-                            <span class="status">Live</span>
-                            <span class="tag">Party</span>
-                        </div>
-                        <h3>Pokémon Typing Battle</h3>
-                        <a class="cta" href="pokemon.html">Start match</a>
-                    </article>
-
-                    <article class="project-card" data-status="live">
-                        <div class="card-top">
-                            <span class="status">Live</span>
-                            <span class="tag">Game</span>
-                        </div>
-                        <h3>Rat Race</h3>
-                        <a class="cta" href="RatRace.html">Enter race</a>
-                    </article>
-
-                    <article class="project-card" data-status="live">
-                        <div class="card-top">
-                            <span class="status">Live</span>
-                            <span class="tag">Dilemma</span>
-                        </div>
-                        <h3>Trolley Game</h3>
-                        <a class="cta" href="trolley-game.html">Play now</a>
-                    </article>
-
-                    <article class="project-card" data-status="live">
-                        <div class="card-top">
-                            <span class="status">Live</span>
-                            <span class="tag">Debate</span>
-                        </div>
-                        <h3>Thing vs Thing</h3>
-                        <a class="cta" href="thing-vs-thing.html">Play now</a>
-                    </article>
+                <div class="game-grid" data-category-grid="good">
+                    <a class="game-button" href="RatRace.html">Rat Race</a>
+                    <a class="game-button" href="blackjack.html">Blackjack</a>
+                    <a class="game-button" href="pokemon.html">Pokémon Typer</a>
                 </div>
 
-                <div class="project-grid" data-category-grid="bad" hidden>
-                    <article class="project-card" data-status="live">
-                        <div class="card-top">
-                            <span class="status">Live</span>
-                            <span class="tag">Auto Battler</span>
-                        </div>
-                        <h3>AutoRogue</h3>
-                        <a class="cta" href="AutoRogue">Begin run</a>
-                    </article>
-
-                    <article class="project-card" data-status="brewing">
-                        <div class="card-top">
-                            <span class="status">Brewing</span>
-                            <span class="tag">Rhythm</span>
-                        </div>
-                        <h3>Rhythm Reactor</h3>
-                        <span class="cta disabled">Stay tuned</span>
-                    </article>
-
-                    <article class="project-card" data-status="live">
-                        <div class="card-top">
-                            <span class="status">Live</span>
-                            <span class="tag">Strategy</span>
-                        </div>
-                        <h3>Rat Kingdom</h3>
-                        <a class="cta" href="rat-kingdom.html">Play now</a>
-                    </article>
-
-                    <article class="project-card" data-status="live">
-                        <div class="card-top">
-                            <span class="status">Live</span>
-                            <span class="tag">Strategy</span>
-                        </div>
-                        <h3>Grand War</h3>
-                        <a class="cta" href="grand-war.html">Join battle</a>
-                    </article>
-
-                    <article class="project-card" data-status="live">
-                        <div class="card-top">
-                            <span class="status">Live</span>
-                            <span class="tag">Party</span>
-                        </div>
-                        <h3>Know Your Friends</h3>
-                        <a class="cta" href="ForFriends.html">Play now</a>
-                    </article>
-
-                    <article class="project-card" data-status="live">
-                        <div class="card-top">
-                            <span class="status">Live</span>
-                            <span class="tag">Party</span>
-                        </div>
-                        <h3>Newlywed Game</h3>
-                        <a class="cta" href="newlywed.html">Host game</a>
-                    </article>
-
-                    <article class="project-card" data-status="live">
-                        <div class="card-top">
-                            <span class="status">Live</span>
-                            <span class="tag">Download</span>
-                        </div>
-                        <h3>Banana</h3>
-                        <button class="cta" type="button" data-download-banana>Download banana</button>
-                    </article>
+                <div class="game-grid" data-category-grid="bad" hidden>
+                    <a class="game-button" href="trolley-game.html">Trolley Game</a>
+                    <a class="game-button" href="thing-vs-thing.html">Thing vs Thing</a>
+                    <a class="game-button" href="AutoRogue">AutoRogue</a>
+                    <button class="game-button is-disabled" type="button" disabled>Rhythm Reactor (Coming Soon)</button>
+                    <a class="game-button" href="rat-kingdom.html">Rat Kingdom</a>
+                    <a class="game-button" href="grand-war.html">Grand War</a>
+                    <a class="game-button" href="ForFriends.html">Know Your Friends</a>
+                    <a class="game-button" href="newlywed.html">Newlywed Game</a>
+                    <button class="game-button" type="button" data-download-banana>Download Banana</button>
                 </div>
             </div>
         </section>
@@ -499,11 +350,11 @@
             const metadata = {
                 good: {
                     title: 'Good Games',
-                    subtitle: 'Top-tier chaos that never misses.'
+                    subtitle: 'Pick from the certified hits.'
                 },
                 bad: {
                     title: 'Bad Games',
-                    subtitle: 'The rest of the misfit experiments.'
+                    subtitle: 'Everything else lives here.'
                 }
             };
 
