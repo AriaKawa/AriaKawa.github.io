@@ -20,6 +20,71 @@ import { v4 as uuidv4 } from "https://esm.sh/uuid@9";
 
 const fallbackUUID = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
 
+const memoryStore = new Map();
+let persistentStorageAvailable = true;
+let storageWarningLogged = false;
+
+const logStorageWarning = (err) => {
+    if (!storageWarningLogged) {
+        console.warn("Pokémon Typing Battle: localStorage unavailable, falling back to in-memory cache.", err);
+        storageWarningLogged = true;
+    }
+};
+
+const getNativeStorage = () => {
+    if (!persistentStorageAvailable) return null;
+    try {
+        if (typeof window !== "undefined" && window.localStorage) {
+            return window.localStorage;
+        }
+        persistentStorageAvailable = false;
+        logStorageWarning(new Error("localStorage is not available in this environment."));
+        return null;
+    } catch (err) {
+        persistentStorageAvailable = false;
+        logStorageWarning(err);
+        return null;
+    }
+};
+
+const safeStorage = {
+    get(key) {
+        const nativeStorage = getNativeStorage();
+        if (nativeStorage) {
+            try {
+                const value = nativeStorage.getItem(key);
+                if (value !== null) {
+                    memoryStore.set(key, value);
+                } else {
+                    memoryStore.delete(key);
+                }
+                return value;
+            } catch (err) {
+                persistentStorageAvailable = false;
+                logStorageWarning(err);
+            }
+        }
+        return memoryStore.has(key) ? memoryStore.get(key) : null;
+    },
+    set(key, value) {
+        memoryStore.set(key, value);
+        const nativeStorage = getNativeStorage();
+        if (nativeStorage) {
+            try {
+                nativeStorage.setItem(key, value);
+                return true;
+            } catch (err) {
+                persistentStorageAvailable = false;
+                logStorageWarning(err);
+            }
+        }
+        return false;
+    },
+    isPersistent() {
+        return persistentStorageAvailable;
+    }
+};
+
 const defaultConfig = {
     apiKey: "AIzaSyDRniZatGeylxphjHQadYjucOcirNBRIdk",
     authDomain: "multiplayer-640ec.firebaseapp.com",
@@ -55,10 +120,10 @@ const normalizeName = (s) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
 
 const useLocalId = () => {
     const [id] = useState(() => {
-        const existing = localStorage.getItem("ptb_player_id");
+        const existing = safeStorage.get("ptb_player_id");
         if (existing) return existing;
         const generated = (uuidv4 ? uuidv4() : fallbackUUID());
-        localStorage.setItem("ptb_player_id", generated);
+        safeStorage.set("ptb_player_id", generated);
         return generated;
     });
     return id;
@@ -74,7 +139,7 @@ const usePokedex = () => {
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        const cached = localStorage.getItem("ptb_pokedex_v2");
+        const cached = safeStorage.get("ptb_pokedex_v2");
         if (cached) {
             try {
                 const arr = JSON.parse(cached);
@@ -93,7 +158,7 @@ const usePokedex = () => {
                 const data = await res.json();
                 const raw = data.results?.map((p) => p.name) || [];
                 const arr = Array.from(new Set(raw));
-                localStorage.setItem("ptb_pokedex_v2", JSON.stringify(arr));
+                safeStorage.set("ptb_pokedex_v2", JSON.stringify(arr));
                 setNames(new Set(arr));
             } catch (e) {
                 setError(e.message);
