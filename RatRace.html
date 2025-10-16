@@ -77,10 +77,14 @@
   }
 
   .board[data-view="betting"]{
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr);
     grid-template-areas:
-      "track"
-      "info"
-      "bets";
+      "track track"
+      "info bets";
+  }
+
+  .board[data-view="betting"] .track-card{
+    grid-column:1/-1;
   }
 
   .board[data-view="race"]{
@@ -127,12 +131,24 @@
         "track bets";
       max-height:calc(100dvh - clamp(90px,10vh,160px));
     }
+    .board[data-view="betting"]{
+      grid-template-columns:minmax(0,1.1fr) minmax(340px,1fr);
+      grid-template-areas:
+        "track track"
+        "info bets";
+    }
+    .board[data-view="betting"] .track-card{
+      grid-column:1/-1;
+    }
   }
 
   @media (min-width:1500px){
     .board{
       grid-template-columns:minmax(0,2fr) minmax(360px,1fr) minmax(360px,1fr);
       grid-template-areas:"track bets info";
+    }
+    .board[data-view="betting"]{
+      grid-template-columns:minmax(0,1.25fr) minmax(400px,1fr);
     }
   }
 
