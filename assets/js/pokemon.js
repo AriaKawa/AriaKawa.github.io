@@ -75,18 +75,6 @@ var useLocalId = () => {
 };
 var nowMs = () => Date.now();
 var secondsLeft = (endsAtMs) => Math.max(0, Math.ceil((endsAtMs - nowMs()) / 1000));
-var DEFAULT_DURATION_MS = 60000;
-var DURATION_OPTIONS = [
-  { id: "60", label: "1 minute", value: 60000 },
-  { id: "120", label: "2 minutes", value: 120000 },
-  { id: "300", label: "5 minutes", value: 300000 },
-  { id: "unlimited", label: "Unlimited", value: null }
-];
-var getDurationOptionById = (id) => {
-  const found = DURATION_OPTIONS.find((opt) => opt.id === id);
-  return found || DURATION_OPTIONS[0];
-};
-var getDurationOptionByValue = (value) => DURATION_OPTIONS.find((opt) => opt.value === value);
 var usePokedex = () => {
   const [names, setNames] = useState(new Set);
   const [loading, setLoading] = useState(true);
@@ -157,8 +145,7 @@ async function createRoom(db2, roomCode, hostId) {
     createdAt: serverTimestamp(),
     hostId,
     startedAt: null,
-    endsAt: null,
-    durationMs: DEFAULT_DURATION_MS
+    endsAt: null
   });
 }
 async function joinRoom(db2, roomCode, playerId, name) {
@@ -172,24 +159,20 @@ async function joinRoom(db2, roomCode, playerId, name) {
     joinedAt: serverTimestamp()
   }, { merge: true });
 }
-async function startGame(db2, roomCode, durationMs = DEFAULT_DURATION_MS) {
+async function startGame(db2, roomCode, durationMs = 60000) {
   const roomRef = doc(db2, "rooms", roomCode);
   const startMs = Date.now() + 3000;
-  const hasDuration = typeof durationMs === "number" && !Number.isNaN(durationMs);
-  const endMs = hasDuration ? startMs + durationMs : null;
+  const endMs = startMs + durationMs;
   await updateDoc(roomRef, {
     status: "countdown",
     startedAt: startMs,
-    endsAt: endMs,
-    durationMs: hasDuration ? durationMs : null
+    endsAt: endMs
   });
   setTimeout(async () => {
     await updateDoc(roomRef, { status: "playing" });
-    if (hasDuration) {
-      setTimeout(async () => {
-        await updateDoc(roomRef, { status: "ended" });
-      }, durationMs);
-    }
+    setTimeout(async () => {
+      await updateDoc(roomRef, { status: "ended" });
+    }, durationMs);
   }, 3000);
 }
 async function submitEntry(db2, roomCode, playerId, inputName) {
@@ -202,23 +185,20 @@ async function submitEntry(db2, roomCode, playerId, inputName) {
     if (!roomSnap.exists())
       throw new Error("Room missing");
     const { status, endsAt } = roomSnap.data();
-    if (status !== "playing") {
-      throw new Error("Round is not active");
-    }
-    if (endsAt && Date.now() > endsAt) {
+    if (status !== "playing" || !endsAt || Date.now() > endsAt) {
       throw new Error("Round is not active");
     }
     const exists = await tx.get(entryRef);
     if (exists.exists()) {
       throw new Error("That Pokémon was already used!");
     }
-    const playerSnap = await tx.get(playerRef);
-    const curr = playerSnap.exists() ? playerSnap.data().score || 0 : 0;
     tx.set(entryRef, {
       name: inputName.trim(),
       playerId,
       createdAt: serverTimestamp()
     });
+    const playerSnap = await tx.get(playerRef);
+    const curr = playerSnap.exists() ? playerSnap.data().score || 0 : 0;
     tx.set(playerRef, { score: curr + 1 }, { merge: true });
   });
 }
@@ -233,12 +213,6 @@ function App() {
   const [entries, setEntries] = useState([]);
   const [input, setInput] = useState("");
   const [feedback, setFeedback] = useState("");
-  const [isCompact, setIsCompact] = useState(() => {
-    if (typeof window === "undefined")
-      return false;
-    return window.matchMedia("(max-width: 720px)").matches;
-  });
-  const [selectedDurationId, setSelectedDurationId] = useState(() => DURATION_OPTIONS[0].id);
   const roomRef = useMemo(() => roomCode ? doc(db, "rooms", roomCode) : null, [roomCode]);
   useEffect(() => {
     if (!roomRef)
@@ -272,55 +246,6 @@ function App() {
     });
     return () => unsub();
   }, [roomCode]);
-  useEffect(() => {
-    if (typeof window === "undefined")
-      return;
-    const media = window.matchMedia("(max-width: 720px)");
-    const handleChange = (event) => setIsCompact(event.matches);
-    if (media.addEventListener)
-      media.addEventListener("change", handleChange);
-    else
-      media.addListener(handleChange);
-    return () => {
-      if (media.removeEventListener)
-        media.removeEventListener("change", handleChange);
-      else
-        media.removeListener(handleChange);
-    };
-  }, []);
-  useEffect(() => {
-    if (!room)
-      return;
-    if (room.durationMs === null) {
-      setSelectedDurationId("unlimited");
-      return;
-    }
-    if (typeof room.durationMs === "number") {
-      const preset = getDurationOptionByValue(room.durationMs);
-      if (preset) {
-        setSelectedDurationId(preset.id);
-      }
-    }
-  }, [room?.durationMs]);
-  const selectedDuration = useMemo(() => getDurationOptionById(selectedDurationId), [selectedDurationId]);
-  const startButtonLabel = useMemo(() => {
-    if (!selectedDuration)
-      return "Start round";
-    return selectedDuration.label === "Unlimited" ? "Start unlimited round" : `Start ${selectedDuration.label} round`;
-  }, [selectedDuration]);
-  const activeDurationLabel = useMemo(() => {
-    if (!room)
-      return null;
-    if (room.status === "lobby")
-      return selectedDuration?.label || null;
-    if (room.durationMs === null)
-      return "Unlimited";
-    if (typeof room.durationMs === "number") {
-      const preset = getDurationOptionByValue(room.durationMs);
-      return preset ? preset.label : `${Math.round(room.durationMs / 1000)}s`;
-    }
-    return null;
-  }, [room?.status, room?.durationMs, selectedDuration]);
   const handleCreateRoom = async () => {
     try {
       const code = (Math.random().toString(36).slice(2, 6) + Math.random().toString(36).slice(2, 6)).slice(0, 6).toUpperCase();
@@ -340,27 +265,15 @@ function App() {
       alert(e.message);
     }
   };
-  const isHost = room?.hostId === playerId;
   const handleStart = async () => {
     try {
       if (!room)
         return;
       if (room.hostId !== playerId)
         throw new Error("Only host can start");
-      await startGame(db, room.id, selectedDuration?.value ?? DEFAULT_DURATION_MS);
+      await startGame(db, room.id, 60000);
     } catch (e) {
       alert(e.message);
-    }
-  };
-  const handleDurationSelect = async (optionId) => {
-    setSelectedDurationId(optionId);
-    if (!isHost || !roomRef)
-      return;
-    const preset = getDurationOptionById(optionId);
-    try {
-      await updateDoc(roomRef, { durationMs: preset.value === null ? null : preset.value });
-    } catch (err) {
-      console.error("Failed to update round duration", err);
     }
   };
   const canType = room?.status === "playing";
@@ -403,6 +316,7 @@ function App() {
       setTimeout(() => setFeedback(""), 1000);
     }
   };
+  const isHost = room?.hostId === playerId;
   return /* @__PURE__ */ jsxDEV("div", {
     style: {
       fontFamily: "Plus Jakarta Sans, Inter, system-ui, -apple-system, sans-serif",
@@ -519,18 +433,6 @@ function App() {
                 children: [
                   /* @__PURE__ */ jsxDEV("div", {
                     style: { fontSize: 12, color: "var(--text-muted)" },
-                    children: "Round length"
-                  }, undefined, false, undefined, this),
-                  /* @__PURE__ */ jsxDEV("div", {
-                    style: { fontSize: 18, fontWeight: 700 },
-                    children: activeDurationLabel || "—"
-                  }, undefined, false, undefined, this)
-                ]
-              }, undefined, true, undefined, this),
-              /* @__PURE__ */ jsxDEV("div", {
-                children: [
-                  /* @__PURE__ */ jsxDEV("div", {
-                    style: { fontSize: 12, color: "var(--text-muted)" },
                     children: "Status"
                   }, undefined, false, undefined, this),
                   /* @__PURE__ */ jsxDEV("div", {
@@ -548,15 +450,13 @@ function App() {
                       countdown ?? 0
                     ]
                   }, undefined, true, undefined, this),
-                  room.status === "playing" && (room.endsAt ? /* @__PURE__ */ jsxDEV(Fragment, {
+                  room.status === "playing" && /* @__PURE__ */ jsxDEV(Fragment, {
                     children: [
                       "Time left ",
                       timeLeft,
                       "s"
                     ]
-                  }, undefined, true, undefined, this) : /* @__PURE__ */ jsxDEV(Fragment, {
-                    children: "Unlimited time"
-                  }, undefined, false, undefined, this)),
+                  }, undefined, true, undefined, this),
                   room.status === "ended" && /* @__PURE__ */ jsxDEV(Fragment, {
                     children: "Round over"
                   }, undefined, false, undefined, this)
@@ -565,53 +465,72 @@ function App() {
               isHost && room.status === "lobby" && /* @__PURE__ */ jsxDEV("button", {
                 onClick: handleStart,
                 style: btnPrimary,
-                children: startButtonLabel
-              }, undefined, false, undefined, this)
-            ]
-          }, undefined, true, undefined, this),
-          isHost && room.status === "lobby" && /* @__PURE__ */ jsxDEV("div", {
-            style: { display: "grid", gap: 8 },
-            children: [
-              /* @__PURE__ */ jsxDEV("div", {
-                style: { fontSize: 14, color: "var(--text-muted)" },
-                children: "Choose a round duration:"
-              }, undefined, false, undefined, this),
-              /* @__PURE__ */ jsxDEV("div", {
-                style: { display: "flex", flexWrap: "wrap", gap: 8 },
-                children: DURATION_OPTIONS.map((option) => /* @__PURE__ */ jsxDEV("button", {
-                  type: "button",
-                  onClick: () => handleDurationSelect(option.id),
-                  "aria-pressed": selectedDurationId === option.id,
-                  style: {
-                    ...btnSecondary,
-                    padding: "10px 16px",
-                    fontSize: 14,
-                    background: selectedDurationId === option.id ? "linear-gradient(135deg, rgba(147,198,255,0.85), rgba(247,167,218,0.8))" : "linear-gradient(135deg, rgba(31,21,58,0.85), rgba(11,7,27,0.88))",
-                    color: selectedDurationId === option.id ? "#110720" : "var(--text-primary)",
-                    border: selectedDurationId === option.id ? "1px solid rgba(247, 167, 218, 0.75)" : "1px solid rgba(147,198,255,0.32)",
-                    boxShadow: selectedDurationId === option.id ? "0 20px 36px rgba(5, 3, 17, 0.55)" : "0 18px 32px rgba(5, 3, 17, 0.45)"
-                  },
-                  children: option.label
-                }, option.id, false, undefined, this))
+                children: "Start 60s round"
               }, undefined, false, undefined, this)
             ]
           }, undefined, true, undefined, this),
           /* @__PURE__ */ jsxDEV("div", {
-            style: {
-              display: "grid",
-              gap: 20,
-              gridTemplateColumns: isCompact ? "1fr" : "minmax(200px, 240px) 1fr",
-              alignItems: "start"
-            },
+            style: { display: "grid", gap: 20, gridTemplateColumns: "minmax(0, 3fr) minmax(0, 2fr)" },
             children: [
-              /* @__PURE__ */ jsxDEV("aside", {
-                style: { display: "grid", gap: 16, alignContent: "start" },
+              /* @__PURE__ */ jsxDEV("div", {
+                style: { display: "grid", gap: 16 },
                 children: [
-                  (room?.status === "lobby" || room?.status === "countdown") && /* @__PURE__ */ jsxDEV("div", {
-                    style: { ...panelStyle, display: "grid", gap: 12 },
+                  /* @__PURE__ */ jsxDEV("form", {
+                    onSubmit,
+                    style: { display: "flex", flexWrap: "wrap", gap: 12 },
+                    children: [
+                      /* @__PURE__ */ jsxDEV("input", {
+                        disabled: !canType,
+                        value: input,
+                        onChange: (e) => setInput(e.target.value),
+                        placeholder: "Type a Pokémon and press Enter…",
+                        style: { ...inputStyle, flex: "1 1 220px", fontSize: 18 }
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsxDEV("button", {
+                        disabled: !canType,
+                        style: btnSecondary,
+                        children: "Submit"
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this),
+                  feedback && /* @__PURE__ */ jsxDEV("div", {
+                    style: { fontWeight: 600 },
+                    children: feedback
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsxDEV("div", {
                     children: [
                       /* @__PURE__ */ jsxDEV("h3", {
-                        style: { margin: 0, fontSize: 18 },
+                        style: { margin: "12px 0 8px", fontSize: 18 },
+                        children: "Recent entries"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsxDEV("ul", {
+                        style: { margin: 0, paddingLeft: 18, display: "grid", gap: 4 },
+                        children: entries.map((e) => /* @__PURE__ */ jsxDEV("li", {
+                          style: { opacity: 0.9 },
+                          children: [
+                            e.name,
+                            " ",
+                            /* @__PURE__ */ jsxDEV("span", {
+                              style: { opacity: 0.6 },
+                              children: [
+                                "— ",
+                                players.find((p) => p.id === e.playerId)?.name || "someone"
+                              ]
+                            }, undefined, true, undefined, this)
+                          ]
+                        }, e.id, true, undefined, this))
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              /* @__PURE__ */ jsxDEV("aside", {
+                children: [
+                  (room?.status === "lobby" || room?.status === "countdown") && /* @__PURE__ */ jsxDEV("div", {
+                    style: { display: "grid", gap: 8 },
+                    children: [
+                      /* @__PURE__ */ jsxDEV("h3", {
+                        style: { margin: "12px 0 0", fontSize: 18 },
                         children: "Players in lobby"
                       }, undefined, false, undefined, this),
                       players.length === 0 ? /* @__PURE__ */ jsxDEV("p", {
@@ -628,15 +547,15 @@ function App() {
                               p.id === playerId ? " — You" : ""
                             ]
                           }, undefined, true, undefined, this)
-                        }, p.id, true, undefined, this))
+                        }, p.id, false, undefined, this))
                       }, undefined, false, undefined, this)
                     ]
                   }, undefined, true, undefined, this),
                   room?.status === "playing" && /* @__PURE__ */ jsxDEV("div", {
-                    style: { ...panelStyle, display: "grid", gap: 12 },
+                    style: { display: "grid", gap: 8 },
                     children: [
                       /* @__PURE__ */ jsxDEV("h3", {
-                        style: { margin: 0, fontSize: 18 },
+                        style: { margin: "12px 0 0", fontSize: 18 },
                         children: "Live leaderboard"
                       }, undefined, false, undefined, this),
                       /* @__PURE__ */ jsxDEV("ol", {
@@ -660,10 +579,10 @@ function App() {
                     ]
                   }, undefined, true, undefined, this),
                   room?.status === "ended" && /* @__PURE__ */ jsxDEV("div", {
-                    style: { ...panelStyle, display: "grid", gap: 12 },
+                    style: { display: "grid", gap: 8 },
                     children: [
                       /* @__PURE__ */ jsxDEV("h3", {
-                        style: { margin: 0, fontSize: 18 },
+                        style: { margin: "12px 0 0", fontSize: 18 },
                         children: "Final scores"
                       }, undefined, false, undefined, this),
                       players.length === 0 ? /* @__PURE__ */ jsxDEV("p", {
@@ -690,112 +609,17 @@ function App() {
                     ]
                   }, undefined, true, undefined, this)
                 ]
-              }, undefined, true, undefined, this),
-              /* @__PURE__ */ jsxDEV("div", {
-                style: {
-                  display: "grid",
-                  gap: 16,
-                  gridTemplateRows: isCompact ? "auto auto" : "1fr auto",
-                  minHeight: isCompact ? "auto" : 320
-                },
-                children: [
-                  /* @__PURE__ */ jsxDEV("div", {
-                    style: {
-                      ...panelStyle,
-                      display: "grid",
-                      gap: 12,
-                      alignContent: "start",
-                      minHeight: isCompact ? "auto" : 240
-                    },
-                    children: [
-                      feedback && /* @__PURE__ */ jsxDEV("div", {
-                        style: {
-                          fontWeight: 600,
-                          fontSize: 14,
-                          padding: "10px 14px",
-                          borderRadius: 10,
-                          background: "rgba(147,198,255,0.14)"
-                        },
-                        children: feedback
-                      }, undefined, false, undefined, this),
-                      /* @__PURE__ */ jsxDEV("div", {
-                        children: [
-                          /* @__PURE__ */ jsxDEV("h3", {
-                            style: { margin: 0, fontSize: 18 },
-                            children: "Recent entries"
-                          }, undefined, false, undefined, this),
-                          entries.length === 0 ? /* @__PURE__ */ jsxDEV("p", {
-                            style: { margin: "8px 0 0", color: "var(--text-muted)", fontSize: 14 },
-                            children: "No entries yet. Be the first to strike!"
-                          }, undefined, false, undefined, this) : /* @__PURE__ */ jsxDEV("ul", {
-                            style: { margin: "8px 0 0", paddingLeft: 18, display: "grid", gap: 6 },
-                            children: entries.map((e) => /* @__PURE__ */ jsxDEV("li", {
-                              style: { opacity: 0.9 },
-                              children: [
-                                e.name,
-                                " ",
-                                /* @__PURE__ */ jsxDEV("span", {
-                                  style: { opacity: 0.6 },
-                                  children: [
-                                    "— ",
-                                    players.find((p) => p.id === e.playerId)?.name || "someone"
-                                  ]
-                                }, undefined, true, undefined, this)
-                              ]
-                            }, e.id, true, undefined, this))
-                          }, undefined, false, undefined, this)
-                        ]
-                      }, undefined, true, undefined, this)
-                    ]
-                  }, undefined, true, undefined, this),
-                  /* @__PURE__ */ jsxDEV("form", {
-                    onSubmit,
-                    style: { ...panelStyle, display: "grid", gap: 12 },
-                    children: [
-                      /* @__PURE__ */ jsxDEV("label", {
-                        htmlFor: "pokemon-entry",
-                        style: {
-                          fontSize: 13,
-                          letterSpacing: "0.08em",
-                          textTransform: "uppercase",
-                          color: "var(--text-muted)",
-                          fontWeight: 700
-                        },
-                        children: "Your entry"
-                      }, undefined, false, undefined, this),
-                      /* @__PURE__ */ jsxDEV("input", {
-                        id: "pokemon-entry",
-                        disabled: !canType,
-                        value: input,
-                        onChange: (e) => setInput(e.target.value),
-                        placeholder: canType ? "Type a Pokémon name…" : "Typing opens when the round starts",
-                        style: { ...inputStyle, fontSize: 18, width: "100%", padding: "14px 16px" },
-                        "aria-describedby": "entry-helper"
-                      }, undefined, false, undefined, this),
-                      /* @__PURE__ */ jsxDEV("p", {
-                        id: "entry-helper",
-                        style: { margin: 0, fontSize: 12, color: "var(--text-muted)" },
-                        children: canType ? "Press Enter to lock it in." : "You can type once the host starts the round."
-                      }, undefined, false, undefined, this)
-                    ]
-                  }, undefined, true, undefined, this)
-                ]
               }, undefined, true, undefined, this)
             ]
-          }, undefined, true, undefined, this),
+          }, undefined, true, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
       /* @__PURE__ */ jsxDEV(Footer, {
         me
       }, undefined, false, undefined, this)
     ]
   }, undefined, true, undefined, this);
 }
-var panelStyle = {
-  background: "rgba(8, 4, 22, 0.6)",
-  borderRadius: 16,
-  border: "1px solid rgba(147,198,255,0.22)",
-  padding: 16,
-  boxShadow: "0 20px 36px rgba(5, 3, 17, 0.4)"
-};
 var inputStyle = {
   padding: "12px 14px",
   border: "1px solid rgba(147,198,255,0.25)",
