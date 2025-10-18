@@ -188,6 +188,7 @@ async function submitEntry(db2, roomCode, playerId, inputName) {
     if (status !== "playing" || !endsAt || Date.now() > endsAt) {
       throw new Error("Round is not active");
     }
+    const playerSnap = await tx.get(playerRef);
     const exists = await tx.get(entryRef);
     if (exists.exists()) {
       throw new Error("That Pokémon was already used!");
@@ -197,7 +198,6 @@ async function submitEntry(db2, roomCode, playerId, inputName) {
       playerId,
       createdAt: serverTimestamp()
     });
-    const playerSnap = await tx.get(playerRef);
     const curr = playerSnap.exists() ? playerSnap.data().score || 0 : 0;
     tx.set(playerRef, { score: curr + 1 }, { merge: true });
   });
