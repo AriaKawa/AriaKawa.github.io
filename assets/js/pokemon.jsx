@@ -272,8 +272,10 @@ function App() {
     const playerId = useLocalId();
     const { loading: dexLoading, error: dexError, isValid } = usePokedex();
 
-    const [roomCode, setRoomCode] = useState("");
-    const [name, setName] = useState("");
+    const [activeRoomCode, setActiveRoomCode] = useState("");
+    const [roomCodeInput, setRoomCodeInput] = useState("");
+    const [hostName, setHostName] = useState(() => safeStorage.get("ptb_display_name") || "");
+    const [joinName, setJoinName] = useState(() => safeStorage.get("ptb_display_name") || "");
     const [me, setMe] = useState(null);
     const [room, setRoom] = useState(null);
     const [players, setPlayers] = useState([]);
@@ -281,7 +283,7 @@ function App() {
     const [input, setInput] = useState("");
     const [feedback, setFeedback] = useState("");
 
-    const roomRef = useMemo(() => roomCode ? doc(db, "rooms", roomCode) : null, [roomCode]);
+    const roomRef = useMemo(() => activeRoomCode ? doc(db, "rooms", activeRoomCode) : null, [activeRoomCode]);
 
     useEffect(() => {
         if (!roomRef) return;
@@ -292,8 +294,8 @@ function App() {
     }, [roomRef]);
 
     useEffect(() => {
-        if (!roomCode) return;
-        const playersRef = collection(db, "rooms", roomCode, "players");
+        if (!activeRoomCode) return;
+        const playersRef = collection(db, "rooms", activeRoomCode, "players");
         const unsub = onSnapshot(playersRef, (snap) => {
             const arr = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
             arr.sort((a, b) => (b.score || 0) - (a.score || 0));
@@ -302,24 +304,40 @@ function App() {
             setMe(mine || null);
         });
         return () => unsub();
-    }, [roomCode, playerId]);
+    }, [activeRoomCode, playerId]);
 
     useEffect(() => {
-        if (!roomCode) return;
-        const entriesRef = collection(db, "rooms", roomCode, "entries");
+        if (!activeRoomCode) return;
+        const entriesRef = collection(db, "rooms", activeRoomCode, "entries");
         const q = query(entriesRef, orderBy("createdAt", "desc"), limit(20));
         const unsub = onSnapshot(q, (snap) => {
             const arr = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
             setEntries(arr);
         });
         return () => unsub();
-    }, [roomCode]);
+    }, [activeRoomCode]);
+
+    useEffect(() => {
+        if (!activeRoomCode) {
+            setRoom(null);
+            setPlayers([]);
+            setEntries([]);
+            setMe(null);
+        }
+    }, [activeRoomCode]);
 
     const handleCreateRoom = async () => {
         try {
+            if (!hostName.trim()) throw new Error("Enter a name to host the room");
+            const trimmed = hostName.trim();
             const code = (Math.random().toString(36).slice(2, 6) + Math.random().toString(36).slice(2, 6)).slice(0, 6).toUpperCase();
             await createRoom(db, code, playerId);
-            setRoomCode(code);
+            await joinRoom(db, code, playerId, trimmed);
+            safeStorage.set("ptb_display_name", trimmed);
+            setHostName(trimmed);
+            setJoinName(trimmed);
+            setRoomCodeInput(code);
+            setActiveRoomCode(code);
         } catch (e) {
             alert(e.message);
         }
@@ -327,9 +345,15 @@ function App() {
 
     const handleJoinRoom = async () => {
         try {
-            if (!roomCode || !name.trim()) throw new Error("Enter room code and name");
-            await joinRoom(db, roomCode.toUpperCase(), playerId, name.trim());
-            setRoomCode(roomCode.toUpperCase());
+            if (!roomCodeInput || !joinName.trim()) throw new Error("Enter room code and name");
+            const code = roomCodeInput.toUpperCase();
+            const trimmed = joinName.trim();
+            await joinRoom(db, code, playerId, trimmed);
+            safeStorage.set("ptb_display_name", trimmed);
+            setHostName(trimmed);
+            setJoinName(trimmed);
+            setActiveRoomCode(code);
+            setRoomCodeInput(code);
         } catch (e) {
             alert(e.message);
         }
@@ -407,23 +431,37 @@ function App() {
             {dexLoading && <div>Loading Pokédex… (first run can take a few seconds)</div>}
             {dexError && <div style={{ color: "#ff6b8a" }}>Pokédex error: {dexError}</div>}
 
-            {!room && (
+            {!activeRoomCode && (
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 }}>
                     <div style={{ border: "1px solid rgba(147,198,255,0.25)", borderRadius: 16, padding: 16, background: "rgba(17, 10, 35, 0.65)", boxShadow: "var(--shadow-strong)" }}>
                         <h2 style={{ fontSize: 22, fontWeight: 700, marginTop: 0 }}>Create Room</h2>
                         <p style={{ marginTop: 0, color: "var(--text-muted)", fontSize: 14 }}>Generate a one-time code and share it with your party.</p>
+                        <div style={{ display: "grid", gap: 8, marginBottom: 12 }}>
+                            <input
+                                placeholder="Your Name"
+                                value={hostName}
+                                onChange={(e) => setHostName(e.target.value)}
+                                style={inputStyle}
+                            />
+                        </div>
                         <button onClick={handleCreateRoom} style={btnPrimary}>Create code</button>
                     </div>
                     <div style={{ border: "1px solid rgba(147,198,255,0.25)", borderRadius: 16, padding: 16, background: "rgba(17, 10, 35, 0.65)", boxShadow: "var(--shadow-strong)" }}>
                         <h2 style={{ fontSize: 22, fontWeight: 700, marginTop: 0 }}>Join Room</h2>
                         <p style={{ marginTop: 0, color: "var(--text-muted)", fontSize: 14 }}>Enter the host code and your name to jump in.</p>
                         <div style={{ display: "grid", gap: 8 }}>
-                            <input placeholder="Room Code" value={roomCode} onChange={(e) => setRoomCode(e.target.value.toUpperCase())} style={inputStyle} />
-                            <input placeholder="Your Name" value={name} onChange={(e) => setName(e.target.value)} style={inputStyle} />
+                            <input placeholder="Room Code" value={roomCodeInput} onChange={(e) => setRoomCodeInput(e.target.value.toUpperCase())} style={inputStyle} />
+                            <input placeholder="Your Name" value={joinName} onChange={(e) => setJoinName(e.target.value)} style={inputStyle} />
                             <button onClick={handleJoinRoom} style={btnSecondary}>Join room</button>
                         </div>
                     </div>
                 </div>
+            )}
+
+            {activeRoomCode && !room && (
+                <section style={{ border: "1px solid rgba(147,198,255,0.25)", borderRadius: 20, padding: 20, background: "rgba(15, 9, 30, 0.75)", boxShadow: "var(--shadow-strong)", display: "grid", placeItems: "center", minHeight: 180 }}>
+                    <div style={{ color: "var(--text-muted)", fontWeight: 600 }}>Connecting to room…</div>
+                </section>
             )}
 
             {room && (
