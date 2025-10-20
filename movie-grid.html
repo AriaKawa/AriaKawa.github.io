@@ -188,6 +188,7 @@
 
     const grid = document.getElementById('grid');
     const cells = Array.from(grid.querySelectorAll('.cell'));
+    let hoveredCell = null;
 
     function setPreviewFromFile(cell, file){
       if(!file || !file.type.startsWith('image/')) return;
@@ -254,7 +255,7 @@
       e.preventDefault();
       const eventTargetCell = e.target?.closest?.('.cell');
       const activeCell = document.activeElement?.closest?.('.cell');
-      const targetCell = eventTargetCell || activeCell || cells.find(cell=>!cell.dataset.filled) || cells[0];
+      const targetCell = eventTargetCell || hoveredCell || activeCell || cells.find(cell=>!cell.dataset.filled) || cells[0];
       if(targetCell){
         setPreviewFromFile(targetCell, file);
       }
@@ -265,6 +266,9 @@
       const input = cell.querySelector('input[type=file]');
       const replaceBtn = cell.querySelector('.replace');
       const clearBtn = cell.querySelector('.clear');
+
+      cell.addEventListener('mouseenter', ()=>{ hoveredCell = cell; });
+      cell.addEventListener('mouseleave', ()=>{ if(hoveredCell === cell) hoveredCell = null; });
 
       // Click empty area to pick file
       cell.addEventListener('click', (e)=>{
