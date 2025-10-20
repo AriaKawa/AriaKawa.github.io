@@ -1081,6 +1081,16 @@
       }
     }
     try{
+      const activeElement = document.activeElement;
+      const isTextControl = activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA');
+      let selectionRange = null;
+      if(isTextControl){
+        try{
+          selectionRange = { start: activeElement.selectionStart, end: activeElement.selectionEnd };
+        }catch(err){
+          selectionRange = null;
+        }
+      }
       const textarea = document.createElement('textarea');
       textarea.value = text;
       textarea.setAttribute('readonly', '');
@@ -1095,6 +1105,20 @@
       if(previousRange){
         selection.removeAllRanges();
         selection.addRange(previousRange);
+      }
+      if(activeElement && typeof activeElement.focus === 'function'){
+        try{
+          activeElement.focus({ preventScroll: true });
+        }catch(err){
+          activeElement.focus();
+        }
+        if(isTextControl && selectionRange && typeof activeElement.setSelectionRange === 'function'){
+          try{
+            activeElement.setSelectionRange(selectionRange.start, selectionRange.end);
+          }catch(err){
+            /* ignore selection restore errors */
+          }
+        }
       }
       return successful;
     }catch(err){
