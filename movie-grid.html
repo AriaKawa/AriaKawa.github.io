@@ -6,20 +6,24 @@
   <title>3×3 Image Grid Uploader</title>
   <style>
     :root{
-      --bg:#0f1216;      /* page background */
-      --card:#11151b;    /* grid background */
-      --line:#1c2330;    /* grid line */
-      --ring:#7aa2ff;    /* focus ring */
-      --text:#e8eef6;    /* text */
-      --muted:#9fb0c7;   /* subtler text */
-      --btn:#1a2433;     /* button bg */
-      --btn-hover:#243148; /* hover */
+      --bg:#12040d;        /* page background */
+      --card:#1c0a14;      /* grid background */
+      --line:#3a1827;      /* grid line */
+      --ring:#ff9fd7;      /* focus ring */
+      --text:#f9ecff;      /* text */
+      --muted:#d5b4c9;     /* subtler text */
+      --btn:#23101a;       /* button bg */
+      --btn-hover:#2e1823; /* hover */
     }
     *{box-sizing:border-box}
     html,body{height:100%}
     body{
       margin:0; font-family:ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
-      color:var(--text); background:radial-gradient(1200px 800px at 80% -10%, #1b2230 0%, #0f1216 60%);
+      color:var(--text); background:
+        radial-gradient(1100px 780px at 78% -8%, rgba(122, 41, 88, .38) 0%, rgba(18, 4, 13, 0) 62%),
+        radial-gradient(900px 680px at 8% 8%, rgba(90, 30, 70, .42) 0%, rgba(18, 4, 13, 0) 60%),
+        radial-gradient(600px 420px at 50% 120%, rgba(160, 65, 105, .25) 0%, rgba(18, 4, 13, 0) 70%),
+        linear-gradient(160deg, #14050f 0%, #0d0208 38%, #180713 100%);
       display:flex; flex-direction:column; align-items:center; gap:20px; padding:24px;
     }
     h1{font-size:clamp(20px, 2.4vw, 28px); margin:0 0 8px}
