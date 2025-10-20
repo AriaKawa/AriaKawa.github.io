@@ -276,6 +276,7 @@ function App() {
     const [roomCodeInput, setRoomCodeInput] = useState("");
     const [hostName, setHostName] = useState(() => safeStorage.get("ptb_display_name") || "");
     const [joinName, setJoinName] = useState(() => safeStorage.get("ptb_display_name") || "");
+    const [pendingRoomCode, setPendingRoomCode] = useState("");
     const [me, setMe] = useState(null);
     const [room, setRoom] = useState(null);
     const [players, setPlayers] = useState([]);
@@ -332,12 +333,11 @@ function App() {
             const trimmed = hostName.trim();
             const code = (Math.random().toString(36).slice(2, 6) + Math.random().toString(36).slice(2, 6)).slice(0, 6).toUpperCase();
             await createRoom(db, code, playerId);
-            await joinRoom(db, code, playerId, trimmed);
             safeStorage.set("ptb_display_name", trimmed);
             setHostName(trimmed);
             setJoinName(trimmed);
             setRoomCodeInput(code);
-            setActiveRoomCode(code);
+            setPendingRoomCode(code);
         } catch (e) {
             alert(e.message);
         }
@@ -354,6 +354,7 @@ function App() {
             setJoinName(trimmed);
             setActiveRoomCode(code);
             setRoomCodeInput(code);
+            setPendingRoomCode("");
         } catch (e) {
             alert(e.message);
         }
@@ -445,6 +446,15 @@ function App() {
                             />
                         </div>
                         <button onClick={handleCreateRoom} style={btnPrimary}>Create code</button>
+                        {pendingRoomCode && (
+                            <div style={{ marginTop: 12, padding: 12, borderRadius: 12, background: "rgba(60, 90, 170, 0.2)", border: "1px solid rgba(147,198,255,0.35)" }}>
+                                <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--text-muted)" }}>Generated code</div>
+                                <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: "0.2em" }}>{pendingRoomCode}</div>
+                                <p style={{ margin: "8px 0 0", fontSize: 13, color: "var(--text-muted)" }}>
+                                    Review your name below and select “Join room” to enter the lobby.
+                                </p>
+                            </div>
+                        )}
                     </div>
                     <div style={{ border: "1px solid rgba(147,198,255,0.25)", borderRadius: 16, padding: 16, background: "rgba(17, 10, 35, 0.65)", boxShadow: "var(--shadow-strong)" }}>
                         <h2 style={{ fontSize: 22, fontWeight: 700, marginTop: 0 }}>Join Room</h2>
