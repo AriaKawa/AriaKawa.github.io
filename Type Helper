@@ -1,0 +1,514 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pokémon Type Trainer</title>
+<style>
+  :root{
+    --bg:#0b0f16;--panel:#101827;--muted:#1f2937;--ink:#e5e7eb;--sub:#a7b0bf;--good:#22c55e;--bad:#ef4444;--accent:#60a5fa;
+    --chip:#0e1726;--chip-br:#20314b;--btn:#111827;--btn-br:#1f2a3c;--shadow:0 12px 30px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:radial-gradient(1200px 700px at 50% -100px, #12203a 0%, var(--bg) 60%);color:var(--ink);font:16px/1.4 system-ui,Segoe UI,Roboto,Inter,Arial,sans-serif;}
+  .wrap{max-width:1100px;margin:28px auto;padding:0 16px}
+  header{display:flex;gap:16px;align-items:center;justify-content:space-between;margin-bottom:18px}
+  h1{font-size:clamp(22px,4vw,32px);margin:0;letter-spacing:.3px}
+  .tabs{display:flex;gap:10px;flex-wrap:wrap}
+  .tab{padding:10px 14px;border-radius:12px;background:var(--btn);border:1px solid var(--btn-br);cursor:pointer;user-select:none}
+  .tab[aria-selected="true"]{background:linear-gradient(180deg,#1b2c47,#0e1626);border-color:#2d3c5b;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+  .panel{background:linear-gradient(180deg,#0c1321,#0b1220);border:1px solid #1f2b43;border-radius:18px;box-shadow:var(--shadow);padding:18px}
+  .grid{display:grid;gap:16px}
+  @media(min-width:900px){.grid{grid-template-columns:1.1fr .9fr}}
+  .card{background:var(--panel);border:1px solid #21314a;border-radius:16px;padding:16px}
+  .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .title{font-weight:700;margin-bottom:8px}
+  .subtitle{color:var(--sub);font-size:14px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{padding:6px 10px;border-radius:999px;border:1px solid var(--chip-br);background:var(--chip);font-weight:650;letter-spacing:.2px}
+  .type{--c:#64748b;color:#081018;border:0}
+  .type.badge{color:#0b1220;border:1px solid rgba(0,0,0,.2)}
+  .type[data-active="true"]{outline:2px solid var(--accent)}
+  .type-grid{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:8px}
+  .type-btn{border:1px solid #2a3857;background:#0f172a;color:#dbe7ff;padding:8px 6px;border-radius:10px;font-weight:700;cursor:pointer;user-select:none;text-align:center}
+  .type-btn[aria-pressed="true"]{outline:2px solid #60a5fa}
+  .type-btn[data-state="good"]{box-shadow:inset 0 0 0 999px rgba(34,197,94,.18),0 0 0 1px rgba(34,197,94,.3)}
+  .type-btn[data-state="bad"]{box-shadow:inset 0 0 0 999px rgba(239,68,68,.18),0 0 0 1px rgba(239,68,68,.3)}
+  .kpi{display:flex;gap:10px;flex-wrap:wrap}
+  .pill{padding:8px 10px;border-radius:12px;border:1px solid #27344f;background:#0f1729}
+  .pill b{font-size:18px}
+  .btn{padding:10px 14px;border-radius:12px;border:1px solid #2b3a59;background:#0f172a;color:#e5edff;cursor:pointer;font-weight:700}
+  .btn:active{transform:translateY(1px)}
+  .btn.primary{background:linear-gradient(180deg,#1d335c,#10203d);border-color:#345082}
+  .btn.ghost{background:transparent}
+  .notice{font-size:14px;color:#b7c2d9}
+  .answer{padding:10px 12px;border-radius:12px}
+  .answer.good{background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.35)}
+  .answer.bad{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.35)}
+  .footer{margin-top:14px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+  .hidden{display:none}
+  .sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+  /* Type colors (approximate) */
+  .t-Normal{--c:#A8A77A}.t-Fire{--c:#EE8130}.t-Water{--c:#6390F0}.t-Electric{--c:#F7D02C}.t-Grass{--c:#7AC74C}.t-Ice{--c:#96D9D6}.t-Fighting{--c:#C22E28}.t-Poison{--c:#A33EA1}.t-Ground{--c:#E2BF65}.t-Flying{--c:#A98FF3}.t-Psychic{--c:#F95587}.t-Bug{--c:#A6B91A}.t-Rock{--c:#B6A136}.t-Ghost{--c:#735797}.t-Dragon{--c:#6F35FC}.t-Dark{--c:#705746}.t-Steel{--c:#B7B7CE}.t-Fairy{--c:#D685AD}
+  .type.badge{background:var(--c)}
+  .type-btn{background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(0,0,0,.08)), var(--c);color:#081018;border-color:rgba(0,0,0,.2)}
+
+  .flex{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .grow{flex:1}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Pokémon Type Trainer</h1>
+      <div class="tabs" role="tablist" aria-label="Modes">
+        <button class="tab" role="tab" aria-selected="true" data-mode="weak">Pick All Weaknesses</button>
+        <button class="tab" role="tab" aria-selected="false" data-mode="mult">Multiplier Quiz</button>
+        <button class="tab" role="tab" aria-selected="false" data-mode="custom">Custom Types</button>
+      </div>
+    </header>
+
+    <div class="grid">
+      <section class="panel card" id="left">
+        <div class="title">Prompt</div>
+        <div id="promptArea" class="subtitle"></div>
+
+        <div class="row" id="defenderArea" aria-live="polite" style="margin-top:10px"></div>
+
+        <div id="typePicker" class="type-grid" style="margin-top:14px"></div>
+
+        <div class="footer">
+          <div class="kpi">
+            <div class="pill">Score: <b id="score">0</b></div>
+            <div class="pill">Streak: <b id="streak">0</b></div>
+            <div class="pill">Best: <b id="best">0</b></div>
+          </div>
+          <div class="flex">
+            <button class="btn ghost" id="skipBtn">Skip ↷</button>
+            <button class="btn primary" id="checkBtn">Check ✓</button>
+            <button class="btn" id="nextBtn" disabled>Next ▶</button>
+          </div>
+        </div>
+        <div id="feedback" class="answer hidden" role="status" aria-live="polite"></div>
+      </section>
+
+      <aside class="panel card" id="right">
+        <div class="title">Settings</div>
+        <div class="subtitle">Choose what we quiz you on.</div>
+
+        <div class="card" style="margin-top:10px">
+          <div class="title" style="margin-bottom:4px">Roster</div>
+          <div class="row">
+            <label><input type="radio" name="roster" value="pokemon" checked> Random Pokémon</label>
+            <label><input type="radio" name="roster" value="types"> Random Type Pair</label>
+          </div>
+          <div class="notice" style="margin-top:6px">The Pokémon set is a curated sample for practice. You can also pick exact types below.</div>
+        </div>
+
+        <div class="card" style="margin-top:10px">
+          <div class="title" style="margin-bottom:6px">Force Defender Types</div>
+          <div class="chips" id="forceTypes"></div>
+          <div class="notice">Click 1–2 types to lock them in (click again to clear). Use this to drill tough matchups (e.g., <span class="chip type t-Steel badge">Steel</span> + <span class="chip type t-Fairy badge">Fairy</span>).</div>
+        </div>
+
+        <div class="card" style="margin-top:10px">
+          <div class="title" style="margin-bottom:6px">Multiplier Quiz Options</div>
+          <div class="row">
+            <label class="pill"><input type="checkbox" id="includeZero"> Include immunities (×0)</label>
+            <label class="pill"><input type="checkbox" id="allowQuarter"> Include ¼×/4×</label>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:10px">
+          <div class="title" style="margin-bottom:6px">Practice Builder</div>
+          <div class="row">
+            <input id="customName" class="pill grow" placeholder="Nickname (optional): e.g., My Test Mon"/>
+          </div>
+          <div class="row" style="margin-top:6px">
+            <div id="customTypePicker" class="type-grid" style="grid-template-columns:repeat(9,minmax(0,1fr))"></div>
+          </div>
+          <div class="row" style="margin-top:8px">
+            <button class="btn" id="startCustom">Use in next question</button>
+          </div>
+        </div>
+
+        <div class="notice" style="margin-top:10px">Tip: Hit <b>Enter</b> to check, <b>N</b> for next, and number keys select multipliers in that quiz.</div>
+      </aside>
+    </div>
+  </div>
+
+<script>
+// -----------------------------
+// Data: Types + Effectiveness
+// -----------------------------
+const TYPES = [
+  'Normal','Fire','Water','Electric','Grass','Ice','Fighting','Poison','Ground','Flying','Psychic','Bug','Rock','Ghost','Dragon','Dark','Steel','Fairy'
+];
+
+// Attack -> Defend -> multiplier
+// Values are from the modern mainline games (Gen 6+)
+const CHART = {
+  Normal:   {Rock:.5, Steel:.5, Ghost:0},
+  Fire:     {Grass:2, Ice:2, Bug:2, Steel:2, Fire:.5, Water:.5, Rock:.5, Dragon:.5},
+  Water:    {Fire:2, Ground:2, Rock:2, Water:.5, Grass:.5, Dragon:.5},
+  Electric: {Water:2, Flying:2, Electric:.5, Grass:.5, Dragon:.5, Ground:0},
+  Grass:    {Water:2, Ground:2, Rock:2, Fire:.5, Grass:.5, Poison:.5, Flying:.5, Bug:.5, Dragon:.5, Steel:.5},
+  Ice:      {Grass:2, Ground:2, Flying:2, Dragon:2, Fire:.5, Water:.5, Ice:.5, Steel:.5},
+  Fighting: {Normal:2, Ice:2, Rock:2, Dark:2, Steel:2, Poison:.5, Flying:.5, Psychic:.5, Bug:.5, Fairy:.5, Ghost:0},
+  Poison:   {Grass:2, Fairy:2, Poison:.5, Ground:.5, Rock:.5, Ghost:.5, Steel:0},
+  Ground:   {Fire:2, Electric:2, Poison:2, Rock:2, Steel:2, Grass:.5, Bug:.5, Flying:0},
+  Flying:   {Grass:2, Fighting:2, Bug:2, Electric:.5, Rock:.5, Steel:.5},
+  Psychic:  {Fighting:2, Poison:2, Psychic:.5, Steel:.5, Dark:0},
+  Bug:      {Grass:2, Psychic:2, Dark:2, Fire:.5, Fighting:.5, Poison:.5, Flying:.5, Ghost:.5, Steel:.5, Fairy:.5, Rock:.5},
+  Rock:     {Fire:2, Ice:2, Flying:2, Bug:2, Fighting:.5, Ground:.5, Steel:.5},
+  Ghost:    {Psychic:2, Ghost:2, Dark:.5, Normal:0},
+  Dragon:   {Dragon:2, Steel:.5, Fairy:0},
+  Dark:     {Psychic:2, Ghost:2, Fighting:.5, Dark:.5, Fairy:.5},
+  Steel:    {Ice:2, Rock:2, Fairy:2, Fire:.5, Water:.5, Electric:.5, Steel:.5},
+  Fairy:    {Fighting:2, Dragon:2, Dark:2, Fire:.5, Poison:.5, Steel:.5}
+};
+
+// Helper: get multiplier of one attack type vs 1 or 2 defender types
+function mult(attack, defenders){
+  const arr = defenders.filter(Boolean);
+  let m = 1;
+  for(const d of arr){
+    const row = CHART[attack] || {};
+    m *= (row[d] ?? 1);
+  }
+  return m;
+}
+
+// -----------------------------
+// Sample Pokémon roster (practice-friendly variegated set)
+// -----------------------------
+const ROSTER = [
+  ['Charizard',['Fire','Flying']],
+  ['Gyarados',['Water','Flying']],
+  ['Gengar',['Ghost','Poison']],
+  ['Tyranitar',['Rock','Dark']],
+  ['Scizor',['Bug','Steel']],
+  ['Dragonite',['Dragon','Flying']],
+  ['Lucario',['Fighting','Steel']],
+  ['Togekiss',['Fairy','Flying']],
+  ['Sableye',['Dark','Ghost']],
+  ['Excadrill',['Ground','Steel']],
+  ['Swampert',['Water','Ground']],
+  ['Ferrothorn',['Grass','Steel']],
+  ['Mamoswine',['Ice','Ground']],
+  ['Rotom-Wash',['Electric','Water']],
+  ['Hydreigon',['Dark','Dragon']],
+  ['Aegislash',['Steel','Ghost']],
+  ['Marowak (Alola)',['Fire','Ghost']],
+  ['Gliscor',['Ground','Flying']],
+  ['Heatran',['Fire','Steel']],
+  ['Skarmory',['Steel','Flying']],
+  ['Haxorus',['Dragon']],
+  ['Greninja',['Water','Dark']],
+  ['Chandelure',['Ghost','Fire']],
+  ['Rillaboom',['Grass']],
+  ['Toxapex',['Water','Poison']],
+  ['Corviknight',['Steel','Flying']],
+  ['Dragapult',['Dragon','Ghost']]
+];
+
+// UI refs
+const promptArea = document.getElementById('promptArea');
+const defenderArea = document.getElementById('defenderArea');
+const typePicker = document.getElementById('typePicker');
+const feedback = document.getElementById('feedback');
+const scoreEl = document.getElementById('score');
+const streakEl = document.getElementById('streak');
+const bestEl = document.getElementById('best');
+const tabs = document.querySelectorAll('.tab');
+const nextBtn = document.getElementById('nextBtn');
+const checkBtn = document.getElementById('checkBtn');
+const skipBtn = document.getElementById('skipBtn');
+const includeZero = document.getElementById('includeZero');
+const allowQuarter = document.getElementById('allowQuarter');
+
+let MODE = 'weak'; // weak | mult | custom
+let score = 0, streak = 0, best = 0;
+let currentQ = null;
+let forcedTypes = [];
+let pendingCustom = null;
+
+// Build type buttons for main picker
+function buildTypeButtons(container, click){
+  container.innerHTML = '';
+  TYPES.forEach(t=>{
+    const b = document.createElement('button');
+    b.className = `type-btn t-${t}`;
+    b.textContent = t;
+    b.setAttribute('data-type', t);
+    b.addEventListener('click', ()=> click(t,b));
+    container.appendChild(b);
+  });
+}
+
+// Build chips for force-select
+const forceTypes = document.getElementById('forceTypes');
+TYPES.forEach(t=>{
+  const c = document.createElement('button');
+  c.className = `chip type badge t-${t}`;
+  c.textContent = t;
+  c.setAttribute('data-type', t);
+  c.addEventListener('click', ()=>{
+    const i = forcedTypes.indexOf(t);
+    if(i>=0){ forcedTypes.splice(i,1); c.style.outline=''; }
+    else if(forcedTypes.length<2){ forcedTypes.push(t); c.style.outline='2px solid #60a5fa'; }
+  });
+  forceTypes.appendChild(c);
+});
+
+// Custom type picker (for Practice Builder)
+const customTypePicker = document.getElementById('customTypePicker');
+const selectedCustom = new Set();
+buildTypeButtons(customTypePicker, (t,btn)=>{
+  if(selectedCustom.has(t)) { selectedCustom.delete(t); btn.setAttribute('aria-pressed','false'); btn.style.outline=''; }
+  else if(selectedCustom.size<2){ selectedCustom.add(t); btn.setAttribute('aria-pressed','true'); btn.style.outline='2px solid #60a5fa'; }
+});
+
+document.getElementById('startCustom').addEventListener('click', ()=>{
+  if(selectedCustom.size===0){ alert('Pick 1–2 types for your custom defender.'); return; }
+  const name = document.getElementById('customName').value.trim() || 'Custom Defender';
+  pendingCustom = { name, types: [...selectedCustom] };
+  newQuestion();
+});
+
+// Main picker (for answers). Different behavior per mode.
+let selectedTypes = new Set();
+function onAnswerTypeClick(t, btn){
+  if(MODE==='weak'){
+    // multi-select: toggle
+    const on = selectedTypes.has(t);
+    if(on){ selectedTypes.delete(t); btn.setAttribute('aria-pressed','false'); btn.dataset.state=''; }
+    else { selectedTypes.add(t); btn.setAttribute('aria-pressed','true'); btn.dataset.state=''; }
+  } else if(MODE==='mult'){
+    // choosing an attack type (single), then multiplier via quick-keys (or UI chips)
+    selectedTypes.clear();
+    document.querySelectorAll('#typePicker .type-btn').forEach(b=>{ b.setAttribute('aria-pressed','false'); b.style.outline=''; });
+    selectedTypes.add(t);
+    btn.setAttribute('aria-pressed','true'); btn.style.outline='2px solid #60a5fa';
+  } else if(MODE==='custom'){
+    // same as weak mode (multi)
+    const on = selectedTypes.has(t);
+    if(on){ selectedTypes.delete(t); btn.setAttribute('aria-pressed','false'); btn.dataset.state=''; }
+    else { selectedTypes.add(t); btn.setAttribute('aria-pressed','true'); btn.dataset.state=''; }
+  }
+}
+
+buildTypeButtons(typePicker, onAnswerTypeClick);
+
+// Tabs (modes)
+for(const t of tabs){
+  t.addEventListener('click', ()=>{
+    tabs.forEach(x=>x.setAttribute('aria-selected','false'));
+    t.setAttribute('aria-selected','true');
+    MODE = t.dataset.mode;
+    newQuestion();
+  });
+}
+
+document.querySelectorAll('input[name="roster"]').forEach(r=>{
+  r.addEventListener('change', ()=> newQuestion());
+});
+
+skipBtn.addEventListener('click', ()=> revealAndExplain(false));
+checkBtn.addEventListener('click', ()=> grade());
+nextBtn.addEventListener('click', ()=> newQuestion());
+
+// Keyboard shortcuts
+window.addEventListener('keydown', (e)=>{
+  if(e.key==='Enter') grade();
+  if(e.key.toLowerCase()==='n') newQuestion();
+  if(MODE==='mult'){
+    const map = { '1':0, '2':0.25, '3':0.5, '4':1, '5':2, '6':4 };
+    if(map[e.key]!=null){ currentQ && (currentQ.choiceMultiplier = map[e.key]); grade(); }
+  }
+});
+
+function rand(a){ return a[Math.floor(Math.random()*a.length)] }
+
+function chooseDefender(){
+  // Forced types override roster
+  if(forcedTypes.length){
+    const name = forcedTypes.join(' / ');
+    return { name, types:[...forcedTypes] };
+  }
+  const rosterMode = document.querySelector('input[name="roster"]:checked').value;
+  if(pendingCustom){ const out = pendingCustom; pendingCustom = null; return out; }
+  if(rosterMode==='types'){
+    const roll = Math.random();
+    if(roll<0.2){ return { name:'Random Mono', types:[rand(TYPES)] } }
+    // Random dual
+    let t1 = rand(TYPES), t2 = rand(TYPES);
+    while(t2===t1) t2 = rand(TYPES);
+    return { name:`${t1} / ${t2}`, types:[t1,t2] };
+  } else {
+    const [name, types] = rand(ROSTER);
+    return { name, types };
+  }
+}
+
+function setDefenderUI(def){
+  defenderArea.innerHTML = '';
+  const title = document.createElement('div');
+  title.className = 'title';
+  title.textContent = def.name;
+  defenderArea.appendChild(title);
+
+  const chips = document.createElement('div');
+  chips.className='chips';
+  def.types.forEach(t=>{
+    const c=document.createElement('span');
+    c.className=`chip type badge t-${t}`;
+    c.textContent=t;
+    chips.appendChild(c);
+  });
+  defenderArea.appendChild(chips);
+}
+
+function resetAnswerUI(){
+  selectedTypes.clear();
+  document.querySelectorAll('#typePicker .type-btn').forEach(b=>{
+    b.setAttribute('aria-pressed','false');
+    b.dataset.state='';
+    b.style.outline='';
+  });
+  feedback.className='answer hidden';
+  feedback.textContent='';
+  nextBtn.disabled=true;
+}
+
+function newQuestion(){
+  resetAnswerUI();
+
+  const def = chooseDefender();
+  currentQ = { def, correct:new Set(), mode:MODE };
+  setDefenderUI(def);
+
+  if(MODE==='weak' || MODE==='custom'){
+    promptArea.textContent = 'Select all attack types that are super-effective (×2 or ×4) against this defender.';
+    // Compute correct set
+    TYPES.forEach(att=>{
+      const m = mult(att, def.types);
+      if(m>=2) currentQ.correct.add(att);
+    });
+  } else if(MODE==='mult'){
+    // pick a random attack type and ask for the multiplier
+    const attack = rand(TYPES);
+    currentQ.attack = attack;
+    promptArea.innerHTML = `What is the damage multiplier of <span class="chip type badge t-${attack}">${attack}</span> hitting this defender? <span class="subtitle">Select an attack type first (the highlighted one), then press 1–6 for: 0, ¼, ½, 1, 2, 4.</span>`;
+    // Pre-highlight one on click; grading will read currentQ.choiceMultiplier
+  }
+}
+
+function grade(){
+  if(!currentQ) return;
+  if(MODE==='weak' || MODE==='custom'){
+    // evaluate selectedTypes vs correct
+    const sel = new Set(selectedTypes);
+    const correct = currentQ.correct;
+    // mark buttons
+    document.querySelectorAll('#typePicker .type-btn').forEach(b=>{
+      const t = b.dataset.type; 
+      const isCorrect = correct.has(t);
+      const isChosen = sel.has(t);
+      b.dataset.state = isCorrect ? 'good' : (isChosen ? 'bad' : '');
+    });
+    const missed = [...correct].filter(t=>!sel.has(t));
+    const wrong = [...sel].filter(t=>!correct.has(t));
+    const ok = missed.length===0 && wrong.length===0 && correct.size>0;
+    finish(ok, explainWeaknesses(currentQ.def));
+  } else if(MODE==='mult'){
+    const pick = [...selectedTypes][0];
+    if(!pick){ alert('Pick an attack type first.'); return; }
+    if(currentQ.choiceMultiplier==null){
+      // Provide a quick selector if they prefer clicking
+      showMultiplierPicker(pick);
+      return;
+    }
+    const m = mult(pick, currentQ.def.types);
+    const ok = (m===currentQ.choiceMultiplier);
+    finish(ok, `Your answer: <b>${formatMult(currentQ.choiceMultiplier)}</b>. Correct: <b>${formatMult(m)}</b>.`);
+  }
+}
+
+function showMultiplierPicker(pick){
+  const mRow = document.createElement('div');
+  mRow.className='row';
+  const opts = [0, .25, .5, 1, 2, 4];
+  const allowZero = includeZero.checked; 
+  const allowQ = allowQuarter.checked;
+  const filtered = opts.filter(x=> (allowZero || x!==0) && (allowQ || (x!==.25 && x!==4)) );
+  const parts = filtered.map(v=>`<button class="btn" data-m="${v}">${formatMult(v)}</button>`);
+  feedback.className='answer';
+  feedback.innerHTML = `<div class="title">Pick multiplier for <span class="chip type badge t-${pick}">${pick}</span> → ${currentQ.def.types.map(t=>`<span class='chip type badge t-${t}'>${t}</span>`).join(' ')}</div>` + parts.join(' ');
+  filtered.forEach(()=>{});
+  filtered.forEach((v,i)=>{
+    const btn = feedback.querySelectorAll('button')[i];
+    btn.addEventListener('click', ()=>{ currentQ.choiceMultiplier = v; grade(); });
+  });
+}
+
+function formatMult(x){
+  if(x===0) return '×0';
+  if(x===0.25) return '×¼';
+  if(x===0.5) return '×½';
+  return `×${x}`;
+}
+
+function explainWeaknesses(def){
+  const lines=[];
+  const groups={ '4×':[], '2×':[], '½×':[], '¼×':[], '0×':[] };
+  TYPES.forEach(att=>{
+    const m = mult(att, def.types);
+    if(m===4) groups['4×'].push(att);
+    else if(m===2) groups['2×'].push(att);
+    else if(m===0.5) groups['½×'].push(att);
+    else if(m===0.25) groups['¼×'].push(att);
+    else if(m===0) groups['0×'].push(att);
+  });
+  function render(list,label){
+    if(!list.length) return '';
+    return `<div class='row' style='margin:.2rem 0'><b>${label}</b> ${list.map(t=>`<span class="chip type badge t-${t}">${t}</span>`).join(' ')}</div>`
+  }
+  return [
+    `<div class='title'>Effectiveness vs ${def.types.map(t=>`<span class='chip type badge t-${t}'>${t}</span>`).join(' ')}</div>`,
+    render(groups['4×'],'Super-weak (4×):'),
+    render(groups['2×'],'Weak (2×):'),
+    render(groups['½×'],'Resist (½×):'),
+    render(groups['¼×'],'Strong resist (¼×):'),
+    render(groups['0×'],'Immune (0×):')
+  ].join('');
+}
+
+function finish(correct, detailHTML){
+  if(correct){ score+=10; streak+=1; best=Math.max(best,streak); feedback.className='answer good'; feedback.innerHTML = 'Correct! 🎉 ' + detailHTML; }
+  else { score=Math.max(0,score-2); streak=0; feedback.className='answer bad'; feedback.innerHTML = 'Not quite. ' + detailHTML; }
+  scoreEl.textContent=score; streakEl.textContent=streak; bestEl.textContent=best;
+  nextBtn.disabled=false;
+}
+
+function revealAndExplain(isRight){
+  if(MODE==='weak' || MODE==='custom'){
+    // mark correct
+    document.querySelectorAll('#typePicker .type-btn').forEach(b=>{
+      const t=b.dataset.type; b.dataset.state = currentQ.correct.has(t)?'good':'';
+    });
+    finish(false, explainWeaknesses(currentQ.def));
+  } else if(MODE==='mult'){
+    const chosen = [...selectedTypes][0];
+    const m = chosen ? mult(chosen, currentQ.def.types) : '—';
+    finish(false, `Correct multiplier would be <b>${formatMult(m)}</b> for your current selection.`);
+  }
+}
+
+// Initial
+newQuestion();
+</script>
+</body>
+</html>
