@@ -24,8 +24,12 @@
     html,body{height:100%}
     body{
       margin:0; font-family:ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
-      color:var(--text); background:
-        linear-gradient(165deg, #1d0518 0%, #12040d 45%, #080109 100%);
+      color:var(--text);
+      background-color:#10030f;
+      background:
+        radial-gradient(90% 140% at 0% 50%, rgba(123, 45, 99, 0.32), rgba(16, 3, 15, 0)),
+        radial-gradient(90% 140% at 100% 50%, rgba(76, 34, 122, 0.3), rgba(16, 3, 15, 0)),
+        linear-gradient(180deg, #160416 0%, #080009 100%);
       display:flex; flex-direction:column; align-items:center; gap:20px; padding:24px;
     }
     h1{font-size:clamp(20px, 2.4vw, 28px); margin:0 0 8px}
