@@ -320,6 +320,42 @@
       });
     }
 
+    async function imageElementToDataUrl(img){
+      if(!img) return '';
+      const src = img.currentSrc || img.src;
+      if(!src) return '';
+      if(src.startsWith('data:')){
+        return src;
+      }
+      try{
+        const response = await fetch(src);
+        const blob = await response.blob();
+        return await new Promise((resolve, reject)=>{
+          const reader = new FileReader();
+          reader.onloadend = ()=>resolve(reader.result?.toString() || '');
+          reader.onerror = ()=>reject(new Error('Failed to read image data.'));
+          reader.readAsDataURL(blob);
+        });
+      }catch(err){
+        try{
+          if(img.naturalWidth && img.naturalHeight){
+            const canvas = document.createElement('canvas');
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            const ctx = canvas.getContext('2d');
+            if(ctx){
+              ctx.drawImage(img, 0, 0);
+              return canvas.toDataURL('image/png');
+            }
+          }
+        }catch(innerErr){
+          console.error('Unable to draw image for screenshot', innerErr);
+        }
+        console.error('Unable to inline image for screenshot', err);
+        return '';
+      }
+    }
+
     async function downloadGridAsImage(){
       if(!gridWrap || !screenshotButton) return;
       screenshotButton.disabled = true;
@@ -337,6 +373,17 @@
         clone.querySelectorAll('input[type="file"]').forEach(input=>input.remove());
         clone.style.width = `${width}px`;
         clone.style.maxWidth = 'none';
+
+        const originalImages = Array.from(gridWrap.querySelectorAll('img.preview'));
+        const cloneImages = Array.from(clone.querySelectorAll('img.preview'));
+        await Promise.all(cloneImages.map(async (cloneImg, index)=>{
+          const original = originalImages[index];
+          if(!original) return;
+          const dataUrl = await imageElementToDataUrl(original);
+          if(dataUrl){
+            cloneImg.src = dataUrl;
+          }
+        }));
         const wrapper = document.createElement('div');
         wrapper.appendChild(clone);
 
