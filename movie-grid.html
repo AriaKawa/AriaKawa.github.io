@@ -334,6 +334,7 @@
         const height = Math.ceil(gridWrap.offsetHeight);
 
         const clone = gridWrap.cloneNode(true);
+        clone.querySelectorAll('input[type="file"]').forEach(input=>input.remove());
         clone.style.width = `${width}px`;
         clone.style.maxWidth = 'none';
         const wrapper = document.createElement('div');
