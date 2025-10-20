@@ -40,14 +40,14 @@
     .grid-wrap{width:min(92vw, 920px);}
     .grid{
       background:var(--card);
-      display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; padding:10px; border-radius:16px; border:1px solid var(--line);
+      display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; padding:10px; border-radius:16px; border:1px solid #000;
       box-shadow:0 12px 40px rgba(0,0,0,.35);
     }
 
     /* Each cell maintains a square via aspect-ratio */
     .cell{
       position:relative; aspect-ratio:1/1; border-radius:12px; overflow:hidden; border:1px dashed #2a3a54;
-      background:linear-gradient(135deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      background:linear-gradient(135deg, #c0c0c0 0%, #000000 100%);
       display:grid; place-items:center; color:var(--muted);
     }
     .cell:hover{border-color:#3c5278}
