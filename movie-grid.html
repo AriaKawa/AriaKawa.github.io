@@ -260,8 +260,16 @@
       ;['dragenter','dragover'].forEach(evt=>{
         cell.addEventListener(evt, (e)=>{ e.preventDefault(); cell.style.outline = '2px solid var(--ring)'; });
       });
-      ;['dragleave','drop'].forEach(evt=>{
-        cell.addEventListener(evt, (e)=>{ e.preventDefault(); cell.style.outline = ''; });
+      cell.addEventListener('dragleave', (e)=>{
+        e.preventDefault();
+        const related = e.relatedTarget;
+        if(!related || !cell.contains(related)){
+          cell.style.outline = '';
+        }
+      });
+      cell.addEventListener('drop', (e)=>{
+        e.preventDefault();
+        cell.style.outline = '';
       });
       cell.addEventListener('drop', (e)=>{
         const file = e.dataTransfer?.files?.[0];
