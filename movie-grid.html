@@ -6,7 +6,6 @@
   <title>3×3 Image Grid Uploader</title>
   <style>
     :root{
-      --bg:#12040d;        /* page background */
       --card:#1c0a14;      /* grid background */
       --line:#3a1827;      /* grid line */
       --ring:#ff9fd7;      /* focus ring */
@@ -30,28 +29,6 @@
     .sub{color:var(--muted); margin:0 0 8px}
 
     .toolbar{display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:center}
-    .search{width:min(92vw, 920px); background:rgba(17,21,27,.75); border:1px solid var(--line); border-radius:14px; padding:14px 18px; box-shadow:0 20px 40px rgba(0,0,0,.35); display:flex; flex-direction:column; gap:10px}
-    .search-row{display:grid; gap:12px; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr))}
-    .field{display:flex; flex-direction:column; gap:6px; font-size:14px; color:var(--muted)}
-    .field span{font-weight:600; text-transform:uppercase; letter-spacing:.05em; font-size:12px}
-    .field input{background:var(--btn); color:var(--text); border:1px solid var(--line); border-radius:10px; padding:10px 12px; font-size:15px}
-    .field input:focus-visible{outline:2px solid var(--ring); outline-offset:2px}
-    .field.query{grid-column:span 2}
-    .query-input{display:flex; gap:10px}
-    .query-input input{flex:1}
-    .button.inline{display:inline-flex; align-items:center; justify-content:center; white-space:nowrap; padding:0 18px; height:42px}
-    @media(max-width:720px){
-      .field.query{grid-column:span 1}
-      .query-input{flex-direction:column}
-      .button.inline{width:100%; height:44px}
-    }
-    .results{width:min(92vw, 920px); display:grid; grid-template-columns:repeat(auto-fill, minmax(160px, 1fr)); gap:12px}
-    .results[aria-busy="true"]{opacity:.7}
-    .result-card{border:1px solid var(--line); background:var(--card); border-radius:12px; overflow:hidden; display:flex; flex-direction:column; cursor:pointer; padding:0; text-align:left; color:var(--text); box-shadow:0 12px 30px rgba(0,0,0,.25); transition:transform .1s ease, border-color .1s ease}
-    .result-card:hover{transform:translateY(-2px); border-color:var(--ring)}
-    .result-card img{width:100%; height:140px; object-fit:cover}
-    .result-info{padding:10px 12px; font-size:13px; color:var(--muted); line-height:1.4}
-    .result-info b{display:block; color:var(--text); margin-bottom:4px; font-size:14px}
     button, label.button{
       border:1px solid var(--line); background:var(--btn); color:var(--text);
       padding:10px 14px; border-radius:10px; cursor:pointer; font-weight:600; 
@@ -100,7 +77,6 @@
     /* Keyboard focus style for cells */
     .cell:focus-within{outline:2px solid var(--ring); outline-offset:2px}
 
-    .search-hint{font-size:13px; color:var(--muted); text-align:center}
   </style>
 </head>
 <body>
@@ -120,29 +96,6 @@
       Reset grid
     </button>
   </div>
-
-  <form id="imageSearch" class="search" aria-label="Google Image Search">
-    <div class="search-row">
-      <label class="field" title="Google Custom Search API key">
-        <span>API key</span>
-        <input type="text" id="apiKey" name="apiKey" autocomplete="off" placeholder="Enter your API key" required />
-      </label>
-      <label class="field" title="Google Custom Search Engine ID (cx)">
-        <span>Search engine ID</span>
-        <input type="text" id="searchCx" name="searchCx" autocomplete="off" placeholder="Enter your CX" required />
-      </label>
-      <label class="field query" title="Search Google Images">
-        <span>Search images</span>
-        <div class="query-input">
-          <input type="text" id="searchQuery" name="searchQuery" placeholder="e.g. cyberpunk city" required />
-          <button type="submit" class="button inline">Search</button>
-        </div>
-      </label>
-    </div>
-    <p class="search-hint">Use a Google Custom Search API key and custom search engine (set to image search). Click a result to drop it into the grid.</p>
-  </form>
-
-  <section id="searchResults" class="results" aria-live="polite" aria-busy="false"></section>
 
   <main class="grid-wrap">
     <section class="grid" id="grid" aria-label="3 by 3 image grid">
@@ -333,95 +286,6 @@
     });
 
     document.addEventListener('paste', handlePasteEvent);
-
-    const searchForm = document.getElementById('imageSearch');
-    const searchResults = document.getElementById('searchResults');
-    const apiKeyInput = document.getElementById('apiKey');
-    const cxInput = document.getElementById('searchCx');
-    const queryInput = document.getElementById('searchQuery');
-
-    function getTargetCell(){
-      return document.activeElement?.closest?.('.cell') || cells.find(cell=>!cell.dataset.filled) || cells[0];
-    }
-
-    function escapeHtml(value){
-      return String(value)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-    }
-
-    function renderResults(items){
-      if(!searchResults) return;
-      searchResults.innerHTML = '';
-      items.forEach((item, index)=>{
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'result-card';
-        const hostname = item.image?.contextLink ? (()=>{ try{ return new URL(item.image.contextLink).hostname; }catch{ return ''; } })() : '';
-        const title = item.title || 'Untitled image';
-        const imageUrl = item.link || '';
-        button.innerHTML = `
-          <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(title)}">
-          <div class="result-info">
-            <b>${escapeHtml(title)}</b>
-            ${hostname ? `<span>${escapeHtml(hostname)}</span>` : ''}
-          </div>
-        `;
-        button.addEventListener('click', ()=>{
-          const target = getTargetCell();
-          if(target){
-            setCellImage(target, { src: imageUrl, alt: title });
-            target.focus();
-          }
-        });
-        searchResults.appendChild(button);
-      });
-    }
-
-    function setStatus(message){
-      if(searchResults){
-        searchResults.innerHTML = `<div class="result-info">${message}</div>`;
-      }
-    }
-
-    if(searchForm){
-      searchForm.addEventListener('submit', async (e)=>{
-        e.preventDefault();
-        const key = apiKeyInput.value.trim();
-        const cx = cxInput.value.trim();
-        const query = queryInput.value.trim();
-        if(!key || !cx || !query){
-          setStatus('Please provide API key, search engine ID, and a query.');
-          return;
-        }
-        const params = new URLSearchParams({ key, cx, searchType: 'image', q: query });
-        searchForm.setAttribute('aria-busy', 'true');
-        searchResults?.setAttribute?.('aria-busy', 'true');
-        setStatus('Searching for images…');
-        try{
-          const response = await fetch(`https://customsearch.googleapis.com/customsearch/v1?${params.toString()}`);
-          if(!response.ok){
-            throw new Error(`Request failed with status ${response.status}`);
-          }
-          const data = await response.json();
-          const items = data.items || [];
-          if(!items.length){
-            setStatus('No image results found. Adjust your search terms and try again.');
-            return;
-          }
-          renderResults(items);
-        }catch(err){
-          console.error(err);
-          setStatus('Image search failed. Check your credentials and network connection.');
-        }finally{
-          searchForm.setAttribute('aria-busy', 'false');
-          searchResults?.setAttribute?.('aria-busy', 'false');
-        }
-      });
-    }
   </script>
 </body>
 </html>
