@@ -154,20 +154,97 @@
     display:flex;align-items:center;justify-content:center;flex-direction:column;color:#a8c0e0;
     box-shadow:inset 0 6px 14px rgba(0,0,0,.35)
   }
-  .hand{display:flex;gap:12px;min-height:132px;align-items:flex-end;flex-wrap:wrap}
-  .hand .card-ui{
-    width:190px;min-height:120px;border-radius:16px;padding:12px 12px;border:1px solid var(--line);
-    background:linear-gradient(180deg,#141e32,#0f1727);
-    display:flex;flex-direction:column;gap:8px;cursor:pointer;
-    box-shadow:0 14px 28px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.04);
-    transform:translateZ(0); transition:transform .12s ease, box-shadow .15s ease, border-color .15s ease;
+  .hand{
+    display:flex;gap:18px;min-height:160px;align-items:flex-end;flex-wrap:wrap;justify-content:center;
+    perspective:1400px;perspective-origin:center bottom;position:relative;
   }
-  .hand .card-ui:hover{ transform:translateY(-2px) }
-  .card-ui .name{font-weight:900;display:flex;align-items:center;justify-content:space-between}
-  .card-ui .text{color:#c7d2fe;font-size:12px;opacity:.96}
-  .card-ui .tags{font-size:11px;color:#93c5fd}
-  .card-ui.selected{
-    outline:2px solid var(--accent); box-shadow:0 16px 34px rgba(125,211,252,.28)
+  .card-ui{
+    --card-width:200px; --card-height:280px; --card-padding:18px;
+    --gem-size:64px; --icon-size:56px; --name-size:18px; --text-size:13px; --tag-size:11px;
+    --card-accent:var(--accent);
+    width:var(--card-width);height:var(--card-height);border-radius:22px;position:relative;
+    display:flex;align-items:stretch;justify-content:center;pointer-events:none;
+    transform-origin:center calc(100% - 18px);
+    transition:transform .22s cubic-bezier(.16,1,.3,1), box-shadow .22s ease, filter .22s ease;
+    filter:drop-shadow(0 18px 38px rgba(0,0,0,.42));
+  }
+  .card-ui::before{
+    content:"";position:absolute;inset:-4px;border-radius:inherit;z-index:-1;
+    background:radial-gradient(circle at 50% 10%, color-mix(in srgb, var(--card-accent) 60%, transparent) 0%, transparent 55%);
+    opacity:.55;filter:blur(0.4px);
+  }
+  .card-frame{
+    position:relative;width:100%;border-radius:inherit;padding:var(--card-padding);
+    background:
+      radial-gradient(180% 120% at 50% -20%, rgba(255,255,255,.16), transparent 60%),
+      radial-gradient(circle at 50% 0%, rgba(255,255,255,.08), transparent 70%),
+      linear-gradient(180deg,#152034,#0c1423 68%,#0f1828);
+    border:1px solid rgba(255,255,255,.05);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.22), inset 0 -2px 12px rgba(0,0,0,.55);
+    display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:12px;
+    pointer-events:auto;text-align:center;
+  }
+  .card-frame::after{
+    content:"";position:absolute;inset:10px;border-radius:18px;
+    background:linear-gradient(180deg,rgba(255,255,255,.04),transparent);
+    mix-blend-mode:screen;pointer-events:none;opacity:.55;
+  }
+  .card-gem{
+    width:var(--gem-size);height:var(--gem-size);border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-weight:900;font-size:calc(var(--name-size) + 6px);color:#06121f;letter-spacing:.02em;
+    background:
+      radial-gradient(circle at 30% 30%, rgba(255,255,255,.85), rgba(255,255,255,.18) 60%),
+      linear-gradient(180deg,var(--card-accent), color-mix(in srgb, var(--card-accent) 50%, #0a1320));
+    box-shadow:0 14px 28px rgba(0,0,0,.55), inset 0 2px 0 rgba(255,255,255,.72), inset 0 -4px 12px rgba(0,0,0,.48);
+    text-shadow:0 1px 0 rgba(255,255,255,.35);
+  }
+  .card-icon{
+    font-size:var(--icon-size);filter:drop-shadow(0 6px 8px rgba(0,0,0,.35));
+  }
+  .card-name{
+    font-weight:900;font-size:var(--name-size);letter-spacing:.04em;text-transform:uppercase;
+    text-shadow:0 3px 12px rgba(0,0,0,.45);
+  }
+  .card-rule{
+    font-size:var(--text-size);color:#e0ecff;background:linear-gradient(180deg,rgba(15,23,42,.75),rgba(15,23,42,.35));
+    border-radius:14px;padding:12px;line-height:1.35;box-shadow:inset 0 1px 0 rgba(255,255,255,.12), inset 0 -1px 8px rgba(0,0,0,.45);
+    min-height:92px;display:flex;align-items:center;justify-content:center;
+  }
+  .card-footer{
+    margin-top:auto;width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;
+    font-size:var(--tag-size);color:#cfe0ff;text-transform:uppercase;letter-spacing:.08em;
+  }
+  .card-footer-left{
+    display:flex;align-items:center;gap:6px;
+  }
+  .card-footer-left:empty{display:none}
+  .card-owner-dot{
+    width:14px;height:14px;border-radius:50%;box-shadow:0 0 0 2px rgba(8,12,20,.85), inset 0 0 6px rgba(255,255,255,.35);
+  }
+  .card-owner{font-weight:800;font-size:var(--tag-size);letter-spacing:.06em;color:#e8f1ff}
+  .card-tags{font-weight:600;opacity:.9}
+  .card-mini{
+    --card-width:160px; --card-height:220px; --card-padding:14px;
+    --gem-size:52px; --icon-size:44px; --name-size:16px; --text-size:12px; --tag-size:10px;
+    filter:drop-shadow(0 12px 26px rgba(0,0,0,.38));
+  }
+  .card-mini .card-rule{min-height:76px}
+  .card-mini:hover{transform:none;box-shadow:none}
+  .card-hand{
+    cursor:pointer;pointer-events:auto;
+    transform:translateZ(0) rotateX(2deg);
+  }
+  .card-hand:hover,
+  .card-hand:focus-visible{
+    transform:translateY(-28px) scale(1.12) rotateX(10deg);
+    box-shadow:0 26px 48px rgba(0,0,0,.55), 0 0 0 2px color-mix(in srgb, var(--card-accent) 45%, transparent);
+    z-index:10;filter:drop-shadow(0 24px 48px rgba(0,0,0,.55));
+  }
+  .card-hand:focus-visible{outline:none}
+  .card-hand.selected{
+    transform:translateY(-34px) scale(1.14) rotateX(12deg);
+    box-shadow:0 30px 60px rgba(0,0,0,.6), 0 0 0 3px color-mix(in srgb, var(--card-accent) 55%, transparent);
+    z-index:12;filter:drop-shadow(0 30px 60px rgba(0,0,0,.6));
   }
 
   .meter{display:flex;gap:10px;flex-wrap:wrap}
@@ -375,6 +452,36 @@ function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random
 function colorFor(owner){ if(!owner) return 'var(--gray)'; return ROLES.find(r=>r.id===owner)?.color||'var(--gray)'; }
 function toast(msg){ $('eventText').textContent = msg; }
 
+function createCardElement(card, options={}){
+  const {
+    variant='mini',
+    meta,
+    ownerColor=null,
+    ownerName='',
+    showOwnerDot=false
+  } = options;
+  const el=document.createElement('div');
+  const classes=['card-ui'];
+  classes.push(variant==='hand'?'card-hand':'card-mini');
+  el.className=classes.join(' ');
+  if(ownerColor) el.style.setProperty('--card-accent', ownerColor);
+
+  const infText=`${card.inf>=0?'+':''}${card.inf}`;
+  const footerText = meta || `Influence • ${infText}`;
+  const ownerBlock=(showOwnerDot||ownerName)
+    ? `<div class="card-footer-left">${showOwnerDot?`<span class="card-owner-dot" style="background:${ownerColor||'var(--gray)'}"></span>`:''}${ownerName?`<span class="card-owner">${ownerName}</span>`:''}</div>`
+    : '<div class="card-footer-left"></div>';
+
+  el.innerHTML=`<div class="card-frame">
+      <div class="card-gem">${infText}</div>
+      <div class="card-icon" aria-hidden="true">${card.icon}</div>
+      <div class="card-name">${card.name}</div>
+      <div class="card-rule">${card.text}</div>
+      <div class="card-footer">${ownerBlock}<span class="card-tags">${footerText}</span></div>
+    </div>`;
+  return el;
+}
+
 /* =========
    Screens
    ========= */
@@ -416,11 +523,12 @@ function renderDeckPreview(){
   const r=ROLES.find(x=>x.id===selectedRoleId);
   const wrap=$('deckPreview'); wrap.innerHTML='';
   r.starter.forEach(c=>{
-    const el=document.createElement('div');
-    el.className='card-ui';
-    el.innerHTML=`<div class="name"><span>${c.icon} ${c.name}</span></div>
-                  <div class="text">${c.text}</div>
-                  <div class="tags">Influence: +${c.inf}</div>`;
+    const inf=`${c.inf>=0?'+':''}${c.inf}`;
+    const el=createCardElement(c,{
+      variant:'mini',
+      ownerColor:r.color,
+      meta:`Starter • ${inf} Influence`
+    });
     wrap.appendChild(el);
   });
 }
@@ -483,15 +591,19 @@ $('btnEnd').onclick=()=>{
 function renderHand(){
   const hand=$('hand'); hand.innerHTML='';
   state.hand.forEach((c,idx)=>{
-    const el=document.createElement('div'); el.className='card-ui';
+    const el=createCardElement(c,{
+      variant:'hand',
+      ownerColor:colorFor(c.owner||state.role)
+    });
+    el.tabIndex=0;
     if(state.selectedCardIndex===idx) el.classList.add('selected');
-    el.innerHTML=`<div class="name">${c.icon} ${c.name}</div>
-                  <div class="text">${c.text}</div>
-                  <div class="tags">Influence: +${c.inf}</div>`;
     el.onclick=()=>{
       state.selectedCardIndex = state.selectedCardIndex===idx?null:idx;
       document.body.classList.toggle('aiming', state.selectedCardIndex!==null);
       renderHand();
+    };
+    el.onkeydown=(ev)=>{
+      if(ev.key==='Enter'||ev.key===' '){ ev.preventDefault(); el.onclick(); }
     };
     hand.appendChild(el);
   });
@@ -729,14 +841,15 @@ function openDistrictPanel(idx){
   $('districtOwner').textContent='owner: '+(ROLES.find(r=>r.id===d.owner)?.name||'—');
   const list=$('districtCards'); list.innerHTML='';
   d.cards.slice().reverse().forEach(c=>{
-    const el=document.createElement('div'); el.className='card-ui';
     const who=ROLES.find(r=>r.id===c.owner);
-    el.innerHTML=`<div class="name">
-                    <span>${c.icon} ${c.name}</span>
-                    <span class="dot" style="background:${who?who.color:'var(--gray)'}"></span>
-                  </div>
-                  <div class="text">${c.text}</div>
-                  <div class="tags">Influence here: +${c.inf}</div>`;
+    const inf=`${c.inf>=0?'+':''}${c.inf}`;
+    const el=createCardElement(c,{
+      variant:'mini',
+      ownerColor:who?who.color:null,
+      ownerName:who?who.name:'Unclaimed',
+      showOwnerDot:true,
+      meta:`Influence • ${inf}`
+    });
     list.appendChild(el);
   });
 }
