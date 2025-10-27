@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Education | Aria &amp; Friends Project Vault</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-base: #050311;
+            --bg-alt: #120a2d;
+            --text-primary: #f5f3ff;
+            --text-muted: #bcb4da;
+            --accent-pink: #f7a7da;
+            --accent-blue: #93c6ff;
+            --accent-lavender: #c2b7ff;
+            --card-gradient: linear-gradient(155deg, rgba(23, 16, 52, 0.92), rgba(10, 6, 27, 0.88));
+            --border-gradient: linear-gradient(140deg, rgba(244, 170, 219, 0.8), rgba(147, 198, 255, 0.8));
+            --radius-lg: 28px;
+            --radius-sm: 14px;
+            --shadow-strong: 0 35px 65px rgba(8, 4, 22, 0.7);
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            min-height: 100vh;
+            font-family: "Plus Jakarta Sans", "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+            background: linear-gradient(180deg, #050311 0%, #0a0824 45%, #16123c 100%);
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: clamp(1.6rem, 5vw, 4rem);
+        }
+
+        .page {
+            width: min(920px, 100%);
+            display: flex;
+            flex-direction: column;
+            gap: clamp(1.8rem, 4vw, 2.8rem);
+        }
+
+        .back-button {
+            align-self: flex-start;
+            appearance: none;
+            border: 1px solid rgba(147, 198, 255, 0.45);
+            background: linear-gradient(135deg, rgba(31, 21, 58, 0.82), rgba(11, 7, 27, 0.88));
+            color: var(--text-primary);
+            border-radius: 999px;
+            padding: 0.65rem 1.4rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .back-button:hover,
+        .back-button:focus-visible {
+            transform: translateY(-2px);
+            border-color: rgba(247, 167, 218, 0.65);
+            outline: none;
+        }
+
+        .section-header {
+            display: flex;
+            flex-direction: column;
+            gap: clamp(0.75rem, 2vw, 1rem);
+        }
+
+        .section-title {
+            margin: 0;
+            font-size: clamp(2rem, 5vw, 2.8rem);
+        }
+
+        .section-description {
+            margin: 0;
+            color: var(--text-muted);
+            font-size: clamp(1rem, 2vw, 1.15rem);
+            line-height: 1.6;
+            max-width: 640px;
+        }
+
+        .game-grid {
+            display: grid;
+            gap: clamp(1.1rem, 2.5vw, 1.8rem);
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        }
+
+        .game-button {
+            appearance: none;
+            border: 1px solid transparent;
+            border-radius: var(--radius-lg);
+            background: var(--card-gradient);
+            color: var(--text-primary);
+            box-shadow: var(--shadow-strong);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: clamp(1.1rem, 2.8vw, 1.6rem);
+            font-size: clamp(1.05rem, 1.8vw, 1.2rem);
+            font-weight: 600;
+            text-decoration: none;
+            letter-spacing: 0.04em;
+            background-image: var(--card-gradient), var(--border-gradient);
+            background-clip: padding-box, border-box;
+            background-origin: border-box;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+        }
+
+        .game-button:hover,
+        .game-button:focus-visible {
+            transform: translateY(-6px);
+            box-shadow: 0 40px 80px rgba(5, 3, 17, 0.85);
+            outline: none;
+        }
+
+        .game-button[disabled],
+        .game-button.is-disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
+
+        .game-button[disabled]:hover,
+        .game-button.is-disabled:hover,
+        .game-button[disabled]:focus-visible,
+        .game-button.is-disabled:focus-visible {
+            transform: none;
+            box-shadow: none;
+            outline: none;
+        }
+
+        @media (max-width: 640px) {
+            body {
+                padding: clamp(1.2rem, 7vw, 2.4rem);
+            }
+
+            .back-button {
+                align-self: stretch;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="page">
+        <a class="back-button" href="index.html"><span aria-hidden="true">←</span> Back to Menu</a>
+        <header class="section-header">
+            <h1 class="section-title">Education Tools</h1>
+            <p class="section-description">Sharpen your typing, memory, and music skills with these Sylveon-themed learning experiences.</p>
+        </header>
+
+        <div class="game-grid">
+            <a class="game-button" href="pokemon.html">Pokémon Typer</a>
+            <a class="game-button" href="type-helper.html">Type Helper</a>
+            <a class="game-button" href="movie-grid.html">Movie Grid</a>
+            <a class="game-button" href="bass-guitar-frets.html">Bass Guitar Frets</a>
+        </div>
+    </main>
+</body>
+</html>
