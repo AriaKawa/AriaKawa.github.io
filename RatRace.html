@@ -310,6 +310,12 @@
     box-shadow:0 18px 36px rgba(0,0,0,.45);
     z-index:5;
   }
+  .statusRow{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:12px;
+  }
   .status{
     font-weight:800;
     letter-spacing:.05em;
@@ -317,6 +323,10 @@
     font-size:1.3rem;
   }
   .status.countdown{ font-size:1.45rem; }
+  .hostStartButton{
+    padding:.55rem 1.15rem;
+    font-size:.85rem;
+  }
   .pill{
     background:linear-gradient(135deg, #ffe775 0%, #ffbf24 65%, #ff8b24 100%);
     color:#1a1600;
@@ -669,7 +679,10 @@
           </div>
         </div>
         <header>
-          <div class="status" id="status">Place your bets.</div>
+          <div class="statusRow">
+            <div class="status" id="status">Place your bets.</div>
+            <button class="btn hostStartButton hidden" id="btnHostStartRace" type="button">Start Race</button>
+          </div>
           <div class="legend">
             <span><span class="pill" id="pot">$0</span> pot</span>
             <span>Min bet $1</span>
@@ -795,6 +808,7 @@ const RAT_DATA = [
 ];
 
 const statusEl = document.getElementById('status');
+const hostStartBtn = document.getElementById('btnHostStartRace');
 const potEl = document.getElementById('pot');
 const trackViewport = document.getElementById('trackViewport');
 const raceCamera = document.getElementById('raceCamera');
@@ -1301,6 +1315,15 @@ if(ratTotalsEl){
   });
 }
 
+if(hostStartBtn){
+  hostStartBtn.addEventListener('click', async ()=>{
+    if(hostStartBtn.disabled) return;
+    hostStartBtn.disabled = true;
+    await hostStartRace();
+    updateHostStartButton();
+  });
+}
+
 function cancelAutoStart(){
   if(autoStartTimer){
     clearTimeout(autoStartTimer);
@@ -1333,20 +1356,9 @@ async function triggerAutoStart(){
 }
 
 function scheduleAutoStart(){
-  if(betUiLocked || !bets.length){
+  if(betUiLocked || !bets.length || isMultiplayer || racing || finished){
     cancelAutoStart();
     return;
-  }
-  if(isMultiplayer){
-    if(!isHost || remoteState.status !== 'open'){
-      cancelAutoStart();
-      return;
-    }
-  }else{
-    if(racing || finished){
-      cancelAutoStart();
-      return;
-    }
   }
   cancelAutoStart();
   statusEl.classList.remove('countdown');
@@ -1355,6 +1367,18 @@ function scheduleAutoStart(){
     autoStartTimer = null;
     triggerAutoStart();
   }, AUTO_START_DELAY);
+}
+
+function updateHostStartButton(){
+  if(!hostStartBtn) return;
+  const shouldShow = isMultiplayer && isHost && remoteState.status === 'open' && !betUiLocked && !racing;
+  hostStartBtn.classList.toggle('hidden', !shouldShow);
+  if(!shouldShow){
+    hostStartBtn.disabled = true;
+    return;
+  }
+  const canStart = bets.length > 0 && !betUiLocked && !racing && !finished;
+  hostStartBtn.disabled = !canStart;
 }
 
 function cancelAutoReopen(){
@@ -1395,26 +1419,34 @@ function openNextSoloRound(){
 }
 
 function updateAutoStartState(){
+  updateHostStartButton();
   if(betUiLocked){
     cancelAutoStart();
+    return;
+  }
+  if(isMultiplayer){
+    cancelAutoStart();
+    if(remoteState.status !== 'open' || racing){
+      return;
+    }
+    statusEl.classList.remove('countdown');
+    if(!bets.length){
+      statusEl.textContent = isHost ? 'Place your bets, then press Start.' : 'Place your bets.';
+    }else{
+      statusEl.textContent = isHost
+        ? 'Start the race when you\'re ready.'
+        : 'Waiting for the host to start the race.';
+    }
     return;
   }
   if(!bets.length && !racing){
     statusEl.classList.remove('countdown');
     statusEl.textContent = 'Place your bets.';
   }
-  if(isMultiplayer){
-    if(isHost && remoteState.status === 'open' && bets.length && !racing){
-      scheduleAutoStart();
-    }else{
-      cancelAutoStart();
-    }
+  if(bets.length && !racing && !finished){
+    scheduleAutoStart();
   }else{
-    if(bets.length && !racing && !finished){
-      scheduleAutoStart();
-    }else{
-      cancelAutoStart();
-    }
+    cancelAutoStart();
   }
 }
 
@@ -1632,6 +1664,7 @@ function toggleBetUI(lock){
   renderRatTotals();
   if(lock){
     cancelAutoStart();
+    updateHostStartButton();
   }else{
     updateAutoStartState();
   }
@@ -1877,6 +1910,7 @@ function handleNetworkState(state){
     }
   }
   updateNotice();
+  updateAutoStartState();
 }
 
 function updateNotice(){
@@ -2098,6 +2132,7 @@ function joinRoom(code, { host=false }={}){
   setMpMode('room');
   updateModeUI();
   attachListeners();
+  updateAutoStartState();
   const now = Date.now();
   const presencePath = `${gamePath}/players/${clientId}`;
   presenceRef = ref(db, presencePath);
