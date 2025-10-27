@@ -28,7 +28,7 @@
     color:#e7eefc;
   }
   .app{
-    width:min(1100px, 96vw);
+    width:min(1600px, 98vw);
     background:linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.02));
     border:1px solid rgba(255,255,255,.08);
     border-radius:18px;
@@ -38,23 +38,19 @@
   .board{
     position:relative;
     width:100%;
-    aspect-ratio: 16 / 5.5; /* nice wide fretboard */
+    aspect-ratio: 1246 / 439;
     background:
-      linear-gradient(90deg, rgba(0,0,0,.06) 0%, rgba(0,0,0,0) 12%),
-      linear-gradient(180deg, var(--wood2), var(--wood1));
+      radial-gradient(120% 140% at 50% 50%, rgba(12,18,30,.9), rgba(7,11,20,.95)),
+      #05070d;
+    background-image:
+      url("https://cdn.discordapp.com/attachments/1167576096076023920/1319187523703359519/cor_bass_heroN4SR35DR.png"),
+      radial-gradient(120% 140% at 50% 50%, rgba(12,18,30,.9), rgba(7,11,20,.95));
+    background-size: contain, cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    overflow:hidden;
   }
-  /* subtle wood grain */
-  .board:before{
-    content:"";
-    position:absolute; inset:0;
-    background:
-      repeating-linear-gradient( 90deg, rgba(0,0,0,.035) 0 6px, rgba(255,255,255,.02) 6px 12px),
-      radial-gradient(1200px 200px at 40% 30%, rgba(255,255,255,.05), transparent 60%),
-      radial-gradient(900px 200px at 70% 70%, rgba(255,255,255,.05), transparent 60%);
-    mix-blend-mode:multiply;
-    pointer-events:none;
-  }
-  svg{display:block; width:100%; height:100%}
+  svg{display:block; width:100%; height:100%; position:absolute; inset:0; pointer-events:none;}
   .controls{
     display:flex; align-items:center; justify-content:center; gap:10px;
     padding:10px; background:linear-gradient(180deg, #0e1523, #0c1320);
@@ -106,7 +102,17 @@
   .flash.bad{  background: radial-gradient(70% 60% at 50% 50%, rgba(239,68,68,.20), transparent 70%) }
   .flash.show{ opacity:1 }
   .highlight-glow{
-    filter: drop-shadow(0 0 10px rgba(56,189,248,.9)) drop-shadow(0 0 26px rgba(56,189,248,.6));
+    filter: drop-shadow(0 0 16px rgba(56,189,248,.85)) drop-shadow(0 0 32px rgba(56,189,248,.55));
+  }
+  .fret-target{
+    fill: rgba(56,189,248,.18);
+    stroke: rgba(56,189,248,.45);
+    stroke-width:3;
+    mix-blend-mode: screen;
+  }
+  .string-target{
+    fill: rgba(56,189,248,.75);
+    mix-blend-mode: screen;
   }
   @media (max-width:720px){
     .notes{gap:6px}
@@ -122,7 +128,7 @@
       <!-- feedback flashes -->
       <div class="flash" id="flash"></div>
       <!-- SVG fretboard -->
-      <svg id="fretSVG" viewBox="0 0 1600 550" aria-label="Bass Fretboard" role="img">
+      <svg id="fretSVG" viewBox="0 0 1246 439" aria-label="Bass Fretboard" role="img">
         <!-- wood background handled by CSS -->
         <!-- fret slots group (for layering) -->
         <g id="frets"></g>
@@ -136,8 +142,6 @@
         <!-- highlight target (string+fret) -->
         <g id="target"></g>
 
-        <!-- nut -->
-        <rect x="46" y="55" width="18" height="440" fill="var(--nut)" rx="4" ry="4" opacity=".9"></rect>
       </svg>
     </div>
 
@@ -170,7 +174,16 @@
   const OPEN_STRING_NOTES = { G:7, D:2, A:9, E:4 }; // indices in SHARP
   const STRINGS_ORDER = ["G","D","A","E"]; // render order top->bottom
   const NUM_FRETS = 12; // choose range (0..12). Change if you want more
-  const SVG_W = 1600, SVG_H = 550, PADDING_X = 64, PADDING_Y = 60;
+  // Tuned to the provided photograph — tweak these numbers to realign the overlay if you swap imagery
+  const FRETBOARD = {
+    left: 300,
+    right: 1044,
+    top: 148,
+    bottom: 292
+  };
+  const SCALE_PX = (FRETBOARD.right - FRETBOARD.left) * 2;
+  const FRET_PAD_X = 10;
+  const FRET_PAD_Y = 20;
 
   // ---------- State ----------
   let useSharps = true;
@@ -193,19 +206,17 @@
   // ---------- Geometry Helpers ----------
   const fretXs = []; // x of each fret line
   (function computeFrets(){
-    // even spacing looks nice; real frets are exponential, but we keep simple
-    const innerW = SVG_W - PADDING_X*2;
     for(let i=0;i<=NUM_FRETS;i++){
-      fretXs[i] = PADDING_X + (innerW)*(i/(NUM_FRETS));
+      const ratio = 1 - Math.pow(2, -i/12);
+      const x = FRETBOARD.right - SCALE_PX * ratio;
+      fretXs[i] = x;
     }
   })();
 
   function stringY(i){
     // 4 strings across usable height
-    const innerH = SVG_H - PADDING_Y*2;
-    const top = PADDING_Y;
-    const bottom = SVG_H - PADDING_Y;
-    return top + (innerH)*(i/(STRINGS_ORDER.length-1));
+    const innerH = FRETBOARD.bottom - FRETBOARD.top;
+    return FRETBOARD.top + (innerH)*(i/(STRINGS_ORDER.length-1));
   }
 
   function midBetween(a,b){ return a + (b-a)/2 }
@@ -213,69 +224,14 @@
   // ---------- Build Fretboard ----------
   function drawFrets(){
     fretsG.innerHTML = "";
-    for(let i=0;i<=NUM_FRETS;i++){
-      const x = fretXs[i];
-      const thick = i===0 ? 6 : 3;
-      const line = document.createElementNS("http://www.w3.org/2000/svg","rect");
-      line.setAttribute("x", x - thick/2);
-      line.setAttribute("y", PADDING_Y - 10);
-      line.setAttribute("width", thick);
-      line.setAttribute("height", SVG_H - (PADDING_Y - 10)*2);
-      line.setAttribute("fill", i===0 ? "var(--fret)" : "rgba(255,255,255,.45)");
-      line.setAttribute("opacity", i===0 ? "1" : ".55");
-      fretsG.appendChild(line);
-    }
   }
 
   function drawInlays(){
     inlaysG.innerHTML = "";
-    const singleDots = [3,5,7,9];
-    const doubleDots = [12];
-    const cy = midBetween(PADDING_Y, SVG_H - PADDING_Y);
-
-    singleDots.forEach(f=>{
-      const x = midBetween(fretXs[f-1], fretXs[f]);
-      const dot = circle(x, cy, 9, "var(--dot)", .5);
-      inlaysG.appendChild(dot);
-    });
-
-    doubleDots.forEach(f=>{
-      const x = midBetween(fretXs[f-1], fretXs[f]);
-      const yTop = cy - 22, yBot = cy + 22;
-      inlaysG.appendChild(circle(x, yTop, 9, "var(--dot)", .6));
-      inlaysG.appendChild(circle(x, yBot, 9, "var(--dot)", .6));
-    });
   }
 
   function drawStrings(){
     stringsG.innerHTML = "";
-    STRINGS_ORDER.forEach((s, i)=>{
-      const y = stringY(i);
-      const thickness = [2.5, 2.8, 3.2, 3.6][i]; // make E a bit thicker
-      const rectEl = document.createElementNS("http://www.w3.org/2000/svg","rect");
-      rectEl.setAttribute("x", PADDING_X - 8);
-      rectEl.setAttribute("y", y - thickness/2);
-      rectEl.setAttribute("width", SVG_W - (PADDING_X - 8)*2);
-      rectEl.setAttribute("height", thickness);
-      rectEl.setAttribute("rx", thickness/2);
-      rectEl.setAttribute("fill", "url(#stringGrad"+i+")");
-      stringsG.appendChild(rectEl);
-    });
-
-    // add gradients for strings
-    const defs = document.createElementNS("http://www.w3.org/2000/svg","defs");
-    STRINGS_ORDER.forEach((s, i)=>{
-      const grad = document.createElementNS("http://www.w3.org/2000/svg","linearGradient");
-      grad.setAttribute("id","stringGrad"+i);
-      grad.setAttribute("x1","0"); grad.setAttribute("x2","1");
-      grad.setAttribute("y1","0"); grad.setAttribute("y2","0");
-      const stop1 = stop(0, "#fafafa");
-      const stop2 = stop(0.5, "#b7c0c7");
-      const stop3 = stop(1, "#f0f2f5");
-      grad.appendChild(stop1); grad.appendChild(stop2); grad.appendChild(stop3);
-      defs.appendChild(grad);
-    });
-    stringsG.appendChild(defs);
   }
 
   function circle(cx, cy, r, fill, opacity=1){
@@ -285,13 +241,6 @@
     c.setAttribute("opacity", opacity);
     return c;
   }
-  function stop(offset, color){
-    const s = document.createElementNS("http://www.w3.org/2000/svg","stop");
-    s.setAttribute("offset", offset);
-    s.setAttribute("stop-color", color);
-    return s;
-  }
-
   // ---------- Target Highlight ----------
   function renderTarget(){
     targetG.innerHTML = "";
@@ -299,16 +248,36 @@
     const f = current.fret;
 
     // glowing puck at the middle of the fret segment on that string
-    const cx = midBetween(fretXs[f], fretXs[f+1]);
+    const startX = Math.min(fretXs[f], fretXs[f+1]);
+    const endX = Math.max(fretXs[f], fretXs[f+1]);
+    const width = endX - startX;
+    const cx = midBetween(startX, endX);
     const cy = stringY(i);
 
-    const halo = circle(cx, cy, 30, "rgba(56,189,248,.12)", 1);
-    const outer = circle(cx, cy, 16, "rgba(56,189,248,.25)", 1);
-    const core  = circle(cx, cy, 7.5, "var(--accent)", 1);
-    halo.classList.add('highlight-glow');
+    const fretRect = document.createElementNS("http://www.w3.org/2000/svg","rect");
+    fretRect.setAttribute("x", startX - FRET_PAD_X);
+    fretRect.setAttribute("y", FRETBOARD.top - FRET_PAD_Y);
+    fretRect.setAttribute("width", width + FRET_PAD_X*2);
+    fretRect.setAttribute("height", (FRETBOARD.bottom - FRETBOARD.top) + FRET_PAD_Y*2);
+    fretRect.setAttribute("rx", 18);
+    fretRect.setAttribute("ry", 18);
+    fretRect.classList.add('fret-target','highlight-glow');
 
-    targetG.appendChild(halo);
-    targetG.appendChild(outer);
+    const stringRect = document.createElementNS("http://www.w3.org/2000/svg","rect");
+    const stringHeight = 7;
+    const innerWidth = Math.max(12, width - 36);
+    const stringX = startX + (width - innerWidth)/2;
+    stringRect.setAttribute("x", stringX);
+    stringRect.setAttribute("y", cy - stringHeight/2);
+    stringRect.setAttribute("width", innerWidth);
+    stringRect.setAttribute("height", stringHeight);
+    stringRect.setAttribute("rx", stringHeight/2);
+    stringRect.classList.add('string-target','highlight-glow');
+
+    const core  = circle(cx, cy, 7.5, "var(--accent)", 1);
+
+    targetG.appendChild(fretRect);
+    targetG.appendChild(stringRect);
     targetG.appendChild(core);
   }
 
