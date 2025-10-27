@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bass Fret Trainer</title>
+<style>
+  :root{
+    --bg:#0b0f16;
+    --panel:#0f1624;
+    --wood1:#6b4a2d;
+    --wood2:#8b5e36;
+    --metal:#cfd8dc;
+    --fret:#c0c9d2;
+    --string:#e5e7eb;
+    --nut:#d6dee6;
+    --dot:#1f2937;
+    --accent:#38bdf8;
+    --good:#22c55e;
+    --bad:#ef4444;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:radial-gradient(1200px 800px at 70% -10%, #142032 0%, var(--bg) 50%);
+    display:flex; align-items:center; justify-content:center; padding:12px;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji","Segoe UI Emoji";
+    color:#e7eefc;
+  }
+  .app{
+    width:min(1100px, 96vw);
+    background:linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.02));
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:18px;
+    box-shadow: 0 20px 50px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.05);
+    overflow:hidden;
+  }
+  .board{
+    position:relative;
+    width:100%;
+    aspect-ratio: 16 / 5.5; /* nice wide fretboard */
+    background:
+      linear-gradient(90deg, rgba(0,0,0,.06) 0%, rgba(0,0,0,0) 12%),
+      linear-gradient(180deg, var(--wood2), var(--wood1));
+  }
+  /* subtle wood grain */
+  .board:before{
+    content:"";
+    position:absolute; inset:0;
+    background:
+      repeating-linear-gradient( 90deg, rgba(0,0,0,.035) 0 6px, rgba(255,255,255,.02) 6px 12px),
+      radial-gradient(1200px 200px at 40% 30%, rgba(255,255,255,.05), transparent 60%),
+      radial-gradient(900px 200px at 70% 70%, rgba(255,255,255,.05), transparent 60%);
+    mix-blend-mode:multiply;
+    pointer-events:none;
+  }
+  svg{display:block; width:100%; height:100%}
+  .controls{
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    padding:10px; background:linear-gradient(180deg, #0e1523, #0c1320);
+    border-top:1px solid rgba(255,255,255,.06);
+  }
+  .notes{
+    display:grid;
+    grid-template-columns: repeat(12, minmax(40px, 1fr));
+    gap:8px; width:100%; max-width:980px;
+  }
+  button.note{
+    appearance:none; border:none; cursor:pointer;
+    padding:.8rem 0; border-radius:12px;
+    background:linear-gradient(180deg, #0f1b2d, #0b1422);
+    border:1px solid rgba(255,255,255,.08);
+    color:#eaf2ff; font-weight:700; font-size:1.05rem; letter-spacing:.5px;
+    box-shadow: 0 6px 16px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.06);
+    transition: transform .06s ease, background .2s ease, border-color .2s ease;
+  }
+  button.note:active{ transform:translateY(1px) scale(.995) }
+  button.note:hover{ border-color: rgba(255,255,255,.18) }
+  .bar{
+    display:flex; align-items:center; gap:10px; justify-content:space-between;
+    padding:12px 14px; border-top:1px solid rgba(255,255,255,.06);
+    background:linear-gradient(180deg, #0f1829, #0d1422);
+  }
+  .left, .right{display:flex; align-items:center; gap:8px}
+  .iconbtn{
+    width:40px; height:40px; border-radius:12px; display:grid; place-items:center;
+    border:1px solid rgba(255,255,255,.08); background:linear-gradient(180deg, #0e1727, #0b1220);
+    color:#cfe8ff; cursor:pointer; transition:.2s;
+    box-shadow: 0 6px 16px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.06);
+    user-select:none;
+  }
+  .iconbtn:hover{ border-color: rgba(255,255,255,.18) }
+  .pill{
+    min-width:40px; height:40px; padding:0 12px; border-radius:999px;
+    display:flex; align-items:center; justify-content:center; gap:6px;
+    border:1px solid rgba(255,255,255,.08); background:linear-gradient(180deg, #0e1727, #0b1220);
+    box-shadow: 0 6px 16px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.06);
+    font-weight:700; letter-spacing:.3px;
+  }
+  .light{ opacity:.75 }
+  .flash{
+    position:absolute; inset:0; pointer-events:none; opacity:0;
+    transition: opacity .18s ease;
+  }
+  .flash.good{ background: radial-gradient(70% 60% at 50% 50%, rgba(34,197,94,.18), transparent 70%) }
+  .flash.bad{  background: radial-gradient(70% 60% at 50% 50%, rgba(239,68,68,.20), transparent 70%) }
+  .flash.show{ opacity:1 }
+  .highlight-glow{
+    filter: drop-shadow(0 0 10px rgba(56,189,248,.9)) drop-shadow(0 0 26px rgba(56,189,248,.6));
+  }
+  @media (max-width:720px){
+    .notes{gap:6px}
+    button.note{font-size:1rem; padding:.7rem 0}
+    .iconbtn{width:36px; height:36px; border-radius:10px}
+    .pill{height:36px; padding:0 10px}
+  }
+</style>
+</head>
+<body>
+  <div class="app">
+    <div class="board" id="board">
+      <!-- feedback flashes -->
+      <div class="flash" id="flash"></div>
+      <!-- SVG fretboard -->
+      <svg id="fretSVG" viewBox="0 0 1600 550" aria-label="Bass Fretboard" role="img">
+        <!-- wood background handled by CSS -->
+        <!-- fret slots group (for layering) -->
+        <g id="frets"></g>
+
+        <!-- inlay dots -->
+        <g id="inlays"></g>
+
+        <!-- strings -->
+        <g id="strings"></g>
+
+        <!-- highlight target (string+fret) -->
+        <g id="target"></g>
+
+        <!-- nut -->
+        <rect x="46" y="55" width="18" height="440" fill="var(--nut)" rx="4" ry="4" opacity=".9"></rect>
+      </svg>
+    </div>
+
+    <div class="bar">
+      <div class="left">
+        <!-- ♯ / ♭ toggle -->
+        <div class="iconbtn" id="accToggle" title="Toggle sharps/flats" aria-label="Toggle sharps/flats">♯/♭</div>
+        <!-- reveal helper (shows answer briefly) -->
+        <div class="iconbtn" id="reveal" title="Peek" aria-label="Peek">👁️</div>
+      </div>
+      <div class="right">
+        <!-- streak pill (no words) -->
+        <div class="pill" id="streak" aria-label="Streak">✅×0</div>
+        <!-- reset -->
+        <div class="iconbtn" id="reset" title="Reset" aria-label="Reset">⟲</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="notes" id="noteButtons"></div>
+    </div>
+  </div>
+
+<script>
+(()=>{
+  // ---------- Constants ----------
+  const SHARP = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+  const FLAT  = ["C","Db","D","Eb","E","F","Gb","G","Ab","A","Bb","B"];
+  // Standard 4-string bass tuning, top to bottom visually: G, D, A, E
+  const OPEN_STRING_NOTES = { G:7, D:2, A:9, E:4 }; // indices in SHARP
+  const STRINGS_ORDER = ["G","D","A","E"]; // render order top->bottom
+  const NUM_FRETS = 12; // choose range (0..12). Change if you want more
+  const SVG_W = 1600, SVG_H = 550, PADDING_X = 64, PADDING_Y = 60;
+
+  // ---------- State ----------
+  let useSharps = true;
+  let current = { stringIndex: 0, fret: 0, answerIdx: 0 };
+  let streak = 0;
+  let peekTimeout = null;
+
+  // ---------- DOM ----------
+  const fretsG   = document.getElementById('frets');
+  const stringsG = document.getElementById('strings');
+  const inlaysG  = document.getElementById('inlays');
+  const targetG  = document.getElementById('target');
+  const noteButtons = document.getElementById('noteButtons');
+  const flashEl  = document.getElementById('flash');
+  const streakEl = document.getElementById('streak');
+  const accToggle= document.getElementById('accToggle');
+  const revealBtn= document.getElementById('reveal');
+  const resetBtn = document.getElementById('reset');
+
+  // ---------- Geometry Helpers ----------
+  const fretXs = []; // x of each fret line
+  (function computeFrets(){
+    // even spacing looks nice; real frets are exponential, but we keep simple
+    const innerW = SVG_W - PADDING_X*2;
+    for(let i=0;i<=NUM_FRETS;i++){
+      fretXs[i] = PADDING_X + (innerW)*(i/(NUM_FRETS));
+    }
+  })();
+
+  function stringY(i){
+    // 4 strings across usable height
+    const innerH = SVG_H - PADDING_Y*2;
+    const top = PADDING_Y;
+    const bottom = SVG_H - PADDING_Y;
+    return top + (innerH)*(i/(STRINGS_ORDER.length-1));
+  }
+
+  function midBetween(a,b){ return a + (b-a)/2 }
+
+  // ---------- Build Fretboard ----------
+  function drawFrets(){
+    fretsG.innerHTML = "";
+    for(let i=0;i<=NUM_FRETS;i++){
+      const x = fretXs[i];
+      const thick = i===0 ? 6 : 3;
+      const line = document.createElementNS("http://www.w3.org/2000/svg","rect");
+      line.setAttribute("x", x - thick/2);
+      line.setAttribute("y", PADDING_Y - 10);
+      line.setAttribute("width", thick);
+      line.setAttribute("height", SVG_H - (PADDING_Y - 10)*2);
+      line.setAttribute("fill", i===0 ? "var(--fret)" : "rgba(255,255,255,.45)");
+      line.setAttribute("opacity", i===0 ? "1" : ".55");
+      fretsG.appendChild(line);
+    }
+  }
+
+  function drawInlays(){
+    inlaysG.innerHTML = "";
+    const singleDots = [3,5,7,9];
+    const doubleDots = [12];
+    const cy = midBetween(PADDING_Y, SVG_H - PADDING_Y);
+
+    singleDots.forEach(f=>{
+      const x = midBetween(fretXs[f-1], fretXs[f]);
+      const dot = circle(x, cy, 9, "var(--dot)", .5);
+      inlaysG.appendChild(dot);
+    });
+
+    doubleDots.forEach(f=>{
+      const x = midBetween(fretXs[f-1], fretXs[f]);
+      const yTop = cy - 22, yBot = cy + 22;
+      inlaysG.appendChild(circle(x, yTop, 9, "var(--dot)", .6));
+      inlaysG.appendChild(circle(x, yBot, 9, "var(--dot)", .6));
+    });
+  }
+
+  function drawStrings(){
+    stringsG.innerHTML = "";
+    STRINGS_ORDER.forEach((s, i)=>{
+      const y = stringY(i);
+      const thickness = [2.5, 2.8, 3.2, 3.6][i]; // make E a bit thicker
+      const rectEl = document.createElementNS("http://www.w3.org/2000/svg","rect");
+      rectEl.setAttribute("x", PADDING_X - 8);
+      rectEl.setAttribute("y", y - thickness/2);
+      rectEl.setAttribute("width", SVG_W - (PADDING_X - 8)*2);
+      rectEl.setAttribute("height", thickness);
+      rectEl.setAttribute("rx", thickness/2);
+      rectEl.setAttribute("fill", "url(#stringGrad"+i+")");
+      stringsG.appendChild(rectEl);
+    });
+
+    // add gradients for strings
+    const defs = document.createElementNS("http://www.w3.org/2000/svg","defs");
+    STRINGS_ORDER.forEach((s, i)=>{
+      const grad = document.createElementNS("http://www.w3.org/2000/svg","linearGradient");
+      grad.setAttribute("id","stringGrad"+i);
+      grad.setAttribute("x1","0"); grad.setAttribute("x2","1");
+      grad.setAttribute("y1","0"); grad.setAttribute("y2","0");
+      const stop1 = stop(0, "#fafafa");
+      const stop2 = stop(0.5, "#b7c0c7");
+      const stop3 = stop(1, "#f0f2f5");
+      grad.appendChild(stop1); grad.appendChild(stop2); grad.appendChild(stop3);
+      defs.appendChild(grad);
+    });
+    stringsG.appendChild(defs);
+  }
+
+  function circle(cx, cy, r, fill, opacity=1){
+    const c = document.createElementNS("http://www.w3.org/2000/svg","circle");
+    c.setAttribute("cx", cx); c.setAttribute("cy", cy);
+    c.setAttribute("r", r); c.setAttribute("fill", fill);
+    c.setAttribute("opacity", opacity);
+    return c;
+  }
+  function stop(offset, color){
+    const s = document.createElementNS("http://www.w3.org/2000/svg","stop");
+    s.setAttribute("offset", offset);
+    s.setAttribute("stop-color", color);
+    return s;
+  }
+
+  // ---------- Target Highlight ----------
+  function renderTarget(){
+    targetG.innerHTML = "";
+    const i = current.stringIndex;
+    const f = current.fret;
+
+    // glowing puck at the middle of the fret segment on that string
+    const cx = midBetween(fretXs[f], fretXs[f+1]);
+    const cy = stringY(i);
+
+    const halo = circle(cx, cy, 30, "rgba(56,189,248,.12)", 1);
+    const outer = circle(cx, cy, 16, "rgba(56,189,248,.25)", 1);
+    const core  = circle(cx, cy, 7.5, "var(--accent)", 1);
+    halo.classList.add('highlight-glow');
+
+    targetG.appendChild(halo);
+    targetG.appendChild(outer);
+    targetG.appendChild(core);
+  }
+
+  // ---------- Notes & Answers ----------
+  const enharmonics = {
+    "A#":"Bb","Bb":"A#",
+    "C#":"Db","Db":"C#",
+    "D#":"Eb","Eb":"D#",
+    "F#":"Gb","Gb":"F#",
+    "G#":"Ab","Ab":"G#"
+  };
+
+  function idxFromName(name){
+    const i = SHARP.indexOf(name);
+    if(i !== -1) return i;
+    // maybe it's a flat name
+    const j = FLAT.indexOf(name);
+    return j;
+  }
+
+  function noteAt(stringIndex, fret){
+    const openName = STRINGS_ORDER[stringIndex];
+    const openIdx = OPEN_STRING_NOTES[openName];
+    return (openIdx + fret) % 12;
+  }
+
+  function nextQuestion(){
+    // random string 0..3, random fret 0..NUM_FRETS (inclusive of 0 exclusive of last segment for target)
+    current.stringIndex = Math.floor(Math.random()*STRINGS_ORDER.length);
+    current.fret = Math.floor(Math.random()*NUM_FRETS); // 0..11 if NUM_FRETS=12 (uses segment before next line)
+    current.answerIdx = noteAt(current.stringIndex, current.fret);
+    renderTarget();
+  }
+
+  // ---------- Buttons ----------
+  function renderButtons(){
+    noteButtons.innerHTML = "";
+    const labels = useSharps ? SHARP : FLAT;
+    labels.forEach(n=>{
+      const btn = document.createElement('button');
+      btn.className = 'note';
+      btn.textContent = n;
+      btn.setAttribute('aria-label', n);
+      btn.addEventListener('click', ()=> handleGuess(n));
+      noteButtons.appendChild(btn);
+    });
+  }
+
+  function answersMatch(guessName, answerIdx){
+    const guessIdx = idxFromName(guessName);
+    if(guessIdx === answerIdx) return true;
+    // accept enharmonic equivalents (e.g., Bb vs A#)
+    const alt = enharmonics[guessName];
+    if(alt){
+      const altIdx = idxFromName(alt);
+      return altIdx === answerIdx;
+    }
+    return false;
+  }
+
+  function flash(type){
+    flashEl.className = 'flash ' + (type==='good' ? 'good' : 'bad') + ' show';
+    setTimeout(()=> flashEl.classList.remove('show'), 160);
+  }
+
+  function handleGuess(name){
+    if(answersMatch(name, current.answerIdx)){
+      streak++;
+      streakEl.textContent = "✅×"+streak;
+      flash('good');
+      nextQuestion();
+    }else{
+      streak = 0;
+      streakEl.textContent = "✅×0";
+      flash('bad');
+      // brief wobble animation on target
+      wobbleTarget();
+    }
+  }
+
+  function wobbleTarget(){
+    targetG.animate([
+      { transform: 'translateX(0px)' },
+      { transform: 'translateX(-6px)' },
+      { transform: 'translateX(6px)' },
+      { transform: 'translateX(0px)' },
+    ], { duration: 180, easing: 'ease-out' });
+  }
+
+  // ---------- Peek / Reset / Toggle ----------
+  accToggle.addEventListener('click', ()=>{
+    useSharps = !useSharps;
+    renderButtons();
+  });
+
+  revealBtn.addEventListener('click', ()=>{
+    if(peekTimeout) { clearTimeout(peekTimeout); peekTimeout=null; }
+    // show answer as a soft ring that fades
+    const cx = midBetween(fretXs[current.fret], fretXs[current.fret+1]);
+    const cy = stringY(current.stringIndex);
+    const ring = document.createElementNS("http://www.w3.org/2000/svg","circle");
+    ring.setAttribute("cx", cx); ring.setAttribute("cy", cy);
+    ring.setAttribute("r", 52); ring.setAttribute("fill","none");
+    ring.setAttribute("stroke","rgba(255,255,255,.28)");
+    ring.setAttribute("stroke-width","4");
+    targetG.appendChild(ring);
+    ring.animate([{opacity:1, r:52},{opacity:0, r:88}], {duration:650, easing:'ease-out'}).onfinish=()=> ring.remove();
+  });
+
+  resetBtn.addEventListener('click', ()=>{
+    streak = 0; streakEl.textContent = "✅×0";
+    nextQuestion();
+  });
+
+  // ---------- Init ----------
+  function init(){
+    drawFrets();
+    drawInlays();
+    drawStrings();
+    renderButtons();
+    nextQuestion();
+  }
+  init();
+
+  // Optional: keyboard input (A..G with optional # or b). No labels shown; just a convenience.
+  const keyMap = new Set(["A","B","C","D","E","F","G","#","b"]);
+  let lastLetter = null;
+  window.addEventListener('keydown', (e)=>{
+    const k = e.key.toUpperCase();
+    if(!keyMap.has(k) && k !== "ARROWRIGHT" && k!==" "){ return; }
+    if(k===" " || k==="ARROWRIGHT"){ e.preventDefault(); nextQuestion(); return; }
+    if("ABCDEFG".includes(k)){
+      lastLetter = k;
+      // if single letter is a complete note (A,B,C,D,E,F,G) it might be enough; wait briefly for accidental
+      setTimeout(()=>{ if(lastLetter){ handleGuess(lastLetter); lastLetter=null; } }, 180);
+    }else if(k==="#" || e.key==="b"){
+      if(lastLetter){
+        const name = lastLetter + (k==="#" ? "#" : "b");
+        lastLetter = null;
+        handleGuess(name);
+      }
+    }
+  });
+
+})();
+</script>
+</body>
+</html>
