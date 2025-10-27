@@ -6,149 +6,269 @@
 <title>Pokémon Type Trainer</title>
 <style>
   :root{
-    --bg:#0b0f16;--panel:#101827;--muted:#1f2937;--ink:#e5e7eb;--sub:#a7b0bf;--good:#22c55e;--bad:#ef4444;--accent:#60a5fa;
-    --chip:#0e1726;--chip-br:#20314b;--btn:#111827;--btn-br:#1f2a3c;--shadow:0 12px 30px rgba(0,0,0,.35);
+    --bg:#040812;
+    --surface:rgba(12,20,36,0.92);
+    --surface-strong:rgba(16,27,46,0.94);
+    --border:rgba(255,255,255,0.08);
+    --border-strong:rgba(148,163,184,0.25);
+    --text:#f8fafc;
+    --title:#e2e8f0;
+    --muted:#94a3b8;
+    --muted-soft:rgba(148,163,184,0.18);
+    --accent:#38bdf8;
+    --good:#34d399;
+    --bad:#f87171;
+    --focus-super:#f97316;
+    --focus-notvery:#38bdf8;
+    --focus-immune:#fde047;
+    --focus-resist:#c084fc;
   }
-  *{box-sizing:border-box}
-  html,body{height:100%}
-  body{margin:0;background:radial-gradient(1200px 700px at 50% -100px, #12203a 0%, var(--bg) 60%);color:var(--ink);font:16px/1.4 system-ui,Segoe UI,Roboto,Inter,Arial,sans-serif;}
-  .wrap{max-width:1100px;margin:28px auto;padding:0 16px}
-  header{display:flex;gap:16px;align-items:center;justify-content:space-between;margin-bottom:18px}
-  h1{font-size:clamp(22px,4vw,32px);margin:0;letter-spacing:.3px}
-  .tabs{display:flex;gap:10px;flex-wrap:wrap}
-  .tab{padding:10px 14px;border-radius:12px;background:var(--btn);border:1px solid var(--btn-br);cursor:pointer;user-select:none}
-  .tab[aria-selected="true"]{background:linear-gradient(180deg,#1b2c47,#0e1626);border-color:#2d3c5b;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
-  .panel{background:linear-gradient(180deg,#0c1321,#0b1220);border:1px solid #1f2b43;border-radius:18px;box-shadow:var(--shadow);padding:18px}
-  .grid{display:grid;gap:16px}
-  @media(min-width:900px){.grid{grid-template-columns:1.1fr .9fr}}
-  .card{background:var(--panel);border:1px solid #21314a;border-radius:16px;padding:16px}
-  .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-  .title{font-weight:700;margin-bottom:8px}
-  .subtitle{color:var(--sub);font-size:14px}
-  .chips{display:flex;flex-wrap:wrap;gap:8px}
-  .chip{padding:6px 10px;border-radius:999px;border:1px solid var(--chip-br);background:var(--chip);font-weight:650;letter-spacing:.2px}
-  .type{--c:#64748b;color:#081018;border:0}
-  .type.badge{color:#0b1220;border:1px solid rgba(0,0,0,.2)}
-  .type[data-active="true"]{outline:2px solid var(--accent)}
-  .type-grid{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:8px}
-  .type-btn{border:1px solid #2a3857;background:#0f172a;color:#dbe7ff;padding:8px 6px;border-radius:10px;font-weight:700;cursor:pointer;user-select:none;text-align:center}
-  .type-btn[aria-pressed="true"]{outline:2px solid #60a5fa}
-  .type-btn[data-state="good"]{box-shadow:inset 0 0 0 999px rgba(34,197,94,.18),0 0 0 1px rgba(34,197,94,.3)}
-  .type-btn[data-state="bad"]{box-shadow:inset 0 0 0 999px rgba(239,68,68,.18),0 0 0 1px rgba(239,68,68,.3)}
-  .kpi{display:flex;gap:10px;flex-wrap:wrap}
-  .pill{padding:8px 10px;border-radius:12px;border:1px solid #27344f;background:#0f1729}
-  .pill b{font-size:18px}
-  .btn{padding:10px 14px;border-radius:12px;border:1px solid #2b3a59;background:#0f172a;color:#e5edff;cursor:pointer;font-weight:700}
-  .btn:active{transform:translateY(1px)}
-  .btn.primary{background:linear-gradient(180deg,#1d335c,#10203d);border-color:#345082}
-  .btn.ghost{background:transparent}
-  .notice{font-size:14px;color:#b7c2d9}
-  .answer{padding:10px 12px;border-radius:12px}
-  .answer.good{background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.35)}
-  .answer.bad{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.35)}
-  .footer{margin-top:14px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
-  .hidden{display:none}
-  .sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+  *,*::before,*::after{box-sizing:border-box}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:radial-gradient(1200px 800px at 50% -200px,rgba(30,64,175,0.25) 0%,#020617 35%,var(--bg) 100%);
+    color:var(--text);
+    font:16px/1.5 "Inter", "Segoe UI", Roboto, system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+    display:flex;
+    justify-content:center;
+    align-items:flex-start;
+    padding:40px 20px 80px;
+  }
+  .app{width:min(1080px,100%);}
+  .top{display:flex;justify-content:space-between;align-items:center;gap:24px;margin-bottom:32px;flex-wrap:wrap;}
+  .brand{display:flex;flex-direction:column;gap:6px;min-width:240px;}
+  .brand h1{margin:0;font-size:clamp(28px,4vw,38px);font-weight:800;letter-spacing:.6px;}
+  .brand p{margin:0;color:var(--muted);font-size:15px;}
+  .scoreboard{display:flex;gap:14px;flex-wrap:wrap;}
+  .score-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px 18px;min-width:96px;text-align:center;box-shadow:0 14px 28px -20px rgba(15,118,250,0.45);}
+  .score-box span{display:block;text-transform:uppercase;letter-spacing:.12em;font-size:11px;color:var(--muted);margin-bottom:6px;}
+  .score-box strong{display:block;font-size:26px;letter-spacing:.04em;}
+  main{display:flex;flex-direction:column;gap:32px;}
+  .view{animation:fadeIn .45s ease;}
+  .hidden{display:none !important;}
 
-  /* Type colors (approximate) */
-  .t-Normal{--c:#A8A77A}.t-Fire{--c:#EE8130}.t-Water{--c:#6390F0}.t-Electric{--c:#F7D02C}.t-Grass{--c:#7AC74C}.t-Ice{--c:#96D9D6}.t-Fighting{--c:#C22E28}.t-Poison{--c:#A33EA1}.t-Ground{--c:#E2BF65}.t-Flying{--c:#A98FF3}.t-Psychic{--c:#F95587}.t-Bug{--c:#A6B91A}.t-Rock{--c:#B6A136}.t-Ghost{--c:#735797}.t-Dragon{--c:#6F35FC}.t-Dark{--c:#705746}.t-Steel{--c:#B7B7CE}.t-Fairy{--c:#D685AD}
-  .type.badge{background:var(--c)}
-  .type-btn{background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(0,0,0,.08)), var(--c);color:#081018;border-color:rgba(0,0,0,.2)}
+  #intro{padding:56px 20px;text-align:center;background:var(--surface);border-radius:24px;border:1px solid var(--border);box-shadow:0 40px 120px -60px rgba(37,99,235,0.5);}
+  #intro h2{margin:0;font-size:clamp(26px,3.6vw,36px);font-weight:800;letter-spacing:.5px;}
+  #intro p{margin:16px auto 32px;max-width:520px;color:var(--muted);font-size:17px;}
 
-  .flex{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-  .grow{flex:1}
+  .btn{border:none;border-radius:999px;padding:14px 28px;font-weight:700;letter-spacing:.04em;font-size:15px;cursor:pointer;color:var(--text);background:linear-gradient(135deg,#2563eb,#38bdf8);box-shadow:0 20px 40px -24px rgba(56,189,248,0.85);transition:transform .18s ease, box-shadow .18s ease;}
+  .btn:hover{transform:translateY(-2px);box-shadow:0 24px 48px -20px rgba(56,189,248,0.85);}
+  .btn:active{transform:translateY(0);}
+  .btn.primary{background:linear-gradient(135deg,#16a34a,#34d399);box-shadow:0 22px 42px -22px rgba(34,197,94,0.7);}
+  .btn.primary:hover{box-shadow:0 26px 56px -22px rgba(34,197,94,0.72);}
+  .btn.alt{background:linear-gradient(135deg,#1e293b,#334155);box-shadow:0 18px 36px -24px rgba(15,23,42,0.8);}
+  .btn[disabled]{opacity:.5;cursor:not-allowed;box-shadow:none;}
+
+  .link-btn{border:none;background:none;color:var(--muted);font-weight:600;letter-spacing:.04em;padding:0;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:14px;}
+  .link-btn:hover{color:var(--text);}
+
+  #focusView{background:var(--surface-strong);border-radius:24px;padding:42px;border:1px solid var(--border);box-shadow:0 32px 90px -60px rgba(30,58,138,0.65);}
+  #focusView header{display:flex;flex-direction:column;gap:10px;margin-bottom:32px;text-align:center;}
+  #focusView h2{margin:0;font-size:clamp(24px,3.4vw,34px);font-weight:800;}
+  #focusView p{margin:0;color:var(--muted);font-size:16px;}
+  .focus-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:22px;}
+  .focus-card{position:relative;overflow:hidden;padding:26px 24px;border-radius:22px;border:1px solid var(--border-strong);background:linear-gradient(160deg,rgba(148,163,184,0.08),rgba(15,23,42,0.95));display:flex;flex-direction:column;gap:14px;align-items:flex-start;text-align:left;cursor:pointer;transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease;min-height:204px;color:var(--text);--card-accent:var(--accent);--card-soft:rgba(56,189,248,0.35);--card-border:rgba(56,189,248,0.45);}
+  .focus-card::after{content:"";position:absolute;inset:0;background:radial-gradient(160px 160px at 100% -20%,var(--card-soft,rgba(56,189,248,0.35)) 0%,transparent 70%);opacity:.9;pointer-events:none;transition:opacity .2s ease;}
+  .focus-card .focus-icon{font-size:36px;display:inline-flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:18px;background:rgba(15,23,42,0.75);border:1px solid var(--card-border,rgba(148,163,184,0.35));color:var(--card-accent);box-shadow:0 18px 36px -26px var(--card-soft,rgba(56,189,248,0.4));}
+  .focus-card h3{margin:0;font-size:20px;font-weight:700;letter-spacing:.04em;}
+  .focus-card p{margin:0;color:var(--muted);font-size:15px;line-height:1.45;}
+  .focus-card:hover{transform:translateY(-6px);box-shadow:0 26px 70px -48px var(--card-soft,rgba(59,130,246,0.65));border-color:var(--card-border,rgba(148,163,184,0.38));}
+  .focus-card:hover::after{opacity:1;}
+  .focus-card:active{transform:translateY(-2px);}
+  .focus-card[data-focus="super"]{--card-accent:var(--focus-super);--card-soft:rgba(249,115,22,0.34);--card-border:rgba(249,115,22,0.45);}
+  .focus-card[data-focus="notvery"]{--card-accent:var(--focus-notvery);--card-soft:rgba(56,189,248,0.34);--card-border:rgba(56,189,248,0.45);}
+  .focus-card[data-focus="immune"]{--card-accent:var(--focus-immune);--card-soft:rgba(253,224,71,0.32);--card-border:rgba(253,224,71,0.45);}
+  .focus-card[data-focus="resist"]{--card-accent:var(--focus-resist);--card-soft:rgba(192,132,252,0.32);--card-border:rgba(192,132,252,0.45);}
+
+  #quizView{display:flex;flex-direction:column;gap:22px;}
+  .quiz-shell{background:var(--surface-strong);border-radius:26px;padding:36px 32px;border:1px solid var(--border);box-shadow:0 36px 90px -60px rgba(30,58,138,0.7);}
+  .quiz-header{display:flex;justify-content:center;align-items:center;gap:12px;margin-bottom:24px;flex-wrap:wrap;}
+  .focus-tag{padding:10px 18px;border-radius:999px;border:1px solid var(--border-strong);font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:13px;color:var(--muted);background:rgba(148,163,184,0.14);display:inline-flex;align-items:center;gap:8px;}
+  .focus-tag span{font-size:16px;}
+  .focus-tag[data-focus="super"]{color:var(--focus-super);border-color:rgba(249,115,22,0.45);background:rgba(249,115,22,0.12);}
+  .focus-tag[data-focus="notvery"]{color:var(--focus-notvery);border-color:rgba(56,189,248,0.45);background:rgba(56,189,248,0.12);}
+  .focus-tag[data-focus="immune"]{color:#facc15;border-color:rgba(250,204,21,0.55);background:rgba(250,204,21,0.12);}
+  .focus-tag[data-focus="resist"]{color:var(--focus-resist);border-color:rgba(192,132,252,0.5);background:rgba(192,132,252,0.12);}
+
+  .defender-card{text-align:center;display:flex;flex-direction:column;gap:18px;align-items:center;margin-bottom:18px;}
+  .poke-name{font-size:clamp(30px,4.2vw,42px);font-weight:800;letter-spacing:.5px;margin:0;}
+  .poke-types{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;}
+  .type-chip{display:inline-flex;align-items:center;justify-content:center;padding:8px 14px;border-radius:999px;font-weight:700;letter-spacing:.02em;background:linear-gradient(135deg,rgba(255,255,255,0.22),rgba(255,255,255,0.05));border:1px solid rgba(255,255,255,0.2);color:#020817;min-width:64px;box-shadow:0 12px 26px -20px rgba(15,23,42,0.9);}
+  .prompt{margin:0;color:var(--muted);font-size:17px;max-width:720px;text-align:center;}
+  .focus-note{margin:8px auto 0;color:rgba(250,204,21,0.9);font-size:14px;font-weight:600;letter-spacing:.03em;text-align:center;max-width:640px;}
+
+  .type-grid{margin-top:28px;display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:14px;}
+  .type-pill{position:relative;border-radius:18px;padding:12px 14px;border:1px solid rgba(15,23,42,0.8);font-weight:700;font-size:15px;text-align:center;cursor:pointer;background:linear-gradient(135deg,rgba(255,255,255,0.18),rgba(15,23,42,0.85)),var(--c,rgba(71,85,105,0.85));color:#010409;transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease, opacity .18s ease;user-select:none;}
+  .type-pill:hover{transform:translateY(-2px);}
+  .type-pill[data-selected="true"]{box-shadow:0 0 0 3px rgba(148,197,255,0.65),0 28px 52px -28px rgba(56,189,248,0.9);border-color:rgba(148,197,255,0.7);transform:translateY(-3px);}
+  .type-pill[data-state="correct"]{box-shadow:0 0 0 3px rgba(34,197,94,0.75),0 24px 48px -26px rgba(34,197,94,0.55);border-color:rgba(34,197,94,0.6);}
+  .type-pill[data-state="wrong"]{box-shadow:0 0 0 3px rgba(239,68,68,0.75),0 24px 48px -24px rgba(239,68,68,0.6);border-color:rgba(239,68,68,0.65);}
+  .type-pill[data-state="missed"]{box-shadow:0 0 0 3px rgba(59,130,246,0.7),0 24px 48px -26px rgba(59,130,246,0.55);border-color:rgba(96,165,250,0.6);opacity:.92;}
+  .type-pill[disabled]{cursor:default;opacity:.6;transform:none;}
+
+  .actions{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;margin-top:30px;}
+
+  .result{margin-top:28px;padding:20px 24px;border-radius:20px;border:1px solid rgba(148,197,255,0.2);background:rgba(15,23,42,0.7);display:flex;align-items:center;gap:18px;transition:opacity .2s ease;}
+  .result.hidden{display:none;}
+  .result[data-state="good"]{border-color:rgba(34,197,94,0.45);background:rgba(34,197,94,0.12);}
+  .result[data-state="bad"]{border-color:rgba(239,68,68,0.5);background:rgba(239,68,68,0.12);}
+  .result-icon{width:54px;height:54px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;}
+  .result[data-state="good"] .result-icon{background:rgba(34,197,94,0.18);color:#4ade80;}
+  .result[data-state="bad"] .result-icon{background:rgba(239,68,68,0.2);color:#fca5a5;}
+  .result-body{display:flex;flex-direction:column;gap:10px;}
+  .result-body h4{margin:0;font-size:18px;font-weight:700;letter-spacing:.04em;}
+  .result-body p{margin:0;color:var(--muted);font-size:14px;line-height:1.5;}
+  .result-lines{display:flex;flex-direction:column;gap:10px;}
+  .result-line{display:flex;flex-direction:column;gap:6px;font-size:14px;color:var(--muted);}
+  .chip-row{display:flex;flex-wrap:wrap;gap:8px;}
+  .chip-row .type-chip{padding:6px 12px;font-size:13px;border-radius:14px;box-shadow:none;}
+
+  #changeFocus{align-self:center;margin-top:4px;}
+
+  .type-chip.t-Normal{background:linear-gradient(135deg,rgba(255,255,255,0.25),rgba(226,232,240,0.1)),#A8A77A;}
+  .type-chip.t-Fire{background:linear-gradient(135deg,rgba(255,255,255,0.25),rgba(226,232,240,0.1)),#EE8130;}
+  .type-chip.t-Water{background:linear-gradient(135deg,rgba(255,255,255,0.25),rgba(226,232,240,0.1)),#6390F0;}
+  .type-chip.t-Electric{background:linear-gradient(135deg,rgba(255,255,255,0.25),rgba(226,232,240,0.1)),#F7D02C;}
+  .type-chip.t-Grass{background:linear-gradient(135deg,rgba(255,255,255,0.25),rgba(226,232,240,0.1)),#7AC74C;}
+  .type-chip.t-Ice{background:linear-gradient(135deg,rgba(255,255,255,0.25),rgba(226,232,240,0.1)),#96D9D6;}
+  .type-chip.t-Fighting{background:linear-gradient(135deg,rgba(255,255,255,0.25),rgba(226,232,240,0.1)),#C22E28;}
+  .type-chip.t-Poison{background:linear-gradient(135deg,rgba(255,255,255,0.25),rgba(226,232,240,0.1)),#A33EA1;}
+  .type-chip.t-Ground{background:linear-gradient(135deg,rgba(255,255,255,0.25),rgba(226,232,240,0.1)),#E2BF65;}
+  .type-chip.t-Flying{background:linear-gradient(135deg,rgba(255,255,255,0.25),rgba(226,232,240,0.1)),#A98FF3;}
+  .type-chip.t-Psychic{background:linear-gradient(135deg,rgba(255,255,255,0.25),rgba(226,232,240,0.1)),#F95587;}
+  .type-chip.t-Bug{background:linear-gradient(135deg,rgba(255,255,255,0.25),rgba(226,232,240,0.1)),#A6B91A;}
+  .type-chip.t-Rock{background:linear-gradient(135deg,rgba(255,255,255,0.25),rgba(226,232,240,0.1)),#B6A136;}
+  .type-chip.t-Ghost{background:linear-gradient(135deg,rgba(255,255,255,0.25),rgba(226,232,240,0.1)),#735797;}
+  .type-chip.t-Dragon{background:linear-gradient(135deg,rgba(255,255,255,0.25),rgba(226,232,240,0.1)),#6F35FC;}
+  .type-chip.t-Dark{background:linear-gradient(135deg,rgba(255,255,255,0.25),rgba(226,232,240,0.1)),#705746;}
+  .type-chip.t-Steel{background:linear-gradient(135deg,rgba(255,255,255,0.25),rgba(226,232,240,0.1)),#B7B7CE;}
+  .type-chip.t-Fairy{background:linear-gradient(135deg,rgba(255,255,255,0.25),rgba(226,232,240,0.1)),#D685AD;}
+
+  .type-pill.t-Normal{--c:#A8A77A;}
+  .type-pill.t-Fire{--c:#EE8130;}
+  .type-pill.t-Water{--c:#6390F0;}
+  .type-pill.t-Electric{--c:#F7D02C;}
+  .type-pill.t-Grass{--c:#7AC74C;}
+  .type-pill.t-Ice{--c:#96D9D6;}
+  .type-pill.t-Fighting{--c:#C22E28;}
+  .type-pill.t-Poison{--c:#A33EA1;}
+  .type-pill.t-Ground{--c:#E2BF65;}
+  .type-pill.t-Flying{--c:#A98FF3;}
+  .type-pill.t-Psychic{--c:#F95587;}
+  .type-pill.t-Bug{--c:#A6B91A;}
+  .type-pill.t-Rock{--c:#B6A136;}
+  .type-pill.t-Ghost{--c:#735797;}
+  .type-pill.t-Dragon{--c:#6F35FC;}
+  .type-pill.t-Dark{--c:#705746;}
+  .type-pill.t-Steel{--c:#B7B7CE;}
+  .type-pill.t-Fairy{--c:#D685AD;}
+
+  @media(max-width:720px){
+    body{padding:30px 16px 60px;}
+    .brand{min-width:unset;}
+    .quiz-shell{padding:28px 22px;}
+    .type-grid{grid-template-columns:repeat(auto-fit,minmax(110px,1fr));}
+  }
+  @media(max-width:520px){
+    .actions{flex-direction:column;}
+    .scoreboard{justify-content:flex-start;}
+    #focusView{padding:32px 22px;}
+  }
+
+  @keyframes fadeIn{
+    from{opacity:0;transform:translateY(12px);}
+    to{opacity:1;transform:translateY(0);}
+  }
 </style>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <h1>Pokémon Type Trainer</h1>
-      <div class="tabs" role="tablist" aria-label="Modes">
-        <button class="tab" role="tab" aria-selected="true" data-mode="weak">Pick All Weaknesses</button>
-        <button class="tab" role="tab" aria-selected="false" data-mode="mult">Multiplier Quiz</button>
-        <button class="tab" role="tab" aria-selected="false" data-mode="custom">Custom Types</button>
+  <div class="app">
+    <header class="top">
+      <div class="brand">
+        <h1>Pokémon Type Trainer</h1>
+        <p>Sharpen your matchup memory with a focused drill.</p>
+      </div>
+      <div class="scoreboard">
+        <div class="score-box"><span>Score</span><strong id="score">0</strong></div>
+        <div class="score-box"><span>Streak</span><strong id="streak">0</strong></div>
+        <div class="score-box"><span>Best</span><strong id="best">0</strong></div>
       </div>
     </header>
 
-    <div class="grid">
-      <section class="panel card" id="left">
-        <div class="title">Prompt</div>
-        <div id="promptArea" class="subtitle"></div>
-
-        <div class="row" id="defenderArea" aria-live="polite" style="margin-top:10px"></div>
-
-        <div id="typePicker" class="type-grid" style="margin-top:14px"></div>
-
-        <div class="footer">
-          <div class="kpi">
-            <div class="pill">Score: <b id="score">0</b></div>
-            <div class="pill">Streak: <b id="streak">0</b></div>
-            <div class="pill">Best: <b id="best">0</b></div>
-          </div>
-          <div class="flex">
-            <button class="btn ghost" id="skipBtn">Skip ↷</button>
-            <button class="btn primary" id="checkBtn">Check ✓</button>
-            <button class="btn" id="nextBtn" disabled>Next ▶</button>
-          </div>
-        </div>
-        <div id="feedback" class="answer hidden" role="status" aria-live="polite"></div>
+    <main>
+      <section id="intro" class="view">
+        <h2>Master the matchup chart</h2>
+        <p>Jump into quick drills that target a specific effectiveness tier. Choose what you want to practise, then tap through randomized Pokémon to lock the type chart into muscle memory.</p>
+        <button id="startBtn" class="btn">Start training</button>
       </section>
 
-      <aside class="panel card" id="right">
-        <div class="title">Settings</div>
-        <div class="subtitle">Choose what we quiz you on.</div>
-
-        <div class="card" style="margin-top:10px">
-          <div class="title" style="margin-bottom:4px">Roster</div>
-          <div class="row">
-            <label><input type="radio" name="roster" value="pokemon" checked> Random Pokémon</label>
-            <label><input type="radio" name="roster" value="types"> Random Type Pair</label>
-          </div>
-          <div class="notice" style="margin-top:6px">The Pokémon set is a curated sample for practice. You can also pick exact types below.</div>
+      <section id="focusView" class="view hidden">
+        <header>
+          <h2>Select your focus</h2>
+          <p>What matchup tier do you want to drill right now?</p>
+        </header>
+        <div class="focus-grid">
+          <button class="focus-card" data-focus="super">
+            <span class="focus-icon">⚔️</span>
+            <h3>Super Effective</h3>
+            <p>Find the coverage moves that hit for ×2 or ×4 damage. Perfect for planning offense.</p>
+          </button>
+          <button class="focus-card" data-focus="notvery">
+            <span class="focus-icon">🛡️</span>
+            <h3>Not Very Effective</h3>
+            <p>Memorize matchups that only deal ×½ damage so you know when a move is safe to shrug off.</p>
+          </button>
+          <button class="focus-card" data-focus="immune">
+            <span class="focus-icon">⛔️</span>
+            <h3>Immune</h3>
+            <p>Spot the types that do zero damage. Never lose a turn to an immunity again.</p>
+          </button>
+          <button class="focus-card" data-focus="resist">
+            <span class="focus-icon">🔁</span>
+            <h3>Resist</h3>
+            <p>Drill tricky double resistances (×¼). When none exist, we fall back to regular resistances.</p>
+          </button>
         </div>
-
-        <div class="card" style="margin-top:10px">
-          <div class="title" style="margin-bottom:6px">Force Defender Types</div>
-          <div class="chips" id="forceTypes"></div>
-          <div class="notice">Click 1–2 types to lock them in (click again to clear). Use this to drill tough matchups (e.g., <span class="chip type t-Steel badge">Steel</span> + <span class="chip type t-Fairy badge">Fairy</span>).</div>
+        <div style="margin-top:26px;display:flex;justify-content:center;">
+          <button id="backToIntro" class="link-btn">← Back</button>
         </div>
+      </section>
 
-        <div class="card" style="margin-top:10px">
-          <div class="title" style="margin-bottom:6px">Multiplier Quiz Options</div>
-          <div class="row">
-            <label class="pill"><input type="checkbox" id="includeZero"> Include immunities (×0)</label>
-            <label class="pill"><input type="checkbox" id="allowQuarter"> Include ¼×/4×</label>
+      <section id="quizView" class="view hidden">
+        <div class="quiz-shell">
+          <div class="quiz-header">
+            <div id="focusTag" class="focus-tag" data-focus="super"><span>★</span><span>Super Effective practice</span></div>
+          </div>
+          <div class="defender-card">
+            <h3 id="pokeName" class="poke-name">Charizard</h3>
+            <div id="pokeTypes" class="poke-types"></div>
+            <p id="promptText" class="prompt">Select all attack types that are super effective (×2 or ×4).</p>
+            <div id="focusNote" class="focus-note hidden"></div>
+          </div>
+          <div id="typeGrid" class="type-grid"></div>
+          <div class="actions">
+            <button id="submitBtn" class="btn primary">Check answer</button>
+            <button id="nextBtn" class="btn alt" disabled>Next Pokémon</button>
+          </div>
+          <div id="result" class="result hidden" aria-live="polite">
+            <div id="resultIcon" class="result-icon">✓</div>
+            <div class="result-body">
+              <h4 id="resultHeading">Great work!</h4>
+              <div id="resultSummary" class="result-lines"></div>
+            </div>
           </div>
         </div>
-
-        <div class="card" style="margin-top:10px">
-          <div class="title" style="margin-bottom:6px">Practice Builder</div>
-          <div class="row">
-            <input id="customName" class="pill grow" placeholder="Nickname (optional): e.g., My Test Mon"/>
-          </div>
-          <div class="row" style="margin-top:6px">
-            <div id="customTypePicker" class="type-grid" style="grid-template-columns:repeat(9,minmax(0,1fr))"></div>
-          </div>
-          <div class="row" style="margin-top:8px">
-            <button class="btn" id="startCustom">Use in next question</button>
-          </div>
-        </div>
-
-        <div class="notice" style="margin-top:10px">Tip: Hit <b>Enter</b> to check, <b>N</b> for next, and number keys select multipliers in that quiz.</div>
-      </aside>
-    </div>
+        <button id="changeFocus" class="link-btn">← Change focus</button>
+      </section>
+    </main>
   </div>
 
 <script>
-// -----------------------------
-// Data: Types + Effectiveness
-// -----------------------------
 const TYPES = [
   'Normal','Fire','Water','Electric','Grass','Ice','Fighting','Poison','Ground','Flying','Psychic','Bug','Rock','Ghost','Dragon','Dark','Steel','Fairy'
 ];
 
-// Attack -> Defend -> multiplier
-// Values are from the modern mainline games (Gen 6+)
 const CHART = {
   Normal:   {Rock:.5, Steel:.5, Ghost:0},
   Fire:     {Grass:2, Ice:2, Bug:2, Steel:2, Fire:.5, Water:.5, Rock:.5, Dragon:.5},
@@ -170,20 +290,6 @@ const CHART = {
   Fairy:    {Fighting:2, Dragon:2, Dark:2, Fire:.5, Poison:.5, Steel:.5}
 };
 
-// Helper: get multiplier of one attack type vs 1 or 2 defender types
-function mult(attack, defenders){
-  const arr = defenders.filter(Boolean);
-  let m = 1;
-  for(const d of arr){
-    const row = CHART[attack] || {};
-    m *= (row[d] ?? 1);
-  }
-  return m;
-}
-
-// -----------------------------
-// Sample Pokémon roster (practice-friendly variegated set)
-// -----------------------------
 const ROSTER = [
   ['Charizard',['Fire','Flying']],
   ['Gyarados',['Water','Flying']],
@@ -214,301 +320,325 @@ const ROSTER = [
   ['Dragapult',['Dragon','Ghost']]
 ];
 
-// UI refs
-const promptArea = document.getElementById('promptArea');
-const defenderArea = document.getElementById('defenderArea');
-const typePicker = document.getElementById('typePicker');
-const feedback = document.getElementById('feedback');
+const FOCUS = {
+  super: {
+    label: 'Super Effective',
+    tagIcon: '⚡️',
+    prompt: 'Select every attack type that deals super-effective damage (×2 or ×4).',
+    description: 'Find the coverage moves that land big hits.',
+    filter: (m)=>m>=2
+  },
+  notvery: {
+    label: 'Not Very Effective',
+    tagIcon: '🛡️',
+    prompt: 'Select the attack types that only deal ×½ damage.',
+    description: 'Identify matchups that barely scratch this defender.',
+    filter: (m)=>m===0.5
+  },
+  immune: {
+    label: 'Immune',
+    tagIcon: '⛔️',
+    prompt: 'Select the attack types that do no damage (×0).',
+    description: 'Catch every immunity before you lock in a move.',
+    filter: (m)=>m===0
+  },
+  resist: {
+    label: 'Resist',
+    tagIcon: '🔁',
+    prompt: 'Select the attack types that deal only ×¼ damage (double resist).',
+    description: 'Memorize rare double resistances.',
+    filter: (m)=>m===0.25,
+    fallbackFilter: (m)=>m===0.5,
+    fallbackPrompt: 'Select the attack types that deal ×½ damage. (No double resistances for this defender.)',
+    fallbackNote: 'No double resistances found, so we are drilling regular resistances instead.'
+  }
+};
+
+const intro = document.getElementById('intro');
+const focusView = document.getElementById('focusView');
+const quizView = document.getElementById('quizView');
+const startBtn = document.getElementById('startBtn');
+const backToIntro = document.getElementById('backToIntro');
+const changeFocusBtn = document.getElementById('changeFocus');
+const focusCards = document.querySelectorAll('.focus-card');
+const focusTag = document.getElementById('focusTag');
+const promptText = document.getElementById('promptText');
+const focusNote = document.getElementById('focusNote');
+const typeGrid = document.getElementById('typeGrid');
+const pokeNameEl = document.getElementById('pokeName');
+const pokeTypesEl = document.getElementById('pokeTypes');
+const submitBtn = document.getElementById('submitBtn');
+const nextBtn = document.getElementById('nextBtn');
+const resultBox = document.getElementById('result');
+const resultIcon = document.getElementById('resultIcon');
+const resultHeading = document.getElementById('resultHeading');
+const resultSummary = document.getElementById('resultSummary');
 const scoreEl = document.getElementById('score');
 const streakEl = document.getElementById('streak');
 const bestEl = document.getElementById('best');
-const tabs = document.querySelectorAll('.tab');
-const nextBtn = document.getElementById('nextBtn');
-const checkBtn = document.getElementById('checkBtn');
-const skipBtn = document.getElementById('skipBtn');
-const includeZero = document.getElementById('includeZero');
-const allowQuarter = document.getElementById('allowQuarter');
 
-let MODE = 'weak'; // weak | mult | custom
+const VIEWS = { intro, focus: focusView, quiz: quizView };
+let currentFocusKey = null;
+let currentFocus = null;
+let currentQuestion = null;
 let score = 0, streak = 0, best = 0;
-let currentQ = null;
-let forcedTypes = [];
-let pendingCustom = null;
+const selectedTypes = new Set();
+const typeButtons = [];
 
-// Build type buttons for main picker
-function buildTypeButtons(container, click){
-  container.innerHTML = '';
-  TYPES.forEach(t=>{
-    const b = document.createElement('button');
-    b.className = `type-btn t-${t}`;
-    b.textContent = t;
-    b.setAttribute('data-type', t);
-    b.addEventListener('click', ()=> click(t,b));
-    container.appendChild(b);
+function showView(name){
+  Object.entries(VIEWS).forEach(([key,el])=>{
+    if(el) el.classList.toggle('hidden', key!==name);
   });
 }
 
-// Build chips for force-select
-const forceTypes = document.getElementById('forceTypes');
-TYPES.forEach(t=>{
-  const c = document.createElement('button');
-  c.className = `chip type badge t-${t}`;
-  c.textContent = t;
-  c.setAttribute('data-type', t);
-  c.addEventListener('click', ()=>{
-    const i = forcedTypes.indexOf(t);
-    if(i>=0){ forcedTypes.splice(i,1); c.style.outline=''; }
-    else if(forcedTypes.length<2){ forcedTypes.push(t); c.style.outline='2px solid #60a5fa'; }
-  });
-  forceTypes.appendChild(c);
-});
-
-// Custom type picker (for Practice Builder)
-const customTypePicker = document.getElementById('customTypePicker');
-const selectedCustom = new Set();
-buildTypeButtons(customTypePicker, (t,btn)=>{
-  if(selectedCustom.has(t)) { selectedCustom.delete(t); btn.setAttribute('aria-pressed','false'); btn.style.outline=''; }
-  else if(selectedCustom.size<2){ selectedCustom.add(t); btn.setAttribute('aria-pressed','true'); btn.style.outline='2px solid #60a5fa'; }
-});
-
-document.getElementById('startCustom').addEventListener('click', ()=>{
-  if(selectedCustom.size===0){ alert('Pick 1–2 types for your custom defender.'); return; }
-  const name = document.getElementById('customName').value.trim() || 'Custom Defender';
-  pendingCustom = { name, types: [...selectedCustom] };
-  newQuestion();
-});
-
-// Main picker (for answers). Different behavior per mode.
-let selectedTypes = new Set();
-function onAnswerTypeClick(t, btn){
-  if(MODE==='weak'){
-    // multi-select: toggle
-    const on = selectedTypes.has(t);
-    if(on){ selectedTypes.delete(t); btn.setAttribute('aria-pressed','false'); btn.dataset.state=''; }
-    else { selectedTypes.add(t); btn.setAttribute('aria-pressed','true'); btn.dataset.state=''; }
-  } else if(MODE==='mult'){
-    // choosing an attack type (single), then multiplier via quick-keys (or UI chips)
-    selectedTypes.clear();
-    document.querySelectorAll('#typePicker .type-btn').forEach(b=>{ b.setAttribute('aria-pressed','false'); b.style.outline=''; });
-    selectedTypes.add(t);
-    btn.setAttribute('aria-pressed','true'); btn.style.outline='2px solid #60a5fa';
-  } else if(MODE==='custom'){
-    // same as weak mode (multi)
-    const on = selectedTypes.has(t);
-    if(on){ selectedTypes.delete(t); btn.setAttribute('aria-pressed','false'); btn.dataset.state=''; }
-    else { selectedTypes.add(t); btn.setAttribute('aria-pressed','true'); btn.dataset.state=''; }
-  }
+function rand(arr){
+  return arr[Math.floor(Math.random()*arr.length)];
 }
-
-buildTypeButtons(typePicker, onAnswerTypeClick);
-
-// Tabs (modes)
-for(const t of tabs){
-  t.addEventListener('click', ()=>{
-    tabs.forEach(x=>x.setAttribute('aria-selected','false'));
-    t.setAttribute('aria-selected','true');
-    MODE = t.dataset.mode;
-    newQuestion();
-  });
-}
-
-document.querySelectorAll('input[name="roster"]').forEach(r=>{
-  r.addEventListener('change', ()=> newQuestion());
-});
-
-skipBtn.addEventListener('click', ()=> revealAndExplain(false));
-checkBtn.addEventListener('click', ()=> grade());
-nextBtn.addEventListener('click', ()=> newQuestion());
-
-// Keyboard shortcuts
-window.addEventListener('keydown', (e)=>{
-  if(e.key==='Enter') grade();
-  if(e.key.toLowerCase()==='n') newQuestion();
-  if(MODE==='mult'){
-    const map = { '1':0, '2':0.25, '3':0.5, '4':1, '5':2, '6':4 };
-    if(map[e.key]!=null){ currentQ && (currentQ.choiceMultiplier = map[e.key]); grade(); }
-  }
-});
-
-function rand(a){ return a[Math.floor(Math.random()*a.length)] }
 
 function chooseDefender(){
-  // Forced types override roster
-  if(forcedTypes.length){
-    const name = forcedTypes.join(' / ');
-    return { name, types:[...forcedTypes] };
+  const [name, types] = rand(ROSTER);
+  return { name, types };
+}
+
+function mult(attack, defenders){
+  const arr = defenders.filter(Boolean);
+  let m = 1;
+  for(const d of arr){
+    const row = CHART[attack] || {};
+    m *= (row[d] ?? 1);
   }
-  const rosterMode = document.querySelector('input[name="roster"]:checked').value;
-  if(pendingCustom){ const out = pendingCustom; pendingCustom = null; return out; }
-  if(rosterMode==='types'){
-    const roll = Math.random();
-    if(roll<0.2){ return { name:'Random Mono', types:[rand(TYPES)] } }
-    // Random dual
-    let t1 = rand(TYPES), t2 = rand(TYPES);
-    while(t2===t1) t2 = rand(TYPES);
-    return { name:`${t1} / ${t2}`, types:[t1,t2] };
+  return m;
+}
+
+function buildTypeButtons(){
+  typeGrid.innerHTML = '';
+  typeButtons.length = 0;
+  TYPES.forEach(type=>{
+    const btn = document.createElement('button');
+    btn.className = `type-pill t-${type}`;
+    btn.textContent = type;
+    btn.dataset.type = type;
+    btn.dataset.selected = 'false';
+    btn.addEventListener('click', ()=> toggleType(type, btn));
+    typeGrid.appendChild(btn);
+    typeButtons.push(btn);
+  });
+}
+
+function toggleType(type, btn){
+  if(btn.disabled) return;
+  if(selectedTypes.has(type)){
+    selectedTypes.delete(type);
+    btn.dataset.selected = 'false';
   } else {
-    const [name, types] = rand(ROSTER);
-    return { name, types };
+    selectedTypes.add(type);
+    btn.dataset.selected = 'true';
   }
+}
+
+function resetScoreboard(){
+  score = 0;
+  streak = 0;
+  best = 0;
+  updateScoreboard();
+}
+
+function updateScoreboard(){
+  scoreEl.textContent = score;
+  streakEl.textContent = streak;
+  bestEl.textContent = best;
+}
+
+function setFocus(key){
+  currentFocusKey = key;
+  currentFocus = FOCUS[key];
+  resetScoreboard();
+  focusTag.dataset.focus = key;
+  focusTag.innerHTML = `<span>${currentFocus.tagIcon}</span><span>${currentFocus.label} practice</span>`;
+  showView('quiz');
+  newQuestion();
+}
+
+function renderTypeChip(type){
+  return `<span class="type-chip t-${type}">${type}</span>`;
 }
 
 function setDefenderUI(def){
-  defenderArea.innerHTML = '';
-  const title = document.createElement('div');
-  title.className = 'title';
-  title.textContent = def.name;
-  defenderArea.appendChild(title);
-
-  const chips = document.createElement('div');
-  chips.className='chips';
-  def.types.forEach(t=>{
-    const c=document.createElement('span');
-    c.className=`chip type badge t-${t}`;
-    c.textContent=t;
-    chips.appendChild(c);
-  });
-  defenderArea.appendChild(chips);
+  pokeNameEl.textContent = def.name;
+  pokeTypesEl.innerHTML = def.types.map(renderTypeChip).join('');
 }
 
-function resetAnswerUI(){
+function resetSelections(){
   selectedTypes.clear();
-  document.querySelectorAll('#typePicker .type-btn').forEach(b=>{
-    b.setAttribute('aria-pressed','false');
-    b.dataset.state='';
-    b.style.outline='';
+  typeButtons.forEach(btn=>{
+    btn.dataset.selected = 'false';
+    btn.dataset.state = '';
+    btn.disabled = false;
   });
-  feedback.className='answer hidden';
-  feedback.textContent='';
-  nextBtn.disabled=true;
+  resultBox.classList.add('hidden');
+  resultBox.dataset.state = '';
+  focusNote.classList.add('hidden');
+  focusNote.textContent = '';
+  submitBtn.disabled = false;
+  nextBtn.disabled = true;
+}
+
+function computeMatches(def, filter){
+  const correct = new Set();
+  TYPES.forEach(type=>{
+    const m = mult(type, def.types);
+    if(filter(m)) correct.add(type);
+  });
+  return correct;
+}
+
+function pickQuestion(filter){
+  if(!filter) return null;
+  for(let attempts=0; attempts<160; attempts++){
+    const def = chooseDefender();
+    const correct = computeMatches(def, filter);
+    if(correct.size){
+      return { def, correct };
+    }
+  }
+  return null;
 }
 
 function newQuestion(){
-  resetAnswerUI();
-
-  const def = chooseDefender();
-  currentQ = { def, correct:new Set(), mode:MODE };
-  setDefenderUI(def);
-
-  if(MODE==='weak' || MODE==='custom'){
-    promptArea.textContent = 'Select all attack types that are super-effective (×2 or ×4) against this defender.';
-    // Compute correct set
-    TYPES.forEach(att=>{
-      const m = mult(att, def.types);
-      if(m>=2) currentQ.correct.add(att);
+  if(!currentFocus) return;
+  resetSelections();
+  let q = pickQuestion(currentFocus.filter);
+  let usedFallback = false;
+  if(!q && currentFocus.fallbackFilter){
+    q = pickQuestion(currentFocus.fallbackFilter);
+    if(q){
+      usedFallback = true;
+    }
+  }
+  if(!q){
+    currentQuestion = null;
+    selectedTypes.clear();
+    typeButtons.forEach(btn=>{
+      btn.disabled = true;
+      btn.dataset.selected = 'false';
+      btn.dataset.state = '';
     });
-  } else if(MODE==='mult'){
-    // pick a random attack type and ask for the multiplier
-    const attack = rand(TYPES);
-    currentQ.attack = attack;
-    promptArea.innerHTML = `What is the damage multiplier of <span class="chip type badge t-${attack}">${attack}</span> hitting this defender? <span class="subtitle">Select an attack type first (the highlighted one), then press 1–6 for: 0, ¼, ½, 1, 2, 4.</span>`;
-    // Pre-highlight one on click; grading will read currentQ.choiceMultiplier
+    resultHeading.textContent = 'No matchups available';
+    resultSummary.innerHTML = `<div class="result-line"><span>Heads up</span><div>We couldn't find any ${currentFocus.label.toLowerCase()} matchups in the current roster. Try a different focus or press Next to roll again.</div></div>`;
+    resultBox.dataset.state = 'bad';
+    resultBox.classList.remove('hidden');
+    submitBtn.disabled = true;
+    nextBtn.disabled = false;
+    return;
+  }
+  currentQuestion = { ...q, usedFallback };
+  setDefenderUI(q.def);
+  const usingFallback = usedFallback && currentFocus.fallbackPrompt;
+  promptText.textContent = usingFallback ? currentFocus.fallbackPrompt : currentFocus.prompt;
+  if(usedFallback && currentFocus.fallbackNote){
+    focusNote.textContent = currentFocus.fallbackNote;
+    focusNote.classList.remove('hidden');
   }
 }
 
 function grade(){
-  if(!currentQ) return;
-  if(MODE==='weak' || MODE==='custom'){
-    // evaluate selectedTypes vs correct
-    const sel = new Set(selectedTypes);
-    const correct = currentQ.correct;
-    // mark buttons
-    document.querySelectorAll('#typePicker .type-btn').forEach(b=>{
-      const t = b.dataset.type; 
-      const isCorrect = correct.has(t);
-      const isChosen = sel.has(t);
-      b.dataset.state = isCorrect ? 'good' : (isChosen ? 'bad' : '');
-    });
-    const missed = [...correct].filter(t=>!sel.has(t));
-    const wrong = [...sel].filter(t=>!correct.has(t));
-    const ok = missed.length===0 && wrong.length===0 && correct.size>0;
-    finish(ok, explainWeaknesses(currentQ.def));
-  } else if(MODE==='mult'){
-    const pick = [...selectedTypes][0];
-    if(!pick){ alert('Pick an attack type first.'); return; }
-    if(currentQ.choiceMultiplier==null){
-      // Provide a quick selector if they prefer clicking
-      showMultiplierPicker(pick);
-      return;
+  if(!currentQuestion) return;
+  const correct = currentQuestion.correct;
+  const selected = new Set(selectedTypes);
+  if(correct.size === 0){
+    return;
+  }
+  const missed = [...correct].filter(t=>!selected.has(t)).sort();
+  const wrong = [...selected].filter(t=>!correct.has(t)).sort();
+  const ok = missed.length === 0 && wrong.length === 0;
+
+  typeButtons.forEach(btn=>{
+    const t = btn.dataset.type;
+    btn.disabled = true;
+    if(correct.has(t) && selected.has(t)){
+      btn.dataset.state = 'correct';
+    } else if(correct.has(t) && !selected.has(t)){
+      btn.dataset.state = 'missed';
+    } else if(!correct.has(t) && selected.has(t)){
+      btn.dataset.state = 'wrong';
+    } else {
+      btn.dataset.state = '';
     }
-    const m = mult(pick, currentQ.def.types);
-    const ok = (m===currentQ.choiceMultiplier);
-    finish(ok, `Your answer: <b>${formatMult(currentQ.choiceMultiplier)}</b>. Correct: <b>${formatMult(m)}</b>.`);
-  }
-}
-
-function showMultiplierPicker(pick){
-  const mRow = document.createElement('div');
-  mRow.className='row';
-  const opts = [0, .25, .5, 1, 2, 4];
-  const allowZero = includeZero.checked; 
-  const allowQ = allowQuarter.checked;
-  const filtered = opts.filter(x=> (allowZero || x!==0) && (allowQ || (x!==.25 && x!==4)) );
-  const parts = filtered.map(v=>`<button class="btn" data-m="${v}">${formatMult(v)}</button>`);
-  feedback.className='answer';
-  feedback.innerHTML = `<div class="title">Pick multiplier for <span class="chip type badge t-${pick}">${pick}</span> → ${currentQ.def.types.map(t=>`<span class='chip type badge t-${t}'>${t}</span>`).join(' ')}</div>` + parts.join(' ');
-  filtered.forEach(()=>{});
-  filtered.forEach((v,i)=>{
-    const btn = feedback.querySelectorAll('button')[i];
-    btn.addEventListener('click', ()=>{ currentQ.choiceMultiplier = v; grade(); });
   });
+
+  if(ok){
+    score += 10;
+    streak += 1;
+    best = Math.max(best, streak);
+  } else {
+    score = Math.max(0, score - 3);
+    streak = 0;
+  }
+  updateScoreboard();
+
+  submitBtn.disabled = true;
+  nextBtn.disabled = false;
+
+  showResult(ok, correct, missed, wrong);
 }
 
-function formatMult(x){
-  if(x===0) return '×0';
-  if(x===0.25) return '×¼';
-  if(x===0.5) return '×½';
-  return `×${x}`;
+function showResult(ok, correct, missed, wrong){
+  resultBox.dataset.state = ok ? 'good' : 'bad';
+  resultIcon.textContent = ok ? '✓' : '✕';
+  resultHeading.textContent = ok ? 'Great work!' : 'Keep practising';
+  const parts = [];
+  const sortedCorrect = [...correct].sort();
+  parts.push(`<div class="result-line"><span>Correct answers</span><div class="chip-row">${sortedCorrect.map(renderTypeChip).join('')}</div></div>`);
+  if(wrong.length){
+    parts.push(`<div class="result-line"><span>Selected but incorrect</span><div class="chip-row">${wrong.map(renderTypeChip).join('')}</div></div>`);
+  }
+  if(missed.length){
+    parts.push(`<div class="result-line"><span>You missed</span><div class="chip-row">${missed.map(renderTypeChip).join('')}</div></div>`);
+  }
+  if(ok){
+    parts.push(`<div class="result-line"><span>Streak</span><div>${streak} correct in a row!</div></div>`);
+  }
+  resultSummary.innerHTML = parts.join('');
+  resultBox.classList.remove('hidden');
 }
 
-function explainWeaknesses(def){
-  const lines=[];
-  const groups={ '4×':[], '2×':[], '½×':[], '¼×':[], '0×':[] };
-  TYPES.forEach(att=>{
-    const m = mult(att, def.types);
-    if(m===4) groups['4×'].push(att);
-    else if(m===2) groups['2×'].push(att);
-    else if(m===0.5) groups['½×'].push(att);
-    else if(m===0.25) groups['¼×'].push(att);
-    else if(m===0) groups['0×'].push(att);
+startBtn.addEventListener('click', ()=> showView('focus'));
+backToIntro.addEventListener('click', ()=>{
+  showView('intro');
+});
+changeFocusBtn.addEventListener('click', ()=>{
+  showView('focus');
+  currentFocusKey = null;
+  currentFocus = null;
+});
+
+focusCards.forEach(card=>{
+  card.addEventListener('click', ()=>{
+    const key = card.dataset.focus;
+    if(FOCUS[key]){
+      setFocus(key);
+    }
   });
-  function render(list,label){
-    if(!list.length) return '';
-    return `<div class='row' style='margin:.2rem 0'><b>${label}</b> ${list.map(t=>`<span class="chip type badge t-${t}">${t}</span>`).join(' ')}</div>`
+});
+
+submitBtn.addEventListener('click', grade);
+nextBtn.addEventListener('click', newQuestion);
+
+window.addEventListener('keydown', (event)=>{
+  if(quizView.classList.contains('hidden')) return;
+  if(event.key === 'Enter'){
+    event.preventDefault();
+    if(!submitBtn.disabled) grade();
+    else if(!nextBtn.disabled) newQuestion();
   }
-  return [
-    `<div class='title'>Effectiveness vs ${def.types.map(t=>`<span class='chip type badge t-${t}'>${t}</span>`).join(' ')}</div>`,
-    render(groups['4×'],'Super-weak (4×):'),
-    render(groups['2×'],'Weak (2×):'),
-    render(groups['½×'],'Resist (½×):'),
-    render(groups['¼×'],'Strong resist (¼×):'),
-    render(groups['0×'],'Immune (0×):')
-  ].join('');
-}
-
-function finish(correct, detailHTML){
-  if(correct){ score+=10; streak+=1; best=Math.max(best,streak); feedback.className='answer good'; feedback.innerHTML = 'Correct! 🎉 ' + detailHTML; }
-  else { score=Math.max(0,score-2); streak=0; feedback.className='answer bad'; feedback.innerHTML = 'Not quite. ' + detailHTML; }
-  scoreEl.textContent=score; streakEl.textContent=streak; bestEl.textContent=best;
-  nextBtn.disabled=false;
-}
-
-function revealAndExplain(isRight){
-  if(MODE==='weak' || MODE==='custom'){
-    // mark correct
-    document.querySelectorAll('#typePicker .type-btn').forEach(b=>{
-      const t=b.dataset.type; b.dataset.state = currentQ.correct.has(t)?'good':'';
-    });
-    finish(false, explainWeaknesses(currentQ.def));
-  } else if(MODE==='mult'){
-    const chosen = [...selectedTypes][0];
-    const m = chosen ? mult(chosen, currentQ.def.types) : '—';
-    finish(false, `Correct multiplier would be <b>${formatMult(m)}</b> for your current selection.`);
+  if(event.key && event.key.toLowerCase() === 'n' && !nextBtn.disabled){
+    event.preventDefault();
+    newQuestion();
   }
-}
+});
 
-// Initial
-newQuestion();
+buildTypeButtons();
+showView('intro');
 </script>
 </body>
 </html>
