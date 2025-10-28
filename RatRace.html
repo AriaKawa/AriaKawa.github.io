@@ -99,7 +99,11 @@
   }
 
   .board[data-view="betting"] .track-viewport{
-    display:none;
+    display:block;
+    height:clamp(220px, 32vh, 360px);
+    max-height:420px;
+    aspect-ratio:auto;
+    margin-bottom:18px;
   }
 
   .board[data-view="betting"] .track-card{
@@ -340,14 +344,35 @@
   }
 
   .rat-layer{ position:absolute; top:0; left:0; height:100%; width:100%; pointer-events:none; z-index:5; }
+  .rat-layer.interactive{ pointer-events:auto; }
   .rat{
     position:absolute;
     width:116px;
     height:104px;
     transform:translate(-9999px,-9999px);
     pointer-events:none;
+    outline:none;
   }
-  .rat-art{ width:116px; height:auto; transform-origin:50% 70%; }
+  .rat.selectable{ pointer-events:auto; cursor:pointer; }
+  .rat.selectable:focus-visible{ outline:2px solid rgba(255,209,59,.65); outline-offset:6px; border-radius:999px; }
+  .rat.selectable:hover .rat-art,
+  .rat.selectable:focus-visible .rat-art,
+  .rat.selected .rat-art{
+    filter:drop-shadow(0 0 18px rgba(255,209,59,.48));
+  }
+  .rat.selected .nameTag{
+    background:linear-gradient(135deg,#ffe775,#ffbf24 70%,#ff8b24);
+    color:#111;
+  }
+  .board[data-view="betting"] .rat .nameTag{
+    bottom:auto;
+    top:calc(100% + 12px);
+    transform:translate(-50%,0);
+  }
+  .board[data-view="betting"] .rat.selected .nameTag{
+    transform:translate(-50%,0) scale(1.05);
+  }
+  .rat-art{ width:116px; height:auto; transform-origin:50% 70%; transition:filter .18s ease; }
   .rat svg{ width:116px; height:auto; }
   .rat svg .tail{ animation:tail-sway 1.1s ease-in-out infinite; transform-origin:60px 92px; }
   .rat svg .body-group{ animation:body-bob .48s ease-in-out infinite; transform-origin:120px 90px; }
@@ -375,6 +400,7 @@
     box-shadow:0 6px 14px rgba(0,0,0,.38);
     text-transform:uppercase;
     white-space:nowrap;
+    transition:background .18s ease, color .18s ease, transform .18s ease;
   }
 
   /* Betting Panel */
@@ -816,10 +842,18 @@ let viewportWidth = 0;
 let viewportHeight = 0;
 let laneCenters = [];
 let cameraX = 0;
+let quickBetRatId = null;
+let rats = [];
 
 function setScreen(view='betting'){
   if(boardEl){
     boardEl.dataset.view = view;
+  }
+  updateRatSelectionUI();
+  if(view === 'betting' && Array.isArray(rats) && !racing){
+    for(const r of rats){
+      positionRat(r, r.x || 0);
+    }
   }
 }
 
@@ -869,9 +903,14 @@ function setCameraX(value=0){
   }
 }
 
-const rats = RAT_DATA.map((r, index) => {
+rats = RAT_DATA.map((r, index) => {
   const el = document.createElement('div');
   el.className = 'rat';
+  el.dataset.ratId = r.id;
+  el.setAttribute('role', 'button');
+  el.setAttribute('aria-label', `Bet on ${r.name}`);
+  el.setAttribute('aria-pressed', 'false');
+  el.tabIndex = -1;
   const art = document.createElement('div');
   art.className = 'rat-art';
   art.innerHTML = ratSVG(r.color);
@@ -881,6 +920,18 @@ const rats = RAT_DATA.map((r, index) => {
   tag.textContent = r.name;
   el.appendChild(tag);
   ratLayer?.appendChild(el);
+
+  const handleSelect = (event) => {
+    if(event){ event.preventDefault(); }
+    selectRatForBetting(r.id, { focusAmount:true });
+  };
+  el.addEventListener('click', handleSelect);
+  el.addEventListener('keydown', (event) => {
+    if(event.key === 'Enter' || event.key === ' '){
+      event.preventDefault();
+      handleSelect();
+    }
+  });
 
   const halfWidth = el.offsetWidth / 2 || 58;
   const halfHeight = el.offsetHeight / 2 || 52;
@@ -892,13 +943,24 @@ for(const r of rats){
   positionRat(r, 0);
 }
 
+setScreen('betting');
+
 function positionRat(r, distance=0){
   const clamped = Math.min(distance, TRACK_DISTANCE);
-  const worldX = TRACK_START_OFFSET + clamped;
   const laneIndex = r.laneIndex ?? 0;
   const laneY = laneCenters[laneIndex] ?? (viewportHeight * 0.65);
   const halfWidth = r.el.offsetWidth ? r.el.offsetWidth / 2 : (r.halfWidth || 58);
   const halfHeight = r.el.offsetHeight ? r.el.offsetHeight / 2 : (r.halfHeight || 52);
+  let worldX = TRACK_START_OFFSET + clamped;
+  if(!racing && boardEl?.dataset?.view === 'betting'){
+    const viewportCenter = cameraX + (viewportWidth * 0.5);
+    if(viewportWidth > 0){
+      const minX = TRACK_START_OFFSET + halfWidth;
+      const maxX = TRACK_START_OFFSET + TRACK_DISTANCE - halfWidth;
+      const target = Math.max(minX, Math.min(maxX, viewportCenter));
+      worldX = target;
+    }
+  }
   r.halfWidth = halfWidth;
   r.halfHeight = halfHeight;
   r.el.style.transform = `translate(${worldX - halfWidth}px, ${laneY - halfHeight}px)`;
@@ -928,7 +990,7 @@ const resultRows = document.getElementById('resultRows');
 const addBetBtn = document.getElementById('addBet');
 const bettorInput = document.getElementById('bettor');
 const amountInput = document.getElementById('amount');
-let quickBetRatId = sel ? sel.value : null;
+quickBetRatId = sel ? sel.value : null;
 let players = {};
 let isMultiplayer = false;
 let isHost = false;
@@ -1269,12 +1331,97 @@ function renderRatTotals(){
     return `<div class="ratRow${amount ? ' has-bets' : ''}${selectedClass}" data-rat="${r.id}">${progress}<div class="ratRowInner"><div class="ratInfo"><span class="ratSwatch" style="background:${ratColor(r.id)}"></span><span>${ratLabel}</span></div><div class="ratNumbers"><span class="ratAmount">${fmt(amount)}</span><span class="ratMeta">${metaParts.join(' • ')}</span><button class="ratBetButton" type="button" data-bet-rat="${r.id}" aria-label="Bet on ${ratLabel}" title="${title}"${bettingLocked ? ' disabled' : ''}>Bet</button></div></div></div>`;
   }).join('');
   ratTotalsEl.innerHTML = rows || `<div class="emptyState">No bets yet.</div>`;
+  updateRatSelectionUI();
+}
+
+function focusAmountField(){
+  if(!amountInput) return;
+  amountInput.focus();
+  amountInput.select();
+}
+
+function canInteractWithRats(){
+  const view = boardEl?.dataset?.view || 'betting';
+  const bettingOpen = !betUiLocked && (!isMultiplayer || (remoteState?.status ?? 'open') === 'open');
+  return view !== 'race' && bettingOpen && !racing;
+}
+
+function announceRatSelection(ratId){
+  const canUpdateStatus = (!isMultiplayer || (remoteState?.status ?? 'open') === 'open') && !racing && !finished;
+  if(!canUpdateStatus) return;
+  statusEl.classList.remove('countdown');
+  if(ratId){
+    statusEl.textContent = `Bet on ${ratName(ratId)}. Enter amount below.`;
+  }else{
+    statusEl.textContent = 'Select a rat to bet on.';
+  }
+}
+
+function updateRatSelectionUI(){
+  const interactive = canInteractWithRats();
+  if(ratLayer){
+    ratLayer.classList.toggle('interactive', interactive);
+  }
+  if(!Array.isArray(rats) || !rats.length){
+    return;
+  }
+  for(const r of rats){
+    const isSelected = quickBetRatId === r.id;
+    r.el.classList.toggle('selectable', interactive);
+    r.el.classList.toggle('selected', isSelected);
+    r.el.tabIndex = interactive ? 0 : -1;
+    r.el.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+    if(interactive){
+      r.el.removeAttribute('aria-disabled');
+    }else{
+      r.el.setAttribute('aria-disabled', 'true');
+    }
+  }
+}
+
+function selectRatForBetting(ratId, options={}){
+  if(ratId && !RAT_DATA.some(r=>r.id===ratId)){
+    return false;
+  }
+  const normalized = ratId ? ratId : null;
+  if(normalized && !options.force && !canInteractWithRats()){
+    return false;
+  }
+  const previous = quickBetRatId;
+  quickBetRatId = normalized;
+  if(sel && !options.skipDropdown){
+    sel.value = normalized || '';
+  }
+  if(previous === normalized){
+    if(normalized){
+      if(options.focusAmount){
+        focusAmountField();
+      }
+      if(options.announce !== false){
+        announceRatSelection(normalized);
+      }
+    }
+    return true;
+  }
+  renderRatTotals();
+  if(normalized){
+    if(options.focusAmount){
+      focusAmountField();
+    }
+    if(options.announce !== false){
+      announceRatSelection(normalized);
+    }
+    return true;
+  }
+  if(options.announce){
+    announceRatSelection(null);
+  }
+  return true;
 }
 
 if(sel){
   sel.addEventListener('change', ()=>{
-    quickBetRatId = sel.value || null;
-    renderRatTotals();
+    selectRatForBetting(sel.value || null, { focusAmount:false, announce:false, skipDropdown:true });
   });
 }
 
@@ -1284,20 +1431,7 @@ if(ratTotalsEl){
     if(!button || button.disabled) return;
     const ratId = button.dataset.betRat;
     if(!ratId) return;
-    quickBetRatId = ratId;
-    renderRatTotals();
-    if(sel){
-      sel.value = ratId;
-    }
-    if(amountInput){
-      amountInput.focus();
-      amountInput.select();
-    }
-    const canUpdateStatus = (!isMultiplayer || (remoteState?.status ?? 'open') === 'open') && !racing && !finished;
-    if(canUpdateStatus){
-      statusEl.classList.remove('countdown');
-      statusEl.textContent = `Bet on ${ratName(ratId)}. Enter amount below.`;
-    }
+    selectRatForBetting(ratId, { focusAmount:true });
   });
 }
 
@@ -1477,6 +1611,7 @@ function resetRacePositions(){
     raceCountdownEl.classList.add('hidden');
   }
   winner = null; finished=false; racing=false; currentRaceSetup=null; postedResults=false;
+  updateRatSelectionUI();
 }
 resetRacePositions();
 
@@ -1527,8 +1662,8 @@ async function startCountdown({ startTime=Date.now(), duration=2100 }={}){
 }
 
 function startRace(setup){
-  setScreen('race');
   racing = true;
+  setScreen('race');
   finished = false;
   setCameraX(0);
 
