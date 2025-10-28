@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>In Progress — Aria &amp; Friends Project Vault</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <main class="category">
+        <header class="category__header">
+            <a class="category__back" href="index.html">
+                <span aria-hidden="true">←</span>
+                <span>Back to Menu</span>
+            </a>
+            <div>
+                <h1 class="category__title">In Progress</h1>
+                <p class="category__description">
+                    Preview experiments, prototypes, and other works still finding their final form.
+                </p>
+            </div>
+        </header>
+
+        <section class="category__grid" aria-label="In-progress projects">
+            <a class="category-card" href="AutoRogue">
+                <span class="category-card__title">AutoRogue</span>
+                <p class="category-card__description">
+                    Watch autonomous heroes battle through dungeon rooms while you tweak their builds.
+                </p>
+            </a>
+            <a class="category-card" href="Council.html">
+                <span class="category-card__title">Council of Power</span>
+                <p class="category-card__description">
+                    Explore a cinematic strategy UI mock-up that blends pie charts with city builder flair.
+                </p>
+            </a>
+            <button class="category-card" type="button" disabled>
+                <span class="category-card__title">Rhythm Reactor</span>
+                <p class="category-card__description">
+                    Coming soon — a cooperative beat lab for aspiring DJs and rhythm champions.
+                </p>
+            </button>
+            <button class="category-card" type="button" data-download-banana>
+                <span class="category-card__title">Download Banana</span>
+                <p class="category-card__description">
+                    Grab the original guild banana asset for your own experiments and memes.
+                </p>
+            </button>
+        </section>
+    </main>
+
+    <script>
+        (function setupBananaDownload() {
+            const button = document.querySelector('[data-download-banana]');
+            if (!(button instanceof HTMLButtonElement)) {
+                return;
+            }
+
+            const defaultLabel = button.querySelector('.category-card__title');
+            const defaultText = defaultLabel?.textContent?.trim() || 'Download Banana';
+            const downloadUrl = 'assets/banana.svg';
+            const downloadName = 'banana.svg';
+
+            button.addEventListener('click', async () => {
+                const restore = () => {
+                    if (defaultLabel) {
+                        defaultLabel.textContent = defaultText;
+                    }
+                    button.disabled = false;
+                };
+
+                button.disabled = true;
+                if (defaultLabel) {
+                    defaultLabel.textContent = 'Preparing…';
+                }
+
+                try {
+                    const response = await fetch(downloadUrl, { cache: 'no-store' });
+                    if (!response.ok) {
+                        throw new Error(`Request failed with status ${response.status}`);
+                    }
+
+                    const blob = await response.blob();
+                    const href = URL.createObjectURL(blob);
+                    const anchor = document.createElement('a');
+                    anchor.href = href;
+                    anchor.download = downloadName;
+                    document.body.appendChild(anchor);
+                    anchor.click();
+                    anchor.remove();
+                    URL.revokeObjectURL(href);
+
+                    if (defaultLabel) {
+                        defaultLabel.textContent = 'Banana ready!';
+                    }
+                    window.setTimeout(restore, 1200);
+                } catch (error) {
+                    console.error('Unable to download banana image', error);
+                    if (defaultLabel) {
+                        defaultLabel.textContent = 'Download failed';
+                    }
+                    window.setTimeout(restore, 1800);
+                }
+            });
+        })();
+    </script>
+</body>
+</html>
