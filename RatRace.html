@@ -333,8 +333,9 @@
     right:24px;
     bottom:24px;
     display:flex;
-    gap:12px;
-    align-items:center;
+    gap:16px;
+    flex-wrap:wrap;
+    align-items:flex-start;
     justify-content:space-between;
     padding:16px 20px;
     border-radius:20px;
@@ -342,6 +343,13 @@
     border:1px solid rgba(255,255,255,.08);
     box-shadow:0 18px 36px rgba(0,0,0,.45);
     z-index:5;
+  }
+  .trackHeaderMain{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    flex:1 1 320px;
+    min-width:220px;
   }
   .statusRow{
     display:flex;
@@ -371,6 +379,57 @@
   .legend{ display:flex; gap:14px; opacity:.92; font-size:.92rem; align-items:center; }
   .legend span{ display:inline-flex; gap:8px; align-items:center; background:rgba(9,14,24,.55);
     padding:.35rem .65rem; border-radius:999px; border:1px solid rgba(255,255,255,.08); }
+  .trackOdds{ display:flex; flex-direction:column; align-items:flex-end; gap:6px; flex:0 1 360px; min-width:220px; }
+  .trackOdds[hidden]{ display:none !important; }
+  .trackOdds__label{ font-size:.75rem; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); opacity:.82; }
+  .trackOdds__list{ display:flex; flex-wrap:wrap; gap:6px; justify-content:flex-end; }
+  .trackOdds__item{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:.38rem .75rem;
+    border-radius:999px;
+    border:1px solid rgba(255,255,255,.12);
+    background:rgba(9,14,24,.58);
+    box-shadow:0 12px 26px rgba(0,0,0,.35);
+    font-size:.75rem;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:var(--muted);
+    transition:border-color .2s ease, box-shadow .2s ease, background .2s ease, color .2s ease;
+    max-width:100%;
+  }
+  .trackOdds__item.selected{
+    border-color:rgba(255,209,59,.75);
+    background:rgba(255,209,59,.16);
+    color:var(--text);
+    box-shadow:0 16px 30px rgba(0,0,0,.45), 0 0 0 1px rgba(255,209,59,.32);
+  }
+  .trackOdds__item--empty:not(.selected){ opacity:.6; }
+  .trackOdds__swatch{
+    width:12px;
+    height:12px;
+    border-radius:50%;
+    background:var(--rat-color, var(--accent));
+    box-shadow:0 0 0 2px rgba(0,0,0,.4);
+  }
+  .trackOdds__name{
+    font-weight:700;
+    color:var(--text);
+    max-width:140px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .trackOdds__meta{ display:flex; align-items:center; gap:6px; }
+  .trackOdds__share{ color:var(--text); font-weight:700; }
+  .trackOdds__payout{ color:var(--muted); font-weight:600; }
+  .trackOdds__separator{ color:rgba(232,238,246,.4); }
+  .trackOdds__empty{ padding:.45rem .75rem; border-radius:999px; border:1px dashed rgba(255,255,255,.15); color:var(--muted); font-size:.75rem; letter-spacing:.08em; text-transform:uppercase; }
+  @media (max-width:900px){
+    .trackOdds{ align-items:flex-start; flex:1 1 100%; }
+    .trackOdds__list{ justify-content:flex-start; }
+  }
 
   .info-panel{ grid-area:info; display:flex; flex-direction:column; gap:18px; min-height:0; }
   .info-panel .summaryGrid{ flex:1; }
@@ -712,13 +771,19 @@
           </div>
         </div>
         <header>
-          <div class="statusRow">
-            <div class="status" id="status">Place your bets.</div>
-            <button class="btn hostStartButton hidden" id="btnHostStartRace" type="button">Start Race</button>
+          <div class="trackHeaderMain">
+            <div class="statusRow">
+              <div class="status" id="status">Place your bets.</div>
+              <button class="btn hostStartButton hidden" id="btnHostStartRace" type="button">Start Race</button>
+            </div>
+            <div class="legend">
+              <span><span class="pill" id="pot">$0</span> pot</span>
+              <span>Min bet $1</span>
+            </div>
           </div>
-          <div class="legend">
-            <span><span class="pill" id="pot">$0</span> pot</span>
-            <span>Min bet $1</span>
+          <div class="trackOdds" id="trackOdds" hidden aria-hidden="true">
+            <div class="trackOdds__label">Live Odds</div>
+            <div class="trackOdds__list" id="trackOddsList"></div>
           </div>
         </header>
       </section>
@@ -843,6 +908,8 @@ const RAT_DATA = [
 const statusEl = document.getElementById('status');
 const hostStartBtn = document.getElementById('btnHostStartRace');
 const potEl = document.getElementById('pot');
+const trackOddsEl = document.getElementById('trackOdds');
+const trackOddsListEl = document.getElementById('trackOddsList');
 const trackViewport = document.getElementById('trackViewport');
 const raceCamera = document.getElementById('raceCamera');
 const raceStage = document.getElementById('raceStage');
@@ -1297,7 +1364,49 @@ function renderPlayerList(){
     </div>`;
   }).join('');
 }
+function formatShareLabel(amount, total){
+  if(!total || !amount) return '0%';
+  const pct = (amount/total) * 100;
+  if(pct < 1) return '<1%';
+  if(pct < 10) return `${pct.toFixed(1).replace(/\.0$/, '')}%`;
+  return `${Math.round(pct)}%`;
+}
+function formatPayoutLabel(amount, total){
+  if(!total || !amount) return '—';
+  const multiplier = total / amount;
+  const digits = multiplier >= 100 ? 0 : (multiplier >= 10 ? 1 : 2);
+  const formatter = new Intl.NumberFormat(undefined, { minimumFractionDigits: 0, maximumFractionDigits: digits });
+  return `x${formatter.format(multiplier)}`;
+}
+function renderHeaderOdds(){
+  if(!trackOddsEl || !trackOddsListEl) return;
+  const showOdds = isMultiplayer;
+  trackOddsEl.hidden = !showOdds;
+  trackOddsEl.setAttribute('aria-hidden', showOdds ? 'false' : 'true');
+  if(!showOdds){
+    trackOddsListEl.innerHTML = '';
+    return;
+  }
+  const totalPot = pot();
+  if(!totalPot){
+    trackOddsListEl.innerHTML = `<div class="trackOdds__empty">Odds appear after bets are placed.</div>`;
+    return;
+  }
+  const oddsMarkup = RAT_DATA.map(rat=>{
+    const amount = totalOn(rat.id);
+    const shareLabel = formatShareLabel(amount, totalPot);
+    const payoutLabel = formatPayoutLabel(amount, totalPot);
+    const classes = ['trackOdds__item'];
+    if(!amount) classes.push('trackOdds__item--empty');
+    if(quickBetRatId === rat.id) classes.push('selected');
+    const metaContent = `<span class="trackOdds__share">${escapeHTML(shareLabel)}</span><span class="trackOdds__separator">•</span><span class="trackOdds__payout">${escapeHTML(payoutLabel)}</span>`;
+    const titleText = `${shareLabel} of pot • Payout ${payoutLabel}`;
+    return `<div class="${classes.join(' ')}" data-rat="${rat.id}" style="--rat-color:${ratColor(rat.id)}" title="${escapeHTML(titleText)}"><span class="trackOdds__swatch"></span><span class="trackOdds__name">${escapeHTML(rat.name)}</span><span class="trackOdds__meta">${metaContent}</span></div>`;
+  }).join('');
+  trackOddsListEl.innerHTML = oddsMarkup;
+}
 function renderRatTotals(){
+  renderHeaderOdds();
   if(!ratTotalsEl) return;
   const totalPot = pot();
   if(poolMetaEl){
@@ -1947,6 +2056,7 @@ function handleNetworkState(state){
   }
   updateNotice();
   updateAutoStartState();
+  renderHeaderOdds();
 }
 
 function updateNotice(){
@@ -2038,6 +2148,7 @@ function updateModeUI(){
     }
     toggleBetUI(false);
   }
+  renderHeaderOdds();
 }
 
 function startSolo(){
