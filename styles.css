@@ -5,12 +5,14 @@
     --sylveon-blue-200: #d9edff;
     --sylveon-blue-400: #a6cbff;
     --sylveon-lavender: #e7d8ff;
-    --sylveon-navy: #2d1b2f;
-    --sylveon-text-soft: #514055;
-    --panel-background: rgba(255, 255, 255, 0.68);
-    --panel-border: rgba(255, 255, 255, 0.75);
-    --panel-shadow: 0 35px 70px rgba(210, 160, 210, 0.35);
-    --glow-color: rgba(244, 166, 207, 0.65);
+    --vault-surface: rgba(19, 12, 37, 0.82);
+    --vault-surface-border: rgba(244, 166, 207, 0.45);
+    --vault-text: #f3edff;
+    --vault-text-soft: #c7bcda;
+    --panel-background: var(--vault-surface);
+    --panel-border: var(--vault-surface-border);
+    --panel-shadow: 0 35px 70px rgba(5, 3, 12, 0.85);
+    --glow-color: rgba(166, 203, 255, 0.55);
 }
 
 *,
@@ -28,16 +30,16 @@ body {
     margin: 0;
     min-height: 100vh;
     font-family: "Plus Jakarta Sans", "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
-    color: var(--sylveon-navy);
+    color: var(--vault-text);
     line-height: 1.6;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: clamp(1.5rem, 4vw, 3.5rem);
     background:
-        radial-gradient(circle at 10% 20%, rgba(255, 231, 246, 0.85), transparent 60%),
-        radial-gradient(circle at 90% 10%, rgba(214, 237, 255, 0.9), transparent 55%),
-        linear-gradient(160deg, #fef9ff 0%, #f8eaff 45%, #dff1ff 100%);
+        radial-gradient(circle at 18% 20%, rgba(244, 166, 207, 0.28), transparent 62%),
+        radial-gradient(circle at 82% 18%, rgba(166, 203, 255, 0.3), transparent 55%),
+        linear-gradient(160deg, #060311 0%, #0e0a20 42%, #041a29 100%);
     background-attachment: fixed;
 }
 
@@ -77,7 +79,7 @@ a {
 .landing__tagline {
     margin: 0;
     font-size: clamp(1.05rem, 2.5vw, 1.3rem);
-    color: var(--sylveon-text-soft);
+    color: var(--vault-text-soft);
 }
 
 .landing__nav {
@@ -100,8 +102,9 @@ a {
     font-size: clamp(1.3rem, 3vw, 1.6rem);
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    background: linear-gradient(135deg, var(--sylveon-pink-300), var(--sylveon-blue-400));
-    box-shadow: 0 25px 45px rgba(166, 203, 255, 0.32);
+    background: linear-gradient(135deg, rgba(244, 166, 207, 0.9), rgba(166, 203, 255, 0.85));
+    color: #1a082a;
+    box-shadow: 0 25px 45px rgba(11, 9, 30, 0.65);
     transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
 
@@ -123,7 +126,7 @@ a {
 .landing__link:hover,
 .landing__link:focus-visible {
     transform: scale(1.05);
-    box-shadow: 0 35px 60px rgba(166, 203, 255, 0.42);
+    box-shadow: 0 35px 70px rgba(11, 9, 30, 0.75);
 }
 
 .landing__link:hover::after,
