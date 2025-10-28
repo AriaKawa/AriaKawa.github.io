@@ -31,6 +31,11 @@
     display:flex; flex-direction:column; align-items:center; justify-content:center;
     min-height:100dvh; padding:24px clamp(18px,3vw,64px);
   }
+  body.race-view{
+    padding:0;
+    align-items:stretch;
+    justify-content:flex-start;
+  }
   .back-nav{
     position:fixed; top:20px; right:22px; z-index:20;
   }
@@ -53,6 +58,10 @@
     width:100%;
     padding:0;
     padding-inline:clamp(12px, 2.5vw, 56px);
+  }
+  body.race-view .wrap{
+    padding:0;
+    padding-inline:0;
   }
   .board{
     width:100%;
@@ -90,7 +99,17 @@
   .board[data-view="race"]{
     grid-template-areas:
       "track";
-    grid-template-rows:minmax(560px,1fr);
+    grid-template-rows:minmax(0,1fr);
+    width:100vw;
+    min-height:100dvh;
+    height:100dvh;
+    max-height:none;
+    gap:0;
+    padding:0;
+    border:none;
+    border-radius:0;
+    box-shadow:none;
+    background:none;
   }
 
   .board[data-view="race"] .info-panel,
@@ -131,6 +150,9 @@
         "track bets";
       max-height:calc(100dvh - clamp(90px,10vh,160px));
     }
+    .board[data-view="race"]{
+      max-height:none;
+    }
     .board[data-view="betting"]{
       grid-template-columns:minmax(0,1.1fr) minmax(340px,1fr);
       grid-template-areas:
@@ -165,6 +187,12 @@
       radial-gradient(160% 140% at 50% -30%, rgba(255,232,189,.18) 0%, rgba(141,86,40,.38) 55%, rgba(63,36,15,.88) 100%),
       linear-gradient(180deg, #b67a46 0%, #7f4f2c 82%);
   }
+  .board[data-view="race"] .track-card{
+    align-self:stretch;
+    border:none;
+    border-radius:0;
+    box-shadow:none;
+  }
   .track-card::after{
     content:"";
     position:absolute;
@@ -180,6 +208,11 @@
     filter:drop-shadow(0 22px 42px rgba(0,0,0,.45));
     z-index:0;
     overflow:hidden;
+  }
+  .board[data-view="race"] .track-viewport{
+    aspect-ratio:auto;
+    height:100%;
+    min-height:0;
   }
   .race-camera{
     position:absolute;
@@ -820,6 +853,9 @@ let cameraX = 0;
 function setScreen(view='betting'){
   if(boardEl){
     boardEl.dataset.view = view;
+  }
+  if(document?.body){
+    document.body.classList.toggle('race-view', view === 'race');
   }
 }
 
