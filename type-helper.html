@@ -91,6 +91,14 @@
   .focus-tag[data-focus="immune"]{color:#facc15;border-color:rgba(250,204,21,0.55);background:rgba(250,204,21,0.12);}
   .focus-tag[data-focus="resist"]{color:var(--focus-resist);border-color:rgba(192,132,252,0.5);background:rgba(192,132,252,0.12);}
 
+  .mode-switch{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:12px;margin-top:-6px;}
+  .mode-switch-label{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);font-weight:700;}
+  .mode-options{display:inline-flex;align-items:center;padding:4px;border-radius:999px;background:rgba(15,23,42,0.75);border:1px solid var(--border);box-shadow:0 18px 42px -28px rgba(30,64,175,0.55);}
+  .mode-btn{border:none;background:none;color:var(--muted);font-weight:600;letter-spacing:.04em;font-size:13px;padding:8px 14px;border-radius:999px;cursor:pointer;transition:color .18s ease, background .18s ease, box-shadow .18s ease;}
+  .mode-btn:hover{color:var(--text);}
+  .mode-btn[data-active="true"]{background:linear-gradient(135deg,#2563eb,#38bdf8);color:var(--text);box-shadow:0 14px 36px -18px rgba(56,189,248,0.75);}
+  .mode-btn[data-active="true"]:hover{box-shadow:0 18px 44px -18px rgba(56,189,248,0.82);}
+
   .defender-card{text-align:center;display:flex;flex-direction:column;gap:18px;align-items:center;margin-bottom:18px;}
   .poke-name{font-size:clamp(30px,4.2vw,42px);font-weight:800;letter-spacing:.5px;margin:0;}
   .poke-types{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;}
@@ -239,6 +247,14 @@
         <div class="quiz-shell">
           <div class="quiz-header">
             <div id="focusTag" class="focus-tag" data-focus="super"><span>★</span><span>Super Effective practice</span></div>
+            <div class="mode-switch">
+              <span class="mode-switch-label">Defender typing</span>
+              <div class="mode-options" role="group" aria-label="Defender typing mode">
+                <button class="mode-btn" type="button" data-mode="any" data-active="true">Mixed</button>
+                <button class="mode-btn" type="button" data-mode="single" data-active="false">Single</button>
+                <button class="mode-btn" type="button" data-mode="double" data-active="false">Dual</button>
+              </div>
+            </div>
           </div>
           <div class="defender-card">
             <h3 id="pokeName" class="poke-name">Charizard</h3>
@@ -362,6 +378,7 @@ const backToIntro = document.getElementById('backToIntro');
 const changeFocusBtn = document.getElementById('changeFocus');
 const focusCards = document.querySelectorAll('.focus-card');
 const focusTag = document.getElementById('focusTag');
+const modeButtons = document.querySelectorAll('.mode-btn');
 const promptText = document.getElementById('promptText');
 const focusNote = document.getElementById('focusNote');
 const typeGrid = document.getElementById('typeGrid');
@@ -382,6 +399,7 @@ let currentFocusKey = null;
 let currentFocus = null;
 let currentQuestion = null;
 let score = 0, streak = 0, best = 0;
+let defenderMode = 'any';
 const selectedTypes = new Set();
 const typeButtons = [];
 
@@ -395,9 +413,12 @@ function rand(arr){
   return arr[Math.floor(Math.random()*arr.length)];
 }
 
-function chooseDefender(){
-  const [name, types] = rand(ROSTER);
-  return { name, types };
+function getRosterPool(){
+  return ROSTER.filter(([_, types])=>{
+    if(defenderMode === 'single') return types.length === 1;
+    if(defenderMode === 'double') return types.length >= 2;
+    return true;
+  });
 }
 
 function mult(attack, defenders){
@@ -449,10 +470,37 @@ function updateScoreboard(){
   bestEl.textContent = best;
 }
 
+function updateModeButtons(){
+  modeButtons.forEach(btn=>{
+    btn.dataset.active = btn.dataset.mode === defenderMode ? 'true' : 'false';
+  });
+}
+
+function setDefenderMode(mode){
+  if(!mode) return;
+  if(defenderMode === mode) return;
+  defenderMode = mode;
+  updateModeButtons();
+  newQuestion();
+}
+
+function modeFriendlyName(mode){
+  switch(mode){
+    case 'single':
+      return 'single-type defenders';
+    case 'double':
+      return 'dual-type defenders';
+    default:
+      return 'mixed single- and dual-type defenders';
+  }
+}
+
 function setFocus(key){
   currentFocusKey = key;
   currentFocus = FOCUS[key];
   resetScoreboard();
+  defenderMode = 'any';
+  updateModeButtons();
   focusTag.dataset.focus = key;
   focusTag.innerHTML = `<span>${currentFocus.tagIcon}</span><span>${currentFocus.label} practice</span>`;
   showView('quiz');
@@ -492,10 +540,11 @@ function computeMatches(def, filter){
   return correct;
 }
 
-function pickQuestion(filter){
-  if(!filter) return null;
+function pickQuestion(filter, pool){
+  if(!filter || !pool.length) return null;
   for(let attempts=0; attempts<160; attempts++){
-    const def = chooseDefender();
+    const [name, types] = rand(pool);
+    const def = { name, types };
     const correct = computeMatches(def, filter);
     if(correct.size){
       return { def, correct };
@@ -507,10 +556,15 @@ function pickQuestion(filter){
 function newQuestion(){
   if(!currentFocus) return;
   resetSelections();
-  let q = pickQuestion(currentFocus.filter);
+  const pool = getRosterPool();
+  if(!pool.length){
+    showNoRosterMessage();
+    return;
+  }
+  let q = pickQuestion(currentFocus.filter, pool);
   let usedFallback = false;
   if(!q && currentFocus.fallbackFilter){
-    q = pickQuestion(currentFocus.fallbackFilter);
+    q = pickQuestion(currentFocus.fallbackFilter, pool);
     if(q){
       usedFallback = true;
     }
@@ -524,7 +578,7 @@ function newQuestion(){
       btn.dataset.state = '';
     });
     resultHeading.textContent = 'No matchups available';
-    resultSummary.innerHTML = `<div class="result-line"><span>Heads up</span><div>We couldn't find any ${currentFocus.label.toLowerCase()} matchups in the current roster. Try a different focus or press Next to roll again.</div></div>`;
+    resultSummary.innerHTML = `<div class="result-line"><span>Heads up</span><div>We couldn't find any ${currentFocus.label.toLowerCase()} matchups among the ${modeFriendlyName(defenderMode)}. Press Next to roll again or change the defender typing filter.</div></div>`;
     resultBox.dataset.state = 'bad';
     resultBox.classList.remove('hidden');
     submitBtn.disabled = true;
@@ -539,6 +593,25 @@ function newQuestion(){
     focusNote.textContent = currentFocus.fallbackNote;
     focusNote.classList.remove('hidden');
   }
+}
+
+function showNoRosterMessage(){
+  currentQuestion = null;
+  pokeNameEl.textContent = 'No Pokémon available';
+  pokeTypesEl.innerHTML = '';
+  promptText.textContent = 'Switch the defender typing filter or pick a different focus to keep training.';
+  selectedTypes.clear();
+  typeButtons.forEach(btn=>{
+    btn.disabled = true;
+    btn.dataset.selected = 'false';
+    btn.dataset.state = '';
+  });
+  resultHeading.textContent = 'No defenders available';
+  resultSummary.innerHTML = `<div class="result-line"><span>Heads up</span><div>There are no ${modeFriendlyName(defenderMode)} in the roster yet. Choose another option for now.</div></div>`;
+  resultBox.dataset.state = 'bad';
+  resultBox.classList.remove('hidden');
+  submitBtn.disabled = true;
+  nextBtn.disabled = true;
 }
 
 function grade(){
@@ -621,6 +694,12 @@ focusCards.forEach(card=>{
   });
 });
 
+modeButtons.forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    setDefenderMode(btn.dataset.mode);
+  });
+});
+
 submitBtn.addEventListener('click', grade);
 nextBtn.addEventListener('click', newQuestion);
 
@@ -637,6 +716,7 @@ window.addEventListener('keydown', (event)=>{
   }
 });
 
+updateModeButtons();
 buildTypeButtons();
 showView('intro');
 </script>
