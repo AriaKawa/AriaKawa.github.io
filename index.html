@@ -11,6 +11,48 @@
 </head>
 <body>
     <main class="landing">
+        <div class="landing__top-bar">
+            <div class="account-menu" data-account-menu data-state="signed-out">
+                <button
+                    type="button"
+                    class="account-menu__trigger"
+                    data-account-trigger
+                    aria-haspopup="true"
+                    aria-expanded="false"
+                    aria-controls="landing-account-menu-dropdown"
+                >
+                    <span class="account-menu__avatar" data-account-avatar>G</span>
+                    <span class="sr-only">Open account menu</span>
+                </button>
+                <div
+                    class="account-menu__dropdown"
+                    data-account-dropdown
+                    id="landing-account-menu-dropdown"
+                    role="menu"
+                    aria-label="Account options"
+                    hidden
+                >
+                    <div class="account-menu__details">
+                        <span class="account-menu__name" data-account-name>Guest</span>
+                        <span class="account-menu__status" data-account-status>Signed out</span>
+                    </div>
+                    <div class="account-menu__actions">
+                        <button type="button" class="account-menu__action" data-account-action="signin" role="menuitem">
+                            Sign in
+                        </button>
+                        <button
+                            type="button"
+                            class="account-menu__action"
+                            data-account-action="signout"
+                            role="menuitem"
+                            hidden
+                        >
+                            Sign out
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
         <header class="landing__header">
             <h1>Vault</h1>
             <p class="landing__tagline">Choose a path to explore the latest creations.</p>
