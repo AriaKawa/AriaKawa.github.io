@@ -1,5 +1,5 @@
 // assets/js/pokemon.jsx
-import React2, { useEffect, useMemo, useState } from "https://esm.sh/react@18";
+import React2, { useEffect, useMemo, useRef, useState } from "https://esm.sh/react@18";
 import { createRoot } from "https://esm.sh/react-dom@18/client";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
@@ -202,6 +202,25 @@ async function submitEntry(db2, roomCode, playerId, inputName) {
     tx.set(playerRef, { score: curr + 1 }, { merge: true });
   });
 }
+async function upsertLeaderboardPersonalBest(db2, playerId, displayName, score) {
+  if (!playerId || !db2)
+    return;
+  const entryRef = doc(db2, "leaderboard", playerId);
+  const safeName = (displayName || "Mystery Trainer").trim() || "Mystery Trainer";
+  const normalizedScore = typeof score === "number" ? score : Number(score) || 0;
+  await runTransaction(db2, async (tx) => {
+    const snap = await tx.get(entryRef);
+    const prevBest = snap.exists() ? snap.data().bestScore || 0 : null;
+    if (!snap.exists() || normalizedScore > (prevBest || 0)) {
+      tx.set(entryRef, {
+        playerId,
+        displayName: safeName,
+        bestScore: normalizedScore,
+        updatedAt: serverTimestamp()
+      });
+    }
+  });
+}
 function App() {
   const playerId = useLocalId();
   const { loading: dexLoading, error: dexError, isValid } = usePokedex();
@@ -210,6 +229,7 @@ function App() {
   const [me, setMe] = useState(null);
   const [room, setRoom] = useState(null);
   const [players, setPlayers] = useState([]);
+  const [globalLeaders, setGlobalLeaders] = useState([]);
   const [entries, setEntries] = useState([]);
   const [input, setInput] = useState("");
   const [feedback, setFeedback] = useState("");
@@ -246,6 +266,17 @@ function App() {
     });
     return () => unsub();
   }, [roomCode]);
+  useEffect(() => {
+    if (!db)
+      return;
+    const leaderboardRef = collection(db, "leaderboard");
+    const topQuery = query(leaderboardRef, orderBy("bestScore", "desc"), limit(5));
+    const unsub = onSnapshot(topQuery, (snap) => {
+      const arr = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      setGlobalLeaders(arr);
+    });
+    return () => unsub();
+  }, []);
   const handleCreateRoom = async () => {
     try {
       const code = (Math.random().toString(36).slice(2, 6) + Math.random().toString(36).slice(2, 6)).slice(0, 6).toUpperCase();
@@ -282,6 +313,24 @@ function App() {
     const t = setInterval(() => setTick((x) => x + 1), 200);
     return () => clearInterval(t);
   }, []);
+  const lastRecordedResult = useRef(null);
+  useEffect(() => {
+    if (!room || room.status !== "ended" || players.length === 0)
+      return;
+    const key = `${room.id}:${room.endsAt || room.startedAt || ""}`;
+    if (lastRecordedResult.current === key)
+      return;
+    lastRecordedResult.current = key;
+    const recordResults = async () => {
+      try {
+        await Promise.all(players.map((p) => upsertLeaderboardPersonalBest(db, p.id, p.name, p.score || 0)));
+      } catch (err) {
+        console.error("Failed to record leaderboard results", err);
+        lastRecordedResult.current = null;
+      }
+    };
+    recordResults();
+  }, [room?.status, room?.id, room?.endsAt, room?.startedAt, players]);
   const countdown = useMemo(() => {
     if (!room?.startedAt)
       return null;
@@ -605,6 +654,35 @@ function App() {
                             }, undefined, false, undefined, this)
                           ]
                         }, p.id, true, undefined, this))
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this),
+                  /* @__PURE__ */ jsxDEV("div", {
+                    style: { display: "grid", gap: 8 },
+                    children: [
+                      /* @__PURE__ */ jsxDEV("h3", {
+                        style: { margin: "12px 0 0", fontSize: 18 },
+                        children: "Top trainers"
+                      }, undefined, false, undefined, this),
+                      globalLeaders.length === 0 ? /* @__PURE__ */ jsxDEV("p", {
+                        style: { margin: 0, color: "var(--text-muted)", fontSize: 14 },
+                        children: "No personal bests recorded yet. Finish a round to claim a spot!"
+                      }, undefined, false, undefined, this) : /* @__PURE__ */ jsxDEV("ol", {
+                        style: { margin: 0, paddingLeft: 20, display: "grid", gap: 6 },
+                        children: globalLeaders.map((entry, idx) => /* @__PURE__ */ jsxDEV("li", {
+                          style: { display: "flex", justifyContent: "space-between", gap: 12 },
+                          children: [
+                            /* @__PURE__ */ jsxDEV("span", {
+                              children: [
+                                "#" + (idx + 1) + " ",
+                                entry.displayName || "Mystery Trainer"
+                              ]
+                            }, undefined, true, undefined, this),
+                            /* @__PURE__ */ jsxDEV("strong", {
+                              children: entry.bestScore || 0
+                            }, undefined, false, undefined, this)
+                          ]
+                        }, entry.id, true, undefined, this))
                       }, undefined, false, undefined, this)
                     ]
                   }, undefined, true, undefined, this)
