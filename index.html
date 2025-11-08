@@ -134,7 +134,8 @@
                 return;
             }
 
-            const storageKey = 'ak-account-profile';
+            const storageKey = 'ak-account';
+            const legacyStorageKeys = ['ak-account-profile'];
             let storageAvailable = true;
             let isOpen = false;
             let account = null;
@@ -172,6 +173,34 @@
                     ? `Open account menu for ${account.name}`
                     : 'Open account menu. You are signed out.';
                 trigger.setAttribute('aria-label', ariaLabel);
+            }
+
+            function migrateLegacyAccount() {
+                if (!storageAvailable) {
+                    return;
+                }
+
+                try {
+                    const existing = window.localStorage.getItem(storageKey);
+                    if (existing) {
+                        return;
+                    }
+
+                    for (const legacyKey of legacyStorageKeys) {
+                        if (legacyKey === storageKey) {
+                            continue;
+                        }
+
+                        const legacyValue = window.localStorage.getItem(legacyKey);
+                        if (legacyValue) {
+                            window.localStorage.setItem(storageKey, legacyValue);
+                            break;
+                        }
+                    }
+                } catch (error) {
+                    storageAvailable = false;
+                    console.warn('Unable to migrate account state', error);
+                }
             }
 
             function loadAccount() {
@@ -342,6 +371,7 @@
                 closeMenu({ focusTrigger: true });
             });
 
+            migrateLegacyAccount();
             account = loadAccount();
             updateUI();
         })();
