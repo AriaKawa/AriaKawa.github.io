@@ -82,99 +82,14 @@
 
             const trigger = menu.querySelector('[data-account-trigger]');
             const dropdown = menu.querySelector('[data-account-dropdown]');
-            const avatar = menu.querySelector('[data-account-avatar]');
-            const nameEl = menu.querySelector('[data-account-name]');
-            const statusEl = menu.querySelector('[data-account-status]');
             const signInButton = menu.querySelector('[data-account-action="signin"]');
             const signOutButton = menu.querySelector('[data-account-action="signout"]');
 
-            if (!trigger || !dropdown || !avatar || !nameEl || !statusEl || !signInButton || !signOutButton) {
+            if (!trigger || !dropdown || !signInButton || !signOutButton) {
                 return;
             }
 
-            const storageKey = 'ak-account-profile';
-            let storageAvailable = true;
             let isOpen = false;
-            let account = null;
-
-            function normalizeName(value) {
-                if (typeof value !== 'string') {
-                    return '';
-                }
-
-                return value.replace(/\s+/g, ' ').trim();
-            }
-
-            function getInitial(name) {
-                const normalized = normalizeName(name);
-                if (!normalized) {
-                    return 'G';
-                }
-
-                return normalized.charAt(0).toUpperCase();
-            }
-
-            function updateUI() {
-                const isSignedIn = Boolean(account && account.name);
-                menu.dataset.state = isSignedIn ? 'signed-in' : 'signed-out';
-                avatar.textContent = isSignedIn ? getInitial(account.name) : 'G';
-                nameEl.textContent = isSignedIn ? account.name : 'Guest';
-
-                const statusText = isSignedIn ? 'Signed in' : 'Signed out';
-                statusEl.textContent = storageAvailable ? statusText : `${statusText} • not saved`;
-
-                signInButton.hidden = isSignedIn;
-                signOutButton.hidden = !isSignedIn;
-
-                const ariaLabel = isSignedIn
-                    ? `Open account menu for ${account.name}`
-                    : 'Open account menu. You are signed out.';
-                trigger.setAttribute('aria-label', ariaLabel);
-            }
-
-            function loadAccount() {
-                if (!storageAvailable) {
-                    return null;
-                }
-
-                try {
-                    const stored = window.localStorage.getItem(storageKey);
-                    if (!stored) {
-                        return null;
-                    }
-
-                    const parsed = JSON.parse(stored);
-                    if (parsed && typeof parsed === 'object' && 'name' in parsed) {
-                        const normalizedName = normalizeName(parsed.name);
-                        if (normalizedName) {
-                            return { name: normalizedName };
-                        }
-                    }
-                } catch (error) {
-                    storageAvailable = false;
-                    console.warn('Account state unavailable', error);
-                }
-
-                return null;
-            }
-
-            function persistAccount(value) {
-                if (!storageAvailable) {
-                    return;
-                }
-
-                try {
-                    if (value && value.name) {
-                        window.localStorage.setItem(storageKey, JSON.stringify({ name: value.name }));
-                    } else {
-                        window.localStorage.removeItem(storageKey);
-                    }
-                } catch (error) {
-                    storageAvailable = false;
-                    console.warn('Unable to persist account state', error);
-                    updateUI();
-                }
-            }
 
             function closeMenu(options = {}) {
                 const { focusTrigger = false } = options;
@@ -219,12 +134,6 @@
                 }
             }
 
-            function handlePointerDown(event) {
-                if (!menu.contains(event.target)) {
-                    closeMenu();
-                }
-            }
-
             function handleKeydown(event) {
                 if (!isOpen) {
                     return;
@@ -258,6 +167,15 @@
                 }
             }
 
+            function handlePointerDown(event) {
+                if (!menu.contains(event.target)) {
+                    closeMenu();
+                }
+            }
+
+            menu.__closeAccountMenu = closeMenu;
+            menu.__openAccountMenu = openMenu;
+
             trigger.addEventListener('click', () => {
                 if (isOpen) {
                     closeMenu();
@@ -272,42 +190,21 @@
                     openMenu();
                 }
             });
-
-            signInButton.addEventListener('click', () => {
-                closeMenu();
-                const input = window.prompt('Enter your display name to sign in:', account?.name ?? '');
-                if (input === null) {
-                    trigger.focus();
-                    return;
-                }
-
-                const normalizedName = normalizeName(input);
-                if (!normalizedName) {
-                    trigger.focus();
-                    return;
-                }
-
-                account = { name: normalizedName };
-                persistAccount(account);
-                updateUI();
-                trigger.focus();
-            });
-
-            signOutButton.addEventListener('click', () => {
-                account = null;
-                persistAccount(account);
-                updateUI();
-                closeMenu({ focusTrigger: true });
-            });
-
-            account = loadAccount();
-            updateUI();
+        })();
         })();
     </script>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+        import { initializeApp, getApp, getApps } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
         import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-analytics.js";
+        import {
+            getAuth,
+            GoogleAuthProvider,
+            onAuthStateChanged,
+            signInWithPopup,
+            signOut
+        } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+        import { getDatabase, ref, set, update, onValue } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDRniZatGeylxphjHQadYjucOcirNBRIdk",
@@ -320,7 +217,7 @@
             measurementId: "G-V43J1S8RGF"
         };
 
-        const app = initializeApp(firebaseConfig);
+        const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
         isSupported()
             .then((supported) => {
                 if (supported) {
@@ -328,6 +225,12 @@
                 }
             })
             .catch((err) => console.warn("Firebase analytics not supported", err));
+
+        const database = getDatabase(app);
+        const auth = getAuth(app);
+        auth.useDeviceLanguage();
+        const provider = new GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: 'select_account' });
 
         const outfits = [
             { id: 'classic', name: 'Cozy Classic', description: 'The baseline guild tunic.', price: 0 },
@@ -350,6 +253,7 @@
             if (currencyAmount) {
                 currencyAmount.textContent = '—';
             }
+            setupAccountMenu();
             return;
         }
 
@@ -402,126 +306,256 @@
             });
         });
 
-        const outfitStorageKey = 'ak-avatar-outfit';
-        const walletStorageKey = 'ak-wallet-coins';
-        const ownedStorageKey = 'ak-avatar-owned-outfits';
         const defaultOutfit = 'classic';
         const defaultCoins = 1;
         const defaultOwnedOutfits = new Set([defaultOutfit]);
 
-        let storageAvailable = true;
         let coins = defaultCoins;
         let ownedOutfits = new Set(defaultOwnedOutfits);
         let currentOutfit = defaultOutfit;
         let closetIsOpen = false;
+        let currentUser = null;
+        let applyingRemoteState = false;
+        let stopUserListener = null;
 
-        function loadCoins() {
-            if (!storageAvailable) {
-                return defaultCoins;
+        const accountMenu = setupAccountMenu();
+
+        function setupAccountMenu() {
+            const menu = document.querySelector('[data-account-menu]');
+            const trigger = menu?.querySelector('[data-account-trigger]') ?? null;
+            const dropdown = menu?.querySelector('[data-account-dropdown]') ?? null;
+            const avatar = menu?.querySelector('[data-account-avatar]') ?? null;
+            const nameEl = menu?.querySelector('[data-account-name]') ?? null;
+            const statusEl = menu?.querySelector('[data-account-status]') ?? null;
+            const signInButton = menu?.querySelector('[data-account-action="signin"]') ?? null;
+            const signOutButton = menu?.querySelector('[data-account-action="signout"]') ?? null;
+
+            if (!menu || !trigger || !dropdown || !avatar || !nameEl || !statusEl || !signInButton || !signOutButton) {
+                return {
+                    onUserChange() {
+                        return () => {};
+                    },
+                    reportSyncStatus() {}
+                };
             }
 
-            try {
-                const stored = window.localStorage.getItem(walletStorageKey);
-                if (!stored) {
-                    return defaultCoins;
+            const listeners = new Set();
+            let syncHealthy = true;
+            let currentAccount = null;
+
+            function normalizeName(value) {
+                if (typeof value !== 'string') {
+                    return '';
                 }
 
-                const parsed = Number.parseInt(stored, 10);
-                if (Number.isFinite(parsed) && parsed >= 0) {
-                    return parsed;
+                return value.replace(/\s+/g, ' ').trim();
+            }
+
+            function resolveDisplayName(user) {
+                if (!user) {
+                    return 'Guest';
                 }
-            } catch (error) {
-                storageAvailable = false;
-                console.warn('Wallet state unavailable', error);
+
+                const fromDisplayName = normalizeName(user.displayName ?? '');
+                if (fromDisplayName) {
+                    return fromDisplayName;
+                }
+
+                const fromEmail = normalizeName(user.email ?? '');
+                if (fromEmail) {
+                    const [first] = fromEmail.split('@');
+                    return first ? normalizeName(first) || 'Traveler' : 'Traveler';
+                }
+
+                return 'Traveler';
             }
 
-            return defaultCoins;
+            function getInitial(name) {
+                const normalized = normalizeName(name);
+                if (!normalized) {
+                    return 'G';
+                }
+
+                return normalized.charAt(0).toUpperCase();
+            }
+
+            function updateUI(user) {
+                const displayName = resolveDisplayName(user);
+                const isSignedIn = Boolean(user);
+                menu.dataset.state = isSignedIn ? 'signed-in' : 'signed-out';
+                avatar.textContent = getInitial(displayName);
+                nameEl.textContent = displayName;
+
+                const baseStatus = isSignedIn ? 'Signed in' : 'Signed out';
+                const statusText = !syncHealthy && isSignedIn ? `${baseStatus} • sync unavailable` : baseStatus;
+                statusEl.textContent = statusText;
+
+                signInButton.hidden = isSignedIn;
+                signOutButton.hidden = !isSignedIn;
+
+                if (trigger) {
+                    const ariaLabel = isSignedIn
+                        ? `Open account menu for ${displayName}`
+                        : 'Open account menu. You are signed out.';
+                    trigger.setAttribute('aria-label', ariaLabel);
+                }
+            }
+
+            const closeMenu = typeof menu.__closeAccountMenu === 'function'
+                ? menu.__closeAccountMenu
+                : () => {}
+            ;
+
+            signInButton.addEventListener('click', async () => {
+                try {
+                    await signInWithPopup(auth, provider);
+                } catch (error) {
+                    console.warn('Sign-in failed', error);
+                } finally {
+                    closeMenu({ focusTrigger: true });
+                }
+            });
+
+            signOutButton.addEventListener('click', async () => {
+                try {
+                    await signOut(auth);
+                } catch (error) {
+                    console.warn('Sign-out failed', error);
+                }
+
+                closeMenu({ focusTrigger: true });
+            });
+
+            onAuthStateChanged(auth, (user) => {
+                currentAccount = user ?? null;
+                updateUI(currentAccount);
+                listeners.forEach((listener) => {
+                    try {
+                        listener(currentAccount);
+                    } catch (error) {
+                        console.error('Account listener error', error);
+                    }
+                });
+            });
+
+            updateUI(null);
+
+            return {
+                onUserChange(listener) {
+                    if (typeof listener !== 'function') {
+                        return () => {};
+                    }
+
+                    listeners.add(listener);
+                    listener(currentAccount);
+                    return () => {
+                        listeners.delete(listener);
+                    };
+                },
+                reportSyncStatus(healthy) {
+                    syncHealthy = Boolean(healthy);
+                    updateUI(currentAccount);
+                }
+            };
         }
 
-        function persistCoins(value) {
-            if (!storageAvailable) {
-                return;
-            }
-
-            try {
-                window.localStorage.setItem(walletStorageKey, String(value));
-            } catch (error) {
-                storageAvailable = false;
-                console.warn('Unable to save coin balance', error);
-            }
+        function userVaultRef(uid) {
+            return ref(database, `users/${uid}/vault`);
         }
 
-        function loadOwnedOutfits() {
+        function defaultUserState() {
+            return {
+                coins: defaultCoins,
+                currentOutfit: defaultOutfit,
+                ownedOutfits: Array.from(defaultOwnedOutfits)
+            };
+        }
+
+        function sanitizeState(value) {
+            let coinsValue = defaultCoins;
+            let outfitValue = defaultOutfit;
             const owned = new Set(defaultOwnedOutfits);
-            if (!storageAvailable) {
-                return owned;
-            }
 
-            try {
-                const stored = window.localStorage.getItem(ownedStorageKey);
-                if (!stored) {
-                    return owned;
+            if (value && typeof value === 'object') {
+                const parsedCoins = Number.parseInt(value.coins, 10);
+                if (Number.isFinite(parsedCoins) && parsedCoins >= 0) {
+                    coinsValue = parsedCoins;
                 }
 
-                const parsed = JSON.parse(stored);
-                if (Array.isArray(parsed)) {
-                    parsed.forEach((value) => {
-                        if (typeof value === 'string' && value) {
-                            owned.add(value);
+                if (Array.isArray(value.ownedOutfits)) {
+                    value.ownedOutfits.forEach((item) => {
+                        if (typeof item === 'string' && outfitById.has(item)) {
+                            owned.add(item);
                         }
                     });
                 }
-            } catch (error) {
-                storageAvailable = false;
-                console.warn('Avatar shop ownership unavailable', error);
+
+                if (typeof value.currentOutfit === 'string' && outfitById.has(value.currentOutfit)) {
+                    outfitValue = value.currentOutfit;
+                }
             }
 
-            return owned;
+            owned.add(outfitValue);
+
+            return {
+                coins: coinsValue,
+                currentOutfit: outfitValue,
+                ownedOutfits: owned
+            };
+        }
+
+        async function syncUserState(partial) {
+            if (!currentUser || applyingRemoteState) {
+                return;
+            }
+
+            try {
+                await update(userVaultRef(currentUser.uid), partial);
+                accountMenu.reportSyncStatus(true);
+            } catch (error) {
+                console.warn('Unable to sync wardrobe profile', error);
+                accountMenu.reportSyncStatus(false);
+            }
+        }
+
+        function applyRemoteState(state) {
+            applyingRemoteState = true;
+            coins = state.coins;
+            ownedOutfits = new Set(state.ownedOutfits);
+            const applied = applyOutfit(state.currentOutfit);
+            ownedOutfits.add(applied);
+            applyingRemoteState = false;
+
+            updateCurrencyUI();
+            updateClosetUI();
+            updateCurrentOutfitSummary();
+        }
+
+        function persistCoins(value) {
+            coins = value;
+            if (!currentUser || applyingRemoteState) {
+                return;
+            }
+
+            syncUserState({ coins: value });
         }
 
         function persistOwnedOutfits(owned) {
-            if (!storageAvailable) {
+            if (!currentUser || applyingRemoteState) {
                 return;
             }
 
-            try {
-                const value = JSON.stringify(Array.from(owned));
-                window.localStorage.setItem(ownedStorageKey, value);
-            } catch (error) {
-                storageAvailable = false;
-                console.warn('Unable to save owned outfits', error);
-            }
-        }
-
-        function loadOutfit() {
-            if (!storageAvailable) {
-                return defaultOutfit;
-            }
-
-            try {
-                const stored = window.localStorage.getItem(outfitStorageKey);
-                if (stored) {
-                    return stored;
-                }
-            } catch (error) {
-                storageAvailable = false;
-                console.warn('Avatar outfit storage unavailable', error);
-            }
-
-            return defaultOutfit;
+            const list = Array.from(owned);
+            syncUserState({ ownedOutfits: list });
         }
 
         function persistOutfit(value) {
-            if (!storageAvailable) {
+            currentOutfit = value;
+            if (!currentUser || applyingRemoteState) {
                 return;
             }
 
-            try {
-                window.localStorage.setItem(outfitStorageKey, value);
-            } catch (error) {
-                storageAvailable = false;
-                console.warn('Unable to save outfit selection', error);
-            }
+            syncUserState({ currentOutfit: value });
         }
 
         function updateCurrencyUI() {
@@ -707,43 +741,52 @@
             closeCloset({ focusToggle: true });
         });
 
-        coins = loadCoins();
-        ownedOutfits = loadOwnedOutfits();
-        const storedOutfit = loadOutfit();
-        const appliedOutfit = applyOutfit(storedOutfit);
-        if (!ownedOutfits.has(appliedOutfit)) {
-            ownedOutfits.add(appliedOutfit);
-            persistOwnedOutfits(ownedOutfits);
-        }
-        if (appliedOutfit !== storedOutfit) {
-            persistOutfit(appliedOutfit);
-        }
-
+        const appliedDefault = applyOutfit(defaultOutfit);
+        ownedOutfits.add(appliedDefault);
         updateCurrencyUI();
         updateClosetUI();
         updateCurrentOutfitSummary();
         closeCloset();
 
-        window.addEventListener('storage', (event) => {
-            if (!event) {
+        accountMenu.onUserChange((user) => {
+            currentUser = user ?? null;
+
+            if (stopUserListener) {
+                stopUserListener();
+                stopUserListener = null;
+            }
+
+            applyRemoteState(sanitizeState({}));
+
+            if (!currentUser) {
+                accountMenu.reportSyncStatus(true);
                 return;
             }
 
-            if (event.key === walletStorageKey) {
-                coins = loadCoins();
-                updateCurrencyUI();
-            } else if (event.key === ownedStorageKey) {
-                ownedOutfits = loadOwnedOutfits();
-                updateClosetUI();
-            } else if (event.key === outfitStorageKey) {
-                const next = applyOutfit(loadOutfit());
-                if (!ownedOutfits.has(next)) {
-                    ownedOutfits.add(next);
-                    persistOwnedOutfits(ownedOutfits);
+            stopUserListener = onValue(
+                userVaultRef(currentUser.uid),
+                (snapshot) => {
+                    if (!snapshot.exists()) {
+                        set(userVaultRef(currentUser.uid), defaultUserState())
+                            .then(() => {
+                                accountMenu.reportSyncStatus(true);
+                            })
+                            .catch((error) => {
+                                console.warn('Unable to initialize wardrobe profile', error);
+                                accountMenu.reportSyncStatus(false);
+                            });
+                        return;
+                    }
+
+                    const sanitized = sanitizeState(snapshot.val());
+                    applyRemoteState(sanitized);
+                    accountMenu.reportSyncStatus(true);
+                },
+                (error) => {
+                    console.warn('Unable to read wardrobe profile', error);
+                    accountMenu.reportSyncStatus(false);
                 }
-                updateCurrentOutfitSummary();
-                updateClosetUI();
-            }
+            );
         });
     </script>
 </body>
