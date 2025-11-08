@@ -698,6 +698,7 @@
             }
 
             const storageKey = 'ak-account';
+            const legacyStorageKeys = ['ak-account-profile'];
             let storageAvailable = true;
             let account = null;
             let isOpen = false;
@@ -717,6 +718,34 @@
 
                 const trimmed = value.trim();
                 return trimmed ? trimmed.charAt(0).toUpperCase() : 'G';
+            };
+
+            const migrateLegacyAccount = () => {
+                if (!storageAvailable) {
+                    return;
+                }
+
+                try {
+                    const existing = window.localStorage.getItem(storageKey);
+                    if (existing) {
+                        return;
+                    }
+
+                    for (const legacyKey of legacyStorageKeys) {
+                        if (legacyKey === storageKey) {
+                            continue;
+                        }
+
+                        const legacyValue = window.localStorage.getItem(legacyKey);
+                        if (legacyValue) {
+                            window.localStorage.setItem(storageKey, legacyValue);
+                            break;
+                        }
+                    }
+                } catch (error) {
+                    storageAvailable = false;
+                    console.warn('Unable to migrate account state', error);
+                }
             };
 
             const loadAccount = () => {
@@ -905,6 +934,7 @@
                 closeMenu({ focusTrigger: true });
             });
 
+            migrateLegacyAccount();
             account = loadAccount();
             updateUI();
         })();
