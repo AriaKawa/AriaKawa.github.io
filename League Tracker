@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>LoL Champion Checklist</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --accent: #22c55e;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+    }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      padding: 1rem 1.5rem;
+      background: rgba(15, 23, 42, 0.8);
+      border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    h1 {
+      font-size: 1.25rem;
+      margin: 0;
+    }
+    #controls {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    button {
+      background: #334155;
+      border: none;
+      color: var(--text);
+      padding: 0.4rem 0.8rem;
+      border-radius: 9999px;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+    button:hover {
+      background: #475569;
+    }
+    #status {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    main {
+      padding: 1rem;
+      flex: 1 1 auto;
+    }
+    #grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+      gap: 0.75rem;
+    }
+    .champ {
+      background: var(--card);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 0.5rem;
+      padding: 0.35rem;
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.1s ease, border 0.1s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.25rem;
+    }
+    .champ:hover {
+      transform: translateY(-2px);
+      border: 1px solid rgba(226, 232, 240, 0.4);
+    }
+    .champ img {
+      width: 64px;
+      height: 64px;
+      border-radius: 0.35rem;
+      object-fit: cover;
+      background: #0f172a;
+    }
+    .champ span {
+      font-size: 0.7rem;
+      line-height: 1.1;
+      word-break: break-word;
+    }
+    .checked {
+      border: 1px solid rgba(34, 197, 94, 0.8);
+      box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
+      opacity: 0.7;
+      position: relative;
+    }
+    .checked::after {
+      content: "✓";
+      position: absolute;
+      top: 4px;
+      right: 6px;
+      background: var(--accent);
+      color: #0f172a;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      font-size: 0.75rem;
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+    }
+    #loader {
+      text-align: center;
+      margin-top: 3rem;
+      color: var(--muted);
+    }
+    #search {
+      padding: 0.35rem 0.6rem;
+      border-radius: 9999px;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      background: rgba(15, 23, 42, 0.3);
+      color: var(--text);
+    }
+    @media (max-width: 500px) {
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      #grid {
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>LoL Win-Tracker</h1>
+    <div id="controls">
+      <input id="search" type="text" placeholder="Search champ..." />
+      <button id="clear">Clear all</button>
+      <div id="status">Loading champions…</div>
+    </div>
+  </header>
+  <main>
+    <div id="loader">Fetching champions from Data Dragon…</div>
+    <div id="grid" hidden></div>
+  </main>
+
+  <script>
+    // key for localStorage
+    const STORAGE_KEY = "lol-champ-checklist-v1";
+
+    const statusEl = document.getElementById("status");
+    const gridEl = document.getElementById("grid");
+    const loaderEl = document.getElementById("loader");
+    const clearBtn = document.getElementById("clear");
+    const searchInput = document.getElementById("search");
+
+    // load saved checked champs
+    let checked = new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"));
+
+    function saveChecked() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify([...checked]));
+      updateStatus();
+    }
+
+    function updateStatus(total) {
+      const count = checked.size;
+      if (typeof total === "number") {
+        statusEl.textContent = `${count} / ${total} marked`;
+      } else {
+        // try to read from current grid
+        const champs = gridEl.children.length;
+        statusEl.textContent = `${count} / ${champs} marked`;
+      }
+    }
+
+    async function loadChamps() {
+      try {
+        // 1) get latest version
+        const versionsRes = await fetch("https://ddragon.leagueoflegends.com/api/versions.json");
+        const versions = await versionsRes.json();
+        const latest = versions[0]; // newest patch
+
+        // 2) get champion data
+        const champsRes = await fetch(
+          `https://ddragon.leagueoflegends.com/cdn/${latest}/data/en_US/champion.json`
+        );
+        const champsJson = await champsRes.json();
+        const data = champsJson.data; // object keyed by champ id (Aatrox, Ahri, ...)
+        const champs = Object.values(data).sort((a, b) => a.name.localeCompare(b.name));
+
+        // build grid
+        gridEl.innerHTML = "";
+        champs.forEach((champ) => {
+          const div = document.createElement("div");
+          div.className = "champ";
+          div.dataset.champId = champ.id.toString();
+
+          // image url from ddragon docs
+          const img = document.createElement("img");
+          img.src = `https://ddragon.leagueoflegends.com/cdn/${latest}/img/champion/${champ.image.full}`;
+          img.alt = champ.name;
+
+          const span = document.createElement("span");
+          span.textContent = champ.name;
+
+          div.appendChild(img);
+          div.appendChild(span);
+
+          if (checked.has(champ.id)) {
+            div.classList.add("checked");
+          }
+
+          div.addEventListener("click", () => {
+            if (div.classList.contains("checked")) {
+              div.classList.remove("checked");
+              checked.delete(champ.id);
+            } else {
+              div.classList.add("checked");
+              checked.add(champ.id);
+            }
+            saveChecked();
+          });
+
+          gridEl.appendChild(div);
+        });
+
+        loaderEl.hidden = true;
+        gridEl.hidden = false;
+        updateStatus(champs.length);
+
+        // hook up search
+        searchInput.addEventListener("input", () => {
+          const q = searchInput.value.toLowerCase();
+          [...gridEl.children].forEach((el) => {
+            const name = el.querySelector("span").textContent.toLowerCase();
+            el.style.display = name.includes(q) ? "" : "none";
+          });
+        });
+
+        // clear button
+        clearBtn.addEventListener("click", () => {
+          checked.clear();
+          [...gridEl.children].forEach((el) => el.classList.remove("checked"));
+          saveChecked();
+        });
+      } catch (err) {
+        loaderEl.textContent = "Failed to load champions 😢";
+        console.error(err);
+      }
+    }
+
+    loadChamps();
+  </script>
+</body>
+</html>
