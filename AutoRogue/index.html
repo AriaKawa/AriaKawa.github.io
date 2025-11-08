@@ -148,7 +148,9 @@ const state = {
   hero:null, enemies:[], projs:[], effects:[],
   pickups:[], // reserved
   inventory:[], // {id, lvl, tags[], apply(hero, lvl), desc(lvl), rarity}
-  synergies:{blade:0,ranged:0,arcane:0,heavy:0}
+  synergies:{blade:0,ranged:0,arcane:0,heavy:0},
+  spawnQueue:[],
+  waveScale:1,
 };
 
 /* =========================
@@ -322,20 +324,29 @@ function createHero(H){
     actives:[], passives:[], onHit:[]
   };
 }
+const ENEMY_BASE = {
+  grunt:  {hp:60,  dmg:10, spd:55, arm:0, range:16,  cd:1.1, color:'#e67272'},
+  swift:  {hp:40,  dmg:8,  spd:90, arm:0, range:14,  cd:0.75,color:'#ef9b63'},
+  brute:  {hp:130, dmg:14, spd:45, arm:2, range:18,  cd:1.3, color:'#d8bb6b'},
+  archer: {hp:55,  dmg:9,  spd:60, arm:0, range:110, cd:1.4, color:'#7ab0e8', ranged:true},
+  warlock:{hp:70,  dmg:11, spd:50, arm:1, range:150, cd:1.8, color:'#b889ff', ranged:true, special:'burst'},
+  bomber: {hp:85,  dmg:18, spd:75, arm:0, range:28,  cd:99,  color:'#f06c80', special:'explode'},
+  sentinel:{hp:200, dmg:16, spd:38, arm:4, range:20,  cd:1.35,color:'#d0c76b', special:'guard'},
+  slinger:{hp:50,  dmg:8,  spd:72, arm:0, range:140, cd:0.9, color:'#6ec1ff', ranged:true, special:'rapid'},
+};
+
 function spawnEnemy(kind, x,y, scale=1){
-  // kinds: grunt, swift, archer, brute
-  const k = {
-    grunt: {hp:60, dmg:10, spd:55, arm:0, range:16, cd:1.1, color:'#e67272'},
-    swift: {hp:40, dmg:8,  spd:90, arm:0, range:14, cd:0.75, color:'#ef9b63'},
-    brute: {hp:130,dmg:14, spd:45, arm:2, range:18, cd:1.3, color:'#d8bb6b'},
-    archer:{hp:55, dmg:9,  spd:60, arm:0, range:110,cd:1.4, color:'#7ab0e8', ranged:true}
-  }[kind];
-  return {
-    kind, x,y, r:10*DPR, color:k.color,
+  const k = ENEMY_BASE[kind];
+  if(!k){ console.warn('Unknown enemy', kind); return null; }
+  const en = {
+    kind, x,y, r:(k.r??10)*DPR, color:k.color,
     hp:k.hp*scale, hpMax:k.hp*scale, armor:k.arm,
     dmg:k.dmg*scale, speed:k.spd*DPR, range:k.range*DPR, cd:k.cd, t:rand(0,k.cd),
-    stun:0, bleed:0, bleedT:0, ranged:k.ranged||false
+    stun:0, bleed:0, bleedT:0, ranged:k.ranged||false,
+    special:k.special||null,
+    data:{},
   };
+  return en;
 }
 function spawnProj(p){ state.projs.push({ ...p, ttl:2.2 }); }
 
@@ -370,29 +381,137 @@ function knockback(en, force, ang){
   en.x += Math.cos(ang)*force; en.y += Math.sin(ang)*force;
 }
 
+function explodeEnemy(en){
+  if(en.hp<=0) return;
+  const radius = 70*DPR;
+  state.effects.push({type:'ring',x:en.x,y:en.y,r:radius, t:0, ttl:0.3, color:'#f06c80'});
+  if(state.hero && dist(en.x,en.y,state.hero.x,state.hero.y) <= radius + state.hero.r){
+    hitHero(en.dmg*1.35);
+  }
+  for(const other of state.enemies){
+    if(other===en || other.hp<=0) continue;
+    if(dist(en.x,en.y,other.x,other.y)<=radius){ dealDamage(other, en.dmg*0.5, 'blast'); }
+  }
+  en.hp=0; en.stun=99; state.gold += 1;
+}
+
 /* =========================
    Waves
 ========================= */
+const BASE_WAVE_PLAN = [
+  { groups:[
+    {delay:0, pattern:'ring', kind:'grunt', count:6},
+    {delay:4, pattern:'ring', kind:'swift', count:4},
+  ]},
+  { groups:[
+    {delay:0, pattern:'ring', kind:'grunt', count:6},
+    {delay:3, pattern:'rush', side:'top', kind:'archer', count:4},
+    {delay:6, pattern:'ring', kind:'swift', count:6},
+  ]},
+  { groups:[
+    {delay:0, pattern:'ring', kind:'grunt', count:8},
+    {delay:3, pattern:'pincer', kind:'brute', count:3},
+    {delay:7, pattern:'rush', side:'top', kind:'archer', count:5},
+  ]},
+  { groups:[
+    {delay:0, pattern:'ring', kind:'swift', count:6},
+    {delay:3, pattern:'ring', kind:'brute', count:4},
+    {delay:7, pattern:'flare', kind:'bomber', count:4},
+  ]},
+  { groups:[
+    {delay:0, pattern:'ring', kind:'grunt', count:10},
+    {delay:4, pattern:'rush', side:'sides', kind:'slinger', count:6},
+    {delay:8, pattern:'ring', kind:'warlock', count:3},
+  ]},
+  { groups:[
+    {delay:0, pattern:'ring', kind:'swift', count:8},
+    {delay:4, pattern:'pincer', kind:'bomber', count:4},
+    {delay:8, pattern:'ring', kind:'sentinel', count:2},
+    {delay:12, pattern:'rush', side:'top', kind:'warlock', count:4},
+  ]},
+];
+
+function buildWavePlan(wave){
+  const base = BASE_WAVE_PLAN[Math.min(BASE_WAVE_PLAN.length-1, wave-1)];
+  if(base === BASE_WAVE_PLAN[BASE_WAVE_PLAN.length-1] && wave>BASE_WAVE_PLAN.length){
+    // add extra difficulty past the handcrafted set
+    const extra = wave-BASE_WAVE_PLAN.length;
+    const groups = base.groups.map(g=>({...g}));
+    const bonus = {delay: 6 + extra*1.5, pattern: extra%2? 'flare':'rush', side:'top', kind: extra%2? 'warlock':'bomber', count: 2+extra};
+    groups.push(bonus);
+    return {groups};
+  }
+  return base;
+}
+
+function scheduleWaveGroups(plan){
+  state.spawnQueue.length=0;
+  for(const g of plan.groups){
+    state.spawnQueue.push({delay:g.delay, group:g});
+  }
+}
+
+function spawnGroup(group, scale){
+  const pattern = group.pattern||'ring';
+  const count = group.count||1;
+  if(!ENEMY_BASE[group.kind]) return;
+  const pushEnemy = (x,y)=>{
+    const en = spawnEnemy(group.kind, x,y, scale);
+    if(en) state.enemies.push(en);
+  };
+  const ringRadius = Math.min(W,H)*0.48;
+  if(pattern==='ring'){
+    for(let i=0;i<count;i++){
+      const a = (i/count)*Math.PI*2 + rand(0.4,-0.4);
+      const r = ringRadius*rand(1,0.85);
+      pushEnemy(W/2 + Math.cos(a)*r, H/2 + Math.sin(a)*r);
+    }
+  }else if(pattern==='rush'){
+    const side = group.side||'top';
+    for(let i=0;i<count;i++){
+      const frac = (i+0.5)/count;
+      if(side==='top') pushEnemy(W*frac, -40*DPR);
+      else if(side==='bottom') pushEnemy(W*frac, H+40*DPR);
+      else if(side==='sides'){
+        const left = i%2===0;
+        pushEnemy(left? -40*DPR : W+40*DPR, H*frac);
+      }
+    }
+  }else if(pattern==='pincer'){
+    for(let i=0;i<count;i++){
+      const upper = i%2===0;
+      const off = (i/2+1)/(Math.ceil(count/2)+1);
+      pushEnemy(upper? -50*DPR : W+50*DPR, H*off);
+    }
+  }else if(pattern==='flare'){
+    for(let i=0;i<count;i++){
+      const a = Math.random()*Math.PI*2;
+      const r = ringRadius*1.05;
+      pushEnemy(W/2 + Math.cos(a)*r, H/2 + Math.sin(a)*r);
+    }
+  }else{
+    // fallback ring
+    for(let i=0;i<count;i++){
+      const a = (i/count)*Math.PI*2;
+      pushEnemy(W/2 + Math.cos(a)*ringRadius, H/2 + Math.sin(a)*ringRadius);
+    }
+  }
+}
+
 function startWave(){
   if(!state.hero) return;
   running=true; document.getElementById('btnPlay').textContent='Fighting…';
   log(`Wave ${state.wave} started.`);
-  // spawn ring
-  const count = Math.floor(8 + state.wave*2.4);
-  for(let i=0;i<count;i++){
-    const a = (i/count)*Math.PI*2 + rand(0.1,-0.1);
-    const R = Math.min(W,H)*0.45;
-    const x = W/2 + Math.cos(a)*R, y = H/2 + Math.sin(a)*R;
-    const k = choice(['grunt','grunt','swift','archer','brute']);
-    const scale = 1 + state.wave*0.12;
-    state.enemies.push(spawnEnemy(k, x,y, scale));
-  }
+  state.waveScale = 1 + (state.wave-1)*0.15;
+  const plan = buildWavePlan(state.wave);
+  scheduleWaveGroups(plan);
 }
 function waveClear(){
   running=false; document.getElementById('btnPlay').textContent='Start Wave';
   const reward = 5 + Math.floor(state.wave*1.5);
   state.gold += reward;
   log(`Wave ${state.wave} cleared. +${reward} gold.`);
+  state.spawnQueue=[];
   // open picker
   openPicker();
   state.wave++;
@@ -502,6 +621,7 @@ function rebuildSynergies(){
 function startRun(Hdef){
   // hero
   state.wave=1; state.gold=0; state.enemies=[]; state.projs=[]; state.effects=[]; dpsTrack=[];
+  state.spawnQueue=[]; state.waveScale=1;
   state.inventory=[]; running=false; speed=1; document.getElementById('btnSpeed').textContent='1x';
   state.hero = createHero(Hdef);
   state.hero.baseArmor = state.hero.armor;
@@ -564,13 +684,43 @@ function step(dt){
       e.x += (dx/d)*e.speed*dt*dir;
       e.y += (dy/d)*e.speed*dt*dir;
       e.t -= dt;
+      if(e.special==='rapid'){ e.t -= dt*0.25; }
       if(e.t<=0 && d<=e.range*1.2){ e.t=e.cd; // fire
-        const a=Math.atan2(dy,dx); spawnEProj(e.x,e.y, Math.cos(a)*240*DPR, Math.sin(a)*240*DPR, 4*DPR, e.dmg);
+        const a=Math.atan2(dy,dx);
+        if(e.special==='burst'){
+          const spread=0.25;
+          for(const off of [-spread,0,spread]){
+            spawnEProj(e.x,e.y, Math.cos(a+off)*220*DPR, Math.sin(a+off)*220*DPR, 4*DPR, e.dmg*0.85);
+          }
+        }else if(e.special==='rapid'){
+          spawnEProj(e.x,e.y, Math.cos(a)*250*DPR, Math.sin(a)*250*DPR, 3*DPR, e.dmg*0.75);
+        }else{
+          spawnEProj(e.x,e.y, Math.cos(a)*240*DPR, Math.sin(a)*240*DPR, 4*DPR, e.dmg);
+        }
       }
     }else{
       // walk toward hero, hit in melee
+      if(e.special==='guard' && e.hp/e.hpMax<0.5 && !e.data.enraged){
+        e.data.enraged=true; e.armor += 2; e.speed *= 1.15;
+        log('A sentinel enters a defensive stance!');
+      }
       if(d>e.range){ e.x += (dx/d)*e.speed*dt; e.y += (dy/d)*e.speed*dt; e.t-=dt; }
-      else{ e.t-=dt; if(e.t<=0){ e.t=e.cd; hitHero(e.dmg); if(state.hero.reflect>0) dealDamage(e, e.dmg*state.hero.reflect, 'reflect'); } }
+      else{
+        if(e.special==='explode'){
+          explodeEnemy(e);
+          continue;
+        }
+        e.t-=dt; if(e.t<=0){ e.t=e.cd; hitHero(e.dmg); if(state.hero.reflect>0) dealDamage(e, e.dmg*state.hero.reflect, 'reflect'); }
+      }
+    }
+  }
+
+  // pending spawns
+  if(running && state.spawnQueue.length){
+    state.spawnQueue[0].delay -= dt;
+    if(state.spawnQueue[0].delay<=0){
+      const grp = state.spawnQueue.shift();
+      spawnGroup(grp.group, state.waveScale);
     }
   }
 
@@ -598,7 +748,7 @@ function step(dt){
   state.enemies = state.enemies.filter(e=>e.hp>0);
 
   // wave clear?
-  if(running && state.enemies.length===0){
+  if(running && state.enemies.length===0 && state.spawnQueue.length===0){
     waveClear();
   }
 
