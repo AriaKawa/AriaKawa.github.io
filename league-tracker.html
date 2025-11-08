@@ -142,14 +142,13 @@
   <header>
     <h1>LoL Win-Tracker</h1>
     <div id="controls">
-      <button id="start">Start Game</button>
       <input id="search" type="text" placeholder="Search champ..." disabled />
       <button id="clear" disabled>Clear all</button>
       <div id="status">Loading champions…</div>
     </div>
   </header>
   <main>
-    <div id="loader">Press Start to load champions.</div>
+    <div id="loader">Fetching champions from Data Dragon…</div>
     <div id="grid" hidden></div>
   </main>
 
@@ -160,14 +159,11 @@
     const statusEl = document.getElementById("status");
     const gridEl = document.getElementById("grid");
     const loaderEl = document.getElementById("loader");
-    const startBtn = document.getElementById("start");
     const clearBtn = document.getElementById("clear");
     const searchInput = document.getElementById("search");
 
     // load saved checked champs
     let checked = new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"));
-    let hasLoaded = false;
-    let isLoading = false;
 
     function setControlsEnabled(enabled) {
       clearBtn.disabled = !enabled;
@@ -175,7 +171,7 @@
     }
 
     setControlsEnabled(false);
-    statusEl.textContent = "Press start to begin.";
+    statusEl.textContent = "Loading champions…";
 
     function saveChecked() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify([...checked]));
@@ -266,35 +262,21 @@
         });
       } catch (err) {
         loaderEl.textContent = "Failed to load champions 😢";
+        statusEl.textContent = "Unable to load champions.";
         console.error(err);
         throw err;
       }
     }
 
-    startBtn.addEventListener("click", async () => {
-      if (hasLoaded || isLoading) {
-        return;
-      }
-
-      isLoading = true;
-      startBtn.disabled = true;
-      startBtn.textContent = "Loading…";
+    (async () => {
       loaderEl.hidden = false;
       loaderEl.textContent = "Fetching champions from Data Dragon…";
-
       try {
         await loadChamps();
-        hasLoaded = true;
-        startBtn.textContent = "Game ready";
       } catch (error) {
-        startBtn.disabled = false;
-        startBtn.textContent = "Start Game";
-        isLoading = false;
-        return;
+        // already handled in loadChamps
       }
-
-      isLoading = false;
-    });
+    })();
   </script>
 </body>
 </html>
