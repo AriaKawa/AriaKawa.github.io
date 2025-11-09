@@ -50,6 +50,45 @@
     transition: background-color 0.3s;
   }
 
+  .back-nav {
+    position: fixed;
+    top: clamp(1rem, 3vw, 1.5rem);
+    left: clamp(1rem, 3vw, 1.5rem);
+    z-index: 10;
+  }
+
+  .back-nav__button {
+    appearance: none;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
+    color: #fff;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1.1rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    text-decoration: none;
+    box-shadow: 0 16px 28px rgba(0, 0, 0, 0.4);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+
+  .back-nav__button:hover,
+  .back-nav__button:focus-visible {
+    transform: translateY(-1px);
+    border-color: rgba(144, 202, 249, 0.7);
+    box-shadow: 0 22px 36px rgba(0, 0, 0, 0.45);
+    outline: none;
+  }
+
+  .back-nav__icon {
+    font-size: 1.05rem;
+    line-height: 1;
+  }
+
   #results {
     margin-top: 20px;
     font-size: 1.2em;
@@ -57,6 +96,12 @@
 </style>
 </head>
 <body>
+  <nav class="back-nav">
+    <a class="back-nav__button" href="index.html">
+      <span aria-hidden="true" class="back-nav__icon">←</span>
+      <span>Back to home</span>
+    </a>
+  </nav>
   <h1>Reaction Time Test</h1>
   <p>Click when the screen turns <span style="color:lime">green</span>!</p>
   <button id="start-button" type="button">Start Reaction Time Test</button>
