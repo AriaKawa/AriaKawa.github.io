@@ -3,6 +3,11 @@ import React, { useEffect, useMemo, useState } from "https://esm.sh/react@18";
 import { createRoot } from "https://esm.sh/react-dom@18/client";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
+    getAuth,
+    onAuthStateChanged,
+    signInAnonymously
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
     getFirestore,
     doc,
     setDoc,
@@ -99,6 +104,8 @@ const defaultConfig = {
 const firebaseConfig = window.POKEMON_FIREBASE_CONFIG || defaultConfig;
 
 let db = null;
+let auth = null;
+let authReady = Promise.resolve(null);
 let firebaseReady = false;
 let firebaseInitError = null;
 
@@ -107,6 +114,31 @@ if (firebaseConfig && firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_A
         const app = initializeApp(firebaseConfig);
         db = getFirestore(app);
         firebaseReady = true;
+
+        auth = getAuth(app);
+        authReady = new Promise((resolve, reject) => {
+            const unsubscribe = onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    resolve(user);
+                    unsubscribe();
+                }
+            }, (error) => {
+                console.error("Pokémon Typing Battle auth state error", error);
+                unsubscribe();
+                reject(error);
+            });
+
+            if (!auth.currentUser) {
+                signInAnonymously(auth).catch((err) => {
+                    console.error("Pokémon Typing Battle anonymous auth failed", err);
+                    unsubscribe();
+                    reject(err);
+                });
+            } else {
+                resolve(auth.currentUser);
+                unsubscribe();
+            }
+        });
     } catch (err) {
         firebaseInitError = err;
         console.error("Pokémon Typing Battle Firebase init failed", err);
@@ -197,6 +229,7 @@ const usePokedex = () => {
 };
 
 async function createRoom(db, roomCode, hostId) {
+    await authReady;
     const roomRef = doc(db, "rooms", roomCode);
     const snap = await getDoc(roomRef);
     if (snap.exists()) throw new Error("Room already exists");
@@ -210,6 +243,7 @@ async function createRoom(db, roomCode, hostId) {
 }
 
 async function joinRoom(db, roomCode, playerId, name) {
+    await authReady;
     const roomRef = doc(db, "rooms", roomCode);
     const roomSnap = await getDoc(roomRef);
     if (!roomSnap.exists()) throw new Error("Room not found");
@@ -221,6 +255,7 @@ async function joinRoom(db, roomCode, playerId, name) {
 }
 
 async function startGame(db, roomCode, durationMs = 60000) {
+    await authReady;
     const roomRef = doc(db, "rooms", roomCode);
     const startMs = Date.now() + 3000;
     const endMs = startMs + durationMs;
@@ -238,6 +273,7 @@ async function startGame(db, roomCode, durationMs = 60000) {
 }
 
 async function submitEntry(db, roomCode, playerId, inputName) {
+    await authReady;
     const norm = normalizeName(inputName);
     const roomRef = doc(db, "rooms", roomCode);
     const entryRef = doc(db, "rooms", roomCode, "entries", norm);
