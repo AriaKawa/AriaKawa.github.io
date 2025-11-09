@@ -61,6 +61,10 @@
     button:hover {
       background: #475569;
     }
+    #sortCompleted.active {
+      background: var(--accent);
+      color: #0f172a;
+    }
     #status {
       font-size: 0.8rem;
       color: var(--muted);
@@ -194,6 +198,7 @@
       <div id="controls">
         <input id="search" type="text" placeholder="Search champ..." disabled />
         <button id="clear" disabled>Clear all</button>
+        <button id="sortCompleted" disabled aria-pressed="false">Completed first</button>
       </div>
       <div id="status">Loading champions…</div>
     </div>
@@ -214,6 +219,7 @@
     const loaderEl = document.getElementById("loader");
     const clearBtn = document.getElementById("clear");
     const searchInput = document.getElementById("search");
+    const sortCompletedBtn = document.getElementById("sortCompleted");
     const accountSelect = document.getElementById("accountSelect");
     const newAccountInput = document.getElementById("newAccount");
     const addAccountBtn = document.getElementById("addAccount");
@@ -234,6 +240,9 @@
     }
     let activeUser = localStorage.getItem(ACTIVE_USER_KEY) || null;
     let checked = new Set();
+    let champsList = [];
+    let filterText = "";
+    let completedFirst = false;
 
     function setAccountMessage(message = "", isError = false) {
       accountMessageEl.textContent = message;
@@ -266,17 +275,7 @@
     }
 
     function applyCheckedToGrid() {
-      [...gridEl.children].forEach((el) => {
-        const champId = el.dataset.champId;
-        if (checked.has(champId)) {
-          el.classList.add("checked");
-        } else {
-          el.classList.remove("checked");
-        }
-      });
-      if (gridEl.children.length > 0) {
-        updateStatus();
-      }
+      renderGrid();
     }
 
     function setActiveUser(username) {
@@ -354,6 +353,7 @@
     function setControlsEnabled(enabled) {
       clearBtn.disabled = !enabled;
       searchInput.disabled = !enabled;
+      sortCompletedBtn.disabled = !enabled;
     }
 
     setControlsEnabled(false);
@@ -364,18 +364,82 @@
       accounts[activeUser].checked = [...checked];
       persistAccounts();
       localStorage.setItem(ACTIVE_USER_KEY, activeUser);
-      updateStatus();
+      updateStatus(champsList.length);
     }
 
     function updateStatus(total) {
       const count = checked.size;
+      let totalCount;
       if (typeof total === "number") {
-        statusEl.textContent = `${count} / ${total} marked`;
+        totalCount = total;
+      } else if (champsList.length > 0) {
+        totalCount = champsList.length;
       } else {
-        // try to read from current grid
-        const champs = gridEl.children.length;
-        statusEl.textContent = `${count} / ${champs} marked`;
+        totalCount = gridEl.children.length;
       }
+      statusEl.textContent = `${count} / ${totalCount} marked`;
+    }
+
+    function renderGrid() {
+      if (!Array.isArray(champsList) || champsList.length === 0) {
+        return;
+      }
+
+      sortCompletedBtn.classList.toggle("active", completedFirst);
+      sortCompletedBtn.setAttribute("aria-pressed", completedFirst ? "true" : "false");
+
+      const query = filterText.trim().toLowerCase();
+      const filtered = champsList.filter((champ) =>
+        champ.name.toLowerCase().includes(query)
+      );
+
+      const toRender = completedFirst ? [...filtered] : filtered;
+      if (completedFirst) {
+        toRender.sort((a, b) => {
+          const aChecked = checked.has(a.id);
+          const bChecked = checked.has(b.id);
+          if (aChecked === bChecked) {
+            return a.name.localeCompare(b.name);
+          }
+          return aChecked ? -1 : 1;
+        });
+      }
+
+      gridEl.innerHTML = "";
+
+      toRender.forEach((champ) => {
+        const div = document.createElement("div");
+        div.className = "champ";
+        div.dataset.champId = champ.id.toString();
+
+        const img = document.createElement("img");
+        img.src = champ.imgUrl;
+        img.alt = champ.name;
+
+        const span = document.createElement("span");
+        span.textContent = champ.name;
+
+        if (checked.has(champ.id)) {
+          div.classList.add("checked");
+        }
+
+        div.appendChild(img);
+        div.appendChild(span);
+
+        div.addEventListener("click", () => {
+          if (checked.has(champ.id)) {
+            checked.delete(champ.id);
+          } else {
+            checked.add(champ.id);
+          }
+          saveChecked();
+          renderGrid();
+        });
+
+        gridEl.appendChild(div);
+      });
+
+      updateStatus(champsList.length);
     }
 
     async function loadChamps() {
@@ -391,43 +455,15 @@
         );
         const champsJson = await champsRes.json();
         const data = champsJson.data; // object keyed by champ id (Aatrox, Ahri, ...)
-        const champs = Object.values(data).sort((a, b) => a.name.localeCompare(b.name));
+        const champs = Object.values(data)
+          .map((champ) => ({
+            ...champ,
+            imgUrl: `https://ddragon.leagueoflegends.com/cdn/${latest}/img/champion/${champ.image.full}`,
+          }))
+          .sort((a, b) => a.name.localeCompare(b.name));
 
-        // build grid
-        gridEl.innerHTML = "";
-        champs.forEach((champ) => {
-          const div = document.createElement("div");
-          div.className = "champ";
-          div.dataset.champId = champ.id.toString();
-
-          // image url from ddragon docs
-          const img = document.createElement("img");
-          img.src = `https://ddragon.leagueoflegends.com/cdn/${latest}/img/champion/${champ.image.full}`;
-          img.alt = champ.name;
-
-          const span = document.createElement("span");
-          span.textContent = champ.name;
-
-          div.appendChild(img);
-          div.appendChild(span);
-
-          if (checked.has(champ.id)) {
-            div.classList.add("checked");
-          }
-
-          div.addEventListener("click", () => {
-            if (div.classList.contains("checked")) {
-              div.classList.remove("checked");
-              checked.delete(champ.id);
-            } else {
-              div.classList.add("checked");
-              checked.add(champ.id);
-            }
-            saveChecked();
-          });
-
-          gridEl.appendChild(div);
-        });
+        champsList = champs;
+        renderGrid();
 
         loaderEl.hidden = true;
         gridEl.hidden = false;
@@ -436,18 +472,20 @@
 
         // hook up search
         searchInput.addEventListener("input", () => {
-          const q = searchInput.value.toLowerCase();
-          [...gridEl.children].forEach((el) => {
-            const name = el.querySelector("span").textContent.toLowerCase();
-            el.style.display = name.includes(q) ? "" : "none";
-          });
+          filterText = searchInput.value;
+          renderGrid();
         });
 
         // clear button
         clearBtn.addEventListener("click", () => {
           checked.clear();
-          [...gridEl.children].forEach((el) => el.classList.remove("checked"));
           saveChecked();
+          renderGrid();
+        });
+
+        sortCompletedBtn.addEventListener("click", () => {
+          completedFirst = !completedFirst;
+          renderGrid();
         });
       } catch (err) {
         loaderEl.textContent = "Failed to load champions 😢";
