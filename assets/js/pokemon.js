@@ -1,7 +1,12 @@
 // assets/js/pokemon.jsx
-import React2, { useEffect, useMemo, useRef, useState } from "https://esm.sh/react@18";
+import React2, { useEffect, useMemo, useState } from "https://esm.sh/react@18";
 import { createRoot } from "https://esm.sh/react-dom@18/client";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getAuth,
+  onAuthStateChanged,
+  signInAnonymously
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   getFirestore,
   doc,
@@ -34,6 +39,68 @@ var Fragment = React.Fragment;
 
 // assets/js/pokemon.jsx
 var fallbackUUID = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
+var memoryStore = new Map;
+var persistentStorageAvailable = true;
+var storageWarningLogged = false;
+var logStorageWarning = (err) => {
+  if (!storageWarningLogged) {
+    console.warn("Pokémon Typing Battle: localStorage unavailable, falling back to in-memory cache.", err);
+    storageWarningLogged = true;
+  }
+};
+var getNativeStorage = () => {
+  if (!persistentStorageAvailable)
+    return null;
+  try {
+    if (typeof window !== "undefined" && window.localStorage) {
+      return window.localStorage;
+    }
+    persistentStorageAvailable = false;
+    logStorageWarning(new Error("localStorage is not available in this environment."));
+    return null;
+  } catch (err) {
+    persistentStorageAvailable = false;
+    logStorageWarning(err);
+    return null;
+  }
+};
+var safeStorage = {
+  get(key) {
+    const nativeStorage = getNativeStorage();
+    if (nativeStorage) {
+      try {
+        const value = nativeStorage.getItem(key);
+        if (value !== null) {
+          memoryStore.set(key, value);
+        } else {
+          memoryStore.delete(key);
+        }
+        return value;
+      } catch (err) {
+        persistentStorageAvailable = false;
+        logStorageWarning(err);
+      }
+    }
+    return memoryStore.has(key) ? memoryStore.get(key) : null;
+  },
+  set(key, value) {
+    memoryStore.set(key, value);
+    const nativeStorage = getNativeStorage();
+    if (nativeStorage) {
+      try {
+        nativeStorage.setItem(key, value);
+        return true;
+      } catch (err) {
+        persistentStorageAvailable = false;
+        logStorageWarning(err);
+      }
+    }
+    return false;
+  },
+  isPersistent() {
+    return persistentStorageAvailable;
+  }
+};
 var defaultConfig = {
   apiKey: "AIzaSyDRniZatGeylxphjHQadYjucOcirNBRIdk",
   authDomain: "multiplayer-640ec.firebaseapp.com",
@@ -46,6 +113,8 @@ var defaultConfig = {
 };
 var firebaseConfig = window.POKEMON_FIREBASE_CONFIG || defaultConfig;
 var db = null;
+var auth = null;
+var authReady = Promise.resolve(null);
 var firebaseReady = false;
 var firebaseInitError = null;
 if (firebaseConfig && firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY") {
@@ -53,6 +122,29 @@ if (firebaseConfig && firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_A
     const app = initializeApp(firebaseConfig);
     db = getFirestore(app);
     firebaseReady = true;
+    auth = getAuth(app);
+    authReady = new Promise((resolve, reject) => {
+      const unsubscribe = onAuthStateChanged(auth, (user) => {
+        if (user) {
+          resolve(user);
+          unsubscribe();
+        }
+      }, (error) => {
+        console.error("Pokémon Typing Battle auth state error", error);
+        unsubscribe();
+        reject(error);
+      });
+      if (!auth.currentUser) {
+        signInAnonymously(auth).catch((err) => {
+          console.error("Pokémon Typing Battle anonymous auth failed", err);
+          unsubscribe();
+          reject(err);
+        });
+      } else {
+        resolve(auth.currentUser);
+        unsubscribe();
+      }
+    });
   } catch (err) {
     firebaseInitError = err;
     console.error("Pokémon Typing Battle Firebase init failed", err);
@@ -64,11 +156,11 @@ if (firebaseConfig && firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_A
 var normalizeName = (s) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
 var useLocalId = () => {
   const [id] = useState(() => {
-    const existing = localStorage.getItem("ptb_player_id");
+    const existing = safeStorage.get("ptb_player_id");
     if (existing)
       return existing;
     const generated = uuidv4 ? uuidv4() : fallbackUUID();
-    localStorage.setItem("ptb_player_id", generated);
+    safeStorage.set("ptb_player_id", generated);
     return generated;
   });
   return id;
@@ -80,7 +172,7 @@ var usePokedex = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   useEffect(() => {
-    const cached = localStorage.getItem("ptb_pokedex_v2");
+    const cached = safeStorage.get("ptb_pokedex_v2");
     if (cached) {
       try {
         const arr = JSON.parse(cached);
@@ -99,7 +191,7 @@ var usePokedex = () => {
         const data = await res.json();
         const raw = data.results?.map((p) => p.name) || [];
         const arr = Array.from(new Set(raw));
-        localStorage.setItem("ptb_pokedex_v2", JSON.stringify(arr));
+        safeStorage.set("ptb_pokedex_v2", JSON.stringify(arr));
         setNames(new Set(arr));
       } catch (e) {
         setError(e.message);
@@ -136,6 +228,7 @@ var usePokedex = () => {
   return { loading, error, isValid };
 };
 async function createRoom(db2, roomCode, hostId) {
+  await authReady;
   const roomRef = doc(db2, "rooms", roomCode);
   const snap = await getDoc(roomRef);
   if (snap.exists())
@@ -149,6 +242,7 @@ async function createRoom(db2, roomCode, hostId) {
   });
 }
 async function joinRoom(db2, roomCode, playerId, name) {
+  await authReady;
   const roomRef = doc(db2, "rooms", roomCode);
   const roomSnap = await getDoc(roomRef);
   if (!roomSnap.exists())
@@ -160,6 +254,7 @@ async function joinRoom(db2, roomCode, playerId, name) {
   }, { merge: true });
 }
 async function startGame(db2, roomCode, durationMs = 60000) {
+  await authReady;
   const roomRef = doc(db2, "rooms", roomCode);
   const startMs = Date.now() + 3000;
   const endMs = startMs + durationMs;
@@ -176,6 +271,7 @@ async function startGame(db2, roomCode, durationMs = 60000) {
   }, 3000);
 }
 async function submitEntry(db2, roomCode, playerId, inputName) {
+  await authReady;
   const norm = normalizeName(inputName);
   const roomRef = doc(db2, "rooms", roomCode);
   const entryRef = doc(db2, "rooms", roomCode, "entries", norm);
@@ -188,7 +284,6 @@ async function submitEntry(db2, roomCode, playerId, inputName) {
     if (status !== "playing" || !endsAt || Date.now() > endsAt) {
       throw new Error("Round is not active");
     }
-    const playerSnap = await tx.get(playerRef);
     const exists = await tx.get(entryRef);
     if (exists.exists()) {
       throw new Error("That Pokémon was already used!");
@@ -198,42 +293,26 @@ async function submitEntry(db2, roomCode, playerId, inputName) {
       playerId,
       createdAt: serverTimestamp()
     });
+    const playerSnap = await tx.get(playerRef);
     const curr = playerSnap.exists() ? playerSnap.data().score || 0 : 0;
     tx.set(playerRef, { score: curr + 1 }, { merge: true });
-  });
-}
-async function upsertLeaderboardPersonalBest(db2, playerId, displayName, score) {
-  if (!playerId || !db2)
-    return;
-  const entryRef = doc(db2, "leaderboard", playerId);
-  const safeName = (displayName || "Mystery Trainer").trim() || "Mystery Trainer";
-  const normalizedScore = typeof score === "number" ? score : Number(score) || 0;
-  await runTransaction(db2, async (tx) => {
-    const snap = await tx.get(entryRef);
-    const prevBest = snap.exists() ? snap.data().bestScore || 0 : null;
-    if (!snap.exists() || normalizedScore > (prevBest || 0)) {
-      tx.set(entryRef, {
-        playerId,
-        displayName: safeName,
-        bestScore: normalizedScore,
-        updatedAt: serverTimestamp()
-      });
-    }
   });
 }
 function App() {
   const playerId = useLocalId();
   const { loading: dexLoading, error: dexError, isValid } = usePokedex();
-  const [roomCode, setRoomCode] = useState("");
-  const [name, setName] = useState("");
+  const [activeRoomCode, setActiveRoomCode] = useState("");
+  const [roomCodeInput, setRoomCodeInput] = useState("");
+  const [hostName, setHostName] = useState(() => safeStorage.get("ptb_display_name") || "");
+  const [joinName, setJoinName] = useState(() => safeStorage.get("ptb_display_name") || "");
+  const [pendingRoomCode, setPendingRoomCode] = useState("");
   const [me, setMe] = useState(null);
   const [room, setRoom] = useState(null);
   const [players, setPlayers] = useState([]);
-  const [globalLeaders, setGlobalLeaders] = useState([]);
   const [entries, setEntries] = useState([]);
   const [input, setInput] = useState("");
   const [feedback, setFeedback] = useState("");
-  const roomRef = useMemo(() => roomCode ? doc(db, "rooms", roomCode) : null, [roomCode]);
+  const roomRef = useMemo(() => activeRoomCode ? doc(db, "rooms", activeRoomCode) : null, [activeRoomCode]);
   useEffect(() => {
     if (!roomRef)
       return;
@@ -243,9 +322,9 @@ function App() {
     return () => unsub();
   }, [roomRef]);
   useEffect(() => {
-    if (!roomCode)
+    if (!activeRoomCode)
       return;
-    const playersRef = collection(db, "rooms", roomCode, "players");
+    const playersRef = collection(db, "rooms", activeRoomCode, "players");
     const unsub = onSnapshot(playersRef, (snap) => {
       const arr = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
       arr.sort((a, b) => (b.score || 0) - (a.score || 0));
@@ -254,44 +333,55 @@ function App() {
       setMe(mine || null);
     });
     return () => unsub();
-  }, [roomCode, playerId]);
+  }, [activeRoomCode, playerId]);
   useEffect(() => {
-    if (!roomCode)
+    if (!activeRoomCode)
       return;
-    const entriesRef = collection(db, "rooms", roomCode, "entries");
+    const entriesRef = collection(db, "rooms", activeRoomCode, "entries");
     const q = query(entriesRef, orderBy("createdAt", "desc"), limit(20));
     const unsub = onSnapshot(q, (snap) => {
       const arr = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
       setEntries(arr);
     });
     return () => unsub();
-  }, [roomCode]);
+  }, [activeRoomCode]);
   useEffect(() => {
-    if (!db)
-      return;
-    const leaderboardRef = collection(db, "leaderboard");
-    const topQuery = query(leaderboardRef, orderBy("bestScore", "desc"), limit(5));
-    const unsub = onSnapshot(topQuery, (snap) => {
-      const arr = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      setGlobalLeaders(arr);
-    });
-    return () => unsub();
-  }, []);
+    if (!activeRoomCode) {
+      setRoom(null);
+      setPlayers([]);
+      setEntries([]);
+      setMe(null);
+    }
+  }, [activeRoomCode]);
   const handleCreateRoom = async () => {
     try {
+      if (!hostName.trim())
+        throw new Error("Enter a name to host the room");
+      const trimmed = hostName.trim();
       const code = (Math.random().toString(36).slice(2, 6) + Math.random().toString(36).slice(2, 6)).slice(0, 6).toUpperCase();
       await createRoom(db, code, playerId);
-      setRoomCode(code);
+      safeStorage.set("ptb_display_name", trimmed);
+      setHostName(trimmed);
+      setJoinName(trimmed);
+      setRoomCodeInput(code);
+      setPendingRoomCode(code);
     } catch (e) {
       alert(e.message);
     }
   };
   const handleJoinRoom = async () => {
     try {
-      if (!roomCode || !name.trim())
+      if (!roomCodeInput || !joinName.trim())
         throw new Error("Enter room code and name");
-      await joinRoom(db, roomCode.toUpperCase(), playerId, name.trim());
-      setRoomCode(roomCode.toUpperCase());
+      const code = roomCodeInput.toUpperCase();
+      const trimmed = joinName.trim();
+      await joinRoom(db, code, playerId, trimmed);
+      safeStorage.set("ptb_display_name", trimmed);
+      setHostName(trimmed);
+      setJoinName(trimmed);
+      setActiveRoomCode(code);
+      setRoomCodeInput(code);
+      setPendingRoomCode("");
     } catch (e) {
       alert(e.message);
     }
@@ -313,24 +403,6 @@ function App() {
     const t = setInterval(() => setTick((x) => x + 1), 200);
     return () => clearInterval(t);
   }, []);
-  const lastRecordedResult = useRef(null);
-  useEffect(() => {
-    if (!room || room.status !== "ended" || players.length === 0)
-      return;
-    const key = `${room.id}:${room.endsAt || room.startedAt || ""}`;
-    if (lastRecordedResult.current === key)
-      return;
-    lastRecordedResult.current = key;
-    const recordResults = async () => {
-      try {
-        await Promise.all(players.map((p) => upsertLeaderboardPersonalBest(db, p.id, p.name, p.score || 0)));
-      } catch (err) {
-        console.error("Failed to record leaderboard results", err);
-        lastRecordedResult.current = null;
-      }
-    };
-    recordResults();
-  }, [room?.status, room?.id, room?.endsAt, room?.startedAt, players]);
   const countdown = useMemo(() => {
     if (!room?.startedAt)
       return null;
@@ -402,7 +474,7 @@ function App() {
           dexError
         ]
       }, undefined, true, undefined, this),
-      !room && /* @__PURE__ */ jsxDEV("div", {
+      !activeRoomCode && /* @__PURE__ */ jsxDEV("div", {
         style: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 },
         children: [
           /* @__PURE__ */ jsxDEV("div", {
@@ -416,11 +488,37 @@ function App() {
                 style: { marginTop: 0, color: "var(--text-muted)", fontSize: 14 },
                 children: "Generate a one-time code and share it with your party."
               }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsxDEV("div", {
+                style: { display: "grid", gap: 8, marginBottom: 12 },
+                children: /* @__PURE__ */ jsxDEV("input", {
+                  placeholder: "Your Name",
+                  value: hostName,
+                  onChange: (e) => setHostName(e.target.value),
+                  style: inputStyle
+                }, undefined, false, undefined, this)
+              }, undefined, false, undefined, this),
               /* @__PURE__ */ jsxDEV("button", {
                 onClick: handleCreateRoom,
                 style: btnPrimary,
                 children: "Create code"
-              }, undefined, false, undefined, this)
+              }, undefined, false, undefined, this),
+              pendingRoomCode && /* @__PURE__ */ jsxDEV("div", {
+                style: { marginTop: 12, padding: 12, borderRadius: 12, background: "rgba(60, 90, 170, 0.2)", border: "1px solid rgba(147,198,255,0.35)" },
+                children: [
+                  /* @__PURE__ */ jsxDEV("div", {
+                    style: { fontSize: 12, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--text-muted)" },
+                    children: "Generated code"
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsxDEV("div", {
+                    style: { fontSize: 24, fontWeight: 800, letterSpacing: "0.2em" },
+                    children: pendingRoomCode
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsxDEV("p", {
+                    style: { margin: "8px 0 0", fontSize: 13, color: "var(--text-muted)" },
+                    children: "Review your name below and select “Join room” to enter the lobby."
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this)
             ]
           }, undefined, true, undefined, this),
           /* @__PURE__ */ jsxDEV("div", {
@@ -439,14 +537,14 @@ function App() {
                 children: [
                   /* @__PURE__ */ jsxDEV("input", {
                     placeholder: "Room Code",
-                    value: roomCode,
-                    onChange: (e) => setRoomCode(e.target.value.toUpperCase()),
+                    value: roomCodeInput,
+                    onChange: (e) => setRoomCodeInput(e.target.value.toUpperCase()),
                     style: inputStyle
                   }, undefined, false, undefined, this),
                   /* @__PURE__ */ jsxDEV("input", {
                     placeholder: "Your Name",
-                    value: name,
-                    onChange: (e) => setName(e.target.value),
+                    value: joinName,
+                    onChange: (e) => setJoinName(e.target.value),
                     style: inputStyle
                   }, undefined, false, undefined, this),
                   /* @__PURE__ */ jsxDEV("button", {
@@ -460,6 +558,13 @@ function App() {
           }, undefined, true, undefined, this)
         ]
       }, undefined, true, undefined, this),
+      activeRoomCode && !room && /* @__PURE__ */ jsxDEV("section", {
+        style: { border: "1px solid rgba(147,198,255,0.25)", borderRadius: 20, padding: 20, background: "rgba(15, 9, 30, 0.75)", boxShadow: "var(--shadow-strong)", display: "grid", placeItems: "center", minHeight: 180 },
+        children: /* @__PURE__ */ jsxDEV("div", {
+          style: { color: "var(--text-muted)", fontWeight: 600 },
+          children: "Connecting to room…"
+        }, undefined, false, undefined, this)
+      }, undefined, false, undefined, this),
       room && /* @__PURE__ */ jsxDEV("section", {
         style: { border: "1px solid rgba(147,198,255,0.25)", borderRadius: 20, padding: 20, background: "rgba(15, 9, 30, 0.75)", boxShadow: "var(--shadow-strong)", display: "grid", gap: 20 },
         children: [
@@ -654,35 +759,6 @@ function App() {
                             }, undefined, false, undefined, this)
                           ]
                         }, p.id, true, undefined, this))
-                      }, undefined, false, undefined, this)
-                    ]
-                  }, undefined, true, undefined, this),
-                  /* @__PURE__ */ jsxDEV("div", {
-                    style: { display: "grid", gap: 8 },
-                    children: [
-                      /* @__PURE__ */ jsxDEV("h3", {
-                        style: { margin: "12px 0 0", fontSize: 18 },
-                        children: "Top trainers"
-                      }, undefined, false, undefined, this),
-                      globalLeaders.length === 0 ? /* @__PURE__ */ jsxDEV("p", {
-                        style: { margin: 0, color: "var(--text-muted)", fontSize: 14 },
-                        children: "No personal bests recorded yet. Finish a round to claim a spot!"
-                      }, undefined, false, undefined, this) : /* @__PURE__ */ jsxDEV("ol", {
-                        style: { margin: 0, paddingLeft: 20, display: "grid", gap: 6 },
-                        children: globalLeaders.map((entry, idx) => /* @__PURE__ */ jsxDEV("li", {
-                          style: { display: "flex", justifyContent: "space-between", gap: 12 },
-                          children: [
-                            /* @__PURE__ */ jsxDEV("span", {
-                              children: [
-                                "#" + (idx + 1) + " ",
-                                entry.displayName || "Mystery Trainer"
-                              ]
-                            }, undefined, true, undefined, this),
-                            /* @__PURE__ */ jsxDEV("strong", {
-                              children: entry.bestScore || 0
-                            }, undefined, false, undefined, this)
-                          ]
-                        }, entry.id, true, undefined, this))
                       }, undefined, false, undefined, this)
                     ]
                   }, undefined, true, undefined, this)
