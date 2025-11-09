@@ -192,6 +192,7 @@
   let peekTimeout = null;
 
   // ---------- DOM ----------
+  const fretSVG  = document.getElementById('fretSVG');
   const fretsG   = document.getElementById('frets');
   const stringsG = document.getElementById('strings');
   const inlaysG  = document.getElementById('inlays');
@@ -222,93 +223,182 @@
   function midBetween(a,b){ return a + (b-a)/2 }
 
   // ---------- Build Fretboard ----------
+  const SVG_NS = "http://www.w3.org/2000/svg";
+
+  function ensureDefs(){
+    let defs = fretSVG.querySelector('defs');
+    if(!defs){
+      defs = document.createElementNS(SVG_NS, 'defs');
+      fretSVG.insertBefore(defs, fretSVG.firstChild);
+    }
+    return defs;
+  }
+
+  function defineLinearGradient(id, stops, attrs={}){
+    const defs = ensureDefs();
+    let gradient = defs.querySelector(`#${id}`);
+    if(!gradient){
+      gradient = document.createElementNS(SVG_NS, 'linearGradient');
+      gradient.setAttribute('id', id);
+      Object.entries(attrs).forEach(([key,value])=> gradient.setAttribute(key, value));
+      defs.appendChild(gradient);
+    }else{
+      while(gradient.firstChild) gradient.removeChild(gradient.firstChild);
+    }
+    stops.forEach(stop => {
+      const stopEl = document.createElementNS(SVG_NS, 'stop');
+      stopEl.setAttribute('offset', stop.offset);
+      stopEl.setAttribute('stop-color', stop.color);
+      if(stop.opacity !== undefined) stopEl.setAttribute('stop-opacity', stop.opacity);
+      gradient.appendChild(stopEl);
+    });
+    return `url(#${id})`;
+  }
+
+  const fretFill = defineLinearGradient('fretMetal', [
+    { offset: '0%',  color: 'rgba(246,250,255,.85)' },
+    { offset: '45%', color: 'rgba(192,202,214,.95)' },
+    { offset: '100%',color: 'rgba(109,123,139,.85)' }
+  ], { x1: '0%', y1: '0%', x2: '0%', y2: '100%' });
+
+  const nutFill = defineLinearGradient('nutMetal', [
+    { offset: '0%',  color: 'rgba(255,255,255,.92)' },
+    { offset: '55%', color: 'rgba(212,223,233,.95)' },
+    { offset: '100%',color: 'rgba(165,177,189,.9)' }
+  ], { x1: '0%', y1: '0%', x2: '0%', y2: '100%' });
+
+  const stringFill = defineLinearGradient('stringMetal', [
+    { offset: '0%',  color: 'rgba(42,51,63,.75)', opacity: .85 },
+    { offset: '30%', color: 'rgba(230,235,240,.95)' },
+    { offset: '55%', color: 'rgba(165,175,186,.9)' },
+    { offset: '100%',color: 'rgba(42,51,63,.78)', opacity: .88 }
+  ], { x1: '0%', y1: '0%', x2: '100%', y2: '0%' });
+
   function drawFrets(){
     fretsG.innerHTML = "";
 
+    const fragment = document.createDocumentFragment();
     const fretHeight = (FRETBOARD.bottom - FRETBOARD.top) + FRET_PAD_Y*2;
     const fretY = FRETBOARD.top - FRET_PAD_Y;
 
-    // nut (wider, brighter)
-    const nutWidth = 14;
-    const nut = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-    nut.setAttribute("x", fretXs[0] - nutWidth/2);
-    nut.setAttribute("y", fretY);
-    nut.setAttribute("width", nutWidth);
-    nut.setAttribute("height", fretHeight);
-    nut.setAttribute("rx", 4);
-    nut.setAttribute("fill", "var(--nut)");
-    nut.setAttribute("stroke", "rgba(255,255,255,.55)");
-    nut.setAttribute("stroke-width", "1.5");
-    fretsG.appendChild(nut);
+    const nutWidth = 16;
+    const nut = document.createElementNS(SVG_NS, 'rect');
+    nut.setAttribute('x', fretXs[0] - nutWidth/2);
+    nut.setAttribute('y', fretY);
+    nut.setAttribute('width', nutWidth);
+    nut.setAttribute('height', fretHeight);
+    nut.setAttribute('rx', 4);
+    nut.setAttribute('fill', nutFill);
+    nut.setAttribute('stroke', 'rgba(255,255,255,.65)');
+    nut.setAttribute('stroke-width', '1.2');
+    fragment.appendChild(nut);
 
     for(let i=1;i<=NUM_FRETS;i++){
       const x = fretXs[i];
-      const fret = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-      const width = i % 12 === 0 ? 6 : 4;
-      fret.setAttribute("x", x - width/2);
-      fret.setAttribute("y", fretY);
-      fret.setAttribute("width", width);
-      fret.setAttribute("height", fretHeight);
-      fret.setAttribute("rx", 2);
-      fret.setAttribute("fill", "var(--fret)");
-      fret.setAttribute("stroke", "rgba(255,255,255,.38)");
-      fret.setAttribute("stroke-width", "1");
-      fret.setAttribute("opacity", i % 12 === 0 ? 0.95 : 0.85);
-      fretsG.appendChild(fret);
+      const fretWidth = (i % 12 === 0) ? 6 : 4;
+      const fret = document.createElementNS(SVG_NS, 'rect');
+      fret.setAttribute('x', x - fretWidth/2);
+      fret.setAttribute('y', fretY);
+      fret.setAttribute('width', fretWidth);
+      fret.setAttribute('height', fretHeight);
+      fret.setAttribute('rx', 2.5);
+      fret.setAttribute('fill', fretFill);
+      fret.setAttribute('stroke', 'rgba(15,23,42,.45)');
+      fret.setAttribute('stroke-width', '0.9');
+      fret.setAttribute('opacity', i % 12 === 0 ? 0.95 : 0.88);
+      fragment.appendChild(fret);
+
+      const sheen = document.createElementNS(SVG_NS, 'line');
+      sheen.setAttribute('x1', x - fretWidth/2 + 0.6);
+      sheen.setAttribute('x2', x + fretWidth/2 - 0.6);
+      sheen.setAttribute('y1', fretY + 6);
+      sheen.setAttribute('y2', fretY + fretHeight - 6);
+      sheen.setAttribute('stroke', 'rgba(255,255,255,.25)');
+      sheen.setAttribute('stroke-width', '0.7');
+      sheen.setAttribute('stroke-linecap', 'round');
+      fragment.appendChild(sheen);
     }
+
+    fretsG.appendChild(fragment);
   }
 
   function drawInlays(){
     inlaysG.innerHTML = "";
 
+    const fragment = document.createDocumentFragment();
     const centerY = midBetween(FRETBOARD.top, FRETBOARD.bottom);
-    const inlayFrets = [3,5,7,9,12];
     const radius = 13;
+    const standardInlays = [3,5,7,9,12,15,17,19,21,24];
 
-    inlayFrets.forEach(fretNum => {
-      const idx = Math.max(0, fretNum - 1);
-      if(idx + 1 >= fretXs.length) return;
-      const cx = midBetween(fretXs[idx], fretXs[idx+1]);
+    standardInlays.forEach(fretNum => {
+      if(fretNum > NUM_FRETS) return;
+      const prevIdx = fretNum - 1;
+      const nextIdx = fretNum;
+      if(prevIdx < 0 || nextIdx >= fretXs.length) return;
+      const cx = midBetween(fretXs[prevIdx], fretXs[nextIdx]);
+      const isDouble = fretNum % 12 === 0;
 
-      if(fretNum === 12){
-        const offset = 18;
-        inlaysG.appendChild(circle(cx, centerY - offset, radius * 0.85, "rgba(223,229,236,.92)"));
-        inlaysG.appendChild(circle(cx, centerY + offset, radius * 0.85, "rgba(223,229,236,.92)"));
+      if(isDouble){
+        const offset = radius * 1.35;
+        fragment.appendChild(circle(cx, centerY - offset, radius * 0.85, 'rgba(230,235,242,.94)', 1, 'rgba(30,41,59,.3)', 1));
+        fragment.appendChild(circle(cx, centerY + offset, radius * 0.85, 'rgba(230,235,242,.94)', 1, 'rgba(30,41,59,.3)', 1));
       }else{
-        inlaysG.appendChild(circle(cx, centerY, radius, "rgba(223,229,236,.9)"));
+        fragment.appendChild(circle(cx, centerY, radius, 'rgba(225,231,238,.9)', 1, 'rgba(30,41,59,.28)', 0.9));
       }
     });
+
+    inlaysG.appendChild(fragment);
   }
 
   function drawStrings(){
     stringsG.innerHTML = "";
 
+    const fragment = document.createDocumentFragment();
     const lengths = FRETBOARD.right - FRETBOARD.left + FRET_PAD_X*2;
     const startX = FRETBOARD.left - FRET_PAD_X;
-    const gauges = [4, 5.5, 7.5, 9.5];
+    const gauges = [4.2, 5.6, 7.6, 9.8];
 
     STRINGS_ORDER.forEach((_, i) => {
       const y = stringY(i);
       const thickness = gauges[i];
-      const string = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-      string.setAttribute("x", startX);
-      string.setAttribute("y", y - thickness/2);
-      string.setAttribute("width", lengths);
-      string.setAttribute("height", thickness);
-      string.setAttribute("rx", thickness/2);
-      string.setAttribute("fill", "var(--string)");
-      string.setAttribute("stroke", "rgba(255,255,255,.25)");
-      string.setAttribute("stroke-width", "0.8");
-      string.setAttribute("opacity", 0.92);
-      stringsG.appendChild(string);
+      const string = document.createElementNS(SVG_NS, 'rect');
+      string.setAttribute('x', startX);
+      string.setAttribute('y', y - thickness/2);
+      string.setAttribute('width', lengths);
+      string.setAttribute('height', thickness);
+      string.setAttribute('rx', thickness/2);
+      string.setAttribute('fill', stringFill);
+      string.setAttribute('stroke', 'rgba(15,23,42,.55)');
+      string.setAttribute('stroke-width', '0.6');
+      string.setAttribute('opacity', 0.96);
+
+      const wrap = document.createElementNS(SVG_NS, 'line');
+      wrap.setAttribute('x1', startX + lengths * 0.08);
+      wrap.setAttribute('x2', startX + lengths * 0.92);
+      wrap.setAttribute('y1', y);
+      wrap.setAttribute('y2', y);
+      wrap.setAttribute('stroke', 'rgba(255,255,255,.18)');
+      wrap.setAttribute('stroke-width', Math.max(1.2, thickness * 0.18));
+      wrap.setAttribute('stroke-linecap', 'round');
+
+      fragment.appendChild(string);
+      fragment.appendChild(wrap);
     });
+
+    stringsG.appendChild(fragment);
   }
 
-  function circle(cx, cy, r, fill, opacity=1){
-    const c = document.createElementNS("http://www.w3.org/2000/svg","circle");
-    c.setAttribute("cx", cx); c.setAttribute("cy", cy);
-    c.setAttribute("r", r); c.setAttribute("fill", fill);
-    c.setAttribute("opacity", opacity);
+  function circle(cx, cy, r, fill, opacity=1, stroke=null, strokeWidth=null){
+    const c = document.createElementNS(SVG_NS,'circle');
+    c.setAttribute('cx', cx);
+    c.setAttribute('cy', cy);
+    c.setAttribute('r', r);
+    c.setAttribute('fill', fill);
+    c.setAttribute('opacity', opacity);
+    if(stroke){
+      c.setAttribute('stroke', stroke);
+      if(strokeWidth !== null) c.setAttribute('stroke-width', strokeWidth);
+    }
     return c;
   }
   // ---------- Target Highlight ----------
