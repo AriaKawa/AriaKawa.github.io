@@ -7,6 +7,10 @@
   <style>
     :root{--bg:#0b1220;--panel:#111a2b;--accent:#6ee7ff;--good:#70ff9f;--bad:#ff6b6b;--text:#e7f0ff}
     *{box-sizing:border-box} body{margin:0;background:radial-gradient(1200px 800px at 70% -10%,#16233c 0%,#0b1220 50%,#0b1220 100%);color:var(--text);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial}
+    .back-nav{position:fixed;top:16px;left:16px;z-index:2000}
+    .back-nav__link{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;background:rgba(11,18,32,.85);color:var(--text);border:1px solid rgba(110,231,255,.4);text-decoration:none;font-size:14px;font-weight:500;backdrop-filter:blur(6px);transition:background-color .2s ease,border-color .2s ease,transform .2s ease}
+    .back-nav__link:hover,.back-nav__link:focus{background:rgba(110,231,255,.15);border-color:var(--accent);outline:none;transform:translateY(-1px)}
+    .back-nav__link:focus-visible{box-shadow:0 0 0 3px rgba(110,231,255,.35)}
     header{padding:10px 16px;border-bottom:1px solid #21304b;display:flex;gap:12px;align-items:center}
     h1{margin:0;font-size:18px;letter-spacing:.5px}
     #container{display:grid;grid-template-columns:340px 1fr;gap:10px;height:calc(100vh - 56px)}
@@ -34,6 +38,9 @@
   </style>
 </head>
 <body>
+  <nav class="back-nav">
+    <a class="back-nav__link" href="index.html" aria-label="Return to the home menu">⟵ Back to Home</a>
+  </nav>
   <header>
     <h1>🛡️ Auto TD Arena</h1>
     <div style="margin-left:auto" class="small">Multiplayer (read‑only leaderboard) • Local deterministic waves</div>
