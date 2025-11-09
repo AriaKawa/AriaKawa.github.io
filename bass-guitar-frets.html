@@ -40,15 +40,24 @@
     width:100%;
     aspect-ratio: 1246 / 439;
     background:
-      radial-gradient(120% 140% at 50% 50%, rgba(12,18,30,.9), rgba(7,11,20,.95)),
-      #05070d;
-    background-image:
-      url("https://cdn.discordapp.com/attachments/1167576096076023920/1319187523703359519/cor_bass_heroN4SR35DR.png"),
-      radial-gradient(120% 140% at 50% 50%, rgba(12,18,30,.9), rgba(7,11,20,.95));
-    background-size: contain, cover;
+      radial-gradient(140% 120% at 50% 0%, rgba(56,189,248,.08), transparent 70%),
+      linear-gradient(180deg, rgba(12,18,30,.65), rgba(12,18,30,.1)),
+      repeating-linear-gradient(90deg, rgba(139,94,54,.62) 0 34px, rgba(107,74,45,.58) 34px 68px),
+      linear-gradient(180deg, var(--wood1), var(--wood2));
+    background-size: 100% 100%;
     background-position: center;
     background-repeat: no-repeat;
     overflow:hidden;
+  }
+  .board::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:
+      radial-gradient(130% 140% at 50% 105%, rgba(5,7,13,.72), transparent 55%),
+      linear-gradient(180deg, rgba(255,255,255,.09), transparent 40%);
+    mix-blend-mode: soft-light;
+    pointer-events:none;
   }
   svg{display:block; width:100%; height:100%; position:absolute; inset:0; pointer-events:none;}
   .controls{
@@ -222,24 +231,153 @@
   function midBetween(a,b){ return a + (b-a)/2 }
 
   // ---------- Build Fretboard ----------
+  function svgEl(tag, attrs={}){
+    const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    Object.entries(attrs).forEach(([key, value])=> el.setAttribute(key, value));
+    return el;
+  }
+
+  function circle(cx, cy, r, fill, opacity=1){
+    const c = svgEl("circle", { cx, cy, r, fill, opacity });
+    return c;
+  }
+
   function drawFrets(){
     fretsG.innerHTML = "";
+    const frag = document.createDocumentFragment();
+    const yStart = FRETBOARD.top - 26;
+    const yEnd = FRETBOARD.bottom + 26;
+
+    for(let i=0; i<=NUM_FRETS; i++){
+      const x = fretXs[i];
+      const isNut = i === 0;
+      const stroke = isNut ? "var(--nut)" : "var(--fret)";
+      const width = isNut ? 12 : 6;
+
+      const base = svgEl("line", {
+        x1: x,
+        y1: yStart,
+        x2: x,
+        y2: yEnd,
+        stroke,
+        "stroke-width": width,
+        "stroke-linecap": "round",
+        opacity: isNut ? 0.95 : 0.85
+      });
+      frag.appendChild(base);
+
+      const shine = svgEl("line", {
+        x1: x - (isNut ? 3.2 : 2),
+        y1: yStart,
+        x2: x - (isNut ? 3.2 : 2),
+        y2: yEnd,
+        stroke: "rgba(255,255,255,.55)",
+        "stroke-width": isNut ? 2.6 : 1.4,
+        "stroke-linecap": "round",
+        opacity: 0.65
+      });
+      frag.appendChild(shine);
+
+      if(!isNut){
+        const shadow = svgEl("line", {
+          x1: x + 2.4,
+          y1: yStart,
+          x2: x + 2.4,
+          y2: yEnd,
+          stroke: "rgba(5,10,18,.55)",
+          "stroke-width": 2.6,
+          "stroke-linecap": "round",
+          opacity: 0.45
+        });
+        frag.appendChild(shadow);
+      }
+    }
+
+    fretsG.appendChild(frag);
   }
 
   function drawInlays(){
     inlaysG.innerHTML = "";
+    const frag = document.createDocumentFragment();
+    const singles = [3,5,7,9];
+    const radius = 16;
+    const centerY = midBetween(stringY(0), stringY(STRINGS_ORDER.length-1));
+
+    singles.forEach(fretNum => {
+      if(fretNum >= NUM_FRETS || fretNum + 1 >= fretXs.length) return;
+      const cx = midBetween(fretXs[fretNum], fretXs[fretNum+1]);
+      const dot = circle(cx, centerY, radius, "rgba(238,242,248,.94)");
+      dot.setAttribute("stroke", "rgba(15,23,42,.28)");
+      dot.setAttribute("stroke-width", 4);
+      frag.appendChild(dot);
+
+      const gleam = circle(cx, centerY, radius-5, "rgba(255,255,255,.55)", 0.55);
+      frag.appendChild(gleam);
+    });
+
+    if(NUM_FRETS >= 12){
+      const cx = midBetween(fretXs[11], fretXs[12]);
+      const offset = 32;
+      [centerY - offset/2, centerY + offset/2].forEach(cy => {
+        const dot = circle(cx, cy, radius, "rgba(238,242,248,.94)");
+        dot.setAttribute("stroke", "rgba(15,23,42,.28)");
+        dot.setAttribute("stroke-width", 4);
+        frag.appendChild(dot);
+
+        const gleam = circle(cx, cy, radius-5, "rgba(255,255,255,.55)", 0.55);
+        frag.appendChild(gleam);
+      });
+    }
+
+    inlaysG.appendChild(frag);
   }
 
   function drawStrings(){
     stringsG.innerHTML = "";
-  }
+    const frag = document.createDocumentFragment();
+    const overhang = 60;
+    const x = FRETBOARD.left - overhang;
+    const width = (FRETBOARD.right - FRETBOARD.left) + overhang * 2;
 
-  function circle(cx, cy, r, fill, opacity=1){
-    const c = document.createElementNS("http://www.w3.org/2000/svg","circle");
-    c.setAttribute("cx", cx); c.setAttribute("cy", cy);
-    c.setAttribute("r", r); c.setAttribute("fill", fill);
-    c.setAttribute("opacity", opacity);
-    return c;
+    STRINGS_ORDER.forEach((_, idx) => {
+      const thickness = 5 + (STRINGS_ORDER.length - idx - 1) * 1.4;
+      const cy = stringY(idx);
+      const y = cy - thickness/2;
+
+      const base = svgEl("rect", {
+        x,
+        y,
+        width,
+        height: thickness,
+        rx: thickness/2,
+        fill: "rgba(229,231,235,.82)",
+      });
+      frag.appendChild(base);
+
+      const highlight = svgEl("rect", {
+        x,
+        y: y + 1,
+        width,
+        height: thickness * 0.45,
+        rx: thickness/2,
+        fill: "rgba(255,255,255,.6)",
+        opacity: 0.65
+      });
+      frag.appendChild(highlight);
+
+      const shadow = svgEl("rect", {
+        x,
+        y: cy + thickness * 0.05,
+        width,
+        height: thickness * 0.42,
+        rx: thickness/2,
+        fill: "rgba(15,23,42,.35)",
+        opacity: 0.45
+      });
+      frag.appendChild(shadow);
+    });
+
+    stringsG.appendChild(frag);
   }
   // ---------- Target Highlight ----------
   function renderTarget(){
