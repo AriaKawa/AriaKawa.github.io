@@ -224,14 +224,84 @@
   // ---------- Build Fretboard ----------
   function drawFrets(){
     fretsG.innerHTML = "";
+
+    const fretHeight = (FRETBOARD.bottom - FRETBOARD.top) + FRET_PAD_Y*2;
+    const fretY = FRETBOARD.top - FRET_PAD_Y;
+
+    // nut (wider, brighter)
+    const nutWidth = 14;
+    const nut = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    nut.setAttribute("x", fretXs[0] - nutWidth/2);
+    nut.setAttribute("y", fretY);
+    nut.setAttribute("width", nutWidth);
+    nut.setAttribute("height", fretHeight);
+    nut.setAttribute("rx", 4);
+    nut.setAttribute("fill", "var(--nut)");
+    nut.setAttribute("stroke", "rgba(255,255,255,.55)");
+    nut.setAttribute("stroke-width", "1.5");
+    fretsG.appendChild(nut);
+
+    for(let i=1;i<=NUM_FRETS;i++){
+      const x = fretXs[i];
+      const fret = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      const width = i % 12 === 0 ? 6 : 4;
+      fret.setAttribute("x", x - width/2);
+      fret.setAttribute("y", fretY);
+      fret.setAttribute("width", width);
+      fret.setAttribute("height", fretHeight);
+      fret.setAttribute("rx", 2);
+      fret.setAttribute("fill", "var(--fret)");
+      fret.setAttribute("stroke", "rgba(255,255,255,.38)");
+      fret.setAttribute("stroke-width", "1");
+      fret.setAttribute("opacity", i % 12 === 0 ? 0.95 : 0.85);
+      fretsG.appendChild(fret);
+    }
   }
 
   function drawInlays(){
     inlaysG.innerHTML = "";
+
+    const centerY = midBetween(FRETBOARD.top, FRETBOARD.bottom);
+    const inlayFrets = [3,5,7,9,12];
+    const radius = 13;
+
+    inlayFrets.forEach(fretNum => {
+      const idx = Math.max(0, fretNum - 1);
+      if(idx + 1 >= fretXs.length) return;
+      const cx = midBetween(fretXs[idx], fretXs[idx+1]);
+
+      if(fretNum === 12){
+        const offset = 18;
+        inlaysG.appendChild(circle(cx, centerY - offset, radius * 0.85, "rgba(223,229,236,.92)"));
+        inlaysG.appendChild(circle(cx, centerY + offset, radius * 0.85, "rgba(223,229,236,.92)"));
+      }else{
+        inlaysG.appendChild(circle(cx, centerY, radius, "rgba(223,229,236,.9)"));
+      }
+    });
   }
 
   function drawStrings(){
     stringsG.innerHTML = "";
+
+    const lengths = FRETBOARD.right - FRETBOARD.left + FRET_PAD_X*2;
+    const startX = FRETBOARD.left - FRET_PAD_X;
+    const gauges = [4, 5.5, 7.5, 9.5];
+
+    STRINGS_ORDER.forEach((_, i) => {
+      const y = stringY(i);
+      const thickness = gauges[i];
+      const string = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      string.setAttribute("x", startX);
+      string.setAttribute("y", y - thickness/2);
+      string.setAttribute("width", lengths);
+      string.setAttribute("height", thickness);
+      string.setAttribute("rx", thickness/2);
+      string.setAttribute("fill", "var(--string)");
+      string.setAttribute("stroke", "rgba(255,255,255,.25)");
+      string.setAttribute("stroke-width", "0.8");
+      string.setAttribute("opacity", 0.92);
+      stringsG.appendChild(string);
+    });
   }
 
   function circle(cx, cy, r, fill, opacity=1){
