@@ -17,6 +17,23 @@
     justify-content: center;
   }
 
+  #start-button {
+    padding: 12px 24px;
+    margin: 10px auto 20px;
+    border: none;
+    border-radius: 8px;
+    background-color: #4caf50;
+    color: #fff;
+    font-size: 1em;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.2s;
+  }
+
+  #start-button:hover {
+    background-color: #43a047;
+    transform: translateY(-1px);
+  }
+
   #game-area {
     background-color: red;
     width: 80%;
@@ -42,12 +59,14 @@
 <body>
   <h1>Reaction Time Test</h1>
   <p>Click when the screen turns <span style="color:lime">green</span>!</p>
-  <div id="game-area">Click to Start</div>
+  <button id="start-button" type="button">Start Reaction Time Test</button>
+  <div id="game-area" tabindex="0">Click to Start</div>
   <div id="results"></div>
 
   <script>
     const gameArea = document.getElementById("game-area");
     const results = document.getElementById("results");
+    const startButton = document.getElementById("start-button");
 
     let startTime, timeoutId;
     let waiting = false;
@@ -69,6 +88,16 @@
         waiting = false;
         canClick = true;
       }, delay);
+    }
+
+    function beginGame() {
+      clearTimeout(timeoutId);
+      waiting = false;
+      canClick = false;
+      tries = 0;
+      scores = [];
+      results.innerHTML = "";
+      startRound();
     }
 
     gameArea.addEventListener("click", () => {
@@ -104,9 +133,13 @@
         }
       } else {
         // Start new round
-        results.textContent = "";
-        startRound();
+        beginGame();
       }
+    });
+
+    startButton.addEventListener("click", () => {
+      beginGame();
+      gameArea.focus({ preventScroll: true });
     });
   </script>
 </body>
