@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reaction Time Test</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    background-color: #222;
+    color: white;
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  #game-area {
+    background-color: red;
+    width: 80%;
+    max-width: 600px;
+    height: 300px;
+    margin: 0 auto;
+    border-radius: 12px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    font-size: 1.5em;
+    user-select: none;
+    transition: background-color 0.3s;
+  }
+
+  #results {
+    margin-top: 20px;
+    font-size: 1.2em;
+  }
+</style>
+</head>
+<body>
+  <h1>Reaction Time Test</h1>
+  <p>Click when the screen turns <span style="color:lime">green</span>!</p>
+  <div id="game-area">Click to Start</div>
+  <div id="results"></div>
+
+  <script>
+    const gameArea = document.getElementById("game-area");
+    const results = document.getElementById("results");
+
+    let startTime, timeoutId;
+    let waiting = false;
+    let canClick = false;
+    let tries = 0;
+    let scores = [];
+
+    function startRound() {
+      gameArea.textContent = "Wait for green...";
+      gameArea.style.backgroundColor = "red";
+      waiting = true;
+      canClick = false;
+
+      const delay = 1000 + Math.random() * 4000; // random 1–5 seconds
+      timeoutId = setTimeout(() => {
+        gameArea.style.backgroundColor = "green";
+        gameArea.textContent = "CLICK!";
+        startTime = Date.now();
+        waiting = false;
+        canClick = true;
+      }, delay);
+    }
+
+    gameArea.addEventListener("click", () => {
+      if (waiting) {
+        // Clicked too soon
+        clearTimeout(timeoutId);
+        gameArea.style.backgroundColor = "red";
+        gameArea.textContent = "Too soon! Click to try again.";
+        waiting = false;
+      } else if (canClick) {
+        // Successful click
+        const reactionTime = Date.now() - startTime;
+        scores.push(reactionTime);
+        tries++;
+        gameArea.textContent = `Reaction Time: ${reactionTime} ms`;
+        gameArea.style.backgroundColor = "#444";
+        canClick = false;
+
+        if (tries < 3) {
+          setTimeout(() => {
+            gameArea.textContent = "Click to start next round";
+          }, 1000);
+        } else {
+          const avg =
+            Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+          results.innerHTML = `
+            <p>Tries: ${scores.join(" ms, ")} ms</p>
+            <p><strong>Average: ${avg} ms</strong></p>
+            <p>Click the box to play again.</p>
+          `;
+          tries = 0;
+          scores = [];
+        }
+      } else {
+        // Start new round
+        results.textContent = "";
+        startRound();
+      }
+    });
+  </script>
+</body>
+</html>
