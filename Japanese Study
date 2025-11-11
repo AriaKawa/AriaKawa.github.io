@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Japanese Verb Match Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #1f2937;
+      --accent: #38bdf8;
+      --good: #22c55e;
+      --bad: #ef4444;
+      --text: #e2e8f0;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(circle at top, #1f2937, #0f172a 65%);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      min-height: 100vh;
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .game {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 18px;
+      max-width: 1100px;
+      width: 100%;
+      padding: 20px 20px 26px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 20px 45px rgba(0,0,0,0.25);
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+    h1 {
+      font-size: 1.2rem;
+      margin: 0;
+    }
+    .controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    button {
+      background: var(--accent);
+      border: none;
+      color: #0f172a;
+      font-weight: 600;
+      padding: 8px 16px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: 0.15s ease;
+    }
+    button:hover {
+      background: #0ea5e9;
+    }
+    .timer, .status {
+      background: rgba(15, 23, 42, 0.4);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 999px;
+      padding: 5px 14px;
+      font-size: 0.8rem;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(250px, 1fr));
+      gap: 16px;
+    }
+    .col {
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      border-radius: 14px;
+      padding: 12px;
+      min-height: 360px;
+    }
+    .col-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      opacity: 0.7;
+      margin-bottom: 10px;
+    }
+    .item {
+      background: rgba(15, 23, 42, 0.3);
+      border: 1px solid transparent;
+      border-radius: 10px;
+      padding: 7px 10px 8px;
+      margin-bottom: 6px;
+      cursor: pointer;
+      transition: 0.1s ease;
+      font-size: 0.9rem;
+    }
+    .item:hover {
+      background: rgba(56, 189, 248, 0.11);
+      border-color: rgba(148, 163, 184, 0.2);
+    }
+    .item.selected {
+      border-color: var(--accent);
+      background: rgba(56, 189, 248, 0.25);
+    }
+    .item.correct {
+      background: rgba(34, 197, 94, 0.18);
+      border-color: rgba(34, 197, 94, 1);
+      color: #ecfdf3;
+      cursor: default;
+    }
+    .item.disabled {
+      pointer-events: none;
+      opacity: 0.6;
+    }
+    .footer-text {
+      margin-top: 15px;
+      font-size: 0.7rem;
+      opacity: 0.4;
+      text-align: right;
+    }
+    @media (max-width: 720px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+      .header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="game">
+    <div class="header">
+      <h1>Japanese Verb Match — N5/N4-ish</h1>
+      <div class="controls">
+        <button id="startBtn">Start</button>
+        <div class="timer" id="timer">Time: 0.00s</div>
+        <div class="status" id="status">Click "Start" to shuffle.</div>
+      </div>
+    </div>
+    <div class="grid">
+      <div class="col" id="leftCol">
+        <div class="col-title">動詞（日本語）</div>
+        <!-- verbs here -->
+      </div>
+      <div class="col" id="rightCol">
+        <div class="col-title">意味（英語説明）</div>
+        <!-- meanings here -->
+      </div>
+    </div>
+    <div class="footer-text">
+      Tip: try to beat your own time 👊
+    </div>
+  </div>
+
+  <script>
+    // 20 verbs (Japanese + description). Tried not to use only super baby ones.
+    const VERBS = [
+      { id: 1, jp: "あやまる", en: "to apologize" },
+      { id: 2, jp: "えらぶ", en: "to choose; to select" },
+      { id: 3, jp: "うつす", en: "to copy / to photograph / to move (something)" },
+      { id: 4, jp: "くらべる", en: "to compare" },
+      { id: 5, jp: "つづける", en: "to continue (doing something)" },
+      { id: 6, jp: "なおす", en: "to fix; to repair; to correct" },
+      { id: 7, jp: "まにあう", en: "to be in time / to make it" },
+      { id: 8, jp: "とどける", en: "to deliver; to send; to report" },
+      { id: 9, jp: "うける", en: "to receive / to take (a test)" },
+      { id:10, jp: "はじめる", en: "to start; to begin (something)" },
+      { id:11, jp: "おぼえる", en: "to memorize; to remember" },
+      { id:12, jp: "つれていく", en: "to take someone along" },
+      { id:13, jp: "てつだう", en: "to help; to assist" },
+      { id:14, jp: "たしかめる", en: "to check; to make sure" },
+      { id:15, jp: "あつめる", en: "to collect; to gather" },
+      { id:16, jp: "よやくする", en: "to reserve; to book" },
+      { id:17, jp: "れんしゅうする", en: "to practice" },
+      { id:18, jp: "しっぱいする", en: "to fail; to make a mistake" },
+      { id:19, jp: "きめる", en: "to decide" },
+      { id:20, jp: "つたえる", en: "to tell; to convey; to report" }
+    ];
+
+    const leftCol = document.getElementById("leftCol");
+    const rightCol = document.getElementById("rightCol");
+    const startBtn = document.getElementById("startBtn");
+    const timerEl = document.getElementById("timer");
+    const statusEl = document.getElementById("status");
+
+    let selectedLeft = null;
+    let selectedRight = null;
+    let startTime = null;
+    let timerInterval = null;
+    let matches = 0;
+    let gameActive = false;
+
+    function shuffle(array) {
+      const arr = array.slice();
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    function stopTimer() {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+
+    function startTimer() {
+      startTime = performance.now();
+      timerInterval = setInterval(() => {
+        const now = performance.now();
+        const diff = (now - startTime) / 1000;
+        timerEl.textContent = `Time: ${diff.toFixed(2)}s`;
+      }, 50);
+    }
+
+    function buildBoard() {
+      leftCol.querySelectorAll(".item").forEach(el => el.remove());
+      rightCol.querySelectorAll(".item").forEach(el => el.remove());
+
+      const left = shuffle(VERBS);
+      const right = shuffle(VERBS);
+
+      left.forEach(v => {
+        const div = document.createElement("div");
+        div.className = "item";
+        div.textContent = v.jp;
+        div.dataset.id = v.id;
+        div.addEventListener("click", () => selectLeft(div));
+        leftCol.appendChild(div);
+      });
+
+      right.forEach(v => {
+        const div = document.createElement("div");
+        div.className = "item";
+        div.textContent = v.en;
+        div.dataset.id = v.id;
+        div.addEventListener("click", () => selectRight(div));
+        rightCol.appendChild(div);
+      });
+    }
+
+    function clearSelections() {
+      leftCol.querySelectorAll(".item.selected").forEach(el => el.classList.remove("selected"));
+      rightCol.querySelectorAll(".item.selected").forEach(el => el.classList.remove("selected"));
+      selectedLeft = null;
+      selectedRight = null;
+    }
+
+    function selectLeft(el) {
+      if (!gameActive) return;
+      if (el.classList.contains("correct")) return;
+      leftCol.querySelectorAll(".item").forEach(i => i.classList.remove("selected"));
+      el.classList.add("selected");
+      selectedLeft = el;
+      checkMatch();
+    }
+
+    function selectRight(el) {
+      if (!gameActive) return;
+      if (el.classList.contains("correct")) return;
+      rightCol.querySelectorAll(".item").forEach(i => i.classList.remove("selected"));
+      el.classList.add("selected");
+      selectedRight = el;
+      checkMatch();
+    }
+
+    function checkMatch() {
+      if (selectedLeft && selectedRight) {
+        const idL = selectedLeft.dataset.id;
+        const idR = selectedRight.dataset.id;
+        if (idL === idR) {
+          // correct
+          selectedLeft.classList.add("correct");
+          selectedRight.classList.add("correct");
+          selectedLeft.classList.remove("selected");
+          selectedRight.classList.remove("selected");
+          matches++;
+          statusEl.textContent = `Nice! ${matches}/${VERBS.length} matched.`;
+          clearSelections();
+          if (matches === VERBS.length) {
+            gameActive = false;
+            stopTimer();
+            const finalTime = timerEl.textContent.replace("Time: ", "");
+            statusEl.textContent = `Finished! Your time: ${finalTime}`;
+          }
+        } else {
+          // wrong
+          statusEl.textContent = "Not a match.";
+          // brief flash red?
+          const l = selectedLeft;
+          const r = selectedRight;
+          l.classList.add("bad");
+          r.classList.add("bad");
+          setTimeout(() => {
+            l.classList.remove("selected", "bad");
+            r.classList.remove("selected", "bad");
+            selectedLeft = null;
+            selectedRight = null;
+          }, 350);
+        }
+      }
+    }
+
+    startBtn.addEventListener("click", () => {
+      buildBoard();
+      stopTimer();
+      matches = 0;
+      gameActive = true;
+      statusEl.textContent = "Match the verbs!";
+      timerEl.textContent = "Time: 0.00s";
+      startTimer();
+    });
+
+    // build initial
+    buildBoard();
+  </script>
+</body>
+</html>
