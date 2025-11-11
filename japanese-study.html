@@ -25,7 +25,7 @@
       align-items: center;
       padding: 20px;
     }
-    .game {
+    .panel {
       background: rgba(15, 23, 42, 0.8);
       border: 1px solid rgba(148, 163, 184, 0.2);
       border-radius: 18px;
@@ -34,6 +34,12 @@
       padding: 20px 20px 26px;
       backdrop-filter: blur(12px);
       box-shadow: 0 20px 45px rgba(0,0,0,0.25);
+    }
+    .scene {
+      display: none;
+    }
+    .scene.active {
+      display: block;
     }
     .header {
       display: flex;
@@ -46,6 +52,27 @@
     h1 {
       font-size: 1.2rem;
       margin: 0;
+    }
+    .menu-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 24px;
+    }
+    .menu-actions button,
+    .menu-actions a {
+      background: var(--accent);
+      border: none;
+      color: #0f172a;
+      font-weight: 600;
+      padding: 10px 18px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: 0.15s ease;
+      text-align: center;
+      text-decoration: none;
+      display: inline-flex;
+      justify-content: center;
     }
     .controls {
       display: flex;
@@ -63,8 +90,27 @@
       cursor: pointer;
       transition: 0.15s ease;
     }
-    button:hover {
+    button:hover,
+    .menu-actions button:hover,
+    .menu-actions a:hover {
       background: #0ea5e9;
+    }
+    .ghost {
+      background: transparent;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      color: var(--text);
+      padding: 6px 14px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: 0.15s ease;
+      align-self: flex-start;
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .ghost:hover {
+      color: var(--accent);
+      border-color: rgba(56, 189, 248, 0.7);
     }
     .timer, .status {
       background: rgba(15, 23, 42, 0.4);
@@ -127,6 +173,9 @@
       text-align: right;
     }
     @media (max-width: 720px) {
+      body {
+        padding: 16px;
+      }
       .grid {
         grid-template-columns: 1fr;
       }
@@ -134,11 +183,29 @@
         flex-direction: column;
         align-items: flex-start;
       }
+      .menu-actions {
+        width: 100%;
+      }
+      .menu-actions button,
+      .menu-actions a {
+        width: 100%;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="game">
+  <section id="menuScene" class="scene panel active">
+    <button class="ghost" id="menuBackBtn">⟵ Back to Home</button>
+    <h1>Japanese Study Hub</h1>
+    <p>Choose how you want to practice today.</p>
+    <div class="menu-actions">
+      <button id="menuGameBtn">Game</button>
+      <button id="studyGuideBtn">Study Guide</button>
+    </div>
+  </section>
+
+  <section id="gameScene" class="scene panel">
+    <button class="ghost" id="backToMenu">⟵ Back to Menu</button>
     <div class="header">
       <h1>Japanese Verb Match — N5/N4-ish</h1>
       <div class="controls">
@@ -160,7 +227,7 @@
     <div class="footer-text">
       Tip: try to beat your own time 👊
     </div>
-  </div>
+  </section>
 
   <script>
     // 20 verbs (Japanese + description). Tried not to use only super baby ones.
@@ -192,6 +259,10 @@
     const startBtn = document.getElementById("startBtn");
     const timerEl = document.getElementById("timer");
     const statusEl = document.getElementById("status");
+    const backToMenuBtn = document.getElementById("backToMenu");
+    const menuGameBtn = document.getElementById("menuGameBtn");
+    const menuBackBtn = document.getElementById("menuBackBtn");
+    const studyGuideBtn = document.getElementById("studyGuideBtn");
 
     let selectedLeft = null;
     let selectedRight = null;
@@ -199,6 +270,7 @@
     let timerInterval = null;
     let matches = 0;
     let gameActive = false;
+    let currentScene = "menuScene";
 
     function shuffle(array) {
       const arr = array.slice();
@@ -247,6 +319,16 @@
         div.addEventListener("click", () => selectRight(div));
         rightCol.appendChild(div);
       });
+    }
+
+    function resetGameBoard() {
+      buildBoard();
+      stopTimer();
+      matches = 0;
+      gameActive = false;
+      clearSelections();
+      timerEl.textContent = "Time: 0.00s";
+      statusEl.textContent = "Click \"Start\" to shuffle.";
     }
 
     function clearSelections() {
@@ -311,6 +393,18 @@
       }
     }
 
+    function showScene(id) {
+      const target = document.getElementById(id);
+      if (!target || id === currentScene) return;
+      if (currentScene === "gameScene" && id !== "gameScene") {
+        resetGameBoard();
+      }
+      const current = document.getElementById(currentScene);
+      current?.classList.remove("active");
+      target.classList.add("active");
+      currentScene = id;
+    }
+
     startBtn.addEventListener("click", () => {
       buildBoard();
       stopTimer();
@@ -321,8 +415,28 @@
       startTimer();
     });
 
-    // build initial
-    buildBoard();
+    backToMenuBtn.addEventListener("click", () => {
+      showScene("menuScene");
+    });
+
+    menuGameBtn.addEventListener("click", () => {
+      showScene("gameScene");
+    });
+
+    menuBackBtn.addEventListener("click", () => {
+      if (window.history.length > 1) {
+        window.history.back();
+      } else {
+        window.location.href = "index.html";
+      }
+    });
+
+    studyGuideBtn.addEventListener("click", () => {
+      window.location.href = "education.html";
+    });
+
+    // initialize board and state
+    resetGameBoard();
   </script>
 </body>
 </html>
