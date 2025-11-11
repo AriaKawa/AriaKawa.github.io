@@ -126,6 +126,9 @@
       opacity: 0.4;
       text-align: right;
     }
+    .is-hidden {
+      display: none !important;
+    }
     #guideScene {
       margin-top: 28px;
       background: rgba(15, 23, 42, 0.55);
@@ -202,6 +205,7 @@
       <h1>Japanese Verb Match — N5/N4-ish</h1>
       <div class="controls">
         <button id="startBtn">Start</button>
+        <button id="guideBtn" type="button">Study Guide</button>
         <div class="timer" id="timer">Time: 0.00s</div>
         <div class="status" id="status">Click "Start" to shuffle.</div>
       </div>
@@ -219,10 +223,10 @@
     <div class="footer-text">
       Tip: try to beat your own time 👊
     </div>
-    <section id="guideScene">
+    <section id="guideScene" class="is-hidden">
       <div class="guide-header">
-        <button class="back-button" type="button">Back</button>
         <h2>Verb Study Guide</h2>
+        <button class="back-button" id="guideBack" type="button">Back</button>
       </div>
       <div id="guideList" class="guide-list"></div>
     </section>
@@ -259,6 +263,11 @@
     const timerEl = document.getElementById("timer");
     const statusEl = document.getElementById("status");
     const guideList = document.getElementById("guideList");
+    const guideScene = document.getElementById("guideScene");
+    const guideBtn = document.getElementById("guideBtn");
+    const guideBack = document.getElementById("guideBack");
+    const matchGrid = document.querySelector(".grid");
+    const footerText = document.querySelector(".footer-text");
 
     let selectedLeft = null;
     let selectedRight = null;
@@ -411,6 +420,38 @@
       timerEl.textContent = "Time: 0.00s";
       startTimer();
     });
+
+    if (guideBtn && guideScene) {
+      guideBtn.addEventListener("click", () => {
+        if (!guideScene.classList.contains("is-hidden")) return;
+        clearSelections();
+        stopTimer();
+        matches = 0;
+        gameActive = false;
+        guideScene.classList.remove("is-hidden");
+        if (matchGrid) matchGrid.classList.add("is-hidden");
+        if (footerText) footerText.classList.add("is-hidden");
+        guideBtn.disabled = true;
+        startBtn.disabled = true;
+        statusEl.textContent = "Study mode: review the verbs.";
+        timerEl.textContent = "Time: 0.00s";
+      });
+    }
+
+    if (guideBack && guideScene) {
+      guideBack.addEventListener("click", () => {
+        if (guideScene.classList.contains("is-hidden")) return;
+        guideScene.classList.add("is-hidden");
+        if (matchGrid) matchGrid.classList.remove("is-hidden");
+        if (footerText) footerText.classList.remove("is-hidden");
+        guideBtn && (guideBtn.disabled = false);
+        startBtn.disabled = false;
+        matches = 0;
+        statusEl.textContent = 'Click "Start" to shuffle.';
+        timerEl.textContent = "Time: 0.00s";
+        buildBoard();
+      });
+    }
 
     // build initial
     buildBoard();
