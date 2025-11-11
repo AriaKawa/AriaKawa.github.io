@@ -126,6 +126,62 @@
       opacity: 0.4;
       text-align: right;
     }
+    #guideScene {
+      margin-top: 28px;
+      background: rgba(15, 23, 42, 0.55);
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      border-radius: 14px;
+      padding: 18px;
+    }
+    .guide-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .guide-header h2 {
+      font-size: 1rem;
+      margin: 0;
+    }
+    .back-button {
+      background: transparent;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      color: var(--text);
+      padding: 6px 14px;
+    }
+    .back-button:hover {
+      background: rgba(148, 163, 184, 0.18);
+    }
+    .guide-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+    }
+    .guide-item {
+      background: rgba(15, 23, 42, 0.35);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 12px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-height: 120px;
+    }
+    .guide-item .hiragana {
+      font-size: 1.2rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+    .guide-item .romaji {
+      font-size: 0.9rem;
+      opacity: 0.75;
+    }
+    .guide-item .en {
+      font-size: 0.85rem;
+      line-height: 1.4;
+    }
     @media (max-width: 720px) {
       .grid {
         grid-template-columns: 1fr;
@@ -133,6 +189,9 @@
       .header {
         flex-direction: column;
         align-items: flex-start;
+      }
+      .guide-list {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
       }
     }
   </style>
@@ -160,31 +219,38 @@
     <div class="footer-text">
       Tip: try to beat your own time 👊
     </div>
+    <section id="guideScene">
+      <div class="guide-header">
+        <button class="back-button" type="button">Back</button>
+        <h2>Verb Study Guide</h2>
+      </div>
+      <div id="guideList" class="guide-list"></div>
+    </section>
   </div>
 
   <script>
     // 20 verbs (Japanese + description). Tried not to use only super baby ones.
     const VERBS = [
-      { id: 1, jp: "あやまる", en: "to apologize" },
-      { id: 2, jp: "えらぶ", en: "to choose; to select" },
-      { id: 3, jp: "うつす", en: "to copy / to photograph / to move (something)" },
-      { id: 4, jp: "くらべる", en: "to compare" },
-      { id: 5, jp: "つづける", en: "to continue (doing something)" },
-      { id: 6, jp: "なおす", en: "to fix; to repair; to correct" },
-      { id: 7, jp: "まにあう", en: "to be in time / to make it" },
-      { id: 8, jp: "とどける", en: "to deliver; to send; to report" },
-      { id: 9, jp: "うける", en: "to receive / to take (a test)" },
-      { id:10, jp: "はじめる", en: "to start; to begin (something)" },
-      { id:11, jp: "おぼえる", en: "to memorize; to remember" },
-      { id:12, jp: "つれていく", en: "to take someone along" },
-      { id:13, jp: "てつだう", en: "to help; to assist" },
-      { id:14, jp: "たしかめる", en: "to check; to make sure" },
-      { id:15, jp: "あつめる", en: "to collect; to gather" },
-      { id:16, jp: "よやくする", en: "to reserve; to book" },
-      { id:17, jp: "れんしゅうする", en: "to practice" },
-      { id:18, jp: "しっぱいする", en: "to fail; to make a mistake" },
-      { id:19, jp: "きめる", en: "to decide" },
-      { id:20, jp: "つたえる", en: "to tell; to convey; to report" }
+      { id: 1, jp: "あやまる", romaji: "ayamaru", en: "to apologize" },
+      { id: 2, jp: "えらぶ", romaji: "erabu", en: "to choose; to select" },
+      { id: 3, jp: "うつす", romaji: "utsusu", en: "to copy / to photograph / to move (something)" },
+      { id: 4, jp: "くらべる", romaji: "kuraberu", en: "to compare" },
+      { id: 5, jp: "つづける", romaji: "tsuzukeru", en: "to continue (doing something)" },
+      { id: 6, jp: "なおす", romaji: "naosu", en: "to fix; to repair; to correct" },
+      { id: 7, jp: "まにあう", romaji: "maniau", en: "to be in time / to make it" },
+      { id: 8, jp: "とどける", romaji: "todokeru", en: "to deliver; to send; to report" },
+      { id: 9, jp: "うける", romaji: "ukeru", en: "to receive / to take (a test)" },
+      { id:10, jp: "はじめる", romaji: "hajimeru", en: "to start; to begin (something)" },
+      { id:11, jp: "おぼえる", romaji: "oboeru", en: "to memorize; to remember" },
+      { id:12, jp: "つれていく", romaji: "tsureteiku", en: "to take someone along" },
+      { id:13, jp: "てつだう", romaji: "tetsudau", en: "to help; to assist" },
+      { id:14, jp: "たしかめる", romaji: "tashikameru", en: "to check; to make sure" },
+      { id:15, jp: "あつめる", romaji: "atsumeru", en: "to collect; to gather" },
+      { id:16, jp: "よやくする", romaji: "yoyaku suru", en: "to reserve; to book" },
+      { id:17, jp: "れんしゅうする", romaji: "renshuu suru", en: "to practice" },
+      { id:18, jp: "しっぱいする", romaji: "shippai suru", en: "to fail; to make a mistake" },
+      { id:19, jp: "きめる", romaji: "kimeru", en: "to decide" },
+      { id:20, jp: "つたえる", romaji: "tsutaeru", en: "to tell; to convey; to report" }
     ];
 
     const leftCol = document.getElementById("leftCol");
@@ -192,6 +258,7 @@
     const startBtn = document.getElementById("startBtn");
     const timerEl = document.getElementById("timer");
     const statusEl = document.getElementById("status");
+    const guideList = document.getElementById("guideList");
 
     let selectedLeft = null;
     let selectedRight = null;
@@ -311,6 +378,30 @@
       }
     }
 
+    function renderGuide() {
+      if (!guideList) return;
+      guideList.innerHTML = "";
+      VERBS.forEach(verb => {
+        const card = document.createElement("article");
+        card.className = "guide-item";
+
+        const hiragana = document.createElement("div");
+        hiragana.className = "hiragana";
+        hiragana.textContent = verb.jp;
+
+        const romaji = document.createElement("div");
+        romaji.className = "romaji";
+        romaji.textContent = verb.romaji;
+
+        const english = document.createElement("div");
+        english.className = "en";
+        english.textContent = verb.en;
+
+        card.append(hiragana, romaji, english);
+        guideList.appendChild(card);
+      });
+    }
+
     startBtn.addEventListener("click", () => {
       buildBoard();
       stopTimer();
@@ -323,6 +414,7 @@
 
     // build initial
     buildBoard();
+    renderGuide();
   </script>
 </body>
 </html>
