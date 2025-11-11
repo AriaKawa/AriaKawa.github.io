@@ -124,6 +124,37 @@
       grid-template-columns: repeat(2, minmax(250px, 1fr));
       gap: 16px;
     }
+    .guide-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-top: 20px;
+    }
+    .guide-item {
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 14px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: flex-start;
+      box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.2);
+    }
+    .guide-item .hiragana {
+      font-size: 1.4rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+    .guide-item .romaji {
+      font-size: 0.95rem;
+      opacity: 0.8;
+    }
+    .guide-item .en {
+      font-size: 0.85rem;
+      line-height: 1.3;
+      color: rgba(226, 232, 240, 0.85);
+    }
     .col {
       background: rgba(15, 23, 42, 0.5);
       border: 1px solid rgba(148, 163, 184, 0.14);
@@ -229,29 +260,38 @@
     </div>
   </section>
 
+  <section id="guideScene" class="scene panel">
+    <button class="ghost" id="guideBackBtn">⟵ Back to Menu</button>
+    <div class="header">
+      <h1>Verb Study Guide</h1>
+      <p>Use this list to review hiragana, romaji, and meanings before playing.</p>
+    </div>
+    <div id="guideList" class="guide-list"></div>
+  </section>
+
   <script>
     // 20 verbs (Japanese + description). Tried not to use only super baby ones.
     const VERBS = [
-      { id: 1, jp: "あやまる", en: "to apologize" },
-      { id: 2, jp: "えらぶ", en: "to choose; to select" },
-      { id: 3, jp: "うつす", en: "to copy / to photograph / to move (something)" },
-      { id: 4, jp: "くらべる", en: "to compare" },
-      { id: 5, jp: "つづける", en: "to continue (doing something)" },
-      { id: 6, jp: "なおす", en: "to fix; to repair; to correct" },
-      { id: 7, jp: "まにあう", en: "to be in time / to make it" },
-      { id: 8, jp: "とどける", en: "to deliver; to send; to report" },
-      { id: 9, jp: "うける", en: "to receive / to take (a test)" },
-      { id:10, jp: "はじめる", en: "to start; to begin (something)" },
-      { id:11, jp: "おぼえる", en: "to memorize; to remember" },
-      { id:12, jp: "つれていく", en: "to take someone along" },
-      { id:13, jp: "てつだう", en: "to help; to assist" },
-      { id:14, jp: "たしかめる", en: "to check; to make sure" },
-      { id:15, jp: "あつめる", en: "to collect; to gather" },
-      { id:16, jp: "よやくする", en: "to reserve; to book" },
-      { id:17, jp: "れんしゅうする", en: "to practice" },
-      { id:18, jp: "しっぱいする", en: "to fail; to make a mistake" },
-      { id:19, jp: "きめる", en: "to decide" },
-      { id:20, jp: "つたえる", en: "to tell; to convey; to report" }
+      { id: 1, jp: "あやまる", romaji: "ayamaru", en: "to apologize" },
+      { id: 2, jp: "えらぶ", romaji: "erabu", en: "to choose; to select" },
+      { id: 3, jp: "うつす", romaji: "utsusu", en: "to copy / to photograph / to move (something)" },
+      { id: 4, jp: "くらべる", romaji: "kuraberu", en: "to compare" },
+      { id: 5, jp: "つづける", romaji: "tsuzukeru", en: "to continue (doing something)" },
+      { id: 6, jp: "なおす", romaji: "naosu", en: "to fix; to repair; to correct" },
+      { id: 7, jp: "まにあう", romaji: "maniau", en: "to be in time / to make it" },
+      { id: 8, jp: "とどける", romaji: "todokeru", en: "to deliver; to send; to report" },
+      { id: 9, jp: "うける", romaji: "ukeru", en: "to receive / to take (a test)" },
+      { id:10, jp: "はじめる", romaji: "hajimeru", en: "to start; to begin (something)" },
+      { id:11, jp: "おぼえる", romaji: "oboeru", en: "to memorize; to remember" },
+      { id:12, jp: "つれていく", romaji: "tsureteiku", en: "to take someone along" },
+      { id:13, jp: "てつだう", romaji: "tetsudau", en: "to help; to assist" },
+      { id:14, jp: "たしかめる", romaji: "tashikameru", en: "to check; to make sure" },
+      { id:15, jp: "あつめる", romaji: "atsumeru", en: "to collect; to gather" },
+      { id:16, jp: "よやくする", romaji: "yoyaku suru", en: "to reserve; to book" },
+      { id:17, jp: "れんしゅうする", romaji: "renshuu suru", en: "to practice" },
+      { id:18, jp: "しっぱいする", romaji: "shippai suru", en: "to fail; to make a mistake" },
+      { id:19, jp: "きめる", romaji: "kimeru", en: "to decide" },
+      { id:20, jp: "つたえる", romaji: "tsutaeru", en: "to tell; to convey; to report" }
     ];
 
     const leftCol = document.getElementById("leftCol");
@@ -263,6 +303,8 @@
     const menuGameBtn = document.getElementById("menuGameBtn");
     const menuBackBtn = document.getElementById("menuBackBtn");
     const studyGuideBtn = document.getElementById("studyGuideBtn");
+    const guideList = document.getElementById("guideList");
+    const guideBackBtn = document.getElementById("guideBackBtn");
 
     let selectedLeft = null;
     let selectedRight = null;
@@ -393,6 +435,30 @@
       }
     }
 
+    function renderGuide() {
+      if (!guideList) return;
+      guideList.innerHTML = "";
+      VERBS.forEach(verb => {
+        const card = document.createElement("div");
+        card.className = "guide-item";
+
+        const hiragana = document.createElement("div");
+        hiragana.className = "hiragana";
+        hiragana.textContent = verb.jp;
+
+        const romaji = document.createElement("div");
+        romaji.className = "romaji";
+        romaji.textContent = verb.romaji;
+
+        const english = document.createElement("div");
+        english.className = "en";
+        english.textContent = verb.en;
+
+        card.append(hiragana, romaji, english);
+        guideList.appendChild(card);
+      });
+    }
+
     function showScene(id) {
       const target = document.getElementById(id);
       if (!target || id === currentScene) return;
@@ -432,11 +498,16 @@
     });
 
     studyGuideBtn.addEventListener("click", () => {
-      window.location.href = "education.html";
+      showScene("guideScene");
+    });
+
+    guideBackBtn.addEventListener("click", () => {
+      showScene("menuScene");
     });
 
     // initialize board and state
     resetGameBoard();
+    renderGuide();
   </script>
 </body>
 </html>
