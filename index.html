@@ -53,23 +53,43 @@
                 </div>
             </div>
         </div>
-        <header class="landing__header">
-            <h1>Vault</h1>
-            <p class="landing__tagline">Choose a path to explore the latest creations.</p>
-        </header>
         <nav class="landing__nav" aria-label="Primary">
-            <a class="landing__link" href="education.html">
-                <span class="landing__label">Education</span>
-            </a>
-            <a class="landing__link" href="games.html">
-                <span class="landing__label">Games</span>
-            </a>
-            <a class="landing__link" href="in-progress.html">
-                <span class="landing__label">In Progress</span>
-            </a>
-            <a class="landing__link" href="misc.html">
-                <span class="landing__label">Misc</span>
-            </a>
+            <div class="landing__rail" data-rail>
+                <a class="tile tile--education" href="education.html">
+                    <span class="tile__glass"></span>
+                    <div class="tile__content">
+                        <p class="tile__title">Education</p>
+                    </div>
+                </a>
+                <a class="tile tile--games" href="games.html">
+                    <span class="tile__glass"></span>
+                    <div class="tile__content">
+                        <p class="tile__title">Games</p>
+                    </div>
+                </a>
+                <a class="tile tile--progress" href="in-progress.html">
+                    <span class="tile__glass"></span>
+                    <div class="tile__content">
+                        <p class="tile__title">In Progress</p>
+                    </div>
+                </a>
+                <a class="tile tile--misc" href="misc.html">
+                    <span class="tile__glass"></span>
+                    <div class="tile__content">
+                        <p class="tile__title">Misc</p>
+                    </div>
+                </a>
+            </div>
+            <div class="landing__rail-controls" aria-hidden="true">
+                <button class="rail-button" type="button" data-rail-prev>
+                    <span class="rail-button__icon">←</span>
+                    <span class="sr-only">Scroll collections left</span>
+                </button>
+                <button class="rail-button" type="button" data-rail-next>
+                    <span class="rail-button__icon">→</span>
+                    <span class="sr-only">Scroll collections right</span>
+                </button>
+            </div>
         </nav>
     </main>
 
@@ -117,6 +137,42 @@
                     window.setTimeout(restoreLabel, 1800);
                 }
             });
+        })();
+
+        (function setupRailControls() {
+            const rail = document.querySelector('[data-rail]');
+            const prev = document.querySelector('[data-rail-prev]');
+            const next = document.querySelector('[data-rail-next]');
+
+            if (!rail || !prev || !next) {
+                return;
+            }
+
+            const scrollAmount = () => {
+                const firstTile = rail.querySelector('.tile');
+                if (firstTile instanceof HTMLElement) {
+                    const { width } = firstTile.getBoundingClientRect();
+                    return width + 20;
+                }
+
+                return rail.clientWidth * 0.8;
+            };
+
+            const updateButtons = () => {
+                const maxScroll = rail.scrollWidth - rail.clientWidth;
+                prev.disabled = rail.scrollLeft <= 0;
+                next.disabled = rail.scrollLeft >= maxScroll - 2;
+            };
+
+            const handleScroll = (direction) => {
+                rail.scrollBy({ left: direction * scrollAmount(), behavior: 'smooth' });
+            };
+
+            prev.addEventListener('click', () => handleScroll(-1));
+            next.addEventListener('click', () => handleScroll(1));
+            rail.addEventListener('scroll', updateButtons, { passive: true });
+
+            updateButtons();
         })();
 
         (function setupAccountMenu() {
