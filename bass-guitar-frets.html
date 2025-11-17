@@ -38,12 +38,10 @@
   .board{
     position:relative;
     width:100%;
-    aspect-ratio: 1246 / 439;
+    aspect-ratio: 1600 / 721;
     background:
-      radial-gradient(140% 120% at 50% 0%, rgba(56,189,248,.08), transparent 70%),
       linear-gradient(180deg, rgba(12,18,30,.65), rgba(12,18,30,.1)),
-      repeating-linear-gradient(90deg, rgba(139,94,54,.62) 0 34px, rgba(107,74,45,.58) 34px 68px),
-      linear-gradient(180deg, var(--wood1), var(--wood2));
+      url("./bass.png");
     background-size: 100% 100%;
     background-position: center;
     background-repeat: no-repeat;
@@ -137,7 +135,7 @@
       <!-- feedback flashes -->
       <div class="flash" id="flash"></div>
       <!-- SVG fretboard -->
-      <svg id="fretSVG" viewBox="0 0 1246 439" aria-label="Bass Fretboard" role="img">
+      <svg id="fretSVG" viewBox="0 0 1600 721" aria-label="Bass Fretboard" role="img">
         <!-- wood background handled by CSS -->
         <!-- fret slots group (for layering) -->
         <g id="frets"></g>
@@ -185,14 +183,14 @@
   const NUM_FRETS = 12; // choose range (0..12). Change if you want more
   // Tuned to the provided photograph — tweak these numbers to realign the overlay if you swap imagery
   const FRETBOARD = {
-    left: 280,
-    right: 1060,
-    top: 138,
-    bottom: 304
+    left: 359,
+    right: 1360,
+    top: 226,
+    bottom: 499
   };
   const SCALE_PX = (FRETBOARD.right - FRETBOARD.left) * 2;
-  const FRET_PAD_X = 10;
-  const FRET_PAD_Y = 20;
+  const FRET_PAD_X = 13;
+  const FRET_PAD_Y = 33;
 
   // ---------- State ----------
   let useSharps = true;
