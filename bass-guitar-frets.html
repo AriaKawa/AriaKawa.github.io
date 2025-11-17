@@ -60,6 +60,10 @@
     pointer-events:none;
   }
   svg{display:block; width:100%; height:100%; position:absolute; inset:0; pointer-events:none;}
+  #hotspots{ pointer-events: auto; }
+  .hotspot{ fill: transparent; cursor: pointer; transition: fill .15s ease; }
+  .hotspot:hover{ fill: rgba(56,189,248,.08); }
+  .hotspot.active{ fill: rgba(56,189,248,.16); stroke: rgba(56,189,248,.35); stroke-width: 2; }
   .controls{
     display:flex; align-items:center; justify-content:center; gap:10px;
     padding:10px; background:linear-gradient(180deg, #0e1523, #0c1320);
@@ -148,6 +152,9 @@
         <!-- strings -->
         <g id="strings"></g>
 
+        <!-- interactive fret selectors -->
+        <g id="hotspots"></g>
+
         <!-- highlight target (string+fret) -->
         <g id="target"></g>
 
@@ -205,6 +212,7 @@
   const stringsG = document.getElementById('strings');
   const inlaysG  = document.getElementById('inlays');
   const targetG  = document.getElementById('target');
+  const hotspotsG= document.getElementById('hotspots');
   const noteButtons = document.getElementById('noteButtons');
   const flashEl  = document.getElementById('flash');
   const streakEl = document.getElementById('streak');
@@ -419,6 +427,56 @@
     targetG.appendChild(core);
   }
 
+  // ---------- Hotspots ----------
+  const hotspotGrid = [];
+  let activeHotspot = null;
+
+  function setActiveHotspot(){
+    if(activeHotspot){ activeHotspot.classList.remove('active'); }
+    const next = hotspotGrid[current.stringIndex]?.[current.fret];
+    if(next){ next.classList.add('active'); activeHotspot = next; }
+  }
+
+  function setTarget(stringIndex, fret){
+    current.stringIndex = stringIndex;
+    current.fret = fret;
+    current.answerIdx = noteAt(stringIndex, fret);
+    renderTarget();
+    setActiveHotspot();
+  }
+
+  function drawHotspots(){
+    hotspotsG.innerHTML = "";
+    hotspotGrid.length = 0;
+    const frag = document.createDocumentFragment();
+
+    STRINGS_ORDER.forEach((_, stringIdx)=>{
+      hotspotGrid[stringIdx] = [];
+      for(let fret=0; fret<NUM_FRETS; fret++){
+        const startX = Math.min(fretXs[fret], fretXs[fret+1]);
+        const endX = Math.max(fretXs[fret], fretXs[fret+1]);
+        const width = endX - startX;
+        const cy = stringY(stringIdx);
+
+        const rect = svgEl("rect", {
+          x: startX - FRET_PAD_X,
+          y: cy - (FRET_PAD_Y + 12),
+          width: width + FRET_PAD_X*2,
+          height: (FRET_PAD_Y + 12)*2,
+          rx: 16
+        });
+        rect.classList.add('hotspot');
+        rect.setAttribute('aria-label', `String ${STRINGS_ORDER[stringIdx]} fret ${fret}`);
+        rect.addEventListener('click', ()=> setTarget(stringIdx, fret));
+
+        hotspotGrid[stringIdx][fret] = rect;
+        frag.appendChild(rect);
+      }
+    });
+
+    hotspotsG.appendChild(frag);
+  }
+
   // ---------- Notes & Answers ----------
   const enharmonics = {
     "A#":"Bb","Bb":"A#",
@@ -440,14 +498,6 @@
     const openName = STRINGS_ORDER[stringIndex];
     const openIdx = OPEN_STRING_NOTES[openName];
     return (openIdx + fret) % 12;
-  }
-
-  function nextQuestion(){
-    // random string 0..3, random fret 0..NUM_FRETS (inclusive of 0 exclusive of last segment for target)
-    current.stringIndex = Math.floor(Math.random()*STRINGS_ORDER.length);
-    current.fret = Math.floor(Math.random()*NUM_FRETS); // 0..11 if NUM_FRETS=12 (uses segment before next line)
-    current.answerIdx = noteAt(current.stringIndex, current.fret);
-    renderTarget();
   }
 
   // ---------- Buttons ----------
@@ -486,7 +536,6 @@
       streak++;
       streakEl.textContent = "✅×"+streak;
       flash('good');
-      nextQuestion();
     }else{
       streak = 0;
       streakEl.textContent = "✅×0";
@@ -527,7 +576,7 @@
 
   resetBtn.addEventListener('click', ()=>{
     streak = 0; streakEl.textContent = "✅×0";
-    nextQuestion();
+    setTarget(0,0);
   });
 
   // ---------- Init ----------
@@ -535,10 +584,21 @@
     drawFrets();
     drawInlays();
     drawStrings();
+    drawHotspots();
     renderButtons();
-    nextQuestion();
+    setTarget(0,0);
   }
   init();
+
+  function jumpToNextHotspot(){
+    let nextFret = current.fret + 1;
+    let nextString = current.stringIndex;
+    if(nextFret >= NUM_FRETS){
+      nextFret = 0;
+      nextString = (nextString + 1) % STRINGS_ORDER.length;
+    }
+    setTarget(nextString, nextFret);
+  }
 
   // Optional: keyboard input (A..G with optional # or b). No labels shown; just a convenience.
   const keyMap = new Set(["A","B","C","D","E","F","G","#","b"]);
@@ -546,7 +606,7 @@
   window.addEventListener('keydown', (e)=>{
     const k = e.key.toUpperCase();
     if(!keyMap.has(k) && k !== "ARROWRIGHT" && k!==" "){ return; }
-    if(k===" " || k==="ARROWRIGHT"){ e.preventDefault(); nextQuestion(); return; }
+    if(k===" " || k==="ARROWRIGHT"){ e.preventDefault(); jumpToNextHotspot(); return; }
     if("ABCDEFG".includes(k)){
       lastLetter = k;
       // if single letter is a complete note (A,B,C,D,E,F,G) it might be enough; wait briefly for accidental
