@@ -314,6 +314,11 @@
     let gameActive = false;
     let currentScene = "menuScene";
 
+    const SCENE_HASH_MAP = {
+      gameScene: "#game",
+      guideScene: "#guide"
+    };
+
     function shuffle(array) {
       const arr = array.slice();
       for (let i = arr.length - 1; i > 0; i--) {
@@ -471,6 +476,57 @@
       currentScene = id;
     }
 
+    function normalizeSceneKey(key = "") {
+      switch (key.toLowerCase()) {
+        case "game":
+          return "gameScene";
+        case "guide":
+          return "guideScene";
+        default:
+          return "menuScene";
+      }
+    }
+
+    function sceneFromHash(hashValue) {
+      if (!hashValue) return "menuScene";
+      return normalizeSceneKey(hashValue.replace(/^#/, ""));
+    }
+
+    function sceneFromLocation() {
+      const fromHash = sceneFromHash(window.location.hash);
+      if (fromHash !== "menuScene") {
+        return fromHash;
+      }
+      const params = new URLSearchParams(window.location.search);
+      const sceneParam = params.get("scene");
+      return normalizeSceneKey(sceneParam ?? "");
+    }
+
+    function syncLocationHash(sceneId) {
+      const desiredHash = SCENE_HASH_MAP[sceneId] ?? "";
+      if (desiredHash) {
+        if (window.location.hash !== desiredHash) {
+          window.location.hash = desiredHash;
+        }
+      } else if (window.location.hash) {
+        history.replaceState(null, "", window.location.pathname + window.location.search);
+      }
+    }
+
+    function applyInitialScene() {
+      const initialScene = sceneFromLocation();
+      if (initialScene === "menuScene") return;
+      document.getElementById("menuScene")?.classList.remove("active");
+      currentScene = "menuScene";
+      showScene(initialScene);
+    }
+
+    function handleHashChange() {
+      const targetScene = sceneFromHash(window.location.hash);
+      if (targetScene === currentScene) return;
+      showScene(targetScene);
+    }
+
     startBtn.addEventListener("click", () => {
       buildBoard();
       stopTimer();
@@ -483,10 +539,12 @@
 
     backToMenuBtn.addEventListener("click", () => {
       showScene("menuScene");
+      syncLocationHash("menuScene");
     });
 
     menuGameBtn.addEventListener("click", () => {
       showScene("gameScene");
+      syncLocationHash("gameScene");
     });
 
     menuBackBtn.addEventListener("click", () => {
@@ -499,15 +557,19 @@
 
     studyGuideBtn.addEventListener("click", () => {
       showScene("guideScene");
+      syncLocationHash("guideScene");
     });
 
     guideBackBtn.addEventListener("click", () => {
       showScene("menuScene");
+      syncLocationHash("menuScene");
     });
 
     // initialize board and state
     resetGameBoard();
     renderGuide();
+    applyInitialScene();
+    window.addEventListener("hashchange", handleHashChange);
   </script>
 </body>
 </html>
