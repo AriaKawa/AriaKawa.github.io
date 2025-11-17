@@ -116,10 +116,18 @@
     filter: drop-shadow(0 0 16px rgba(56,189,248,.85)) drop-shadow(0 0 32px rgba(56,189,248,.55));
   }
   .fret-target{
-    fill: rgba(56,189,248,.18);
-    stroke: rgba(56,189,248,.45);
-    stroke-width:3;
+    fill: none;
+    stroke: rgba(56,189,248,.65);
+    stroke-width: 11;
+    stroke-linecap: round;
     mix-blend-mode: screen;
+  }
+  .fret-target-outline{
+    stroke: rgba(255,255,255,.7);
+    stroke-width: 3.6;
+    stroke-linecap: round;
+    mix-blend-mode: screen;
+    opacity: 0.9;
   }
   .string-target{
     fill: rgba(56,189,248,.75);
@@ -391,26 +399,35 @@
     const i = current.stringIndex;
     const f = current.fret;
 
-    // glowing puck at the middle of the fret segment on that string
+    // glowing puck aligned directly to the fret bar on that string
     const startX = Math.min(fretXs[f], fretXs[f+1]);
     const endX = Math.max(fretXs[f], fretXs[f+1]);
     const width = endX - startX;
-    const cx = midBetween(startX, endX);
+    const fretX = fretXs[f];
+    const cx = fretX;
     const cy = stringY(i);
 
-    const fretRect = document.createElementNS("http://www.w3.org/2000/svg","rect");
-    fretRect.setAttribute("x", startX - FRET_PAD_X);
-    fretRect.setAttribute("y", FRETBOARD.top - FRET_PAD_Y);
-    fretRect.setAttribute("width", width + FRET_PAD_X*2);
-    fretRect.setAttribute("height", (FRETBOARD.bottom - FRETBOARD.top) + FRET_PAD_Y*2);
-    fretRect.setAttribute("rx", 18);
-    fretRect.setAttribute("ry", 18);
-    fretRect.classList.add('fret-target','highlight-glow');
+    const fretY = FRETBOARD.top - 8;
+    const fretHeight = (FRETBOARD.bottom - FRETBOARD.top) + 16;
+
+    const fretOutline = document.createElementNS("http://www.w3.org/2000/svg","line");
+    fretOutline.setAttribute("x1", fretX);
+    fretOutline.setAttribute("x2", fretX);
+    fretOutline.setAttribute("y1", fretY);
+    fretOutline.setAttribute("y2", fretY + fretHeight);
+    fretOutline.classList.add('fret-target-outline','highlight-glow');
+
+    const fretLine = document.createElementNS("http://www.w3.org/2000/svg","line");
+    fretLine.setAttribute("x1", fretX);
+    fretLine.setAttribute("x2", fretX);
+    fretLine.setAttribute("y1", fretY);
+    fretLine.setAttribute("y2", fretY + fretHeight);
+    fretLine.classList.add('fret-target','highlight-glow');
 
     const stringRect = document.createElementNS("http://www.w3.org/2000/svg","rect");
     const stringHeight = 7;
-    const innerWidth = Math.max(12, width - 36);
-    const stringX = startX + (width - innerWidth)/2;
+    const innerWidth = Math.max(18, Math.min(48, width * 0.55));
+    const stringX = cx - innerWidth/2;
     stringRect.setAttribute("x", stringX);
     stringRect.setAttribute("y", cy - stringHeight/2);
     stringRect.setAttribute("width", innerWidth);
@@ -420,7 +437,8 @@
 
     const core  = circle(cx, cy, 7.5, "var(--accent)", 1);
 
-    targetG.appendChild(fretRect);
+    targetG.appendChild(fretOutline);
+    targetG.appendChild(fretLine);
     targetG.appendChild(stringRect);
     targetG.appendChild(core);
   }
