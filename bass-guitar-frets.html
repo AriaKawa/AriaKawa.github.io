@@ -251,52 +251,36 @@
   function drawFrets(){
     fretsG.innerHTML = "";
     const frag = document.createDocumentFragment();
-    const yStart = FRETBOARD.top - 26;
-    const yEnd = FRETBOARD.bottom + 26;
+    const markerHeight = 18;
+    const topY = FRETBOARD.top - markerHeight/2;
+    const bottomY = FRETBOARD.bottom - markerHeight/2;
 
     for(let i=0; i<=NUM_FRETS; i++){
       const x = fretXs[i];
       const isNut = i === 0;
-      const stroke = isNut ? "var(--nut)" : "var(--fret)";
-      const width = isNut ? 12 : 6;
+      const stroke = isNut ? "rgba(235,240,245,.45)" : "rgba(200,210,220,.25)";
+      const width = isNut ? 3 : 1.25;
 
-      const base = svgEl("line", {
+      const topGuide = svgEl("line", {
         x1: x,
-        y1: yStart,
+        y1: topY,
         x2: x,
-        y2: yEnd,
+        y2: topY + markerHeight,
         stroke,
         "stroke-width": width,
-        "stroke-linecap": "round",
-        opacity: isNut ? 0.95 : 0.85
+        "stroke-linecap": "round"
       });
-      frag.appendChild(base);
-
-      const shine = svgEl("line", {
-        x1: x - (isNut ? 3.2 : 2),
-        y1: yStart,
-        x2: x - (isNut ? 3.2 : 2),
-        y2: yEnd,
-        stroke: "rgba(255,255,255,.55)",
-        "stroke-width": isNut ? 2.6 : 1.4,
-        "stroke-linecap": "round",
-        opacity: 0.65
+      const bottomGuide = svgEl("line", {
+        x1: x,
+        y1: bottomY,
+        x2: x,
+        y2: bottomY + markerHeight,
+        stroke,
+        "stroke-width": width,
+        "stroke-linecap": "round"
       });
-      frag.appendChild(shine);
-
-      if(!isNut){
-        const shadow = svgEl("line", {
-          x1: x + 2.4,
-          y1: yStart,
-          x2: x + 2.4,
-          y2: yEnd,
-          stroke: "rgba(5,10,18,.55)",
-          "stroke-width": 2.6,
-          "stroke-linecap": "round",
-          opacity: 0.45
-        });
-        frag.appendChild(shadow);
-      }
+      frag.appendChild(topGuide);
+      frag.appendChild(bottomGuide);
     }
 
     fretsG.appendChild(frag);
