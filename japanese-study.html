@@ -245,6 +245,10 @@
     <div class="menu-actions">
       <button id="verbsGameBtn">Verb Matching Game</button>
       <button id="verbsGuideBtn">Verb Study Guide</button>
+      <button id="rainGuideBtn">Rain Study Guide</button>
+      <button id="rainGameBtn">Rain Game</button>
+      <button id="daysStudyBtn">Days Study</button>
+      <button id="daysGameBtn">Days Game</button>
     </div>
   </section>
 
@@ -334,6 +338,10 @@
     const verbsGameBtn = document.getElementById("verbsGameBtn");
     const menuBackBtn = document.getElementById("menuBackBtn");
     const verbsGuideBtn = document.getElementById("verbsGuideBtn");
+    const rainGuideBtn = document.getElementById("rainGuideBtn");
+    const rainGameBtn = document.getElementById("rainGameBtn");
+    const daysStudyBtn = document.getElementById("daysStudyBtn");
+    const daysGameBtn = document.getElementById("daysGameBtn");
     const verbsCategoryBtn = document.getElementById("verbsCategoryBtn");
     const nounsCategoryBtn = document.getElementById("nounsCategoryBtn");
     const particlesCategoryBtn = document.getElementById("particlesCategoryBtn");
@@ -590,6 +598,22 @@
     verbsGuideBtn.addEventListener("click", () => {
       showScene("guideScene");
       syncLocationHash("guideScene");
+    });
+
+    rainGuideBtn.addEventListener("click", () => {
+      window.location.href = "Rain Guide";
+    });
+
+    rainGameBtn.addEventListener("click", () => {
+      window.location.href = "Rain game";
+    });
+
+    daysStudyBtn.addEventListener("click", () => {
+      window.location.href = "Days Study";
+    });
+
+    daysGameBtn.addEventListener("click", () => {
+      window.location.href = "Days Game";
     });
 
     guideBackBtn.addEventListener("click", () => {
