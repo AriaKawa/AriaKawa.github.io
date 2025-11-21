@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Japanese Verb Match Game</title>
+  <title>Japanese Study Hub</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     :root {
@@ -228,17 +228,30 @@
   <section id="menuScene" class="scene panel active">
     <button class="ghost" id="menuBackBtn">⟵ Back to Home</button>
     <h1>Japanese Study Hub</h1>
-    <p>Choose how you want to practice today.</p>
+    <p>Pick a topic to explore and choose the study mode that fits your vibe.</p>
     <div class="menu-actions">
-      <button id="menuGameBtn">Game</button>
-      <button id="studyGuideBtn">Study Guide</button>
+      <button id="verbsCategoryBtn">Verbs</button>
+      <button id="nounsCategoryBtn">Nouns (coming soon)</button>
+      <button id="particlesCategoryBtn">Particles (coming soon)</button>
+    </div>
+  </section>
+
+  <section id="verbsScene" class="scene panel">
+    <button class="ghost" id="verbsBackBtn">⟵ Back to Topics</button>
+    <div class="header">
+      <h1>Verb Practice Zone</h1>
+      <p>Match, review, or speedrun through common verbs.</p>
+    </div>
+    <div class="menu-actions">
+      <button id="verbsGameBtn">Verb Matching Game</button>
+      <button id="verbsGuideBtn">Verb Study Guide</button>
     </div>
   </section>
 
   <section id="gameScene" class="scene panel">
-    <button class="ghost" id="backToMenu">⟵ Back to Menu</button>
+    <button class="ghost" id="backToMenu">⟵ Back to Verb Modes</button>
     <div class="header">
-      <h1>Japanese Verb Match — N5/N4-ish</h1>
+      <h1>Verb Match — N5/N4-ish</h1>
       <div class="controls">
         <button id="startBtn">Start</button>
         <div class="timer" id="timer">Time: 0.00s</div>
@@ -261,12 +274,30 @@
   </section>
 
   <section id="guideScene" class="scene panel">
-    <button class="ghost" id="guideBackBtn">⟵ Back to Menu</button>
+    <button class="ghost" id="guideBackBtn">⟵ Back to Verb Modes</button>
     <div class="header" id="guide">
       <h1>Verb Study Guide</h1>
-      <p>Use this list to review hiragana, romaji, and meanings before playing.</p>
+      <p>Review hiragana, romaji, and meanings before diving into a game.</p>
     </div>
     <div id="guideList" class="guide-list"></div>
+  </section>
+
+  <section id="nounsScene" class="scene panel">
+    <button class="ghost" id="nounsBackBtn">⟵ Back to Topics</button>
+    <div class="header">
+      <h1>Noun Practice (Coming Soon)</h1>
+      <p>Flashcards, categories, and matching challenges for nouns are on the way.</p>
+    </div>
+    <p>Bookmark this page—noun drills will land here once they're ready.</p>
+  </section>
+
+  <section id="particlesScene" class="scene panel">
+    <button class="ghost" id="particlesBackBtn">⟵ Back to Topics</button>
+    <div class="header">
+      <h1>Particles &amp; Grammar (Coming Soon)</h1>
+      <p>Expect fill-in-the-blank practice, quick quizzes, and mnemonics.</p>
+    </div>
+    <p>Check back later for interactive particle practice modes.</p>
   </section>
 
   <script>
@@ -300,9 +331,15 @@
     const timerEl = document.getElementById("timer");
     const statusEl = document.getElementById("status");
     const backToMenuBtn = document.getElementById("backToMenu");
-    const menuGameBtn = document.getElementById("menuGameBtn");
+    const verbsGameBtn = document.getElementById("verbsGameBtn");
     const menuBackBtn = document.getElementById("menuBackBtn");
-    const studyGuideBtn = document.getElementById("studyGuideBtn");
+    const verbsGuideBtn = document.getElementById("verbsGuideBtn");
+    const verbsCategoryBtn = document.getElementById("verbsCategoryBtn");
+    const nounsCategoryBtn = document.getElementById("nounsCategoryBtn");
+    const particlesCategoryBtn = document.getElementById("particlesCategoryBtn");
+    const verbsBackBtn = document.getElementById("verbsBackBtn");
+    const nounsBackBtn = document.getElementById("nounsBackBtn");
+    const particlesBackBtn = document.getElementById("particlesBackBtn");
     const guideList = document.getElementById("guideList");
     const guideBackBtn = document.getElementById("guideBackBtn");
 
@@ -315,8 +352,12 @@
     let currentScene = "menuScene";
 
     const SCENE_HASH_MAP = {
-      gameScene: "#game",
-      guideScene: "#guide"
+      menuScene: "#menu",
+      verbsScene: "#verbs",
+      gameScene: "#verbs-game",
+      guideScene: "#verbs-guide",
+      nounsScene: "#nouns",
+      particlesScene: "#particles"
     };
 
     function shuffle(array) {
@@ -476,20 +517,11 @@
       currentScene = id;
     }
 
-    function normalizeSceneKey(key = "") {
-      switch (key.toLowerCase()) {
-        case "game":
-          return "gameScene";
-        case "guide":
-          return "guideScene";
-        default:
-          return "menuScene";
-      }
-    }
-
     function sceneFromHash(hashValue) {
       if (!hashValue) return "menuScene";
-      return normalizeSceneKey(hashValue.replace(/^#/, ""));
+      const normalizedHash = hashValue.startsWith("#") ? hashValue : `#${hashValue}`;
+      const entry = Object.entries(SCENE_HASH_MAP).find(([, hash]) => hash === normalizedHash);
+      return entry ? entry[0] : "menuScene";
     }
 
     function sceneFromLocation() {
@@ -499,7 +531,7 @@
       }
       const params = new URLSearchParams(window.location.search);
       const sceneParam = params.get("scene");
-      return normalizeSceneKey(sceneParam ?? "");
+      return sceneFromHash(sceneParam ?? "");
     }
 
     function syncLocationHash(sceneId) {
@@ -538,11 +570,11 @@
     });
 
     backToMenuBtn.addEventListener("click", () => {
-      showScene("menuScene");
-      syncLocationHash("menuScene");
+      showScene("verbsScene");
+      syncLocationHash("verbsScene");
     });
 
-    menuGameBtn.addEventListener("click", () => {
+    verbsGameBtn.addEventListener("click", () => {
       showScene("gameScene");
       syncLocationHash("gameScene");
     });
@@ -555,12 +587,42 @@
       }
     });
 
-    studyGuideBtn.addEventListener("click", () => {
+    verbsGuideBtn.addEventListener("click", () => {
       showScene("guideScene");
       syncLocationHash("guideScene");
     });
 
     guideBackBtn.addEventListener("click", () => {
+      showScene("verbsScene");
+      syncLocationHash("verbsScene");
+    });
+
+    verbsCategoryBtn.addEventListener("click", () => {
+      showScene("verbsScene");
+      syncLocationHash("verbsScene");
+    });
+
+    nounsCategoryBtn.addEventListener("click", () => {
+      showScene("nounsScene");
+      syncLocationHash("nounsScene");
+    });
+
+    particlesCategoryBtn.addEventListener("click", () => {
+      showScene("particlesScene");
+      syncLocationHash("particlesScene");
+    });
+
+    verbsBackBtn.addEventListener("click", () => {
+      showScene("menuScene");
+      syncLocationHash("menuScene");
+    });
+
+    nounsBackBtn.addEventListener("click", () => {
+      showScene("menuScene");
+      syncLocationHash("menuScene");
+    });
+
+    particlesBackBtn.addEventListener("click", () => {
       showScene("menuScene");
       syncLocationHash("menuScene");
     });
