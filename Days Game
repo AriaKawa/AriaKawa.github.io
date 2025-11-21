@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Days of the Week Quiz – Japanese Practice</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    h1 {
+      text-align: left;
+    }
+    #quiz-container {
+      margin-top: 20px;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background: #fafafa;
+    }
+    #question {
+      font-size: 1.1rem;
+      margin-bottom: 10px;
+    }
+    #hint {
+      font-size: 0.9rem;
+      color: #555;
+      margin-bottom: 15px;
+    }
+    .options {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    button.option-btn {
+      padding: 10px 12px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      background: #ffffff;
+      cursor: pointer;
+      text-align: left;
+      font-size: 1rem;
+    }
+    button.option-btn:hover {
+      background: #f0f0ff;
+    }
+    button.option-btn.correct {
+      border-color: #2e8b57;
+      background: #e5ffef;
+    }
+    button.option-btn.incorrect {
+      border-color: #cc0000;
+      background: #ffecec;
+    }
+    #feedback {
+      min-height: 1.3em;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    #explanation {
+      font-size: 0.95rem;
+      color: #444;
+      margin-bottom: 15px;
+    }
+    #controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    #next-btn {
+      padding: 8px 14px;
+      border-radius: 6px;
+      border: none;
+      background: #3366cc;
+      color: #fff;
+      cursor: pointer;
+      font-size: 0.95rem;
+    }
+    #next-btn:hover {
+      background: #274f9a;
+    }
+    #score {
+      font-size: 0.95rem;
+    }
+    .jp {
+      font-size: 1.1rem;
+    }
+    a {
+      color: #3366cc;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <h1>Days of the Week Quiz – Japanese Practice</h1>
+  <p>
+    Practice the Japanese days of the week: kanji, reading, and using them in sentences.
+  </p>
+  <p>
+    Need help? Open the
+    <a href="days-study-guide.html" target="_blank">Days Study Guide</a>
+    in another tab.
+  </p>
+
+  <div id="quiz-container">
+    <div id="question"></div>
+    <div id="hint"></div>
+    <div class="options" id="options"></div>
+    <div id="feedback"></div>
+    <div id="explanation"></div>
+    <div id="controls">
+      <div id="score">Score: 0 / 0</div>
+      <button id="next-btn">Next Question</button>
+    </div>
+  </div>
+
+  <script>
+    const questions = [
+      {
+        prompt: "What is “Monday” in Japanese (full, with 曜日)?",
+        hint: "It is the Moon day.",
+        options: [
+          "日曜日（にちようび）",
+          "月曜日（げつようび）",
+          "火曜日（かようび）",
+          "水曜日（すいようび）"
+        ],
+        correctIndex: 1,
+        explanation: "月曜日（げつようび）＝ Monday. 月＝moon."
+      },
+      {
+        prompt: "What is “Wednesday” in Japanese?",
+        hint: "Water day.",
+        options: [
+          "木曜日（もくようび）",
+          "水曜日（すいようび）",
+          "土曜日（どようび）",
+          "火曜日（かようび）"
+        ],
+        correctIndex: 1,
+        explanation: "水曜日（すいようび）＝ Wednesday. 水＝water."
+      },
+      {
+        prompt: "What is “Sunday” in Japanese?",
+        hint: "Sun day.",
+        options: [
+          "日曜日（にちようび）",
+          "金曜日（きんようび）",
+          "月曜日（げつようび）",
+          "土曜日（どようび）"
+        ],
+        correctIndex: 0,
+        explanation: "日曜日（にちようび）＝ Sunday. 日＝sun."
+      },
+      {
+        prompt: "What is “Friday” in Japanese?",
+        hint: "Gold day.",
+        options: [
+          "木曜日（もくようび）",
+          "金曜日（きんようび）",
+          "水曜日（すいようび）",
+          "火曜日（かようび）"
+        ],
+        correctIndex: 1,
+        explanation: "金曜日（きんようび）＝ Friday. 金＝gold."
+      },
+      {
+        prompt: "What is “Saturday” in Japanese?",
+        hint: "Earth / soil day.",
+        options: [
+          "火曜日（かようび）",
+          "木曜日（もくようび）",
+          "土曜日（どようび）",
+          "月曜日（げつようび）"
+        ],
+        correctIndex: 2,
+        explanation: "土曜日（どようび）＝ Saturday. 土＝earth."
+      },
+      {
+        prompt: "What is the reading of 火曜日?",
+        hint: "Fire day.",
+        options: [
+          "にちようび",
+          "げつようび",
+          "かようび",
+          "どようび"
+        ],
+        correctIndex: 2,
+        explanation: "火曜日 is read かようび (kayōbi) = Tuesday."
+      },
+      {
+        prompt: "Which kanji is used for “Thursday” on a calendar?",
+        hint: "Tree / wood.",
+        options: [
+          "金",
+          "木",
+          "水",
+          "火"
+        ],
+        correctIndex: 1,
+        explanation: "木 (tree/wood) is the first character of 木曜日（もくようび）＝ Thursday."
+      },
+      {
+        prompt: "Translate: “On Monday, I study Japanese.” (Choose the best Japanese.)",
+        hint: "Use 月曜日に and べんきょうします.",
+        options: [
+          "月曜日は日本語をべんきょうします。",
+          "月曜日に日本語をべんきょうします。",
+          "日曜日に日本語をべんきょうします。",
+          "水曜日に日本語をべんきょうしました。"
+        ],
+        correctIndex: 1,
+        explanation: "月曜日に日本語をべんきょうします。= On Monday, I study Japanese."
+      },
+      {
+        prompt: "Translate: “On Friday, I play with my rats.”",
+        hint: "Use 金曜日に and ねずみとあそびます.",
+        options: [
+          "金曜日にねずみとあそびます。",
+          "金曜日はねずみとあそびました。",
+          "火曜日にねずみとあそびます。",
+          "日曜日にねずみとあそびません。"
+        ],
+        correctIndex: 0,
+        explanation: "金曜日にねずみとあそびます。= On Friday, I play with my rats."
+      },
+      {
+        prompt: "Translate: “Last Tuesday, it rained.”",
+        hint: "Use 先週の火曜日に and 雨が降りました.",
+        options: [
+          "先週の火曜日に雨が降りました。",
+          "先週の水曜日に雨が降りました。",
+          "来週の火曜日に雨が降りました。",
+          "先週の火曜日に雨が降ります。"
+        ],
+        correctIndex: 0,
+        explanation: "先週の火曜日に雨が降りました。= Last Tuesday, it rained."
+      },
+      {
+        prompt: "Which is the correct order from Sunday to Saturday?",
+        hint: "Sun, Moon, Fire, Water, Wood, Gold, Earth.",
+        options: [
+          "日・月・火・水・木・金・土",
+          "月・火・水・木・金・土・日",
+          "日・火・月・水・木・金・土",
+          "月・水・火・木・金・土・日"
+        ],
+        correctIndex: 0,
+        explanation: "The standard order is 日・月・火・水・木・金・土 (Sun → Sat)."
+      }
+    ];
+
+    let currentIndex = 0;
+    let score = 0;
+    let answered = 0;
+
+    const questionEl = document.getElementById("question");
+    const hintEl = document.getElementById("hint");
+    const optionsEl = document.getElementById("options");
+    const feedbackEl = document.getElementById("feedback");
+    const explanationEl = document.getElementById("explanation");
+    const scoreEl = document.getElementById("score");
+    const nextBtn = document.getElementById("next-btn");
+
+    function loadQuestion() {
+      const q = questions[currentIndex];
+      questionEl.textContent = "Q" + (currentIndex + 1) + ": " + q.prompt;
+      hintEl.textContent = "Hint: " + q.hint;
+
+      optionsEl.innerHTML = "";
+      feedbackEl.textContent = "";
+      explanationEl.textContent = "";
+
+      q.options.forEach((opt, i) => {
+        const btn = document.createElement("button");
+        btn.textContent = opt;
+        btn.className = "option-btn";
+        btn.addEventListener("click", () => selectOption(i));
+        optionsEl.appendChild(btn);
+      });
+    }
+
+    function selectOption(selectedIndex) {
+      if (feedbackEl.textContent !== "") return; // already answered
+
+      const q = questions[currentIndex];
+      const buttons = document.querySelectorAll(".option-btn");
+
+      buttons.forEach((btn, i) => {
+        if (i === q.correctIndex) {
+          btn.classList.add("correct");
+        }
+        if (i === selectedIndex && i !== q.correctIndex) {
+          btn.classList.add("incorrect");
+        }
+        btn.disabled = true;
+      });
+
+      answered++;
+      if (selectedIndex === q.correctIndex) {
+        score++;
+        feedbackEl.textContent = "✅ Correct!";
+      } else {
+        feedbackEl.textContent = "❌ Incorrect.";
+      }
+      explanationEl.textContent = q.explanation;
+      updateScore();
+    }
+
+    function updateScore() {
+      scoreEl.textContent = "Score: " + score + " / " + answered;
+    }
+
+    nextBtn.addEventListener("click", () => {
+      currentIndex++;
+      if (currentIndex >= questions.length) {
+        currentIndex = 0;
+      }
+      loadQuestion();
+    });
+
+    // init
+    loadQuestion();
+    updateScore();
+  </script>
+</body>
+</html>
