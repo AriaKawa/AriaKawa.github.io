@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Japanese Weather: Rain (雨が降る) Study Guide</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    h1, h2, h3 {
+      text-align: left;
+    }
+    .jp {
+      font-size: 1.2rem;
+    }
+    code {
+      background: #f5f5f5;
+      padding: 2px 4px;
+      border-radius: 3px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      font-size: 0.95rem;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background: #f0f0f0;
+    }
+    .note {
+      background: #fffbea;
+      border-left: 4px solid #f4c430;
+      padding: 10px;
+      margin: 15px 0;
+      font-size: 0.95rem;
+    }
+    .example {
+      background: #f7f7ff;
+      border-left: 4px solid #6c7bff;
+      padding: 10px;
+      margin: 10px 0;
+    }
+    .example .jp {
+      font-weight: bold;
+    }
+    .nav {
+      margin-top: 20px;
+      padding-top: 10px;
+      border-top: 1px solid #ddd;
+      font-size: 0.95rem;
+    }
+    a {
+      color: #3366cc;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <h1>Japanese Weather: Rain (雨が降る) Study Guide</h1>
+
+  <p>
+    This page teaches you how to say things like
+    <strong>“It rains / It’s raining / It rained”</strong> in Japanese using the verb
+    <span class="jp">降る（ふる）</span>.
+  </p>
+
+  <div class="note">
+    <strong>Key idea:</strong> For rain and snow, Japanese literally says
+    “<strong>rain falls</strong>” → <span class="jp">雨が降る（あめがふる）</span>.
+  </div>
+
+  <h2>1. Basic Pieces</h2>
+
+  <ul>
+    <li><span class="jp">雨（あめ）</span> – rain</li>
+    <li><span class="jp">降る（ふる）</span> – to fall (for rain, snow, etc.)</li>
+    <li><span class="jp">雨が降る（あめがふる）</span> – it rains / it will rain</li>
+  </ul>
+
+  <div class="note">
+    <strong>Why が and not は?</strong><br />
+    Weather verbs usually use <span class="jp">が</span>:
+    <span class="jp">雨が降る</span>, <span class="jp">雪が降る</span>.  
+    You can use <span class="jp">雨は</span> for contrast, but <span class="jp">雨が</span> is
+    the default.
+  </div>
+
+  <h2>2. Important Forms of 雨が降る</h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Meaning</th>
+        <th>Form</th>
+        <th>Japanese</th>
+        <th>Romaji</th>
+        <th>Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>It rains / will rain</td>
+        <td>Plain non-past</td>
+        <td class="jp">雨が降る。</td>
+        <td>ame ga furu.</td>
+        <td>Plain / dictionary form</td>
+      </tr>
+      <tr>
+        <td>It rains / will rain</td>
+        <td>Polite non-past</td>
+        <td class="jp">雨が降ります。</td>
+        <td>ame ga furimasu.</td>
+        <td>Polite</td>
+      </tr>
+      <tr>
+        <td>It is raining (right now)</td>
+        <td>Plain progressive</td>
+        <td class="jp">雨が降っている。</td>
+        <td>ame ga futte iru.</td>
+        <td>“Rain is falling” → right now</td>
+      </tr>
+      <tr>
+        <td>It is raining (right now)</td>
+        <td>Polite progressive</td>
+        <td class="jp">雨が降っています。</td>
+        <td>ame ga futte imasu.</td>
+        <td>Polite “it’s raining”</td>
+      </tr>
+      <tr>
+        <td>It rained</td>
+        <td>Plain past</td>
+        <td class="jp">雨が降った。</td>
+        <td>ame ga futta.</td>
+        <td>Plain</td>
+      </tr>
+      <tr>
+        <td>It rained</td>
+        <td>Polite past</td>
+        <td class="jp">雨が降りました。</td>
+        <td>ame ga furimashita.</td>
+        <td>Polite</td>
+      </tr>
+      <tr>
+        <td>It doesn’t rain / won’t rain</td>
+        <td>Plain negative</td>
+        <td class="jp">雨が降らない。</td>
+        <td>ame ga furanai.</td>
+        <td>Plain negative</td>
+      </tr>
+      <tr>
+        <td>It doesn’t rain / won’t rain</td>
+        <td>Polite negative</td>
+        <td class="jp">雨が降りません。</td>
+        <td>ame ga furimasen.</td>
+        <td>Polite negative</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>3. Example Sentences</h2>
+
+  <div class="example">
+    <div class="jp">雨が降ると、ねずみと遊べません。</div>
+    <div>ame ga furu to, nezumi to asobemasen.</div>
+    <div>When it rains, I can’t play with my rats.</div>
+  </div>
+
+  <div class="example">
+    <div class="jp">今、雨が降っています。</div>
+    <div>ima, ame ga futte imasu.</div>
+    <div>It’s raining right now.</div>
+  </div>
+
+  <div class="example">
+    <div class="jp">きのうは、一日中（いちにちじゅう）雨が降りました。</div>
+    <div>kinō wa, ichinichijū ame ga furimashita.</div>
+    <div>Yesterday, it rained all day.</div>
+  </div>
+
+  <div class="example">
+    <div class="jp">あしたは雨が降らないといいですね。</div>
+    <div>ashita wa ame ga furanai to ii desu ne.</div>
+    <div>I hope it doesn’t rain tomorrow.</div>
+  </div>
+
+  <h2>4. Bonus: Just “It’s rainy”</h2>
+
+  <p>
+    Sometimes Japanese also just says
+    <span class="jp">雨です。</span> (ame desu.)  
+    Literally “It is rain.” → “It’s rainy.”
+  </p>
+
+  <p>
+    But for “<strong>It’s raining (right now)</strong>,” the most natural and common is:
+  </p>
+
+  <div class="example">
+    <div class="jp">雨が降っています。</div>
+    <div>ame ga futte imasu.</div>
+  </div>
+
+  <div class="nav">
+    <p>
+      Ready to practice? Go to the
+      <strong>Rain Verb Quiz Game</strong> page and test yourself!
+    </p>
+    <!-- Change this href to your actual quiz file path -->
+    <p><a href="rain-quiz-game.html">→ Go to Rain Quiz Game</a></p>
+  </div>
+</body>
+</html>
