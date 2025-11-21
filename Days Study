@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Japanese Days of the Week Study Guide</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    h1, h2, h3 {
+      text-align: left;
+    }
+    .jp {
+      font-size: 1.1rem;
+    }
+    code {
+      background: #f5f5f5;
+      padding: 2px 4px;
+      border-radius: 3px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      font-size: 0.95rem;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background: #f0f0f0;
+    }
+    .note {
+      background: #fffbea;
+      border-left: 4px solid #f4c430;
+      padding: 10px;
+      margin: 15px 0;
+      font-size: 0.95rem;
+    }
+    .example {
+      background: #f7f7ff;
+      border-left: 4px solid #6c7bff;
+      padding: 10px;
+      margin: 10px 0;
+    }
+    .example .jp {
+      font-weight: bold;
+    }
+    .nav {
+      margin-top: 20px;
+      padding-top: 10px;
+      border-top: 1px solid #ddd;
+      font-size: 0.95rem;
+    }
+    a {
+      color: #3366cc;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <h1>Japanese Days of the Week – Study Guide</h1>
+
+  <p>
+    This page explains the Japanese days of the week with
+    <strong>kanji, hiragana, romaji, and examples</strong>.
+  </p>
+
+  <div class="note">
+    <strong>Pattern:</strong>  
+    Every day ends with <span class="jp">〜曜日（ようび）</span> = “day of the week”.
+  </div>
+
+  <h2>1. Days of the Week – Full List</h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th>English</th>
+        <th>Kanji</th>
+        <th>Hiragana</th>
+        <th>Romaji</th>
+        <th>Meaning / Element</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Sunday</td>
+        <td class="jp">日曜日</td>
+        <td class="jp">にちようび</td>
+        <td>nichiyōbi</td>
+        <td>Sun day (日＝sun)</td>
+      </tr>
+      <tr>
+        <td>Monday</td>
+        <td class="jp">月曜日</td>
+        <td class="jp">げつようび</td>
+        <td>getsuyōbi</td>
+        <td>Moon day (月＝moon)</td>
+      </tr>
+      <tr>
+        <td>Tuesday</td>
+        <td class="jp">火曜日</td>
+        <td class="jp">かようび</td>
+        <td>kayōbi</td>
+        <td>Fire day (火＝fire)</td>
+      </tr>
+      <tr>
+        <td>Wednesday</td>
+        <td class="jp">水曜日</td>
+        <td class="jp">すいようび</td>
+        <td>suiyōbi</td>
+        <td>Water day (水＝water)</td>
+      </tr>
+      <tr>
+        <td>Thursday</td>
+        <td class="jp">木曜日</td>
+        <td class="jp">もくようび</td>
+        <td>mokuyōbi</td>
+        <td>Wood / tree day (木＝tree)</td>
+      </tr>
+      <tr>
+        <td>Friday</td>
+        <td class="jp">金曜日</td>
+        <td class="jp">きんようび</td>
+        <td>kinyōbi</td>
+        <td>Gold / metal day (金＝gold)</td>
+      </tr>
+      <tr>
+        <td>Saturday</td>
+        <td class="jp">土曜日</td>
+        <td class="jp">どようび</td>
+        <td>doyōbi</td>
+        <td>Earth / soil day (土＝earth)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>2. Abbreviations (used on calendars, schedules)</h2>
+  <p>Sometimes only the first kanji is used:</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Kanji</th>
+        <th>Full day</th>
+        <th>English</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="jp">日</td>
+        <td class="jp">日曜日</td>
+        <td>Sunday</td>
+      </tr>
+      <tr>
+        <td class="jp">月</td>
+        <td class="jp">月曜日</td>
+        <td>Monday</td>
+      </tr>
+      <tr>
+        <td class="jp">火</td>
+        <td class="jp">火曜日</td>
+        <td>Tuesday</td>
+      </tr>
+      <tr>
+        <td class="jp">水</td>
+        <td class="jp">水曜日</td>
+        <td>Wednesday</td>
+      </tr>
+      <tr>
+        <td class="jp">木</td>
+        <td class="jp">木曜日</td>
+        <td>Thursday</td>
+      </tr>
+      <tr>
+        <td class="jp">金</td>
+        <td class="jp">金曜日</td>
+        <td>Friday</td>
+      </tr>
+      <tr>
+        <td class="jp">土</td>
+        <td class="jp">土曜日</td>
+        <td>Saturday</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>3. Using Days in Sentences</h2>
+
+  <div class="note">
+    To say “<strong>on</strong> (a day)”, Japanese usually uses
+    <span class="jp">〜に</span>:  
+    <span class="jp">月曜日に</span> = on Monday
+  </div>
+
+  <div class="example">
+    <div class="jp">月曜日に日本語をべんきょうします。</div>
+    <div>getsuyōbi ni nihongo o benkyō shimasu.</div>
+    <div>I study Japanese on Monday.</div>
+  </div>
+
+  <div class="example">
+    <div class="jp">金曜日にねずみとあそびます。</div>
+    <div>kinyōbi ni nezumi to asobimasu.</div>
+    <div>On Friday, I play with my rats.</div>
+  </div>
+
+  <div class="example">
+    <div class="jp">土曜日はアルバイトです。</div>
+    <div>doyōbi wa arubaito desu.</div>
+    <div>On Saturdays, I have my part-time job.</div>
+  </div>
+
+  <div class="example">
+    <div class="jp">日曜日はやすみです。</div>
+    <div>nichiyōbi wa yasumi desu.</div>
+    <div>Sunday is my day off.</div>
+  </div>
+
+  <h2>4. Days + Time Expressions</h2>
+
+  <div class="example">
+    <div class="jp">今週の水曜日にテストがあります。</div>
+    <div>konshū no suiyōbi ni tesuto ga arimasu.</div>
+    <div>I have a test this week on Wednesday.</div>
+  </div>
+
+  <div class="example">
+    <div class="jp">先週の火曜日に雨が降りました。</div>
+    <div>senshū no kayōbi ni ame ga furimashita.</div>
+    <div>Last Tuesday, it rained.</div>
+  </div>
+
+  <h2>5. Memory Hint</h2>
+
+  <p>Order (Sun → Sat):</p>
+  <p class="jp">日・月・火・水・木・金・土</p>
+  <p>
+    Think: <strong>Sun, Moon, Fire, Water, Tree, Gold, Earth</strong>.
+  </p>
+
+  <div class="nav">
+    <p>Ready to practice? Try the quiz game!</p>
+    <!-- Change this href to your actual quiz file path -->
+    <p><a href="days-quiz-game.html">→ Go to Days of the Week Quiz Game</a></p>
+  </div>
+</body>
+</html>
