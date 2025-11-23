@@ -235,6 +235,7 @@
       <a href="rain-game.html">Rain Verb Game</a>
       <a href="Days%20Study">Days of the Week Study</a>
       <a href="Days%20Game">Days of the Week Game</a>
+      <a href="time-year-game.html">Time &amp; Year Game</a>
       <button id="nounsCategoryBtn">Nouns (coming soon)</button>
       <button id="particlesCategoryBtn">Particles (coming soon)</button>
     </div>
@@ -253,6 +254,7 @@
       <button id="rainGameBtn">Rain Game</button>
       <button id="daysStudyBtn">Days Study</button>
       <button id="daysGameBtn">Days Game</button>
+      <button id="timeYearBtn">Time &amp; Year Game</button>
     </div>
   </section>
 
@@ -346,6 +348,7 @@
     const rainGameBtn = document.getElementById("rainGameBtn");
     const daysStudyBtn = document.getElementById("daysStudyBtn");
     const daysGameBtn = document.getElementById("daysGameBtn");
+    const timeYearBtn = document.getElementById("timeYearBtn");
     const verbsCategoryBtn = document.getElementById("verbsCategoryBtn");
     const nounsCategoryBtn = document.getElementById("nounsCategoryBtn");
     const particlesCategoryBtn = document.getElementById("particlesCategoryBtn");
@@ -618,6 +621,10 @@
 
     daysGameBtn.addEventListener("click", () => {
       window.location.href = "Days Game";
+    });
+
+    timeYearBtn.addEventListener("click", () => {
+      window.location.href = "time-year-game.html";
     });
 
     guideBackBtn.addEventListener("click", () => {
