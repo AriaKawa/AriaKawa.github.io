@@ -155,6 +155,73 @@
       line-height: 1.3;
       color: rgba(226, 232, 240, 0.85);
     }
+    .section {
+      background: rgba(15, 23, 42, 0.55);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 14px;
+      padding: 16px;
+      margin-top: 16px;
+      box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.2);
+    }
+    .section h2 {
+      margin: 0 0 10px;
+      font-size: 1rem;
+    }
+    .section p {
+      margin: 0 0 10px;
+      line-height: 1.5;
+      color: rgba(226, 232, 240, 0.9);
+    }
+    .section strong {
+      color: var(--accent);
+    }
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 12px;
+      margin-top: 10px;
+    }
+    .cheat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 12px;
+    }
+    .cheat-item {
+      background: rgba(15, 23, 42, 0.45);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 12px;
+      padding: 12px;
+    }
+    .cheat-item h3 {
+      margin: 0 0 6px;
+      font-size: 0.95rem;
+      color: var(--accent);
+    }
+    .cheat-item ul {
+      padding-left: 18px;
+      margin: 0;
+      line-height: 1.4;
+    }
+    .cheat-item li {
+      margin-bottom: 4px;
+    }
+    .contrast-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 12px;
+    }
+    .contrast-card {
+      background: rgba(15, 23, 42, 0.45);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 12px;
+      padding: 12px;
+      line-height: 1.4;
+    }
+    .contrast-card h3 {
+      margin: 0 0 6px;
+      font-size: 0.95rem;
+      color: var(--accent);
+    }
     .col {
       background: rgba(15, 23, 42, 0.5);
       border: 1px solid rgba(148, 163, 184, 0.14);
@@ -301,7 +368,117 @@
       <h1>する Verb Capsules (JLPT N5→N4)</h1>
       <p>Quick-hit する verbs sorted by level with notes on how they show up.</p>
     </div>
-    <div id="suruList" class="guide-list"></div>
+    <div class="section">
+      <h2>How noun + <strong>する</strong> works</h2>
+      <p><strong>Pattern:</strong> Noun (action idea) ＋ する. The noun already contains the action meaning, and する turns it into a verb. You can drop する in dictionaries and see the noun on its own (べんきょう, れんしゅう, よやく).</p>
+      <div class="info-grid">
+        <div class="guide-item">
+          <div class="hiragana">N5 idea</div>
+          <div class="en">しゅくだいする, さんぽする, でんわする → add する to “homework,” “walk,” “phone” to talk about doing them.</div>
+        </div>
+        <div class="guide-item">
+          <div class="hiragana">Why nouns become verbs</div>
+          <div class="en">Talking about an action (study, plan, review) uses a noun plus する. You can still attach particles to the noun: 日本語をべんきょうする, 友だちにでんわする.</div>
+        </div>
+        <div class="guide-item">
+          <div class="hiragana">Particle quick check</div>
+          <div class="en">を marks the thing you act on (テストをふくしゅうする). に marks the target person (先生に質問をれんしゅうする). で marks the place you do it (家でそうじする).</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Core する verbs (N5 → early N4)</h2>
+      <div id="suruList" class="guide-list"></div>
+    </div>
+
+    <div class="section">
+      <h2>する conjugation cheat sheet</h2>
+      <p>Keep sentences short and clear. All examples use the verbs above.</p>
+      <div class="cheat-grid">
+        <div class="cheat-item">
+          <h3>する (dictionary)</h3>
+          <ul>
+            <li>毎日日本語を<strong>べんきょうする</strong>.</li>
+            <li>日曜日は公園を<strong>さんぽする</strong>.</li>
+          </ul>
+        </div>
+        <div class="cheat-item">
+          <h3>します (polite)</h3>
+          <ul>
+            <li>これから部屋を<strong>そうじします</strong>.</li>
+            <li>あとで友だちに<strong>でんわします</strong>.</li>
+          </ul>
+        </div>
+        <div class="cheat-item">
+          <h3>した (plain past)</h3>
+          <ul>
+            <li>きのうホテルを<strong>よやくした</strong>.</li>
+            <li>テストで少し<strong>しっぱいした</strong>.</li>
+          </ul>
+        </div>
+        <div class="cheat-item">
+          <h3>しました (polite past)</h3>
+          <ul>
+            <li>先生に質問の<strong>れんしゅうをしました</strong>.</li>
+            <li>授業のあと、しっかり<strong>ふくしゅうしました</strong>.</li>
+          </ul>
+        </div>
+        <div class="cheat-item">
+          <h3>して (て-form)</h3>
+          <ul>
+            <li>宿題を<strong>して</strong>、ゲームをします.</li>
+            <li>朝、家を<strong>そうじして</strong>から出かけます.</li>
+          </ul>
+        </div>
+        <div class="cheat-item">
+          <h3>しています / している (progressive / current state)</h3>
+          <ul>
+            <li>今、図書館で<strong>べんきょうしています</strong>.</li>
+            <li>姉はピアノを<strong>れんしゅうしている</strong>ところです.</li>
+          </ul>
+        </div>
+        <div class="cheat-item">
+          <h3>してください (please do)</h3>
+          <ul>
+            <li>レポートを早めに<strong>けいかくしてください</strong>.</li>
+            <li>テスト前にもう一度<strong>ふくしゅうしてください</strong>.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>して vs しています — quick contrasts</h2>
+      <p><strong>して</strong> connects actions or asks for help. <strong>しています / している</strong> shows an ongoing action or current state.</p>
+      <div class="contrast-grid">
+        <div class="contrast-card">
+          <h3>A を B します</h3>
+          <div>毎晩しゅくだいを<strong>します</strong>. (routine)</div>
+          <div>今しゅくだいを<strong>しています</strong>. (right now)</div>
+        </div>
+        <div class="contrast-card">
+          <h3>人に電話して</h3>
+          <div>友だちに<strong>でんわして</strong>、遊びます. (call then do next action)</div>
+          <div>今、母に<strong>でんわしています</strong>. (currently on a call)</div>
+        </div>
+        <div class="contrast-card">
+          <h3>そうじする: で / を</h3>
+          <div>リビングで<strong>そうじして</strong>から、台所もします. (place = で)</div>
+          <div>リビングを<strong>そうじしています</strong>. (object = を, action in progress)</div>
+        </div>
+        <div class="contrast-card">
+          <h3>計画する (plan)</h3>
+          <div>旅行を<strong>けいかくして</strong>、友だちに見せます. (sequence)</div>
+          <div>今、旅行を<strong>けいかくしています</strong>. (still working on it)</div>
+        </div>
+        <div class="contrast-card">
+          <h3>れんしゅうする (practice)</h3>
+          <div>毎朝日本語を<strong>れんしゅうして</strong>から出社します. (do before another action)</div>
+          <div>朝からずっと日本語を<strong>れんしゅうしています</strong>. (continuous)</div>
+        </div>
+      </div>
+    </div>
   </section>
 
   <section id="suruGameScene" class="scene panel">
