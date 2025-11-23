@@ -236,6 +236,7 @@
       <a href="Days%20Study">Days of the Week Study</a>
       <a href="Days%20Game">Days of the Week Game</a>
       <a href="time-year-game.html">Time &amp; Year Game</a>
+      <button id="suruGuideBtn">JLPT N5 → N4 する Verbs</button>
       <button id="nounsCategoryBtn">Nouns (coming soon)</button>
       <button id="particlesCategoryBtn">Particles (coming soon)</button>
     </div>
@@ -250,6 +251,7 @@
     <div class="menu-actions">
       <button id="verbsGameBtn">Verb Matching Game</button>
       <button id="verbsGuideBtn">Verb Study Guide</button>
+      <button id="suruGuideBtnSecondary">する Verb Capsules (N5→N4)</button>
       <button id="rainGuideBtn">Rain Study Guide</button>
       <button id="rainGameBtn">Rain Game</button>
       <button id="daysStudyBtn">Days Study</button>
@@ -290,6 +292,15 @@
       <p>Review hiragana, romaji, and meanings before diving into a game.</p>
     </div>
     <div id="guideList" class="guide-list"></div>
+  </section>
+
+  <section id="suruScene" class="scene panel">
+    <button class="ghost" id="suruBackBtn">⟵ Back to Verb Modes</button>
+    <div class="header">
+      <h1>する Verb Capsules (JLPT N5→N4)</h1>
+      <p>Quick-hit する verbs sorted by level with notes on how they show up.</p>
+    </div>
+    <div id="suruList" class="guide-list"></div>
   </section>
 
   <section id="nounsScene" class="scene panel">
@@ -357,6 +368,10 @@
     const particlesBackBtn = document.getElementById("particlesBackBtn");
     const guideList = document.getElementById("guideList");
     const guideBackBtn = document.getElementById("guideBackBtn");
+    const suruGuideBtn = document.getElementById("suruGuideBtn");
+    const suruGuideBtnSecondary = document.getElementById("suruGuideBtnSecondary");
+    const suruList = document.getElementById("suruList");
+    const suruBackBtn = document.getElementById("suruBackBtn");
 
     let selectedLeft = null;
     let selectedRight = null;
@@ -371,9 +386,23 @@
       verbsScene: "#verbs",
       gameScene: "#verbs-game",
       guideScene: "#verbs-guide",
+      suruScene: "#suru",
       nounsScene: "#nouns",
       particlesScene: "#particles"
     };
+
+    const SURU_GUIDE = [
+      { level: "N5", jp: "べんきょうする", romaji: "benkyou suru", en: "to study", note: "Classic N5 combo verb; pairs with を + subject (日本語をべんきょうする)." },
+      { level: "N5", jp: "さんぽする", romaji: "sanpo suru", en: "to take a walk", note: "Often used with に/へ to mark the destination for strolling." },
+      { level: "N5", jp: "でんわする", romaji: "denwa suru", en: "to call (on the phone)", note: "Use に to mark who you’re calling: 友だちにでんわする." },
+      { level: "N5", jp: "そうじする", romaji: "souji suru", en: "to clean", note: "Can take a place with を or で (部屋をそうじする / 部屋でそうじする)." },
+      { level: "N5", jp: "しゅくだいする", romaji: "shukudai suru", en: "to do homework", note: "Follows the noun directly—no extra particle needed in casual speech." },
+      { level: "N4", jp: "よやくする", romaji: "yoyaku suru", en: "to reserve; to book", note: "Common for appointments and tickets; を marks what you’re booking." },
+      { level: "N4", jp: "れんしゅうする", romaji: "renshuu suru", en: "to practice", note: "Attach the thing you practice with を, e.g., ピアノをれんしゅうする." },
+      { level: "N4", jp: "しっぱいする", romaji: "shippai suru", en: "to fail; to make a mistake", note: "Pairs with で or に to mark what failed: テストでしっぱいした." },
+      { level: "N4", jp: "けいかくする", romaji: "keikaku suru", en: "to plan", note: "Pairs with を for what’s being planned; also appears as 計画を立てる." },
+      { level: "N4", jp: "ふくしゅうする", romaji: "fukushuu suru", en: "to review; to revise", note: "Textbook favorite for talking about reviewing lessons." }
+    ];
 
     function shuffle(array) {
       const arr = array.slice();
@@ -520,6 +549,53 @@
       });
     }
 
+    function renderSuruGuide() {
+      if (!suruList) return;
+      suruList.innerHTML = "";
+
+      SURU_GUIDE.forEach(entry => {
+        const card = document.createElement("div");
+        card.className = "guide-item";
+
+        const headerRow = document.createElement("div");
+        headerRow.style.display = "flex";
+        headerRow.style.justifyContent = "space-between";
+        headerRow.style.width = "100%";
+
+        const hiragana = document.createElement("div");
+        hiragana.className = "hiragana";
+        hiragana.textContent = entry.jp;
+
+        const tag = document.createElement("span");
+        tag.textContent = entry.level;
+        tag.style.fontSize = "0.75rem";
+        tag.style.background = "rgba(56, 189, 248, 0.18)";
+        tag.style.border = "1px solid rgba(56, 189, 248, 0.55)";
+        tag.style.padding = "2px 8px";
+        tag.style.borderRadius = "999px";
+        tag.style.color = "var(--text)";
+
+        headerRow.append(hiragana, tag);
+
+        const romaji = document.createElement("div");
+        romaji.className = "romaji";
+        romaji.textContent = entry.romaji;
+
+        const english = document.createElement("div");
+        english.className = "en";
+        english.textContent = entry.en;
+
+        const note = document.createElement("div");
+        note.className = "en";
+        note.style.fontSize = "0.82rem";
+        note.style.opacity = "0.8";
+        note.textContent = entry.note;
+
+        card.append(headerRow, romaji, english, note);
+        suruList.appendChild(card);
+      });
+    }
+
     function showScene(id) {
       const target = document.getElementById(id);
       if (!target || id === currentScene) return;
@@ -607,6 +683,14 @@
       syncLocationHash("guideScene");
     });
 
+    function goToSuruGuide() {
+      showScene("suruScene");
+      syncLocationHash("suruScene");
+    }
+
+    suruGuideBtn?.addEventListener("click", goToSuruGuide);
+    suruGuideBtnSecondary?.addEventListener("click", goToSuruGuide);
+
     rainGuideBtn.addEventListener("click", () => {
       window.location.href = "rain-guide.html";
     });
@@ -628,6 +712,11 @@
     });
 
     guideBackBtn.addEventListener("click", () => {
+      showScene("verbsScene");
+      syncLocationHash("verbsScene");
+    });
+
+    suruBackBtn.addEventListener("click", () => {
       showScene("verbsScene");
       syncLocationHash("verbsScene");
     });
@@ -665,6 +754,7 @@
     // initialize board and state
     resetGameBoard();
     renderGuide();
+    renderSuruGuide();
     applyInitialScene();
     window.addEventListener("hashchange", handleHashChange);
   </script>
