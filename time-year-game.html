@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Time &amp; Year Practice Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: rgba(15, 23, 42, 0.9);
+      --border: rgba(148, 163, 184, 0.2);
+      --accent: #38bdf8;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --correct: #22c55e;
+      --wrong: #ef4444;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at top, #1f2937, #0f172a 70%);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      padding: 20px;
+    }
+    .panel {
+      width: min(960px, 100%);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 22px;
+      box-shadow: 0 24px 45px rgba(0,0,0,0.25);
+      backdrop-filter: blur(10px);
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 1.4rem;
+    }
+    p {
+      margin: 0;
+      color: var(--muted);
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      margin-bottom: 16px;
+    }
+    .status {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      font-size: 0.95rem;
+    }
+    .pill {
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(148, 163, 184, 0.08);
+    }
+    .question {
+      background: rgba(148, 163, 184, 0.08);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin: 12px 0 10px;
+      font-size: 1.1rem;
+    }
+    .options {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 10px;
+      margin: 8px 0 12px;
+    }
+    button {
+      border: none;
+      cursor: pointer;
+      transition: 0.15s ease;
+      font-weight: 600;
+      border-radius: 12px;
+    }
+    .option {
+      background: rgba(56, 189, 248, 0.12);
+      color: var(--text);
+      padding: 12px 14px;
+      text-align: left;
+      border: 1px solid transparent;
+      display: grid;
+      gap: 6px;
+    }
+    .option:hover {
+      border-color: rgba(56, 189, 248, 0.6);
+      background: rgba(56, 189, 248, 0.2);
+    }
+    .option.correct { border-color: var(--correct); box-shadow: 0 0 0 1px var(--correct); }
+    .option.wrong { border-color: var(--wrong); box-shadow: 0 0 0 1px var(--wrong); }
+    .romaji { color: var(--muted); font-size: 0.9rem; }
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+    .primary {
+      background: var(--accent);
+      color: #0f172a;
+      padding: 10px 16px;
+    }
+    .primary:disabled { opacity: 0.6; cursor: not-allowed; }
+    .helper {
+      border: 1px solid var(--border);
+      background: rgba(148, 163, 184, 0.08);
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-size: 0.95rem;
+    }
+    .helper-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .helper-card {
+      border: 1px solid var(--border);
+      background: rgba(148, 163, 184, 0.06);
+      border-radius: 12px;
+      padding: 10px 12px;
+      display: grid;
+      gap: 4px;
+    }
+    @media (max-width: 640px) {
+      body { padding: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="panel">
+    <div class="header">
+      <div>
+        <h1>Time of Day &amp; Year Practice</h1>
+        <p>Pick the right Japanese for the English prompt. Answer to unlock the next card.</p>
+      </div>
+      <div class="status">
+        <span class="pill" id="progress">Question 0 / 6</span>
+        <span class="pill" id="score">Score: 0</span>
+      </div>
+    </div>
+
+    <div class="question" id="question">Press "Start" to begin.</div>
+    <div class="options" id="options"></div>
+
+    <div class="controls">
+      <div class="helper" id="feedback">No answer yet.</div>
+      <button class="primary" id="nextBtn">Start</button>
+    </div>
+
+    <div class="helper-grid" aria-label="reference list">
+      <div class="helper-card">
+        <strong>朝</strong>
+        <span>asa — morning</span>
+      </div>
+      <div class="helper-card">
+        <strong>昼</strong>
+        <span>hiru — noon</span>
+      </div>
+      <div class="helper-card">
+        <strong>午後</strong>
+        <span>gogo — afternoon</span>
+      </div>
+      <div class="helper-card">
+        <strong>去年</strong>
+        <span>kyonen — last year</span>
+      </div>
+      <div class="helper-card">
+        <strong>今年</strong>
+        <span>kotoshi — this year</span>
+      </div>
+      <div class="helper-card">
+        <strong>来年</strong>
+        <span>rainen — next year</span>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const TERMS = [
+      { jp: "朝", romaji: "asa", en: "morning" },
+      { jp: "昼", romaji: "hiru", en: "noon" },
+      { jp: "午後", romaji: "gogo", en: "afternoon" },
+      { jp: "去年", romaji: "kyonen", en: "last year" },
+      { jp: "今年", romaji: "kotoshi", en: "this year" },
+      { jp: "来年", romaji: "rainen", en: "next year" },
+    ];
+
+    const questionEl = document.getElementById('question');
+    const optionsEl = document.getElementById('options');
+    const feedbackEl = document.getElementById('feedback');
+    const progressEl = document.getElementById('progress');
+    const scoreEl = document.getElementById('score');
+    const nextBtn = document.getElementById('nextBtn');
+
+    let order = [];
+    let index = -1;
+    let score = 0;
+    let current = null;
+    let answered = false;
+
+    const shuffle = (arr) => arr
+      .map(value => ({ value, sort: Math.random() }))
+      .sort((a, b) => a.sort - b.sort)
+      .map(({ value }) => value);
+
+    function startGame() {
+      order = shuffle([...TERMS]);
+      index = 0;
+      score = 0;
+      scoreEl.textContent = `Score: ${score}`;
+      nextBtn.textContent = 'Answer to unlock next';
+      nextBtn.disabled = true;
+      setQuestion();
+    }
+
+    function setQuestion() {
+      answered = false;
+      current = order[index];
+      progressEl.textContent = `Question ${index + 1} / ${order.length}`;
+      questionEl.textContent = `What is the Japanese for "${current.en}"?`;
+      feedbackEl.textContent = 'Pick the best match.';
+      renderOptions();
+    }
+
+    function renderOptions() {
+      optionsEl.innerHTML = '';
+      const distractors = shuffle(TERMS.filter(term => term.en !== current.en)).slice(0, 3);
+      const choices = shuffle([current, ...distractors]);
+      choices.forEach(choice => {
+        const btn = document.createElement('button');
+        btn.className = 'option';
+        btn.innerHTML = `<strong>${choice.jp}</strong><span class="romaji">${choice.romaji}</span><span>${choice.en}</span>`;
+        btn.addEventListener('click', () => handleAnswer(choice, btn));
+        optionsEl.appendChild(btn);
+      });
+    }
+
+    function handleAnswer(choice, button) {
+      if (answered) return;
+      answered = true;
+      const optionButtons = Array.from(optionsEl.children);
+      optionButtons.forEach(btn => btn.disabled = true);
+
+      if (choice.en === current.en) {
+        button.classList.add('correct');
+        feedbackEl.textContent = `Correct! ${current.jp} (${current.romaji}) means "${current.en}."`;
+        score += 1;
+        scoreEl.textContent = `Score: ${score}`;
+      } else {
+        button.classList.add('wrong');
+        feedbackEl.textContent = `Not quite. ${current.jp} (${current.romaji}) is "${current.en}."`;
+        const correctBtn = optionButtons.find(btn => btn.textContent.includes(current.jp));
+        if (correctBtn) correctBtn.classList.add('correct');
+      }
+
+      const isLast = index === order.length - 1;
+      nextBtn.textContent = isLast ? 'Play again' : 'Next prompt';
+      nextBtn.disabled = false;
+    }
+
+    nextBtn.addEventListener('click', () => {
+      if (nextBtn.textContent === 'Start' || nextBtn.textContent === 'Play again') {
+        startGame();
+        return;
+      }
+      if (!answered) return;
+      index += 1;
+      if (index >= order.length) {
+        nextBtn.textContent = 'Play again';
+        nextBtn.disabled = false;
+      } else {
+        nextBtn.textContent = 'Answer to unlock next';
+        nextBtn.disabled = true;
+        setQuestion();
+      }
+    });
+  </script>
+</body>
+</html>
