@@ -70,13 +70,28 @@
       border-radius: 14px;
       padding: 14px 16px;
       margin: 12px 0 10px;
-      font-size: 1.1rem;
+      font-size: 1.05rem;
     }
-    .options {
+    .board {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 14px;
+      margin: 10px 0 14px;
+    }
+    .column {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: rgba(148, 163, 184, 0.06);
+      padding: 12px;
+      display: grid;
       gap: 10px;
-      margin: 8px 0 12px;
+    }
+    .column-title {
+      font-weight: 700;
+      color: var(--muted);
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      font-size: 0.85rem;
     }
     button {
       border: none;
@@ -85,22 +100,23 @@
       font-weight: 600;
       border-radius: 12px;
     }
-    .option {
-      background: rgba(56, 189, 248, 0.12);
+    .item {
+      background: rgba(56, 189, 248, 0.1);
       color: var(--text);
       padding: 12px 14px;
-      text-align: left;
+      border-radius: 12px;
       border: 1px solid transparent;
+      text-align: left;
+      font-size: 1.05rem;
       display: grid;
-      gap: 6px;
+      gap: 4px;
     }
-    .option:hover {
-      border-color: rgba(56, 189, 248, 0.6);
-      background: rgba(56, 189, 248, 0.2);
-    }
-    .option.correct { border-color: var(--correct); box-shadow: 0 0 0 1px var(--correct); }
-    .option.wrong { border-color: var(--wrong); box-shadow: 0 0 0 1px var(--wrong); }
-    .romaji { color: var(--muted); font-size: 0.9rem; }
+    .item:hover { border-color: rgba(56, 189, 248, 0.6); background: rgba(56, 189, 248, 0.2); }
+    .item.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+    .item.correct { border-color: var(--correct); background: rgba(34, 197, 94, 0.12); box-shadow: 0 0 0 1px var(--correct); }
+    .item.bad { border-color: var(--wrong); background: rgba(239, 68, 68, 0.12); }
+    .jp { font-size: 1.25rem; font-weight: 700; }
+    .subtext { color: var(--muted); font-size: 0.95rem; }
     .controls {
       display: flex;
       justify-content: space-between;
@@ -147,19 +163,29 @@
     <div class="header">
       <div>
         <h1>Time of Day &amp; Year Practice</h1>
-        <p>Pick the right Japanese for the English prompt. Answer to unlock the next card.</p>
+        <p>Pair each Japanese time/year term with its English meaning.</p>
       </div>
       <div class="status">
-        <span class="pill" id="progress">Question 0 / 6</span>
+        <span class="pill" id="progress">Pairs matched: 0 / 6</span>
         <span class="pill" id="score">Score: 0</span>
       </div>
     </div>
 
-    <div class="question" id="question">Press "Start" to begin.</div>
-    <div class="options" id="options"></div>
+    <div class="question" id="question">Press "Start" to shuffle both sides, then tap one item from each column to test a match.</div>
+
+    <div class="board" aria-live="polite">
+      <div class="column" aria-label="Japanese terms">
+        <div class="column-title">Japanese</div>
+        <div id="leftColumn"></div>
+      </div>
+      <div class="column" aria-label="English meanings">
+        <div class="column-title">English</div>
+        <div id="rightColumn"></div>
+      </div>
+    </div>
 
     <div class="controls">
-      <div class="helper" id="feedback">No answer yet.</div>
+      <div class="helper" id="feedback">No selections yet.</div>
       <button class="primary" id="nextBtn">Start</button>
     </div>
 
@@ -202,17 +228,18 @@
     ];
 
     const questionEl = document.getElementById('question');
-    const optionsEl = document.getElementById('options');
+    const leftCol = document.getElementById('leftColumn');
+    const rightCol = document.getElementById('rightColumn');
     const feedbackEl = document.getElementById('feedback');
     const progressEl = document.getElementById('progress');
     const scoreEl = document.getElementById('score');
     const nextBtn = document.getElementById('nextBtn');
 
-    let order = [];
-    let index = -1;
     let score = 0;
-    let current = null;
-    let answered = false;
+    let selectedLeft = null;
+    let selectedRight = null;
+    let matches = 0;
+    let active = false;
 
     const shuffle = (arr) => arr
       .map(value => ({ value, sort: Math.random() }))
@@ -220,75 +247,106 @@
       .map(({ value }) => value);
 
     function startGame() {
-      order = shuffle([...TERMS]);
-      index = 0;
       score = 0;
-      scoreEl.textContent = `Score: ${score}`;
-      nextBtn.textContent = 'Answer to unlock next';
-      nextBtn.disabled = true;
-      setQuestion();
+      matches = 0;
+      active = true;
+      questionEl.textContent = 'Select one Japanese card and one English card to see if they match.';
+      feedbackEl.textContent = 'Ready when you are!';
+      nextBtn.textContent = 'Restart';
+      buildBoard();
+      updateStatus();
     }
 
-    function setQuestion() {
-      answered = false;
-      current = order[index];
-      progressEl.textContent = `Question ${index + 1} / ${order.length}`;
-      questionEl.textContent = `What is the Japanese for "${current.en}"?`;
-      feedbackEl.textContent = 'Pick the best match.';
-      renderOptions();
-    }
+    function buildBoard() {
+      clearBoard();
+      const leftSide = shuffle([...TERMS]);
+      const rightSide = shuffle([...TERMS]);
 
-    function renderOptions() {
-      optionsEl.innerHTML = '';
-      const distractors = shuffle(TERMS.filter(term => term.en !== current.en)).slice(0, 3);
-      const choices = shuffle([current, ...distractors]);
-      choices.forEach(choice => {
-        const btn = document.createElement('button');
-        btn.className = 'option';
-        btn.innerHTML = `<strong>${choice.jp}</strong><span class="romaji">${choice.romaji}</span><span>${choice.en}</span>`;
-        btn.addEventListener('click', () => handleAnswer(choice, btn));
-        optionsEl.appendChild(btn);
+      leftSide.forEach(term => {
+        const card = document.createElement('button');
+        card.className = 'item';
+        card.innerHTML = `<span class="jp">${term.jp}</span>`;
+        card.dataset.id = term.en;
+        card.addEventListener('click', () => selectCard('left', card));
+        leftCol.appendChild(card);
+      });
+
+      rightSide.forEach(term => {
+        const card = document.createElement('button');
+        card.className = 'item';
+        card.innerHTML = `<span class="subtext">Meaning</span><span>${term.en}</span>`;
+        card.dataset.id = term.en;
+        card.addEventListener('click', () => selectCard('right', card));
+        rightCol.appendChild(card);
       });
     }
 
-    function handleAnswer(choice, button) {
-      if (answered) return;
-      answered = true;
-      const optionButtons = Array.from(optionsEl.children);
-      optionButtons.forEach(btn => btn.disabled = true);
+    function clearBoard() {
+      leftCol.innerHTML = '';
+      rightCol.innerHTML = '';
+      selectedLeft = null;
+      selectedRight = null;
+    }
 
-      if (choice.en === current.en) {
-        button.classList.add('correct');
-        feedbackEl.textContent = `Correct! ${current.jp} (${current.romaji}) means "${current.en}."`;
-        score += 1;
-        scoreEl.textContent = `Score: ${score}`;
+    function selectCard(side, card) {
+      if (!active) return;
+      if (card.classList.contains('correct')) return;
+
+      if (side === 'left') {
+        leftCol.querySelectorAll('.item').forEach(btn => btn.classList.remove('selected'));
+        card.classList.add('selected');
+        selectedLeft = card;
       } else {
-        button.classList.add('wrong');
-        feedbackEl.textContent = `Not quite. ${current.jp} (${current.romaji}) is "${current.en}."`;
-        const correctBtn = optionButtons.find(btn => btn.textContent.includes(current.jp));
-        if (correctBtn) correctBtn.classList.add('correct');
+        rightCol.querySelectorAll('.item').forEach(btn => btn.classList.remove('selected'));
+        card.classList.add('selected');
+        selectedRight = card;
       }
+      checkMatch();
+    }
 
-      const isLast = index === order.length - 1;
-      nextBtn.textContent = isLast ? 'Play again' : 'Next prompt';
-      nextBtn.disabled = false;
+    function checkMatch() {
+      if (!selectedLeft || !selectedRight) return;
+      const leftId = selectedLeft.dataset.id;
+      const rightId = selectedRight.dataset.id;
+
+      if (leftId === rightId) {
+        selectedLeft.classList.add('correct');
+        selectedRight.classList.add('correct');
+        selectedLeft.classList.remove('selected');
+        selectedRight.classList.remove('selected');
+        score += 1;
+        matches += 1;
+        feedbackEl.textContent = `Matched! ${selectedLeft.textContent.trim()} = ${rightId}.`;
+        selectedLeft = null;
+        selectedRight = null;
+        updateStatus();
+        if (matches === TERMS.length) {
+          active = false;
+          nextBtn.textContent = 'Play again';
+          questionEl.textContent = 'Great work! You matched every time/year term.';
+        }
+      } else {
+        feedbackEl.textContent = 'Not a match. Try again.';
+        const wrongLeft = selectedLeft;
+        const wrongRight = selectedRight;
+        wrongLeft.classList.add('bad');
+        wrongRight.classList.add('bad');
+        setTimeout(() => {
+          wrongLeft.classList.remove('selected', 'bad');
+          wrongRight.classList.remove('selected', 'bad');
+          selectedLeft = null;
+          selectedRight = null;
+        }, 320);
+      }
+    }
+
+    function updateStatus() {
+      progressEl.textContent = `Pairs matched: ${matches} / ${TERMS.length}`;
+      scoreEl.textContent = `Score: ${score}`;
     }
 
     nextBtn.addEventListener('click', () => {
-      if (nextBtn.textContent === 'Start' || nextBtn.textContent === 'Play again') {
-        startGame();
-        return;
-      }
-      if (!answered) return;
-      index += 1;
-      if (index >= order.length) {
-        nextBtn.textContent = 'Play again';
-        nextBtn.disabled = false;
-      } else {
-        nextBtn.textContent = 'Answer to unlock next';
-        nextBtn.disabled = true;
-        setQuestion();
-      }
+      startGame();
     });
   </script>
 </body>
