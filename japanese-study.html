@@ -252,6 +252,7 @@
       <button id="verbsGameBtn">Verb Matching Game</button>
       <button id="verbsGuideBtn">Verb Study Guide</button>
       <button id="suruGuideBtnSecondary">する Verb Capsules (N5→N4)</button>
+      <button id="suruGameBtn">する Verb Trainer</button>
       <button id="rainGuideBtn">Rain Study Guide</button>
       <button id="rainGameBtn">Rain Game</button>
       <button id="daysStudyBtn">Days Study</button>
@@ -301,6 +302,36 @@
       <p>Quick-hit する verbs sorted by level with notes on how they show up.</p>
     </div>
     <div id="suruList" class="guide-list"></div>
+  </section>
+
+  <section id="suruGameScene" class="scene panel">
+    <button class="ghost" id="suruGameBackBtn">⟵ Back to Verb Modes</button>
+    <div class="header">
+      <h1>する Verb Trainer</h1>
+      <p>Mix-and-match drills using the same N5→N4 する verbs.</p>
+    </div>
+
+    <div class="controls" style="margin-bottom:12px; gap:8px; flex-wrap:wrap;">
+      <button class="ghost" data-suru-mode="fill" aria-label="Fill-in-the-blank">Fill-in Blank</button>
+      <button class="ghost" data-suru-mode="forms" aria-label="Multiple choice forms">Correct Form</button>
+      <button class="ghost" data-suru-mode="build" aria-label="Sentence building">Sentence Builder</button>
+      <button class="ghost" data-suru-mode="speed" aria-label="Speed round">Speed Round</button>
+      <div class="status" id="suruProgress">Score: 0/0 • Mode: Fill-in</div>
+    </div>
+
+    <div id="suruPrompt" style="background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(148,163,184,0.2); padding: 14px; border-radius: 12px; min-height: 120px; margin-bottom: 14px; line-height: 1.4;"></div>
+
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-start;">
+      <input id="suruInput" type="text" placeholder="Type your answer here" style="flex:1; min-width:200px; padding:10px; border-radius:10px; border:1px solid rgba(148,163,184,0.25); background: rgba(15,23,42,0.35); color: var(--text);" />
+      <button id="suruSubmitBtn">Check</button>
+      <button class="ghost" id="suruSkipBtn">Skip</button>
+    </div>
+
+    <div id="suruChoices" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:10px; margin-top:12px;"></div>
+
+    <div id="suruWordBank" style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;"></div>
+
+    <div class="status" id="suruFeedback" style="margin-top:12px;">Pick a mode to start.</div>
   </section>
 
   <section id="nounsScene" class="scene panel">
@@ -372,6 +403,17 @@
     const suruGuideBtnSecondary = document.getElementById("suruGuideBtnSecondary");
     const suruList = document.getElementById("suruList");
     const suruBackBtn = document.getElementById("suruBackBtn");
+    const suruGameBtn = document.getElementById("suruGameBtn");
+    const suruGameScene = document.getElementById("suruGameScene");
+    const suruGameBackBtn = document.getElementById("suruGameBackBtn");
+    const suruProgress = document.getElementById("suruProgress");
+    const suruPrompt = document.getElementById("suruPrompt");
+    const suruInput = document.getElementById("suruInput");
+    const suruSubmitBtn = document.getElementById("suruSubmitBtn");
+    const suruSkipBtn = document.getElementById("suruSkipBtn");
+    const suruChoices = document.getElementById("suruChoices");
+    const suruWordBank = document.getElementById("suruWordBank");
+    const suruFeedback = document.getElementById("suruFeedback");
 
     let selectedLeft = null;
     let selectedRight = null;
@@ -387,6 +429,7 @@
       gameScene: "#verbs-game",
       guideScene: "#verbs-guide",
       suruScene: "#suru",
+      suruGameScene: "#suru-trainer",
       nounsScene: "#nouns",
       particlesScene: "#particles"
     };
@@ -403,6 +446,213 @@
       { level: "N4", jp: "けいかくする", romaji: "keikaku suru", en: "to plan", note: "Pairs with を for what’s being planned; also appears as 計画を立てる." },
       { level: "N4", jp: "ふくしゅうする", romaji: "fukushuu suru", en: "to review; to revise", note: "Textbook favorite for talking about reviewing lessons." }
     ];
+
+    const SURU_FORMS = [
+      { jp: "べんきょうする", en: "to study", masu: "べんきょうします", te: "べんきょうして", nai: "べんきょうしない", past: "べんきょうした" },
+      { jp: "さんぽする", en: "to take a walk", masu: "さんぽします", te: "さんぽして", nai: "さんぽしない", past: "さんぽした" },
+      { jp: "でんわする", en: "to call", masu: "でんわします", te: "でんわして", nai: "でんわしない", past: "でんわした" },
+      { jp: "そうじする", en: "to clean", masu: "そうじします", te: "そうじして", nai: "そうじしない", past: "そうじした" },
+      { jp: "しゅくだいする", en: "to do homework", masu: "しゅくだいします", te: "しゅくだいして", nai: "しゅくだいしない", past: "しゅくだいした" },
+      { jp: "よやくする", en: "to reserve", masu: "よやくします", te: "よやくして", nai: "よやくしない", past: "よやくした" },
+      { jp: "れんしゅうする", en: "to practice", masu: "れんしゅうします", te: "れんしゅうして", nai: "れんしゅうしない", past: "れんしゅうした" },
+      { jp: "しっぱいする", en: "to fail", masu: "しっぱいします", te: "しっぱいして", nai: "しっぱいしない", past: "しっぱいした" },
+      { jp: "けいかくする", en: "to plan", masu: "けいかくします", te: "けいかくして", nai: "けいかくしない", past: "けいかくした" },
+      { jp: "ふくしゅうする", en: "to review", masu: "ふくしゅうします", te: "ふくしゅうして", nai: "ふくしゅうしない", past: "ふくしゅうした" }
+    ];
+
+    const SURU_FILL_BLANKS = [
+      { sentence: "まいにち日本語を＿＿＿＿。", answer: "べんきょうします", hint: "polite present" },
+      { sentence: "きのう友だちに＿＿＿＿。", answer: "でんわしました", hint: "past tense" },
+      { sentence: "へやをきれいにするために＿＿＿＿。", answer: "そうじします", hint: "polite" },
+      { sentence: "テストのまえにもう一度＿＿＿＿。", answer: "ふくしゅうします", hint: "review" },
+      { sentence: "あしたこうえんを＿＿＿＿つもりです。", answer: "さんぽする", hint: "plain" },
+      { sentence: "チケットを＿＿＿＿ので、いっしょに行きましょう。", answer: "よやくした", hint: "plain past" },
+      { sentence: "毎週ピアノを＿＿＿＿。", answer: "れんしゅうします", hint: "practice" },
+      { sentence: "しっぱいしないように、計画をよく＿＿＿＿。", answer: "けいかくします", hint: "plan it" }
+    ];
+
+    const SURU_SENTENCE_BANK = [
+      { english: "I will call my friend tonight.", pieces: ["わたしは", "よる", "友だちに", "でんわします"], answer: "わたしは よる 友だちに でんわします" },
+      { english: "Let's clean the room tomorrow.", pieces: ["あした", "部屋を", "そうじしましょう"], answer: "あした 部屋を そうじしましょう" },
+      { english: "I plan to review the lesson.", pieces: ["レッスンを", "ふくしゅうします", "よていです"], answer: "レッスンを ふくしゅうします よていです" },
+      { english: "We practiced Japanese yesterday.", pieces: ["きのう", "日本語を", "れんしゅうしました"], answer: "きのう 日本語を れんしゅうしました" }
+    ];
+
+    let suruMode = "fill";
+    let suruScore = { correct: 0, total: 0 };
+    let suruCurrent = null;
+    let speedTimer = null;
+    let speedTimeLeft = 30;
+
+    const FORM_LABELS = { masu: "ます", te: "て", nai: "ない", past: "past" };
+
+    function updateSuruProgress(extra = "") {
+      const modeNames = { fill: "Fill-in", forms: "Correct Form", build: "Sentence Builder", speed: "Speed" };
+      const bonus = extra ? ` • ${extra}` : "";
+      if (suruProgress) {
+        suruProgress.textContent = `Score: ${suruScore.correct}/${suruScore.total} • Mode: ${modeNames[suruMode]}${bonus}`;
+      }
+    }
+
+    function resetSuruUI() {
+      suruInput.value = "";
+      suruChoices.innerHTML = "";
+      suruWordBank.innerHTML = "";
+      suruFeedback.textContent = "Pick a mode to start.";
+    }
+
+    function pickRandom(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function normalizeAnswer(str) {
+      return str.replace(/\s+/g, " ").trim();
+    }
+
+    function newFillQuestion() {
+      suruCurrent = pickRandom(SURU_FILL_BLANKS);
+      suruPrompt.innerHTML = `<strong>Fill the blank:</strong> ${suruCurrent.sentence}<br><small>Hint: ${suruCurrent.hint}</small>`;
+      suruInput.placeholder = "type the missing phrase";
+      suruInput.disabled = false;
+      suruSubmitBtn.disabled = false;
+      suruChoices.innerHTML = "";
+      suruWordBank.innerHTML = "";
+    }
+
+    function buildChoices(formKey) {
+      const pool = shuffle(SURU_FORMS).map(v => v[formKey]);
+      const options = [suruCurrent.correct];
+      for (const cand of pool) {
+        if (options.length >= 4) break;
+        if (!options.includes(cand)) options.push(cand);
+      }
+      return shuffle(options);
+    }
+
+    function newFormQuestion(isSpeed = false) {
+      const verb = pickRandom(SURU_FORMS);
+      const formKey = pickRandom(["masu", "te", "nai", "past"]);
+      const promptLabel = FORM_LABELS[formKey];
+      const correct = verb[formKey];
+      suruCurrent = { type: isSpeed ? "speed" : "forms", correct, prompt: `${verb.jp} (${verb.en}) → ${promptLabel} form`, formKey };
+      suruPrompt.innerHTML = `<strong>Pick the ${promptLabel} form.</strong><br>${verb.jp} (${verb.en})`;
+      suruInput.disabled = true;
+      suruSubmitBtn.disabled = true;
+      suruChoices.innerHTML = "";
+      const opts = buildChoices(formKey);
+      opts.forEach(choice => {
+        const btn = document.createElement("button");
+        btn.className = "ghost";
+        btn.textContent = choice;
+        btn.addEventListener("click", () => handleSuruChoice(choice));
+        suruChoices.appendChild(btn);
+      });
+    }
+
+    function newBuildQuestion() {
+      suruCurrent = pickRandom(SURU_SENTENCE_BANK);
+      suruPrompt.innerHTML = `<strong>Build this sentence:</strong> ${suruCurrent.english}<br><small>Tap the pieces or type.</small>`;
+      suruInput.placeholder = "click pieces below or type your version";
+      suruInput.disabled = false;
+      suruSubmitBtn.disabled = false;
+      suruChoices.innerHTML = "";
+      suruWordBank.innerHTML = "";
+      shuffle(suruCurrent.pieces.slice()).forEach(piece => {
+        const chip = document.createElement("button");
+        chip.className = "ghost";
+        chip.textContent = piece;
+        chip.addEventListener("click", () => {
+          const existing = normalizeAnswer(suruInput.value);
+          suruInput.value = existing ? `${existing} ${piece}` : piece;
+        });
+        suruWordBank.appendChild(chip);
+      });
+    }
+
+    function newSpeedQuestion() {
+      newFormQuestion(true);
+    }
+
+    function changeSuruMode(mode) {
+      suruMode = mode;
+      suruInput.value = "";
+      suruFeedback.textContent = "";
+      if (speedTimer) {
+        clearInterval(speedTimer);
+        speedTimer = null;
+      }
+      if (mode !== "speed") {
+        speedTimeLeft = 30;
+      }
+      if (mode === "fill") newFillQuestion();
+      if (mode === "forms") newFormQuestion();
+      if (mode === "build") newBuildQuestion();
+      if (mode === "speed") startSpeedRound();
+      updateSuruProgress();
+    }
+
+    function handleSuruChoice(choice) {
+      if (!suruCurrent) return;
+      const correct = choice === suruCurrent.correct;
+      suruScore.total += 1;
+      if (correct) suruScore.correct += 1;
+      suruFeedback.textContent = correct ? "✅ Correct!" : `✏️ Answer: ${suruCurrent.correct}`;
+      if (suruMode === "forms") {
+        newFormQuestion();
+      } else if (suruMode === "speed") {
+        newSpeedQuestion();
+      }
+      updateSuruProgress(suruMode === "speed" ? `Time: ${speedTimeLeft}s` : "");
+    }
+
+    function checkSuruInput() {
+      if (!suruCurrent) return;
+      let correct = false;
+      const userAnswer = normalizeAnswer(suruInput.value);
+      if (suruMode === "fill") {
+        correct = userAnswer === normalizeAnswer(suruCurrent.answer);
+        suruFeedback.textContent = correct ? "✅ Nice!" : `✏️ ${suruCurrent.answer}`;
+        newFillQuestion();
+      } else if (suruMode === "build") {
+        correct = normalizeAnswer(suruCurrent.answer) === userAnswer;
+        suruFeedback.textContent = correct ? "✅ Sounds natural." : `✏️ Example: ${suruCurrent.answer}`;
+        newBuildQuestion();
+      }
+      suruScore.total += 1;
+      if (correct) suruScore.correct += 1;
+      updateSuruProgress();
+    }
+
+    function skipSuruQuestion() {
+      if (suruMode === "fill") newFillQuestion();
+      if (suruMode === "forms") newFormQuestion();
+      if (suruMode === "build") newBuildQuestion();
+      if (suruMode === "speed") newSpeedQuestion();
+      suruFeedback.textContent = "Skipped. New prompt ready.";
+      updateSuruProgress();
+    }
+
+    function startSpeedRound() {
+      speedTimeLeft = 30;
+      suruFeedback.textContent = "Go fast! Pick the right form.";
+      suruInput.disabled = true;
+      suruSubmitBtn.disabled = true;
+      newSpeedQuestion();
+      updateSuruProgress(`Time: ${speedTimeLeft}s`);
+      speedTimer = setInterval(() => {
+        speedTimeLeft -= 1;
+        if (speedTimeLeft <= 0) {
+          clearInterval(speedTimer);
+          speedTimer = null;
+          suruFeedback.textContent = `⏱️ Time! Final score: ${suruScore.correct}/${suruScore.total}`;
+          suruChoices.innerHTML = "";
+          suruPrompt.textContent = "Speed round finished.";
+          updateSuruProgress("Done");
+          return;
+        }
+        updateSuruProgress(`Time: ${speedTimeLeft}s`);
+      }, 1000);
+    }
 
     function shuffle(array) {
       const arr = array.slice();
@@ -602,6 +852,13 @@
       if (currentScene === "gameScene" && id !== "gameScene") {
         resetGameBoard();
       }
+      if (currentScene === "suruGameScene" && id !== "suruGameScene") {
+        if (speedTimer) clearInterval(speedTimer);
+        speedTimer = null;
+        suruFeedback.textContent = "Pick a mode to start.";
+        suruChoices.innerHTML = "";
+        suruPrompt.textContent = "";
+      }
       const current = document.getElementById(currentScene);
       current?.classList.remove("active");
       target.classList.add("active");
@@ -690,6 +947,12 @@
 
     suruGuideBtn?.addEventListener("click", goToSuruGuide);
     suruGuideBtnSecondary?.addEventListener("click", goToSuruGuide);
+    suruGameBtn?.addEventListener("click", () => {
+      showScene("suruGameScene");
+      syncLocationHash("suruGameScene");
+      changeSuruMode("fill");
+      updateSuruProgress();
+    });
 
     rainGuideBtn.addEventListener("click", () => {
       window.location.href = "rain-guide.html";
@@ -721,6 +984,11 @@
       syncLocationHash("verbsScene");
     });
 
+    suruGameBackBtn.addEventListener("click", () => {
+      showScene("verbsScene");
+      syncLocationHash("verbsScene");
+    });
+
     verbsCategoryBtn.addEventListener("click", () => {
       showScene("verbsScene");
       syncLocationHash("verbsScene");
@@ -739,6 +1007,19 @@
     verbsBackBtn.addEventListener("click", () => {
       showScene("menuScene");
       syncLocationHash("menuScene");
+    });
+
+    document.querySelectorAll('[data-suru-mode]').forEach(btn => {
+      btn.addEventListener("click", () => changeSuruMode(btn.dataset.suruMode));
+    });
+
+    suruSubmitBtn.addEventListener("click", checkSuruInput);
+    suruSkipBtn.addEventListener("click", skipSuruQuestion);
+    suruInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        checkSuruInput();
+      }
     });
 
     nounsBackBtn.addEventListener("click", () => {
