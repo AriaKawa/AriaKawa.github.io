@@ -53,26 +53,75 @@
       font-size: 1.2rem;
       margin: 0;
     }
-    .menu-actions {
+    .topic-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 14px;
+      margin-top: 20px;
+    }
+    .topic-card {
+      background: rgba(43, 13, 24, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 14px;
+      padding: 14px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
-      margin-top: 24px;
+      gap: 10px;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
     }
-    .menu-actions button,
-    .menu-actions a {
-      background: var(--accent);
-      border: none;
-      color: #2b0d18;
-      font-weight: 600;
-      padding: 10px 18px;
-      border-radius: 999px;
+    .topic-card h2 {
+      margin: 4px 0 4px;
+      font-size: 1.05rem;
+    }
+    .topic-card p {
+      margin: 0;
+      color: rgba(233, 216, 232, 0.85);
+      line-height: 1.5;
+    }
+    .eyebrow {
+      font-size: 0.75rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: rgba(233, 216, 232, 0.7);
+      margin: 0;
+    }
+    .topic-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .chip {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 8px 12px;
       cursor: pointer;
       transition: 0.15s ease;
-      text-align: center;
+      font-weight: 600;
       text-decoration: none;
       display: inline-flex;
-      justify-content: center;
+      align-items: center;
+      gap: 6px;
+    }
+    .chip[disabled], .chip[aria-disabled="true"] {
+      opacity: 0.4;
+      cursor: not-allowed;
+      color: rgba(233, 216, 232, 0.7);
+      border-color: rgba(255, 255, 255, 0.12);
+    }
+    .chip.primary {
+      background: var(--accent);
+      color: #2b0d18;
+      border-color: transparent;
+    }
+    .chip:hover {
+      border-color: rgba(217, 85, 127, 0.6);
+      color: var(--accent);
+    }
+    .chip.primary:hover {
+      background: #e06b93;
+      color: #2b0d18;
     }
     .controls {
       display: flex;
@@ -90,9 +139,7 @@
       cursor: pointer;
       transition: 0.15s ease;
     }
-    button:hover,
-    .menu-actions button:hover,
-    .menu-actions a:hover {
+    button:hover {
       background: #e06b93;
     }
     .ghost {
@@ -123,6 +170,25 @@
       display: grid;
       grid-template-columns: repeat(2, minmax(250px, 1fr));
       gap: 16px;
+    }
+    .mode-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 14px;
+      margin-top: 8px;
+    }
+    .mode-card {
+      background: rgba(43, 13, 24, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .mode-card h2 {
+      margin: 2px 0 4px;
+      font-size: 1rem;
     }
     .guide-list {
       display: grid;
@@ -281,12 +347,8 @@
         flex-direction: column;
         align-items: flex-start;
       }
-      .menu-actions {
-        width: 100%;
-      }
-      .menu-actions button,
-      .menu-actions a {
-        width: 100%;
+      .topic-grid, .mode-grid {
+        grid-template-columns: 1fr;
       }
     }
   </style>
@@ -295,17 +357,76 @@
   <section id="menuScene" class="scene panel active">
     <button class="ghost" id="menuBackBtn">⟵ Back to Home</button>
     <h1>Japanese Study Hub</h1>
-    <p>Pick a topic to explore and choose the study mode that fits your vibe.</p>
-    <div class="menu-actions">
-      <button id="verbsCategoryBtn">Verb Hub (games + guide)</button>
-      <a href="rain-guide.html">Rain Study Guide</a>
-      <a href="rain-game.html">Rain Verb Game</a>
-      <a href="Days%20Study">Days of the Week Study</a>
-      <a href="Days%20Game">Days of the Week Game</a>
-      <a href="time-year-game.html">Time &amp; Year Game</a>
-      <button id="suruGuideBtn">JLPT N5 → N4 する Verbs</button>
-      <button id="nounsCategoryBtn">Nouns (coming soon)</button>
-      <button id="particlesCategoryBtn">Particles (coming soon)</button>
+    <p>Pick a topic to explore. Each card keeps the study guide and the game together.</p>
+    <div class="topic-grid">
+      <div class="topic-card">
+        <div>
+          <p class="eyebrow">Core set</p>
+          <h2>Verbs Hub</h2>
+          <p>Match verbs, browse the guide, or jump into the する pack.</p>
+        </div>
+        <div class="topic-actions">
+          <button id="verbsCategoryBtn" class="chip primary">Open verb hub</button>
+          <button id="suruGuideBtn" class="chip">する capsules</button>
+        </div>
+      </div>
+
+      <div class="topic-card">
+        <div>
+          <p class="eyebrow">Weather</p>
+          <h2>Rain verbs</h2>
+          <p>Study the list or try the themed matching game.</p>
+        </div>
+        <div class="topic-actions">
+          <a class="chip" href="rain-guide.html">Study guide</a>
+          <a class="chip primary" href="rain-game.html">Play game</a>
+        </div>
+      </div>
+
+      <div class="topic-card">
+        <div>
+          <p class="eyebrow">Weekly rhythm</p>
+          <h2>Days of the week</h2>
+          <p>Keep practice and study side-by-side for quick refreshers.</p>
+        </div>
+        <div class="topic-actions">
+          <a class="chip" href="Days%20Study">Study guide</a>
+          <a class="chip primary" href="Days%20Game">Play game</a>
+        </div>
+      </div>
+
+      <div class="topic-card">
+        <div>
+          <p class="eyebrow">Counting</p>
+          <h2>Time &amp; Year</h2>
+          <p>Practice dates and times with the mini drill game.</p>
+        </div>
+        <div class="topic-actions">
+          <a class="chip primary" href="time-year-game.html">Play game</a>
+        </div>
+      </div>
+
+      <div class="topic-card">
+        <div>
+          <p class="eyebrow">Vocabulary</p>
+          <h2>Nouns</h2>
+          <p>Flashcards and drills are on the way.</p>
+        </div>
+        <div class="topic-actions">
+          <button id="nounsCategoryBtn" class="chip" disabled aria-disabled="true">Coming soon</button>
+        </div>
+      </div>
+
+      <div class="topic-card">
+        <div>
+          <p class="eyebrow">Particles</p>
+          <h2>Grammar bits</h2>
+          <p>Fill-in-the-blank practice will land here.</p>
+        </div>
+        <div class="topic-actions">
+          <button id="particlesCategoryBtn" class="chip" disabled aria-disabled="true">Coming soon</button>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -315,16 +436,45 @@
       <h1>Verb Practice Zone</h1>
       <p>Match, review, or speedrun through common verbs.</p>
     </div>
-    <div class="menu-actions">
-      <button id="verbsGameBtn">Verb Matching Game</button>
-      <button id="verbsGuideBtn">Verb Study Guide</button>
-      <button id="suruGuideBtnSecondary">する Verb Capsules (N5→N4)</button>
-      <button id="suruGameBtn">する Verb Trainer</button>
-      <button id="rainGuideBtn">Rain Study Guide</button>
-      <button id="rainGameBtn">Rain Game</button>
-      <button id="daysStudyBtn">Days Study</button>
-      <button id="daysGameBtn">Days Game</button>
-      <button id="timeYearBtn">Time &amp; Year Game</button>
+    <div class="mode-grid">
+      <div class="mode-card">
+        <div>
+          <p class="eyebrow">Core verbs</p>
+          <h2>Main set</h2>
+          <p>Jump between the matching game and the study guide.</p>
+        </div>
+        <div class="topic-actions">
+          <button id="verbsGameBtn" class="chip primary">Match game</button>
+          <button id="verbsGuideBtn" class="chip">Study guide</button>
+        </div>
+      </div>
+
+      <div class="mode-card">
+        <div>
+          <p class="eyebrow">する pack</p>
+          <h2>JLPT N5 → N4</h2>
+          <p>Review the capsules or drill forms with the trainer.</p>
+        </div>
+        <div class="topic-actions">
+          <button id="suruGuideBtnSecondary" class="chip">Study capsules</button>
+          <button id="suruGameBtn" class="chip primary">Play trainer</button>
+        </div>
+      </div>
+
+      <div class="mode-card">
+        <div>
+          <p class="eyebrow">Extra sets</p>
+          <h2>Rain + Days</h2>
+          <p>Keep themed practice close to the core verbs.</p>
+        </div>
+        <div class="topic-actions">
+          <button id="rainGuideBtn" class="chip">Rain guide</button>
+          <button id="rainGameBtn" class="chip">Rain game</button>
+          <button id="daysStudyBtn" class="chip">Days guide</button>
+          <button id="daysGameBtn" class="chip">Days game</button>
+          <button id="timeYearBtn" class="chip primary">Time &amp; year game</button>
+        </div>
+      </div>
     </div>
   </section>
 
