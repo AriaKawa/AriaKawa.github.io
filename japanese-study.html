@@ -625,18 +625,17 @@
     ];
 
     const SURU_FORMS = [
-      { jp: "べんきょうする", en: "to study", masu: "べんきょうします", te: "べんきょうして", nai: "べんきょうしない", past: "べんきょうした" },
-      { jp: "さんぽする", en: "to take a walk", masu: "さんぽします", te: "さんぽして", nai: "さんぽしない", past: "さんぽした" },
-      { jp: "でんわする", en: "to call", masu: "でんわします", te: "でんわして", nai: "でんわしない", past: "でんわした" },
-      { jp: "そうじする", en: "to clean", masu: "そうじします", te: "そうじして", nai: "そうじしない", past: "そうじした" },
-      { jp: "しゅくだいする", en: "to do homework", masu: "しゅくだいします", te: "しゅくだいして", nai: "しゅくだいしない", past: "しゅくだいした" },
-      { jp: "よやくする", en: "to reserve", masu: "よやくします", te: "よやくして", nai: "よやくしない", past: "よやくした" },
-      { jp: "れんしゅうする", en: "to practice", masu: "れんしゅうします", te: "れんしゅうして", nai: "れんしゅうしない", past: "れんしゅうした" },
-      { jp: "しっぱいする", en: "to fail", masu: "しっぱいします", te: "しっぱいして", nai: "しっぱいしない", past: "しっぱいした" },
-      { jp: "けいかくする", en: "to plan", masu: "けいかくします", te: "けいかくして", nai: "けいかくしない", past: "けいかくした" },
-      { jp: "ふくしゅうする", en: "to review", masu: "ふくしゅうします", te: "ふくしゅうして", nai: "ふくしゅうしない", past: "ふくしゅうした" }
+      { jp: "べんきょうする", en: "to study", masu: "べんきょうします", masuPast: "べんきょうしました", masuNegative: "べんきょうしません", te: "べんきょうして", nai: "べんきょうしない", past: "べんきょうした", pastNegative: "べんきょうしなかった", volitional: "べんきょうしよう" },
+      { jp: "さんぽする", en: "to take a walk", masu: "さんぽします", masuPast: "さんぽしました", masuNegative: "さんぽしません", te: "さんぽして", nai: "さんぽしない", past: "さんぽした", pastNegative: "さんぽしなかった", volitional: "さんぽしよう" },
+      { jp: "でんわする", en: "to call", masu: "でんわします", masuPast: "でんわしました", masuNegative: "でんわしません", te: "でんわして", nai: "でんわしない", past: "でんわした", pastNegative: "でんわしなかった", volitional: "でんわしよう" },
+      { jp: "そうじする", en: "to clean", masu: "そうじします", masuPast: "そうじしました", masuNegative: "そうじしません", te: "そうじして", nai: "そうじしない", past: "そうじした", pastNegative: "そうじしなかった", volitional: "そうじしよう" },
+      { jp: "しゅくだいする", en: "to do homework", masu: "しゅくだいします", masuPast: "しゅくだいしました", masuNegative: "しゅくだいしません", te: "しゅくだいして", nai: "しゅくだいしない", past: "しゅくだいした", pastNegative: "しゅくだいしなかった", volitional: "しゅくだいしよう" },
+      { jp: "よやくする", en: "to reserve", masu: "よやくします", masuPast: "よやくしました", masuNegative: "よやくしません", te: "よやくして", nai: "よやくしない", past: "よやくした", pastNegative: "よやくしなかった", volitional: "よやくしよう" },
+      { jp: "れんしゅうする", en: "to practice", masu: "れんしゅうします", masuPast: "れんしゅうしました", masuNegative: "れんしゅうしません", te: "れんしゅうして", nai: "れんしゅうしない", past: "れんしゅうした", pastNegative: "れんしゅうしなかった", volitional: "れんしゅうしよう" },
+      { jp: "しっぱいする", en: "to fail", masu: "しっぱいします", masuPast: "しっぱいしました", masuNegative: "しっぱいしません", te: "しっぱいして", nai: "しっぱいしない", past: "しっぱいした", pastNegative: "しっぱいしなかった", volitional: "しっぱいしよう" },
+      { jp: "けいかくする", en: "to plan", masu: "けいかくします", masuPast: "けいかくしました", masuNegative: "けいかくしません", te: "けいかくして", nai: "けいかくしない", past: "けいかくした", pastNegative: "けいかくしなかった", volitional: "けいかくしよう" },
+      { jp: "ふくしゅうする", en: "to review", masu: "ふくしゅうします", masuPast: "ふくしゅうしました", masuNegative: "ふくしゅうしません", te: "ふくしゅうして", nai: "ふくしゅうしない", past: "ふくしゅうした", pastNegative: "ふくしゅうしなかった", volitional: "ふくしゅうしよう" }
     ];
-
     const SURU_FILL_BLANKS = [
       { sentence: "まいにち日本語を＿＿＿＿。", answer: "べんきょうします", hint: "polite present" },
       { sentence: "きのう友だちに＿＿＿＿。", answer: "でんわしました", hint: "past tense" },
@@ -661,7 +660,7 @@
     let speedTimer = null;
     let speedTimeLeft = 30;
 
-    const FORM_LABELS = { masu: "ます", te: "て", nai: "ない", past: "past" };
+    const FORM_LABELS = { masu: "ます", masuPast: "ました", masuNegative: "ません", te: "て", nai: "ない", past: "past", pastNegative: "なかった", volitional: "volitional" };
 
     function updateSuruProgress(extra = "") {
       const modeNames = { fill: "Fill-in", forms: "Correct Form", build: "Sentence Builder", speed: "Speed" };
@@ -708,7 +707,7 @@
 
     function newFormQuestion(isSpeed = false) {
       const verb = pickRandom(SURU_FORMS);
-      const formKey = pickRandom(["masu", "te", "nai", "past"]);
+      const formKey = pickRandom(["masu", "masuPast", "masuNegative", "te", "nai", "past", "pastNegative", "volitional"]);
       const promptLabel = FORM_LABELS[formKey];
       const correct = verb[formKey];
       suruCurrent = { type: isSpeed ? "speed" : "forms", correct, prompt: `${verb.jp} (${verb.en}) → ${promptLabel} form`, formKey };
