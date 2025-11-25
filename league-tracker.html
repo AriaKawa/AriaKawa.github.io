@@ -356,6 +356,30 @@
       sortCompletedBtn.disabled = !enabled;
     }
 
+    function createPlaceholder(name) {
+      const initial = name.charAt(0).toUpperCase() || "?";
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="${name}">\
+        <defs>\
+          <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">\
+            <stop offset="0%" stop-color="#22c55e" />\
+            <stop offset="100%" stop-color="#16a34a" />\
+          </linearGradient>\
+        </defs>\
+        <rect width="64" height="64" rx="10" fill="url(#g)" />\
+        <text x="50%" y="55%" font-size="32" fill="#0f172a" font-family="'Segoe UI', sans-serif" font-weight="700" text-anchor="middle">${initial}</text>\
+      </svg>`;
+      return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+    }
+
+    const EXTRA_CHAMPS = [
+      {
+        id: "Zaheen",
+        name: "Zaheen",
+        title: "",
+        imgUrl: createPlaceholder("Zaheen"),
+      },
+    ];
+
     setControlsEnabled(false);
     statusEl.textContent = "Loading champions…";
 
@@ -461,6 +485,17 @@
             imgUrl: `https://ddragon.leagueoflegends.com/cdn/${latest}/img/champion/${champ.image.full}`,
           }))
           .sort((a, b) => a.name.localeCompare(b.name));
+
+        EXTRA_CHAMPS.forEach((extra) => {
+          const exists = champs.some(
+            (champ) => champ.id.toLowerCase() === extra.id.toLowerCase()
+          );
+          if (!exists) {
+            champs.push(extra);
+          }
+        });
+
+        champs.sort((a, b) => a.name.localeCompare(b.name));
 
         champsList = champs;
         renderGrid();
