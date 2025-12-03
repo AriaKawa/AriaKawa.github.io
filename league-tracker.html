@@ -43,13 +43,19 @@
       font-size: 1.25rem;
       margin: 0;
     }
+    .title-group {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
     #controls {
       display: flex;
       gap: 0.5rem;
       flex-wrap: wrap;
       align-items: center;
     }
-    button {
+    button,
+    .pill-button {
       background: #334155;
       border: none;
       color: var(--text);
@@ -57,8 +63,13 @@
       border-radius: 9999px;
       cursor: pointer;
       font-size: 0.85rem;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
     }
-    button:hover {
+    button:hover,
+    .pill-button:hover {
       background: #475569;
     }
     #sortCompleted.active {
@@ -171,6 +182,10 @@
         flex-direction: column;
         align-items: flex-start;
       }
+      .title-group {
+        width: 100%;
+        justify-content: space-between;
+      }
       #grid {
         grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
       }
@@ -180,7 +195,12 @@
 <body>
   <header>
     <div class="header-row">
-      <h1>LoL Win-Tracker</h1>
+      <div class="title-group">
+        <a class="pill-button" href="index.html" aria-label="Back to home">
+          ← Home
+        </a>
+        <h1>LoL Win-Tracker</h1>
+      </div>
       <div id="account-controls">
         <label for="accountSelect">Account</label>
         <select id="accountSelect" disabled></select>
