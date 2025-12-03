@@ -249,10 +249,9 @@
             <div id="focusTag" class="focus-tag" data-focus="super"><span>★</span><span>Super Effective practice</span></div>
             <div class="mode-switch">
               <span class="mode-switch-label">Defender typing</span>
-              <div class="mode-options" role="group" aria-label="Defender typing mode">
-                <button class="mode-btn" type="button" data-mode="any" data-active="true">Mixed</button>
-                <button class="mode-btn" type="button" data-mode="single" data-active="false">Single</button>
-                <button class="mode-btn" type="button" data-mode="double" data-active="false">Dual</button>
+              <div class="mode-options" role="group" aria-label="Defender typing options (Multi or Mono)">
+                <button class="mode-btn" type="button" data-mode="any" data-active="true">Multi</button>
+                <button class="mode-btn" type="button" data-mode="single" data-active="false">Mono</button>
               </div>
             </div>
           </div>
@@ -416,7 +415,6 @@ function rand(arr){
 function getRosterPool(){
   return ROSTER.filter(([_, types])=>{
     if(defenderMode === 'single') return types.length === 1;
-    if(defenderMode === 'double') return types.length >= 2;
     return true;
   });
 }
@@ -487,11 +485,9 @@ function setDefenderMode(mode){
 function modeFriendlyName(mode){
   switch(mode){
     case 'single':
-      return 'single-type defenders';
-    case 'double':
-      return 'dual-type defenders';
+      return 'Mono-type defenders';
     default:
-      return 'mixed single- and dual-type defenders';
+      return 'Multi-type defenders';
   }
 }
 
