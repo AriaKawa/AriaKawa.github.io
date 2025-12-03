@@ -54,7 +54,7 @@
             </div>
         </div>
         <nav class="landing__nav" aria-label="Primary">
-            <div class="landing__rail" data-rail>
+            <div class="landing__rail">
                 <a class="tile tile--education" href="education.html">
                     <span class="tile__glass"></span>
                     <div class="tile__content">
@@ -79,16 +79,6 @@
                         <p class="tile__title">Misc</p>
                     </div>
                 </a>
-            </div>
-            <div class="landing__rail-controls" aria-hidden="true">
-                <button class="rail-button" type="button" data-rail-prev>
-                    <span class="rail-button__icon">←</span>
-                    <span class="sr-only">Scroll collections left</span>
-                </button>
-                <button class="rail-button" type="button" data-rail-next>
-                    <span class="rail-button__icon">→</span>
-                    <span class="sr-only">Scroll collections right</span>
-                </button>
             </div>
         </nav>
 
@@ -173,42 +163,6 @@
                     window.setTimeout(restoreLabel, 1800);
                 }
             });
-        })();
-
-        (function setupRailControls() {
-            const rail = document.querySelector('[data-rail]');
-            const prev = document.querySelector('[data-rail-prev]');
-            const next = document.querySelector('[data-rail-next]');
-
-            if (!rail || !prev || !next) {
-                return;
-            }
-
-            const scrollAmount = () => {
-                const firstTile = rail.querySelector('.tile');
-                if (firstTile instanceof HTMLElement) {
-                    const { width } = firstTile.getBoundingClientRect();
-                    return width + 20;
-                }
-
-                return rail.clientWidth * 0.8;
-            };
-
-            const updateButtons = () => {
-                const maxScroll = rail.scrollWidth - rail.clientWidth;
-                prev.disabled = rail.scrollLeft <= 0;
-                next.disabled = rail.scrollLeft >= maxScroll - 2;
-            };
-
-            const handleScroll = (direction) => {
-                rail.scrollBy({ left: direction * scrollAmount(), behavior: 'smooth' });
-            };
-
-            prev.addEventListener('click', () => handleScroll(-1));
-            next.addEventListener('click', () => handleScroll(1));
-            rail.addEventListener('scroll', updateButtons, { passive: true });
-
-            updateButtons();
         })();
 
         (function setupAccountMenu() {
