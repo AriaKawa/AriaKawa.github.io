@@ -486,15 +486,11 @@
 
       <div class="mode-card">
         <div>
-          <p class="eyebrow">Extra sets</p>
-          <h2>Rain + Days</h2>
-          <p>Keep themed practice close to the core verbs.</p>
+          <p class="eyebrow">Extra set</p>
+          <h2>Time + Year</h2>
+          <p>Keep the time practice close to the core verbs.</p>
         </div>
         <div class="topic-actions">
-          <button id="rainGuideBtn" class="chip">Rain guide</button>
-          <button id="rainGameBtn" class="chip">Rain game</button>
-          <button id="daysStudyBtn" class="chip">Days guide</button>
-          <button id="daysGameBtn" class="chip">Days game</button>
           <button id="timeYearBtn" class="chip primary">Time &amp; year game</button>
         </div>
       </div>
@@ -802,10 +798,6 @@
     const verbsGameBtn = document.getElementById("verbsGameBtn");
     const menuBackBtn = document.getElementById("menuBackBtn");
     const verbsGuideBtn = document.getElementById("verbsGuideBtn");
-    const rainGuideBtn = document.getElementById("rainGuideBtn");
-    const rainGameBtn = document.getElementById("rainGameBtn");
-    const daysStudyBtn = document.getElementById("daysStudyBtn");
-    const daysGameBtn = document.getElementById("daysGameBtn");
     const timeYearBtn = document.getElementById("timeYearBtn");
     const verbsCategoryBtn = document.getElementById("verbsCategoryBtn");
     const nounsCategoryBtn = document.getElementById("nounsCategoryBtn");
@@ -1480,22 +1472,6 @@
       syncLocationHash("suruGameScene");
       changeSuruMode("fill");
       updateSuruProgress();
-    });
-
-    rainGuideBtn.addEventListener("click", () => {
-      window.location.href = "rain-guide.html";
-    });
-
-    rainGameBtn.addEventListener("click", () => {
-      window.location.href = "rain-game.html";
-    });
-
-    daysStudyBtn.addEventListener("click", () => {
-      window.location.href = "days-study-guide.html";
-    });
-
-    daysGameBtn.addEventListener("click", () => {
-      window.location.href = "days-game.html";
     });
 
     timeYearBtn.addEventListener("click", () => {
