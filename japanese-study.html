@@ -171,6 +171,29 @@
       grid-template-columns: repeat(2, minmax(250px, 1fr));
       gap: 16px;
     }
+    .match-area {
+      position: relative;
+      margin-top: 10px;
+    }
+    .match-grid {
+      position: relative;
+      z-index: 1;
+    }
+    .connection-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+    .connection-line {
+      stroke: rgba(255, 255, 255, 0.35);
+      stroke-width: 3;
+      stroke-linecap: round;
+      filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.15));
+    }
+    .connection-line.active {
+      stroke: rgba(217, 85, 127, 0.7);
+      stroke-dasharray: 6 4;
+    }
     .mode-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -485,17 +508,20 @@
       <div class="controls">
         <button id="startBtn">Start</button>
         <div class="timer" id="timer">Time: 0.00s</div>
-        <div class="status" id="status">Click "Start" to shuffle.</div>
+        <div class="status" id="status">Click "Start" for 10 pairs, then drag to match.</div>
       </div>
     </div>
-    <div class="grid">
-      <div class="col" id="leftCol">
-        <div class="col-title">動詞（日本語）</div>
-        <!-- verbs here -->
-      </div>
-      <div class="col" id="rightCol">
-        <div class="col-title">意味（英語説明）</div>
-        <!-- meanings here -->
+    <div id="matchArea" class="match-area">
+      <svg id="connectionCanvas" class="connection-layer"></svg>
+      <div class="grid match-grid">
+        <div class="col" id="leftCol">
+          <div class="col-title">Romaji (readings)</div>
+          <!-- verbs here -->
+        </div>
+        <div class="col" id="rightCol">
+          <div class="col-title">Meaning (English)</div>
+          <!-- meanings here -->
+        </div>
       </div>
     </div>
     <div class="footer-text">
@@ -767,6 +793,8 @@
 
     const leftCol = document.getElementById("leftCol");
     const rightCol = document.getElementById("rightCol");
+    const matchArea = document.getElementById("matchArea");
+    const connectionCanvas = document.getElementById("connectionCanvas");
     const startBtn = document.getElementById("startBtn");
     const timerEl = document.getElementById("timer");
     const statusEl = document.getElementById("status");
@@ -808,6 +836,10 @@
     let startTime = null;
     let timerInterval = null;
     let matches = 0;
+    let currentPool = [];
+    let connectionLines = [];
+    let activeLine = null;
+    const MATCH_COUNT = 10;
     let gameActive = false;
     let currentScene = "menuScene";
 
@@ -1050,6 +1082,42 @@
       return arr;
     }
 
+    function syncCanvasSize() {
+      if (!matchArea || !connectionCanvas) return;
+      const rect = matchArea.getBoundingClientRect();
+      connectionCanvas.setAttribute("width", rect.width);
+      connectionCanvas.setAttribute("height", rect.height);
+      connectionCanvas.setAttribute("viewBox", `0 0 ${rect.width} ${rect.height}`);
+      updateAllConnectionLines();
+    }
+
+    function getCenterPoint(el) {
+      if (!el || !matchArea) return { x: 0, y: 0 };
+      const areaRect = matchArea.getBoundingClientRect();
+      const rect = el.getBoundingClientRect();
+      return {
+        x: rect.left - areaRect.left + rect.width / 2,
+        y: rect.top - areaRect.top + rect.height / 2
+      };
+    }
+
+    function drawConnectionLine(leftEl, rightEl, lineEl) {
+      const line = lineEl ?? document.createElementNS("http://www.w3.org/2000/svg", "line");
+      line.classList.add("connection-line");
+      const start = getCenterPoint(leftEl);
+      const end = getCenterPoint(rightEl);
+      line.setAttribute("x1", start.x);
+      line.setAttribute("y1", start.y);
+      line.setAttribute("x2", end.x);
+      line.setAttribute("y2", end.y);
+      if (!lineEl) connectionCanvas.appendChild(line);
+      return line;
+    }
+
+    function updateAllConnectionLines() {
+      connectionLines.forEach(conn => drawConnectionLine(conn.left, conn.right, conn.line));
+    }
+
     function stopTimer() {
       clearInterval(timerInterval);
       timerInterval = null;
@@ -1064,19 +1132,78 @@
       }, 50);
     }
 
+    function startLineDrag(evt, originEl) {
+      if (!gameActive || !matchArea || originEl.classList.contains("correct")) return;
+      clearSelections();
+      originEl.classList.add("selected");
+      selectedLeft = originEl;
+      syncCanvasSize();
+
+      const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      line.classList.add("connection-line", "active");
+      connectionCanvas.appendChild(line);
+      activeLine = line;
+      updateActiveLine(evt.clientX, evt.clientY);
+      window.addEventListener("pointermove", handlePointerMove);
+      window.addEventListener("pointerup", handlePointerUp);
+      evt.preventDefault();
+    }
+
+    function updateActiveLine(clientX, clientY) {
+      if (!activeLine || !selectedLeft || !matchArea) return;
+      const start = getCenterPoint(selectedLeft);
+      const areaRect = matchArea.getBoundingClientRect();
+      activeLine.setAttribute("x1", start.x);
+      activeLine.setAttribute("y1", start.y);
+      activeLine.setAttribute("x2", clientX - areaRect.left);
+      activeLine.setAttribute("y2", clientY - areaRect.top);
+    }
+
+    function handlePointerMove(evt) {
+      updateActiveLine(evt.clientX, evt.clientY);
+    }
+
+    function handlePointerUp(evt) {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+
+      const target = document.elementFromPoint(evt.clientX, evt.clientY);
+      const item = target?.closest ? target.closest(".item") : target;
+      const inRightCol = item?.closest ? item.closest("#rightCol") : null;
+
+      if (item && inRightCol) {
+        selectRight(item);
+      } else if (activeLine) {
+        connectionCanvas.removeChild(activeLine);
+        activeLine = null;
+        clearSelections();
+      }
+
+      if (activeLine) {
+        connectionCanvas.removeChild(activeLine);
+        activeLine = null;
+      }
+    }
+
     function buildBoard() {
       leftCol.querySelectorAll(".item").forEach(el => el.remove());
       rightCol.querySelectorAll(".item").forEach(el => el.remove());
+      connectionLines = [];
+      activeLine = null;
+      connectionCanvas.innerHTML = "";
+      syncCanvasSize();
 
-      const left = shuffle(VERBS);
-      const right = shuffle(VERBS);
+      currentPool = shuffle(VERBS).slice(0, MATCH_COUNT);
+      const left = shuffle(currentPool);
+      const right = shuffle(currentPool);
 
       left.forEach(v => {
         const div = document.createElement("div");
         div.className = "item";
-        div.textContent = v.jp;
+        div.textContent = v.romaji;
         div.dataset.id = v.id;
         div.addEventListener("click", () => selectLeft(div));
+        div.addEventListener("pointerdown", evt => startLineDrag(evt, div));
         leftCol.appendChild(div);
       });
 
@@ -1097,7 +1224,7 @@
       gameActive = false;
       clearSelections();
       timerEl.textContent = "Time: 0.00s";
-      statusEl.textContent = "Click \"Start\" to shuffle.";
+      statusEl.textContent = "Click \"Start\" for 10 new pairs.";
     }
 
     function clearSelections() {
@@ -1105,6 +1232,10 @@
       rightCol.querySelectorAll(".item.selected").forEach(el => el.classList.remove("selected"));
       selectedLeft = null;
       selectedRight = null;
+      if (activeLine) {
+        connectionCanvas.removeChild(activeLine);
+        activeLine = null;
+      }
     }
 
     function selectLeft(el) {
@@ -1135,10 +1266,16 @@
           selectedRight.classList.add("correct");
           selectedLeft.classList.remove("selected");
           selectedRight.classList.remove("selected");
+          const line = drawConnectionLine(selectedLeft, selectedRight);
+          connectionLines.push({ left: selectedLeft, right: selectedRight, line });
+          if (activeLine) {
+            connectionCanvas.removeChild(activeLine);
+            activeLine = null;
+          }
           matches++;
-          statusEl.textContent = `Nice! ${matches}/${VERBS.length} matched.`;
+          statusEl.textContent = `Nice! ${matches}/${currentPool.length} matched.`;
           clearSelections();
-          if (matches === VERBS.length) {
+          if (matches === currentPool.length) {
             gameActive = false;
             stopTimer();
             const finalTime = timerEl.textContent.replace("Time: ", "");
@@ -1157,6 +1294,10 @@
             r.classList.remove("selected", "bad");
             selectedLeft = null;
             selectedRight = null;
+            if (activeLine) {
+              connectionCanvas.removeChild(activeLine);
+              activeLine = null;
+            }
           }, 350);
         }
       }
@@ -1299,7 +1440,7 @@
       stopTimer();
       matches = 0;
       gameActive = true;
-      statusEl.textContent = "Match the verbs!";
+      statusEl.textContent = "Draw lines between romaji and meaning!";
       timerEl.textContent = "Time: 0.00s";
       startTimer();
     });
@@ -1360,6 +1501,8 @@
     timeYearBtn.addEventListener("click", () => {
       window.location.href = "time-year-game.html";
     });
+
+    window.addEventListener("resize", syncCanvasSize);
 
     guideBackBtn.addEventListener("click", () => {
       showScene("verbsScene");
