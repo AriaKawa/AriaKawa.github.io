@@ -436,8 +436,12 @@
     let currentSystem = "kanji";
 
     let currentIndex = 0;
+    let questionOrder = [];
+    let orderPosition = 0;
     let score = 0;
     let answered = 0;
+    let currentOptionOrder = [];
+    let currentCorrectIndex = 0;
 
     const questionEl = document.getElementById("question");
     const hintEl = document.getElementById("hint");
@@ -457,16 +461,44 @@
       return opt[currentSystem] || opt.kanji || "";
     }
 
+    function shuffleArray(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    function shuffleQuestions(previousIndex = null) {
+      const order = questions.map((_, idx) => idx);
+      for (let i = order.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [order[i], order[j]] = [order[j], order[i]];
+      }
+      if (previousIndex !== null && order.length > 1 && order[0] === previousIndex) {
+        [order[0], order[1]] = [order[1], order[0]];
+      }
+      return order;
+    }
+
+    function getCurrentQuestion() {
+      return questions[currentIndex];
+    }
+
     function loadQuestion() {
-      const q = questions[currentIndex];
-      questionEl.textContent = "Q" + (currentIndex + 1) + ": " + q.prompt;
+      const q = getCurrentQuestion();
+      questionEl.textContent = "Q" + (orderPosition + 1) + ": " + q.prompt;
       hintEl.textContent = "Hint: " + q.hint;
+
+      currentOptionOrder = shuffleArray(q.options.map((_, i) => i));
+      currentCorrectIndex = currentOptionOrder.indexOf(q.correctIndex);
 
       optionsEl.innerHTML = "";
       feedbackEl.textContent = "";
       explanationEl.textContent = "";
 
-      q.options.forEach((opt, i) => {
+      currentOptionOrder.forEach((originalIndex, i) => {
+        const opt = q.options[originalIndex];
         const btn = document.createElement("button");
         btn.textContent = optionText(opt);
         btn.className = "option-btn";
@@ -478,21 +510,22 @@
     function selectOption(selectedIndex) {
       if (feedbackEl.textContent !== "") return; // already answered
 
-      const q = questions[currentIndex];
+      const q = getCurrentQuestion();
       const buttons = document.querySelectorAll(".option-btn");
 
       buttons.forEach((btn, i) => {
-        if (i === q.correctIndex) {
+        const originalIndex = currentOptionOrder[i];
+        if (originalIndex === q.correctIndex) {
           btn.classList.add("correct");
         }
-        if (i === selectedIndex && i !== q.correctIndex) {
+        if (i === selectedIndex && i !== currentCorrectIndex) {
           btn.classList.add("incorrect");
         }
         btn.disabled = true;
       });
 
       answered++;
-      if (selectedIndex === q.correctIndex) {
+      if (selectedIndex === currentCorrectIndex) {
         score++;
         feedbackEl.textContent = "✅ Correct!";
       } else {
@@ -507,9 +540,9 @@
     }
 
     function refreshOptionLabels() {
-      const q = questions[currentIndex];
+      const q = getCurrentQuestion();
       document.querySelectorAll(".option-btn").forEach((btn, i) => {
-        const opt = q.options[i];
+        const opt = q.options[currentOptionOrder[i]];
         if (opt) {
           btn.textContent = optionText(opt);
         }
@@ -525,14 +558,19 @@
     });
 
     nextBtn.addEventListener("click", () => {
-      currentIndex++;
-      if (currentIndex >= questions.length) {
-        currentIndex = 0;
+      orderPosition++;
+      if (orderPosition >= questionOrder.length) {
+        const previousQuestion = currentIndex;
+        questionOrder = shuffleQuestions(previousQuestion);
+        orderPosition = 0;
       }
+      currentIndex = questionOrder[orderPosition];
       loadQuestion();
     });
 
     // init
+    questionOrder = shuffleQuestions();
+    currentIndex = questionOrder[orderPosition];
     loadQuestion();
     setActiveSystemChip();
     updateScore();
