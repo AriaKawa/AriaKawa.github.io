@@ -463,24 +463,24 @@
       <div class="mode-card">
         <div>
           <p class="eyebrow">Core verbs</p>
-          <h2>Main set</h2>
-          <p>Jump between the matching game and the study guide.</p>
+          <h2>Verb S1</h2>
+          <p>First half of the core verbs. Jump between the matching game and the guide.</p>
         </div>
         <div class="topic-actions">
-          <button id="verbsGameBtn" class="chip primary">Match game</button>
-          <button id="verbsGuideBtn" class="chip">Study guide</button>
+          <button id="verbsGameBtnS1" class="chip primary">Match game</button>
+          <button id="verbsGuideBtnS1" class="chip">Study guide</button>
         </div>
       </div>
 
       <div class="mode-card">
         <div>
-          <p class="eyebrow">する pack</p>
-          <h2>JLPT N5 → N4</h2>
-          <p>Review the capsules or drill forms with the trainer.</p>
+          <p class="eyebrow">Core verbs</p>
+          <h2>Verb S2</h2>
+          <p>Second half of the core verbs. Keep matching practice and the guide together.</p>
         </div>
         <div class="topic-actions">
-          <button id="suruGuideBtnSecondary" class="chip">Study capsules</button>
-          <button id="suruGameBtn" class="chip primary">Play trainer</button>
+          <button id="verbsGameBtnS2" class="chip primary">Match game</button>
+          <button id="verbsGuideBtnS2" class="chip">Study guide</button>
         </div>
       </div>
 
@@ -504,7 +504,10 @@
   <section id="gameScene" class="scene panel">
     <button class="ghost" id="backToMenu">⟵ Back to Verb Modes</button>
     <div class="header">
-      <h1>Verb Match — N5/N4-ish</h1>
+      <div>
+        <p class="eyebrow" id="gameSetLabel">Verb S1 active</p>
+        <h1>Verb Match — N5/N4-ish</h1>
+      </div>
       <div class="controls">
         <button id="startBtn">Start</button>
         <div class="timer" id="timer">Time: 0.00s</div>
@@ -533,6 +536,7 @@
     <button class="ghost" id="guideBackBtn">⟵ Back to Verb Modes</button>
     <div class="header" id="guide">
       <h1>Verb Study Guide</h1>
+      <p class="eyebrow" id="guideSetLabel">Verb S1 active</p>
       <p>Review hiragana, romaji, and meanings before diving into a game.</p>
     </div>
     <div id="guideList" class="guide-list"></div>
@@ -791,6 +795,13 @@
       { id: 81, jp: "あやまる", romaji: "ayamaru", en: "to apologize" }
     ];
 
+    const VERB_SPLIT_INDEX = Math.ceil(VERBS.length / 2);
+    const VERB_SETS = {
+      s1: VERBS.slice(0, VERB_SPLIT_INDEX),
+      s2: VERBS.slice(VERB_SPLIT_INDEX)
+    };
+    let currentVerbSet = "s1";
+
     const leftCol = document.getElementById("leftCol");
     const rightCol = document.getElementById("rightCol");
     const matchArea = document.getElementById("matchArea");
@@ -799,9 +810,11 @@
     const timerEl = document.getElementById("timer");
     const statusEl = document.getElementById("status");
     const backToMenuBtn = document.getElementById("backToMenu");
-    const verbsGameBtn = document.getElementById("verbsGameBtn");
+    const verbsGameBtnS1 = document.getElementById("verbsGameBtnS1");
+    const verbsGameBtnS2 = document.getElementById("verbsGameBtnS2");
     const menuBackBtn = document.getElementById("menuBackBtn");
-    const verbsGuideBtn = document.getElementById("verbsGuideBtn");
+    const verbsGuideBtnS1 = document.getElementById("verbsGuideBtnS1");
+    const verbsGuideBtnS2 = document.getElementById("verbsGuideBtnS2");
     const rainGuideBtn = document.getElementById("rainGuideBtn");
     const rainGameBtn = document.getElementById("rainGameBtn");
     const daysStudyBtn = document.getElementById("daysStudyBtn");
@@ -830,6 +843,8 @@
     const suruChoices = document.getElementById("suruChoices");
     const suruWordBank = document.getElementById("suruWordBank");
     const suruFeedback = document.getElementById("suruFeedback");
+    const gameSetLabel = document.getElementById("gameSetLabel");
+    const guideSetLabel = document.getElementById("guideSetLabel");
 
     let selectedLeft = null;
     let selectedRight = null;
@@ -926,6 +941,24 @@
 
     function normalizeAnswer(str) {
       return str.replace(/\s+/g, " ").trim();
+    }
+
+    function getActiveVerbSetLabel() {
+      return currentVerbSet === "s2" ? "Verb S2" : "Verb S1";
+    }
+
+    function updateVerbSetLabels() {
+      const label = `${getActiveVerbSetLabel()} active`;
+      if (gameSetLabel) gameSetLabel.textContent = label;
+      if (guideSetLabel) guideSetLabel.textContent = label;
+    }
+
+    function setVerbSet(setKey) {
+      if (!VERB_SETS[setKey]) return;
+      currentVerbSet = setKey;
+      resetGameBoard();
+      renderGuide();
+      updateVerbSetLabels();
     }
 
     function newFillQuestion() {
@@ -1193,7 +1226,8 @@
       connectionCanvas.innerHTML = "";
       syncCanvasSize();
 
-      currentPool = shuffle(VERBS).slice(0, MATCH_COUNT);
+      const poolSource = VERB_SETS[currentVerbSet] ?? VERBS;
+      currentPool = shuffle(poolSource).slice(0, MATCH_COUNT);
       const left = shuffle(currentPool);
       const right = shuffle(currentPool);
 
@@ -1224,7 +1258,8 @@
       gameActive = false;
       clearSelections();
       timerEl.textContent = "Time: 0.00s";
-      statusEl.textContent = "Click \"Start\" for 10 new pairs.";
+      statusEl.textContent = `Click "Start" for 10 pairs from ${getActiveVerbSetLabel()}.`;
+      updateVerbSetLabels();
     }
 
     function clearSelections() {
@@ -1306,7 +1341,8 @@
     function renderGuide() {
       if (!guideList) return;
       guideList.innerHTML = "";
-      VERBS.forEach(verb => {
+      const guideData = VERB_SETS[currentVerbSet] ?? VERBS;
+      guideData.forEach(verb => {
         const card = document.createElement("div");
         card.className = "guide-item";
 
@@ -1450,10 +1486,11 @@
       syncLocationHash("verbsScene");
     });
 
-    verbsGameBtn.addEventListener("click", () => {
+    function openGameForSet(setKey) {
+      setVerbSet(setKey);
       showScene("gameScene");
       syncLocationHash("gameScene");
-    });
+    }
 
     menuBackBtn.addEventListener("click", () => {
       if (window.history.length > 1) {
@@ -1463,10 +1500,16 @@
       }
     });
 
-    verbsGuideBtn.addEventListener("click", () => {
+    function openGuideForSet(setKey) {
+      setVerbSet(setKey);
       showScene("guideScene");
       syncLocationHash("guideScene");
-    });
+    }
+
+    verbsGameBtnS1?.addEventListener("click", () => openGameForSet("s1"));
+    verbsGameBtnS2?.addEventListener("click", () => openGameForSet("s2"));
+    verbsGuideBtnS1?.addEventListener("click", () => openGuideForSet("s1"));
+    verbsGuideBtnS2?.addEventListener("click", () => openGuideForSet("s2"));
 
     function goToSuruGuide() {
       showScene("suruScene");
