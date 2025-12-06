@@ -153,6 +153,22 @@
       display: grid;
       gap: 4px;
     }
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      color: var(--text);
+      text-decoration: none;
+      background: rgba(148, 163, 184, 0.08);
+      font-weight: 700;
+    }
+    .back-link:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
     @media (max-width: 640px) {
       body { padding: 14px; }
     }
@@ -160,6 +176,7 @@
 </head>
 <body>
   <main class="panel">
+    <a class="back-link" href="japanese-study.html#verbs">⟵ Back to Japanese Study</a>
     <div class="header">
       <div>
         <h1>Time of Day &amp; Year Practice</h1>
