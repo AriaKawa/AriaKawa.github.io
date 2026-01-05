@@ -249,7 +249,17 @@
   </div>
 
   <script>
-    const questions = [
+    const DAYS = [
+      { english: "Sunday", kanji: "日曜日", hiragana: "にちようび", romaji: "nichiyoubi", shortKanji: "日", shortHiragana: "にち", shortRomaji: "nichi" },
+      { english: "Monday", kanji: "月曜日", hiragana: "げつようび", romaji: "getsuyoubi", shortKanji: "月", shortHiragana: "げつ", shortRomaji: "getsu" },
+      { english: "Tuesday", kanji: "火曜日", hiragana: "かようび", romaji: "kayoubi", shortKanji: "火", shortHiragana: "か", shortRomaji: "ka" },
+      { english: "Wednesday", kanji: "水曜日", hiragana: "すいようび", romaji: "suiyoubi", shortKanji: "水", shortHiragana: "すい", shortRomaji: "sui" },
+      { english: "Thursday", kanji: "木曜日", hiragana: "もくようび", romaji: "mokuyoubi", shortKanji: "木", shortHiragana: "もく", shortRomaji: "moku" },
+      { english: "Friday", kanji: "金曜日", hiragana: "きんようび", romaji: "kinyoubi", shortKanji: "金", shortHiragana: "きん", shortRomaji: "kin" },
+      { english: "Saturday", kanji: "土曜日", hiragana: "どようび", romaji: "doyoubi", shortKanji: "土", shortHiragana: "ど", shortRomaji: "do" }
+    ];
+
+    const baseQuestions = [
       {
         prompt: "What is “Monday” in Japanese (full, with 曜日)?",
         hint: "It is the Moon day.",
@@ -429,8 +439,176 @@
         ],
         correctIndex: 0,
         explanation: "The standard order is 日・月・火・水・木・金・土 (Sun → Sat)."
+      },
+      {
+        prompt: "Translate: “On Thursday, I have soccer practice.”",
+        hint: "Use 木曜日に and 練習があります.",
+        options: [
+          {
+            kanji: "木曜日にサッカーの練習があります。",
+            hiragana: "もくようびに さっかーの れんしゅうが あります。",
+            romaji: "mokuyoubi ni sakkaa no renshuu ga arimasu."
+          },
+          {
+            kanji: "木曜日はサッカーの練習でした。",
+            hiragana: "もくようびは さっかーの れんしゅうでした。",
+            romaji: "mokuyoubi wa sakkaa no renshuu deshita."
+          },
+          {
+            kanji: "金曜日にサッカーの練習があります。",
+            hiragana: "きんようびに さっかーの れんしゅうが あります。",
+            romaji: "kinyoubi ni sakkaa no renshuu ga arimasu."
+          },
+          {
+            kanji: "木曜日にサッカーの練習をします。",
+            hiragana: "もくようびに さっかーの れんしゅうを します。",
+            romaji: "mokuyoubi ni sakkaa no renshuu o shimasu."
+          }
+        ],
+        correctIndex: 0,
+        explanation: "木曜日にサッカーの練習があります。= On Thursday, I have soccer practice."
+      },
+      {
+        prompt: "Translate: “Every Saturday I work.”",
+        hint: "Use 毎週土曜日に and はたらきます.",
+        options: [
+          {
+            kanji: "毎週土曜日にはたらきます。",
+            hiragana: "まいしゅう どようびに はたらきます。",
+            romaji: "maishuu doyoubi ni hatarakimasu."
+          },
+          {
+            kanji: "土曜日に毎週はたらきました。",
+            hiragana: "どようびに まいしゅう はたらきました。",
+            romaji: "doyoubi ni maishuu hatarakimashita."
+          },
+          {
+            kanji: "毎週日曜日にはたらきます。",
+            hiragana: "まいしゅう にちようびに はたらきます。",
+            romaji: "maishuu nichiyoubi ni hatarakimasu."
+          },
+          {
+            kanji: "毎週土曜日にはたらきません。",
+            hiragana: "まいしゅう どようびに はたらきません。",
+            romaji: "maishuu doyoubi ni hatarakimasen."
+          }
+        ],
+        correctIndex: 0,
+        explanation: "毎週土曜日にはたらきます。= Every Saturday I work."
+      },
+      {
+        prompt: "Translate: “We meet on Sunday morning.”",
+        hint: "Use 日曜日の朝に and 会います.",
+        options: [
+          {
+            kanji: "日曜日の朝に会います。",
+            hiragana: "にちようびの あさに あいます。",
+            romaji: "nichiyoubi no asa ni aimasu."
+          },
+          {
+            kanji: "日曜日の朝で会いました。",
+            hiragana: "にちようびの あさで あいました。",
+            romaji: "nichiyoubi no asa de aimashita."
+          },
+          {
+            kanji: "日曜日の夜に会います。",
+            hiragana: "にちようびの よるに あいます。",
+            romaji: "nichiyoubi no yoru ni aimasu."
+          },
+          {
+            kanji: "月曜日の朝に会います。",
+            hiragana: "げつようびの あさに あいます。",
+            romaji: "getsuyoubi no asa ni aimasu."
+          }
+        ],
+        correctIndex: 0,
+        explanation: "日曜日の朝に会います。= We meet on Sunday morning."
       }
     ];
+
+    function pickRandom(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function buildOptionsFromDays(mapper, correctDay) {
+      const pool = shuffleArray(DAYS.map(mapper));
+      const correctOption = mapper(correctDay);
+      const selected = [correctOption];
+      for (const opt of pool) {
+        if (selected.length >= 4) break;
+        if (!selected.some((item) => item.kanji === opt.kanji)) {
+          selected.push(opt);
+        }
+      }
+      return shuffleArray(selected);
+    }
+
+    function buildDayKanjiQuestion() {
+      const day = pickRandom(DAYS);
+      const options = buildOptionsFromDays(
+        (d) => ({ kanji: d.shortKanji, hiragana: d.shortHiragana, romaji: d.shortRomaji }),
+        day
+      );
+      const correctIndex = options.findIndex((opt) => opt.kanji === day.shortKanji);
+      return {
+        prompt: `What's the kanji for ${day.english}?`,
+        hint: `Pick the single kanji used in ${day.english} (${day.kanji}).`,
+        options,
+        correctIndex,
+        explanation: `${day.english} uses ${day.shortKanji}, read ${day.shortHiragana} (${day.shortRomaji}).`
+      };
+    }
+
+    function buildLastDayQuestion() {
+      const day = pickRandom(DAYS);
+      const options = buildOptionsFromDays(
+        (d) => ({
+          kanji: `先週の${d.kanji}`,
+          hiragana: `せんしゅうの ${d.hiragana}`,
+          romaji: `senshuu no ${d.romaji}`
+        }),
+        day
+      );
+      const correctIndex = options.findIndex((opt) => opt.kanji === `先週の${day.kanji}`);
+      return {
+        prompt: `How do you say “Last ${day.english}”?`,
+        hint: "Use 先週の + day of the week.",
+        options,
+        correctIndex,
+        explanation: `“Last ${day.english}” → 先週の${day.kanji}（せんしゅうの ${day.hiragana}）.`
+      };
+    }
+
+    function buildPracticeDayQuestion() {
+      const day = pickRandom(DAYS);
+      const options = buildOptionsFromDays(
+        (d) => ({
+          kanji: `${d.kanji}に練習があります。`,
+          hiragana: `${d.hiragana}に れんしゅうが あります。`,
+          romaji: `${d.romaji} ni renshuu ga arimasu.`
+        }),
+        day
+      );
+      const correctIndex = options.findIndex((opt) => opt.kanji === `${day.kanji}に練習があります。`);
+      return {
+        prompt: `Translate: “I have practice on ${day.english}.”`,
+        hint: "Use ～曜日に練習があります.",
+        options,
+        correctIndex,
+        explanation: `${day.kanji}に練習があります。= I have practice on ${day.english}.`
+      };
+    }
+
+    function buildQuestions() {
+      return [
+        ...baseQuestions,
+        buildDayKanjiQuestion(),
+        buildLastDayQuestion(),
+        buildPracticeDayQuestion()
+      ];
+    }
+
+    const questions = buildQuestions();
 
     const chips = document.querySelectorAll(".chip");
     let currentSystem = "kanji";
