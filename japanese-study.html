@@ -899,7 +899,9 @@
     let suruCurrent = null;
     let speedTimer = null;
     let speedTimeLeft = 30;
-    let showHints = true;
+    const SURU_HINT_STORAGE_KEY = "suruShowHints";
+    const storedSuruHints = localStorage.getItem(SURU_HINT_STORAGE_KEY);
+    let showHints = storedSuruHints ? storedSuruHints === "true" : false;
 
     const FORM_LABELS = { masu: "ます", masuPast: "ました", masuNegative: "ません", te: "て", nai: "ない", past: "past", pastNegative: "なかった", volitional: "volitional" };
 
@@ -1543,6 +1545,7 @@
 
     suruHintToggle?.addEventListener("click", () => {
       showHints = !showHints;
+      localStorage.setItem(SURU_HINT_STORAGE_KEY, showHints);
       updateHintToggle();
       if (suruMode === "fill") {
         renderFillPrompt();
