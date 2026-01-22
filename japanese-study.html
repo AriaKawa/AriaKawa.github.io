@@ -244,6 +244,9 @@
       line-height: 1.3;
       color: rgba(233, 216, 232, 0.9);
     }
+    .hint-text {
+      color: rgba(233, 216, 232, 0.75);
+    }
     .section {
       background: rgba(43, 13, 24, 0.6);
       border: 1px solid rgba(255, 255, 255, 0.12);
@@ -665,6 +668,7 @@
       <button class="ghost" data-suru-mode="forms" aria-label="Multiple choice forms">Correct Form</button>
       <button class="ghost" data-suru-mode="build" aria-label="Sentence building">Sentence Builder</button>
       <button class="ghost" data-suru-mode="speed" aria-label="Speed round">Speed Round</button>
+      <button class="ghost" id="suruHintToggle" aria-pressed="true">Hints: On</button>
       <div class="status" id="suruProgress">Score: 0/0 • Mode: Fill-in</div>
     </div>
 
@@ -822,6 +826,7 @@
     const suruChoices = document.getElementById("suruChoices");
     const suruWordBank = document.getElementById("suruWordBank");
     const suruFeedback = document.getElementById("suruFeedback");
+    const suruHintToggle = document.getElementById("suruHintToggle");
 
     let selectedLeft = null;
     let selectedRight = null;
@@ -894,6 +899,7 @@
     let suruCurrent = null;
     let speedTimer = null;
     let speedTimeLeft = 30;
+    let showHints = true;
 
     const FORM_LABELS = { masu: "ます", masuPast: "ました", masuNegative: "ません", te: "て", nai: "ない", past: "past", pastNegative: "なかった", volitional: "volitional" };
 
@@ -920,9 +926,21 @@
       return str.replace(/\s+/g, " ").trim();
     }
 
+    function renderFillPrompt() {
+      if (!suruCurrent) return;
+      const hintText = showHints ? `<br><small class="hint-text">Hint: ${suruCurrent.hint}</small>` : "";
+      suruPrompt.innerHTML = `<strong>Fill the blank:</strong> ${suruCurrent.sentence}${hintText}`;
+    }
+
+    function updateHintToggle() {
+      if (!suruHintToggle) return;
+      suruHintToggle.textContent = `Hints: ${showHints ? "On" : "Off"}`;
+      suruHintToggle.setAttribute("aria-pressed", showHints ? "true" : "false");
+    }
+
     function newFillQuestion() {
       suruCurrent = pickRandom(SURU_FILL_BLANKS);
-      suruPrompt.innerHTML = `<strong>Fill the blank:</strong> ${suruCurrent.sentence}<br><small>Hint: ${suruCurrent.hint}</small>`;
+      renderFillPrompt();
       suruInput.placeholder = "type the missing phrase";
       suruInput.disabled = false;
       suruSubmitBtn.disabled = false;
@@ -1523,6 +1541,14 @@
       btn.addEventListener("click", () => changeSuruMode(btn.dataset.suruMode));
     });
 
+    suruHintToggle?.addEventListener("click", () => {
+      showHints = !showHints;
+      updateHintToggle();
+      if (suruMode === "fill") {
+        renderFillPrompt();
+      }
+    });
+
     suruSubmitBtn.addEventListener("click", checkSuruInput);
     suruSkipBtn.addEventListener("click", skipSuruQuestion);
     suruInput.addEventListener("keydown", (e) => {
@@ -1546,6 +1572,7 @@
     resetGameBoard();
     renderGuide();
     renderSuruGuide();
+    updateHintToggle();
     applyInitialScene();
     window.addEventListener("hashchange", handleHashChange);
   </script>
