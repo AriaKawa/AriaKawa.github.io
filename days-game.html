@@ -100,6 +100,10 @@
       box-shadow: 0 10px 30px rgba(96, 165, 250, 0.2);
     }
 
+    .hint-toggle {
+      white-space: nowrap;
+    }
+
 
     .options {
       display: grid;
@@ -237,6 +241,7 @@
         <button class="chip" data-system="hiragana">Hiragana</button>
         <button class="chip" data-system="romaji">Romaji</button>
       </div>
+      <button class="chip hint-toggle" id="hint-toggle" type="button" aria-pressed="false">Hints: Off</button>
       <div id="score">Score: 0 / 0</div>
     </div>
     <div id="question"></div>
@@ -641,6 +646,29 @@
     const explanationEl = document.getElementById("explanation");
     const scoreEl = document.getElementById("score");
     const nextBtn = document.getElementById("next-btn");
+    const hintToggle = document.getElementById("hint-toggle");
+    const hintStorageKey = "daysGameShowHints";
+    let showHints = false;
+
+    if (hintToggle) {
+      showHints = localStorage.getItem(hintStorageKey) === "true";
+    }
+
+    function updateHintToggle() {
+      if (!hintToggle) return;
+      hintToggle.textContent = `Hints: ${showHints ? "On" : "Off"}`;
+      hintToggle.setAttribute("aria-pressed", String(showHints));
+    }
+
+    function applyHintVisibility(question) {
+      if (showHints) {
+        hintEl.textContent = "Hint: " + question.hint;
+        hintEl.style.display = "";
+      } else {
+        hintEl.textContent = "";
+        hintEl.style.display = "none";
+      }
+    }
 
     function setActiveSystemChip() {
       chips.forEach((chip) => {
@@ -679,7 +707,7 @@
     function loadQuestion() {
       const q = getCurrentQuestion();
       questionEl.textContent = "Q" + (orderPosition + 1) + ": " + q.prompt;
-      hintEl.textContent = "Hint: " + q.hint;
+      applyHintVisibility(q);
 
       currentOptionOrder = shuffleArray(q.options.map((_, i) => i));
       currentCorrectIndex = currentOptionOrder.indexOf(q.correctIndex);
@@ -748,6 +776,15 @@
       });
     });
 
+    if (hintToggle) {
+      hintToggle.addEventListener("click", () => {
+        showHints = !showHints;
+        localStorage.setItem(hintStorageKey, String(showHints));
+        updateHintToggle();
+        applyHintVisibility(getCurrentQuestion());
+      });
+    }
+
     nextBtn.addEventListener("click", () => {
       orderPosition++;
       if (orderPosition >= questionOrder.length) {
@@ -765,6 +802,7 @@
     loadQuestion();
     setActiveSystemChip();
     updateScore();
+    updateHintToggle();
   </script>
 </body>
 </html>
