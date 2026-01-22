@@ -30,6 +30,20 @@
       color: #555;
       margin-bottom: 15px;
     }
+    #hint-toggle {
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      background: #fff;
+      cursor: pointer;
+      font-size: 0.9rem;
+      margin-bottom: 8px;
+    }
+    #hint-toggle[aria-pressed="true"] {
+      border-color: #3366cc;
+      color: #1f3b73;
+      background: #eef3ff;
+    }
     .options {
       display: flex;
       flex-direction: column;
@@ -131,6 +145,7 @@
 
   <div id="quiz-container">
     <div id="question"></div>
+    <button id="hint-toggle" type="button" aria-pressed="false">Hints: Off</button>
     <div id="hint"></div>
     <div class="options" id="options"></div>
     <div id="feedback"></div>
@@ -287,11 +302,30 @@
     const explanationEl = document.getElementById("explanation");
     const scoreEl = document.getElementById("score");
     const nextBtn = document.getElementById("next-btn");
+    const hintToggleBtn = document.getElementById("hint-toggle");
+    const storedShowHints = localStorage.getItem("rainGameShowHints");
+    let showHints = storedShowHints ? storedShowHints === "true" : false;
+
+    function updateHintToggle() {
+      hintToggleBtn.textContent = showHints ? "Hints: On" : "Hints: Off";
+      hintToggleBtn.setAttribute("aria-pressed", showHints ? "true" : "false");
+    }
+
+    function updateHintDisplay() {
+      const q = questions[currentIndex];
+      if (showHints) {
+        hintEl.textContent = "Hint: " + q.hint;
+        hintEl.style.display = "";
+      } else {
+        hintEl.textContent = "";
+        hintEl.style.display = "none";
+      }
+    }
 
     function loadQuestion() {
       const q = questions[currentIndex];
       questionEl.textContent = "Q" + (currentIndex + 1) + ": " + q.prompt;
-      hintEl.textContent = "Hint: " + q.hint;
+      updateHintDisplay();
 
       optionsEl.innerHTML = "";
       feedbackEl.textContent = "";
@@ -346,7 +380,15 @@
       loadQuestion();
     });
 
+    hintToggleBtn.addEventListener("click", () => {
+      showHints = !showHints;
+      localStorage.setItem("rainGameShowHints", showHints);
+      updateHintToggle();
+      updateHintDisplay();
+    });
+
     // init
+    updateHintToggle();
     loadQuestion();
     updateScore();
   </script>
