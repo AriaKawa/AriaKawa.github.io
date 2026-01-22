@@ -496,10 +496,14 @@ a {
     border-radius: 999px;
     font-weight: 600;
     letter-spacing: 0.02em;
+    border: none;
     color: var(--sylveon-navy);
     background: linear-gradient(135deg, var(--sylveon-blue-400), var(--sylveon-pink-500));
     box-shadow: 0 20px 40px rgba(166, 203, 255, 0.32);
     transition: transform 0.25s ease, box-shadow 0.25s ease;
+    cursor: pointer;
+    font: inherit;
+    text-decoration: none;
 }
 
 .category__back:focus-visible {

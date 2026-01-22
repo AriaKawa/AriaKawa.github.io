@@ -206,6 +206,8 @@
       font-weight: 700;
       background: rgba(255, 255, 255, 0.04);
       transition: all 0.12s ease;
+      cursor: pointer;
+      font: inherit;
     }
 
     .back-link:hover {
@@ -216,7 +218,7 @@
   </style>
 </head>
 <body>
-  <a class="back-link" href="japanese-study.html#verbs">⟵ Back to Japanese Study</a>
+  <button class="back-link" type="button" data-back-button aria-label="Back">⟵ Back</button>
   <h1>Days of the Week Quiz – Japanese Practice</h1>
   <p>
     Practice the Japanese days of the week: kanji, reading, and using them in sentences.
@@ -249,6 +251,17 @@
   </div>
 
   <script>
+    const backButton = document.querySelector('[data-back-button]');
+    if (backButton) {
+      backButton.addEventListener('click', () => {
+        if (window.history.length <= 1) {
+          window.location.href = 'index.html';
+        } else {
+          window.history.back();
+        }
+      });
+    }
+
     const DAYS = [
       { english: "Sunday", kanji: "日曜日", hiragana: "にちようび", romaji: "nichiyoubi", shortKanji: "日", shortHiragana: "にち", shortRomaji: "nichi" },
       { english: "Monday", kanji: "月曜日", hiragana: "げつようび", romaji: "getsuyoubi", shortKanji: "月", shortHiragana: "げつ", shortRomaji: "getsu" },

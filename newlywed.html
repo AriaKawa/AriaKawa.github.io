@@ -43,7 +43,7 @@
     .monospace{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace}
     .code{padding:8px 10px; border-radius:10px; background:#0e1527; border:1px solid rgba(255,255,255,.12)}
     .back-nav{position:fixed;top:16px;left:16px;z-index:30}
-    .back-nav__link{display:inline-flex;align-items:center;gap:.45rem;padding:.55rem 1.1rem;border-radius:999px;font-weight:600;letter-spacing:.03em;text-decoration:none;color:var(--text);background:rgba(9,15,28,.85);border:1px solid rgba(255,255,255,.18);box-shadow:0 16px 28px rgba(0,0,0,.45);transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+    .back-nav__link{display:inline-flex;align-items:center;gap:.45rem;padding:.55rem 1.1rem;border-radius:999px;font-weight:600;letter-spacing:.03em;text-decoration:none;color:var(--text);background:rgba(9,15,28,.85);border:1px solid rgba(255,255,255,.18);box-shadow:0 16px 28px rgba(0,0,0,.45);transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease;cursor:pointer;font:inherit}
     .back-nav__link:hover,
     .back-nav__link:focus-visible{transform:translateY(-1px);border-color:rgba(110,168,254,.4);box-shadow:0 22px 36px rgba(0,0,0,.55);outline:none}
     .back-nav__icon{font-size:1rem;line-height:1}
@@ -51,10 +51,10 @@
 </head>
 <body>
   <nav class="back-nav" aria-label="Return to main menu">
-    <a class="back-nav__link" href="index.html">
+    <button class="back-nav__link" type="button" data-back-button aria-label="Back">
       <span class="back-nav__icon" aria-hidden="true">⟵</span>
-      <span>Back to menu</span>
-    </a>
+      <span>Back</span>
+    </button>
   </nav>
   <div class="wrap">
     <h1>Newlywed Game <span class="muted">(Friends Edition)</span></h1>
@@ -194,6 +194,17 @@
     // ============================
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot, collection, addDoc, serverTimestamp, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const backButton = document.querySelector('[data-back-button]');
+    if (backButton) {
+      backButton.addEventListener('click', () => {
+        if (window.history.length <= 1) {
+          window.location.href = 'index.html';
+        } else {
+          window.history.back();
+        }
+      });
+    }
 
     const firebaseConfig = {
       // ⛳ TODO: paste your Firebase web app config here

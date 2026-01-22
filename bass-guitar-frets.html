@@ -42,6 +42,26 @@
       backdrop-filter: blur(10px);
       background: linear-gradient(180deg, rgba(18,28,46,.85), rgba(18,28,46,.6));
     }
+    .back-button{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 12px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.18);
+      background:rgba(9,14,22,.85);
+      color:var(--text);
+      font-weight:600;
+      cursor:pointer;
+      font:inherit;
+      white-space:nowrap;
+    }
+    .back-button:hover,
+    .back-button:focus-visible{
+      border-color:rgba(116,199,255,.6);
+      box-shadow:0 0 0 2px rgba(116,199,255,.25);
+      outline:none;
+    }
     h1{
       margin:0;
       font-size:18px;
@@ -188,6 +208,7 @@
 <body>
   <div class="app" aria-label="Bass fret lighting trainer">
     <div class="top-bar">
+      <button class="back-button" type="button" data-back-button aria-label="Back">← Back</button>
       <div>
         <h1>Bass Fret Lighting</h1>
         <p class="hint">Tap frets to toggle the glow, or use the randomizer and clear buttons.</p>
@@ -209,6 +230,17 @@
     </div>
   </div>
   <script>
+    const backButton = document.querySelector('[data-back-button]');
+    if (backButton) {
+      backButton.addEventListener('click', () => {
+        if (window.history.length <= 1) {
+          window.location.href = 'index.html';
+        } else {
+          window.history.back();
+        }
+      });
+    }
+
     const fretsEl = document.querySelector('.frets');
     const statusEl = document.querySelector('[data-status]');
     const countEl = document.querySelector('[data-count]');

@@ -12,10 +12,10 @@
 <body>
     <main class="category">
         <header class="category__header">
-            <a class="category__back" href="index.html">
+            <button class="category__back" type="button" data-back-button aria-label="Back">
                 <span aria-hidden="true">←</span>
-                <span>Back to Menu</span>
-            </a>
+                <span>Back</span>
+            </button>
             <div>
                 <h1 class="category__title">Miscellaneous</h1>
                 <p class="category__description">
@@ -39,5 +39,17 @@
             </a>
         </section>
     </main>
+    <script>
+        const backButton = document.querySelector('[data-back-button]');
+        if (backButton) {
+            backButton.addEventListener('click', () => {
+                if (window.history.length <= 1) {
+                    window.location.href = 'index.html';
+                } else {
+                    window.history.back();
+                }
+            });
+        }
+    </script>
 </body>
 </html>
