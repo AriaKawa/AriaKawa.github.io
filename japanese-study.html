@@ -498,7 +498,7 @@
   </section>
 
   <section id="gameScene" class="scene panel">
-    <button class="ghost" id="backToMenu">⟵ Back to Verb Modes</button>
+    <button class="ghost" id="backToMenu">⟵ Back</button>
     <div class="header">
       <h1>Verb Match — N5/N4-ish</h1>
       <div class="controls">
@@ -1438,8 +1438,12 @@
     });
 
     backToMenuBtn.addEventListener("click", () => {
-      showScene("verbsScene");
-      syncLocationHash("verbsScene");
+      if (window.history.length > 1) {
+        window.history.back();
+      } else {
+        showScene("verbsScene");
+        syncLocationHash("verbsScene");
+      }
     });
 
     verbsGameBtn.addEventListener("click", () => {
