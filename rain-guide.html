@@ -101,10 +101,31 @@
     a:hover {
       text-decoration: underline;
     }
+    .back-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(217, 85, 127, 0.12);
+      color: var(--text);
+      font-weight: 600;
+      cursor: pointer;
+      font: inherit;
+      margin-bottom: 14px;
+    }
+    .back-button:hover,
+    .back-button:focus-visible {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(217, 85, 127, 0.3);
+      outline: none;
+    }
   </style>
 </head>
 <body>
   <div class="panel">
+  <button class="back-button" type="button" data-back-button aria-label="Back">← Back</button>
   <h1>Japanese Weather: Rain (雨が降る) Study Guide</h1>
 
   <p>
@@ -258,5 +279,17 @@
     <p><a href="rain-quiz-game.html">→ Go to Rain Quiz Game</a></p>
   </div>
 </div>
+  <script>
+    const backButton = document.querySelector('[data-back-button]');
+    if (backButton) {
+      backButton.addEventListener('click', () => {
+        if (window.history.length <= 1) {
+          window.location.href = 'index.html';
+        } else {
+          window.history.back();
+        }
+      });
+    }
+  </script>
 </body>
 </html>

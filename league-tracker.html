@@ -196,9 +196,9 @@
   <header>
     <div class="header-row">
       <div class="title-group">
-        <a class="pill-button" href="index.html" aria-label="Back to home">
-          ← Home
-        </a>
+        <button class="pill-button" type="button" data-back-button aria-label="Back">
+          ← Back
+        </button>
         <h1>LoL Win-Tracker</h1>
       </div>
       <div id="account-controls">
@@ -229,6 +229,17 @@
   </main>
 
   <script>
+    const backButton = document.querySelector('[data-back-button]');
+    if (backButton) {
+      backButton.addEventListener('click', () => {
+        if (window.history.length <= 1) {
+          window.location.href = 'index.html';
+        } else {
+          window.history.back();
+        }
+      });
+    }
+
     // storage keys
     const LEGACY_STORAGE_KEY = "lol-champ-checklist-v1";
     const ACCOUNT_STORAGE_KEY = "lol-champ-accounts-v1";

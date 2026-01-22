@@ -164,6 +164,8 @@
       text-decoration: none;
       background: rgba(148, 163, 184, 0.08);
       font-weight: 700;
+      cursor: pointer;
+      font: inherit;
     }
     .back-link:hover {
       border-color: var(--accent);
@@ -176,7 +178,7 @@
 </head>
 <body>
   <main class="panel">
-    <a class="back-link" href="japanese-study.html#verbs">⟵ Back to Japanese Study</a>
+    <button class="back-link" type="button" data-back-button aria-label="Back">⟵ Back</button>
     <div class="header">
       <div>
         <h1>Time of Day &amp; Year Practice</h1>
@@ -235,6 +237,17 @@
   </main>
 
   <script>
+    const backButton = document.querySelector('[data-back-button]');
+    if (backButton) {
+      backButton.addEventListener('click', () => {
+        if (window.history.length <= 1) {
+          window.location.href = 'index.html';
+        } else {
+          window.history.back();
+        }
+      });
+    }
+
     const TERMS = [
       { jp: "朝", romaji: "asa", en: "morning" },
       { jp: "昼", romaji: "hiru", en: "noon" },

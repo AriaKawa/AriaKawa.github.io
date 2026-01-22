@@ -36,6 +36,11 @@
       display:flex; flex-direction:column; align-items:center; gap:16px; padding:16px;
     }
 
+    .back-button{
+      align-self:flex-start;
+      margin-bottom:4px;
+    }
+
     .workspace{
       width:100%;
       max-width:calc(var(--grid-size) + 320px);
@@ -124,6 +129,7 @@
   </style>
 </head>
 <body>
+  <button class="back-button" type="button" data-back-button aria-label="Back">← Back</button>
   <div class="workspace" aria-label="Grid controls and preview">
     <div class="toolbar-left">
       <label class="button" for="bulkInput" title="Add images; they will fill empty cells left-to-right, top-to-bottom.">
@@ -177,6 +183,17 @@
   </div>
 
   <script>
+    const backButton = document.querySelector('[data-back-button]');
+    if (backButton) {
+      backButton.addEventListener('click', () => {
+        if (window.history.length <= 1) {
+          window.location.href = 'index.html';
+        } else {
+          window.history.back();
+        }
+      });
+    }
+
     /**
      * Minimal, dependency‑free uploader for a 3×3 grid.
      * Features:

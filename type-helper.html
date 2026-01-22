@@ -199,6 +199,7 @@
   <div class="app">
     <header class="top">
       <div class="brand">
+        <button class="link-btn" type="button" data-back-button aria-label="Back">← Back</button>
         <h1>Pokémon Typing Battle</h1>
         <p>Sharpen your matchup memory with a focused drill.</p>
       </div>
@@ -285,6 +286,17 @@
   </div>
 
 <script>
+const backButton = document.querySelector('[data-back-button]');
+if (backButton) {
+  backButton.addEventListener('click', () => {
+    if (window.history.length <= 1) {
+      window.location.href = 'index.html';
+    } else {
+      window.history.back();
+    }
+  });
+}
+
 const TYPES = [
   'Normal','Fire','Water','Electric','Grass','Ice','Fighting','Poison','Ground','Flying','Psychic','Bug','Rock','Ghost','Dragon','Dark','Steel','Fairy'
 ];

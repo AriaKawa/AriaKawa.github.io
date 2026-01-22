@@ -33,6 +33,8 @@
     border:1px solid rgba(255,255,255,.18);
     box-shadow:0 16px 28px rgba(0,0,0,.45);
     transition:transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+    cursor:pointer;
+    font:inherit;
   }
   .back-nav__link:hover,
   .back-nav__link:focus-visible {
@@ -46,10 +48,10 @@
 </head>
 <body>
 <nav class="back-nav" aria-label="Return to main menu">
-  <a class="back-nav__link" href="index.html">
+  <button class="back-nav__link" type="button" data-back-button aria-label="Back">
     <span class="back-nav__icon" aria-hidden="true">⟵</span>
-    <span>Back to menu</span>
-  </a>
+    <span>Back</span>
+  </button>
 </nav>
 <canvas id="game" width="384" height="216"></canvas>
 
@@ -62,6 +64,17 @@
 <div id="toast"></div>
 
 <script>
+const backButton = document.querySelector('[data-back-button]');
+if (backButton) {
+  backButton.addEventListener('click', () => {
+    if (window.history.length <= 1) {
+      window.location.href = 'index.html';
+    } else {
+      window.history.back();
+    }
+  });
+}
+
 (() => {
   // =========================
   // Config & Constants

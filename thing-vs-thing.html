@@ -352,10 +352,10 @@
 
     <div class="layout">
         <nav class="back-nav">
-            <a class="back-nav__button" href="index.html">
+            <button class="back-nav__button" type="button" data-back-button aria-label="Back">
                 <span class="back-nav__icon" aria-hidden="true">⟵</span>
-                Back to vault
-            </a>
+                Back
+            </button>
         </nav>
 
         <header>
@@ -396,6 +396,17 @@
     </div>
 
     <script>
+        const backButton = document.querySelector('[data-back-button]');
+        if (backButton) {
+            backButton.addEventListener('click', () => {
+                if (window.history.length <= 1) {
+                    window.location.href = 'index.html';
+                } else {
+                    window.history.back();
+                }
+            });
+        }
+
         const twists = [
             "Loser has to DJ the afterparty using only movie soundtracks.",
             "Each argument must include a rhyme.",
