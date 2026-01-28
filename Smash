@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Smash Random 1v1 Picker</title>
+  <style>
+    :root {
+      --bg: #0b0f17;
+      --card: #121a2a;
+      --card2: #0f1626;
+      --border: rgba(255,255,255,0.10);
+      --text: rgba(255,255,255,0.92);
+      --muted: rgba(255,255,255,0.65);
+      --accent: #7aa2ff;
+      --good: #2ecc71;
+      --bad: #ff5c5c;
+      --shadow: 0 14px 40px rgba(0,0,0,0.35);
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(1200px 700px at 20% 0%, #122042 0%, var(--bg) 55%);
+      color: var(--text);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    }
+
+    header {
+      padding: 20px 18px 10px;
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      gap: 12px;
+    }
+
+    h1 { margin: 0; font-size: 20px; letter-spacing: 0.2px; }
+    .sub { color: var(--muted); font-size: 13px; line-height: 1.3; }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    button {
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 12px;
+      cursor: pointer;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.25);
+      transition: transform .05s ease, border-color .15s ease, background .15s ease;
+      user-select: none;
+    }
+    button:active { transform: translateY(1px); }
+    button:hover { border-color: rgba(122,162,255,0.55); }
+
+    .btn-primary { border-color: rgba(122,162,255,0.45); }
+    .btn-primary:hover { border-color: rgba(122,162,255,0.8); }
+
+    .btn-reset { border-color: rgba(255,92,92,0.35); }
+    .btn-reset:hover { border-color: rgba(255,92,92,0.7); }
+
+    .pill {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: rgba(0,0,0,0.15);
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .pill strong { color: var(--text); font-weight: 650; }
+
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 10px 18px 30px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .matchup {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .slot {
+      background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 12px;
+      display: grid;
+      grid-template-columns: 80px 1fr;
+      gap: 12px;
+      align-items: center;
+      min-height: 104px;
+    }
+
+    .slot .face {
+      width: 80px;
+      height: 80px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: rgba(0,0,0,0.25);
+      overflow: hidden;
+      display: grid;
+      place-items: center;
+    }
+    .slot .face img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scale(1.03);
+    }
+
+    .slot .meta {
+      display: grid;
+      gap: 6px;
+      align-content: center;
+    }
+    .slot .name {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+    }
+    .slot .score {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .slot .actions {
+      grid-column: 1 / -1;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .vs {
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      font-weight: 800;
+      letter-spacing: 2px;
+      padding: 0 4px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+      gap: 10px;
+    }
+
+    .char {
+      background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.015));
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 10px 22px rgba(0,0,0,0.25);
+      cursor: pointer;
+      position: relative;
+      min-height: 104px;
+      display: grid;
+      grid-template-rows: 1fr auto;
+      transition: transform .06s ease, border-color .15s ease, filter .2s ease, opacity .2s ease;
+      user-select: none;
+    }
+    .char:hover { border-color: rgba(122,162,255,0.55); transform: translateY(-1px); }
+    .char:active { transform: translateY(0px); }
+
+    .char .imgwrap {
+      background: rgba(0,0,0,0.2);
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+    }
+    .char img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scale(1.06);
+    }
+    .char .label {
+      padding: 8px 8px;
+      font-size: 12px;
+      color: var(--muted);
+      border-top: 1px solid rgba(255,255,255,0.08);
+      background: rgba(0,0,0,0.18);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .char.selected-p1 { border-color: rgba(46,204,113,0.7); }
+    .char.selected-p2 { border-color: rgba(122,162,255,0.85); }
+
+    .char.used {
+      opacity: 0.32;
+      filter: grayscale(1);
+      cursor: not-allowed;
+    }
+
+    .badge {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(0,0,0,0.35);
+      color: var(--text);
+    }
+    .badge.p1 { border-color: rgba(46,204,113,0.5); }
+    .badge.p2 { border-color: rgba(122,162,255,0.55); }
+
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      margin-top: 8px;
+    }
+    .section-title h2 { margin: 0; font-size: 14px; color: var(--muted); font-weight: 650; }
+    .hint { font-size: 12px; color: rgba(255,255,255,0.55); }
+
+    @media (max-width: 680px) {
+      .matchup { grid-template-columns: 1fr; }
+      .vs { display: none; }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Smash Random 1v1 Picker</h1>
+    <div class="sub">
+      Click <b>Randomize</b> to pick two fighters. Then click <b>P1</b> or <b>P2</b> to award the win — that fighter gets greyed out and removed from future random rolls.
+    </div>
+
+    <div class="controls">
+      <button id="btnRandom" class="btn-primary">Randomize (Pick 2)</button>
+      <button id="btnReset" class="btn-reset">Reset Pool</button>
+
+      <span class="pill">Available: <strong id="availableCount">0</strong></span>
+      <span class="pill">Used: <strong id="usedCount">0</strong></span>
+    </div>
+  </header>
+
+  <main>
+    <section class="matchup" aria-label="Matchup">
+      <div class="slot" id="slotP1">
+        <div class="face" id="p1Face"></div>
+        <div class="meta">
+          <div class="name" id="p1Name">P1: —</div>
+          <div class="score" id="p1Score">Wins: 0</div>
+        </div>
+        <div class="actions">
+          <button id="btnP1Win" disabled>Give Point to P1</button>
+        </div>
+      </div>
+
+      <div class="vs">VS</div>
+
+      <div class="slot" id="slotP2">
+        <div class="face" id="p2Face"></div>
+        <div class="meta">
+          <div class="name" id="p2Name">P2: —</div>
+          <div class="score" id="p2Score">Wins: 0</div>
+        </div>
+        <div class="actions">
+          <button id="btnP2Win" disabled>Give Point to P2</button>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-title">
+        <h2>Character Pool</h2>
+        <div class="hint">Tip: click a character tile to manually set P1, then click another to set P2 (optional).</div>
+      </div>
+      <div class="grid" id="grid"></div>
+    </section>
+  </main>
+
+  <script>
+    /**
+     * HOW TO ADD ALL SMASH CHARACTERS:
+     * - Put images in /img/
+     * - Add each character here with: { id, name, img }
+     *
+     * Recommended: square headshots (e.g., 256x256 or 512x512).
+     */
+    const fighters = [
+      // --- Sample list (replace/expand to full roster) ---
+      { id: "mario", name: "Mario", img: "img/mario.png" },
+      { id: "donkey_kong", name: "Donkey Kong", img: "img/donkey_kong.png" },
+      { id: "link", name: "Link", img: "img/link.png" },
+      { id: "samus", name: "Samus", img: "img/samus.png" },
+      { id: "kirby", name: "Kirby", img: "img/kirby.png" },
+      { id: "fox", name: "Fox", img: "img/fox.png" },
+      { id: "pikachu", name: "Pikachu", img: "img/pikachu.png" },
+      { id: "ness", name: "Ness", img: "img/ness.png" },
+      { id: "captain_falcon", name: "Captain Falcon", img: "img/captain_falcon.png" },
+      { id: "jigglypuff", name: "Jigglypuff", img: "img/jigglypuff.png" },
+      { id: "marth", na
