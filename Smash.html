@@ -433,13 +433,15 @@
     };
 
     const ICON_BASES = [
+      "https://cdn.jsdelivr.net/gh/akabab/smash-ultimate-api@master/assets/icons",
+      "https://raw.githubusercontent.com/akabab/smash-ultimate-api/master/assets/icons",
+      "https://akabab.github.io/smash-ultimate-api/characters/icon",
       "https://cdn.jsdelivr.net/gh/akabab/smash-ultimate-api@master/characters/icon",
       "https://cdn.jsdelivr.net/gh/akabab/smash-ultimate-api@master/public/characters/icon",
-      "https://akabab.github.io/smash-ultimate-api/characters/icon",
       "https://raw.githubusercontent.com/akabab/smash-ultimate-api/master/characters/icon",
-      "https://raw.githubusercontent.com/akabab/smash-ultimate-api/master/public/characters/icon",
-      "https://raw.githubusercontent.com/akabab/smash-ultimate-api/master/assets/icons"
+      "https://raw.githubusercontent.com/akabab/smash-ultimate-api/master/public/characters/icon"
     ];
+    const ICON_EXTS = ["png", "webp", "jpg"];
 
     const toIconSlug = (name) => {
       const overrides = {
@@ -474,7 +476,10 @@
         .replace(/^_+|_+$/g, "");
     };
 
-    const iconUrlFor = (base, name) => `${base}/${toIconSlug(name)}.png`;
+    const iconUrlFor = (base, name, ext) => `${base}/${toIconSlug(name)}.${ext}`;
+
+    const iconVariantsFor = (base, name) =>
+      ICON_EXTS.map((ext) => iconUrlFor(base, name, ext));
 
     const iconSourcesFor = (fighter) => {
       const sources = [];
@@ -484,7 +489,7 @@
       if (fighter?.image) {
         sources.push(fighter.image);
       }
-      ICON_BASES.forEach((base) => sources.push(iconUrlFor(base, fighter.name)));
+      ICON_BASES.forEach((base) => sources.push(...iconVariantsFor(base, fighter.name)));
       return sources.filter(Boolean);
     };
 
@@ -516,7 +521,7 @@
     const hydrateFallback = () => fallbackFighters.map((name, index) => ({
       id: `fallback-${index}`,
       name,
-      icon: iconUrlFor(ICON_BASES[0], name)
+      icon: iconUrlFor(ICON_BASES[0], name, ICON_EXTS[0])
     }));
 
     const applyFighterImage = (img, fighter, errorBadge) => {
@@ -561,7 +566,7 @@
             unique.set(name, {
               id: fighter.id ?? name,
               name,
-              icon: fighter.icon || fighter.image || iconUrlFor(ICON_BASES[0], name)
+              icon: fighter.icon || fighter.image || iconUrlFor(ICON_BASES[0], name, ICON_EXTS[0])
             });
           }
         });
@@ -582,6 +587,8 @@
         const img = document.createElement("img");
         applyFighterImage(img, fighter);
         img.alt = fighter.name;
+        img.referrerPolicy = "no-referrer";
+        img.decoding = "async";
         faceEl.appendChild(img);
         nameEl.textContent = `${slot}: ${fighter.name}`;
         scoreEl.textContent = `Wins: ${wins}`;
@@ -635,6 +642,8 @@
         applyFighterImage(img, fighter, imageFailure);
         img.alt = fighter.name;
         img.loading = "lazy";
+        img.referrerPolicy = "no-referrer";
+        img.decoding = "async";
 
         const label = document.createElement("span");
         label.textContent = fighter.name;
