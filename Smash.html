@@ -419,6 +419,36 @@
       btnP2Win: document.getElementById("btnP2Win")
     };
 
+    const ICON_BASE = "https://akabab.github.io/smash-ultimate-api/characters/icon";
+
+    const toIconSlug = (name) => {
+      const overrides = {
+        "Mr. Game & Watch": "mr_game_and_watch",
+        "Dr. Mario": "dr_mario",
+        "Dark Samus": "dark_samus",
+        "Zero Suit Samus": "zero_suit_samus",
+        "Pokémon Trainer": "pokemon_trainer",
+        "Pokemon Trainer": "pokemon_trainer",
+        "R.O.B.": "rob",
+        "King K. Rool": "king_k_rool",
+        "Banjo & Kazooie": "banjo_and_kazooie",
+        "Rosalina & Luma": "rosalina_and_luma",
+        "Pyra / Mythra": "pyra_and_mythra"
+      };
+
+      if (overrides[name]) {
+        return overrides[name];
+      }
+
+      return name
+        .toLowerCase()
+        .replace(/&/g, "and")
+        .replace(/[^a-z0-9]+/g, "_")
+        .replace(/^_+|_+$/g, "");
+    };
+
+    const iconUrlFor = (name) => `${ICON_BASE}/${toIconSlug(name)}.png`;
+
     const createPlaceholder = (name) => {
       const initials = name
         .replace(/[^A-Za-z0-9 ]/g, "")
@@ -447,8 +477,17 @@
     const hydrateFallback = () => fallbackFighters.map((name, index) => ({
       id: `fallback-${index}`,
       name,
-      icon: createPlaceholder(name)
+      icon: iconUrlFor(name)
     }));
+
+    const applyFighterImage = (img, fighter) => {
+      const placeholder = createPlaceholder(fighter.name);
+      img.src = fighter.icon || iconUrlFor(fighter.name) || placeholder;
+      img.onerror = () => {
+        img.onerror = null;
+        img.src = placeholder;
+      };
+    };
 
     const loadFighters = async () => {
       try {
@@ -464,7 +503,7 @@
             unique.set(name, {
               id: fighter.id ?? name,
               name,
-              icon: fighter.icon || fighter.image || createPlaceholder(name)
+              icon: fighter.icon || fighter.image || iconUrlFor(name)
             });
           }
         });
@@ -483,7 +522,7 @@
       faceEl.innerHTML = "";
       if (fighter) {
         const img = document.createElement("img");
-        img.src = fighter.icon;
+        applyFighterImage(img, fighter);
         img.alt = fighter.name;
         faceEl.appendChild(img);
         nameEl.textContent = `${slot}: ${fighter.name}`;
@@ -531,7 +570,7 @@
         }
 
         const img = document.createElement("img");
-        img.src = fighter.icon;
+        applyFighterImage(img, fighter);
         img.alt = fighter.name;
         img.loading = "lazy";
 

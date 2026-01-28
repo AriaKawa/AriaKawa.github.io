@@ -570,6 +570,22 @@ a {
     font-weight: 700;
 }
 
+.category-card__icon-strip {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 0.1rem;
+}
+
+.category-card__icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 0.65rem;
+    border: 1px solid rgba(148, 163, 184, 0.4);
+    background: rgba(15, 23, 42, 0.7);
+    object-fit: cover;
+}
+
 .category-card__description {
     margin: 0;
     color: var(--card-text-soft);
