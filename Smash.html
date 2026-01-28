@@ -236,6 +236,19 @@
       background: rgba(15, 23, 42, 0.85);
       border: 1px solid rgba(148, 163, 184, 0.35);
     }
+    .fighter .image-failed {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      font-size: 0.6rem;
+      padding: 0.1rem 0.35rem;
+      border-radius: 9999px;
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.45);
+      color: #fecaca;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
 
     @media (max-width: 600px) {
       header {
@@ -433,7 +446,12 @@
         "King K. Rool": "king_k_rool",
         "Banjo & Kazooie": "banjo_and_kazooie",
         "Rosalina & Luma": "rosalina_and_luma",
-        "Pyra / Mythra": "pyra_and_mythra"
+        "Pyra / Mythra": "pyra_and_mythra",
+        "Pac-Man": "pacman",
+        "Bowser Jr.": "bowser_jr",
+        "Ice Climbers": "ice_climbers",
+        "Duck Hunt": "duck_hunt",
+        "Wii Fit Trainer": "wii_fit_trainer"
       };
 
       if (overrides[name]) {
@@ -441,6 +459,8 @@
       }
 
       return name
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
         .toLowerCase()
         .replace(/&/g, "and")
         .replace(/[^a-z0-9]+/g, "_")
@@ -480,11 +500,18 @@
       icon: iconUrlFor(name)
     }));
 
-    const applyFighterImage = (img, fighter) => {
+    const applyFighterImage = (img, fighter, errorBadge) => {
       const placeholder = createPlaceholder(fighter.name);
+      if (errorBadge) {
+        errorBadge.hidden = true;
+      }
       img.src = fighter.icon || iconUrlFor(fighter.name) || placeholder;
       img.onerror = () => {
         img.onerror = null;
+        if (errorBadge) {
+          errorBadge.hidden = false;
+        }
+        console.warn("Missing fighter icon asset:", fighter.name, iconUrlFor(fighter.name));
         img.src = placeholder;
       };
     };
@@ -570,7 +597,11 @@
         }
 
         const img = document.createElement("img");
-        applyFighterImage(img, fighter);
+        const imageFailure = document.createElement("span");
+        imageFailure.className = "image-failed";
+        imageFailure.textContent = "image failed";
+        imageFailure.hidden = true;
+        applyFighterImage(img, fighter, imageFailure);
         img.alt = fighter.name;
         img.loading = "lazy";
 
@@ -578,6 +609,7 @@
         label.textContent = fighter.name;
 
         div.appendChild(img);
+        div.appendChild(imageFailure);
         div.appendChild(label);
 
         div.addEventListener("click", () => {
