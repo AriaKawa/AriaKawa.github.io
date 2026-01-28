@@ -438,6 +438,7 @@
       "https://raw.githubusercontent.com/akabab/smash-ultimate-api/master/public/characters/icon",
       "https://raw.githubusercontent.com/akabab/smash-ultimate-api/master/assets/icons"
     ];
+    const ICON_PROXY = "https://images.weserv.nl/?url=";
 
     const toIconSlug = (name) => {
       const overrides = {
@@ -474,6 +475,11 @@
 
     const iconUrlFor = (base, name) => `${base}/${toIconSlug(name)}.png`;
 
+    const proxyUrlFor = (url) => {
+      const sanitized = url.replace(/^https?:\/\//, "");
+      return `${ICON_PROXY}${encodeURIComponent(sanitized)}`;
+    };
+
     const iconSourcesFor = (fighter) => {
       const sources = [];
       if (fighter?.icon) {
@@ -483,6 +489,7 @@
         sources.push(fighter.image);
       }
       ICON_BASES.forEach((base) => sources.push(iconUrlFor(base, fighter.name)));
+      sources.slice().forEach((url) => sources.push(proxyUrlFor(url)));
       return sources.filter(Boolean);
     };
 
