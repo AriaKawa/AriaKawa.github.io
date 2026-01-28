@@ -432,7 +432,11 @@
       btnP2Win: document.getElementById("btnP2Win")
     };
 
-    const ICON_BASE = "https://akabab.github.io/smash-ultimate-api/characters/icon";
+    const ICON_BASES = [
+      "https://akabab.github.io/smash-ultimate-api/characters/icon",
+      "https://raw.githubusercontent.com/akabab/smash-ultimate-api/master/public/characters/icon",
+      "https://raw.githubusercontent.com/akabab/smash-ultimate-api/master/assets/icons"
+    ];
 
     const toIconSlug = (name) => {
       const overrides = {
@@ -467,7 +471,19 @@
         .replace(/^_+|_+$/g, "");
     };
 
-    const iconUrlFor = (name) => `${ICON_BASE}/${toIconSlug(name)}.png`;
+    const iconUrlFor = (base, name) => `${base}/${toIconSlug(name)}.png`;
+
+    const iconSourcesFor = (fighter) => {
+      const sources = [];
+      if (fighter?.icon) {
+        sources.push(fighter.icon);
+      }
+      if (fighter?.image) {
+        sources.push(fighter.image);
+      }
+      ICON_BASES.forEach((base) => sources.push(iconUrlFor(base, fighter.name)));
+      return sources.filter(Boolean);
+    };
 
     const createPlaceholder = (name) => {
       const initials = name
@@ -497,7 +513,7 @@
     const hydrateFallback = () => fallbackFighters.map((name, index) => ({
       id: `fallback-${index}`,
       name,
-      icon: iconUrlFor(name)
+      icon: iconUrlFor(ICON_BASES[0], name)
     }));
 
     const applyFighterImage = (img, fighter, errorBadge) => {
@@ -505,15 +521,27 @@
       if (errorBadge) {
         errorBadge.hidden = true;
       }
-      img.src = fighter.icon || iconUrlFor(fighter.name) || placeholder;
-      img.onerror = () => {
-        img.onerror = null;
-        if (errorBadge) {
-          errorBadge.hidden = false;
+      const sources = iconSourcesFor(fighter);
+      const trySource = (index) => {
+        if (index >= sources.length) {
+          if (errorBadge) {
+            errorBadge.hidden = false;
+          }
+          console.warn("Missing fighter icon asset:", fighter.name, sources);
+          img.src = placeholder;
+          return;
         }
-        console.warn("Missing fighter icon asset:", fighter.name, iconUrlFor(fighter.name));
-        img.src = placeholder;
+        img.src = sources[index];
+        img.onerror = () => {
+          img.onerror = null;
+          trySource(index + 1);
+        };
       };
+      if (sources.length) {
+        trySource(0);
+      } else {
+        img.src = placeholder;
+      }
     };
 
     const loadFighters = async () => {
@@ -530,7 +558,7 @@
             unique.set(name, {
               id: fighter.id ?? name,
               name,
-              icon: fighter.icon || fighter.image || iconUrlFor(name)
+              icon: fighter.icon || fighter.image || iconUrlFor(ICON_BASES[0], name)
             });
           }
         });
