@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tapple — Aria &amp; Friends Project Vault</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            color-scheme: dark;
+            --bg: #0b0b16;
+            --card: #151428;
+            --accent: #9d6bff;
+            --accent-soft: rgba(157, 107, 255, 0.2);
+            --text: #f5f5ff;
+            --muted: #b5b3d6;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "Plus Jakarta Sans", "Inter", system-ui, -apple-system, sans-serif;
+            background: radial-gradient(circle at top left, rgba(157, 107, 255, 0.18), transparent 55%),
+                        radial-gradient(circle at bottom right, rgba(76, 192, 255, 0.2), transparent 60%),
+                        var(--bg);
+            color: var(--text);
+        }
+
+        .page {
+            min-height: 100vh;
+            padding: 32px 20px 48px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 24px;
+        }
+
+        .top-row {
+            width: min(920px, 100%);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .back-button {
+            border: 1px solid rgba(157, 107, 255, 0.4);
+            background: rgba(21, 20, 40, 0.8);
+            color: var(--text);
+            border-radius: 999px;
+            padding: 8px 18px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .back-button:hover,
+        .back-button:focus-visible {
+            transform: translateY(-1px);
+            border-color: var(--accent);
+            outline: none;
+        }
+
+        .panel {
+            width: min(920px, 100%);
+            background: var(--card);
+            border-radius: 24px;
+            padding: clamp(24px, 4vw, 36px);
+            box-shadow: 0 30px 60px rgba(4, 4, 12, 0.55);
+            text-align: center;
+        }
+
+        .timer {
+            font-size: clamp(2.8rem, 6vw, 4rem);
+            font-weight: 700;
+            margin: 12px 0 24px;
+            color: var(--accent);
+        }
+
+        .letter-ring {
+            position: relative;
+            width: 320px;
+            height: 320px;
+            margin: 32px auto 24px;
+        }
+
+        .letter-button {
+            position: absolute;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: #1b1a33;
+            color: var(--text);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s ease, background 0.2s ease;
+        }
+
+        .letter-button:hover:not(:disabled) {
+            transform: scale(1.08);
+            background: rgba(157, 107, 255, 0.35);
+        }
+
+        .letter-button:disabled {
+            cursor: not-allowed;
+            background: #2b2a43;
+            color: #7b7a97;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .control-button {
+            border: 1px solid transparent;
+            background: rgba(157, 107, 255, 0.2);
+            color: var(--text);
+            padding: 10px 20px;
+            border-radius: 999px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: border-color 0.2s ease, transform 0.2s ease;
+        }
+
+        .control-button:hover,
+        .control-button:focus-visible {
+            border-color: var(--accent);
+            transform: translateY(-1px);
+            outline: none;
+        }
+
+        .status {
+            margin-top: 16px;
+            color: var(--muted);
+            min-height: 1.4rem;
+        }
+
+        .vote-panel {
+            margin: 20px auto 0;
+            padding: 16px;
+            border-radius: 16px;
+            background: rgba(0, 0, 0, 0.3);
+            display: none;
+            max-width: 360px;
+        }
+
+        .vote-panel.active {
+            display: block;
+        }
+
+        .vote-panel p {
+            margin: 0 0 12px;
+        }
+    </style>
+</head>
+<body>
+    <main class="page">
+        <div class="top-row">
+            <button class="back-button" type="button" data-back-button>← Back</button>
+            <div></div>
+        </div>
+
+        <section class="panel">
+            <h1>Tapple</h1>
+            <p class="status" id="status">Click a letter to keep the timer alive.</p>
+            <div class="timer" id="timer">10</div>
+
+            <div class="letter-ring" id="letter-ring" aria-label="Tapple letters"></div>
+
+            <div class="controls">
+                <button class="control-button" type="button" id="start-button">Start</button>
+                <button class="control-button" type="button" id="challenge-button">Challenge</button>
+                <button class="control-button" type="button" id="reset-button">Reset</button>
+            </div>
+
+            <div class="vote-panel" id="vote-panel">
+                <p>Vote on challenge</p>
+                <div class="controls">
+                    <button class="control-button" type="button" data-vote="yes">Yes</button>
+                    <button class="control-button" type="button" data-vote="no">No</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const backButton = document.querySelector('[data-back-button]');
+        if (backButton) {
+            backButton.addEventListener('click', () => {
+                if (window.history.length <= 1) {
+                    window.location.href = 'index.html';
+                } else {
+                    window.history.back();
+                }
+            });
+        }
+
+        const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+        const timerEl = document.getElementById('timer');
+        const ringEl = document.getElementById('letter-ring');
+        const statusEl = document.getElementById('status');
+        const startButton = document.getElementById('start-button');
+        const challengeButton = document.getElementById('challenge-button');
+        const resetButton = document.getElementById('reset-button');
+        const votePanel = document.getElementById('vote-panel');
+        let intervalId = null;
+
+        const game = {
+            letters: new Set(),
+            timer: 10,
+            running: false,
+            challenged: false
+        };
+
+        const updateStatus = (message) => {
+            statusEl.textContent = message;
+        };
+
+        const updateTimer = () => {
+            timerEl.textContent = game.timer;
+        };
+
+        const updateButtons = () => {
+            document.querySelectorAll('.letter-button').forEach((button) => {
+                const letter = button.dataset.letter;
+                const used = game.letters.has(letter);
+                button.disabled = used || game.challenged;
+                if (used) {
+                    button.setAttribute('aria-pressed', 'true');
+                } else {
+                    button.removeAttribute('aria-pressed');
+                }
+            });
+        };
+
+        const pressLetter = (letter) => {
+            if (game.letters.has(letter) || game.challenged) return;
+            game.letters.add(letter);
+            game.timer = 10;
+            updateTimer();
+            updateButtons();
+            updateStatus(`Letter ${letter} locked. Keep it going!`);
+        };
+
+        const startTimer = () => {
+            if (game.running) return;
+            game.running = true;
+            updateStatus('Timer running. Call a new answer before it hits zero!');
+
+            intervalId = setInterval(() => {
+                if (game.timer <= 0) {
+                    clearInterval(intervalId);
+                    intervalId = null;
+                    game.running = false;
+                    updateStatus('Time up! Reset or challenge to continue.');
+                    return;
+                }
+                game.timer -= 1;
+                updateTimer();
+            }, 1000);
+        };
+
+        const stopTimer = () => {
+            if (intervalId) {
+                clearInterval(intervalId);
+                intervalId = null;
+            }
+            game.running = false;
+        };
+
+        const challenge = () => {
+            game.challenged = true;
+            stopTimer();
+            votePanel.classList.add('active');
+            updateButtons();
+            updateStatus('Challenge initiated. Vote to decide the outcome.');
+        };
+
+        const vote = (result) => {
+            votePanel.classList.remove('active');
+            if (result === 'yes') {
+                game.letters.clear();
+                game.timer = 10;
+                updateTimer();
+                updateStatus('Challenge accepted. Letters cleared!');
+            } else {
+                updateStatus('Challenge denied. Keep playing!');
+            }
+            game.challenged = false;
+            updateButtons();
+            startTimer();
+        };
+
+        const reset = () => {
+            game.letters.clear();
+            game.timer = 10;
+            game.challenged = false;
+            stopTimer();
+            updateTimer();
+            updateButtons();
+            votePanel.classList.remove('active');
+            updateStatus('Board reset. Hit start when you\'re ready.');
+        };
+
+        const renderLetters = () => {
+            ringEl.innerHTML = '';
+            letters.forEach((letter, index) => {
+                const angle = (360 / letters.length) * index;
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'letter-button';
+                button.textContent = letter;
+                button.dataset.letter = letter;
+                button.style.transform = `rotate(${angle}deg) translate(140px) rotate(-${angle}deg)`;
+                button.addEventListener('click', () => pressLetter(letter));
+                ringEl.appendChild(button);
+            });
+            updateButtons();
+        };
+
+        startButton.addEventListener('click', startTimer);
+        challengeButton.addEventListener('click', challenge);
+        resetButton.addEventListener('click', reset);
+        votePanel.addEventListener('click', (event) => {
+            const voteButton = event.target.closest('[data-vote]');
+            if (!voteButton) return;
+            vote(voteButton.dataset.vote);
+        });
+
+        renderLetters();
+        updateTimer();
+        startTimer();
+    </script>
+</body>
+</html>
