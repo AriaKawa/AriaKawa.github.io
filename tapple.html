@@ -124,8 +124,25 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 20px;
+            gap: 24px;
             text-align: center;
+        }
+
+        .panel-header {
+            width: min(520px, 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 16px;
+            border-radius: 16px;
+            background: rgba(9, 12, 26, 0.6);
+            border: 1px solid rgba(162, 123, 255, 0.2);
+        }
+
+        .panel-header h1 {
+            margin: 0;
+            font-size: clamp(1.6rem, 3vw, 2.2rem);
         }
 
         .timer {
@@ -137,9 +154,9 @@
 
         .letter-ring {
             position: relative;
-            width: 420px;
-            height: 420px;
-            margin: 12px auto 8px;
+            width: clamp(260px, 60vw, 420px);
+            height: clamp(260px, 60vw, 420px);
+            margin: 20px auto 8px;
         }
 
         .letter-button {
@@ -264,9 +281,11 @@
                 </aside>
 
                 <div class="game-area">
-                    <h1>Tapple</h1>
-                    <p class="status" id="status">Press Start to begin the timer.</p>
-                    <div class="timer" id="timer">10</div>
+                    <div class="panel-header">
+                        <h1>Tapple</h1>
+                        <p class="status" id="status">Press Start to begin the timer.</p>
+                        <div class="timer" id="timer">10</div>
+                    </div>
 
                     <div class="letter-ring" id="letter-ring" aria-label="Tapple letters"></div>
 
@@ -421,7 +440,20 @@
             updateStatus('Board reset. Hit start when you\'re ready.');
         };
 
-        const ringRadius = 180;
+        let ringRadius = 180;
+
+        const updateRingRadius = () => {
+            const size = ringEl.offsetWidth;
+            ringRadius = Math.max(0, size / 2 - 30);
+        };
+
+        const positionLetters = () => {
+            updateRingRadius();
+            ringEl.querySelectorAll('.letter-button').forEach((button, index) => {
+                const angle = (360 / letters.length) * index;
+                button.style.transform = `rotate(${angle}deg) translate(${ringRadius}px) rotate(-${angle}deg)`;
+            });
+        };
 
         const renderLetters = () => {
             ringEl.innerHTML = '';
@@ -437,6 +469,7 @@
                 ringEl.appendChild(button);
             });
             updateButtons();
+            positionLetters();
         };
 
         const drawTopic = () => {
@@ -453,6 +486,7 @@
             if (!voteButton) return;
             vote(voteButton.dataset.vote);
         });
+        window.addEventListener('resize', positionLetters);
 
         renderLetters();
         updateTimer();
