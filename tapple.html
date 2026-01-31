@@ -123,21 +123,23 @@
         .game-area {
             display: flex;
             flex-direction: column;
-            align-items: center;
+            align-items: stretch;
             gap: 20px;
             text-align: center;
         }
 
         .panel-header {
-            width: min(680px, 100%);
+            width: min(720px, 100%);
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 16px;
+            align-self: center;
         }
 
         .panel-header h1 {
             margin: 0;
+            text-align: left;
         }
 
         .timer-wrap {
@@ -150,6 +152,7 @@
             justify-content: center;
             background: radial-gradient(circle at 30% 25%, rgba(162, 123, 255, 0.25), transparent 55%);
             box-shadow: inset 0 0 12px rgba(9, 10, 24, 0.6);
+            margin-left: auto;
         }
 
         .timer {
