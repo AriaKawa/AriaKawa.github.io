@@ -174,7 +174,7 @@
 
         <section class="panel">
             <h1>Tapple</h1>
-            <p class="status" id="status">Click a letter to keep the timer alive.</p>
+            <p class="status" id="status">Press Start to begin the timer.</p>
             <div class="timer" id="timer">10</div>
 
             <div class="letter-ring" id="letter-ring" aria-label="Tapple letters"></div>
@@ -294,13 +294,12 @@
                 game.letters.clear();
                 game.timer = 10;
                 updateTimer();
-                updateStatus('Challenge accepted. Letters cleared!');
+                updateStatus('Challenge accepted. Letters cleared! Press start to resume.');
             } else {
-                updateStatus('Challenge denied. Keep playing!');
+                updateStatus('Challenge denied. Press start to resume.');
             }
             game.challenged = false;
             updateButtons();
-            startTimer();
         };
 
         const reset = () => {
@@ -341,7 +340,6 @@
 
         renderLetters();
         updateTimer();
-        startTimer();
     </script>
 </body>
 </html>
