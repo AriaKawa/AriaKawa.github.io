@@ -13,6 +13,7 @@ export default function App() {
     challenged: false,
     votes: {}
   });
+  const [hasStarted, setHasStarted] = useState(false);
 
   // Sync game state
   useEffect(() => {
@@ -31,18 +32,8 @@ export default function App() {
     });
   }, [room]);
 
-  const pressLetter = (l) => {
-    if (game.letters[l] || game.challenged) return;
-    const updates = {
-      [`letters/${l}`]: true,
-      timer: 10
-    };
-    update(ref(db, `rooms/${room}`), updates);
-  };
-
-  const startTimer = () => {
-    if (game.running) return;
-    update(ref(db, `rooms/${room}`), { running: true });
+  useEffect(() => {
+    if (!hasStarted || !game.running) return;
 
     const interval = setInterval(() => {
       onValue(ref(db, `rooms/${room}/timer`), snap => {
@@ -55,8 +46,25 @@ export default function App() {
         } else {
           update(ref(db, `rooms/${room}`), { timer: t - 1 });
         }
-      });
+      }, { onlyOnce: true });
     }, 1000);
+
+    return () => clearInterval(interval);
+  }, [game.running, hasStarted, room]);
+
+  const pressLetter = (l) => {
+    if (game.letters[l] || game.challenged) return;
+    const updates = {
+      [`letters/${l}`]: true,
+      timer: 10
+    };
+    update(ref(db, `rooms/${room}`), updates);
+  };
+
+  const startTimer = () => {
+    if (game.running) return;
+    setHasStarted(true);
+    update(ref(db, `rooms/${room}`), { running: true });
   };
 
   const challenge = () => {
