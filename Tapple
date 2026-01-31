@@ -1,0 +1,142 @@
+import { useEffect, useState } from "react";
+import { db } from "./firebase";
+import { ref, onValue, set, update } from "firebase/database";
+
+const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+
+export default function App() {
+  const [room, setRoom] = useState("default"); // change for multiple rooms
+  const [game, setGame] = useState({
+    letters: {},
+    timer: 10,
+    running: false,
+    challenged: false,
+    votes: {}
+  });
+
+  // Sync game state
+  useEffect(() => {
+    const gameRef = ref(db, `rooms/${room}`);
+    onValue(gameRef, snapshot => {
+      if (snapshot.exists()) setGame(snapshot.val());
+    });
+
+    // Initialize room if empty
+    set(ref(db, `rooms/${room}`), {
+      letters: {},
+      timer: 10,
+      running: false,
+      challenged: false,
+      votes: {}
+    });
+  }, [room]);
+
+  const pressLetter = (l) => {
+    if (game.letters[l] || game.challenged) return;
+    const updates = {
+      [`letters/${l}`]: true,
+      timer: 10
+    };
+    update(ref(db, `rooms/${room}`), updates);
+  };
+
+  const startTimer = () => {
+    if (game.running) return;
+    update(ref(db, `rooms/${room}`), { running: true });
+
+    const interval = setInterval(() => {
+      onValue(ref(db, `rooms/${room}/timer`), snap => {
+        if (!snap.exists()) return;
+        const t = snap.val();
+        if (t <= 0) {
+          clearInterval(interval);
+          update(ref(db, `rooms/${room}`), { running: false });
+          alert("Time up!");
+        } else {
+          update(ref(db, `rooms/${room}`), { timer: t - 1 });
+        }
+      });
+    }, 1000);
+  };
+
+  const challenge = () => {
+    update(ref(db, `rooms/${room}`), { challenged: true, votes: {} });
+  };
+
+  const vote = (v) => {
+    const voteRef = ref(db, `rooms/${room}/votes/${Math.random()}`);
+    set(voteRef, v);
+
+    // Check votes after a small delay
+    setTimeout(() => {
+      onValue(ref(db, `rooms/${room}/votes`), snap => {
+        if (!snap.exists()) return;
+        const votes = Object.values(snap.val());
+        if (votes.length >= 2) { // simple 2-player majority
+          const yes = votes.filter(x => x === "yes").length;
+          if (yes > votes.length / 2) {
+            update(ref(db, `rooms/${room}`), { letters: {}, challenged: false, timer: 10, votes: {} });
+          } else {
+            update(ref(db, `rooms/${room}`), { challenged: false, votes: {} });
+          }
+        }
+      }, { onlyOnce: true });
+    }, 500);
+  };
+
+  const reset = () => {
+    set(ref(db, `rooms/${room}`), {
+      letters: {},
+      timer: 10,
+      running: false,
+      challenged: false,
+      votes: {}
+    });
+  };
+
+  return (
+    <div style={{ textAlign: "center", color: "white", background: "#111", minHeight: "100vh", padding: 20 }}>
+      <h1>Tapple</h1>
+      <div style={{ fontSize: "3rem" }}>{game.timer}</div>
+
+      <div style={{ position: "relative", width: 320, height: 320, margin: "40px auto", borderRadius: "50%" }}>
+        {letters.map((l, i) => {
+          const angle = (360 / 26) * i;
+          return (
+            <button
+              key={l}
+              onClick={() => pressLetter(l)}
+              disabled={game.letters[l] || game.challenged}
+              style={{
+                position: "absolute",
+                transform: `rotate(${angle}deg) translate(140px) rotate(-${angle}deg)`,
+                width: 40,
+                height: 40,
+                borderRadius: "50%",
+                background: game.letters[l] ? "#444" : "#222",
+                color: "white",
+                border: "1px solid #555"
+              }}
+            >
+              {l}
+            </button>
+          );
+        })}
+      </div>
+
+      <div style={{ margin: 20 }}>
+        <button onClick={startTimer} style={{ margin: 5 }}>Start</button>
+        <button onClick={challenge} style={{ margin: 5 }}>Challenge</button>
+        <button onClick={reset} style={{ margin: 5 }}>Reset</button>
+      </div>
+
+      {game.challenged && (
+        <div style={{ background: "#222", padding: 20, borderRadius: 10, margin: 10 }}>
+          <p>Vote on challenge</p>
+          <button onClick={() => vote("yes")} style={{ margin: 5 }}>Yes</button>
+          <button onClick={() => vote("no")} style={{ margin: 5 }}>No</button>
+        </div>
+      )}
+    </div>
+  );
+}
