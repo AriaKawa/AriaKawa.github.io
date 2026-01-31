@@ -10,12 +10,14 @@
     <style>
         :root {
             color-scheme: dark;
-            --bg: #0b0b16;
+            --bg: #070815;
             --card: #151428;
-            --accent: #9d6bff;
-            --accent-soft: rgba(157, 107, 255, 0.2);
-            --text: #f5f5ff;
-            --muted: #b5b3d6;
+            --accent: #a27bff;
+            --accent-soft: rgba(162, 123, 255, 0.22);
+            --accent-contrast: #ff7b6e;
+            --accent-cool: #38d6d1;
+            --text: #f7f4ff;
+            --muted: #b7b4d7;
         }
 
         *,
@@ -28,9 +30,10 @@
             margin: 0;
             min-height: 100vh;
             font-family: "Plus Jakarta Sans", "Inter", system-ui, -apple-system, sans-serif;
-            background: radial-gradient(circle at top left, rgba(157, 107, 255, 0.18), transparent 55%),
-                        radial-gradient(circle at bottom right, rgba(76, 192, 255, 0.2), transparent 60%),
-                        var(--bg);
+            background: radial-gradient(circle at 15% 20%, rgba(72, 118, 255, 0.35), transparent 55%),
+                        radial-gradient(circle at 85% 10%, rgba(168, 92, 255, 0.35), transparent 50%),
+                        radial-gradient(circle at 80% 85%, rgba(56, 214, 209, 0.25), transparent 55%),
+                        linear-gradient(140deg, #060713 0%, #0b112a 45%, #160b32 100%);
             color: var(--text);
         }
 
@@ -101,23 +104,31 @@
             width: 46px;
             height: 46px;
             border-radius: 50%;
-            background: #1b1a33;
-            color: var(--text);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: #242548;
+            color: #fbf9ff;
+            border: 1px solid rgba(231, 226, 255, 0.55);
             cursor: pointer;
             font-weight: 600;
-            transition: transform 0.2s ease, background 0.2s ease;
+            transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
         }
 
         .letter-button:hover:not(:disabled) {
             transform: scale(1.08);
-            background: rgba(157, 107, 255, 0.35);
+            background: rgba(162, 123, 255, 0.35);
+            border-color: rgba(231, 226, 255, 0.75);
         }
 
         .letter-button:disabled {
             cursor: not-allowed;
-            background: #2b2a43;
-            color: #7b7a97;
+            background: #1d1f39;
+            color: #9b98b6;
+            border-color: rgba(125, 120, 170, 0.6);
+        }
+
+        .letter-button[aria-pressed="true"] {
+            background: var(--accent-contrast);
+            color: #1b0f14;
+            border-color: rgba(255, 223, 218, 0.9);
         }
 
         .controls {
