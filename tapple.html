@@ -164,6 +164,17 @@
             transition: border-color 0.2s ease, transform 0.2s ease;
         }
 
+        .control-button--primary {
+            background: #3a6bff;
+            color: #f5f7ff;
+            border-color: rgba(58, 107, 255, 0.5);
+        }
+
+        .control-button--secondary {
+            background: rgba(58, 107, 255, 0.18);
+            border-color: rgba(58, 107, 255, 0.3);
+        }
+
         .control-button:hover,
         .control-button:focus-visible {
             border-color: var(--accent);
@@ -210,9 +221,9 @@
             <div class="letter-ring" id="letter-ring" aria-label="Tapple letters"></div>
 
             <div class="controls">
-                <button class="control-button" type="button" id="start-button">Start</button>
-                <button class="control-button" type="button" id="challenge-button">Challenge</button>
-                <button class="control-button" type="button" id="reset-button">Reset</button>
+                <button class="control-button control-button--primary" type="button" id="start-button">Start</button>
+                <button class="control-button control-button--secondary" type="button" id="challenge-button">Challenge</button>
+                <button class="control-button control-button--secondary" type="button" id="reset-button">Reset</button>
             </div>
 
             <div class="vote-panel" id="vote-panel">
