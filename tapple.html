@@ -111,8 +111,23 @@
 
         .letter-button:disabled {
             cursor: not-allowed;
-            background: #2b2a43;
-            color: #7b7a97;
+            background: #242237;
+            color: #8e8aa5;
+            opacity: 0.62;
+            filter: brightness(0.9) saturate(0.75);
+            box-shadow: inset 0 -6px 12px rgba(5, 8, 18, 0.35);
+        }
+
+        .letter-button.is-used {
+            background: #243147;
+            color: #95a6c5;
+            border-color: rgba(130, 150, 190, 0.35);
+            opacity: 0.78;
+            filter: brightness(0.92) saturate(0.8);
+            text-decoration: line-through;
+            text-decoration-color: rgba(149, 166, 197, 0.65);
+            box-shadow: inset 0 0 0 1px rgba(130, 150, 190, 0.2),
+                inset 0 -8px 16px rgba(8, 12, 26, 0.45);
         }
 
         .controls {
@@ -237,6 +252,7 @@
                 const letter = button.dataset.letter;
                 const used = game.letters.has(letter);
                 button.disabled = used || game.challenged;
+                button.classList.toggle('is-used', used);
                 if (used) {
                     button.setAttribute('aria-pressed', 'true');
                 } else {
