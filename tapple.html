@@ -128,11 +128,43 @@
             text-align: center;
         }
 
+        .panel-header {
+            width: min(680px, 100%);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .panel-header h1 {
+            margin: 0;
+        }
+
+        .timer-wrap {
+            width: clamp(88px, 14vw, 120px);
+            height: clamp(88px, 14vw, 120px);
+            border-radius: 50%;
+            border: 2px solid rgba(162, 123, 255, 0.55);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle at 30% 25%, rgba(162, 123, 255, 0.25), transparent 55%);
+            box-shadow: inset 0 0 12px rgba(9, 10, 24, 0.6);
+        }
+
         .timer {
             font-size: clamp(2.8rem, 6vw, 4rem);
             font-weight: 700;
             margin: 0;
             color: var(--accent);
+        }
+
+        .timer.timer--warn {
+            color: #ffb454;
+        }
+
+        .timer.timer--danger {
+            color: #ff6b5f;
         }
 
         .letter-ring {
@@ -245,6 +277,10 @@
             .topic-panel {
                 order: 2;
             }
+
+            .panel-header {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
@@ -264,9 +300,13 @@
                 </aside>
 
                 <div class="game-area">
-                    <h1>Tapple</h1>
+                    <div class="panel-header">
+                        <h1>Tapple</h1>
+                        <div class="timer-wrap">
+                            <div class="timer" id="timer">10</div>
+                        </div>
+                    </div>
                     <p class="status" id="status">Press Start to begin the timer.</p>
-                    <div class="timer" id="timer">10</div>
 
                     <div class="letter-ring" id="letter-ring" aria-label="Tapple letters"></div>
 
@@ -337,6 +377,12 @@
 
         const updateTimer = () => {
             timerEl.textContent = game.timer;
+            timerEl.classList.remove('timer--warn', 'timer--danger');
+            if (game.timer <= 3) {
+                timerEl.classList.add('timer--danger');
+            } else if (game.timer <= 5) {
+                timerEl.classList.add('timer--warn');
+            }
         };
 
         const updateButtons = () => {
