@@ -85,6 +85,18 @@
             gap: 20px;
         }
 
+        .panel-header {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .panel-header h1 {
+            margin: 0;
+        }
+
         .timer {
             font-size: clamp(2.8rem, 6vw, 4rem);
             font-weight: 700;
@@ -94,9 +106,9 @@
 
         .letter-ring {
             position: relative;
-            width: 420px;
-            height: 420px;
-            margin: 12px auto 8px;
+            width: clamp(260px, 60vw, 420px);
+            height: clamp(260px, 60vw, 420px);
+            margin: clamp(16px, 4vw, 32px) auto 8px;
         }
 
         .letter-button {
@@ -172,7 +184,7 @@
         }
 
         .status {
-            margin-top: 8px;
+            margin: 0;
             color: var(--muted);
             min-height: 1.4rem;
         }
@@ -203,9 +215,11 @@
         </div>
 
         <section class="panel">
-            <h1>Tapple</h1>
-            <p class="status" id="status">Press Start to begin the timer.</p>
-            <div class="timer" id="timer">10</div>
+            <div class="panel-header">
+                <h1>Tapple</h1>
+                <p class="status" id="status">Press Start to begin the timer.</p>
+                <div class="timer" id="timer">10</div>
+            </div>
 
             <div class="letter-ring" id="letter-ring" aria-label="Tapple letters"></div>
 
@@ -344,10 +358,16 @@
             updateStatus('Board reset. Hit start when you\'re ready.');
         };
 
-        const ringRadius = 180;
+        const buttonSize = 46;
+
+        const getRingRadius = () => {
+            const ringSize = ringEl.getBoundingClientRect().width || 0;
+            return Math.max(120, (ringSize / 2) - (buttonSize / 2) - 8);
+        };
 
         const renderLetters = () => {
             ringEl.innerHTML = '';
+            const ringRadius = getRingRadius();
             letters.forEach((letter, index) => {
                 const angle = (360 / letters.length) * index;
                 const button = document.createElement('button');
@@ -369,6 +389,10 @@
             const voteButton = event.target.closest('[data-vote]');
             if (!voteButton) return;
             vote(voteButton.dataset.vote);
+        });
+
+        window.addEventListener('resize', () => {
+            renderLetters();
         });
 
         renderLetters();
