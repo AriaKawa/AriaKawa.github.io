@@ -1,0 +1,665 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Particles: Meaning, Function, and Usage</title>
+  <style>
+    :root {
+      --bg: #12060f;
+      --panel: #2b0d18;
+      --accent: #f5a3c7;
+      --accent-strong: #d9557f;
+      --text: #f3e6f1;
+      --muted: rgba(243, 230, 241, 0.7);
+      --line: rgba(255, 255, 255, 0.12);
+      --good: #22c55e;
+      --warn: #f59e0b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      color: var(--text);
+      background: radial-gradient(circle at top, #40142b, var(--bg) 70%);
+      padding: 24px;
+    }
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    header {
+      background: rgba(43, 13, 24, 0.84);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 22px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+    }
+    header .eyebrow {
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+    header h1 {
+      margin: 8px 0 6px;
+      font-size: 2rem;
+    }
+    header p {
+      margin: 0 0 10px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .chip {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      color: var(--text);
+      font-size: 0.85rem;
+    }
+    .chip.accent {
+      background: var(--accent-strong);
+      border-color: transparent;
+      color: #2b0d18;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    section {
+      background: rgba(43, 13, 24, 0.82);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 22px;
+    }
+    h2 {
+      margin: 0 0 12px;
+      font-size: 1.5rem;
+    }
+    h3 {
+      margin: 0 0 10px;
+      font-size: 1.15rem;
+    }
+    p {
+      margin: 0;
+      line-height: 1.6;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+    }
+    .card {
+      background: rgba(18, 6, 15, 0.6);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .card p,
+    .card li {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+    .list {
+      margin: 0;
+      padding-left: 18px;
+      display: grid;
+      gap: 8px;
+    }
+    .label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+    }
+    .particle-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 16px;
+    }
+    .particle-card {
+      background: rgba(18, 6, 15, 0.7);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .particle-card h3 {
+      font-size: 1.2rem;
+    }
+    .particle-card ul {
+      margin: 0;
+      padding-left: 18px;
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+    }
+    .example-box {
+      background: rgba(43, 13, 24, 0.6);
+      border: 1px dashed rgba(245, 163, 199, 0.4);
+      border-radius: 12px;
+      padding: 10px;
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+    }
+    .example-box strong {
+      color: var(--text);
+    }
+    .diagram-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }
+    .diagram-box {
+      background: rgba(18, 6, 15, 0.65);
+      border: 1px solid rgba(245, 163, 199, 0.4);
+      border-radius: 12px;
+      padding: 12px;
+      display: grid;
+      gap: 6px;
+    }
+    .diagram-arrow {
+      font-size: 0.9rem;
+      color: var(--accent);
+    }
+    .game-grid {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    }
+    .mode-card {
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      padding: 14px;
+      background: rgba(18, 6, 15, 0.55);
+      display: grid;
+      gap: 8px;
+    }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8rem;
+      padding: 3px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(245, 163, 199, 0.4);
+      color: var(--accent);
+      width: fit-content;
+    }
+    .rule-list {
+      margin: 0;
+      padding-left: 20px;
+      display: grid;
+      gap: 8px;
+      color: var(--muted);
+    }
+    .footer-note {
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    @media (max-width: 720px) {
+      body {
+        padding: 16px;
+      }
+      header h1 {
+        font-size: 1.6rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <p class="eyebrow">Japanese Particles Curriculum</p>
+      <h1>Particles: Meaning, Function, and Usage</h1>
+      <p>A complete beginner → intermediate path for learners who already “feel” particles but want explicit mastery.</p>
+      <p class="footer-note">Goal: move from intuition to conscious control through explanation, contrast, and guided practice.</p>
+      <div class="chip-row">
+        <a class="chip accent" href="japanese-study.html">⟵ Back to Japanese Study Hub</a>
+        <span class="chip">No romaji after Level 1</span>
+        <span class="chip">Designed for UI cards & panels</span>
+      </div>
+    </header>
+
+    <section>
+      <h2>Learner Profile & Goal</h2>
+      <div class="grid">
+        <div class="card">
+          <span class="label">Profile</span>
+          <p>Already uses particles correctly by intuition, but lacks explicit grammar explanations.</p>
+        </div>
+        <div class="card">
+          <span class="label">Goal</span>
+          <p>Conscious mastery: explain why each particle is chosen, not just memorize patterns.</p>
+        </div>
+        <div class="card">
+          <span class="label">Outcome</span>
+          <p>By the end, learners can contrast particles and self-correct in natural conversation.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Curriculum Map (Beginner → Intermediate)</h2>
+      <div class="grid">
+        <div class="card">
+          <span class="label">Beginner Foundation</span>
+          <h3>Particles Lv.1</h3>
+          <p>は・が・を・に・で・の・へ (core sentence skeleton, location, direction, relationship).</p>
+        </div>
+        <div class="card">
+          <span class="label">Beginner Expansion</span>
+          <h3>Particles Lv.2</h3>
+          <p>と・も・や (listing, inclusion, companion) + contrast lines (は vs が, に vs で).</p>
+        </div>
+        <div class="card">
+          <span class="label">Intermediate Structure</span>
+          <h3>Particles Lv.3</h3>
+          <p>から・まで・より (source, boundary, comparison) + time/space nuance.</p>
+        </div>
+        <div class="card">
+          <span class="label">Interactive Nuance</span>
+          <h3>Particles Lv.4</h3>
+          <p>ね・よ・か・な (stance, invitation, confirmation) for conversational accuracy.</p>
+        </div>
+        <div class="card">
+          <span class="label">Integration</span>
+          <h3>Particles Lv.5</h3>
+          <p>Mixed sentences, swaps, repairs, and subtle contrasts across all particles.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Special Focus: の as a Relationship Marker (not “of”)</h2>
+      <p>Think of の as a bridge that says “A is related to B in this way.” The type of relationship is inferred from context.</p>
+      <div class="diagram-row" style="margin-top: 14px;">
+        <div class="diagram-box">
+          <span class="label">Possession</span>
+          <p><strong>彼の本</strong></p>
+          <p class="diagram-arrow">彼 → (owns) → 本</p>
+        </div>
+        <div class="diagram-box">
+          <span class="label">Description</span>
+          <p><strong>日本の映画</strong></p>
+          <p class="diagram-arrow">日本 → (describes) → 映画</p>
+        </div>
+        <div class="diagram-box">
+          <span class="label">Categorization</span>
+          <p><strong>先生の田中さん</strong></p>
+          <p class="diagram-arrow">先生 → (category) → 田中さん</p>
+        </div>
+        <div class="diagram-box">
+          <span class="label">Nominalization</span>
+          <p><strong>読むのが好き</strong></p>
+          <p class="diagram-arrow">読む → (thing) → 好き</p>
+        </div>
+      </div>
+      <div class="example-box" style="margin-top: 12px;">
+        <strong>Key reframe:</strong> の is a “relationship label,” not an English preposition. Ask “What link connects A and B?”
+      </div>
+    </section>
+
+    <section>
+      <h2>Particle Reference Cards</h2>
+      <div class="particle-grid">
+        <div class="particle-card">
+          <h3>は — Topic marker</h3>
+          <p><strong>Core meaning:</strong> Sets the topic and frames what the sentence is about.</p>
+          <ul>
+            <li><strong>Question it answers:</strong> “As for ___ ?”</li>
+            <li><strong>Conceptual role:</strong> Topic / contrast frame.</li>
+            <li><strong>Beginner mental model:</strong> “This is the theme.”</li>
+            <li><strong>Common misuse:</strong> Overusing は when introducing new information (vs が).</li>
+          </ul>
+          <div class="example-box">
+            <p><strong>Natural:</strong> 私は映画が好きです。 (As for me, I like movies.)</p>
+            <p><strong>Unnatural but grammatical:</strong> 今日は雨は降ります。 (Emphasizes rain specifically, not other things.)</p>
+            <p><strong>Contrast:</strong> 犬は庭にいます。/ 犬が庭にいます。 (Topic vs new focus.)</p>
+          </div>
+        </div>
+
+        <div class="particle-card">
+          <h3>が — Subject / focus marker</h3>
+          <p><strong>Core meaning:</strong> Highlights the subject as the focus or new information.</p>
+          <ul>
+            <li><strong>Question it answers:</strong> “Who/what does it?”</li>
+            <li><strong>Conceptual role:</strong> Subject / focus.</li>
+            <li><strong>Beginner mental model:</strong> “This is the doer.”</li>
+            <li><strong>Common misuse:</strong> Swapping は and が without considering contrast or newness.</li>
+          </ul>
+          <div class="example-box">
+            <p><strong>Natural:</strong> だれが来ますか。 (Who is coming?)</p>
+            <p><strong>Unnatural but grammatical:</strong> 私が寿司が好きです。 (Double focus; sounds heavy.)</p>
+            <p><strong>Contrast:</strong> 私は行きます。/ 私が行きます。 (Topic vs emphasis: “I am the one.”)</p>
+          </div>
+        </div>
+
+        <div class="particle-card">
+          <h3>を — Object marker</h3>
+          <p><strong>Core meaning:</strong> Marks the direct object being acted on.</p>
+          <ul>
+            <li><strong>Question it answers:</strong> “What do/what did you ___?”</li>
+            <li><strong>Conceptual role:</strong> Direct object.</li>
+            <li><strong>Beginner mental model:</strong> “The thing that gets the verb.”</li>
+            <li><strong>Common misuse:</strong> Using を with destinations (should be に/へ).</li>
+          </ul>
+          <div class="example-box">
+            <p><strong>Natural:</strong> パンを食べます。 (I eat bread.)</p>
+            <p><strong>Unnatural but grammatical:</strong> 公園を行きます。 (Grammatical in “walk through,” but odd if you mean “go to.”)</p>
+            <p><strong>Contrast:</strong> 公園を歩きます。/ 公園に行きます。 (Through vs to.)</p>
+          </div>
+        </div>
+
+        <div class="particle-card">
+          <h3>に — Point / target marker</h3>
+          <p><strong>Core meaning:</strong> Marks a specific point in time, place, or target.</p>
+          <ul>
+            <li><strong>Question it answers:</strong> “Where/when/to whom?”</li>
+            <li><strong>Conceptual role:</strong> Target, destination, time point.</li>
+            <li><strong>Beginner mental model:</strong> “The dot on the map.”</li>
+            <li><strong>Common misuse:</strong> Using に instead of で for the place of action.</li>
+          </ul>
+          <div class="example-box">
+            <p><strong>Natural:</strong> ７時に起きます。 (I wake up at 7.)</p>
+            <p><strong>Unnatural but grammatical:</strong> 公園に遊びます。 (Works if “play is directed,” but で is natural.)</p>
+            <p><strong>Contrast:</strong> 公園に行きます。/ 公園で遊びます。 (Destination vs action location.)</p>
+          </div>
+        </div>
+
+        <div class="particle-card">
+          <h3>で — Location / means marker</h3>
+          <p><strong>Core meaning:</strong> Marks the place where an action happens or the means used.</p>
+          <ul>
+            <li><strong>Question it answers:</strong> “Where/how?”</li>
+            <li><strong>Conceptual role:</strong> Action location, instrument, method.</li>
+            <li><strong>Beginner mental model:</strong> “The stage of action.”</li>
+            <li><strong>Common misuse:</strong> Using で for destinations (should be に/へ).</li>
+          </ul>
+          <div class="example-box">
+            <p><strong>Natural:</strong> 家で勉強します。 (I study at home.)</p>
+            <p><strong>Unnatural but grammatical:</strong> 駅で行きます。 (Technically “go by station,” but unclear.)</p>
+            <p><strong>Contrast:</strong> 学校に行きます。/ 学校で勉強します。 (Go to vs do at.)</p>
+          </div>
+        </div>
+
+        <div class="particle-card">
+          <h3>の — Relationship marker</h3>
+          <p><strong>Core meaning:</strong> Links two nouns with a context-based relationship.</p>
+          <ul>
+            <li><strong>Question it answers:</strong> “What relationship connects A and B?”</li>
+            <li><strong>Conceptual role:</strong> Modifier / linker.</li>
+            <li><strong>Beginner mental model:</strong> “A’s B.”</li>
+            <li><strong>Common misuse:</strong> Treating の as only possession and missing other links.</li>
+          </ul>
+          <div class="example-box">
+            <p><strong>Natural:</strong> 日本の友だちです。 (A friend connected to Japan.)</p>
+            <p><strong>Unnatural but grammatical:</strong> 彼の空が青い。 (Grammatical but odd relationship.)</p>
+            <p><strong>Contrast:</strong> 先生の本です。/ 先生が書いた本です。 (Relationship vs subject of action.)</p>
+          </div>
+        </div>
+
+        <div class="particle-card">
+          <h3>へ — Direction marker</h3>
+          <p><strong>Core meaning:</strong> Points toward a direction or destination.</p>
+          <ul>
+            <li><strong>Question it answers:</strong> “Where to?”</li>
+            <li><strong>Conceptual role:</strong> Direction / destination (emphasis on path).</li>
+            <li><strong>Beginner mental model:</strong> “Arrow to.”</li>
+            <li><strong>Common misuse:</strong> Mixing へ and に without considering direction vs arrival.</li>
+          </ul>
+          <div class="example-box">
+            <p><strong>Natural:</strong> 学校へ行きます。 (I go toward school.)</p>
+            <p><strong>Unnatural but grammatical:</strong> 家へ帰りましたか。 (Fine, but sounds formal in casual talk.)</p>
+            <p><strong>Contrast:</strong> 東京へ向かいます。/ 東京に着きます。 (Direction vs arrival.)</p>
+          </div>
+        </div>
+
+        <div class="particle-card">
+          <h3>と — Companion / quote / list marker</h3>
+          <p><strong>Core meaning:</strong> Connects items as a pair, a quote, or a complete list.</p>
+          <ul>
+            <li><strong>Question it answers:</strong> “With whom?/What did you say?”</li>
+            <li><strong>Conceptual role:</strong> Companion, quotation, full list.</li>
+            <li><strong>Beginner mental model:</strong> “And (complete set).”</li>
+            <li><strong>Common misuse:</strong> Using と where や is needed for partial lists.</li>
+          </ul>
+          <div class="example-box">
+            <p><strong>Natural:</strong> 友だちと映画を見ます。 (I watch a movie with a friend.)</p>
+            <p><strong>Unnatural but grammatical:</strong> りんごと買いました。 (Missing object; sounds clipped.)</p>
+            <p><strong>Contrast:</strong> りんごとバナナを買いました。/ りんごやバナナを買いました。 (Complete vs partial list.)</p>
+          </div>
+        </div>
+
+        <div class="particle-card">
+          <h3>も — Inclusion / “also” marker</h3>
+          <p><strong>Core meaning:</strong> Adds inclusion: “too/also/even.”</p>
+          <ul>
+            <li><strong>Question it answers:</strong> “What else?/Who else?”</li>
+            <li><strong>Conceptual role:</strong> Inclusion, emphasis.</li>
+            <li><strong>Beginner mental model:</strong> “Add one more.”</li>
+            <li><strong>Common misuse:</strong> Forgetting it replaces particles (は/が/を/に).</li>
+          </ul>
+          <div class="example-box">
+            <p><strong>Natural:</strong> 私も行きます。 (I am going too.)</p>
+            <p><strong>Unnatural but grammatical:</strong> ここにもで勉強します。 (Redundant; も already replaces で.)</p>
+            <p><strong>Contrast:</strong> 私は行きます。/ 私も行きます。 (Topic vs inclusion.)</p>
+          </div>
+        </div>
+
+        <div class="particle-card">
+          <h3>から — Starting point</h3>
+          <p><strong>Core meaning:</strong> Marks the origin or starting point of time, place, or reason.</p>
+          <ul>
+            <li><strong>Question it answers:</strong> “From where/when/why?”</li>
+            <li><strong>Conceptual role:</strong> Source, cause.</li>
+            <li><strong>Beginner mental model:</strong> “Start line.”</li>
+            <li><strong>Common misuse:</strong> Confusing reason から with ので (softness).</li>
+          </ul>
+          <div class="example-box">
+            <p><strong>Natural:</strong> 東京から来ました。 (I came from Tokyo.)</p>
+            <p><strong>Unnatural but grammatical:</strong> 忙しいから、映画を見ます。 (Grammatical but logic feels off.)</p>
+            <p><strong>Contrast:</strong> ９時から働きます。/ ９時まで働きます。 (Start vs end.)</p>
+          </div>
+        </div>
+
+        <div class="particle-card">
+          <h3>まで — Ending point</h3>
+          <p><strong>Core meaning:</strong> Marks the endpoint or limit.</p>
+          <ul>
+            <li><strong>Question it answers:</strong> “Until where/when?”</li>
+            <li><strong>Conceptual role:</strong> End boundary.</li>
+            <li><strong>Beginner mental model:</strong> “Finish line.”</li>
+            <li><strong>Common misuse:</strong> Using まで for origin.</li>
+          </ul>
+          <div class="example-box">
+            <p><strong>Natural:</strong> ５時まで勉強します。 (I study until 5.)</p>
+            <p><strong>Unnatural but grammatical:</strong> 日本まで来ます。 (Grammatical but implies “all the way to Japan.”)</p>
+            <p><strong>Contrast:</strong> 家から学校まで歩きます。/ 家に学校まで歩きます。 (Start-to-end vs wrong destination.)</p>
+          </div>
+        </div>
+
+        <div class="particle-card">
+          <h3>より — Comparison marker</h3>
+          <p><strong>Core meaning:</strong> Sets the reference point for comparison.</p>
+          <ul>
+            <li><strong>Question it answers:</strong> “Compared to what?”</li>
+            <li><strong>Conceptual role:</strong> Comparison reference.</li>
+            <li><strong>Beginner mental model:</strong> “Baseline.”</li>
+            <li><strong>Common misuse:</strong> Using より with superlatives where で/の中で is better.</li>
+          </ul>
+          <div class="example-box">
+            <p><strong>Natural:</strong> 東京は大阪より大きい。 (Tokyo is bigger than Osaka.)</p>
+            <p><strong>Unnatural but grammatical:</strong> 世界より一番高い。 (Needs “in the world” construction.)</p>
+            <p><strong>Contrast:</strong> 日本より寒い。/ 日本で一番寒い。 (Comparison vs superlative.)</p>
+          </div>
+        </div>
+
+        <div class="particle-card">
+          <h3>や — Partial list marker</h3>
+          <p><strong>Core meaning:</strong> Lists examples, implying “and others.”</p>
+          <ul>
+            <li><strong>Question it answers:</strong> “Like what?”</li>
+            <li><strong>Conceptual role:</strong> Example list.</li>
+            <li><strong>Beginner mental model:</strong> “And stuff like that.”</li>
+            <li><strong>Common misuse:</strong> Using や for exhaustive lists.</li>
+          </ul>
+          <div class="example-box">
+            <p><strong>Natural:</strong> 本やノートを買いました。 (I bought books and notebooks, etc.)</p>
+            <p><strong>Unnatural but grammatical:</strong> りんごやバナナだけです。 (Conflicts with “only.”)</p>
+            <p><strong>Contrast:</strong> りんごとバナナ。/ りんごやバナナ。 (Complete vs partial list.)</p>
+          </div>
+        </div>
+
+        <div class="particle-card">
+          <h3>ね — Confirmation / alignment</h3>
+          <p><strong>Core meaning:</strong> Invites the listener to agree or share feeling.</p>
+          <ul>
+            <li><strong>Question it answers:</strong> “Right?/Isn’t it?”</li>
+            <li><strong>Conceptual role:</strong> Interaction, soft confirmation.</li>
+            <li><strong>Beginner mental model:</strong> “We agree, right?”</li>
+            <li><strong>Common misuse:</strong> Overusing it and sounding too needy for confirmation.</li>
+          </ul>
+          <div class="example-box">
+            <p><strong>Natural:</strong> いい天気ですね。 (Nice weather, right?)</p>
+            <p><strong>Unnatural but grammatical:</strong> 行きますね。 (Sounds like a light announcement rather than a plan.)</p>
+            <p><strong>Contrast:</strong> いい天気ですね。/ いい天気ですよ。 (Shared feeling vs informing.)</p>
+          </div>
+        </div>
+
+        <div class="particle-card">
+          <h3>よ — Assertion / new info</h3>
+          <p><strong>Core meaning:</strong> Signals new information or strong assertion to the listener.</p>
+          <ul>
+            <li><strong>Question it answers:</strong> “Do you know?”</li>
+            <li><strong>Conceptual role:</strong> Emphasis, information push.</li>
+            <li><strong>Beginner mental model:</strong> “I’m telling you.”</li>
+            <li><strong>Common misuse:</strong> Using よ when the listener already knows, sounding pushy.</li>
+          </ul>
+          <div class="example-box">
+            <p><strong>Natural:</strong> ここは静かですよ。 (It’s quiet here, you know.)</p>
+            <p><strong>Unnatural but grammatical:</strong> はい、そうですよ。 (Over-asserting a simple yes.)</p>
+            <p><strong>Contrast:</strong> 行きますね。/ 行きますよ。 (Soft confirmation vs assertive.)</p>
+          </div>
+        </div>
+
+        <div class="particle-card">
+          <h3>か — Question marker</h3>
+          <p><strong>Core meaning:</strong> Marks a question or uncertainty.</p>
+          <ul>
+            <li><strong>Question it answers:</strong> “Is it?/Which one?”</li>
+            <li><strong>Conceptual role:</strong> Interrogative, choice.</li>
+            <li><strong>Beginner mental model:</strong> “Question stamp.”</li>
+            <li><strong>Common misuse:</strong> Forgetting it in polite questions; overusing in casual.</li>
+          </ul>
+          <div class="example-box">
+            <p><strong>Natural:</strong> どこに行きますか。 (Where are you going?)</p>
+            <p><strong>Unnatural but grammatical:</strong> 行きますか。 (Very formal, abrupt without context.)</p>
+            <p><strong>Contrast:</strong> 行きますか。/ 行く？ (Formal vs casual question.)</p>
+          </div>
+        </div>
+
+        <div class="particle-card">
+          <h3>な — Reflection / soft prohibition</h3>
+          <p><strong>Core meaning:</strong> Expresses thoughtfulness, reflection, or soft prohibition.</p>
+          <ul>
+            <li><strong>Question it answers:</strong> “I wonder…” / “Don’t ___.”</li>
+            <li><strong>Conceptual role:</strong> Self-talk, gentle directive.</li>
+            <li><strong>Beginner mental model:</strong> “Thinking out loud.”</li>
+            <li><strong>Common misuse:</strong> Confusing sentence-final な with な-adjective linker.</li>
+          </ul>
+          <div class="example-box">
+            <p><strong>Natural:</strong> きれいだな。 (It’s pretty, huh.)</p>
+            <p><strong>Unnatural but grammatical:</strong> 行くな。 (Grammatically “don’t go,” but very blunt.)</p>
+            <p><strong>Contrast:</strong> きれいですね。/ きれいだな。 (Shared confirmation vs personal reflection.)</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Interactive Study Game (Particles Lv.1 → Lv.5)</h2>
+      <p>Every level unlocks after mastery. The game reinforces intuition with short explanations for every mistake.</p>
+      <div class="game-grid" style="margin-top: 16px;">
+        <div class="mode-card">
+          <span class="tag">Timed Challenge</span>
+          <h3>Accuracy Sprint</h3>
+          <p>Fill missing particles under a timer. Speed only counts if accuracy stays above 90%.</p>
+        </div>
+        <div class="mode-card">
+          <span class="tag">Intuition Check</span>
+          <h3>Which Particle Feels Natural?</h3>
+          <p>Pick the most natural particle for a sentence. Feedback explains why the other choice feels off.</p>
+        </div>
+        <div class="mode-card">
+          <span class="tag">Sentence Repair</span>
+          <h3>Fix the Missing Particle</h3>
+          <p>Particles are removed. Repair the sentence and see the explanation of the intended nuance.</p>
+        </div>
+        <div class="mode-card">
+          <span class="tag">Swap Mode</span>
+          <h3>Contrast Switch</h3>
+          <p>Swap は→が, に→で, と→や, etc., then read how the meaning changes.</p>
+        </div>
+      </div>
+      <div class="game-grid" style="margin-top: 16px;">
+        <div class="mode-card">
+          <span class="tag">Spaced Review</span>
+          <h3>Adaptive Repetition</h3>
+          <p>Weak particles reappear sooner with new contexts. Mastery requires consistency across contexts.</p>
+        </div>
+        <div class="mode-card">
+          <span class="tag">No Romaji</span>
+          <h3>Level Rule</h3>
+          <p>Romaji appears only in Lv.1. From Lv.2 onward, all examples use kana/kanji only.</p>
+        </div>
+      </div>
+      <h3 style="margin-top: 18px;">Game Rules & Feedback Style</h3>
+      <ul class="rule-list">
+        <li>Incorrect answers trigger a short explanation, not just the correction.</li>
+        <li>Every correction names the role (“topic frame,” “destination point,” “relationship link”).</li>
+        <li>Feedback includes one contrast sentence (e.g., は vs が) to show nuance.</li>
+        <li>Weak particles are repeated sooner through adaptive spacing.</li>
+        <li>Timed challenges appear only after you clear a mastery checkpoint.</li>
+      </ul>
+      <div class="example-box" style="margin-top: 14px;">
+        <strong>Sample feedback:</strong> “に is for a destination point. You used で, which marks where the action happens. Try: 図書館に行く / 図書館で勉強する.”
+      </div>
+    </section>
+
+    <section>
+      <h2>Design Notes (UI-ready cards)</h2>
+      <div class="grid">
+        <div class="card">
+          <span class="label">Panel Structure</span>
+          <p>Each particle card has 8 slots (core meaning → contrast sentence) so it can become a reusable component.</p>
+        </div>
+        <div class="card">
+          <span class="label">Learning Path</span>
+          <p>Follow the level order to mimic a formal curriculum: core sentence roles → lists → boundaries → stance.</p>
+        </div>
+        <div class="card">
+          <span class="label">Mastery Goal</span>
+          <p>By Lv.5, learners can explain particle choice out loud, not just recognize it.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
