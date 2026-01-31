@@ -36,15 +36,15 @@
 
         .page {
             min-height: 100vh;
-            padding: 32px 20px 48px;
+            padding: 40px 24px 56px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 24px;
+            gap: 32px;
         }
 
         .top-row {
-            width: min(920px, 100%);
+            width: min(1040px, 100%);
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -69,32 +69,37 @@
         }
 
         .panel {
-            width: min(920px, 100%);
+            width: min(1040px, 100%);
+            min-height: 640px;
             background: var(--card);
             border-radius: 24px;
-            padding: clamp(24px, 4vw, 36px);
+            padding: clamp(32px, 4vw, 48px);
             box-shadow: 0 30px 60px rgba(4, 4, 12, 0.55);
             text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
         }
 
         .timer {
             font-size: clamp(2.8rem, 6vw, 4rem);
             font-weight: 700;
-            margin: 12px 0 24px;
+            margin: 0;
             color: var(--accent);
         }
 
         .letter-ring {
             position: relative;
-            width: 320px;
-            height: 320px;
-            margin: 32px auto 24px;
+            width: 420px;
+            height: 420px;
+            margin: 12px auto 8px;
         }
 
         .letter-button {
             position: absolute;
-            width: 42px;
-            height: 42px;
+            width: 46px;
+            height: 46px;
             border-radius: 50%;
             background: #1b1a33;
             color: var(--text);
@@ -119,8 +124,8 @@
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
-            gap: 12px;
-            margin-top: 16px;
+            gap: 16px;
+            margin-top: 8px;
         }
 
         .control-button {
@@ -142,18 +147,18 @@
         }
 
         .status {
-            margin-top: 16px;
+            margin-top: 8px;
             color: var(--muted);
             min-height: 1.4rem;
         }
 
         .vote-panel {
-            margin: 20px auto 0;
-            padding: 16px;
+            margin: 8px auto 0;
+            padding: 20px;
             border-radius: 16px;
             background: rgba(0, 0, 0, 0.3);
             display: none;
-            max-width: 360px;
+            max-width: 420px;
         }
 
         .vote-panel.active {
@@ -314,6 +319,8 @@
             updateStatus('Board reset. Hit start when you\'re ready.');
         };
 
+        const ringRadius = 180;
+
         const renderLetters = () => {
             ringEl.innerHTML = '';
             letters.forEach((letter, index) => {
@@ -323,7 +330,7 @@
                 button.className = 'letter-button';
                 button.textContent = letter;
                 button.dataset.letter = letter;
-                button.style.transform = `rotate(${angle}deg) translate(140px) rotate(-${angle}deg)`;
+                button.style.transform = `rotate(${angle}deg) translate(${ringRadius}px) rotate(-${angle}deg)`;
                 button.addEventListener('click', () => pressLetter(letter));
                 ringEl.appendChild(button);
             });
