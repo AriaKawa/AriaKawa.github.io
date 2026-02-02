@@ -191,6 +191,25 @@
       display: grid;
       gap: 8px;
     }
+    .game-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .game-nav a {
+      text-decoration: none;
+      color: var(--text);
+      border-radius: 999px;
+      border: 1px solid rgba(245, 163, 199, 0.4);
+      padding: 6px 14px;
+      font-size: 0.85rem;
+      background: rgba(18, 6, 15, 0.45);
+    }
+    .game-nav a:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
     .tag {
       display: inline-flex;
       align-items: center;
@@ -597,6 +616,12 @@
     <section id="particle-game-options">
       <h2>Interactive Study Game (Particles Lv.1 → Lv.5)</h2>
       <p>Every level unlocks after mastery. The game reinforces intuition with short explanations for every mistake.</p>
+      <div class="game-nav">
+        <a href="#game-accuracy-sprint">Timed Challenge: Accuracy Sprint</a>
+        <a href="#game-which-feels-natural">Intuition Check: Which Particle Feels Natural?</a>
+        <a href="#game-fix-missing">Sentence Repair: Fix the Missing Particle</a>
+        <a href="#game-contrast-switch">Swap Mode: Contrast Switch</a>
+      </div>
       <div class="game-grid" style="margin-top: 16px;">
         <div class="mode-card">
           <span class="tag">Timed Challenge</span>
@@ -630,6 +655,84 @@
       </ul>
       <div class="example-box" style="margin-top: 14px;">
         <strong>Sample feedback:</strong> “に is for a destination point. You used で, which marks where the action happens. Try: 図書館に行く / 図書館で勉強する.”
+      </div>
+    </section>
+
+    <section>
+      <h2>Game Study Guides (Detailed Practice Flow)</h2>
+      <p>Each mode trains a specific particle skill. Use the steps below as a guided practice script for learners, teachers, or self-study sessions.</p>
+      <div class="grid" style="margin-top: 16px;">
+        <div class="card" id="game-accuracy-sprint">
+          <span class="label">Timed Challenge</span>
+          <h3>Accuracy Sprint</h3>
+          <p><strong>Goal:</strong> Build automatic particle selection under time pressure while keeping accuracy above 90%.</p>
+          <ul class="list">
+            <li><strong>Setup:</strong> Show 10–15 short sentences with one blank particle (Lv.1 starts with は/が/を/に/で).</li>
+            <li><strong>Timer:</strong> 45–90 seconds for the round. If accuracy drops below 90%, the timer pauses and a hint appears.</li>
+            <li><strong>Scoring:</strong> Score = correct answers × accuracy multiplier (0.9+ to count). Speed is ignored if accuracy is lower.</li>
+            <li><strong>Feedback loop:</strong> Every mistake displays: “role label → correct particle → contrast sentence.”</li>
+          </ul>
+          <div class="example-box">
+            <p><strong>Prompt:</strong> 私は図書館＿勉強します。</p>
+            <p><strong>Answer:</strong> で (action location). Contrast: 図書館に行く / 図書館で勉強する。</p>
+            <p><strong>Hint:</strong> “に = destination dot, で = action stage.”</p>
+          </div>
+          <p class="footer-note">Advance rule: when a learner clears 3 rounds at 90%+, add swap traps (は/が, に/で, と/や).</p>
+        </div>
+
+        <div class="card" id="game-which-feels-natural">
+          <span class="label">Intuition Check</span>
+          <h3>Which Particle Feels Natural?</h3>
+          <p><strong>Goal:</strong> Strengthen the “native-like” feel by comparing two plausible particles and explaining the nuance difference.</p>
+          <ul class="list">
+            <li><strong>Setup:</strong> Provide a sentence with a choice pair (は vs が, に vs で, と vs や, も vs は).</li>
+            <li><strong>Decision rule:</strong> Learner must choose which particle feels more natural in context.</li>
+            <li><strong>Explanation step:</strong> Learner states the role label (topic, focus, destination, action stage).</li>
+            <li><strong>Feedback style:</strong> Explain why the other choice is “off” in tone or implication.</li>
+          </ul>
+          <div class="example-box">
+            <p><strong>Prompt:</strong> だれ＿来ますか。 (は / が)</p>
+            <p><strong>Answer:</strong> が → focus on “who” as new info.</p>
+            <p><strong>Why は feels off:</strong> は frames a topic; this is a direct “who is it?” question.</p>
+          </div>
+          <p class="footer-note">Advance rule: require two explanations—role label + a contrast sentence.</p>
+        </div>
+
+        <div class="card" id="game-fix-missing">
+          <span class="label">Sentence Repair</span>
+          <h3>Fix the Missing Particle</h3>
+          <p><strong>Goal:</strong> Train full-sentence repair, so learners recognize how particles shape meaning.</p>
+          <ul class="list">
+            <li><strong>Setup:</strong> Remove 2–3 particles from a sentence. Provide a particle bank.</li>
+            <li><strong>Constraint:</strong> Each particle can be used once. Learner must place them in order.</li>
+            <li><strong>Check:</strong> Highlight which role each particle is serving (topic, object, location, direction).</li>
+            <li><strong>Explain:</strong> Provide the intended nuance and a contrast sentence if a different particle would shift the meaning.</li>
+          </ul>
+          <div class="example-box">
+            <p><strong>Prompt:</strong> 友だち＿映画＿見ます。 (particles: と / を / に)</p>
+            <p><strong>Answer:</strong> 友だちと映画を見ます。</p>
+            <p><strong>Why not に:</strong> に would mark a destination or time point, not the object here.</p>
+          </div>
+          <p class="footer-note">Advance rule: include one “decoy” particle that makes a grammatical but unnatural sentence.</p>
+        </div>
+
+        <div class="card" id="game-contrast-switch">
+          <span class="label">Swap Mode</span>
+          <h3>Contrast Switch</h3>
+          <p><strong>Goal:</strong> Make nuance visible by swapping particles and observing how meaning changes.</p>
+          <ul class="list">
+            <li><strong>Setup:</strong> Present a base sentence with a focus particle (は, に, と, で).</li>
+            <li><strong>Swap:</strong> Replace it with a paired particle (は→が, に→で, と→や, へ→に).</li>
+            <li><strong>Reflection:</strong> Learner describes the change in nuance in one sentence.</li>
+            <li><strong>Feedback:</strong> Show a side-by-side explanation that names the new role.</li>
+          </ul>
+          <div class="example-box">
+            <p><strong>Base:</strong> 私は駅に行きます。</p>
+            <p><strong>Swap:</strong> 私が駅に行きます。</p>
+            <p><strong>Meaning shift:</strong> は = topic frame (“as for me”), が = focus/emphasis (“I am the one”).</p>
+          </div>
+          <p class="footer-note">Advance rule: require learners to create their own contrast pair with a different particle set.</p>
+        </div>
       </div>
     </section>
 
