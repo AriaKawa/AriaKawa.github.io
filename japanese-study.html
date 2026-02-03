@@ -117,18 +117,34 @@
       color: rgba(246, 242, 239, 0.7);
       border-color: rgba(255, 255, 255, 0.12);
     }
-    .chip.primary {
-      background: var(--accent);
-      color: #1b1f35;
-      border-color: transparent;
-    }
-    .chip:hover {
+    .chip:hover:not(.btn-play):not(.btn-secondary) {
       border-color: rgba(229, 107, 139, 0.6);
       color: var(--accent);
     }
-    .chip.primary:hover {
-      background: #ef8aa5;
+    .chip.btn-play {
+      background: #f5a2c4;
       color: #1b1f35;
+      border-color: transparent;
+    }
+    .chip.btn-play:hover,
+    .chip.btn-play:focus-visible {
+      background: #ffb8d5;
+      color: #1b1f35;
+    }
+    .chip.btn-secondary {
+      background: #5b8df4;
+      color: #f6f2ef;
+      border-color: transparent;
+    }
+    .chip.btn-secondary:hover,
+    .chip.btn-secondary:focus-visible {
+      background: #75a2ff;
+      color: #f6f2ef;
+    }
+    .chip.btn-play:focus-visible,
+    .chip.btn-secondary:focus-visible {
+      outline: 2px solid rgba(246, 242, 239, 0.75);
+      outline-offset: 2px;
     }
     .controls {
       display: flex;
@@ -397,8 +413,8 @@
           <h2>Verbs Hub</h2>
         </div>
         <div class="topic-actions">
-          <button id="verbsCategoryBtn" class="chip primary">Open verb hub</button>
-          <button id="suruGuideBtn" class="chip">する capsules</button>
+          <button id="verbsCategoryBtn" class="chip btn-secondary">Open verb hub</button>
+          <button id="suruGuideBtn" class="chip btn-secondary">する capsules</button>
         </div>
       </div>
 
@@ -407,8 +423,8 @@
           <h2>Rain verbs</h2>
         </div>
         <div class="topic-actions">
-          <a class="chip" href="rain-guide.html">Study guide</a>
-          <a class="chip primary" href="rain-game.html">Play game</a>
+          <a class="chip btn-secondary" href="rain-guide.html">Study guide</a>
+          <a class="chip btn-play" href="rain-game.html">Play game</a>
         </div>
       </div>
 
@@ -417,8 +433,8 @@
           <h2>Days of the week</h2>
         </div>
         <div class="topic-actions">
-          <a class="chip" href="days-study-guide.html">Study guide</a>
-          <a class="chip primary" href="days-game.html">Play game</a>
+          <a class="chip btn-secondary" href="days-study-guide.html">Study guide</a>
+          <a class="chip btn-play" href="days-game.html">Play game</a>
         </div>
       </div>
 
@@ -427,7 +443,7 @@
           <h2>Time &amp; Year</h2>
         </div>
         <div class="topic-actions">
-          <a class="chip primary" href="time-year-game.html">Play game</a>
+          <a class="chip btn-play" href="time-year-game.html">Play game</a>
         </div>
       </div>
 
@@ -454,8 +470,8 @@
           <h2>Meaning, Function, and Usage</h2>
         </div>
         <div class="topic-actions">
-          <a class="chip primary" href="particles-meaning-function.html">Open study guide</a>
-          <a class="chip" href="particles-games.html">Play games</a>
+          <a class="chip btn-secondary" href="particles-meaning-function.html">Open study guide</a>
+          <a class="chip btn-play" href="particles-games.html">Play games</a>
         </div>
       </div>
     </div>
@@ -473,8 +489,8 @@
           <h2>Main set</h2>
         </div>
         <div class="topic-actions">
-          <button id="verbsGameBtn" class="chip primary">Match game</button>
-          <button id="verbsGuideBtn" class="chip">Study guide</button>
+          <button id="verbsGameBtn" class="chip btn-play">Match game</button>
+          <button id="verbsGuideBtn" class="chip btn-secondary">Study guide</button>
         </div>
       </div>
 
@@ -483,8 +499,8 @@
           <h2>JLPT N5 → N4</h2>
         </div>
         <div class="topic-actions">
-          <button id="suruGuideBtnSecondary" class="chip">Study capsules</button>
-          <button id="suruGameBtn" class="chip primary">Play trainer</button>
+          <button id="suruGuideBtnSecondary" class="chip btn-secondary">Study capsules</button>
+          <button id="suruGameBtn" class="chip btn-play">Play trainer</button>
         </div>
       </div>
 
@@ -493,7 +509,7 @@
           <h2>Time + Year</h2>
         </div>
         <div class="topic-actions">
-          <button id="timeYearBtn" class="chip primary">Time &amp; year game</button>
+          <button id="timeYearBtn" class="chip btn-play">Time &amp; year game</button>
         </div>
       </div>
     </div>
