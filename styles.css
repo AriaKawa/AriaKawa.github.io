@@ -613,6 +613,14 @@ a {
     transform: none;
 }
 
+.topic-card .chip,
+.mode-card .chip {
+    width: 180px;
+    height: 38px;
+    justify-content: center;
+    text-align: center;
+}
+
 .has-cursor-glow {
     position: relative;
 }
