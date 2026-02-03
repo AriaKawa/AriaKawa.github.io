@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Timed Fill Sprint</title>
+  <style>
+    :root {
+      --bg: #12060f;
+      --panel: #2b0d18;
+      --accent: #f5a3c7;
+      --accent-strong: #d9557f;
+      --text: #f3e6f1;
+      --muted: rgba(243, 230, 241, 0.7);
+      --line: rgba(255, 255, 255, 0.12);
+      --success: #7ef3c8;
+      --warning: #ffc56b;
+      --danger: #ff8aa6;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      color: var(--text);
+      background: radial-gradient(circle at top, #40142b, var(--bg) 70%);
+      padding: 24px;
+    }
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      gap: 24px;
+    }
+    header {
+      background: rgba(43, 13, 24, 0.85);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 22px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+      display: grid;
+      gap: 12px;
+    }
+    header .eyebrow {
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+    header h1 {
+      margin: 0;
+      font-size: 2rem;
+    }
+    header p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    .nav-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      color: var(--text);
+      font-size: 0.85rem;
+      text-decoration: none;
+    }
+    .chip.accent {
+      background: var(--accent-strong);
+      border-color: transparent;
+      color: #2b0d18;
+      font-weight: 600;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+      gap: 18px;
+    }
+    .panel {
+      background: rgba(18, 6, 15, 0.7);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 20px;
+      display: grid;
+      gap: 16px;
+      min-height: 320px;
+    }
+    .sentence {
+      font-size: 1.6rem;
+      line-height: 1.5;
+    }
+    .sentence .blank {
+      display: inline-block;
+      min-width: 48px;
+      padding: 2px 10px;
+      border-bottom: 2px solid var(--accent);
+      text-align: center;
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .particle-bank {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+      gap: 10px;
+    }
+    .particle-btn {
+      border-radius: 999px;
+      border: 1px solid rgba(245, 163, 199, 0.4);
+      background: rgba(18, 6, 15, 0.4);
+      color: var(--text);
+      padding: 10px 14px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: transform 0.2s ease, background 0.2s ease;
+    }
+    .particle-btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+    .particle-btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      background: rgba(245, 163, 199, 0.2);
+    }
+    .feedback {
+      border-radius: 14px;
+      padding: 12px 14px;
+      background: rgba(43, 13, 24, 0.65);
+      border: 1px solid var(--line);
+      font-size: 0.95rem;
+      color: var(--muted);
+    }
+    .feedback strong {
+      color: var(--text);
+    }
+    .controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .action-btn {
+      border-radius: 999px;
+      border: 1px solid transparent;
+      background: var(--accent-strong);
+      color: #2b0d18;
+      padding: 8px 16px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .action-btn.secondary {
+      background: rgba(18, 6, 15, 0.6);
+      border: 1px solid rgba(245, 163, 199, 0.4);
+      color: var(--text);
+    }
+    .stats {
+      display: grid;
+      gap: 12px;
+    }
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: rgba(18, 6, 15, 0.55);
+      font-size: 0.9rem;
+    }
+    .stat-row span:last-child {
+      font-weight: 700;
+    }
+    .stat-row.accent span:last-child {
+      color: var(--accent);
+    }
+    .stat-row.success span:last-child {
+      color: var(--success);
+    }
+    .stat-row.warning span:last-child {
+      color: var(--warning);
+    }
+    .drawer {
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: rgba(18, 6, 15, 0.6);
+      padding: 0;
+      overflow: hidden;
+    }
+    .drawer summary {
+      cursor: pointer;
+      padding: 14px 16px;
+      font-weight: 600;
+      list-style: none;
+    }
+    .drawer summary::-webkit-details-marker {
+      display: none;
+    }
+    .drawer-content {
+      padding: 0 16px 16px;
+      color: var(--muted);
+      display: grid;
+      gap: 12px;
+      font-size: 0.92rem;
+      line-height: 1.6;
+    }
+    .drawer-content h3 {
+      margin: 0;
+      font-size: 1rem;
+      color: var(--text);
+    }
+    .hint {
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <span class="eyebrow">Particles</span>
+      <h1>Timed Fill Sprint</h1>
+      <p>Fill the missing particle under pressure. Speed only counts once your accuracy clears the gate—stay sharp, build a streak, and watch the feedback to lock in the nuance.</p>
+      <div class="nav-row">
+        <a class="chip accent" href="particles-games.html">Back to particle games</a>
+        <a class="chip" href="particles-meaning-function.html">Back to study guide</a>
+      </div>
+    </header>
+
+    <section class="layout">
+      <div class="panel">
+        <div class="sentence" id="sentenceDisplay">
+          Press start to load the first sprint sentence.
+        </div>
+        <div class="particle-bank" id="particleBank"></div>
+        <div class="feedback" id="feedbackPanel">
+          <strong>Warmup:</strong> Accuracy gate is 90%. Speed bonuses light up once you cross it.
+        </div>
+        <div class="controls">
+          <button class="action-btn" id="startBtn" type="button">Start round</button>
+          <button class="action-btn secondary" id="nextBtn" type="button" disabled>Next sentence</button>
+        </div>
+        <div class="hint">Round length: 60 seconds. Keep an eye on accuracy and streak to unlock extra points.</div>
+      </div>
+
+      <aside class="panel">
+        <div class="stats">
+          <div class="stat-row accent"><span>Time left</span><span id="timeLeft">60s</span></div>
+          <div class="stat-row"><span>Score</span><span id="score">0</span></div>
+          <div class="stat-row success"><span>Accuracy</span><span id="accuracy">--</span></div>
+          <div class="stat-row"><span>Streak</span><span id="streak">0</span></div>
+          <div class="stat-row"><span>Correct / Miss</span><span id="record">0 / 0</span></div>
+          <div class="stat-row warning"><span>Speed bonus</span><span id="speedBonus">Locked</span></div>
+        </div>
+        <details class="drawer">
+          <summary>Rules + help</summary>
+          <div class="drawer-content">
+            <div>
+              <h3>Accuracy gate</h3>
+              <p>Your sprint score only unlocks speed bonuses once accuracy stays at 90%+. Misses drop you below the gate, so slow down until the meter recovers.</p>
+            </div>
+            <div>
+              <h3>Streaks</h3>
+              <p>Every correct answer stacks your streak. Hit 5+ to keep momentum and protect your score. One miss resets it, but the next correct rebuilds instantly.</p>
+            </div>
+            <div>
+              <h3>Feedback logic</h3>
+              <p>After every click you get a role label, the correct particle, and a contrast note. Use it as a micro-explanation to lock in why the particle fits the sentence.</p>
+            </div>
+          </div>
+        </details>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    const sentences = [
+      {
+        text: "私は＿学校に行きます。",
+        particle: "は",
+        role: "Topic marker",
+        feedback: "は sets the topic. が would stress the subject as new information."
+      },
+      {
+        text: "猫が魚＿食べています。",
+        particle: "を",
+        role: "Object marker",
+        feedback: "を marks the direct object. が would make it sound like the fish is the subject."
+      },
+      {
+        text: "友だち＿映画を見ます。",
+        particle: "と",
+        role: "Companion marker",
+        feedback: "と means you are with your friend. に would point to the friend as a target."
+      },
+      {
+        text: "週末に公園＿走りました。",
+        particle: "で",
+        role: "Location of action",
+        feedback: "で marks where the action happens. に would mark destination, not activity."
+      },
+      {
+        text: "駅＿電車に乗ります。",
+        particle: "で",
+        role: "Point of use",
+        feedback: "で indicates the station as the place you board. に would highlight destination."
+      },
+      {
+        text: "先生＿質問をしました。",
+        particle: "に",
+        role: "Target",
+        feedback: "に targets the teacher. と would make it sound like you asked together."
+      },
+      {
+        text: "妹はケーキ＿作るのが好きです。",
+        particle: "を",
+        role: "Object marker",
+        feedback: "を marks what she makes. が would make the cake the subject of liking."
+      },
+      {
+        text: "図書館＿静かにしてください。",
+        particle: "で",
+        role: "Location",
+        feedback: "で pins the location. に would feel like a destination instead of a setting."
+      },
+      {
+        text: "山田さん＿話しました。",
+        particle: "と",
+        role: "Conversation partner",
+        feedback: "と marks the person you spoke with. に would imply you spoke to them one-way."
+      },
+      {
+        text: "新しい単語＿覚えたいです。",
+        particle: "を",
+        role: "Object marker",
+        feedback: "を marks what you want to remember. が would emphasize the word as the subject."
+      },
+      {
+        text: "音楽＿聞きながら勉強します。",
+        particle: "を",
+        role: "Object marker",
+        feedback: "を marks what you listen to. で would make it a tool instead of content."
+      },
+      {
+        text: "明日は雨＿なりそうです。",
+        particle: "に",
+        role: "Change into",
+        feedback: "に indicates the state change. で would mark a location, not a transformation."
+      }
+    ];
+
+    const particles = ["は", "が", "を", "に", "で", "と", "へ", "から", "まで", "も"];
+
+    const state = {
+      timeLeft: 60,
+      timerId: null,
+      currentIndex: 0,
+      usedIndices: new Set(),
+      correct: 0,
+      incorrect: 0,
+      score: 0,
+      streak: 0
+    };
+
+    const sentenceDisplay = document.getElementById("sentenceDisplay");
+    const particleBank = document.getElementById("particleBank");
+    const feedbackPanel = document.getElementById("feedbackPanel");
+    const startBtn = document.getElementById("startBtn");
+    const nextBtn = document.getElementById("nextBtn");
+    const timeLeftEl = document.getElementById("timeLeft");
+    const scoreEl = document.getElementById("score");
+    const accuracyEl = document.getElementById("accuracy");
+    const streakEl = document.getElementById("streak");
+    const recordEl = document.getElementById("record");
+    const speedBonusEl = document.getElementById("speedBonus");
+
+    const updateStats = () => {
+      const total = state.correct + state.incorrect;
+      const accuracy = total ? Math.round((state.correct / total) * 100) : null;
+      accuracyEl.textContent = accuracy === null ? "--" : `${accuracy}%`;
+      recordEl.textContent = `${state.correct} / ${state.incorrect}`;
+      scoreEl.textContent = state.score;
+      streakEl.textContent = state.streak;
+      const bonusActive = accuracy !== null && accuracy >= 90;
+      speedBonusEl.textContent = bonusActive ? "Active" : "Locked";
+    };
+
+    const showSentence = (index) => {
+      const sentence = sentences[index];
+      const parts = sentence.text.split("＿");
+      sentenceDisplay.innerHTML = `${parts[0]}<span class="blank">＿</span>${parts[1] || ""}`;
+      feedbackPanel.innerHTML = `<strong>Ready:</strong> Choose the particle that fits the role.`;
+    };
+
+    const getNextIndex = () => {
+      if (state.usedIndices.size === sentences.length) {
+        state.usedIndices.clear();
+      }
+      let next;
+      do {
+        next = Math.floor(Math.random() * sentences.length);
+      } while (state.usedIndices.has(next));
+      state.usedIndices.add(next);
+      return next;
+    };
+
+    const startRound = () => {
+      state.timeLeft = 60;
+      state.correct = 0;
+      state.incorrect = 0;
+      state.score = 0;
+      state.streak = 0;
+      state.usedIndices.clear();
+      updateStats();
+      state.currentIndex = getNextIndex();
+      showSentence(state.currentIndex);
+      startBtn.textContent = "Restart round";
+      nextBtn.disabled = false;
+      setButtonsEnabled(true);
+      clearInterval(state.timerId);
+      state.timerId = setInterval(() => {
+        state.timeLeft -= 1;
+        timeLeftEl.textContent = `${state.timeLeft}s`;
+        if (state.timeLeft <= 0) {
+          endRound();
+        }
+      }, 1000);
+      timeLeftEl.textContent = `${state.timeLeft}s`;
+    };
+
+    const endRound = () => {
+      clearInterval(state.timerId);
+      state.timerId = null;
+      setButtonsEnabled(false);
+      nextBtn.disabled = true;
+      const total = state.correct + state.incorrect;
+      const accuracy = total ? Math.round((state.correct / total) * 100) : 0;
+      feedbackPanel.innerHTML = `<strong>Round over:</strong> ${state.correct} correct, ${state.incorrect} miss, ${accuracy}% accuracy. Hit start to sprint again.`;
+    };
+
+    const setButtonsEnabled = (enabled) => {
+      particleBank.querySelectorAll("button").forEach((btn) => {
+        btn.disabled = !enabled;
+      });
+    };
+
+    const handleAnswer = (choice) => {
+      if (!state.timerId) {
+        return;
+      }
+      const sentence = sentences[state.currentIndex];
+      const total = state.correct + state.incorrect;
+      const accuracy = total ? state.correct / total : 1;
+      const bonusActive = accuracy >= 0.9;
+
+      if (choice === sentence.particle) {
+        state.correct += 1;
+        state.streak += 1;
+        let points = 10;
+        if (bonusActive) {
+          points += 5;
+        }
+        if (state.streak >= 5) {
+          points += 2;
+        }
+        state.score += points;
+        feedbackPanel.innerHTML = `<strong>Correct:</strong> ${sentence.role}. ${sentence.feedback}`;
+      } else {
+        state.incorrect += 1;
+        state.streak = 0;
+        state.score = Math.max(0, state.score - 3);
+        feedbackPanel.innerHTML = `<strong>Miss:</strong> ${sentence.role} → <span style="color: var(--accent)">${sentence.particle}</span>. ${sentence.feedback}`;
+      }
+
+      updateStats();
+      state.currentIndex = getNextIndex();
+      showSentence(state.currentIndex);
+    };
+
+    const renderButtons = () => {
+      particleBank.innerHTML = "";
+      particles.forEach((particle) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "particle-btn";
+        btn.textContent = particle;
+        btn.addEventListener("click", () => handleAnswer(particle));
+        particleBank.appendChild(btn);
+      });
+      setButtonsEnabled(false);
+    };
+
+    startBtn.addEventListener("click", startRound);
+    nextBtn.addEventListener("click", () => {
+      if (!state.timerId) {
+        return;
+      }
+      state.currentIndex = getNextIndex();
+      showSentence(state.currentIndex);
+    });
+
+    renderButtons();
+    updateStats();
+  </script>
+</body>
+</html>
