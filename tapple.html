@@ -159,9 +159,9 @@
 
         .letter-ring {
             position: relative;
-            width: clamp(260px, 60vw, 420px);
-            height: clamp(260px, 60vw, 420px);
-            margin: clamp(32px, 6vw, 52px) auto 8px;
+            width: clamp(300px, 60vw, 480px);
+            height: clamp(300px, 60vw, 480px);
+            margin: clamp(40px, 8vw, 72px) auto 8px;
         }
 
         .letter-button {
@@ -451,7 +451,7 @@
 
         const updateRingRadius = () => {
             const size = ringEl.offsetWidth;
-            ringRadius = Math.max(0, size / 2 - 30);
+            ringRadius = Math.max(0, size / 2 - 36);
         };
 
         const positionLetters = () => {
