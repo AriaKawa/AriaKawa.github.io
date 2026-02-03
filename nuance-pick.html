@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nuance Pick | Particle Games</title>
+  <style>
+    :root {
+      --bg: #12060f;
+      --panel: #2b0d18;
+      --accent: #f5a3c7;
+      --accent-strong: #d9557f;
+      --text: #f3e6f1;
+      --muted: rgba(243, 230, 241, 0.7);
+      --line: rgba(255, 255, 255, 0.12);
+      --success: #8ce3b8;
+      --warning: #ffc285;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      color: var(--text);
+      background: radial-gradient(circle at top, #40142b, var(--bg) 70%);
+      padding: 24px;
+    }
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      gap: 24px;
+    }
+    header {
+      background: rgba(43, 13, 24, 0.85);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 22px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+      display: grid;
+      gap: 12px;
+    }
+    header .eyebrow {
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+    header h1 {
+      margin: 0;
+      font-size: 2rem;
+    }
+    header p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    .nav-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      color: var(--text);
+      font-size: 0.85rem;
+      text-decoration: none;
+    }
+    .chip.accent {
+      background: var(--accent-strong);
+      border-color: transparent;
+      color: #2b0d18;
+      font-weight: 600;
+    }
+    .card {
+      background: rgba(18, 6, 15, 0.7);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 22px;
+      display: grid;
+      gap: 18px;
+    }
+    .question {
+      font-size: 1.35rem;
+      line-height: 1.6;
+    }
+    .option-row {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    }
+    .option-row button {
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: rgba(18, 6, 15, 0.6);
+      color: var(--text);
+      padding: 14px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: transform 0.15s ease, border 0.15s ease;
+    }
+    .option-row button:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent);
+    }
+    .option-row button.correct {
+      border-color: var(--success);
+      color: var(--success);
+    }
+    .option-row button.incorrect {
+      border-color: var(--warning);
+      color: var(--warning);
+    }
+    .feedback-grid {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    }
+    .panel {
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: rgba(43, 13, 24, 0.55);
+      padding: 16px;
+      display: grid;
+      gap: 8px;
+    }
+    .panel h3 {
+      margin: 0;
+      font-size: 1rem;
+      color: var(--accent);
+    }
+    .panel p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    .option-notes {
+      display: grid;
+      gap: 10px;
+    }
+    .note {
+      border-radius: 12px;
+      padding: 10px 12px;
+      border: 1px solid rgba(245, 163, 199, 0.2);
+      display: grid;
+      gap: 4px;
+    }
+    .note span {
+      font-weight: 600;
+      color: var(--accent);
+    }
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .controls button {
+      border-radius: 999px;
+      border: 1px solid rgba(245, 163, 199, 0.4);
+      background: rgba(18, 6, 15, 0.4);
+      color: var(--text);
+      padding: 10px 18px;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+    .counter {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <span class="eyebrow">Particle Games</span>
+      <h1>Nuance Pick</h1>
+      <p>Each prompt gives two particle choices. Pick the more natural one, then read the explanation panel and the “why the other feels off” note.</p>
+      <div class="nav-row">
+        <a class="chip accent" href="particles-games.html">Back to games</a>
+        <a class="chip" href="particles-meaning-function.html">Back to study guide</a>
+      </div>
+    </header>
+
+    <section class="card">
+      <div class="question" id="question"></div>
+      <div class="option-row" id="options"></div>
+      <div class="feedback-grid" id="feedback" hidden>
+        <div class="panel">
+          <h3>Explanation</h3>
+          <p id="explanation"></p>
+        </div>
+        <div class="panel">
+          <h3>Why the other feels off</h3>
+          <p id="why-off"></p>
+        </div>
+        <div class="panel">
+          <h3>Option breakdown</h3>
+          <div class="option-notes" id="option-notes"></div>
+        </div>
+      </div>
+      <div class="controls">
+        <button type="button" id="next">Next question</button>
+        <span class="counter" id="counter"></span>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const questions = [
+      {
+        sentence: "週末は友だち__映画を見た。",
+        correctParticle: "と",
+        options: [
+          {
+            particle: "と",
+            explanation: "Use と for a companion in an activity: you watched the movie together with a friend.",
+            whyOff: "Not applicable."
+          },
+          {
+            particle: "で",
+            explanation: "で marks the location or means of an action, not the companion.",
+            whyOff: "It makes the friend sound like a place or tool rather than a person you did the activity with."
+          }
+        ]
+      },
+      {
+        sentence: "会議は３時__始まります。",
+        correctParticle: "に",
+        options: [
+          {
+            particle: "に",
+            explanation: "に marks a specific time point when something starts.",
+            whyOff: "Not applicable."
+          },
+          {
+            particle: "で",
+            explanation: "で marks the location or means of an action, not the exact start time.",
+            whyOff: "It suggests the meeting happens at 3 o'clock as a setting, which feels off for a precise start time."
+          }
+        ]
+      },
+      {
+        sentence: "このケーキは甘さ__控えめだ。",
+        correctParticle: "が",
+        options: [
+          {
+            particle: "が",
+            explanation: "が highlights the subject/feature being described: the sweetness is restrained.",
+            whyOff: "Not applicable."
+          },
+          {
+            particle: "を",
+            explanation: "を marks a direct object of an action, but there is no action here.",
+            whyOff: "It makes it sound like someone is actively reducing the sweetness instead of describing a trait."
+          }
+        ]
+      }
+    ];
+
+    const questionEl = document.getElementById("question");
+    const optionsEl = document.getElementById("options");
+    const feedbackEl = document.getElementById("feedback");
+    const explanationEl = document.getElementById("explanation");
+    const whyOffEl = document.getElementById("why-off");
+    const optionNotesEl = document.getElementById("option-notes");
+    const counterEl = document.getElementById("counter");
+    const nextBtn = document.getElementById("next");
+
+    let currentIndex = 0;
+
+    const renderQuestion = () => {
+      const current = questions[currentIndex];
+      questionEl.textContent = current.sentence;
+      optionsEl.innerHTML = "";
+      feedbackEl.hidden = true;
+      optionNotesEl.innerHTML = "";
+      explanationEl.textContent = "";
+      whyOffEl.textContent = "";
+
+      current.options.forEach((option) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = option.particle;
+        button.addEventListener("click", () => handleAnswer(option.particle));
+        optionsEl.appendChild(button);
+      });
+
+      counterEl.textContent = `Question ${currentIndex + 1} of ${questions.length}`;
+    };
+
+    const handleAnswer = (particle) => {
+      const current = questions[currentIndex];
+      const correctOption = current.options.find((option) => option.particle === current.correctParticle);
+      const otherOption = current.options.find((option) => option.particle !== current.correctParticle);
+
+      [...optionsEl.querySelectorAll("button")].forEach((button) => {
+        if (button.textContent === current.correctParticle) {
+          button.classList.add("correct");
+        } else if (button.textContent === particle) {
+          button.classList.add("incorrect");
+        }
+        button.disabled = true;
+      });
+
+      explanationEl.textContent = correctOption.explanation;
+      whyOffEl.textContent = otherOption.whyOff || otherOption.explanation;
+
+      optionNotesEl.innerHTML = "";
+      current.options.forEach((option) => {
+        const note = document.createElement("div");
+        note.className = "note";
+        note.innerHTML = `<span>${option.particle}</span><p>${option.explanation}</p>`;
+        optionNotesEl.appendChild(note);
+      });
+
+      feedbackEl.hidden = false;
+    };
+
+    nextBtn.addEventListener("click", () => {
+      currentIndex = (currentIndex + 1) % questions.length;
+      renderQuestion();
+    });
+
+    renderQuestion();
+  </script>
+</body>
+</html>
