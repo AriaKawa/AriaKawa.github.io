@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Particle Games</title>
+  <style>
+    :root {
+      --bg: #12060f;
+      --panel: #2b0d18;
+      --accent: #f5a3c7;
+      --accent-strong: #d9557f;
+      --text: #f3e6f1;
+      --muted: rgba(243, 230, 241, 0.7);
+      --line: rgba(255, 255, 255, 0.12);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      color: var(--text);
+      background: radial-gradient(circle at top, #40142b, var(--bg) 70%);
+      padding: 24px;
+    }
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      gap: 24px;
+    }
+    header {
+      background: rgba(43, 13, 24, 0.85);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 22px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+      display: grid;
+      gap: 12px;
+    }
+    header .eyebrow {
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+    header h1 {
+      margin: 0;
+      font-size: 2rem;
+    }
+    header p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    .nav-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      color: var(--text);
+      font-size: 0.85rem;
+      text-decoration: none;
+    }
+    .chip.accent {
+      background: var(--accent-strong);
+      border-color: transparent;
+      color: #2b0d18;
+      font-weight: 600;
+    }
+    .game-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 18px;
+    }
+    .game-card {
+      background: rgba(18, 6, 15, 0.7);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 20px;
+      display: grid;
+      gap: 12px;
+      min-height: 240px;
+    }
+    .game-card h2 {
+      margin: 0;
+      font-size: 1.35rem;
+    }
+    .game-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(245, 163, 199, 0.4);
+      color: var(--accent);
+      width: fit-content;
+    }
+    .game-actions {
+      margin-top: auto;
+    }
+    .game-actions button {
+      border-radius: 999px;
+      border: 1px solid rgba(245, 163, 199, 0.4);
+      background: rgba(18, 6, 15, 0.4);
+      color: var(--muted);
+      padding: 8px 16px;
+      font-size: 0.85rem;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <span class="eyebrow">Particles</span>
+      <h1>Play the Particle Games</h1>
+      <p>Choose a mode to train a specific particle skill. Each game focuses on speed, nuance, or repair so you can build automatic accuracy with conscious explanations.</p>
+      <div class="nav-row">
+        <a class="chip accent" href="particles-meaning-function.html">Back to study guide</a>
+        <a class="chip" href="japanese-study.html">Back to Japanese study</a>
+      </div>
+    </header>
+
+    <section class="game-grid">
+      <article class="game-card">
+        <span class="tag">Speed + accuracy</span>
+        <h2>Timed Fill Sprint</h2>
+        <p>Fill the missing particle under time pressure. Speed only counts when accuracy stays above 90%.</p>
+        <div class="game-actions">
+          <button type="button" disabled>Coming soon</button>
+        </div>
+      </article>
+
+      <article class="game-card">
+        <span class="tag">Nuance training</span>
+        <h2>Nuance Pick</h2>
+        <p>Pick the most natural particle for a sentence. Feedback explains why the other choice feels off.</p>
+        <div class="game-actions">
+          <button type="button" disabled>Coming soon</button>
+        </div>
+      </article>
+
+      <article class="game-card">
+        <span class="tag">Sentence repair</span>
+        <h2>Particle Repair</h2>
+        <p>Rebuild sentences by placing 2–3 missing particles in order. Highlights the role each particle is playing.</p>
+        <div class="game-actions">
+          <button type="button" disabled>Coming soon</button>
+        </div>
+      </article>
+
+      <article class="game-card">
+        <span class="tag">Contrast drill</span>
+        <h2>Swap &amp; Contrast</h2>
+        <p>Swap paired particles (は→が, に→で, と→や) and describe how the meaning shifts.</p>
+        <div class="game-actions">
+          <button type="button" disabled>Coming soon</button>
+        </div>
+      </article>
+    </section>
+  </main>
+</body>
+</html>
