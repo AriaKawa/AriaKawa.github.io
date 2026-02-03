@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Particle Repair</title>
+  <style>
+    :root {
+      --bg: #0f0916;
+      --panel: #1d0f2a;
+      --accent: #7ee0ff;
+      --accent-strong: #40b9e6;
+      --text: #f2eef8;
+      --muted: rgba(242, 238, 248, 0.7);
+      --line: rgba(255, 255, 255, 0.12);
+      --success: #7ff2b4;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      color: var(--text);
+      background: radial-gradient(circle at top, #231433, var(--bg) 70%);
+      padding: 24px;
+    }
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      gap: 24px;
+    }
+    header {
+      background: rgba(29, 15, 42, 0.9);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 22px;
+      display: grid;
+      gap: 12px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+    }
+    header .eyebrow {
+      text-transform: uppercase;
+      letter-spacing: 0.25em;
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+    header h1 {
+      margin: 0;
+      font-size: 2rem;
+    }
+    header p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    .nav-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      color: var(--text);
+      font-size: 0.85rem;
+      text-decoration: none;
+    }
+    .chip.accent {
+      background: var(--accent-strong);
+      border-color: transparent;
+      color: #0f0916;
+      font-weight: 600;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+      gap: 20px;
+    }
+    .panel {
+      background: rgba(15, 9, 22, 0.8);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 20px;
+      display: grid;
+      gap: 16px;
+    }
+    .sentence {
+      font-size: 1.4rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+    }
+    .slot {
+      min-width: 48px;
+      padding: 6px 12px;
+      border: 1px dashed rgba(126, 224, 255, 0.6);
+      border-radius: 10px;
+      text-align: center;
+      font-weight: 600;
+      color: var(--accent);
+      background: rgba(126, 224, 255, 0.08);
+      cursor: pointer;
+      transition: border-color 0.2s ease, background 0.2s ease;
+    }
+    .slot.filled {
+      border-style: solid;
+      background: rgba(126, 224, 255, 0.18);
+    }
+    .slot.highlight {
+      border-color: var(--success);
+      background: rgba(127, 242, 180, 0.2);
+      color: var(--success);
+    }
+    .palette {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+      gap: 12px;
+    }
+    .particle {
+      background: rgba(29, 15, 42, 0.9);
+      border: 1px solid rgba(126, 224, 255, 0.4);
+      border-radius: 12px;
+      padding: 10px 8px;
+      font-size: 1.05rem;
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    .particle.selected {
+      border-color: var(--success);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(127, 242, 180, 0.3);
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    button {
+      border-radius: 999px;
+      border: 1px solid rgba(126, 224, 255, 0.4);
+      background: rgba(15, 9, 22, 0.6);
+      color: var(--text);
+      padding: 10px 18px;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+    button.primary {
+      background: var(--accent-strong);
+      color: #0f0916;
+      border-color: transparent;
+      font-weight: 600;
+    }
+    .results {
+      display: grid;
+      gap: 12px;
+      padding: 16px;
+      border-radius: 16px;
+      border: 1px solid rgba(127, 242, 180, 0.4);
+      background: rgba(127, 242, 180, 0.1);
+    }
+    .results.hidden {
+      display: none;
+    }
+    .result-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(15, 9, 22, 0.4);
+    }
+    .role {
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    .hint {
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <span class="eyebrow">Particle repair</span>
+      <h1>Particle Repair</h1>
+      <p>Drag or click particles to repair the sentence. When you submit, each slot reveals the grammatical role it was meant to carry.</p>
+      <div class="nav-row">
+        <a class="chip accent" href="particles-games.html">Back to games</a>
+        <a class="chip" href="particles-meaning-function.html">Study guide</a>
+      </div>
+    </header>
+
+    <section class="layout">
+      <div class="panel">
+        <h2>Sentence to repair</h2>
+        <div class="sentence" aria-live="polite">
+          <span>わたし</span>
+          <span class="slot" data-role="Topic" data-slot="0" aria-label="Slot 1"></span>
+          <span>図書館</span>
+          <span class="slot" data-role="Location of action" data-slot="1" aria-label="Slot 2"></span>
+          <span>本</span>
+          <span class="slot" data-role="Direct object" data-slot="2" aria-label="Slot 3"></span>
+          <span>読みます。</span>
+        </div>
+        <p class="hint">Tip: click a particle, then click a slot to place it. Drag-and-drop works too.</p>
+        <div class="controls">
+          <button type="button" class="primary" id="submitRepair">Submit repair</button>
+          <button type="button" id="clearRepair">Clear slots</button>
+        </div>
+        <div class="results hidden" id="repairResults">
+          <div class="result-item">
+            <div>
+              <strong>Slot 1:</strong> <span data-result="0">—</span>
+            </div>
+            <span class="role">Role: Topic</span>
+          </div>
+          <div class="result-item">
+            <div>
+              <strong>Slot 2:</strong> <span data-result="1">—</span>
+            </div>
+            <span class="role">Role: Location of action</span>
+          </div>
+          <div class="result-item">
+            <div>
+              <strong>Slot 3:</strong> <span data-result="2">—</span>
+            </div>
+            <span class="role">Role: Direct object</span>
+          </div>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <h2>Particle palette</h2>
+        <div class="palette" id="particlePalette">
+          <div class="particle" draggable="true" data-particle="は">は</div>
+          <div class="particle" draggable="true" data-particle="が">が</div>
+          <div class="particle" draggable="true" data-particle="を">を</div>
+          <div class="particle" draggable="true" data-particle="に">に</div>
+          <div class="particle" draggable="true" data-particle="で">で</div>
+          <div class="particle" draggable="true" data-particle="へ">へ</div>
+          <div class="particle" draggable="true" data-particle="と">と</div>
+        </div>
+        <p class="hint">Drag particles onto blanks or click to select and place.</p>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    const slots = Array.from(document.querySelectorAll('.slot'));
+    const particles = Array.from(document.querySelectorAll('.particle'));
+    const results = document.getElementById('repairResults');
+    const submitButton = document.getElementById('submitRepair');
+    const clearButton = document.getElementById('clearRepair');
+    let selectedParticle = null;
+
+    const clearSelection = () => {
+      particles.forEach((particle) => particle.classList.remove('selected'));
+      selectedParticle = null;
+    };
+
+    const placeParticle = (slot, value) => {
+      slot.textContent = value;
+      slot.classList.toggle('filled', Boolean(value));
+    };
+
+    particles.forEach((particle) => {
+      particle.addEventListener('click', () => {
+        const isSelected = particle.classList.contains('selected');
+        clearSelection();
+        if (!isSelected) {
+          particle.classList.add('selected');
+          selectedParticle = particle.dataset.particle;
+        }
+      });
+
+      particle.addEventListener('dragstart', (event) => {
+        event.dataTransfer.setData('text/plain', particle.dataset.particle);
+      });
+    });
+
+    slots.forEach((slot) => {
+      slot.addEventListener('click', () => {
+        if (selectedParticle) {
+          placeParticle(slot, selectedParticle);
+          clearSelection();
+        } else if (slot.textContent) {
+          placeParticle(slot, '');
+        }
+      });
+
+      slot.addEventListener('dragover', (event) => {
+        event.preventDefault();
+        slot.classList.add('highlight');
+      });
+
+      slot.addEventListener('dragleave', () => {
+        slot.classList.remove('highlight');
+      });
+
+      slot.addEventListener('drop', (event) => {
+        event.preventDefault();
+        const value = event.dataTransfer.getData('text/plain');
+        placeParticle(slot, value);
+        slot.classList.remove('highlight');
+      });
+    });
+
+    submitButton.addEventListener('click', () => {
+      slots.forEach((slot) => {
+        const result = results.querySelector(`[data-result="${slot.dataset.slot}"]`);
+        result.textContent = slot.textContent || '—';
+      });
+      results.classList.remove('hidden');
+    });
+
+    clearButton.addEventListener('click', () => {
+      slots.forEach((slot) => placeParticle(slot, ''));
+      results.classList.add('hidden');
+      clearSelection();
+    });
+  </script>
+</body>
+</html>
