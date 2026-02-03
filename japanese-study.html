@@ -1483,11 +1483,7 @@
     });
 
     menuBackBtn.addEventListener("click", () => {
-      if (window.history.length > 1) {
-        window.history.back();
-      } else {
-        window.location.href = "index.html";
-      }
+      window.location.assign("index.html");
     });
 
     verbsGuideBtn.addEventListener("click", () => {
