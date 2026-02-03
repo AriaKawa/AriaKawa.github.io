@@ -6,21 +6,21 @@
   <title>Particle Repair</title>
   <style>
     :root {
-      --bg: #0f0916;
-      --panel: #1d0f2a;
-      --accent: #7ee0ff;
-      --accent-strong: #40b9e6;
-      --text: #f2eef8;
-      --muted: rgba(242, 238, 248, 0.7);
+      --bg: #12060f;
+      --panel: #2b0d18;
+      --accent: #f5a3c7;
+      --accent-strong: #d9557f;
+      --text: #f3e6f1;
+      --muted: rgba(243, 230, 241, 0.7);
       --line: rgba(255, 255, 255, 0.12);
-      --success: #7ff2b4;
+      --good: #22c55e;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
       font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
       color: var(--text);
-      background: radial-gradient(circle at top, #231433, var(--bg) 70%);
+      background: radial-gradient(circle at top, #40142b, var(--bg) 70%);
       padding: 24px;
     }
     main {
@@ -30,7 +30,7 @@
       gap: 24px;
     }
     header {
-      background: rgba(29, 15, 42, 0.9);
+      background: rgba(43, 13, 24, 0.85);
       border: 1px solid var(--line);
       border-radius: 18px;
       padding: 22px;
@@ -72,7 +72,7 @@
     .chip.accent {
       background: var(--accent-strong);
       border-color: transparent;
-      color: #0f0916;
+      color: #2b0d18;
       font-weight: 600;
     }
     .layout {
@@ -81,7 +81,7 @@
       gap: 20px;
     }
     .panel {
-      background: rgba(15, 9, 22, 0.8);
+      background: rgba(18, 6, 15, 0.7);
       border: 1px solid var(--line);
       border-radius: 20px;
       padding: 20px;
@@ -98,23 +98,23 @@
     .slot {
       min-width: 48px;
       padding: 6px 12px;
-      border: 1px dashed rgba(126, 224, 255, 0.6);
+      border: 1px dashed rgba(245, 163, 199, 0.6);
       border-radius: 10px;
       text-align: center;
       font-weight: 600;
       color: var(--accent);
-      background: rgba(126, 224, 255, 0.08);
+      background: rgba(245, 163, 199, 0.08);
       cursor: pointer;
       transition: border-color 0.2s ease, background 0.2s ease;
     }
     .slot.filled {
       border-style: solid;
-      background: rgba(126, 224, 255, 0.18);
+      background: rgba(245, 163, 199, 0.18);
     }
     .slot.highlight {
-      border-color: var(--success);
-      background: rgba(127, 242, 180, 0.2);
-      color: var(--success);
+      border-color: var(--good);
+      background: rgba(34, 197, 94, 0.18);
+      color: var(--good);
     }
     .palette {
       display: grid;
@@ -122,8 +122,8 @@
       gap: 12px;
     }
     .particle {
-      background: rgba(29, 15, 42, 0.9);
-      border: 1px solid rgba(126, 224, 255, 0.4);
+      background: rgba(18, 6, 15, 0.6);
+      border: 1px solid rgba(245, 163, 199, 0.4);
       border-radius: 12px;
       padding: 10px 8px;
       font-size: 1.05rem;
@@ -132,9 +132,9 @@
       transition: transform 0.2s ease, border-color 0.2s ease;
     }
     .particle.selected {
-      border-color: var(--success);
+      border-color: var(--good);
       transform: translateY(-2px);
-      box-shadow: 0 6px 18px rgba(127, 242, 180, 0.3);
+      box-shadow: 0 6px 18px rgba(34, 197, 94, 0.3);
     }
     .controls {
       display: flex;
@@ -143,8 +143,8 @@
     }
     button {
       border-radius: 999px;
-      border: 1px solid rgba(126, 224, 255, 0.4);
-      background: rgba(15, 9, 22, 0.6);
+      border: 1px solid rgba(245, 163, 199, 0.4);
+      background: rgba(18, 6, 15, 0.5);
       color: var(--text);
       padding: 10px 18px;
       font-size: 0.9rem;
@@ -152,7 +152,7 @@
     }
     button.primary {
       background: var(--accent-strong);
-      color: #0f0916;
+      color: #2b0d18;
       border-color: transparent;
       font-weight: 600;
     }
@@ -161,8 +161,8 @@
       gap: 12px;
       padding: 16px;
       border-radius: 16px;
-      border: 1px solid rgba(127, 242, 180, 0.4);
-      background: rgba(127, 242, 180, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.4);
+      background: rgba(34, 197, 94, 0.12);
     }
     .results.hidden {
       display: none;
@@ -175,7 +175,7 @@
       padding: 10px 14px;
       border-radius: 12px;
       border: 1px solid rgba(255, 255, 255, 0.08);
-      background: rgba(15, 9, 22, 0.4);
+      background: rgba(18, 6, 15, 0.4);
     }
     .role {
       font-size: 0.85rem;
@@ -222,7 +222,7 @@
           <button type="button" class="primary" id="submitRepair">Submit repair</button>
           <button type="button" id="clearRepair">Clear slots</button>
         </div>
-        <div class="results hidden" id="repairResults">
+        <div class="results hidden" id="repairResults" aria-live="polite">
           <div class="result-item">
             <div>
               <strong>Slot 1:</strong> <span data-result="0">—</span>
