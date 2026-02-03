@@ -348,7 +348,6 @@
         const draggingTopicCard = document.getElementById('dragging-topic-card');
         let intervalId = null;
         let activeTopic = '';
-        let isDragging = false;
 
         const game = {
             letters: new Set(),
@@ -483,25 +482,18 @@
             const selection = topics[Math.floor(Math.random() * topics.length)];
             activeTopic = selection;
             draggingTopicCard.textContent = selection;
+            updateTopicCardVisibility();
         };
 
-        const updateDraggingCard = () => {
-            const shouldShow = isDragging && activeTopic;
-            draggingTopicCard.classList.toggle('is-dragging', shouldShow);
-        };
-
-        const setDraggingState = (state) => {
-            isDragging = state;
-            updateDraggingCard();
+        const updateTopicCardVisibility = () => {
+            const hasTopic = Boolean(activeTopic);
+            draggingTopicCard.classList.toggle('is-dragging', hasTopic);
         };
 
         startButton.addEventListener('click', startTimer);
         challengeButton.addEventListener('click', challenge);
         resetButton.addEventListener('click', reset);
         drawTopicButton.addEventListener('click', drawTopic);
-        drawTopicButton.addEventListener('pointerdown', () => setDraggingState(true));
-        window.addEventListener('pointerup', () => setDraggingState(false));
-        window.addEventListener('pointercancel', () => setDraggingState(false));
         votePanel.addEventListener('click', (event) => {
             const voteButton = event.target.closest('[data-vote]');
             if (!voteButton) return;
