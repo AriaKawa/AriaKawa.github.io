@@ -105,19 +105,24 @@
             font-size: 1.25rem;
         }
 
-        .topic-card {
-            padding: 18px;
-            border-radius: 14px;
-            background: rgba(162, 123, 255, 0.15);
-            border: 1px solid rgba(162, 123, 255, 0.45);
-            font-size: 1.05rem;
-            font-weight: 600;
-            min-height: 120px;
-            display: flex;
+        .dragging-topic-card {
+            display: none;
+            margin-top: 4px;
+            padding: 24px;
+            border-radius: 16px;
+            background: rgba(162, 123, 255, 0.2);
+            border: 1px solid rgba(162, 123, 255, 0.55);
+            font-size: 1.35rem;
+            font-weight: 700;
+            min-height: 140px;
             align-items: center;
             justify-content: center;
             text-align: center;
             color: var(--text);
+        }
+
+        .dragging-topic-card.is-dragging {
+            display: flex;
         }
 
         .game-area {
@@ -276,8 +281,8 @@
             <div class="panel-content">
                 <aside class="topic-panel" aria-label="Topic draw panel">
                     <h2>Topic card</h2>
-                    <div class="topic-card" id="topic-card">Draw a card to pick a topic.</div>
                     <button class="control-button" type="button" id="draw-topic-button">Draw a card</button>
+                    <div class="dragging-topic-card" id="dragging-topic-card" aria-live="polite"></div>
                 </aside>
 
                 <div class="game-area">
@@ -339,9 +344,11 @@
         const challengeButton = document.getElementById('challenge-button');
         const resetButton = document.getElementById('reset-button');
         const votePanel = document.getElementById('vote-panel');
-        const topicCard = document.getElementById('topic-card');
         const drawTopicButton = document.getElementById('draw-topic-button');
+        const draggingTopicCard = document.getElementById('dragging-topic-card');
         let intervalId = null;
+        let activeTopic = '';
+        let isDragging = false;
 
         const game = {
             letters: new Set(),
@@ -474,13 +481,27 @@
 
         const drawTopic = () => {
             const selection = topics[Math.floor(Math.random() * topics.length)];
-            topicCard.textContent = selection;
+            activeTopic = selection;
+            draggingTopicCard.textContent = selection;
+        };
+
+        const updateDraggingCard = () => {
+            const shouldShow = isDragging && activeTopic;
+            draggingTopicCard.classList.toggle('is-dragging', shouldShow);
+        };
+
+        const setDraggingState = (state) => {
+            isDragging = state;
+            updateDraggingCard();
         };
 
         startButton.addEventListener('click', startTimer);
         challengeButton.addEventListener('click', challenge);
         resetButton.addEventListener('click', reset);
         drawTopicButton.addEventListener('click', drawTopic);
+        drawTopicButton.addEventListener('pointerdown', () => setDraggingState(true));
+        window.addEventListener('pointerup', () => setDraggingState(false));
+        window.addEventListener('pointercancel', () => setDraggingState(false));
         votePanel.addEventListener('click', (event) => {
             const voteButton = event.target.closest('[data-vote]');
             if (!voteButton) return;
