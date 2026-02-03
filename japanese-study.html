@@ -115,6 +115,10 @@
       color: #1b1f35;
       border-color: transparent;
     }
+    .chip.guide {
+      border-color: rgba(79, 184, 138, 0.6);
+      color: var(--good);
+    }
     .chip:hover {
       border-color: rgba(229, 107, 139, 0.6);
       color: var(--accent);
@@ -122,6 +126,11 @@
     .chip.primary:hover {
       background: #ef8aa5;
       color: #1b1f35;
+    }
+    .chip.guide:hover {
+      background: rgba(79, 184, 138, 0.16);
+      border-color: rgba(79, 184, 138, 0.9);
+      color: var(--good);
     }
     .controls {
       display: flex;
@@ -393,7 +402,7 @@
         </div>
         <div class="topic-actions">
           <button id="verbsCategoryBtn" class="chip primary">Open verb hub</button>
-          <button id="suruGuideBtn" class="chip">する capsules</button>
+          <button id="suruGuideBtn" class="chip guide">する capsules</button>
         </div>
       </div>
 
@@ -404,7 +413,7 @@
           <p>Study the list or try the themed matching game.</p>
         </div>
         <div class="topic-actions">
-          <a class="chip" href="rain-guide.html">Study guide</a>
+          <a class="chip guide" href="rain-guide.html">Study guide</a>
           <a class="chip primary" href="rain-game.html">Play game</a>
         </div>
       </div>
@@ -416,7 +425,7 @@
           <p>Keep practice and study side-by-side for quick refreshers.</p>
         </div>
         <div class="topic-actions">
-          <a class="chip" href="days-study-guide.html">Study guide</a>
+          <a class="chip guide" href="days-study-guide.html">Study guide</a>
           <a class="chip primary" href="days-game.html">Play game</a>
         </div>
       </div>
@@ -428,7 +437,20 @@
           <p>Practice dates and times with the mini drill game.</p>
         </div>
         <div class="topic-actions">
+          <a class="chip guide" href="time-year-study-guide.html">Study guide</a>
           <a class="chip primary" href="time-year-game.html">Play game</a>
+        </div>
+      </div>
+
+      <div class="topic-card">
+        <div>
+          <p class="eyebrow">Particles</p>
+          <h2>Meaning, Function, and Usage</h2>
+          <p>Deep-dive guide + game for conscious mastery.</p>
+        </div>
+        <div class="topic-actions">
+          <a class="chip guide" href="particles-meaning-function.html">Open study guide</a>
+          <a class="chip primary" href="particles-games.html">Play games</a>
         </div>
       </div>
 
@@ -453,18 +475,6 @@
           <button id="particlesCategoryBtn" class="chip" disabled aria-disabled="true">Coming soon</button>
         </div>
       </div>
-
-      <div class="topic-card">
-        <div>
-          <p class="eyebrow">Particles</p>
-          <h2>Meaning, Function, and Usage</h2>
-          <p>Deep-dive guide + game for conscious mastery.</p>
-        </div>
-        <div class="topic-actions">
-          <a class="chip primary" href="particles-meaning-function.html">Open study guide</a>
-          <a class="chip" href="particles-games.html">Play games</a>
-        </div>
-      </div>
     </div>
   </section>
 
@@ -483,7 +493,7 @@
         </div>
         <div class="topic-actions">
           <button id="verbsGameBtn" class="chip primary">Match game</button>
-          <button id="verbsGuideBtn" class="chip">Study guide</button>
+          <button id="verbsGuideBtn" class="chip guide">Study guide</button>
         </div>
       </div>
 
@@ -494,7 +504,7 @@
           <p>Review the capsules or drill forms with the trainer.</p>
         </div>
         <div class="topic-actions">
-          <button id="suruGuideBtnSecondary" class="chip">Study capsules</button>
+          <button id="suruGuideBtnSecondary" class="chip guide">Study capsules</button>
           <button id="suruGameBtn" class="chip primary">Play trainer</button>
         </div>
       </div>

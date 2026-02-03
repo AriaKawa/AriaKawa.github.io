@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Time &amp; Year Study Guide</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #0b1021;
+      --panel: #1b1f35;
+      --accent: #4fb88a;
+      --text: #f6f2ef;
+      --muted: rgba(246, 242, 239, 0.75);
+      --border: rgba(255, 255, 255, 0.12);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #2b2343, var(--bg) 65%);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      padding: 20px;
+    }
+    .panel {
+      width: min(100%, 880px);
+      background: rgba(27, 31, 53, 0.85);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.25);
+    }
+    h1 {
+      margin-top: 0;
+      font-size: 1.5rem;
+    }
+    p {
+      line-height: 1.6;
+      color: var(--muted);
+    }
+    .callout {
+      border: 1px solid rgba(79, 184, 138, 0.6);
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-top: 18px;
+      background: rgba(79, 184, 138, 0.12);
+      color: var(--text);
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+    .chip {
+      border: 1px solid rgba(79, 184, 138, 0.6);
+      border-radius: 999px;
+      padding: 8px 14px;
+      background: transparent;
+      color: var(--text);
+      text-decoration: none;
+      font-weight: 600;
+      transition: 0.15s ease;
+    }
+    .chip:hover {
+      background: rgba(79, 184, 138, 0.16);
+      border-color: rgba(79, 184, 138, 0.9);
+      color: var(--text);
+    }
+    .chip.primary {
+      background: var(--accent);
+      color: #1b1f35;
+      border-color: transparent;
+    }
+    .chip.primary:hover {
+      background: #7bd0a7;
+    }
+  </style>
+</head>
+<body>
+  <main class="panel">
+    <h1>Time &amp; Year Study Guide</h1>
+    <p>
+      This guide is getting a full write-up soon. For now, use the game to review
+      dates, times, and counters, then check back for structured notes, examples,
+      and flashcard-friendly lists.
+    </p>
+    <div class="callout">
+      Upcoming sections: reading dates, writing times, year counters, and quick
+      conversion tips.
+    </div>
+    <div class="actions">
+      <a class="chip primary" href="time-year-game.html">Play the time &amp; year game</a>
+      <a class="chip" href="japanese-study.html">Back to study hub</a>
+    </div>
+  </main>
+</body>
+</html>
