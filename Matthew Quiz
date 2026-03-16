@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Room Code Quiz Game</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: linear-gradient(135deg, #2b1055, #7597de);
+      min-height: 100vh;
+      color: white;
+    }
+
+    .screen {
+      display: none;
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    .screen.active {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 900px;
+      background: rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(10px);
+      border-radius: 24px;
+      padding: 28px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    }
+
+    h1, h2, h3, p {
+      margin-top: 0;
+    }
+
+    .title {
+      text-align: center;
+      font-size: 3rem;
+      margin-bottom: 12px;
+    }
+
+    .subtitle {
+      text-align: center;
+      opacity: 0.9;
+      margin-bottom: 24px;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    input {
+      flex: 1;
+      min-width: 220px;
+      padding: 14px 16px;
+      border: none;
+      border-radius: 14px;
+      font-size: 1rem;
+      outline: none;
+    }
+
+    button {
+      border: none;
+      border-radius: 16px;
+      padding: 14px 18px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.12s ease, opacity 0.12s ease;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      opacity: 0.95;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-primary {
+      background: #ffd93d;
+      color: #1a1a1a;
+    }
+
+    .btn-secondary {
+      background: #00e5ff;
+      color: #1a1a1a;
+    }
+
+    .btn-danger {
+      background: #ff5c8a;
+      color: white;
+    }
+
+    .btn-green {
+      background: #57e389;
+      color: #102010;
+    }
+
+    .center {
+      text-align: center;
+    }
+
+    .room-code-box {
+      font-size: 2rem;
+      font-weight: bold;
+      letter-spacing: 6px;
+      background: rgba(255,255,255,0.18);
+      padding: 14px 18px;
+      border-radius: 18px;
+      display: inline-block;
+      margin-bottom: 18px;
+    }
+
+    .players-list {
+      list-style: none;
+      padding: 0;
+      margin: 20px 0;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }
+
+    .players-list li {
+      background: rgba(255,255,255,0.14);
+      border-radius: 16px;
+      padding: 14px;
+      font-weight: bold;
+    }
+
+    .host-badge {
+      font-size: 0.85rem;
+      background: #ffd93d;
+      color: black;
+      padding: 4px 8px;
+      border-radius: 999px;
+      margin-left: 8px;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .pill {
+      background: rgba(255,255,255,0.16);
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-weight: bold;
+    }
+
+    .question-title {
+      font-size: 2rem;
+      text-align: center;
+      margin-bottom: 18px;
+    }
+
+    .question-image {
+      max-width: 100%;
+      max-height: 280px;
+      object-fit: contain;
+      border-radius: 20px;
+      display: block;
+      margin: 0 auto 22px auto;
+      background: rgba(255,255,255,0.12);
+    }
+
+    .answers-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    .answer-btn {
+      min-height: 90px;
+      color: white;
+      font-size: 1.05rem;
+      font-weight: bold;
+      border-radius: 20px;
+      padding: 18px;
+    }
+
+    .answer-0 { background: #e74c3c; }
+    .answer-1 { background: #3498db; }
+    .answer-2 { background: #f1c40f; color: #1a1a1a; }
+    .answer-3 { background: #2ecc71; color: #102010; }
+
+    .leaderboard {
+      list-style: none;
+      padding: 0;
+      margin: 20px 0 0 0;
+    }
+
+    .leaderboard li {
+      display: flex;
+      justify-content: space-between;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.15);
+      font-weight: bold;
+    }
+
+    .small-note {
+      opacity: 0.85;
+      font-size: 0.95rem;
+      margin-top: 12px;
+    }
+
+    .status-text {
+      text-align: center;
+      margin-top: 8px;
+      min-height: 24px;
+      font-weight: bold;
+    }
+
+    @media (max-width: 700px) {
+      .answers-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .title {
+        font-size: 2.2rem;
+      }
+
+      .question-title {
+        font-size: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HOME -->
+  <section id="homeScreen" class="screen active">
+    <div class="card">
+      <h1 class="title">Quiz Party</h1>
+      <p class="subtitle">Create a room or join with a room code</p>
+
+      <div class="input-row">
+        <input id="nameInput" type="text" placeholder="Enter your name" maxlength="20" />
+      </div>
+
+      <div class="input-row">
+        <button id="createRoomBtn" class="btn-primary">Create Room</button>
+      </div>
+
+      <div class="input-row">
+        <input id="joinCodeInput" type="text" placeholder="Enter room code" maxlength="6" />
+        <button id="joinRoomBtn" class="btn-secondary">Join Room</button>
+      </div>
+
+      <div id="homeStatus" class="status-text"></div>
+    </div>
+  </section>
+
+  <!-- LOBBY -->
+  <section id="lobbyScreen" class="screen">
+    <div class="card">
+      <div class="center">
+        <h2>Lobby</h2>
+        <div class="room-code-box" id="roomCodeDisplay">------</div>
+        <p>Share this code so people can join</p>
+      </div>
+
+      <h3>Players</h3>
+      <ul id="playersList" class="players-list"></ul>
+
+      <div class="center">
+        <button id="startGameBtn" class="btn-green">Start Game</button>
+        <button id="leaveLobbyBtn" class="btn-danger" style="margin-left:10px;">Leave</button>
+        <p class="small-note" id="hostOnlyText"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- GAME -->
+  <section id="gameScreen" class="screen">
+    <div class="card">
+      <div class="top-bar">
+        <div class="pill" id="questionCounter">Question 1 / 1</div>
+        <div class="pill" id="timerDisplay">Time: 15</div>
+        <div class="pill" id="scoreDisplay">Score: 0</div>
+      </div>
+
+      <h2 class="question-title" id="questionText">Question goes here</h2>
+      <img id="questionImage" class="question-image" style="display:none;" alt="Question image" />
+
+      <div id="answersGrid" class="answers-grid"></div>
+
+      <div id="gameStatus" class="status-text"></div>
+    </div>
+  </section>
+
+  <!-- RESULTS -->
+  <section id="resultsScreen" class="screen">
+    <div class="card">
+      <h2 class="center">Final Leaderboard</h2>
+      <ul id="leaderboardList" class="leaderboard"></ul>
+      <div class="center" style="margin-top:18px;">
+        <button id="playAgainBtn" class="btn-primary">Back To Home</button>
+      </div>
+    </div>
+  </section>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+    import {
+      getFirestore,
+      doc,
+      setDoc,
+      getDoc,
+      updateDoc,
+      onSnapshot,
+      deleteDoc,
+      collection,
+      getDocs
+    } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
+
+    // =========================
+    // 1) PUT YOUR FIREBASE CONFIG HERE
+    // =========================
+    const firebaseConfig = {
+      apiKey: "PASTE_YOURS",
+      authDomain: "PASTE_YOURS",
+      projectId: "PASTE_YOURS",
+      storageBucket: "PASTE_YOURS",
+      messagingSenderId: "PASTE_YOURS",
+      appId: "PASTE_YOURS"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // =========================
+    // 2) QUIZ QUESTIONS
+    // =========================
+    const quizQuestions = [
+      {
+        text: "What's my favorite color?",
+        correct: "Maroon",
+        options: ["Maroon", "Blue", "Green", "Purple"]
+      },
+      {
+        text: "What's my favorite food?",
+        correct: "Chicken Fettuccine",
+        options: ["Chicken Fettuccine", "Pizza", "Tacos", "Sushi"]
+      },
+      {
+        text: "Which girl do I think is the most attractive?",
+        correct: "This one",
+        options: ["This one", "Option B", "Option C", "Option D"],
+        image: "PUT_IMAGE_URL_HERE"
+      },
+      {
+        text: "What's my favorite song?",
+        correct: "Last Train Home",
+        options: ["Last Train Home", "Bohemian Rhapsody", "Blinding Lights", "Viva La Vida"]
+      },
+      {
+        text: "Where haven't I been to before?",
+        correct: "Kansas City MO",
+        options: ["Cedar Point", "New York", "Hollywood", "Kansas City MO"]
+      },
+      {
+        text: "Is she fat?",
+        correct: "Yes",
+        options: ["Yes", "No", "Maybe", "Not sure"],
+        image: "PUT_SECOND_IMAGE_URL_HERE"
+      },
+      {
+        text: "Favorite soda?",
+        correct: "Mountain Dew",
+        options: ["Mountain Dew", "Coke", "Dr Pepper", "Sprite"]
+      },
+      {
+        text: "If I could snap my fingers and be a professional at any instrument what would I choose?",
+        correct: "Cello",
+        options: ["Cello", "Piano", "French Horn", "Electric Guitar"]
+      }
+    ];
+
+    // =========================
+    // 3) STATE
+    // =========================
+    let playerName = "";
+    let playerId = "";
+    let currentRoomCode = "";
+    let currentRoomData = null;
+    let roomUnsubscribe = null;
+    let questionTimer = null;
+    let hasAnsweredCurrent = false;
+
+    // =========================
+    // 4) ELEMENTS
+    // =========================
+    const homeScreen = document.getElementById("homeScreen");
+    const lobbyScreen = document.getElementById("lobbyScreen");
+    const gameScreen = document.getElementById("gameScreen");
+    const resultsScreen = document.getElementById("resultsScreen");
+
+    const nameInput = document.getElementById("nameInput");
+    const joinCodeInput = document.getElementById("joinCodeInput");
+    const createRoomBtn = document.getElementById("createRoomBtn");
+    const joinRoomBtn = document.getElementById("joinRoomBtn");
+    const homeStatus = document.getElementById("homeStatus");
+
+    const roomCodeDisplay = document.getElementById("roomCodeDisplay");
+    const playersList = document.getElementById("playersList");
+    const startGameBtn = document.getElementById("startGameBtn");
+    const leaveLobbyBtn = document.getElementById("leaveLobbyBtn");
+    const hostOnlyText = document.getElementById("hostOnlyText");
+
+    const questionCounter = document.getElementById("questionCounter");
+    const timerDisplay = document.getElementById("timerDisplay");
+    const scoreDisplay = document.getElementById("scoreDisplay");
+    const questionText = document.getElementById("questionText");
+    const questionImage = document.getElementById("questionImage");
+    const answersGrid = document.getElementById("answersGrid");
+    const gameStatus = document.getElementById("gameStatus");
+
+    const leaderboardList = document.getElementById("leaderboardList");
+    const playAgainBtn = document.getElementById("playAgainBtn");
+
+    // =========================
+    // 5) HELPERS
+    // =========================
+    function showScreen(screen) {
+      [homeScreen, lobbyScreen, gameScreen, resultsScreen].forEach(s => s.classList.remove("active"));
+      screen.classList.add("active");
+    }
+
+    function setStatus(el, text, color = "white") {
+      el.textContent = text;
+      el.style.color = color;
+    }
+
+    function generatePlayerId() {
+      return "p_" + Math.random().toString(36).slice(2, 10);
+    }
+
+    function generateRoomCode() {
+      const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+      let out = "";
+      for (let i = 0; i < 6; i++) {
+        out += chars[Math.floor(Math.random() * chars.length)];
+      }
+      return out;
+    }
+
+    function shuffleArray(arr) {
+      const copy = [...arr];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function getSortedPlayers(roomData) {
+      const players = Object.values(roomData.players || {});
+      return players.sort((a, b) => (b.score || 0) - (a.score || 0));
+    }
+
+    function getMyPlayer(roomData) {
+      return roomData?.players?.[playerId] || null;
+    }
+
+    function isHost(roomData) {
+      return roomData?.hostId === playerId;
+    }
+
+    function clearTimer() {
+      if (questionTimer) {
+        clearInterval(questionTimer);
+        questionTimer = null;
+      }
+    }
+
+    async function safeDeleteMyPlayerFromRoom() {
+      if (!currentRoomCode || !playerId) return;
+
+      const roomRef = doc(db, "rooms", currentRoomCode);
+      const snap = await getDoc(roomRef);
+      if (!snap.exists()) return;
+
+      const room = snap.data();
+      const players = { ...(room.players || {}) };
+
+      if (players[playerId]) {
+        delete players[playerId];
+      }
+
+      const remainingIds = Object.keys(players);
+
+      if (remainingIds.length === 0) {
+        await deleteDoc(roomRef);
+      } else {
+        let newHostId = room.hostId;
+        if (room.hostId === playerId) {
+          newHostId = remainingIds[0];
+          if (players[newHostId]) {
+            players[newHostId].isHost = true;
+          }
+        }
+
+        await updateDoc(roomRef, {
+          players,
+          hostId: newHostId
+        });
+      }
+    }
+
+    // =========================
+    // 6) RENDER
+    // =========================
+    function renderLobby(roomData) {
+      roomCodeDisplay.textContent = roomData.roomCode;
+      playersList.innerHTML = "";
+
+      const players = Object.values(roomData.players || {});
+      players.forEach(player => {
+        const li = document.createElement("li");
+        li.innerHTML = `
+          ${player.name}
+          ${player.id === roomData.hostId ? `<span class="host-badge">HOST</span>` : ""}
+        `;
+        playersList.appendChild(li);
+      });
+
+      if (isHost(roomData)) {
+        startGameBtn.style.display = "inline-block";
+        hostOnlyText.textContent = "You are the host. Start when everyone is ready.";
+      } else {
+        startGameBtn.style.display = "none";
+        hostOnlyText.textContent = "Waiting for the host to start the game.";
+      }
+    }
+
+    function renderQuestion(roomData) {
+      const index = roomData.currentQuestionIndex || 0;
+      const q = roomData.questions[index];
+      const me = getMyPlayer(roomData);
+      const score = me?.score || 0;
+
+      questionCounter.textContent = `Question ${index + 1} / ${roomData.questions.length}`;
+      scoreDisplay.textContent = `Score: ${score}`;
+      questionText.textContent = q.text;
+
+      if (q.image) {
+        questionImage.src = q.image;
+        questionImage.style.display = "block";
+      } else {
+        questionImage.style.display = "none";
+        questionImage.removeAttribute("src");
+      }
+
+      const roomDeadline = roomData.questionDeadline || 0;
+      startLocalTimer(roomDeadline);
+
+      const playerAnswer = me?.answers?.[index];
+      hasAnsweredCurrent = typeof playerAnswer !== "undefined";
+
+      answersGrid.innerHTML = "";
+      q.options.forEach((option, i) => {
+        const btn = document.createElement("button");
+        btn.className = `answer-btn answer-${i % 4}`;
+        btn.textContent = option;
+        btn.disabled = hasAnsweredCurrent || roomData.phase !== "game";
+        btn.onclick = () => submitAnswer(option);
+        answersGrid.appendChild(btn);
+      });
+
+      if (hasAnsweredCurrent) {
+        gameStatus.textContent = "Answer locked in. Waiting for next question...";
+      } else {
+        gameStatus.textContent = "";
+      }
+    }
+
+    function renderResults(roomData) {
+      leaderboardList.innerHTML = "";
+      const sortedPlayers = getSortedPlayers(roomData);
+
+      sortedPlayers.forEach((player, index) => {
+        const li = document.createElement("li");
+        li.innerHTML = `<span>#${index + 1} ${player.name}</span><span>${player.score || 0} pts</span>`;
+        leaderboardList.appendChild(li);
+      });
+    }
+
+    function startLocalTimer(deadlineMs) {
+      clearTimer();
+
+      function tick() {
+        const secs = Math.max(0, Math.ceil((deadlineMs - Date.now()) / 1000));
+        timerDisplay.textContent = `Time: ${secs}`;
+      }
+
+      tick();
+      questionTimer = setInterval(tick, 250);
+    }
+
+    // =========================
+    // 7) ROOM FLOW
+    // =========================
+    async function createRoom() {
+      playerName = nameInput.value.trim();
+      if (!playerName) {
+        setStatus(homeStatus, "Enter your name first.", "#ffd93d");
+        return;
+      }
+
+      playerId = generatePlayerId();
+
+      let roomCode = generateRoomCode();
+      let roomRef = doc(db, "rooms", roomCode);
+      let existing = await getDoc(roomRef);
+
+      while (existing.exists()) {
+        roomCode = generateRoomCode();
+        roomRef = doc(db, "rooms", roomCode);
+        existing = await getDoc(roomRef);
+      }
+
+      const shuffledQuestions = quizQuestions.map(q => ({
+        ...q,
+        options: shuffleArray(q.options)
+      }));
+
+      const roomData = {
+        roomCode,
+        hostId: playerId,
+        phase: "lobby",
+        currentQuestionIndex: 0,
+        questionDeadline: 0,
+        createdAt: Date.now(),
+        questions: shuffledQuestions,
+        players: {
+          [playerId]: {
+            id: playerId,
+            name: playerName,
+            score: 0,
+            isHost: true,
+            answers: {}
+          }
+        }
+      };
+
+      await setDoc(roomRef, roomData);
+      currentRoomCode = roomCode;
+      watchRoom(roomCode);
+    }
+
+    async function joinRoom() {
+      playerName = nameInput.value.trim();
+      const roomCode = joinCodeInput.value.trim().toUpperCase();
+
+      if (!playerName) {
+        setStatus(homeStatus, "Enter your name first.", "#ffd93d");
+        return;
+      }
+
+      if (!roomCode) {
+        setStatus(homeStatus, "Enter a room code.", "#ffd93d");
+        return;
+      }
+
+      playerId = generatePlayerId();
+
+      const roomRef = doc(db, "rooms", roomCode);
+      const snap = await getDoc(roomRef);
+
+      if (!snap.exists()) {
+        setStatus(homeStatus, "Room not found.", "#ff8fab");
+        return;
+      }
+
+      const roomData = snap.data();
+
+      if (roomData.phase !== "lobby") {
+        setStatus(homeStatus, "Game already started.", "#ff8fab");
+        return;
+      }
+
+      const players = { ...(roomData.players || {}) };
+      players[playerId] = {
+        id: playerId,
+        name: playerName,
+        score: 0,
+        isHost: false,
+        answers: {}
+      };
+
+      await updateDoc(roomRef, { players });
+      currentRoomCode = roomCode;
+      watchRoom(roomCode);
+    }
+
+    function watchRoom(roomCode) {
+      if (roomUnsubscribe) {
+        roomUnsubscribe();
+      }
+
+      const roomRef = doc(db, "rooms", roomCode);
+      roomUnsubscribe = onSnapshot(roomRef, async (snap) => {
+        if (!snap.exists()) {
+          clearTimer();
+          currentRoomCode = "";
+          currentRoomData = null;
+          showScreen(homeScreen);
+          setStatus(homeStatus, "Room closed.", "#ffd93d");
+          return;
+        }
+
+        currentRoomData = snap.data();
+
+        if (!currentRoomData.players?.[playerId]) {
+          clearTimer();
+          showScreen(homeScreen);
+          setStatus(homeStatus, "You left the room.", "#ffd93d");
+          return;
+        }
+
+        if (currentRoomData.phase === "lobby") {
+          showScreen(lobbyScreen);
+          renderLobby(currentRoomData);
+        }
+
+        if (currentRoomData.phase === "game") {
+          showScreen(gameScreen);
+          renderQuestion(currentRoomData);
+        }
+
+        if (currentRoomData.phase === "results") {
+          clearTimer();
+          showScreen(resultsScreen);
+          renderResults(currentRoomData);
+        }
+
+        maybeAdvanceQuestionAsHost(currentRoomData);
+      });
+    }
+
+    async function startGame() {
+      if (!currentRoomCode || !currentRoomData || !isHost(currentRoomData)) return;
+
+      const roomRef = doc(db, "rooms", currentRoomCode);
+
+      await updateDoc(roomRef, {
+        phase: "game",
+        currentQuestionIndex: 0,
+        questionDeadline: Date.now() + 15000
+      });
+    }
+
+    async function submitAnswer(selectedOption) {
+      if (!currentRoomCode || !currentRoomData) return;
+
+      const me = getMyPlayer(currentRoomData);
+      const qIndex = currentRoomData.currentQuestionIndex;
+      const question = currentRoomData.questions[qIndex];
+
+      if (!me) return;
+      if (typeof me.answers?.[qIndex] !== "undefined") return;
+
+      const isCorrectAnswer = selectedOption === question.correct;
+      const timeLeftMs = Math.max(0, (currentRoomData.questionDeadline || 0) - Date.now());
+      const speedBonus = Math.floor(timeLeftMs / 100);
+      const earnedPoints = isCorrectAnswer ? 500 + speedBonus : 0;
+
+      const players = { ...(currentRoomData.players || {}) };
+      const myPlayer = { ...players[playerId] };
+      const myAnswers = { ...(myPlayer.answers || {}) };
+
+      myAnswers[qIndex] = {
+        selectedOption,
+        isCorrect: isCorrectAnswer,
+        points: earnedPoints
+      };
+
+      myPlayer.answers = myAnswers;
+      myPlayer.score = (myPlayer.score || 0) + earnedPoints;
+      players[playerId] = myPlayer;
+
+      const roomRef = doc(db, "rooms", currentRoomCode);
+      await updateDoc(roomRef, { players });
+
+      gameStatus.textContent = isCorrectAnswer ? `Correct! +${earnedPoints}` : "Wrong!";
+    }
+
+    async function maybeAdvanceQuestionAsHost(roomData) {
+      if (!isHost(roomData)) return;
+      if (roomData.phase !== "game") return;
+
+      const now = Date.now();
+      const deadline = roomData.questionDeadline || 0;
+      const qIndex = roomData.currentQuestionIndex || 0;
+      const totalQuestions = roomData.questions.length;
+      const players = Object.values(roomData.players || {});
+
+      const everyoneAnswered = players.every(player => {
+        return typeof player.answers?.[qIndex] !== "undefined";
+      });
+
+      if (!everyoneAnswered && now < deadline) return;
+
+      const roomRef = doc(db, "rooms", currentRoomCode);
+
+      if (qIndex + 1 >= totalQuestions) {
+        await updateDoc(roomRef, {
+          phase: "results"
+        });
+        return;
+      }
+
+      if (roomData._advancingLock) return;
+
+      await updateDoc(roomRef, {
+        _advancingLock: true
+      });
+
+      setTimeout(async () => {
+        const freshSnap = await getDoc(roomRef);
+        if (!freshSnap.exists()) return;
+
+        const freshRoom = freshSnap.data();
+        if (freshRoom.phase !== "game") return;
+        if ((freshRoom.currentQuestionIndex || 0) !== qIndex) return;
+
+        await updateDoc(roomRef, {
+          currentQuestionIndex: qIndex + 1,
+          questionDeadline: Date.now() + 15000,
+          _advancingLock: false
+        });
+      }, 2000);
+    }
+
+    async function leaveRoom() {
+      clearTimer();
+      if (roomUnsubscribe) {
+        roomUnsubscribe();
+        roomUnsubscribe = null;
+      }
+
+      await safeDeleteMyPlayerFromRoom();
+
+      currentRoomCode = "";
+      currentRoomData = null;
+      showScreen(homeScreen);
+      setStatus(homeStatus, "You left the room.", "#ffd93d");
+    }
+
+    function resetHome() {
+      if (roomUnsubscribe) {
+        roomUnsubscribe();
+        roomUnsubscribe = null;
+      }
+      clearTimer();
+      currentRoomCode = "";
+      currentRoomData = null;
+      playerId = "";
+      playerName = "";
+      joinCodeInput.value = "";
+      showScreen(homeScreen);
+      setStatus(homeStatus, "");
+    }
+
+    // =========================
+    // 8) EVENTS
+    // =========================
+    createRoomBtn.addEventListener("click", createRoom);
+    joinRoomBtn.addEventListener("click", joinRoom);
+    startGameBtn.addEventListener("click", startGame);
+    leaveLobbyBtn.addEventListener("click", leaveRoom);
+    playAgainBtn.addEventListener("click", resetHome);
+
+    window.addEventListener("beforeunload", () => {
+      // Best-effort cleanup only
+    });
+
+  </script>
+</body>
+</html>
