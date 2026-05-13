@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Neon Ouroboros</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <canvas id="game" aria-label="Neon Ouroboros game arena"></canvas>
+
+    <section class="hud" aria-label="Game status">
+      <div class="brand">
+        <span class="sigil"></span>
+        <div>
+          <h1>Neon Ouroboros</h1>
+          <p>eat stars, weaponize your trail, survive the arena mood swings</p>
+        </div>
+      </div>
+      <div class="stats">
+        <div><span id="score">0</span><small>score</small></div>
+        <div><span id="length">12</span><small>length</small></div>
+        <div><span id="combo">x1.0</span><small>combo</small></div>
+        <div><span id="phase">calm</span><small>rift</small></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <button id="restart" type="button" title="Restart run">Restart</button>
+      <button id="pause" type="button" title="Pause or resume">Pause</button>
+      <div class="meter" aria-label="Active power">
+        <span id="powerLabel">no relic</span>
+        <i id="powerFill"></i>
+      </div>
+    </section>
+
+    <section id="splash" class="splash">
+      <h2>Draw circles around rivals. Cut through stars. Become illegal geometry.</h2>
+      <p>Mouse, touch, or arrow keys steer. Space boosts. Your own tail is safe until the combo starts screaming.</p>
+      <button id="start" type="button">Enter Wild Mode</button>
+    </section>
+
+    <script src="game.js"></script>
+  </body>
+</html>
