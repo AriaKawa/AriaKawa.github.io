@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Grid Runners: Overdrive</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <canvas id="arena" aria-label="Grid Runners game arena"></canvas>
+
+    <header class="hud">
+      <div class="identity">
+        <span class="mark" aria-hidden="true"></span>
+        <div>
+          <h1>Grid Runners</h1>
+          <p>modern light-cycle duels with ultimates, loadouts, and permanent rank</p>
+        </div>
+      </div>
+      <div class="readout" aria-label="Run status">
+        <div><strong id="score">0</strong><span>score</span></div>
+        <div><strong id="level">1</strong><span>rank</span></div>
+        <div><strong id="streak">0</strong><span>KOs</span></div>
+        <div><strong id="round">1</strong><span>wave</span></div>
+      </div>
+    </header>
+
+    <aside class="loadout" aria-label="Abilities and progression">
+      <div class="ability ability--primary">
+        <span>Ultimate</span>
+        <strong id="ultimateName">Nova Cut</strong>
+        <i><b id="ultimateFill"></b></i>
+      </div>
+      <div class="ability">
+        <span>Dash</span>
+        <strong id="dashState">Ready</strong>
+        <i><b id="dashFill"></b></i>
+      </div>
+      <div class="xp">
+        <span id="xpLabel">0 / 120 XP</span>
+        <i><b id="xpFill"></b></i>
+      </div>
+      <div class="controls">
+        <button id="restart" type="button">Restart</button>
+        <button id="pause" type="button">Pause</button>
+      </div>
+    </aside>
+
+    <section id="menu" class="menu">
+      <div class="menu__copy">
+        <p class="eyebrow">Overdrive Circuit</p>
+        <h2>Slice the grid, trap rival runners, and cash in XP for stronger tech.</h2>
+        <p>Move with arrows or WASD. Space/Shift dashes. E fires your ultimate. Survive waves to unlock faster engines, longer dash chains, and heavier ultimate charge.</p>
+      </div>
+      <div class="garage">
+        <div>
+          <span>Rank</span>
+          <strong id="menuRank">1</strong>
+        </div>
+        <div>
+          <span>Permanent XP</span>
+          <strong id="menuXp">0</strong>
+        </div>
+        <div>
+          <span>Unlocked</span>
+          <strong id="menuUnlock">Nova Cut</strong>
+        </div>
+      </div>
+      <button id="start" type="button">Enter The Grid</button>
+    </section>
+
+    <script src="game.js"></script>
+  </body>
+</html>
