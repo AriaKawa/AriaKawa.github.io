@@ -88,6 +88,8 @@ button:disabled {
 .back-link {
   display: inline-flex;
   align-items: center;
+  justify-self: start;
+  width: max-content;
   min-height: 42px;
   padding: 0 16px;
   text-decoration: none;
