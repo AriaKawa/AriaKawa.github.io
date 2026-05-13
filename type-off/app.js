@@ -235,11 +235,15 @@ function renderPlayers(players) {
       const fragment = els.playerTemplate.content.cloneNode(true);
       const card = fragment.querySelector(".player-card");
       const avatar = fragment.querySelector("[data-avatar]");
-      const scale = 1 + Math.min(100, player.mass || 0) / 100 * 1.25;
+      const mass = Math.min(100, player.mass || 0);
+      const stage = Math.min(3, Math.floor(mass / 25));
+      const stageProgress = (mass % 25) / 25;
+      const scale = 1 + stageProgress * 0.08;
 
       card.classList.toggle("is-local", player.id === user?.uid);
       card.classList.toggle("is-winner", currentRoom.winnerId === player.id);
       avatar.style.setProperty("--scale", scale.toFixed(2));
+      avatar.dataset.stage = String(stage);
       avatar.style.filter = player.mass >= 100 ? "saturate(1.45) brightness(1.12)" : "";
 
       fragment.querySelector("[data-player-name]").textContent = player.name || "Player";
