@@ -1,6 +1,6 @@
 # VoiceScale Firebase Setup
 
-VoiceScale is wired for a public Firestore leaderboard. It falls back to browser-only local storage until `firebase-config.js` is filled in.
+VoiceScale is wired for a public Firestore leaderboard. Firebase is configured at the project level in `assets/js/firebase-config.js`.
 
 ## 1. Create Firebase project
 
@@ -8,7 +8,7 @@ VoiceScale is wired for a public Firestore leaderboard. It falls back to browser
 2. Create a project.
 3. Add a Web app.
 4. Copy the Firebase config object.
-5. Paste those values into `voice-scale/firebase-config.js`.
+5. Paste those values into `assets/js/firebase-config.js`.
 
 Firebase's web setup docs show this same config + `initializeApp` pattern:
 https://firebase.google.com/docs/web/setup
@@ -54,4 +54,4 @@ service cloud.firestore {
 
 ## 4. Publish
 
-After `firebase-config.js` has real values, commit and push to GitHub Pages again. The leaderboard will switch from local mode to public realtime mode automatically.
+After `assets/js/firebase-config.js` has real values, commit and push to GitHub Pages again. Pages that use `assets/js/firebase-client.js` will share the same Firebase setup automatically.

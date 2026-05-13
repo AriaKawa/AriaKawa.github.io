@@ -1,4 +1,4 @@
-import { firebaseConfig } from "./firebase-config.js";
+import { getFirebaseServices, hasFirebaseConfig } from "../assets/js/firebase-client.js";
 
 const els = {
   canvas: document.getElementById("waveform"),
@@ -470,15 +470,6 @@ function updateLeaderboardNote() {
   }
 }
 
-function hasFirebaseConfig() {
-  return Boolean(
-    firebaseConfig.apiKey &&
-    firebaseConfig.authDomain &&
-    firebaseConfig.projectId &&
-    firebaseConfig.appId
-  );
-}
-
 function startLocalLeaderboard() {
   leaderboardMode = "local";
   publicLeaderboardReady = false;
@@ -492,12 +483,14 @@ async function startPublicLeaderboard() {
   }
 
   try {
-    const appModule = await import("https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js");
-    const firestoreModule = await import("https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js");
-    firebaseApi = { ...appModule, ...firestoreModule };
-    const { collection, getFirestore, initializeApp, limit, onSnapshot, orderBy, query } = firebaseApi;
-    const app = initializeApp(firebaseConfig);
-    firestoreDb = getFirestore(app);
+    const services = await getFirebaseServices();
+    if (!services) {
+      startLocalLeaderboard();
+      return;
+    }
+    firebaseApi = services.firestore;
+    firestoreDb = services.db;
+    const { collection, limit, onSnapshot, orderBy, query } = firebaseApi;
     leaderboardMode = "firebase";
     updateLeaderboardNote();
 
