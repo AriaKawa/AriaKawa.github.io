@@ -429,6 +429,10 @@ textarea:focus {
   font-weight: 900;
 }
 
+.countdown[hidden] {
+  display: none;
+}
+
 @media (max-width: 760px) {
   .game-shell {
     width: min(100% - 20px, 1180px);
