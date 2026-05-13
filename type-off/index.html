@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Type-Off: Critical Mass</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="game-shell">
+    <header class="topbar">
+      <a class="back-link" href="../games.html" aria-label="Back to games">Back</a>
+      <div>
+        <p class="eyebrow">Room-code multiplayer</p>
+        <h1>Type-Off: Critical Mass</h1>
+      </div>
+      <div class="connection-pill" data-connection>Connecting</div>
+    </header>
+
+    <section class="lobby" data-lobby>
+      <div class="panel lobby-card">
+        <div>
+          <p class="eyebrow">Start a race</p>
+          <h2>Create or join a room</h2>
+        </div>
+
+        <label class="field">
+          <span>Display name</span>
+          <input data-name type="text" maxlength="18" autocomplete="nickname" placeholder="Speed legend">
+        </label>
+
+        <div class="lobby-actions">
+          <button class="primary" type="button" data-create-room>Create room</button>
+          <form class="join-form" data-join-form>
+            <input data-room-code type="text" maxlength="6" placeholder="Room code" aria-label="Room code">
+            <button type="submit">Join</button>
+          </form>
+        </div>
+
+        <p class="notice" data-lobby-notice>Share a room code with a friend, then both players ready up.</p>
+      </div>
+    </section>
+
+    <section class="arena" data-arena hidden>
+      <section class="panel room-panel">
+        <div class="room-meta">
+          <div>
+            <p class="eyebrow">Room</p>
+            <button class="room-code" type="button" data-copy-room title="Copy room code">------</button>
+          </div>
+          <div class="race-state" data-race-state>Lobby</div>
+        </div>
+
+        <div class="player-grid" data-player-grid></div>
+
+        <div class="countdown" data-countdown hidden>3</div>
+
+        <div class="prompt-card">
+          <div class="prompt-line" data-prompt></div>
+          <textarea data-typing-input spellcheck="false" autocomplete="off" autocapitalize="off" rows="4" placeholder="The race text appears here when the host starts..." disabled></textarea>
+        </div>
+
+        <div class="controls">
+          <button class="primary" type="button" data-ready>Ready</button>
+          <button type="button" data-start disabled>Start race</button>
+          <button type="button" data-new-round disabled>New round</button>
+          <button type="button" data-leave>Leave</button>
+        </div>
+
+        <p class="notice" data-game-notice>Waiting for players.</p>
+      </section>
+    </section>
+  </main>
+
+  <template data-player-template>
+    <article class="player-card">
+      <div class="player-head">
+        <div>
+          <h3 data-player-name>Player</h3>
+          <p data-player-status>Waiting</p>
+        </div>
+        <span data-player-badge>Guest</span>
+      </div>
+      <div class="avatar-stage">
+        <div class="avatar" data-avatar>
+          <span class="avatar-face"></span>
+        </div>
+      </div>
+      <dl class="stats">
+        <div>
+          <dt>WPM</dt>
+          <dd data-player-wpm>0</dd>
+        </div>
+        <div>
+          <dt>Accuracy</dt>
+          <dd data-player-accuracy>100%</dd>
+        </div>
+        <div>
+          <dt>Mass</dt>
+          <dd data-player-mass>0%</dd>
+        </div>
+      </dl>
+      <div class="meter" aria-label="mass meter">
+        <span data-player-meter></span>
+      </div>
+    </article>
+  </template>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
