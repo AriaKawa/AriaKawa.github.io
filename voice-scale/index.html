@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VoiceScale</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <section class="scanner">
+      <div class="brand-row">
+        <div class="mark" aria-hidden="true">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+        <div>
+          <p class="eyebrow">VoiceScale</p>
+          <h1>Voice Weight Detector</h1>
+        </div>
+      </div>
+
+      <div class="result-panel">
+        <p class="status" id="status">Ready for a 5 second voice scan</p>
+        <div class="weight-readout">
+          <span id="weight">---</span>
+          <small>lb</small>
+        </div>
+        <div class="confidence-track" aria-label="confidence">
+          <span id="confidenceBar"></span>
+        </div>
+        <p class="confidence-label" id="confidenceLabel">Confidence: standby</p>
+      </div>
+
+      <canvas id="waveform" width="1120" height="260" aria-label="voice waveform"></canvas>
+
+      <div class="controls">
+        <button id="scanButton" class="primary" type="button">
+          <span class="icon mic-icon" aria-hidden="true"></span>
+          Start scan
+        </button>
+        <button id="demoButton" type="button">
+          <span class="icon play-icon" aria-hidden="true"></span>
+          Demo voice
+        </button>
+        <button id="resetButton" type="button">
+          <span class="icon reset-icon" aria-hidden="true"></span>
+          Reset
+        </button>
+      </div>
+    </section>
+
+    <aside class="side-panel">
+      <section class="module">
+        <div class="module-title">
+          <h2>Voice Signal</h2>
+          <span id="modePill">Idle</span>
+        </div>
+        <dl class="metric-grid">
+          <div>
+            <dt>Pitch</dt>
+            <dd id="pitchMetric">-- Hz</dd>
+          </div>
+          <div>
+            <dt>Depth</dt>
+            <dd id="depthMetric">--</dd>
+          </div>
+          <div>
+            <dt>Energy</dt>
+            <dd id="energyMetric">--%</dd>
+          </div>
+          <div>
+            <dt>Stability</dt>
+            <dd id="stabilityMetric">--%</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="module">
+        <h2>Calibration</h2>
+        <label class="field">
+          <span>Height</span>
+          <input id="heightInput" type="range" min="54" max="82" value="68">
+          <strong id="heightValue">5'8"</strong>
+        </label>
+        <label class="field">
+          <span>Frame</span>
+          <select id="frameInput">
+            <option value="-10">Light</option>
+            <option value="0" selected>Average</option>
+            <option value="12">Dense</option>
+          </select>
+        </label>
+      </section>
+
+      <section class="module note">
+        <h2>Reality Check</h2>
+        <p>This is a fun signal analyzer, not a medical scale. Voice alone cannot reliably identify body weight, so the app makes a theatrical estimate from pitch, energy, resonance, and your calibration inputs.</p>
+      </section>
+    </aside>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
