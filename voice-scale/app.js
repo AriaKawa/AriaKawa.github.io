@@ -15,10 +15,16 @@ const els = {
   heightInput: document.getElementById("heightInput"),
   heightValue: document.getElementById("heightValue"),
   frameInput: document.getElementById("frameInput"),
+  scoreForm: document.getElementById("scoreForm"),
+  nameInput: document.getElementById("nameInput"),
+  leaderboard: document.getElementById("leaderboard"),
+  leaderboardCount: document.getElementById("leaderboardCount"),
+  leaderboardNote: document.getElementById("leaderboardNote"),
 };
 
 const ctx = els.canvas.getContext("2d");
 const scanSeconds = 5;
+const leaderboardKey = "voicescale-leaderboard";
 let audioContext;
 let analyser;
 let microphone;
@@ -28,6 +34,7 @@ let startedAt = 0;
 let mode = "idle";
 let samples = [];
 let demoPhase = 0;
+let lastEstimate = null;
 
 function setMode(nextMode) {
   mode = nextMode;
@@ -104,11 +111,15 @@ function finishScan() {
   scanTimer = null;
   cancelAnimationFrame(animationId);
   const estimate = estimateWeight(samples);
+  lastEstimate = estimate;
   animateWeight(estimate.weight);
   els.confidenceBar.style.width = `${estimate.confidence}%`;
   els.confidenceLabel.textContent = `Confidence: ${estimate.confidence}% novelty estimate`;
   els.status.textContent = estimate.label;
   els.scanButton.disabled = false;
+  els.scoreForm.hidden = false;
+  els.nameInput.focus();
+  els.leaderboardNote.textContent = "Enter a name to add this scan to the leaderboard.";
   setMode("result");
   stopAudioOnly();
 }
@@ -145,6 +156,10 @@ function resetApp() {
   els.energyMetric.textContent = "--%";
   els.stabilityMetric.textContent = "--%";
   els.scanButton.disabled = false;
+  els.scoreForm.hidden = true;
+  els.nameInput.value = "";
+  lastEstimate = null;
+  updateLeaderboardNote();
   drawIdle();
 }
 
@@ -331,10 +346,94 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
+function loadLeaderboard() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(leaderboardKey) || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLeaderboard(entries) {
+  localStorage.setItem(leaderboardKey, JSON.stringify(entries));
+}
+
+function addScore(event) {
+  event.preventDefault();
+  if (!lastEstimate) return;
+
+  const name = cleanName(els.nameInput.value);
+  if (!name) {
+    els.leaderboardNote.textContent = "Add a name before submitting the score.";
+    els.nameInput.focus();
+    return;
+  }
+
+  const entries = loadLeaderboard();
+  entries.push({
+    id: crypto.randomUUID(),
+    name,
+    weight: lastEstimate.weight,
+    confidence: lastEstimate.confidence,
+    date: new Date().toISOString(),
+  });
+  const sorted = sortLeaderboard(entries).slice(0, 25);
+  saveLeaderboard(sorted);
+
+  els.nameInput.value = "";
+  els.scoreForm.hidden = true;
+  lastEstimate = null;
+  els.leaderboardNote.textContent = "Score added. Highest estimates stay on top.";
+  renderLeaderboard();
+}
+
+function cleanName(value) {
+  return value.replace(/\s+/g, " ").trim().slice(0, 18);
+}
+
+function sortLeaderboard(entries) {
+  return [...entries].sort((a, b) => b.weight - a.weight || new Date(b.date) - new Date(a.date));
+}
+
+function renderLeaderboard() {
+  const entries = sortLeaderboard(loadLeaderboard());
+  els.leaderboard.innerHTML = "";
+  els.leaderboardCount.textContent = `${entries.length} ${entries.length === 1 ? "score" : "scores"}`;
+
+  if (!entries.length) {
+    updateLeaderboardNote();
+    return;
+  }
+
+  entries.forEach((entry, index) => {
+    const item = document.createElement("li");
+    const date = new Date(entry.date);
+    item.innerHTML = `
+      <span class="rank">${index + 1}</span>
+      <span class="score-name"></span>
+      <span class="score-weight">${entry.weight} lb</span>
+      <span class="score-meta">${entry.confidence}% confidence &middot; ${date.toLocaleDateString()}</span>
+    `;
+    item.querySelector(".score-name").textContent = entry.name;
+    els.leaderboard.appendChild(item);
+  });
+}
+
+function updateLeaderboardNote() {
+  if (loadLeaderboard().length) {
+    els.leaderboardNote.textContent = "Scores are sorted highest to lowest on this browser.";
+  } else {
+    els.leaderboardNote.textContent = "Finish a scan to submit a score. This board saves on this browser until a public database is connected.";
+  }
+}
+
 els.scanButton.addEventListener("click", startMicScan);
 els.demoButton.addEventListener("click", startDemoScan);
 els.resetButton.addEventListener("click", resetApp);
 els.heightInput.addEventListener("input", updateHeight);
+els.scoreForm.addEventListener("submit", addScore);
 
 updateHeight();
+renderLeaderboard();
 drawIdle();

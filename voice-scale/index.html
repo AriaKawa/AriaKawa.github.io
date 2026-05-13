@@ -97,6 +97,22 @@
         </label>
       </section>
 
+      <section class="module leaderboard-module">
+        <div class="module-title">
+          <h2>Leaderboard</h2>
+          <span id="leaderboardCount">0 scores</span>
+        </div>
+        <form class="score-form" id="scoreForm" hidden>
+          <label for="nameInput">Name</label>
+          <div class="score-row">
+            <input id="nameInput" type="text" maxlength="18" placeholder="Your name" autocomplete="nickname">
+            <button type="submit">Add</button>
+          </div>
+        </form>
+        <ol class="leaderboard" id="leaderboard"></ol>
+        <p class="leaderboard-note" id="leaderboardNote">Finish a scan to submit a score. This board saves on this browser until a public database is connected.</p>
+      </section>
+
       <section class="module note">
         <h2>Reality Check</h2>
         <p>This is a fun signal analyzer, not a medical scale. Voice alone cannot reliably identify body weight, so the app makes a theatrical estimate from pitch, energy, resonance, and your calibration inputs.</p>
