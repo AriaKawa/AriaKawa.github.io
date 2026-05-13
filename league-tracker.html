@@ -106,6 +106,56 @@
       color: var(--muted);
       min-width: 12ch;
     }
+    #opgg-panel {
+      padding: 0.85rem 1.5rem;
+      border-top: 1px solid rgba(148, 163, 184, 0.16);
+      background: rgba(30, 41, 59, 0.48);
+      display: grid;
+      gap: 0.7rem;
+    }
+    .opgg-fields,
+    .opgg-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    #opgg-panel label {
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+    #riotName,
+    #riotTag,
+    #opggRegion,
+    #opggPaste {
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      background: rgba(15, 23, 42, 0.45);
+      color: var(--text);
+      border-radius: 0.65rem;
+      font: inherit;
+    }
+    #riotName,
+    #riotTag,
+    #opggRegion {
+      padding: 0.35rem 0.6rem;
+    }
+    #riotName {
+      min-width: 14rem;
+    }
+    #riotTag {
+      width: 7rem;
+    }
+    #opggPaste {
+      width: min(100%, 64rem);
+      min-height: 4.5rem;
+      padding: 0.6rem 0.7rem;
+      resize: vertical;
+    }
+    #opggMessage {
+      min-height: 1rem;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
     main {
       padding: 1rem;
       flex: 1 1 auto;
@@ -189,6 +239,12 @@
       #grid {
         grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
       }
+      #riotName,
+      #riotTag,
+      #opggRegion,
+      #opggPaste {
+        width: 100%;
+      }
     }
   </style>
 </head>
@@ -222,6 +278,35 @@
       </div>
       <div id="status">Loading champions…</div>
     </div>
+    <section id="opgg-panel" aria-label="OP.GG Arena import">
+      <div class="opgg-fields">
+        <label for="riotName">Riot ID</label>
+        <input id="riotName" type="text" placeholder="Game Name" autocomplete="off" />
+        <input id="riotTag" type="text" placeholder="Tag" autocomplete="off" />
+        <label for="opggRegion">Region</label>
+        <select id="opggRegion">
+          <option value="na">NA</option>
+          <option value="euw">EUW</option>
+          <option value="eune">EUNE</option>
+          <option value="kr">KR</option>
+          <option value="br">BR</option>
+          <option value="lan">LAN</option>
+          <option value="las">LAS</option>
+          <option value="oce">OCE</option>
+          <option value="tr">TR</option>
+          <option value="ru">RU</option>
+          <option value="jp">JP</option>
+        </select>
+        <button id="saveRiotId" type="button">Save Riot ID</button>
+        <a id="openOpgg" class="pill-button" href="https://op.gg/" target="_blank" rel="noreferrer">Open OP.GG</a>
+      </div>
+      <textarea id="opggPaste" placeholder="Paste OP.GG Arena match history text here, then import. Matches that say #1, 1st, First, or Place 1 will mark that champion."></textarea>
+      <div class="opgg-actions">
+        <button id="importOpgg" type="button" disabled>Import 1st-place Arena champs</button>
+        <button id="clearOpggPaste" type="button">Clear paste</button>
+        <div id="opggMessage" aria-live="polite"></div>
+      </div>
+    </section>
   </header>
   <main>
     <div id="loader">Fetching champions from Data Dragon…</div>
@@ -255,6 +340,15 @@
     const newAccountInput = document.getElementById("newAccount");
     const addAccountBtn = document.getElementById("addAccount");
     const accountMessageEl = document.getElementById("accountMessage");
+    const riotNameInput = document.getElementById("riotName");
+    const riotTagInput = document.getElementById("riotTag");
+    const opggRegionSelect = document.getElementById("opggRegion");
+    const saveRiotIdBtn = document.getElementById("saveRiotId");
+    const openOpggLink = document.getElementById("openOpgg");
+    const opggPasteInput = document.getElementById("opggPaste");
+    const importOpggBtn = document.getElementById("importOpgg");
+    const clearOpggPasteBtn = document.getElementById("clearOpggPaste");
+    const opggMessageEl = document.getElementById("opggMessage");
 
     function safeParse(json, fallback) {
       try {
@@ -269,6 +363,9 @@
     if (typeof accounts !== "object" || accounts === null || Array.isArray(accounts)) {
       accounts = {};
     }
+    Object.keys(accounts).forEach((name) => {
+      accounts[name] = normalizeAccount(accounts[name]);
+    });
     let activeUser = localStorage.getItem(ACTIVE_USER_KEY) || null;
     let checked = new Set();
     let champsList = [];
@@ -284,11 +381,73 @@
       localStorage.setItem(ACCOUNT_STORAGE_KEY, JSON.stringify(accounts));
     }
 
-    function ensureAccount(username) {
-      if (!accounts[username]) {
-        accounts[username] = { checked: [] };
-        persistAccounts();
+    function normalizeAccount(account) {
+      if (Array.isArray(account)) {
+        return { checked: account, riotName: "", riotTag: "", opggRegion: "na" };
       }
+      if (typeof account !== "object" || account === null) {
+        return { checked: [], riotName: "", riotTag: "", opggRegion: "na" };
+      }
+      return {
+        checked: Array.isArray(account.checked) ? account.checked : [],
+        riotName: typeof account.riotName === "string" ? account.riotName : "",
+        riotTag: typeof account.riotTag === "string" ? account.riotTag : "",
+        opggRegion: typeof account.opggRegion === "string" ? account.opggRegion : "na",
+        lastOpggImport: typeof account.lastOpggImport === "string" ? account.lastOpggImport : "",
+      };
+    }
+
+    function ensureAccount(username) {
+      accounts[username] = normalizeAccount(accounts[username]);
+      persistAccounts();
+    }
+
+    function setOpggMessage(message = "", isError = false) {
+      opggMessageEl.textContent = message;
+      opggMessageEl.style.color = isError ? "#f87171" : "var(--muted)";
+    }
+
+    function buildOpggUrl(account = accounts[activeUser]) {
+      const normalized = normalizeAccount(account);
+      const gameName = normalized.riotName.trim();
+      const tag = normalized.riotTag.trim().replace(/^#/, "");
+      const region = (normalized.opggRegion || "na").toLowerCase();
+
+      if (!gameName || !tag) {
+        return "https://op.gg/";
+      }
+
+      return `https://op.gg/lol/summoners/${encodeURIComponent(region)}/${encodeURIComponent(`${gameName}-${tag}`)}`;
+    }
+
+    function syncOpggControls() {
+      const account = normalizeAccount(accounts[activeUser]);
+      riotNameInput.value = account.riotName;
+      riotTagInput.value = account.riotTag;
+      opggRegionSelect.value = account.opggRegion || "na";
+      openOpggLink.href = buildOpggUrl(account);
+    }
+
+    function previewOpggLinkFromFields() {
+      openOpggLink.href = buildOpggUrl({
+        riotName: riotNameInput.value,
+        riotTag: riotTagInput.value,
+        opggRegion: opggRegionSelect.value,
+      });
+    }
+
+    function saveRiotId() {
+      ensureAccount(activeUser);
+      accounts[activeUser].riotName = riotNameInput.value.trim();
+      accounts[activeUser].riotTag = riotTagInput.value.trim().replace(/^#/, "");
+      accounts[activeUser].opggRegion = opggRegionSelect.value;
+      persistAccounts();
+      syncOpggControls();
+      setOpggMessage(
+        accounts[activeUser].riotName && accounts[activeUser].riotTag
+          ? `Saved OP.GG link for ${accounts[activeUser].riotName}#${accounts[activeUser].riotTag}.`
+          : "Saved. Add both Riot ID fields to open your exact OP.GG profile."
+      );
     }
 
     function populateAccountSelect() {
@@ -319,6 +478,7 @@
         accountSelect.value = activeUser;
       }
       applyCheckedToGrid();
+      syncOpggControls();
       setAccountMessage(`Tracking wins for ${activeUser}.`);
     }
 
@@ -326,7 +486,7 @@
       const existingUsers = Object.keys(accounts);
       if (existingUsers.length === 0) {
         activeUser = "Default";
-        accounts[activeUser] = { checked: [] };
+        accounts[activeUser] = { checked: [], riotName: "", riotTag: "", opggRegion: "na" };
         persistAccounts();
       } else {
         activeUser = existingUsers[0];
@@ -345,6 +505,7 @@
 
     checked = new Set(accounts[activeUser]?.checked || []);
     populateAccountSelect();
+    syncOpggControls();
     setAccountMessage(`Tracking wins for ${activeUser}.`);
 
     accountSelect.addEventListener("change", () => {
@@ -367,7 +528,7 @@
         setAccountMessage("That username already exists.", true);
         return;
       }
-      accounts[newName] = { checked: [] };
+      accounts[newName] = { checked: [], riotName: "", riotTag: "", opggRegion: "na" };
       persistAccounts();
       populateAccountSelect();
       newAccountInput.value = "";
@@ -381,10 +542,25 @@
       }
     });
 
+    saveRiotIdBtn.addEventListener("click", saveRiotId);
+    riotNameInput.addEventListener("input", previewOpggLinkFromFields);
+    riotTagInput.addEventListener("input", previewOpggLinkFromFields);
+    opggRegionSelect.addEventListener("change", previewOpggLinkFromFields);
+    opggPasteInput.addEventListener("input", () => {
+      importOpggBtn.disabled = champsList.length === 0 || opggPasteInput.value.trim().length === 0;
+    });
+    importOpggBtn.addEventListener("click", importOpggArenaWins);
+    clearOpggPasteBtn.addEventListener("click", () => {
+      opggPasteInput.value = "";
+      importOpggBtn.disabled = true;
+      setOpggMessage("");
+    });
+
     function setControlsEnabled(enabled) {
       clearBtn.disabled = !enabled;
       searchInput.disabled = !enabled;
       sortCompletedBtn.disabled = !enabled;
+      importOpggBtn.disabled = !enabled || opggPasteInput.value.trim().length === 0;
     }
 
     function createPlaceholder(name) {
@@ -495,6 +671,130 @@
       });
 
       updateStatus(champsList.length);
+    }
+
+    function normalizeMatchText(value) {
+      return value
+        .toLowerCase()
+        .replace(/&/g, "and")
+        .replace(/[^a-z0-9]+/g, "");
+    }
+
+    function championMatchers() {
+      const aliases = new Map([
+        ["Bel'Veth", ["belveth"]],
+        ["Cho'Gath", ["chogath"]],
+        ["Dr. Mundo", ["drmundo", "mundo"]],
+        ["Kai'Sa", ["kaisa"]],
+        ["Kha'Zix", ["khazix"]],
+        ["Kog'Maw", ["kogmaw"]],
+        ["LeBlanc", ["leblanc"]],
+        ["Master Yi", ["masteryi"]],
+        ["Miss Fortune", ["missfortune"]],
+        ["Nunu & Willump", ["nunu", "nunuandwillump"]],
+        ["Rek'Sai", ["reksai"]],
+        ["Renata Glasc", ["renataglasc", "renata"]],
+        ["Tahm Kench", ["tahmkench"]],
+        ["Twisted Fate", ["twistedfate"]],
+        ["Vel'Koz", ["velkoz"]],
+        ["Xin Zhao", ["xinzhao"]],
+      ]);
+
+      return champsList
+        .flatMap((champ) => {
+          const values = new Set([
+            normalizeMatchText(champ.name),
+            normalizeMatchText(champ.id),
+            ...(aliases.get(champ.name) || []),
+          ]);
+          return [...values].map((value) => ({ value, champ }));
+        })
+        .filter((entry) => entry.value)
+        .sort((a, b) => b.value.length - a.value.length);
+    }
+
+    function splitMatchBlocks(text) {
+      const normalized = text.replace(/\r/g, "");
+      const blocks = normalized
+        .split(/\n\s*\n|(?=\bArena\b)/i)
+        .map((block) => block.trim())
+        .filter(Boolean);
+
+      if (blocks.length > 1) {
+        return blocks;
+      }
+
+      const lines = normalized
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean);
+      const grouped = [];
+      for (let i = 0; i < lines.length; i += 8) {
+        grouped.push(lines.slice(i, i + 8).join("\n"));
+      }
+      return grouped.length > 0 ? grouped : [normalized];
+    }
+
+    function blockHasFirstPlace(block) {
+      return /(?:#\s*1\b|\b1\s*st\b|\b1\s*place\b|\bplace\s*[:#]?\s*1\b|\brank\s*[:#]?\s*1\b|\bfirst\s+place\b)/i.test(block);
+    }
+
+    function findChampionInBlock(block, matchers) {
+      const normalizedBlock = normalizeMatchText(block);
+      let best = null;
+
+      matchers.forEach((entry) => {
+        const index = normalizedBlock.indexOf(entry.value);
+        if (index === -1) {
+          return;
+        }
+        if (!best || index < best.index || (index === best.index && entry.value.length > best.value.length)) {
+          best = { ...entry, index };
+        }
+      });
+
+      return best?.champ || null;
+    }
+
+    function importOpggArenaWins() {
+      const rawText = opggPasteInput.value.trim();
+      if (!rawText) {
+        setOpggMessage("Paste copied Arena match text first.", true);
+        return;
+      }
+      if (!Array.isArray(champsList) || champsList.length === 0) {
+        setOpggMessage("Champion data is still loading.", true);
+        return;
+      }
+
+      saveRiotId();
+      const matchers = championMatchers();
+      const blocks = splitMatchBlocks(rawText);
+      const imported = [];
+      const pasteMentionsArena = /\barena\b/i.test(rawText);
+
+      blocks.forEach((block) => {
+        const mentionsArena = pasteMentionsArena || /\barena\b/i.test(block);
+        if (!mentionsArena || !blockHasFirstPlace(block)) {
+          return;
+        }
+
+        const champ = findChampionInBlock(block, matchers);
+        if (champ && !checked.has(champ.id)) {
+          checked.add(champ.id);
+          imported.push(champ.name);
+        }
+      });
+
+      if (imported.length > 0) {
+        accounts[activeUser].lastOpggImport = new Date().toISOString();
+        saveChecked();
+        renderGrid();
+        setOpggMessage(`Marked ${imported.length}: ${imported.join(", ")}.`);
+        return;
+      }
+
+      setOpggMessage("No new #1 Arena champions found in that paste.", true);
     }
 
     async function loadChamps() {
