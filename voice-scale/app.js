@@ -1,3 +1,5 @@
+import { firebaseConfig } from "./firebase-config.js";
+
 const els = {
   canvas: document.getElementById("waveform"),
   status: document.getElementById("status"),
@@ -25,6 +27,8 @@ const els = {
 const ctx = els.canvas.getContext("2d");
 const scanSeconds = 5;
 const leaderboardKey = "voicescale-leaderboard";
+const leaderboardCollection = "voiceScaleScores";
+const maxScores = 25;
 let audioContext;
 let analyser;
 let microphone;
@@ -35,6 +39,10 @@ let mode = "idle";
 let samples = [];
 let demoPhase = 0;
 let lastEstimate = null;
+let leaderboardMode = "local";
+let publicLeaderboardReady = false;
+let firestoreDb = null;
+let firebaseApi = null;
 
 function setMode(nextMode) {
   mode = nextMode;
@@ -346,7 +354,7 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
-function loadLeaderboard() {
+function loadLocalLeaderboard() {
   try {
     const parsed = JSON.parse(localStorage.getItem(leaderboardKey) || "[]");
     return Array.isArray(parsed) ? parsed : [];
@@ -355,11 +363,11 @@ function loadLeaderboard() {
   }
 }
 
-function saveLeaderboard(entries) {
+function saveLocalLeaderboard(entries) {
   localStorage.setItem(leaderboardKey, JSON.stringify(entries));
 }
 
-function addScore(event) {
+async function addScore(event) {
   event.preventDefault();
   if (!lastEstimate) return;
 
@@ -370,22 +378,34 @@ function addScore(event) {
     return;
   }
 
-  const entries = loadLeaderboard();
-  entries.push({
+  const score = {
     id: crypto.randomUUID(),
     name,
     weight: lastEstimate.weight,
     confidence: lastEstimate.confidence,
     date: new Date().toISOString(),
-  });
-  const sorted = sortLeaderboard(entries).slice(0, 25);
-  saveLeaderboard(sorted);
+  };
 
-  els.nameInput.value = "";
-  els.scoreForm.hidden = true;
-  lastEstimate = null;
-  els.leaderboardNote.textContent = "Score added. Highest estimates stay on top.";
-  renderLeaderboard();
+  els.scoreForm.querySelector("button").disabled = true;
+
+  try {
+    if (leaderboardMode === "firebase" && firestoreDb) {
+      await addPublicScore(score);
+      els.leaderboardNote.textContent = "Score added to the public board.";
+    } else {
+      addLocalScore(score);
+      els.leaderboardNote.textContent = "Score added on this browser. Add Firebase config for a public board.";
+    }
+
+    els.nameInput.value = "";
+    els.scoreForm.hidden = true;
+    lastEstimate = null;
+  } catch (error) {
+    addLocalScore(score);
+    els.leaderboardNote.textContent = "Public save failed, so this score was saved on this browser.";
+  } finally {
+    els.scoreForm.querySelector("button").disabled = false;
+  }
 }
 
 function cleanName(value) {
@@ -396,17 +416,35 @@ function sortLeaderboard(entries) {
   return [...entries].sort((a, b) => b.weight - a.weight || new Date(b.date) - new Date(a.date));
 }
 
-function renderLeaderboard() {
-  const entries = sortLeaderboard(loadLeaderboard());
-  els.leaderboard.innerHTML = "";
-  els.leaderboardCount.textContent = `${entries.length} ${entries.length === 1 ? "score" : "scores"}`;
+function addLocalScore(score) {
+  const entries = loadLocalLeaderboard();
+  entries.push(score);
+  saveLocalLeaderboard(sortLeaderboard(entries).slice(0, maxScores));
+  renderLeaderboard(loadLocalLeaderboard());
+}
 
-  if (!entries.length) {
+async function addPublicScore(score) {
+  const { addDoc, collection, serverTimestamp } = firebaseApi;
+  await addDoc(collection(firestoreDb, leaderboardCollection), {
+    name: score.name,
+    weight: score.weight,
+    confidence: score.confidence,
+    date: score.date,
+    createdAt: serverTimestamp(),
+  });
+}
+
+function renderLeaderboard(entries) {
+  const sortedEntries = sortLeaderboard(entries);
+  els.leaderboard.innerHTML = "";
+  els.leaderboardCount.textContent = `${sortedEntries.length} ${sortedEntries.length === 1 ? "score" : "scores"}`;
+
+  if (!sortedEntries.length) {
     updateLeaderboardNote();
     return;
   }
 
-  entries.forEach((entry, index) => {
+  sortedEntries.forEach((entry, index) => {
     const item = document.createElement("li");
     const date = new Date(entry.date);
     item.innerHTML = `
@@ -421,10 +459,69 @@ function renderLeaderboard() {
 }
 
 function updateLeaderboardNote() {
-  if (loadLeaderboard().length) {
-    els.leaderboardNote.textContent = "Scores are sorted highest to lowest on this browser.";
+  if (leaderboardMode === "firebase") {
+    els.leaderboardNote.textContent = publicLeaderboardReady
+      ? "Public leaderboard is live. Scores update for everyone."
+      : "Connecting to the public leaderboard...";
+  } else if (loadLocalLeaderboard().length) {
+    els.leaderboardNote.textContent = "Scores are sorted highest to lowest on this browser. Add Firebase config for a public board.";
   } else {
-    els.leaderboardNote.textContent = "Finish a scan to submit a score. This board saves on this browser until a public database is connected.";
+    els.leaderboardNote.textContent = "Finish a scan to submit a score. Add Firebase config for a public board.";
+  }
+}
+
+function hasFirebaseConfig() {
+  return Boolean(
+    firebaseConfig.apiKey &&
+    firebaseConfig.authDomain &&
+    firebaseConfig.projectId &&
+    firebaseConfig.appId
+  );
+}
+
+function startLocalLeaderboard() {
+  leaderboardMode = "local";
+  publicLeaderboardReady = false;
+  renderLeaderboard(loadLocalLeaderboard());
+}
+
+async function startPublicLeaderboard() {
+  if (!hasFirebaseConfig()) {
+    startLocalLeaderboard();
+    return;
+  }
+
+  try {
+    const appModule = await import("https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js");
+    const firestoreModule = await import("https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js");
+    firebaseApi = { ...appModule, ...firestoreModule };
+    const { collection, getFirestore, initializeApp, limit, onSnapshot, orderBy, query } = firebaseApi;
+    const app = initializeApp(firebaseConfig);
+    firestoreDb = getFirestore(app);
+    leaderboardMode = "firebase";
+    updateLeaderboardNote();
+
+    const scoresQuery = query(
+      collection(firestoreDb, leaderboardCollection),
+      orderBy("weight", "desc"),
+      limit(maxScores)
+    );
+
+    onSnapshot(
+      scoresQuery,
+      (snapshot) => {
+        publicLeaderboardReady = true;
+        const scores = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        renderLeaderboard(scores);
+        updateLeaderboardNote();
+      },
+      () => {
+        startLocalLeaderboard();
+        els.leaderboardNote.textContent = "Public leaderboard unavailable. Using this browser for now.";
+      }
+    );
+  } catch {
+    startLocalLeaderboard();
   }
 }
 
@@ -435,5 +532,5 @@ els.heightInput.addEventListener("input", updateHeight);
 els.scoreForm.addEventListener("submit", addScore);
 
 updateHeight();
-renderLeaderboard();
+startPublicLeaderboard();
 drawIdle();
