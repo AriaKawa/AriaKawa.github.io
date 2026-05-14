@@ -439,5 +439,6 @@
     // Kick off with defaults
     log('Paste your Firebase config below to enable multiplayer.');
   </script>
+    <script src="site-navigation.js"></script>
 </body>
 </html>
