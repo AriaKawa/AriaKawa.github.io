@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>2048: Dungeon Shift</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="shell">
+      <header class="hero">
+        <a class="back-link" href="../games.html" aria-label="Back to games">Back</a>
+        <div>
+          <p class="eyebrow">Roguelike puzzle run</p>
+          <h1>2048: Dungeon Shift</h1>
+          <p class="tagline">Merge tiles, clear floors, choose relics, and keep the board alive as the rules mutate under you.</p>
+        </div>
+        <div class="run-card" aria-label="Run progress">
+          <span>Floor</span>
+          <strong id="floor">1</strong>
+          <small id="floorRule">Awakening chamber</small>
+        </div>
+      </header>
+
+      <section class="layout">
+        <section class="board-panel" aria-label="2048 game">
+          <div class="stats">
+            <div>
+              <span>Score</span>
+              <strong id="score">0</strong>
+            </div>
+            <div>
+              <span>Target</span>
+              <strong id="target">128</strong>
+            </div>
+            <div>
+              <span>Moves</span>
+              <strong id="moves">28</strong>
+            </div>
+            <div>
+              <span>Resolve</span>
+              <strong id="resolve">3</strong>
+            </div>
+          </div>
+
+          <div class="board-wrap">
+            <div class="board" id="board" role="grid" aria-label="2048 board"></div>
+            <div class="overlay" id="choiceOverlay" hidden>
+              <div class="choice-panel">
+                <p class="eyebrow">Floor secured</p>
+                <h2>Choose one relic</h2>
+                <div class="choices" id="choices"></div>
+              </div>
+            </div>
+            <div class="overlay" id="endOverlay" hidden>
+              <div class="choice-panel">
+                <p class="eyebrow" id="endEyebrow">Run ended</p>
+                <h2 id="endTitle">The board went quiet.</h2>
+                <p id="endBody"></p>
+                <button class="primary" id="again" type="button">New Run</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="controls" aria-label="Movement controls">
+            <button type="button" data-dir="up" aria-label="Move up">Up</button>
+            <div>
+              <button type="button" data-dir="left" aria-label="Move left">Left</button>
+              <button type="button" data-dir="down" aria-label="Move down">Down</button>
+              <button type="button" data-dir="right" aria-label="Move right">Right</button>
+            </div>
+          </div>
+        </section>
+
+        <aside class="side-panel">
+          <section class="panel-block">
+            <div class="panel-head">
+              <span>Run Status</span>
+              <button id="restart" type="button">Restart</button>
+            </div>
+            <div class="meter">
+              <span>Floor pressure</span>
+              <i><b id="pressureFill"></b></i>
+            </div>
+            <p class="status" id="status">Reach the target tile before the move clock breaks your resolve.</p>
+          </section>
+
+          <section class="panel-block">
+            <div class="panel-head">
+              <span>Relics</span>
+              <strong id="relicCount">0</strong>
+            </div>
+            <div class="relic-list" id="relics">
+              <p>No relics yet. Clear a floor to draft your first one.</p>
+            </div>
+          </section>
+
+          <section class="panel-block">
+            <div class="panel-head">
+              <span>Records</span>
+              <strong id="bestFloor">1</strong>
+            </div>
+            <div class="records">
+              <span>Best score</span>
+              <strong id="bestScore">0</strong>
+            </div>
+          </section>
+        </aside>
+      </section>
+    </main>
+
+    <script src="game.js"></script>
+  </body>
+</html>

@@ -446,7 +446,9 @@
         })();
 
         (function setupCursorGlow() {
-            if (!document.body) {
+            const cursorGlowEnabled = false;
+
+            if (!cursorGlowEnabled || !document.body) {
                 return;
             }
 
