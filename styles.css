@@ -1278,3 +1278,76 @@ body::after {
         font-size: clamp(3rem, 17vw, 5rem);
     }
 }
+
+/* Performance pass: keep the dark look, remove hover latency. */
+body {
+    background-attachment: scroll;
+}
+
+.landing,
+.category {
+    backdrop-filter: none;
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34);
+}
+
+.landing::before,
+.category::before,
+.tile__glass,
+.cursor-glow,
+body::after {
+    display: none;
+}
+
+.tile,
+.popular-card,
+.category-card,
+.account-menu__trigger,
+.account-menu__avatar,
+.account-menu__dropdown,
+.account-menu__action,
+.category__back,
+.btn-play,
+.btn-secondary {
+    transition: border-color 0.08s linear, background-color 0.08s linear, color 0.08s linear;
+    box-shadow: none;
+    transform: none;
+    will-change: auto;
+}
+
+.tile::before {
+    box-shadow: none;
+}
+
+.tile:hover,
+.tile:focus-visible,
+.popular-card:hover,
+.popular-card:focus-visible,
+.category-card:hover,
+.category-card:focus-visible,
+.account-menu__trigger:hover,
+.account-menu__trigger:focus-visible,
+.account-menu__trigger:hover .account-menu__avatar,
+.account-menu__trigger:focus-visible .account-menu__avatar,
+.account-menu__action:hover,
+.account-menu__action:focus-visible,
+.category__back:hover,
+.category__back:focus-visible,
+.btn-play:hover,
+.btn-play:focus-visible,
+.btn-secondary:hover,
+.btn-secondary:focus-visible {
+    transform: none;
+    box-shadow: none;
+}
+
+.category-card::after,
+.popular-card::after {
+    transition: none;
+}
+
+.category-card:hover::after,
+.popular-card:hover::after,
+.category-card:focus-visible::after,
+.popular-card:focus-visible::after {
+    transform: none;
+}
