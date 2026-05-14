@@ -384,6 +384,10 @@ h2 {
   backdrop-filter: none;
 }
 
+.overlay[hidden] {
+  display: none;
+}
+
 .choice-panel {
   width: min(520px, 100%);
   padding: 1rem;

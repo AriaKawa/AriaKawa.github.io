@@ -183,6 +183,9 @@ function getMoveLimit() {
 }
 
 function newRun() {
+  el.choiceOverlay.hidden = true;
+  el.endOverlay.hidden = true;
+
   state = {
     board: createEmptyBoard(),
     floor: 1,
@@ -201,8 +204,6 @@ function newRun() {
     gameOver: false
   };
   startFloor();
-  el.choiceOverlay.hidden = true;
-  el.endOverlay.hidden = true;
 }
 
 function startFloor() {
