@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Another World, Another Crown</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #080a10;
+  --ink: #f8fafc;
+  --muted: #a9b6c8;
+  --line: rgba(255, 255, 255, 0.14);
+  --panel: rgba(16, 21, 34, 0.88);
+  --panel-2: rgba(23, 30, 48, 0.92);
+  --cyan: #4df0d2;
+  --gold: #ffd166;
+  --rose: #ff5d8f;
+  --green: #a8f05a;
+  --violet: #a996ff;
+  --danger: #ff7a7a;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
+  color: var(--ink);
+  background:
+    linear-gradient(115deg, rgba(77, 240, 210, 0.16), transparent 28%),
+    linear-gradient(245deg, rgba(255, 93, 143, 0.18), transparent 34%),
+    linear-gradient(180deg, var(--bg), #111528 56%, #0b1517);
+  overflow-x: hidden;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: linear-gradient(to bottom, #000, transparent 82%);
+}
+
+button {
+  font: inherit;
+}
+
+.game-shell {
+  width: min(1180px, calc(100% - 1.5rem));
+  min-height: calc(100vh - 1.5rem);
+  margin: 0.75rem auto;
+  display: grid;
+  grid-template-columns: minmax(230px, 0.85fr) minmax(320px, 1.2fr) minmax(230px, 0.85fr);
+  gap: 1rem;
+  padding: clamp(1rem, 3vw, 1.5rem);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: linear-gradient(145deg, rgba(13, 16, 32, 0.92), rgba(12, 18, 26, 0.86));
+  box-shadow: 0 34px 90px rgba(0, 0, 0, 0.48);
+  backdrop-filter: blur(20px);
+}
+
+.topbar {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  padding-bottom: 0.25rem;
+}
+
+.back-link,
+.icon-button,
+.choice-button,
+.restart-button {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.07);
+  cursor: pointer;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.65rem 1rem;
+  text-decoration: none;
+  font-weight: 800;
+}
+
+.run-title {
+  display: grid;
+  justify-items: end;
+  gap: 0.1rem;
+  text-align: right;
+}
+
+.run-title strong {
+  font-size: clamp(1rem, 2vw, 1.2rem);
+}
+
+.run-title span {
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.panel {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: linear-gradient(145deg, var(--panel), var(--panel-2));
+  box-shadow: 0 22px 55px rgba(0, 0, 0, 0.36);
+}
+
+.stats-panel {
+  padding: 1rem;
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+}
+
+.sigil {
+  min-height: 160px;
+  position: relative;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background:
+    radial-gradient(circle at 50% 45%, rgba(77, 240, 210, 0.3), transparent 38%),
+    linear-gradient(135deg, rgba(169, 150, 255, 0.2), rgba(255, 209, 102, 0.1));
+}
+
+.sigil::before,
+.sigil::after {
+  content: "";
+  position: absolute;
+  width: 108px;
+  aspect-ratio: 1;
+  border: 2px solid rgba(255, 255, 255, 0.28);
+  transform: rotate(45deg);
+}
+
+.sigil::after {
+  width: 68px;
+  border-color: rgba(77, 240, 210, 0.6);
+  animation: spin 12s linear infinite;
+}
+
+.sigil span {
+  z-index: 1;
+  width: 58px;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #07100f;
+  background: linear-gradient(135deg, var(--cyan), var(--gold));
+  font-weight: 900;
+  box-shadow: 0 0 30px rgba(77, 240, 210, 0.35);
+}
+
+.meter-list {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.meter {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.meter__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.meter__track {
+  height: 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.meter__fill {
+  width: 50%;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--color), transparent 45%);
+  transition: width 0.28s ease;
+}
+
+.main-panel {
+  padding: clamp(1rem, 3vw, 1.35rem);
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+}
+
+.chapter {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 900;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.card-stage {
+  min-height: min(66vh, 620px);
+  display: grid;
+  place-items: center;
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 34%),
+    radial-gradient(circle at 50% 20%, rgba(255, 209, 102, 0.13), transparent 36%),
+    #0e1320;
+  touch-action: pan-y;
+}
+
+.card-stage::before {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 30%;
+  background:
+    linear-gradient(120deg, transparent 5%, rgba(77, 240, 210, 0.18) 5% 12%, transparent 12% 22%, rgba(255, 93, 143, 0.14) 22% 31%, transparent 31%),
+    linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.28));
+  opacity: 0.85;
+}
+
+.decision-card {
+  width: min(370px, calc(100% - 1.5rem));
+  min-height: 480px;
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-rows: 210px auto 1fr;
+  overflow: hidden;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: linear-gradient(160deg, rgba(248, 250, 252, 0.98), rgba(220, 228, 242, 0.96));
+  color: #121624;
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.46);
+  user-select: none;
+  transform: translateX(var(--drag-x, 0)) rotate(var(--drag-r, 0));
+  transition: transform 0.18s ease, opacity 0.18s ease;
+}
+
+.decision-card.is-leaving {
+  opacity: 0;
+  transform: translateX(var(--leave-x)) rotate(var(--leave-r));
+}
+
+.card-art {
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, #2c3454, #111827 64%),
+    linear-gradient(90deg, rgba(77, 240, 210, 0.2), rgba(255, 209, 102, 0.2));
+}
+
+.card-art::before {
+  content: "";
+  position: absolute;
+  inset: 18px 28px auto;
+  height: 98px;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.24), rgba(77, 240, 210, 0.08));
+}
+
+.card-art::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 66px;
+  background:
+    linear-gradient(135deg, transparent 20%, rgba(255, 209, 102, 0.24) 20% 38%, transparent 38% 58%, rgba(77, 240, 210, 0.2) 58% 72%, transparent 72%),
+    #182033;
+}
+
+.character {
+  position: absolute;
+  left: 50%;
+  bottom: 28px;
+  width: 86px;
+  height: 124px;
+  transform: translateX(-50%);
+}
+
+.character::before {
+  content: "";
+  position: absolute;
+  left: 26px;
+  top: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #f2c8a9;
+  box-shadow: 0 0 0 6px rgba(255, 209, 102, 0.16);
+}
+
+.character::after {
+  content: "";
+  position: absolute;
+  left: 13px;
+  top: 36px;
+  width: 60px;
+  height: 78px;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  background: linear-gradient(135deg, var(--cyan), var(--violet));
+}
+
+.choice-ghost {
+  position: absolute;
+  top: 1rem;
+  z-index: 3;
+  max-width: 42%;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid currentColor;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.choice-ghost--left {
+  left: 1rem;
+  color: var(--rose);
+}
+
+.choice-ghost--right {
+  right: 1rem;
+  color: var(--cyan);
+  text-align: right;
+}
+
+.decision-card[data-lean="left"] .choice-ghost--left,
+.decision-card[data-lean="right"] .choice-ghost--right {
+  opacity: 1;
+}
+
+.card-body {
+  padding: 1.1rem;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.speaker {
+  margin: 0;
+  color: #536077;
+  font-size: 0.82rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.prompt {
+  margin: 0;
+  color: #0f172a;
+  font-size: 1.3rem;
+  line-height: 1.25;
+  font-weight: 900;
+}
+
+.omen {
+  margin: 0;
+  color: #526070;
+  line-height: 1.45;
+  font-weight: 700;
+}
+
+.choices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.choice-button {
+  min-height: 58px;
+  padding: 0.75rem;
+  font-size: 0.92rem;
+  font-weight: 900;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.choice-button:hover,
+.choice-button:focus-visible,
+.icon-button:hover,
+.icon-button:focus-visible,
+.back-link:hover,
+.back-link:focus-visible,
+.restart-button:hover,
+.restart-button:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.34);
+  outline: none;
+}
+
+.choice-button--left {
+  background: linear-gradient(135deg, rgba(255, 93, 143, 0.18), rgba(255, 255, 255, 0.06));
+}
+
+.choice-button--right {
+  background: linear-gradient(135deg, rgba(77, 240, 210, 0.18), rgba(255, 255, 255, 0.06));
+}
+
+.log-panel {
+  padding: 1rem;
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+}
+
+.status-readout {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.readout {
+  min-height: 86px;
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.readout span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.readout strong {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--gold);
+  font-size: 1.45rem;
+  line-height: 1;
+}
+
+.history {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.history h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.history-list {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.history-list li {
+  padding: 0.65rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.ending {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: none;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(3, 5, 10, 0.76);
+  backdrop-filter: blur(12px);
+}
+
+.ending.is-open {
+  display: grid;
+}
+
+.ending__box {
+  width: min(520px, 100%);
+  padding: clamp(1rem, 4vw, 1.35rem);
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: linear-gradient(145deg, rgba(22, 27, 44, 0.98), rgba(13, 18, 28, 0.98));
+  box-shadow: 0 34px 90px rgba(0, 0, 0, 0.58);
+}
+
+.ending h2 {
+  margin: 0;
+  font-size: clamp(1.6rem, 6vw, 2.4rem);
+  line-height: 1;
+}
+
+.ending p {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.restart-button {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  font-weight: 900;
+  background: linear-gradient(135deg, var(--cyan), var(--gold));
+  color: #07100f;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(405deg);
+  }
+}
+
+@media (max-width: 960px) {
+  .game-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-panel {
+    grid-template-columns: minmax(150px, 0.5fr) 1fr;
+  }
+
+  .log-panel {
+    order: 4;
+  }
+}
+
+@media (max-width: 620px) {
+  .game-shell {
+    width: calc(100% - 0.75rem);
+    margin: 0.375rem auto;
+    padding: 0.75rem;
+  }
+
+  .topbar,
+  .stats-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .topbar {
+    align-items: stretch;
+  }
+
+  .run-title {
+    justify-items: start;
+    text-align: left;
+  }
+
+  .card-stage {
+    min-height: 560px;
+  }
+
+  .decision-card {
+    min-height: 450px;
+    grid-template-rows: 185px auto 1fr;
+  }
+
+  .choices {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+</style>
+</head>
+<body>
+<main class="game-shell">
+  <div class="topbar">
+    <a class="back-link" href="games.html" aria-label="Back to games">
+      <span aria-hidden="true">&larr;</span>
+      <span>Games</span>
+    </a>
+    <div class="run-title">
+      <strong>Another World, Another Crown</strong>
+      <span data-subtitle>Summoned hero protocol</span>
+    </div>
+  </div>
+
+  <aside class="panel stats-panel" aria-label="Realm balance meters">
+    <div class="sigil" aria-hidden="true"><span>III</span></div>
+    <div class="meter-list" data-meters></div>
+  </aside>
+
+  <section class="panel main-panel" aria-label="Decision card">
+    <div class="chapter">
+      <span data-ruler>Hero 1</span>
+      <span data-year>Day 1</span>
+    </div>
+    <div class="card-stage" data-stage>
+      <article class="decision-card" data-card>
+        <div class="choice-ghost choice-ghost--left" data-left-ghost></div>
+        <div class="choice-ghost choice-ghost--right" data-right-ghost></div>
+        <div class="card-art" aria-hidden="true">
+          <div class="character"></div>
+        </div>
+        <div class="card-body">
+          <p class="speaker" data-speaker></p>
+          <p class="prompt" data-prompt></p>
+          <p class="omen" data-omen></p>
+        </div>
+      </article>
+    </div>
+    <div class="choices">
+      <button class="choice-button choice-button--left" type="button" data-choice="left"></button>
+      <button class="choice-button choice-button--right" type="button" data-choice="right"></button>
+    </div>
+  </section>
+
+  <aside class="panel log-panel" aria-label="Run details">
+    <div class="status-readout">
+      <div class="readout">
+        <span>Current Class</span>
+        <strong data-class>Hero</strong>
+      </div>
+      <div class="readout">
+        <span>Best Reign</span>
+        <strong data-best>0</strong>
+      </div>
+      <div class="readout">
+        <span>Relics</span>
+        <strong data-relics>0</strong>
+      </div>
+      <div class="readout">
+        <span>Fate</span>
+        <strong data-fate>Stable</strong>
+      </div>
+    </div>
+    <div class="history">
+      <h2>Chronicle</h2>
+      <ol class="history-list" data-history></ol>
+    </div>
+  </aside>
+</main>
+
+<div class="ending" data-ending role="dialog" aria-modal="true" aria-labelledby="ending-title">
+  <div class="ending__box">
+    <h2 id="ending-title" data-ending-title></h2>
+    <p data-ending-copy></p>
+    <button class="restart-button" type="button" data-restart>Summon the next hero</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  const meters = [
+    { key: "guild", label: "Guild", color: "#4df0d2" },
+    { key: "crown", label: "Crown", color: "#ffd166" },
+    { key: "mana", label: "Mana", color: "#a996ff" },
+    { key: "heart", label: "People", color: "#ff5d8f" }
+  ];
+
+  const classes = ["Hero", "Saint", "Spellblade", "Merchant", "Demon-Touched", "Chronomancer"];
+
+  const deck = [
+    {
+      speaker: "The Goddess of HR",
+      prompt: "Welcome to Eldoria. Your contract says you will save the realm. It does not mention weekends.",
+      omen: "The portal is still warm behind you.",
+      left: { text: "Ask about pay", effects: { crown: -8, guild: 8, heart: 3 }, log: "You asked the divine bureaucracy for a salary." },
+      right: { text: "Accept destiny", effects: { crown: 6, mana: 5, guild: -4 }, log: "You accepted the quest before reading the fine print." }
+    },
+    {
+      speaker: "Princess Liora",
+      prompt: "The court wants you to endorse a prophecy declaring me the only legitimate heir.",
+      omen: "Three dukes are listening too carefully.",
+      left: { text: "Question it", effects: { crown: -10, heart: 8, mana: 3 }, log: "You made the prophecy sound less like a tax document." },
+      right: { text: "Bless the heir", effects: { crown: 12, heart: -7, guild: -3 }, log: "The crown gained a halo and several enemies." }
+    },
+    {
+      speaker: "Guildmaster Brann",
+      prompt: "Slimes are blocking the west road. My adventurers can clear them, if the treasury stops pretending exposure is payment.",
+      omen: "A slime slowly eats the meeting minutes.",
+      left: { text: "Pay the guild", effects: { crown: -9, guild: 12, heart: 4 }, log: "Paid adventurers returned with road access and suspiciously nice boots." },
+      right: { text: "Use volunteers", effects: { crown: 6, guild: -11, heart: -8 }, log: "The volunteer slime plan became a lesson in humility." }
+    },
+    {
+      speaker: "Demon Envoy",
+      prompt: "My lord offers a ceasefire and a suspiciously comfortable chair.",
+      omen: "The chair has horns. Good lumbar support, though.",
+      left: { text: "Refuse him", effects: { mana: -8, guild: 8, crown: -3 }, log: "You insulted infernal furniture diplomacy." },
+      right: { text: "Hear terms", effects: { mana: 12, crown: 4, heart: -10 }, log: "The ceasefire held. Nobody liked the smell of the ink." }
+    },
+    {
+      speaker: "Village Elder",
+      prompt: "Your otherworldly cooking is popular. Can we replace the harvest festival with instant ramen night?",
+      omen: "The farmers look spiritually threatened.",
+      left: { text: "Keep tradition", effects: { heart: 7, mana: -4, guild: -3 }, log: "The harvest festival survived, now with exactly one noodle stall." },
+      right: { text: "Ramen for all", effects: { heart: 10, crown: -6, mana: 5 }, log: "A noodle economy was born overnight." }
+    },
+    {
+      speaker: "Court Mage Nima",
+      prompt: "I can boost your level by twenty if you stand inside this crystal circle and ignore the screaming colors.",
+      omen: "The circle is making dial-up noises.",
+      left: { text: "Step out", effects: { mana: -5, guild: 4, heart: 3 }, log: "You chose survivable mediocrity." },
+      right: { text: "Power level", effects: { mana: 15, heart: -6, crown: -4 }, relic: "Overclocked Soul", log: "Your stats rose. So did everyone's concerns." }
+    },
+    {
+      speaker: "Tax Pixie",
+      prompt: "A loophole lets us classify dragons as luxury fireplaces.",
+      omen: "The pixie has tiny spectacles and enormous confidence.",
+      left: { text: "Close loophole", effects: { crown: 5, guild: -6, heart: 5 }, log: "Dragon accountants vanished into the mountains." },
+      right: { text: "Exploit it", effects: { crown: 14, guild: 4, heart: -9 }, log: "The treasury prospered under deeply flammable policy." }
+    },
+    {
+      speaker: "Rival Hero",
+      prompt: "I was summoned too. Want to duel for main-character rights?",
+      omen: "Their hair is doing more dramatic work than yours.",
+      left: { text: "Team up", effects: { guild: 9, heart: 5, crown: -5 }, log: "Two protagonists made one very crowded destiny." },
+      right: { text: "Accept duel", effects: { guild: -7, mana: 8, heart: -4 }, log: "You won the duel and lost the room." }
+    },
+    {
+      speaker: "Cathedral Saint",
+      prompt: "Your smartphone is glowing again. The clergy believe it is a holy rectangle.",
+      omen: "Someone is praying to the battery icon.",
+      left: { text: "Explain phones", effects: { mana: -8, heart: 6, crown: 2 }, log: "The clergy learned about airplane mode and feared the sky." },
+      right: { text: "Accept worship", effects: { mana: 10, crown: 6, heart: -8 }, log: "The holy rectangle cult now has merch." }
+    },
+    {
+      speaker: "Blacksmith Ivo",
+      prompt: "I can forge your legendary sword into a plow. Terrible for duels. Excellent for famine.",
+      omen: "The sword seems offended.",
+      left: { text: "Keep sword", effects: { guild: 8, heart: -7, crown: 2 }, log: "The blade stayed legendary and the soup stayed thin." },
+      right: { text: "Forge plow", effects: { heart: 12, guild: -8, crown: -3 }, log: "The kingdom ate well and bards had to improvise." }
+    },
+    {
+      speaker: "Dungeon Core",
+      prompt: "Let me open a beginner dungeon near town. Good loot. Mild curses. Gift shop potential.",
+      omen: "A tiny treasure chest coughs politely.",
+      left: { text: "Seal it", effects: { heart: 5, guild: -10, mana: -4 }, log: "The dungeon was sealed before it could sell mugs." },
+      right: { text: "License it", effects: { guild: 12, crown: 8, heart: -7 }, log: "The starter dungeon became a suspiciously profitable attraction." }
+    },
+    {
+      speaker: "Queen Regent",
+      prompt: "The nobles want a ball in your honor. The people want a bridge that does not scream.",
+      omen: "The bridge screams whenever anyone says budget.",
+      left: { text: "Fix bridge", effects: { heart: 13, crown: -8, guild: 2 }, log: "The bridge stopped screaming. The nobles began." },
+      right: { text: "Hold ball", effects: { crown: 10, heart: -9, mana: 3 }, log: "The ball was beautiful, expensive, and structurally useless." }
+    },
+    {
+      speaker: "Familiar",
+      prompt: "Your contract allows one cute companion. I have already signed in your name.",
+      omen: "The familiar is a floating cloak with judgmental sleeves.",
+      left: { text: "Dismiss it", effects: { mana: -7, guild: 3, heart: -2 }, log: "You rejected magical companionship and gained quiet." },
+      right: { text: "Adopt it", effects: { mana: 8, heart: 7, crown: -5 }, relic: "Judgmental Cloak", log: "The cloak joined you and immediately audited your posture." }
+    },
+    {
+      speaker: "Portal Engineer",
+      prompt: "I found a way to send you home. It only needs the royal vault and half the moon's mana.",
+      omen: "The portal smells like old apartments and thunderstorms.",
+      left: { text: "Stay here", effects: { heart: 8, mana: -3, crown: 3 }, log: "You stayed. Eldoria tried not to look too relieved." },
+      right: { text: "Fund portal", effects: { crown: -14, mana: -12, heart: -4 }, log: "The portal opened onto a convenience store parking lot for six seconds." }
+    },
+    {
+      speaker: "Goblet of Plot",
+      prompt: "Drink me and remember the last failed timeline.",
+      omen: "The goblet whispers spoilers.",
+      left: { text: "Pour it out", effects: { mana: -6, heart: 4, crown: 2 }, log: "You rejected spoilers with heroic restraint." },
+      right: { text: "Drink deeply", effects: { mana: 11, guild: -4, heart: -5 }, relic: "Timeline Scar", log: "You remembered just enough to be inconvenient." }
+    },
+    {
+      speaker: "Street Orphans",
+      prompt: "We stole your royal seal to make fake adventurer IDs. Honestly, the design is better now.",
+      omen: "Their forgery has glitter embossing.",
+      left: { text: "Punish them", effects: { crown: 8, heart: -12, guild: -2 }, log: "The law was served with no dessert." },
+      right: { text: "Recruit them", effects: { heart: 10, guild: 8, crown: -7 }, log: "The guild gained scouts with alarmingly good stationery." }
+    },
+    {
+      speaker: "Ancient Dragon",
+      prompt: "Your title amuses me. Let us trade: one crown jewel for one answer.",
+      omen: "The answer is probably not about taxes.",
+      left: { text: "Keep jewel", effects: { crown: 7, mana: -8, guild: -3 }, log: "The dragon left with your unresolved questions." },
+      right: { text: "Trade jewel", effects: { mana: 13, crown: -10, heart: 2 }, log: "The dragon answered exactly one question and three riddles." }
+    },
+    {
+      speaker: "Royal Chef",
+      prompt: "The banquet menu includes monster meat. Safe? Probably. Memorable? Extremely.",
+      omen: "The roast is glowing in a minor key.",
+      left: { text: "Serve normal food", effects: { heart: 4, crown: -4, mana: -3 }, log: "Dinner was safe, edible, and forgotten by sunrise." },
+      right: { text: "Serve monster", effects: { heart: -9, mana: 9, guild: 5 }, log: "The banquet achieved legendary status and several lawsuits." }
+    }
+  ];
+
+  const state = {
+    stats: { guild: 50, crown: 50, mana: 50, heart: 50 },
+    day: 1,
+    hero: 1,
+    className: "Hero",
+    relics: [],
+    history: [],
+    cardIndex: 0,
+    best: Number.parseInt(localStorage.getItem("isekaiReignBest") || "0", 10) || 0,
+    locked: false
+  };
+
+  const els = {
+    meters: document.querySelector("[data-meters]"),
+    card: document.querySelector("[data-card]"),
+    stage: document.querySelector("[data-stage]"),
+    speaker: document.querySelector("[data-speaker]"),
+    prompt: document.querySelector("[data-prompt]"),
+    omen: document.querySelector("[data-omen]"),
+    leftGhost: document.querySelector("[data-left-ghost]"),
+    rightGhost: document.querySelector("[data-right-ghost]"),
+    leftButton: document.querySelector('[data-choice="left"]'),
+    rightButton: document.querySelector('[data-choice="right"]'),
+    ruler: document.querySelector("[data-ruler]"),
+    year: document.querySelector("[data-year]"),
+    className: document.querySelector("[data-class]"),
+    best: document.querySelector("[data-best]"),
+    relics: document.querySelector("[data-relics]"),
+    fate: document.querySelector("[data-fate]"),
+    history: document.querySelector("[data-history]"),
+    ending: document.querySelector("[data-ending]"),
+    endingTitle: document.querySelector("[data-ending-title]"),
+    endingCopy: document.querySelector("[data-ending-copy]"),
+    restart: document.querySelector("[data-restart]")
+  };
+
+  function buildMeters() {
+    els.meters.innerHTML = meters.map((meter) => `
+      <div class="meter" data-meter="${meter.key}">
+        <div class="meter__header">
+          <span>${meter.label}</span>
+          <span data-meter-value="${meter.key}">50</span>
+        </div>
+        <div class="meter__track">
+          <div class="meter__fill" style="--color: ${meter.color}" data-meter-fill="${meter.key}"></div>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  function currentCard() {
+    return deck[state.cardIndex % deck.length];
+  }
+
+  function render() {
+    const card = currentCard();
+    els.speaker.textContent = card.speaker;
+    els.prompt.textContent = card.prompt;
+    els.omen.textContent = card.omen;
+    els.leftButton.textContent = card.left.text;
+    els.rightButton.textContent = card.right.text;
+    els.leftGhost.textContent = card.left.text;
+    els.rightGhost.textContent = card.right.text;
+    els.ruler.textContent = `Hero ${state.hero}`;
+    els.year.textContent = `Day ${state.day}`;
+    els.className.textContent = state.className;
+    els.best.textContent = `${state.best}`;
+    els.relics.textContent = `${state.relics.length}`;
+    els.fate.textContent = getFate();
+    meters.forEach((meter) => {
+      const value = state.stats[meter.key];
+      document.querySelector(`[data-meter-value="${meter.key}"]`).textContent = value;
+      document.querySelector(`[data-meter-fill="${meter.key}"]`).style.width = `${value}%`;
+    });
+    els.history.innerHTML = state.history.slice(0, 5).map((item) => `<li>${item}</li>`).join("");
+  }
+
+  function getFate() {
+    const values = Object.values(state.stats);
+    if (values.some((value) => value <= 15 || value >= 85)) return "Volatile";
+    if (state.relics.length >= 3) return "Mythic";
+    return "Stable";
+  }
+
+  function choose(side) {
+    if (state.locked) return;
+    state.locked = true;
+    const card = currentCard();
+    const choice = card[side];
+    Object.entries(choice.effects).forEach(([key, amount]) => {
+      state.stats[key] = Math.max(0, Math.min(100, state.stats[key] + amount));
+    });
+    if (choice.relic && !state.relics.includes(choice.relic)) {
+      state.relics.push(choice.relic);
+    }
+    state.history.unshift(choice.log);
+    els.card.classList.add("is-leaving");
+    els.card.style.setProperty("--leave-x", side === "left" ? "-140%" : "140%");
+    els.card.style.setProperty("--leave-r", side === "left" ? "-18deg" : "18deg");
+    window.setTimeout(() => {
+      const ending = findEnding();
+      if (ending) {
+        endRun(ending);
+        return;
+      }
+      state.day += 1;
+      state.cardIndex += 1 + Math.floor(Math.random() * 3);
+      if (state.day % 7 === 0) {
+        state.className = classes[(classes.indexOf(state.className) + 1) % classes.length];
+        state.history.unshift(`Class drift: you are now a ${state.className}.`);
+      }
+      els.card.classList.remove("is-leaving");
+      clearDrag();
+      state.locked = false;
+      render();
+    }, 210);
+  }
+
+  function findEnding() {
+    const entries = Object.entries(state.stats);
+    const low = entries.find(([, value]) => value <= 0);
+    const high = entries.find(([, value]) => value >= 100);
+    if (low) {
+      return endingFor(low[0], "low");
+    }
+    if (high) {
+      return endingFor(high[0], "high");
+    }
+    if (state.day >= 30) {
+      return {
+        title: "True Route Unlocked",
+        copy: `You survived ${state.day} days, balanced four impossible factions, and accidentally became canon. Eldoria keeps your statue near the ramen stalls.`
+      };
+    }
+    return null;
+  }
+
+  function endingFor(stat, direction) {
+    const endings = {
+      guild: {
+        low: ["Party Wipe", "The adventurers quit, the dungeons unionized, and your heroic resume developed a very large gap."],
+        high: ["Guild Coup", "The guild became so powerful it voted the crown into a side quest."]
+      },
+      crown: {
+        low: ["Budget Bad End", "The treasury emptied. Your royal title was repossessed by a pixie with a clipboard."],
+        high: ["Golden Cage", "The court adored you so much they locked you in ceremony forever."]
+      },
+      mana: {
+        low: ["Mundane Ending", "The magic faded, the portal coughed, and you were demoted to motivational villager."],
+        high: ["Arcane Overflow", "Mana flooded the realm. You became a constellation with excellent cheekbones."]
+      },
+      heart: {
+        low: ["Exiled Hero", "The people ran out of patience and gave you a packed lunch for the road out."],
+        high: ["Beloved Disaster", "The people loved you too fiercely. Every policy became a parade, including tax audits."]
+      }
+    };
+    const [title, copy] = endings[stat][direction];
+    return { title, copy };
+  }
+
+  function endRun(ending) {
+    state.best = Math.max(state.best, state.day);
+    localStorage.setItem("isekaiReignBest", String(state.best));
+    els.endingTitle.textContent = ending.title;
+    els.endingCopy.textContent = `${ending.copy} Reign length: ${state.day} days.`;
+    els.ending.classList.add("is-open");
+    render();
+  }
+
+  function restart() {
+    state.stats = { guild: 50, crown: 50, mana: 50, heart: 50 };
+    state.day = 1;
+    state.hero += 1;
+    state.className = classes[state.hero % classes.length];
+    state.relics = [];
+    state.history = [];
+    state.cardIndex = Math.floor(Math.random() * deck.length);
+    state.locked = false;
+    els.ending.classList.remove("is-open");
+    els.card.classList.remove("is-leaving");
+    clearDrag();
+    render();
+  }
+
+  let pointerId = null;
+  let startX = 0;
+  let dragX = 0;
+
+  function clearDrag() {
+    dragX = 0;
+    els.card.style.setProperty("--drag-x", "0px");
+    els.card.style.setProperty("--drag-r", "0deg");
+    els.card.dataset.lean = "";
+  }
+
+  function applyDrag(value) {
+    dragX = value;
+    els.card.style.setProperty("--drag-x", `${dragX}px`);
+    els.card.style.setProperty("--drag-r", `${dragX / 18}deg`);
+    els.card.dataset.lean = dragX < -34 ? "left" : dragX > 34 ? "right" : "";
+  }
+
+  els.card.addEventListener("pointerdown", (event) => {
+    if (state.locked) return;
+    pointerId = event.pointerId;
+    startX = event.clientX;
+    els.card.setPointerCapture(pointerId);
+  });
+
+  els.card.addEventListener("pointermove", (event) => {
+    if (pointerId !== event.pointerId || state.locked) return;
+    applyDrag(event.clientX - startX);
+  });
+
+  els.card.addEventListener("pointerup", (event) => {
+    if (pointerId !== event.pointerId) return;
+    pointerId = null;
+    if (dragX <= -110) {
+      choose("left");
+    } else if (dragX >= 110) {
+      choose("right");
+    } else {
+      clearDrag();
+    }
+  });
+
+  els.card.addEventListener("pointercancel", clearDrag);
+  els.leftButton.addEventListener("click", () => choose("left"));
+  els.rightButton.addEventListener("click", () => choose("right"));
+  els.restart.addEventListener("click", restart);
+
+  window.addEventListener("keydown", (event) => {
+    if (els.ending.classList.contains("is-open") && event.key === "Enter") {
+      restart();
+      return;
+    }
+    if (event.key === "ArrowLeft" || event.key.toLowerCase() === "a") {
+      choose("left");
+    } else if (event.key === "ArrowRight" || event.key.toLowerCase() === "d") {
+      choose("right");
+    }
+  });
+
+  buildMeters();
+  render();
+})();
+</script>
+</body>
+</html>
