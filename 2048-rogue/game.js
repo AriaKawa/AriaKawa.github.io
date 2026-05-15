@@ -128,7 +128,9 @@ const el = {
 let state;
 let previousValues = [];
 let lastMerged = new Set();
+let lastMoves = new Map();
 let startTouch = null;
+let isAnimating = false;
 
 function createEmptyBoard() {
   return Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
@@ -213,6 +215,7 @@ function startFloor() {
   state.floorMergeCount = 0;
   state.locked = false;
   lastMerged = new Set();
+  lastMoves = new Map();
   previousValues = [];
   getRule().setup(state);
   spawnTile();
@@ -262,12 +265,14 @@ function spawnTile(forcedValue) {
 }
 
 function move(direction) {
-  if (state.locked || state.gameOver) {
+  if (state.locked || state.gameOver || isAnimating) {
     return;
   }
 
+  const cellCenters = measureCellCenters();
   previousValues = state.board.flat();
   lastMerged = new Set();
+  lastMoves = new Map();
   const before = JSON.stringify(state.board);
   const result = slide(direction);
   const after = JSON.stringify(state.board);
@@ -286,6 +291,19 @@ function move(direction) {
     state.mergeCount += result.merged;
     state.floorMergeCount += result.merged;
   }
+
+  result.moves.forEach((move) => {
+    const fromIndex = move.from.y * SIZE + move.from.x;
+    const toIndex = move.to.y * SIZE + move.to.x;
+    const fromCenter = cellCenters.get(fromIndex);
+    const toCenter = cellCenters.get(toIndex);
+    if (fromCenter && toCenter) {
+      lastMoves.set(toIndex, {
+        x: fromCenter.x - toCenter.x,
+        y: fromCenter.y - toCenter.y
+      });
+    }
+  });
 
   if (state.flags.cleanser && state.mergeCount > 0 && state.mergeCount % 10 === 0 && state.lastCleanseAt !== state.mergeCount) {
     state.lastCleanseAt = state.mergeCount;
@@ -322,10 +340,12 @@ function move(direction) {
   }
 
   render();
+  scheduleAnimationUnlock(result.moves.length > 0);
 }
 
 function slide(direction) {
   let merged = 0;
+  const moves = [];
   const readLine = (index) => {
     const line = [];
     for (let step = 0; step < SIZE; step += 1) {
@@ -344,12 +364,13 @@ function slide(direction) {
 
   for (let index = 0; index < SIZE; index += 1) {
     const line = readLine(index);
-    const values = line.map((cell) => cell.value).filter(Boolean);
+    const values = line.filter((cell) => cell.value);
     const next = [];
+    const lineMoves = [];
 
     for (let i = 0; i < values.length; i += 1) {
-      if (values[i] === values[i + 1]) {
-        const value = values[i] * 2;
+      if (values[i].value === values[i + 1]?.value) {
+        const value = values[i].value * 2;
         const multiplier = getRule().scoreMultiplier || 1;
         let gained = Math.round(value * multiplier);
         merged += 1;
@@ -357,30 +378,36 @@ function slide(direction) {
           gained += value;
         }
         state.score += gained;
-        next.push(value);
+        next.push({ value, from: values[i + 1], merged: true });
         i += 1;
       } else {
-        next.push(values[i]);
+        next.push({ value: values[i].value, from: values[i], merged: false });
       }
     }
 
     while (next.length < SIZE) {
-      next.push(0);
+      next.push({ value: 0, from: null, merged: false });
     }
 
-    writeLine(line, next);
-    next.forEach((value, nextIndex) => {
-      const oldValue = line[nextIndex].value;
-      if (value && value !== oldValue && value % 2 === 0) {
-        const cell = line[nextIndex];
-        if (previousValues.includes(value / 2)) {
-          lastMerged.add(cell.y * SIZE + cell.x);
-        }
+    writeLine(line, next.map((entry) => entry.value));
+    next.forEach((entry, nextIndex) => {
+      if (!entry.value || !entry.from) {
+        return;
+      }
+
+      const to = line[nextIndex];
+      if (entry.from.x !== to.x || entry.from.y !== to.y) {
+        lineMoves.push({ from: entry.from, to });
+      }
+
+      if (entry.merged) {
+        lastMerged.add(to.y * SIZE + to.x);
       }
     });
+    moves.push(...lineMoves);
   }
 
-  return { merged };
+  return { merged, moves };
 }
 
 function removeSmallestTile() {
@@ -518,6 +545,14 @@ function render() {
     if (lastMerged.has(index)) {
       tile.classList.add("is-merged");
     }
+    const move = lastMoves.get(index);
+    if (move) {
+      tile.classList.add("is-moving");
+      tile.style.transform = `translate(${move.x}px, ${move.y}px)`;
+      window.requestAnimationFrame(() => {
+        tile.style.transform = "translate(0, 0)";
+      });
+    }
     if (getRule().name === "Fracture glass" && value >= 8) {
       tile.classList.add("is-fractured");
     }
@@ -540,6 +575,29 @@ function render() {
   el.pressureFill.style.width = `${pressure}%`;
 
   renderRelics();
+}
+
+function measureCellCenters() {
+  const centers = new Map();
+  Array.from(el.board.children).forEach((child, index) => {
+    const rect = child.getBoundingClientRect();
+    centers.set(index, {
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2
+    });
+  });
+  return centers;
+}
+
+function scheduleAnimationUnlock(hasMoves) {
+  if (!hasMoves) {
+    return;
+  }
+
+  isAnimating = true;
+  window.setTimeout(() => {
+    isAnimating = false;
+  }, 170);
 }
 
 function renderRelics() {
