@@ -128,7 +128,6 @@ const el = {
 let state;
 let previousValues = [];
 let lastMerged = new Set();
-let lastMoves = new Map();
 let startTouch = null;
 let isAnimating = false;
 
@@ -215,7 +214,6 @@ function startFloor() {
   state.floorMergeCount = 0;
   state.locked = false;
   lastMerged = new Set();
-  lastMoves = new Map();
   previousValues = [];
   getRule().setup(state);
   spawnTile();
@@ -272,7 +270,6 @@ function move(direction) {
   const cellCenters = measureCellCenters();
   previousValues = state.board.flat();
   lastMerged = new Set();
-  lastMoves = new Map();
   const before = JSON.stringify(state.board);
   const result = slide(direction);
   const after = JSON.stringify(state.board);
@@ -291,19 +288,6 @@ function move(direction) {
     state.mergeCount += result.merged;
     state.floorMergeCount += result.merged;
   }
-
-  result.moves.forEach((move) => {
-    const fromIndex = move.from.y * SIZE + move.from.x;
-    const toIndex = move.to.y * SIZE + move.to.x;
-    const fromCenter = cellCenters.get(fromIndex);
-    const toCenter = cellCenters.get(toIndex);
-    if (fromCenter && toCenter) {
-      lastMoves.set(toIndex, {
-        x: fromCenter.x - toCenter.x,
-        y: fromCenter.y - toCenter.y
-      });
-    }
-  });
 
   if (state.flags.cleanser && state.mergeCount > 0 && state.mergeCount % 10 === 0 && state.lastCleanseAt !== state.mergeCount) {
     state.lastCleanseAt = state.mergeCount;
@@ -339,8 +323,9 @@ function move(direction) {
     setStatus(result.merged ? "Good merge. Keep building toward the floor target." : "Shifted. The clock tightens.");
   }
 
-  render();
-  scheduleAnimationUnlock(result.moves.length > 0);
+  const resolvingCells = getResolvingCells(result.moves);
+  render(resolvingCells);
+  animateTileMoves(result.moves, cellCenters, previousValues, resolvingCells);
 }
 
 function slide(direction) {
@@ -378,27 +363,27 @@ function slide(direction) {
           gained += value;
         }
         state.score += gained;
-        next.push({ value, from: values[i + 1], merged: true });
+        next.push({ value, sources: [values[i], values[i + 1]], merged: true });
         i += 1;
       } else {
-        next.push({ value: values[i].value, from: values[i], merged: false });
+        next.push({ value: values[i].value, sources: [values[i]], merged: false });
       }
     }
 
     while (next.length < SIZE) {
-      next.push({ value: 0, from: null, merged: false });
+      next.push({ value: 0, sources: [], merged: false });
     }
 
     writeLine(line, next.map((entry) => entry.value));
     next.forEach((entry, nextIndex) => {
-      if (!entry.value || !entry.from) {
+      if (!entry.value || !entry.sources.length) {
         return;
       }
 
       const to = line[nextIndex];
-      if (entry.from.x !== to.x || entry.from.y !== to.y) {
-        lineMoves.push({ from: entry.from, to });
-      }
+      entry.sources.forEach((source) => {
+        lineMoves.push({ from: source, to, value: source.value });
+      });
 
       if (entry.merged) {
         lastMerged.add(to.y * SIZE + to.x);
@@ -530,7 +515,7 @@ function endRun(victory, reason) {
   el.endOverlay.hidden = false;
 }
 
-function render() {
+function render(resolvingCells = new Set()) {
   el.board.innerHTML = "";
   const flat = state.board.flat();
   flat.forEach((value, index) => {
@@ -539,19 +524,14 @@ function render() {
     tile.setAttribute("role", "gridcell");
     tile.dataset.value = String(value || 0);
     tile.textContent = value || "";
-    if (previousValues[index] === "new") {
+    if (!resolvingCells.has(index) && previousValues[index] === "new") {
       tile.classList.add("is-new");
     }
-    if (lastMerged.has(index)) {
+    if (!resolvingCells.has(index) && lastMerged.has(index)) {
       tile.classList.add("is-merged");
     }
-    const move = lastMoves.get(index);
-    if (move) {
-      tile.classList.add("is-moving");
-      tile.style.transform = `translate(${move.x}px, ${move.y}px)`;
-      window.requestAnimationFrame(() => {
-        tile.style.transform = "translate(0, 0)";
-      });
+    if (resolvingCells.has(index)) {
+      tile.classList.add("is-resolving");
     }
     if (getRule().name === "Fracture glass" && value >= 8) {
       tile.classList.add("is-fractured");
@@ -589,15 +569,79 @@ function measureCellCenters() {
   return centers;
 }
 
-function scheduleAnimationUnlock(hasMoves) {
-  if (!hasMoves) {
+function getResolvingCells(moves) {
+  const cells = new Set();
+  moves.forEach((move) => {
+    cells.add(move.to.y * SIZE + move.to.x);
+  });
+  previousValues.forEach((value, index) => {
+    if (value === "new") {
+      cells.add(index);
+    }
+  });
+  return cells;
+}
+
+function animateTileMoves(moves, cellCenters, valuesBeforeMove, resolvingCells) {
+  if (!moves.length) {
     return;
   }
 
   isAnimating = true;
+  const boardRect = el.board.getBoundingClientRect();
+  const tileRect = el.board.children[0]?.getBoundingClientRect();
+  const layer = document.createElement("div");
+  layer.className = "tile-motion-layer";
+  el.board.appendChild(layer);
+
+  moves.forEach((move, index) => {
+    const fromIndex = move.from.y * SIZE + move.from.x;
+    const toIndex = move.to.y * SIZE + move.to.x;
+    const fromCenter = cellCenters.get(fromIndex);
+    const toCenter = cellCenters.get(toIndex);
+    const value = move.value || valuesBeforeMove[fromIndex];
+    if (!fromCenter || !toCenter || !tileRect || !value) {
+      return;
+    }
+
+    const clone = document.createElement("div");
+    clone.className = "tile tile-motion";
+    clone.dataset.value = String(value);
+    clone.textContent = value;
+    clone.style.width = `${tileRect.width}px`;
+    clone.style.height = `${tileRect.height}px`;
+    clone.style.left = `${fromCenter.x - boardRect.left - tileRect.width / 2}px`;
+    clone.style.top = `${fromCenter.y - boardRect.top - tileRect.height / 2}px`;
+    clone.style.transitionDelay = `${index * 8}ms`;
+    layer.appendChild(clone);
+
+    window.requestAnimationFrame(() => {
+      clone.style.transform = `translate(${toCenter.x - fromCenter.x}px, ${toCenter.y - fromCenter.y}px)`;
+    });
+  });
+
   window.setTimeout(() => {
+    layer.remove();
+    revealResolvedTiles(resolvingCells);
     isAnimating = false;
-  }, 170);
+  }, 185);
+}
+
+function revealResolvedTiles(resolvingCells) {
+  resolvingCells.forEach((index) => {
+    const tile = el.board.children[index];
+    if (!tile) {
+      return;
+    }
+
+    tile.classList.remove("is-resolving");
+    if (previousValues[index] === "new") {
+      tile.classList.add("is-new");
+    }
+    if (lastMerged.has(index)) {
+      tile.classList.add("is-merged");
+    }
+  });
 }
 
 function renderRelics() {

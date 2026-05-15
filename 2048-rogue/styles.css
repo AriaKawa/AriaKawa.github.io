@@ -206,6 +206,7 @@ h2 {
 }
 
 .board {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: clamp(0.45rem, 1.4vw, 0.8rem);
@@ -219,6 +220,7 @@ h2 {
     linear-gradient(315deg, rgba(255, 93, 143, 0.12), transparent 46%),
     #0a0f19;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  overflow: hidden;
 }
 
 .tile {
@@ -544,13 +546,6 @@ h2 {
   box-shadow: none;
 }
 
-/* Tile-only motion, kept cheap with transform animations. */
-.tile.is-moving {
-  transition: transform 145ms cubic-bezier(0.2, 0.9, 0.2, 1);
-  will-change: transform;
-  z-index: 2;
-}
-
 .tile.is-new {
   animation: tile-spawn 130ms ease-out;
 }
@@ -558,6 +553,25 @@ h2 {
 .tile.is-merged {
   animation: tile-merge 180ms ease-out 145ms;
   z-index: 3;
+}
+
+.tile.is-resolving {
+  opacity: 0;
+}
+
+.tile-motion-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+}
+
+.tile-motion {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  transition: transform 170ms cubic-bezier(0.18, 0.88, 0.24, 1);
+  will-change: transform;
 }
 
 @keyframes tile-spawn {
