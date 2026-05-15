@@ -382,7 +382,10 @@ function slide(direction) {
 
       const to = line[nextIndex];
       entry.sources.forEach((source) => {
-        lineMoves.push({ from: source, to, value: source.value });
+        const changedCell = source.x !== to.x || source.y !== to.y;
+        if (entry.merged || changedCell) {
+          lineMoves.push({ from: source, to, value: source.value });
+        }
       });
 
       if (entry.merged) {
@@ -587,6 +590,7 @@ function animateTileMoves(moves, cellCenters, valuesBeforeMove, resolvingCells) 
     return;
   }
 
+  const motionDuration = 260;
   isAnimating = true;
   const boardRect = el.board.getBoundingClientRect();
   const tileRect = el.board.children[0]?.getBoundingClientRect();
@@ -612,19 +616,17 @@ function animateTileMoves(moves, cellCenters, valuesBeforeMove, resolvingCells) 
     clone.style.height = `${tileRect.height}px`;
     clone.style.left = `${fromCenter.x - boardRect.left - tileRect.width / 2}px`;
     clone.style.top = `${fromCenter.y - boardRect.top - tileRect.height / 2}px`;
-    clone.style.transitionDelay = `${index * 8}ms`;
     layer.appendChild(clone);
 
-    window.requestAnimationFrame(() => {
-      clone.style.transform = `translate(${toCenter.x - fromCenter.x}px, ${toCenter.y - fromCenter.y}px)`;
-    });
+    clone.getBoundingClientRect();
+    clone.style.transform = `translate(${toCenter.x - fromCenter.x}px, ${toCenter.y - fromCenter.y}px)`;
   });
 
   window.setTimeout(() => {
     layer.remove();
     revealResolvedTiles(resolvingCells);
     isAnimating = false;
-  }, 185);
+  }, motionDuration + 35);
 }
 
 function revealResolvedTiles(resolvingCells) {
@@ -662,22 +664,22 @@ function renderRelics() {
 }
 
 function handleKeydown(event) {
+  if (event.altKey || event.ctrlKey || event.metaKey) {
+    return;
+  }
+
   const keyMap = {
     ArrowUp: "up",
-    w: "up",
-    W: "up",
     ArrowDown: "down",
-    s: "down",
-    S: "down",
     ArrowLeft: "left",
-    a: "left",
-    A: "left",
     ArrowRight: "right",
-    d: "right",
-    D: "right"
+    w: "up",
+    s: "down",
+    a: "left",
+    d: "right"
   };
 
-  const direction = keyMap[event.key];
+  const direction = keyMap[event.key] || keyMap[event.key.toLowerCase()];
   if (!direction) {
     return;
   }
@@ -709,12 +711,6 @@ function setupTouch() {
     move(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "right" : "left") : (dy > 0 ? "down" : "up"));
   }, { passive: true });
 }
-
-document.querySelectorAll("[data-dir]").forEach((button) => {
-  button.addEventListener("click", () => {
-    move(button.dataset.dir);
-  });
-});
 
 document.addEventListener("keydown", handleKeydown);
 el.restart.addEventListener("click", newRun);
