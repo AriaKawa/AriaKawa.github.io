@@ -29,22 +29,22 @@ const BASE_STATS = {
 };
 
 const ITEMS = [
-  { id: "silk-band", name: "Silk Band", slot: "hat", cost: 4, className: "hat-band", stats: { speed: 1, crit: 2 }, color: "#ff6fae" },
-  { id: "tiny-crown", name: "Tiny Crown", slot: "hat", cost: 12, className: "hat-crown", stats: { hp: 4, crit: 5 }, color: "#ffd76b" },
-  { id: "mist-hood", name: "Mist Hood", slot: "hat", cost: 9, className: "hat-hood", stats: { defense: 2, speed: 1 }, color: "#68f4d5" },
-  { id: "velvet-cap", name: "Velvet Cap", slot: "hat", cost: 7, className: "hat-cap", stats: { hp: 3, defense: 1 }, color: "#76b8ff" },
-  { id: "quick-boots", name: "Quick Boots", slot: "boots", cost: 8, className: "boots-blue", stats: { speed: 3 }, color: "#76b8ff" },
-  { id: "lucky-boots", name: "Lucky Boots", slot: "boots", cost: 11, className: "boots-gold", stats: { speed: 1, crit: 6 }, color: "#ffd76b" },
-  { id: "moss-boots", name: "Moss Boots", slot: "boots", cost: 10, className: "boots-green", stats: { hp: 3, speed: 2 }, color: "#8df08f" },
-  { id: "iron-boots", name: "Iron Boots", slot: "boots", cost: 6, className: "boots-blue", stats: { defense: 2, speed: -1 }, color: "#aeb8c9" },
-  { id: "needle", name: "Needle", slot: "weapon", cost: 6, className: "weapon-ice", stats: { attack: 2, crit: 3 }, color: "#d7efff" },
-  { id: "matchstick", name: "Matchstick", slot: "weapon", cost: 15, className: "weapon-fire", stats: { attack: 3 }, element: "fire", color: "#ff7a2f" },
-  { id: "thorn-knife", name: "Thorn Knife", slot: "weapon", cost: 14, className: "weapon-poison", stats: { attack: 2, speed: 1 }, element: "poison", color: "#58f092" },
-  { id: "glass-rapier", name: "Glass Rapier", slot: "weapon", cost: 18, className: "weapon-ice", stats: { attack: 5, crit: 6, hp: -2 }, color: "#76b8ff" },
-  { id: "ember-charm", name: "Ember Charm", slot: "charm", cost: 13, className: "charm-fire", stats: { attack: 1, hp: 3 }, element: "fire", color: "#ff7a2f" },
-  { id: "venom-charm", name: "Venom Charm", slot: "charm", cost: 13, className: "charm-poison", stats: { speed: 1, defense: 1 }, element: "poison", color: "#58f092" },
-  { id: "moon-charm", name: "Moon Charm", slot: "charm", cost: 10, className: "charm-moon", stats: { hp: 6 }, color: "#b7c8ff" },
-  { id: "coin-charm", name: "Coin Charm", slot: "charm", cost: 5, className: "charm-coin", stats: { crit: 2 }, color: "#ffd76b" },
+  { id: "silk-band", name: "Silk Band", slot: "hat", cost: 4, sprite: 0, stats: { speed: 1, crit: 2 }, color: "#ff6fae" },
+  { id: "tiny-crown", name: "Tiny Crown", slot: "hat", cost: 12, sprite: 1, stats: { hp: 4, crit: 5 }, color: "#ffd76b" },
+  { id: "mist-hood", name: "Mist Hood", slot: "hat", cost: 9, sprite: 2, stats: { defense: 2, speed: 1 }, color: "#68f4d5" },
+  { id: "velvet-cap", name: "Velvet Cap", slot: "hat", cost: 7, sprite: 3, stats: { hp: 3, defense: 1 }, color: "#76b8ff" },
+  { id: "quick-boots", name: "Quick Boots", slot: "boots", cost: 8, sprite: 4, stats: { speed: 3 }, color: "#76b8ff" },
+  { id: "lucky-boots", name: "Lucky Boots", slot: "boots", cost: 11, sprite: 5, stats: { speed: 1, crit: 6 }, color: "#ffd76b" },
+  { id: "moss-boots", name: "Moss Boots", slot: "boots", cost: 10, sprite: 6, stats: { hp: 3, speed: 2 }, color: "#8df08f" },
+  { id: "iron-boots", name: "Iron Boots", slot: "boots", cost: 6, sprite: 7, stats: { defense: 2, speed: -1 }, color: "#aeb8c9" },
+  { id: "needle", name: "Needle", slot: "weapon", cost: 6, sprite: 8, stats: { attack: 2, crit: 3 }, color: "#d7efff" },
+  { id: "matchstick", name: "Matchstick", slot: "weapon", cost: 15, sprite: 9, stats: { attack: 3 }, element: "fire", color: "#ff7a2f" },
+  { id: "thorn-knife", name: "Thorn Knife", slot: "weapon", cost: 14, sprite: 10, stats: { attack: 2, speed: 1 }, element: "poison", color: "#58f092" },
+  { id: "glass-rapier", name: "Glass Rapier", slot: "weapon", cost: 18, sprite: 11, stats: { attack: 5, crit: 6, hp: -2 }, color: "#76b8ff" },
+  { id: "ember-charm", name: "Ember Charm", slot: "charm", cost: 13, sprite: 12, stats: { attack: 1, hp: 3 }, element: "fire", color: "#ff7a2f" },
+  { id: "venom-charm", name: "Venom Charm", slot: "charm", cost: 13, sprite: 13, stats: { speed: 1, defense: 1 }, element: "poison", color: "#58f092" },
+  { id: "moon-charm", name: "Moon Charm", slot: "charm", cost: 10, sprite: 14, stats: { hp: 6 }, color: "#b7c8ff" },
+  { id: "coin-charm", name: "Coin Charm", slot: "charm", cost: 5, sprite: 15, stats: { crit: 2 }, color: "#ffd76b" },
 ];
 
 const ITEM_BY_ID = Object.fromEntries(ITEMS.map((item) => [item.id, item]));
@@ -546,7 +546,9 @@ function renderShop() {
           const disabled = !item || me.money < item.cost || me.shopReady;
           return `
             <article class="shop-card">
-              <div class="item-art" style="--item-color:${item.color}"></div>
+              <div class="item-art" style="--item-color:${item.color}">
+                ${renderGearSprite(item, "item-sprite")}
+              </div>
               <div>
                 <span class="mini-label">${item.slot}</span>
                 <h3>${escapeHtml(item.name)}</h3>
@@ -680,10 +682,10 @@ function renderHostActions() {
 
 function renderRat(player, options = {}) {
   const ratIndex = clamp(Number(player.rat) || 0, 0, RATS.length - 1);
-  const col = ratIndex % 2;
-  const row = Math.floor(ratIndex / 2);
-  const x = col ? "100%" : "0%";
-  const y = row === 0 ? "0%" : row === 1 ? "33.333%" : row === 2 ? "66.666%" : "100%";
+  const col = ratIndex % 4;
+  const row = Math.floor(ratIndex / 4);
+  const x = spritePosition(col, 4);
+  const y = spritePosition(row, 2);
   const gear = player.gear || {};
   const hat = ITEM_BY_ID[gear.hat];
   const boots = ITEM_BY_ID[gear.boots];
@@ -696,12 +698,18 @@ function renderRat(player, options = {}) {
     <div class="${classes}" style="--rat-x:${x}; --rat-y:${y}">
       <div class="rat-photo"></div>
       ${element ? `<span class="effect-aura ${element}"></span>` : ""}
-      ${hat ? `<span class="gear gear-hat ${hat.className}"></span>` : ""}
-      ${boots ? `<span class="gear gear-boots ${boots.className}"></span>` : ""}
-      ${weapon ? `<span class="gear gear-weapon ${weapon.className}"></span>` : ""}
-      ${charm ? `<span class="gear gear-charm ${charm.className}"></span>` : ""}
+      ${hat ? renderGearSprite(hat, "gear-sprite gear-hat") : ""}
+      ${boots ? renderGearSprite(boots, "gear-sprite gear-boots") : ""}
+      ${weapon ? renderGearSprite(weapon, "gear-sprite gear-weapon") : ""}
+      ${charm ? renderGearSprite(charm, "gear-sprite gear-charm") : ""}
     </div>
   `;
+}
+
+function renderGearSprite(item, className) {
+  const col = item.sprite % 4;
+  const row = Math.floor(item.sprite / 4);
+  return `<span class="${className}" style="--gear-x:${spritePosition(col, 4)}; --gear-y:${spritePosition(row, 4)}"></span>`;
 }
 
 function selectRat(index) {
@@ -1805,6 +1813,13 @@ function showToast(message) {
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
+}
+
+function spritePosition(index, count) {
+  if (count <= 1) {
+    return "0%";
+  }
+  return `${(index / (count - 1)) * 100}%`;
 }
 
 function escapeHtml(value) {

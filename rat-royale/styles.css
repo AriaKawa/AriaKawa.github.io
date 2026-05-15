@@ -188,7 +188,7 @@ a {
   border-radius: 38px;
   background:
     linear-gradient(rgba(7, 9, 16, 0.12), rgba(7, 9, 16, 0.68)),
-    url("assets/rat-sheet.png") center / cover no-repeat;
+    url("assets/rat-body-sheet.png") center / cover no-repeat;
   border: 1px solid var(--line);
   display: flex;
   align-items: flex-end;
@@ -274,7 +274,7 @@ a {
   background: rgba(255, 255, 255, 0.07);
   padding: 0.65rem;
   display: grid;
-  grid-template-columns: 52px 1fr;
+  grid-template-columns: 54px 1fr;
   gap: 0.65rem;
   align-items: center;
 }
@@ -357,7 +357,8 @@ a {
 
 .rat-focus .rat-render {
   width: 100%;
-  min-height: 290px;
+  aspect-ratio: 1 / 1.45;
+  min-height: 360px;
 }
 
 .rat-caption {
@@ -431,7 +432,7 @@ a {
 
 .rat-option .rat-render {
   width: 100%;
-  height: 148px;
+  height: 178px;
 }
 
 .rat-option strong {
@@ -444,6 +445,7 @@ a {
   position: relative;
   isolation: isolate;
   overflow: hidden;
+  aspect-ratio: 1 / 1.45;
   background:
     radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.15), transparent 28%),
     linear-gradient(155deg, rgba(104, 244, 213, 0.12), rgba(255, 111, 174, 0.1));
@@ -453,8 +455,8 @@ a {
   position: absolute;
   inset: 0;
   z-index: 1;
-  background-image: url("assets/rat-sheet.png");
-  background-size: 200% 400%;
+  background-image: url("assets/rat-body-sheet.png");
+  background-size: 400% 200%;
   background-position: var(--rat-x, 0%) var(--rat-y, 0%);
   background-repeat: no-repeat;
   filter: saturate(1.03) contrast(1.04);
@@ -470,8 +472,8 @@ a {
 }
 
 .rat-small {
-  width: 52px;
-  height: 52px;
+  width: 54px;
+  height: 68px;
   border-radius: 18px;
 }
 
@@ -594,6 +596,66 @@ a {
 
 .charm-poison {
   background: radial-gradient(circle, #eaffb6 0 18%, #58f092 19% 62%, rgba(88, 240, 146, 0.28) 64%);
+}
+
+.gear-sprite,
+.item-sprite {
+  position: absolute;
+  display: block;
+  background-image: url("assets/gear-sheet.png");
+  background-repeat: no-repeat;
+  background-size: 400% 400%;
+  background-position: var(--gear-x, 0%) var(--gear-y, 0%);
+  pointer-events: none;
+}
+
+.gear-sprite {
+  z-index: 6;
+  background-color: transparent;
+  border: 0;
+  box-shadow: none;
+  filter: drop-shadow(0 9px 10px rgba(0, 0, 0, 0.38));
+  transform: none;
+  clip-path: none;
+}
+
+.gear-sprite::before,
+.gear-sprite::after {
+  content: none !important;
+}
+
+.gear-hat {
+  left: 29%;
+  top: 4%;
+  width: 42%;
+  height: 18%;
+}
+
+.gear-boots {
+  left: 12%;
+  bottom: 5%;
+  width: 76%;
+  height: 16%;
+  z-index: 7;
+}
+
+.gear-weapon {
+  right: -2%;
+  bottom: 22%;
+  width: 60%;
+  height: 36%;
+  border-radius: 0;
+  transform: none;
+  transform-origin: center;
+}
+
+.gear-charm {
+  left: 32%;
+  top: 39%;
+  width: 36%;
+  height: 22%;
+  aspect-ratio: auto;
+  border-radius: 0;
 }
 
 .effect-aura {
@@ -729,7 +791,7 @@ a {
 }
 
 .item-art {
-  height: 72px;
+  height: 104px;
   border-radius: 22px;
   background:
     radial-gradient(circle at 35% 45%, rgba(255, 255, 255, 0.24), transparent 3rem),
@@ -742,10 +804,18 @@ a {
 .item-art::before {
   content: "";
   position: absolute;
-  inset: 22% 30%;
+  inset: 20% 24%;
   border-radius: 999px;
   background: var(--item-color, var(--mint));
+  opacity: 0.16;
+  filter: blur(18px);
   box-shadow: 0 0 28px var(--item-color, var(--mint));
+}
+
+.item-sprite {
+  inset: 3% 18%;
+  z-index: 2;
+  filter: drop-shadow(0 12px 15px rgba(0, 0, 0, 0.42));
 }
 
 .shop-card h3,
@@ -790,7 +860,7 @@ a {
 }
 
 .combat-card .rat-render {
-  height: 210px;
+  height: 260px;
 }
 
 .combat-card.is-winner {
@@ -847,7 +917,7 @@ a {
 }
 
 .leader .rat-render {
-  height: 180px;
+  height: 230px;
 }
 
 .leader-body {
