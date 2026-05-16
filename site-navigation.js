@@ -7,6 +7,7 @@
     "in-progress.html": "index.html",
 
     "2048-rogue/index.html": "games.html",
+    "nightbound-survivors/index.html": "games.html",
     "rat-royale/index.html": "games.html",
     "isekai-reign.html": "games.html",
     "grid-runners/index.html": "games.html",
