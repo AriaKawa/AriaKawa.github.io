@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Nightbound Auto-Battler</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="game-shell">
+      <canvas id="gameCanvas" aria-label="Nightbound Auto-Battler game field"></canvas>
+
+      <header class="topbar">
+        <a class="back-link" href="../games.html" aria-label="Back to games">Back</a>
+        <div class="brand">
+          <span>AI gothic survival lab</span>
+          <h1>Nightbound Auto-Battler</h1>
+        </div>
+        <button class="pause-button" id="pauseButton" type="button">Pause</button>
+      </header>
+
+      <section class="hud hud-left" aria-label="Run stats">
+        <div class="stat">
+          <span>Time</span>
+          <strong id="timeReadout">00:00</strong>
+        </div>
+        <div class="stat">
+          <span>Level</span>
+          <strong id="levelReadout">1</strong>
+        </div>
+        <div class="stat">
+          <span>Run Kills</span>
+          <strong id="killsReadout">0</strong>
+        </div>
+      </section>
+
+      <section class="hud hud-right" aria-label="Player status">
+        <div class="health">
+          <span>Blood</span>
+          <strong id="healthReadout">100 / 100</strong>
+          <i><b id="healthFill"></b></i>
+        </div>
+        <div class="health xp">
+          <span>Moonlight</span>
+          <strong id="xpReadout">0 / 8</strong>
+          <i><b id="xpFill"></b></i>
+        </div>
+      </section>
+
+      <section class="loadout" id="loadout" aria-label="Weapons"></section>
+
+      <section class="records" aria-label="Records">
+        <span>Best Run</span>
+        <strong id="bestReadout">00:00</strong>
+        <span id="winsReadout">0 wins</span>
+      </section>
+
+      <section class="shop-panel" aria-label="Auto shop">
+        <div class="shop-head">
+          <div>
+            <span>Vault</span>
+            <strong id="moneyReadout">$0</strong>
+          </div>
+          <div>
+            <span>Total Kills</span>
+            <strong id="lifetimeKillsReadout">0</strong>
+          </div>
+        </div>
+        <p id="strategyReadout">AI waits for the bell.</p>
+        <div class="shop-list" id="shopList"></div>
+        <div class="upgrade-log" id="upgradeLog"></div>
+      </section>
+
+      <section class="boss-banner" id="bossBanner" hidden>
+        <span>Blood moon rising</span>
+        <strong id="bossName">The Bellkeeper</strong>
+      </section>
+
+      <section class="overlay" id="startOverlay">
+        <div class="modal">
+          <p class="eyebrow">Run protocol</p>
+          <h2>Let the build fight.</h2>
+          <p>The hunter moves, drafts upgrades, shops, dies, spends the winnings, and starts again until the night learns fear.</p>
+          <div class="modal-actions">
+            <button class="primary" id="startButton" type="button">Start Simulation</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="overlay" id="upgradeOverlay" hidden>
+        <div class="modal upgrade-modal">
+          <p class="eyebrow">Level <span id="draftLevel">2</span></p>
+          <h2>AI drafting...</h2>
+          <div class="choices" id="upgradeChoices"></div>
+        </div>
+      </section>
+
+      <section class="overlay" id="endOverlay" hidden>
+        <div class="modal">
+          <p class="eyebrow" id="endEyebrow">Run ended</p>
+          <h2 id="endTitle">The courtyard goes quiet.</h2>
+          <p id="endBody"></p>
+          <div class="summary-grid">
+            <div>
+              <span>Time</span>
+              <strong id="endTime">00:00</strong>
+            </div>
+            <div>
+              <span>Kills</span>
+              <strong id="endKills">0</strong>
+            </div>
+            <div>
+              <span>Level</span>
+              <strong id="endLevel">1</strong>
+            </div>
+          </div>
+          <div class="modal-actions">
+            <button class="primary" id="restartButton" type="button">Restart Loop</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="game.js"></script>
+    <script src="../site-navigation.js"></script>
+  </body>
+</html>
