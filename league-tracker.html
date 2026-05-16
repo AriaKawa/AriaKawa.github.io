@@ -300,7 +300,7 @@
         <button id="saveRiotId" type="button">Save Riot ID</button>
         <a id="openOpgg" class="pill-button" href="https://op.gg/" target="_blank" rel="noreferrer">Open OP.GG</a>
       </div>
-      <textarea id="opggPaste" placeholder="Paste OP.GG Arena match history text here, then import. Matches that say #1, 1st, First, or Place 1 will mark that champion."></textarea>
+      <textarea id="opggPaste" placeholder="Paste copied OP.GG Arena match history text here, then import. A profile URL alone cannot be imported."></textarea>
       <div class="opgg-actions">
         <button id="importOpgg" type="button" disabled>Import 1st-place Arena champs</button>
         <button id="clearOpggPaste" type="button">Clear paste</button>
@@ -735,8 +735,31 @@
       return grouped.length > 0 ? grouped : [normalized];
     }
 
+    function isOnlyOpggUrl(text) {
+      const withoutUrls = text
+        .replace(/https?:\/\/(?:www\.)?op\.gg\/\S+/gi, "")
+        .trim();
+      return withoutUrls.length === 0 && /\bop\.gg\//i.test(text);
+    }
+
     function blockHasFirstPlace(block) {
-      return /(?:#\s*1\b|\b1\s*st\b|\b1\s*place\b|\bplace\s*[:#]?\s*1\b|\brank\s*[:#]?\s*1\b|\bfirst\s+place\b)/i.test(block);
+      const text = block.replace(/\u00a0/g, " ");
+      if (/(?:#\s*1\b|\b1\s*st\b|\b1\s*place\b|\btop\s*1\b|\bplace(?:d|ment)?\s*[:#]?\s*1\b|\brank(?:ed|ing)?\s*[:#]?\s*1\b|\bfirst\s+place\b)/i.test(text)) {
+        return true;
+      }
+
+      const lines = text
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean);
+
+      return lines.some((line, index) => {
+        if (!/^#?\s*1\s*$/.test(line)) {
+          return false;
+        }
+        const nearby = lines.slice(Math.max(0, index - 2), index + 3).join(" ");
+        return /\b(?:arena|place|placed|placement|rank|ranked|ranking|result|finish|finished)\b/i.test(nearby);
+      });
     }
 
     function findChampionInBlock(block, matchers) {
@@ -762,6 +785,10 @@
         setOpggMessage("Paste copied Arena match text first.", true);
         return;
       }
+      if (isOnlyOpggUrl(rawText)) {
+        setOpggMessage("That is only an OP.GG URL. Open it, copy the Arena match rows/text, then paste that here.", true);
+        return;
+      }
       if (!Array.isArray(champsList) || champsList.length === 0) {
         setOpggMessage("Champion data is still loading.", true);
         return;
@@ -772,6 +799,8 @@
       const blocks = splitMatchBlocks(rawText);
       const imported = [];
       const pasteMentionsArena = /\barena\b/i.test(rawText);
+      let firstPlaceBlocks = 0;
+      let unmatchedFirstPlaceBlocks = 0;
 
       blocks.forEach((block) => {
         const mentionsArena = pasteMentionsArena || /\barena\b/i.test(block);
@@ -779,8 +808,13 @@
           return;
         }
 
+        firstPlaceBlocks += 1;
         const champ = findChampionInBlock(block, matchers);
-        if (champ && !checked.has(champ.id)) {
+        if (!champ) {
+          unmatchedFirstPlaceBlocks += 1;
+          return;
+        }
+        if (!checked.has(champ.id)) {
           checked.add(champ.id);
           imported.push(champ.name);
         }
@@ -794,7 +828,17 @@
         return;
       }
 
-      setOpggMessage("No new #1 Arena champions found in that paste.", true);
+      if (firstPlaceBlocks > 0 && unmatchedFirstPlaceBlocks === firstPlaceBlocks) {
+        setOpggMessage("Found #1 Arena rows, but could not match their champion names. Copy a little more of each match row and try again.", true);
+        return;
+      }
+
+      if (firstPlaceBlocks > 0) {
+        setOpggMessage("Those #1 Arena champions are already marked.", true);
+        return;
+      }
+
+      setOpggMessage("No #1 Arena match rows found in that paste.", true);
     }
 
     async function loadChamps() {

@@ -446,6 +446,26 @@ a {
   isolation: isolate;
   overflow: hidden;
   aspect-ratio: 1 / 1.45;
+  --fit-hat-left: 25%;
+  --fit-hat-top: 5%;
+  --fit-hat-width: 50%;
+  --fit-hat-height: 17%;
+  --fit-left-boot-left: 3%;
+  --fit-left-boot-top: 73%;
+  --fit-left-boot-width: 34%;
+  --fit-left-boot-height: 17%;
+  --fit-right-boot-left: 57%;
+  --fit-right-boot-top: 73%;
+  --fit-right-boot-width: 37%;
+  --fit-right-boot-height: 17%;
+  --fit-weapon-left: 50%;
+  --fit-weapon-top: 26%;
+  --fit-weapon-width: 43%;
+  --fit-weapon-height: 33%;
+  --fit-charm-left: 29%;
+  --fit-charm-top: 28%;
+  --fit-charm-width: 42%;
+  --fit-charm-height: 24%;
   background:
     radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.15), transparent 28%),
     linear-gradient(155deg, rgba(104, 244, 213, 0.12), rgba(255, 111, 174, 0.1));
@@ -615,7 +635,7 @@ a {
   border: 0;
   box-shadow: none;
   filter: drop-shadow(0 9px 10px rgba(0, 0, 0, 0.38));
-  transform: none;
+  transform: translate(var(--item-fit-x, 0), var(--item-fit-y, 0)) rotate(var(--item-rotate, 0deg));
   clip-path: none;
 }
 
@@ -625,37 +645,211 @@ a {
 }
 
 .gear-hat {
-  left: 29%;
-  top: 4%;
-  width: 42%;
-  height: 18%;
-}
-
-.gear-boots {
-  left: 12%;
-  bottom: 5%;
-  width: 76%;
-  height: 16%;
+  left: var(--fit-hat-left);
+  top: var(--fit-hat-top);
+  right: auto;
+  bottom: auto;
+  width: var(--fit-hat-width);
+  height: var(--fit-hat-height);
+  background-position: center;
+  background-size: contain;
   z-index: 7;
 }
 
-.gear-weapon {
-  right: -2%;
-  bottom: 22%;
-  width: 60%;
-  height: 36%;
-  border-radius: 0;
+.gear-boots {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  pointer-events: none;
   transform: none;
-  transform-origin: center;
+}
+
+.gear-boot {
+  position: absolute;
+  display: block;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  filter: drop-shadow(0 8px 8px rgba(0, 0, 0, 0.42));
+  transform: translate(var(--boot-fit-x, 0), var(--boot-fit-y, 0)) rotate(var(--boot-rotate, 0deg));
+  transform-origin: center bottom;
+}
+
+.gear-boot-left {
+  left: var(--fit-left-boot-left);
+  top: var(--fit-left-boot-top);
+  width: var(--fit-left-boot-width);
+  height: var(--fit-left-boot-height);
+}
+
+.gear-boot-right {
+  left: var(--fit-right-boot-left);
+  top: var(--fit-right-boot-top);
+  width: var(--fit-right-boot-width);
+  height: var(--fit-right-boot-height);
+}
+
+.gear-weapon {
+  left: var(--fit-weapon-left);
+  top: var(--fit-weapon-top);
+  right: auto;
+  bottom: auto;
+  width: var(--fit-weapon-width);
+  height: var(--fit-weapon-height);
+  background-position: center;
+  background-size: contain;
+  border-radius: 0;
+  transform-origin: 26% 74%;
+  z-index: 4;
 }
 
 .gear-charm {
-  left: 32%;
-  top: 39%;
-  width: 36%;
-  height: 22%;
+  left: var(--fit-charm-left);
+  top: var(--fit-charm-top);
+  right: auto;
+  bottom: auto;
+  width: var(--fit-charm-width);
+  height: var(--fit-charm-height);
+  background-position: center;
+  background-size: contain;
   aspect-ratio: auto;
   border-radius: 0;
+  z-index: 7;
+}
+
+.gear-hat.item-silk-band {
+  background-image: url("assets/equipped-sprites/silk-band.png");
+  --item-fit-x: -1%;
+  --item-fit-y: 1%;
+}
+
+.gear-hat.item-tiny-crown {
+  background-image: url("assets/equipped-sprites/tiny-crown.png");
+  --item-fit-x: 0%;
+  --item-fit-y: 0%;
+}
+
+.gear-hat.item-mist-hood {
+  background-image: url("assets/equipped-sprites/mist-hood.png");
+  --item-fit-x: 0%;
+  --item-fit-y: 0%;
+  width: 50%;
+  height: 17%;
+}
+
+.gear-hat.item-velvet-cap {
+  background-image: url("assets/equipped-sprites/velvet-cap.png");
+  --item-fit-x: 0%;
+  --item-fit-y: 1%;
+  width: 52%;
+  height: 17%;
+}
+
+.item-quick-boots .gear-boot-left {
+  background-image: url("assets/boot-sprites/quick-boots-left.png");
+  --boot-fit-x: -2%;
+  --boot-fit-y: 0%;
+  --boot-rotate: -3deg;
+}
+
+.item-quick-boots .gear-boot-right {
+  background-image: url("assets/boot-sprites/quick-boots-right.png");
+  --boot-fit-x: 0%;
+  --boot-fit-y: 0%;
+  --boot-rotate: 2deg;
+}
+
+.item-lucky-boots .gear-boot-left {
+  background-image: url("assets/boot-sprites/lucky-boots-left.png");
+  --boot-fit-x: -1%;
+  --boot-fit-y: 0%;
+  --boot-rotate: -2deg;
+}
+
+.item-lucky-boots .gear-boot-right {
+  background-image: url("assets/boot-sprites/lucky-boots-right.png");
+  --boot-fit-x: 1%;
+  --boot-fit-y: 0%;
+  --boot-rotate: 2deg;
+}
+
+.item-moss-boots .gear-boot-left {
+  background-image: url("assets/boot-sprites/moss-boots-left.png");
+  --boot-fit-x: -1%;
+  --boot-fit-y: -1%;
+  --boot-rotate: -2deg;
+}
+
+.item-moss-boots .gear-boot-right {
+  background-image: url("assets/boot-sprites/moss-boots-right.png");
+  --boot-fit-x: 1%;
+  --boot-fit-y: -1%;
+  --boot-rotate: 2deg;
+}
+
+.item-iron-boots .gear-boot-left {
+  background-image: url("assets/boot-sprites/iron-boots-left.png");
+  --boot-fit-x: -1%;
+  --boot-fit-y: -1%;
+  --boot-rotate: -2deg;
+}
+
+.item-iron-boots .gear-boot-right {
+  background-image: url("assets/boot-sprites/iron-boots-right.png");
+  --boot-fit-x: 1%;
+  --boot-fit-y: -1%;
+  --boot-rotate: 2deg;
+}
+
+.gear-weapon.item-needle {
+  background-image: url("assets/equipped-sprites/needle.png");
+  --item-fit-x: -10%;
+  --item-fit-y: 8%;
+  --item-rotate: -2deg;
+}
+
+.gear-weapon.item-matchstick {
+  background-image: url("assets/equipped-sprites/matchstick.png");
+  --item-fit-x: -11%;
+  --item-fit-y: 10%;
+  --item-rotate: -4deg;
+}
+
+.gear-weapon.item-thorn-knife {
+  background-image: url("assets/equipped-sprites/thorn-knife.png");
+  --item-fit-x: -9%;
+  --item-fit-y: 8%;
+  --item-rotate: -2deg;
+}
+
+.gear-weapon.item-glass-rapier {
+  background-image: url("assets/equipped-sprites/glass-rapier.png");
+  --item-fit-x: 0%;
+  --item-fit-y: 0%;
+  --item-rotate: -2deg;
+}
+
+.gear-charm.item-ember-charm,
+.gear-charm.item-venom-charm,
+.gear-charm.item-moon-charm,
+.gear-charm.item-coin-charm {
+  --item-fit-y: 2%;
+}
+
+.gear-charm.item-ember-charm {
+  background-image: url("assets/equipped-sprites/ember-charm.png");
+}
+
+.gear-charm.item-venom-charm {
+  background-image: url("assets/equipped-sprites/venom-charm.png");
+}
+
+.gear-charm.item-moon-charm {
+  background-image: url("assets/equipped-sprites/moon-charm.png");
+}
+
+.gear-charm.item-coin-charm {
+  background-image: url("assets/equipped-sprites/coin-charm.png");
 }
 
 .effect-aura {

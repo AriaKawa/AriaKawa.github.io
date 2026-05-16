@@ -699,17 +699,26 @@ function renderRat(player, options = {}) {
       <div class="rat-photo"></div>
       ${element ? `<span class="effect-aura ${element}"></span>` : ""}
       ${hat ? renderGearSprite(hat, "gear-sprite gear-hat") : ""}
-      ${boots ? renderGearSprite(boots, "gear-sprite gear-boots") : ""}
+      ${boots ? renderBootSprites(boots) : ""}
       ${weapon ? renderGearSprite(weapon, "gear-sprite gear-weapon") : ""}
       ${charm ? renderGearSprite(charm, "gear-sprite gear-charm") : ""}
     </div>
   `;
 }
 
+function renderBootSprites(item) {
+  return `
+    <span class="gear-boots item-${item.id}" aria-hidden="true">
+      <span class="gear-boot gear-boot-left"></span>
+      <span class="gear-boot gear-boot-right"></span>
+    </span>
+  `;
+}
+
 function renderGearSprite(item, className) {
   const col = item.sprite % 4;
   const row = Math.floor(item.sprite / 4);
-  return `<span class="${className}" style="--gear-x:${spritePosition(col, 4)}; --gear-y:${spritePosition(row, 4)}"></span>`;
+  return `<span class="${className} item-${item.id}" style="--gear-x:${spritePosition(col, 4)}; --gear-y:${spritePosition(row, 4)}" aria-hidden="true"></span>`;
 }
 
 function selectRat(index) {
