@@ -34,9 +34,9 @@
         </div>
       </section>
 
-      <section class="hud hud-right" aria-label="Player status">
+      <section class="hud hud-right" aria-label="Team status">
         <div class="health">
-          <span>Blood</span>
+          <span>Team Blood</span>
           <strong id="healthReadout">100 / 100</strong>
           <i><b id="healthFill"></b></i>
         </div>
@@ -78,12 +78,26 @@
 
       <section class="overlay" id="startOverlay">
         <div class="modal">
-          <p class="eyebrow">Run protocol</p>
-          <h2>Let the build fight.</h2>
-          <p>The hunter moves, drafts upgrades, shops, dies, spends the winnings, and starts again until the night learns fear.</p>
-          <div class="modal-actions">
-            <button class="primary" id="startButton" type="button">Start Simulation</button>
+          <p class="eyebrow">Firebase room</p>
+          <h2>Build a shared run.</h2>
+          <p>Create a room or join one. Each player gets an AI survivor, XP is shared, and every level-up drafts upgrades for all active AIs at once.</p>
+          <div class="room-form">
+            <label>
+              <span>Name</span>
+              <input id="playerNameInput" maxlength="18" placeholder="Aria">
+            </label>
+            <label>
+              <span>Room Code</span>
+              <input id="roomCodeInput" maxlength="6" placeholder="MOON42">
+            </label>
           </div>
+          <div class="modal-actions">
+            <button class="primary" id="createRoomButton" type="button">Create Room</button>
+            <button class="secondary" id="joinRoomButton" type="button">Join Room</button>
+            <button class="primary" id="startButton" type="button" hidden>Start Match</button>
+          </div>
+          <div class="room-status" id="roomStatus">Connecting to Firebase...</div>
+          <div class="players-list" id="playersList"></div>
         </div>
       </section>
 
@@ -121,7 +135,7 @@
       </section>
     </main>
 
-    <script src="game.js"></script>
+    <script type="module" src="game.js"></script>
     <script src="../site-navigation.js"></script>
   </body>
 </html>
