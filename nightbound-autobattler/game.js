@@ -46,7 +46,7 @@ const ui = {
 const TAU = Math.PI * 2;
 const WORLD = { width: 3600, height: 2600 };
 const RUN_DURATION = 600;
-const ROOM_COLLECTION = "nightboundAutobattlerRooms";
+const ROOM_COLLECTION = "rooms";
 const PLAYER_COLORS = ["#49f4ff", "#ff4f87", "#77ff9b", "#ffd166"];
 const bossSchedule = [
   { at: 120, name: "The Bellkeeper" },
@@ -158,8 +158,8 @@ function cleanName() {
 
 function makeRoomCode() {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let code = "";
-  for (let i = 0; i < 6; i += 1) code += alphabet[Math.floor(Math.random() * alphabet.length)];
+  let code = "NB";
+  for (let i = 0; i < 4; i += 1) code += alphabet[Math.floor(Math.random() * alphabet.length)];
   return code;
 }
 
@@ -171,6 +171,7 @@ async function createRoom() {
   roomRef = services.firestore.doc(services.db, ROOM_COLLECTION, code);
   await services.firestore.setDoc(roomRef, {
     code,
+    gameType: "nightbound-autobattler",
     hostId: clientId,
     status: "lobby",
     maxPlayers: 4,
