@@ -1,4 +1,7 @@
-import { getFirebaseServices, hasFirebaseConfig } from "../assets/js/firebase-client.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+import { getDatabase, get, onValue, ref, update } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-database.js";
+import { firebaseConfig } from "../assets/js/firebase-config.js";
 
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
@@ -46,7 +49,7 @@ const ui = {
 const TAU = Math.PI * 2;
 const WORLD = { width: 3600, height: 2600 };
 const RUN_DURATION = 600;
-const ROOM_COLLECTION = "rooms";
+const ROOM_COLLECTION = "tables";
 const PLAYER_COLORS = ["#49f4ff", "#ff4f87", "#77ff9b", "#ffd166"];
 const bossSchedule = [
   { at: 120, name: "The Bellkeeper" },
@@ -121,6 +124,10 @@ function resize() {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 
+function hasFirebaseConfig() {
+  return Boolean(firebaseConfig.apiKey && firebaseConfig.databaseURL && firebaseConfig.projectId && firebaseConfig.appId);
+}
+
 async function boot() {
   resize();
   window.addEventListener("resize", resize);
@@ -135,7 +142,10 @@ async function boot() {
   if (!hasFirebaseConfig()) {
     ui.roomStatus.textContent = "Firebase config missing.";
   } else {
-    services = await getFirebaseServices();
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    await signInAnonymously(auth);
+    services = { auth, db: getDatabase(app) };
     ui.roomStatus.textContent = "Firebase ready. Create a room or join a friend.";
   }
 
@@ -168,18 +178,20 @@ async function createRoom() {
   setStatus("Creating Firebase room...");
   const code = makeRoomCode();
   const player = makeRoomPlayer(cleanName(), 0);
-  roomRef = services.firestore.doc(services.db, ROOM_COLLECTION, code);
-  await services.firestore.setDoc(roomRef, {
+  roomRef = ref(services.db, `${ROOM_COLLECTION}/${code}`);
+  await update(ref(services.db), {
+    [`${ROOM_COLLECTION}/${code}`]: {
     code,
     gameType: "nightbound-autobattler",
     hostId: clientId,
     status: "lobby",
     maxPlayers: 4,
-    createdAt: services.firestore.serverTimestamp(),
-    updatedAt: services.firestore.serverTimestamp(),
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
     players: { [clientId]: player },
     snapshot: null,
     eventLog: [`${player.name} created room ${code}.`]
+    }
   });
   connectRoom(code);
 }
@@ -189,18 +201,18 @@ async function joinRoom() {
   const code = ui.roomCodeInput.value.trim().toUpperCase();
   if (!code) return setStatus("Enter a room code first.");
   setStatus(`Joining room ${code}...`);
-  const ref = services.firestore.doc(services.db, ROOM_COLLECTION, code);
-  const snap = await services.firestore.getDoc(ref);
+  const targetRef = ref(services.db, `${ROOM_COLLECTION}/${code}`);
+  const snap = await get(targetRef);
   if (!snap.exists()) return setStatus("Room not found.");
-  const room = snap.data();
+  const room = snap.val();
   const players = room.players || {};
   if (!players[clientId] && Object.keys(players).length >= 4) return setStatus("That room already has 4 players.");
   const player = makeRoomPlayer(cleanName(), Object.keys(players).length);
-  await services.firestore.updateDoc(ref, {
-    [`players.${clientId}`]: Object.assign({}, players[clientId] || {}, player),
-    updatedAt: services.firestore.serverTimestamp()
+  await update(ref(services.db), {
+    [`${ROOM_COLLECTION}/${code}/players/${clientId}`]: Object.assign({}, players[clientId] || {}, player),
+    [`${ROOM_COLLECTION}/${code}/updatedAt`]: Date.now()
   });
-  roomRef = ref;
+  roomRef = targetRef;
   connectRoom(code);
 }
 
@@ -223,13 +235,13 @@ function connectRoom(code) {
   url.searchParams.set("room", code);
   history.replaceState(null, "", url);
   if (unsubscribeRoom) unsubscribeRoom();
-  roomRef = services.firestore.doc(services.db, ROOM_COLLECTION, code);
-  unsubscribeRoom = services.firestore.onSnapshot(roomRef, (snap) => {
+  roomRef = ref(services.db, `${ROOM_COLLECTION}/${code}`);
+  unsubscribeRoom = onValue(roomRef, (snap) => {
     if (!snap.exists()) {
       setStatus("Room disappeared.");
       return;
     }
-    state.remoteRoom = snap.data();
+    state.remoteRoom = snap.val();
     state.isHost = state.remoteRoom.hostId === clientId;
     handleRoomUpdate();
   }, (error) => setStatus(error.message));
@@ -279,12 +291,12 @@ function renderPlayersList(players, hostId) {
 async function startMatch() {
   if (!state.isHost || !state.remoteRoom) return;
   startLocalSimulation(state.remoteRoom);
-  await services.firestore.updateDoc(roomRef, {
-    status: "playing",
-    startedAt: Date.now(),
-    snapshot: compactSnapshot(state.sim),
-    eventLog: [`Room ${state.roomCode} started with ${state.sim.players.length} AI survivors.`],
-    updatedAt: services.firestore.serverTimestamp()
+  await update(ref(services.db), {
+    [`${ROOM_COLLECTION}/${state.roomCode}/status`]: "playing",
+    [`${ROOM_COLLECTION}/${state.roomCode}/startedAt`]: Date.now(),
+    [`${ROOM_COLLECTION}/${state.roomCode}/snapshot`]: compactSnapshot(state.sim),
+    [`${ROOM_COLLECTION}/${state.roomCode}/eventLog`]: [`Room ${state.roomCode} started with ${state.sim.players.length} AI survivors.`],
+    [`${ROOM_COLLECTION}/${state.roomCode}/updatedAt`]: Date.now()
   });
 }
 
@@ -860,16 +872,16 @@ async function publishEnded(sim, won) {
   if (!state.isHost || !roomRef) return;
   const playersUpdate = {};
   sim.players.forEach((player) => {
-    playersUpdate[`players.${player.id}.money`] = Math.round(player.money);
-    playersUpdate[`players.${player.id}.lifetimeKills`] = player.lifetimeKills;
-    playersUpdate[`players.${player.id}.shop`] = player.shop;
+    playersUpdate[`${ROOM_COLLECTION}/${state.roomCode}/players/${player.id}/money`] = Math.round(player.money);
+    playersUpdate[`${ROOM_COLLECTION}/${state.roomCode}/players/${player.id}/lifetimeKills`] = player.lifetimeKills;
+    playersUpdate[`${ROOM_COLLECTION}/${state.roomCode}/players/${player.id}/shop`] = player.shop;
   });
-  await services.firestore.updateDoc(roomRef, Object.assign(playersUpdate, {
-    status: "lobby",
-    snapshot: compactSnapshot(sim),
-    lastResult: won ? "victory" : "wipe",
-    eventLog: sim.eventLog.slice(0, 8),
-    updatedAt: services.firestore.serverTimestamp()
+  await update(ref(services.db), Object.assign(playersUpdate, {
+    [`${ROOM_COLLECTION}/${state.roomCode}/status`]: "lobby",
+    [`${ROOM_COLLECTION}/${state.roomCode}/snapshot`]: compactSnapshot(sim),
+    [`${ROOM_COLLECTION}/${state.roomCode}/lastResult`]: won ? "victory" : "wipe",
+    [`${ROOM_COLLECTION}/${state.roomCode}/eventLog`]: sim.eventLog.slice(0, 8),
+    [`${ROOM_COLLECTION}/${state.roomCode}/updatedAt`]: Date.now()
   }));
   state.sim = null;
   setTimeout(() => {
@@ -905,10 +917,10 @@ function maybePublishSnapshot() {
   const now = performance.now();
   if (!roomRef || now - state.lastSnapshotWrite < 260) return;
   state.lastSnapshotWrite = now;
-  services.firestore.updateDoc(roomRef, {
-    snapshot: compactSnapshot(state.sim),
-    eventLog: state.sim.eventLog.slice(0, 8),
-    updatedAt: services.firestore.serverTimestamp()
+  update(ref(services.db), {
+    [`${ROOM_COLLECTION}/${state.roomCode}/snapshot`]: compactSnapshot(state.sim),
+    [`${ROOM_COLLECTION}/${state.roomCode}/eventLog`]: state.sim.eventLog.slice(0, 8),
+    [`${ROOM_COLLECTION}/${state.roomCode}/updatedAt`]: Date.now()
   }).catch(() => {});
 }
 
