@@ -7,16 +7,16 @@ const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
 const ui = {
-  time: document.getElementById("timeReadout"),
   level: document.getElementById("levelReadout"),
   kills: document.getElementById("killsReadout"),
-  health: document.getElementById("healthReadout"),
-  healthFill: document.getElementById("healthFill"),
-  xp: document.getElementById("xpReadout"),
   xpFill: document.getElementById("xpFill"),
-  loadout: document.getElementById("loadout"),
-  best: document.getElementById("bestReadout"),
-  wins: document.getElementById("winsReadout"),
+  buildButton: document.getElementById("buildButton"),
+  upgradesButton: document.getElementById("upgradesButton"),
+  buildDrawer: document.getElementById("buildDrawer"),
+  upgradesDrawer: document.getElementById("upgradesDrawer"),
+  closeBuildButton: document.getElementById("closeBuildButton"),
+  closeUpgradesButton: document.getElementById("closeUpgradesButton"),
+  buildList: document.getElementById("buildList"),
   money: document.getElementById("moneyReadout"),
   lifetimeKills: document.getElementById("lifetimeKillsReadout"),
   strategy: document.getElementById("strategyReadout"),
@@ -44,13 +44,11 @@ const ui = {
   bossName: document.getElementById("bossName"),
   pauseButton: document.getElementById("pauseButton"),
   followButton: document.getElementById("followButton"),
-  zoomInButton: document.getElementById("zoomInButton"),
-  zoomOutButton: document.getElementById("zoomOutButton"),
   restartButton: document.getElementById("restartButton")
 };
 
 const TAU = Math.PI * 2;
-const WORLD = { width: 3600, height: 2600 };
+const WORLD = { width: 5200, height: 3800 };
 const RUN_DURATION = 600;
 const ROOM_COLLECTION = "tables";
 const PLAYER_COLORS = ["#49f4ff", "#ff4f87", "#77ff9b", "#ffd166"];
@@ -104,8 +102,10 @@ let renderCamera = {
   initialized: false,
   dragging: false,
   dragX: 0,
-  dragY: 0
+  dragY: 0,
+  pinchDistance: 0
 };
+const cameraPointers = new Map();
 let services = null;
 let roomRef = null;
 let unsubscribeRoom = null;
@@ -153,8 +153,15 @@ async function boot() {
   ui.restartButton.addEventListener("click", () => startMatch().catch((error) => setStatus(error.message)));
   ui.pauseButton.addEventListener("click", togglePause);
   ui.followButton.addEventListener("click", toggleFollowCamera);
-  ui.zoomInButton.addEventListener("click", () => zoomCamera(1.12));
-  ui.zoomOutButton.addEventListener("click", () => zoomCamera(0.88));
+  ui.buildButton.addEventListener("click", () => openDrawer(ui.buildDrawer));
+  ui.upgradesButton.addEventListener("click", () => openDrawer(ui.upgradesDrawer));
+  ui.closeBuildButton.addEventListener("click", () => closeDrawer(ui.buildDrawer));
+  ui.closeUpgradesButton.addEventListener("click", () => closeDrawer(ui.upgradesDrawer));
+  ui.buildDrawer.addEventListener("click", closeDrawerFromBackdrop);
+  ui.upgradesDrawer.addEventListener("click", closeDrawerFromBackdrop);
+  window.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeDrawers();
+  });
   setupCameraInput();
 
   if (!hasFirebaseConfig()) {
@@ -178,6 +185,24 @@ function setStatus(message) {
   ui.roomStatus.textContent = message;
 }
 
+function openDrawer(drawer) {
+  closeDrawers();
+  drawer.hidden = false;
+}
+
+function closeDrawer(drawer) {
+  drawer.hidden = true;
+}
+
+function closeDrawers() {
+  ui.buildDrawer.hidden = true;
+  ui.upgradesDrawer.hidden = true;
+}
+
+function closeDrawerFromBackdrop(event) {
+  if (event.target === event.currentTarget) closeDrawer(event.currentTarget);
+}
+
 function setupCameraInput() {
   canvas.addEventListener("wheel", (event) => {
     event.preventDefault();
@@ -185,15 +210,30 @@ function setupCameraInput() {
   }, { passive: false });
 
   canvas.addEventListener("pointerdown", (event) => {
-    if (event.button !== 0) return;
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    cameraPointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
     renderCamera.dragging = true;
     renderCamera.dragX = event.clientX;
     renderCamera.dragY = event.clientY;
+    if (cameraPointers.size >= 2) {
+      renderCamera.dragging = false;
+      renderCamera.pinchDistance = pointerDistance();
+    }
     canvas.classList.add("is-camera-dragging");
     canvas.setPointerCapture?.(event.pointerId);
   });
 
   canvas.addEventListener("pointermove", (event) => {
+    if (!cameraPointers.has(event.pointerId)) return;
+    cameraPointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (cameraPointers.size >= 2) {
+      const distance = pointerDistance();
+      if (renderCamera.pinchDistance > 0 && distance > 0) {
+        zoomCamera(distance / renderCamera.pinchDistance);
+      }
+      renderCamera.pinchDistance = distance;
+      return;
+    }
     if (!renderCamera.dragging) return;
     const dx = event.clientX - renderCamera.dragX;
     const dy = event.clientY - renderCamera.dragY;
@@ -203,12 +243,27 @@ function setupCameraInput() {
     panCamera(-dx / renderCamera.zoom, -dy / renderCamera.zoom);
   });
 
-  const stopCameraDrag = () => {
+  const stopCameraDrag = (event) => {
+    cameraPointers.delete(event.pointerId);
+    renderCamera.pinchDistance = 0;
+    if (cameraPointers.size === 1) {
+      const pointer = Array.from(cameraPointers.values())[0];
+      renderCamera.dragging = true;
+      renderCamera.dragX = pointer.x;
+      renderCamera.dragY = pointer.y;
+      return;
+    }
     renderCamera.dragging = false;
-    canvas.classList.remove("is-camera-dragging");
+    if (!cameraPointers.size) canvas.classList.remove("is-camera-dragging");
   };
   window.addEventListener("pointerup", stopCameraDrag);
   window.addEventListener("pointercancel", stopCameraDrag);
+}
+
+function pointerDistance() {
+  const points = Array.from(cameraPointers.values());
+  if (points.length < 2) return 0;
+  return Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
 }
 
 function setFollowCamera(enabled) {
@@ -456,6 +511,7 @@ function makeFighter(roomPlayer, index, playerCount) {
     money: roomPlayer.money || 0,
     lifetimeKills: roomPlayer.lifetimeKills || 0,
     shop,
+    upgrades: [],
     weapons: {
       orbit: cloneWeapon("orbit"),
       crossbow: cloneWeapon("crossbow"),
@@ -886,6 +942,7 @@ function applyTeamDraft(sim) {
     const player = sim.players.find((item) => item.id === playerId);
     if (!player || !choice) return;
     choice.apply(player);
+    player.upgrades.push(choice.title);
     sim.eventLog.unshift(`${player.name} drafted ${choice.title}.`);
   });
   sim.draftChoices = null;
@@ -953,8 +1010,8 @@ function killEnemy(sim, enemy, ownerId) {
     earner.money += money;
     earner.lifetimeKills += enemy.boss ? 8 : 1;
   }
-  sim.gems.push({ x: enemy.x, y: enemy.y, value: enemy.xp, radius: 7 + Math.min(6, enemy.xp), spin: Math.random() * TAU, magnet: false });
-  if (enemy.boss) sim.gems.push({ x: enemy.x + 28, y: enemy.y, value: Math.floor(enemy.xp * 0.65), radius: 12, spin: 0, magnet: false });
+  sim.gems.push({ x: enemy.x, y: enemy.y, value: enemy.xp, radius: enemy.boss ? 7 : 4.5 + Math.min(2.5, enemy.xp * 0.35), spin: Math.random() * TAU, magnet: false });
+  if (enemy.boss) sim.gems.push({ x: enemy.x + 28, y: enemy.y, value: Math.floor(enemy.xp * 0.65), radius: 8, spin: 0, magnet: false });
 }
 
 function earnMoney(enemy, playerCount, player) {
@@ -1066,6 +1123,7 @@ function compactSnapshot(sim) {
       alive: player.alive,
       money: player.money,
       lifetimeKills: player.lifetimeKills,
+      upgrades: player.upgrades.slice(-24),
       weapons: summarizeWeapons(player.weapons)
     })),
     enemies: sim.enemies.slice(0, 180).map((enemy) => ({ x: enemy.x, y: enemy.y, radius: enemy.radius, color: enemy.color, boss: enemy.boss, hp: enemy.hp, maxHp: enemy.maxHp })),
@@ -1082,44 +1140,43 @@ function summarizeWeapons(weapons) {
 
 function updateHudFromSnapshot(snapshot) {
   if (!snapshot) {
-    ui.time.textContent = "00:00";
     ui.level.textContent = "1";
     ui.kills.textContent = "0";
-    ui.health.textContent = "Waiting";
-    ui.xp.textContent = "0 / 8";
-    ui.healthFill.style.width = "100%";
     ui.xpFill.style.width = "0%";
-    ui.loadout.innerHTML = "";
+    ui.buildList.innerHTML = `<p class="empty-state">Waiting for a room.</p>`;
     return;
   }
-  const alive = snapshot.players.filter((player) => player.alive);
-  const totalHealth = snapshot.players.reduce((sum, player) => sum + player.health, 0);
-  const totalMax = snapshot.players.reduce((sum, player) => sum + player.maxHealth, 0) || 1;
-  ui.time.textContent = formatTime(snapshot.elapsed);
   ui.level.textContent = snapshot.level.toString();
   ui.kills.textContent = snapshot.kills.toString();
-  ui.health.textContent = `${alive.length}/${snapshot.players.length} alive`;
-  ui.healthFill.style.width = `${clamp(totalHealth / totalMax, 0, 1) * 100}%`;
-  ui.xp.textContent = `${Math.floor(snapshot.xp)} / ${snapshot.xpNeeded}`;
   ui.xpFill.style.width = `${clamp(snapshot.xp / snapshot.xpNeeded, 0, 1) * 100}%`;
-  ui.best.textContent = formatTime(snapshot.elapsed);
-  ui.wins.textContent = `${snapshot.playerCount || 1} linked AI players`;
   ui.strategy.textContent = snapshot.draftTimer > 0 ? "Shared XP level-up: every AI is drafting at super speed." : "Host is simulating the room and streaming the fight.";
   updateLoadout(snapshot);
   renderEventLog(snapshot.eventLog || []);
 }
 
 function updateLoadout(snapshot) {
-  ui.loadout.innerHTML = "";
+  ui.buildList.innerHTML = "";
   snapshot.players.forEach((player) => {
+    const panel = document.createElement("article");
+    panel.className = "build-card";
+    panel.style.borderColor = player.color;
+    const health = `${Math.ceil(player.health)} / ${Math.ceil(player.maxHealth)}`;
+    panel.innerHTML = `<header><div><span>${player.alive ? "Online" : "Down"}</span><strong>${player.name}</strong></div><b>${health}</b></header>`;
+    const weapons = document.createElement("div");
+    weapons.className = "build-chips";
     Object.values(player.weapons || {}).forEach((weapon) => {
       if (weapon.level <= 0) return;
       const chip = document.createElement("div");
       chip.className = "weapon-chip";
-      chip.style.borderColor = player.color;
-      chip.innerHTML = `<strong>${player.name}: ${weapon.name}</strong><span>Rank ${weapon.level}</span>`;
-      ui.loadout.appendChild(chip);
+      chip.innerHTML = `<strong>${weapon.name}</strong><span>Rank ${weapon.level}${weapon.count ? ` · ${weapon.count}x` : ""}</span>`;
+      weapons.appendChild(chip);
     });
+    panel.appendChild(weapons);
+    const upgrades = document.createElement("p");
+    upgrades.className = "upgrade-history";
+    upgrades.textContent = player.upgrades?.length ? `Choices: ${player.upgrades.join(", ")}` : "Choices: opening kit only";
+    panel.appendChild(upgrades);
+    ui.buildList.appendChild(panel);
   });
 }
 

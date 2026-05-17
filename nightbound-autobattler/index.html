@@ -12,68 +12,64 @@
 
       <header class="topbar">
         <a class="back-link" href="../games.html" aria-label="Back to games">Back</a>
-        <div class="brand">
-          <span>AI gothic survival lab</span>
-          <h1>Nightbound Auto-Battler</h1>
+        <div class="run-stats" aria-label="Run stats">
+          <div>
+            <span>Level</span>
+            <strong id="levelReadout">1</strong>
+          </div>
+          <div>
+            <span>Kills</span>
+            <strong id="killsReadout">0</strong>
+          </div>
         </div>
-        <div class="camera-controls" aria-label="Camera controls">
+        <div class="toolbar" aria-label="Game controls">
+          <button class="panel-button" id="buildButton" type="button">Build</button>
+          <button class="panel-button" id="upgradesButton" type="button">Upgrades</button>
           <button class="camera-button is-active" id="followButton" type="button" aria-pressed="true">Follow</button>
-          <button class="camera-button" id="zoomOutButton" type="button" aria-label="Zoom out">-</button>
-          <button class="camera-button" id="zoomInButton" type="button" aria-label="Zoom in">+</button>
           <button class="pause-button" id="pauseButton" type="button">Pause</button>
         </div>
       </header>
 
-      <section class="hud hud-left" aria-label="Run stats">
-        <div class="stat">
-          <span>Time</span>
-          <strong id="timeReadout">00:00</strong>
-        </div>
-        <div class="stat">
-          <span>Level</span>
-          <strong id="levelReadout">1</strong>
-        </div>
-        <div class="stat">
-          <span>Run Kills</span>
-          <strong id="killsReadout">0</strong>
+      <section class="xp-bar" aria-label="Experience">
+        <b id="xpFill"></b>
+      </section>
+
+      <section class="drawer-overlay" id="buildDrawer" hidden>
+        <div class="drawer">
+          <header class="drawer-head">
+            <div>
+              <span>AI choices</span>
+              <strong>Build</strong>
+            </div>
+            <button class="icon-button" id="closeBuildButton" type="button" aria-label="Close build">Close</button>
+          </header>
+          <div class="build-list" id="buildList"></div>
         </div>
       </section>
 
-      <section class="hud hud-right" aria-label="Team status">
-        <div class="health">
-          <span>Team Blood</span>
-          <strong id="healthReadout">100 / 100</strong>
-          <i><b id="healthFill"></b></i>
-        </div>
-        <div class="health xp">
-          <span>Moonlight</span>
-          <strong id="xpReadout">0 / 8</strong>
-          <i><b id="xpFill"></b></i>
-        </div>
-      </section>
-
-      <section class="loadout" id="loadout" aria-label="Weapons"></section>
-
-      <section class="records" aria-label="Records">
-        <span>Best Run</span>
-        <strong id="bestReadout">00:00</strong>
-        <span id="winsReadout">0 wins</span>
-      </section>
-
-      <section class="shop-panel" aria-label="Auto shop">
-        <div class="shop-head">
-          <div>
-            <span>Vault</span>
-            <strong id="moneyReadout">$0</strong>
+      <section class="drawer-overlay" id="upgradesDrawer" hidden>
+        <div class="drawer">
+          <header class="drawer-head">
+            <div>
+              <span>Auto shop</span>
+              <strong>Upgrades</strong>
+            </div>
+            <button class="icon-button" id="closeUpgradesButton" type="button" aria-label="Close upgrades">Close</button>
+          </header>
+          <div class="shop-head">
+            <div>
+              <span>Vault</span>
+              <strong id="moneyReadout">$0</strong>
+            </div>
+            <div>
+              <span>Total Kills</span>
+              <strong id="lifetimeKillsReadout">0</strong>
+            </div>
           </div>
-          <div>
-            <span>Total Kills</span>
-            <strong id="lifetimeKillsReadout">0</strong>
-          </div>
+          <p id="strategyReadout">AI waits for the bell.</p>
+          <div class="shop-list" id="shopList"></div>
+          <div class="upgrade-log" id="upgradeLog"></div>
         </div>
-        <p id="strategyReadout">AI waits for the bell.</p>
-        <div class="shop-list" id="shopList"></div>
-        <div class="upgrade-log" id="upgradeLog"></div>
       </section>
 
       <section class="boss-banner" id="bossBanner" hidden>

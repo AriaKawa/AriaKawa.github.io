@@ -70,8 +70,8 @@ button {
 
 .topbar,
 .hud,
-.loadout,
-.records,
+.xp-bar,
+.drawer-overlay,
 .boss-banner,
 .overlay,
 .touch-stick {
@@ -83,7 +83,7 @@ button {
   top: clamp(0.75rem, 2vw, 1.25rem);
   left: clamp(0.75rem, 2vw, 1.25rem);
   right: clamp(0.75rem, 2vw, 1.25rem);
-  z-index: 6;
+  z-index: 4;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 0.75rem;
@@ -94,6 +94,8 @@ button {
 .back-link,
 .pause-button,
 .camera-button,
+.panel-button,
+.icon-button,
 .primary,
 .choice-card {
   min-height: 42px;
@@ -105,7 +107,9 @@ button {
 
 .back-link,
 .pause-button,
-.camera-button {
+.camera-button,
+.panel-button,
+.icon-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -124,14 +128,16 @@ button {
   box-shadow: 0 14px 34px rgba(73, 244, 255, 0.18);
 }
 
-.camera-controls {
+.toolbar {
   display: inline-flex;
   justify-content: end;
+  flex-wrap: wrap;
   gap: 0.42rem;
   pointer-events: auto;
 }
 
-.camera-button {
+.camera-button,
+.panel-button {
   min-width: 42px;
   color: var(--text);
 }
@@ -145,24 +151,51 @@ button {
 .back-link:hover,
 .pause-button:hover,
 .camera-button:hover,
+.panel-button:hover,
+.icon-button:hover,
 .primary:hover,
 .choice-card:hover {
   transform: translateY(-1px);
 }
 
-.brand {
-  min-width: 0;
-  padding: 0.45rem 0.8rem;
-  border: 1px solid rgba(255, 255, 255, 0.11);
+.run-stats {
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(74px, auto));
+  justify-self: center;
+  gap: 0.42rem;
+  pointer-events: auto;
+}
+
+.run-stats div {
+  min-height: 42px;
+  padding: 0.48rem 0.68rem;
+  text-align: center;
+  border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(7, 10, 20, 0.55);
+  background: rgba(7, 10, 20, 0.72);
   backdrop-filter: blur(14px);
 }
 
-.brand span,
+.run-stats span,
+.drawer-head span,
+.build-card span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.64rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.run-stats strong {
+  display: block;
+  margin-top: 0.08rem;
+  font-size: 1rem;
+  line-height: 1;
+}
+
 .eyebrow,
 .hud span,
-.records span,
 .health span,
 .summary-grid span {
   color: var(--muted);
@@ -170,13 +203,6 @@ button {
   font-weight: 900;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-}
-
-.brand h1 {
-  margin: 0.05rem 0 0;
-  font-size: clamp(1.2rem, 3vw, 2rem);
-  line-height: 1;
-  letter-spacing: 0;
 }
 
 .hud {
@@ -197,8 +223,6 @@ button {
 
 .stat,
 .health,
-.records,
-.loadout,
 .modal {
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -243,15 +267,24 @@ button {
   box-shadow: 0 0 18px rgba(73, 244, 255, 0.55);
 }
 
-.loadout {
-  left: 50%;
-  bottom: clamp(0.75rem, 2vw, 1.25rem);
-  display: flex;
-  max-width: min(760px, calc(100vw - 2rem));
-  gap: 0.55rem;
-  padding: 0.55rem;
-  overflow-x: auto;
-  transform: translateX(-50%);
+.xp-bar {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 4;
+  height: 9px;
+  overflow: hidden;
+  background: rgba(73, 244, 255, 0.14);
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.28);
+}
+
+.xp-bar b {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, #49f4ff, #62a8ff);
+  box-shadow: 0 0 18px rgba(73, 244, 255, 0.72);
+  transition: width 0.18s ease;
 }
 
 .weapon-chip {
@@ -275,29 +308,8 @@ button {
   font-weight: 800;
 }
 
-.records {
-  left: clamp(0.75rem, 2vw, 1.25rem);
-  bottom: clamp(0.75rem, 2vw, 1.25rem);
-  display: grid;
-  min-width: 112px;
-  gap: 0.18rem;
-  padding: 0.65rem 0.75rem;
-}
-
-.shop-panel {
-  position: absolute;
-  right: clamp(0.75rem, 2vw, 1.25rem);
-  bottom: clamp(0.75rem, 2vw, 1.25rem);
-  z-index: 2;
-  width: min(360px, 34vw);
-  max-height: min(430px, calc(100vh - 16rem));
-  padding: 0.75rem;
-  overflow: auto;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--panel);
-  box-shadow: 0 18px 34px rgba(0, 0, 0, 0.26);
-  backdrop-filter: blur(14px);
+.build-card .weapon-chip {
+  min-width: 0;
 }
 
 .shop-head {
@@ -384,8 +396,95 @@ button {
   line-height: 1.35;
 }
 
-.records strong {
+.drawer-overlay {
+  inset: 0;
+  z-index: 7;
+  display: flex;
+  justify-content: flex-end;
+  align-items: stretch;
+  padding: clamp(0.75rem, 2vw, 1.25rem);
+  padding-bottom: calc(clamp(0.75rem, 2vw, 1.25rem) + 9px);
+  background: rgba(2, 4, 10, 0.42);
+  backdrop-filter: blur(3px);
+}
+
+.drawer-overlay[hidden] {
+  display: none;
+}
+
+.drawer {
+  width: min(430px, 100%);
+  max-height: 100%;
+  overflow: auto;
+  padding: 0.82rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-strong);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.42);
+}
+
+.drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.drawer-head strong {
+  display: block;
+  margin-top: 0.08rem;
+  font-size: 1.35rem;
+}
+
+.icon-button {
+  min-height: 36px;
+  padding: 0.48rem 0.68rem;
+  font-size: 0.82rem;
+}
+
+.build-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.build-card {
+  padding: 0.72rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.build-card header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 0.8rem;
+  margin-bottom: 0.58rem;
+}
+
+.build-card strong {
+  display: block;
   font-size: 1rem;
+}
+
+.build-card b {
+  color: var(--green);
+  font-size: 0.82rem;
+}
+
+.build-chips {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.48rem;
+}
+
+.upgrade-history,
+.empty-state {
+  margin: 0.58rem 0 0;
+  color: #cbd6e4;
+  font-size: 0.82rem;
+  line-height: 1.45;
 }
 
 .boss-banner {
@@ -627,74 +726,34 @@ button {
   }
 
   .topbar {
-    grid-template-columns: auto auto;
+    display: flex;
+    flex-wrap: wrap;
     justify-content: space-between;
   }
 
-  .brand {
-    display: none;
+  .run-stats {
+    order: 3;
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .brand h1 {
-    font-size: 1rem;
+  .toolbar {
+    gap: 0.28rem;
   }
 
-  .brand span {
-    display: none;
+  .drawer-overlay {
+    padding: 0.65rem;
+    padding-bottom: calc(0.65rem + 9px);
   }
 
   .back-link,
   .pause-button,
-  .camera-button {
+  .camera-button,
+  .panel-button,
+  .icon-button {
     min-height: 38px;
     padding: 0.55rem 0.68rem;
     font-size: 0.85rem;
-  }
-
-  .camera-controls {
-    gap: 0.28rem;
-  }
-
-  .hud {
-    top: 4.4rem;
-  }
-
-  .hud-left {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    left: 0.65rem;
-    right: 0.65rem;
-    width: auto;
-  }
-
-  .hud-right {
-    top: 8.1rem;
-    left: 0.65rem;
-    right: 0.65rem;
-    grid-template-columns: 1fr 1fr;
-    width: auto;
-  }
-
-  .stat,
-  .health {
-    padding: 0.55rem;
-  }
-
-  .stat strong,
-  .health strong {
-    font-size: 0.95rem;
-  }
-
-  .loadout {
-    left: auto;
-    right: 0.65rem;
-    bottom: 0.65rem;
-    width: calc(100vw - 132px);
-    transform: none;
-  }
-
-  .records,
-  .shop-panel {
-    display: none;
   }
 
   .touch-stick {
@@ -726,5 +785,13 @@ button {
 
   .weapon-chip {
     min-width: 116px;
+  }
+
+  .build-card .weapon-chip {
+    min-width: 0;
+  }
+
+  .build-chips {
+    grid-template-columns: 1fr;
   }
 }
