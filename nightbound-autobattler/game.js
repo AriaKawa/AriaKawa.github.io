@@ -44,37 +44,62 @@ const ui = {
   bossName: document.getElementById("bossName"),
   pauseButton: document.getElementById("pauseButton"),
   followButton: document.getElementById("followButton"),
+  speedButtons: Array.from(document.querySelectorAll("[data-speed]")),
   restartButton: document.getElementById("restartButton")
 };
 
 const TAU = Math.PI * 2;
-const WORLD = { width: 5200, height: 3800 };
+const WORLD = { width: 9000, height: 6500 };
 const RUN_DURATION = 600;
 const ROOM_COLLECTION = "tables";
 const PLAYER_COLORS = ["#49f4ff", "#ff4f87", "#77ff9b", "#ffd166"];
+const FOLLOW_ZOOM = 1.06;
+const MANUAL_ZOOM_MIN = 0.24;
+const MANUAL_ZOOM_MAX = 1.22;
 const bossSchedule = [
-  { at: 120, name: "The Bellkeeper" },
-  { at: 240, name: "Duchess of Static" },
-  { at: 360, name: "The Moon Warden" },
-  { at: 480, name: "Choir of Fangs" },
-  { at: 555, name: "Dawnless Count" }
+  { at: 120, name: "Orbital Devourer" },
+  { at: 240, name: "The Prism Maw" },
+  { at: 360, name: "Moonless Leviathan" },
+  { at: 480, name: "Choir of Pulsars" },
+  { at: 555, name: "Dawnless Singularity" }
 ];
 
 const enemyTypes = {
-  thrall: { name: "Thrall", hp: 18, speed: 62, damage: 8, radius: 13, xp: 2, color: "#8b5cf6" },
-  bat: { name: "Glass Bat", hp: 12, speed: 126, damage: 6, radius: 10, xp: 2, color: "#49f4ff" },
-  knight: { name: "Grave Knight", hp: 68, speed: 42, damage: 15, radius: 18, xp: 7, color: "#ffd166" },
-  cultist: { name: "Choir Cultist", hp: 32, speed: 50, damage: 7, radius: 14, xp: 5, color: "#ff4f87", ranged: true },
-  shade: { name: "Burst Shade", hp: 26, speed: 88, damage: 22, radius: 15, xp: 4, color: "#77ff9b", explodes: true },
-  boss: { name: "Boss", hp: 900, speed: 38, damage: 24, radius: 34, xp: 48, color: "#ff395d" }
+  starMite: { name: "Star Mite", hp: 16, speed: 70, damage: 7, radius: 10, xp: 2, color: "#70f5ff" },
+  voidBat: { name: "Void Bat", hp: 14, speed: 136, damage: 6, radius: 12, xp: 2, color: "#a56bff" },
+  spaceRat: { name: "Helmet Rat", hp: 34, speed: 96, damage: 10, radius: 15, xp: 4, color: "#f2d37b", swims: true },
+  crystalKnight: { name: "Crystal Knight", hp: 82, speed: 46, damage: 16, radius: 20, xp: 8, color: "#7dffdb" },
+  plasmaCultist: { name: "Plasma Cultist", hp: 42, speed: 58, damage: 8, radius: 16, xp: 6, color: "#ff5cb8", ranged: true },
+  novaShade: { name: "Nova Shade", hp: 32, speed: 94, damage: 24, radius: 16, xp: 5, color: "#ffb84a", explodes: true },
+  boss: { name: "Boss", hp: 1150, speed: 40, damage: 28, radius: 40, xp: 58, color: "#ff395d" }
 };
 
 const weaponCatalog = {
-  orbit: { name: "Blood Orbit", color: "#ff4f87", level: 1, cooldown: 0, damage: 18, count: 2, radius: 76 },
-  crossbow: { name: "Moonshot Crossbow", color: "#49f4ff", level: 1, cooldown: 0, delay: 0.72, damage: 24, count: 1, speed: 540 },
-  sigil: { name: "Gravefire Sigil", color: "#9b66ff", level: 0, cooldown: 1.4, delay: 3.2, damage: 34, radius: 118 },
-  bats: { name: "Bat Swarm", color: "#77ff9b", level: 0, cooldown: 0.9, delay: 1.9, damage: 17, count: 2, speed: 360 }
+  orbit: { name: "Blood Orbit", color: "#ff3f7d", level: 1, cooldown: 0, damage: 18, count: 2, radius: 76, description: "Red plasma blades circle the UFO and carve nearby enemies." },
+  crossbow: { name: "Moonshot Crossbow", color: "#6be7ff", level: 1, cooldown: 0, delay: 0.72, damage: 24, count: 1, speed: 540, description: "Icy lunar bolts auto-fire at the closest target." },
+  sigil: { name: "Gravefire Sigil", color: "#b15cff", level: 0, cooldown: 1.4, delay: 3.2, damage: 34, radius: 118, description: "A violet ritual ring blooms outward and burns everything it touches." },
+  bats: { name: "Bat Swarm", color: "#b4ff4f", level: 0, cooldown: 0.9, delay: 1.9, damage: 17, count: 2, speed: 360, description: "Green-gold familiars launch from the hull and home into enemies." }
 };
+
+const upgradeMeta = {
+  "Crimson Heart": { color: "#ff5b8e", description: "Adds max blood and gives an instant heal." },
+  "Velvet Thirst": { color: "#ff8cc8", description: "Improves passive regeneration between hits." },
+  "Magnet Moon": { color: "#55f2ff", description: "Expands pickup range so XP reaches the UFO sooner." },
+  "Silver Boots": { color: "#ffd166", description: "Increases AI movement speed and dodge spacing." }
+};
+
+const obstacleLayout = [
+  { id: "ringed-planet", x: 2350, y: 1720, radius: 245, color: "#6e55ff", ring: "#e6b6ff" },
+  { id: "amber-moon", x: 6320, y: 3120, radius: 190, color: "#ffba5d", ring: "#ff6b9e" },
+  { id: "cold-asteroid", x: 4500, y: 5220, radius: 155, color: "#7cd5ff", ring: "#b7f7ff" }
+];
+
+const starField = makeStarField(230);
+const distantPlanets = [
+  { x: 0.17, y: 0.21, r: 74, color: "#7e5cff", ring: true },
+  { x: 0.81, y: 0.16, r: 52, color: "#ff67c7", ring: false },
+  { x: 0.62, y: 0.72, r: 38, color: "#6df7ff", ring: true }
+];
 
 const shopCatalog = [
   { id: "damage", name: "Honed Rituals", type: "Passive", max: 18, base: 35, scale: 1.36, text: "+8% all weapon damage." },
@@ -152,7 +177,10 @@ async function boot() {
   ui.startButton.addEventListener("click", () => startMatch().catch((error) => setStatus(error.message)));
   ui.restartButton.addEventListener("click", () => startMatch().catch((error) => setStatus(error.message)));
   ui.pauseButton.addEventListener("click", togglePause);
-  ui.followButton.addEventListener("click", toggleFollowCamera);
+  ui.followButton.addEventListener("click", focusFollowCamera);
+  ui.speedButtons.forEach((button) => {
+    button.addEventListener("click", () => setRoomSpeed(Number(button.dataset.speed)).catch((error) => setStatus(error.message)));
+  });
   ui.buildButton.addEventListener("click", () => openDrawer(ui.buildDrawer));
   ui.upgradesButton.addEventListener("click", () => openDrawer(ui.upgradesDrawer));
   ui.closeBuildButton.addEventListener("click", () => closeDrawer(ui.buildDrawer));
@@ -183,6 +211,24 @@ async function boot() {
 
 function setStatus(message) {
   ui.roomStatus.textContent = message;
+}
+
+async function setRoomSpeed(speed) {
+  const value = clamp(Number(speed) || 1, 1, 4);
+  setSpeedButtons(value);
+  if (!services || !state.roomCode) return;
+  await update(ref(services.db), {
+    [`${ROOM_COLLECTION}/${state.roomCode}/speedMultiplier`]: value,
+    [`${ROOM_COLLECTION}/${state.roomCode}/updatedAt`]: Date.now()
+  });
+}
+
+function setSpeedButtons(speed) {
+  ui.speedButtons.forEach((button) => {
+    const active = Number(button.dataset.speed) === Number(speed || 1);
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-pressed", active ? "true" : "false");
+  });
 }
 
 function openDrawer(drawer) {
@@ -272,17 +318,16 @@ function setFollowCamera(enabled) {
   ui.followButton.setAttribute("aria-pressed", enabled ? "true" : "false");
 }
 
-function toggleFollowCamera() {
-  setFollowCamera(!renderCamera.follow);
-  if (renderCamera.follow) {
-    renderCamera.snap = true;
-  }
+function focusFollowCamera() {
+  setFollowCamera(true);
+  renderCamera.zoom = FOLLOW_ZOOM;
+  renderCamera.snap = true;
 }
 
 function zoomCamera(multiplier) {
   setFollowCamera(false);
   const before = screenToWorld(width / 2, height / 2);
-  renderCamera.zoom = clamp(renderCamera.zoom * multiplier, 0.38, 1.18);
+  renderCamera.zoom = clamp(renderCamera.zoom * multiplier, MANUAL_ZOOM_MIN, MANUAL_ZOOM_MAX);
   renderCamera.x = before.x - width / 2 / renderCamera.zoom;
   renderCamera.y = before.y - height / 2 / renderCamera.zoom;
   clampCamera();
@@ -322,6 +367,46 @@ function makeRoomCode() {
   return code;
 }
 
+function makeStarField(count) {
+  let seed = 917263;
+  const random = () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed / 4294967296;
+  };
+  return Array.from({ length: count }, () => ({
+    x: random() * 2200,
+    y: random() * 1400,
+    size: 0.8 + random() * 2.2,
+    alpha: random() * 0.4,
+    depth: 0.025 + random() * 0.12,
+    phase: random() * TAU,
+    color: random() > 0.78 ? "#d7b8ff" : random() > 0.55 ? "#9ff8ff" : "#ffffff"
+  }));
+}
+
+function insideObstacle(point, padding = 0) {
+  return obstacleLayout.some((obstacle) => distance(point, obstacle) < obstacle.radius + padding);
+}
+
+function resolveObstacleCollision(entity, padding = 0) {
+  obstacleLayout.forEach((obstacle) => {
+    const dx = entity.x - obstacle.x;
+    const dy = entity.y - obstacle.y;
+    const d = Math.hypot(dx, dy) || 1;
+    const minDistance = obstacle.radius + padding;
+    if (d >= minDistance) return;
+    const push = minDistance - d;
+    entity.x += (dx / d) * push;
+    entity.y += (dy / d) * push;
+    if ("vx" in entity) entity.vx *= 0.45;
+    if ("vy" in entity) entity.vy *= 0.45;
+  });
+}
+
+function wrap(value, max) {
+  return ((value % max) + max) % max;
+}
+
 async function createRoom() {
   if (!services) return setStatus("Firebase is not ready yet.");
   setStatus("Creating Firebase room...");
@@ -335,6 +420,7 @@ async function createRoom() {
     hostId: clientId,
     status: "lobby",
     maxPlayers: 4,
+    speedMultiplier: 1,
     createdAt: Date.now(),
     updatedAt: Date.now(),
     players: { [clientId]: player },
@@ -399,6 +485,7 @@ function connectRoom(code) {
 function handleRoomUpdate() {
   const room = state.remoteRoom;
   const players = sortedRoomPlayers(room);
+  setSpeedButtons(room.speedMultiplier || 1);
   ui.startOverlay.hidden = room.status !== "lobby";
   ui.startButton.hidden = !state.isHost || room.status !== "lobby";
   setStatus(`Room ${room.code} · ${players.length}/4 players · ${state.isHost ? "you host the simulation" : "waiting for host"}`);
@@ -410,6 +497,7 @@ function handleRoomUpdate() {
     if (state.isHost && !state.sim) {
       startLocalSimulation(room);
     }
+    if (state.isHost && state.sim) state.sim.speedMultiplier = room.speedMultiplier || 1;
     state.render = state.isHost ? state.sim : room.snapshot;
   } else if (room.status === "ended") {
     state.mode = "ended";
@@ -474,14 +562,18 @@ function makeSimulation(room) {
     enemyShots: [],
     pulses: [],
     gems: [],
+    pickups: [],
+    particles: [],
+    obstacles: obstacleLayout,
     bossesSeen: [],
     eventLog: [`Shared XP enabled for ${playerCount} AI survivor${playerCount === 1 ? "" : "s"}.`],
     spawnBudget: 0,
     draftTimer: 0,
     draftChoices: null,
-    playerCount
+    playerCount,
+    speedMultiplier: room.speedMultiplier || 1
   };
-  for (let i = 0; i < 18 + playerCount * 8; i += 1) spawnEnemy(sim, "thrall");
+  for (let i = 0; i < 18 + playerCount * 8; i += 1) spawnEnemy(sim, "starMite");
   return sim;
 }
 
@@ -541,7 +633,7 @@ function loop(now) {
   const dt = Math.min(0.05, (now - lastFrame) / 1000);
   lastFrame = now;
   if (state.isHost && state.sim && state.remoteRoom?.status === "playing") {
-    updateSimulation(state.sim, dt * 1.18);
+    updateSimulation(state.sim, dt * 1.18 * clamp(state.remoteRoom?.speedMultiplier || 1, 1, 4));
     state.render = state.sim;
     maybePublishSnapshot();
   }
@@ -565,6 +657,8 @@ function updateSimulation(sim, dt) {
   updateProjectiles(sim, dt);
   updateEnemies(sim, dt);
   updateGems(sim, dt);
+  updatePickups(sim, dt);
+  updateSimParticles(sim, dt);
   sim.enemies = sim.enemies.filter((enemy) => !enemy.dead);
   if (!sim.players.some((player) => player.alive)) endSimulation(sim, false);
 }
@@ -580,6 +674,7 @@ function updatePlayers(sim, dt) {
     player.vy += (targetVy - player.vy) * accel;
     player.x = clamp(player.x + player.vx * dt, 28, WORLD.width - 28);
     player.y = clamp(player.y + player.vy * dt, 28, WORLD.height - 28);
+    resolveObstacleCollision(player, player.radius + 6);
     if (Math.hypot(player.vx, player.vy) > 4) {
       player.angle = Math.atan2(player.vy, player.vx);
     }
@@ -657,8 +752,8 @@ function bestGemTarget(sim, player) {
 function updateDirector(sim, dt) {
   const minute = sim.elapsed / 60;
   const scale = 1 + (sim.playerCount - 1) * 0.55;
-  sim.spawnBudget += dt * (1.6 + minute * 0.92) * scale;
-  const cap = 65 + minute * 22 + (sim.playerCount - 1) * 28;
+  sim.spawnBudget += dt * (1.55 + minute * 1.12) * scale;
+  const cap = Math.min(310, 72 + minute * 30 + (sim.playerCount - 1) * 30);
   while (sim.spawnBudget >= 1 && sim.enemies.length < cap) {
     sim.spawnBudget -= 1;
     spawnEnemy(sim, chooseEnemyType(minute));
@@ -674,11 +769,12 @@ function updateDirector(sim, dt) {
 
 function chooseEnemyType(minute) {
   const candidates = [
-    ["thrall", 1.2],
-    ["bat", minute > 0.7 ? 0.72 : 0],
-    ["knight", minute > 1.7 ? 0.3 + minute * 0.04 : 0],
-    ["cultist", minute > 2.2 ? 0.28 + minute * 0.035 : 0],
-    ["shade", minute > 3.2 ? 0.26 + minute * 0.035 : 0]
+    ["starMite", Math.max(0.04, 1.35 - minute * 0.24)],
+    ["voidBat", minute > 0.45 ? Math.max(0.08, 0.86 - Math.max(0, minute - 4) * 0.16) : 0],
+    ["spaceRat", minute > 0.9 ? Math.max(0.16, 0.68 - Math.max(0, minute - 5.5) * 0.09) : 0],
+    ["crystalKnight", minute > 1.7 ? 0.26 + minute * 0.045 : 0],
+    ["plasmaCultist", minute > 2.25 ? 0.24 + minute * 0.055 : 0],
+    ["novaShade", minute > 3.1 ? 0.18 + minute * 0.07 : 0]
   ];
   const total = candidates.reduce((sum, item) => sum + item[1], 0);
   let roll = Math.random() * total;
@@ -686,14 +782,14 @@ function chooseEnemyType(minute) {
     roll -= weight;
     if (roll <= 0) return kind;
   }
-  return "thrall";
+  return "starMite";
 }
 
 function spawnEnemy(sim, kind, bossName) {
   const base = enemyTypes[kind];
   const minute = sim.elapsed / 60;
   const hpScale = 1 + minute * 0.2 + (sim.playerCount - 1) * 0.45;
-  const point = spawnPoint(kind === "boss" ? 160 : 95);
+  const point = spawnPoint(kind === "boss" ? 190 : 115);
   sim.enemies.push({
     id: `${Date.now()}-${Math.random()}`,
     x: point.x,
@@ -708,6 +804,7 @@ function spawnEnemy(sim, kind, bossName) {
     speed: base.speed * (1 + Math.min(0.28, minute * 0.025)),
     touchTimer: 0,
     shotTimer: 1.2 + Math.random(),
+    swim: Math.random() * TAU,
     flash: 0,
     boss: kind === "boss",
     color: base.color,
@@ -715,6 +812,7 @@ function spawnEnemy(sim, kind, bossName) {
     damage: base.damage,
     ranged: base.ranged,
     explodes: base.explodes,
+    swims: base.swims,
     dead: false
   });
 }
@@ -726,10 +824,15 @@ function spawnPoint(margin) {
   const viewHeight = height / zoom;
   const camX = renderCamera.initialized ? renderCamera.x : clamp(WORLD.width / 2 - viewWidth / 2, 0, Math.max(0, WORLD.width - viewWidth));
   const camY = renderCamera.initialized ? renderCamera.y : clamp(WORLD.height / 2 - viewHeight / 2, 0, Math.max(0, WORLD.height - viewHeight));
-  if (side === 0) return { x: clamp(camX + Math.random() * viewWidth, 20, WORLD.width - 20), y: clamp(camY - margin, 20, WORLD.height - 20) };
-  if (side === 1) return { x: clamp(camX + viewWidth + margin, 20, WORLD.width - 20), y: clamp(camY + Math.random() * viewHeight, 20, WORLD.height - 20) };
-  if (side === 2) return { x: clamp(camX + Math.random() * viewWidth, 20, WORLD.width - 20), y: clamp(camY + viewHeight + margin, 20, WORLD.height - 20) };
-  return { x: clamp(camX - margin, 20, WORLD.width - 20), y: clamp(camY + Math.random() * viewHeight, 20, WORLD.height - 20) };
+  for (let tries = 0; tries < 18; tries += 1) {
+    let point;
+    if (side === 0) point = { x: clamp(camX + Math.random() * viewWidth, 20, WORLD.width - 20), y: clamp(camY - margin, 20, WORLD.height - 20) };
+    else if (side === 1) point = { x: clamp(camX + viewWidth + margin, 20, WORLD.width - 20), y: clamp(camY + Math.random() * viewHeight, 20, WORLD.height - 20) };
+    else if (side === 2) point = { x: clamp(camX + Math.random() * viewWidth, 20, WORLD.width - 20), y: clamp(camY + viewHeight + margin, 20, WORLD.height - 20) };
+    else point = { x: clamp(camX - margin, 20, WORLD.width - 20), y: clamp(camY + Math.random() * viewHeight, 20, WORLD.height - 20) };
+    if (!insideObstacle(point, 80)) return point;
+  }
+  return { x: WORLD.width / 2 + (Math.random() - 0.5) * 800, y: WORLD.height / 2 + (Math.random() - 0.5) * 800 };
 }
 
 function updateWeapons(sim, dt) {
@@ -845,12 +948,18 @@ function updateProjectiles(sim, dt) {
     shot.x += shot.vx * dt;
     shot.y += shot.vy * dt;
     shot.life -= dt;
+    if (insideObstacle(shot, shot.radius + 2)) {
+      shot.life = -1;
+      addBurst(sim, shot.x, shot.y, shot.color, 4, 0.42);
+      return;
+    }
     sim.enemies.forEach((enemy) => {
       if (enemy.dead || shot.hit.includes(enemy.id)) return;
       if (distance(shot, enemy) < shot.radius + enemy.radius) {
         shot.hit.push(enemy.id);
         shot.pierce -= 1;
         damageEnemy(sim, enemy, shot.damage, shot.ownerId);
+        addBurst(sim, enemy.x, enemy.y, shot.color, 3, 0.34);
         if (shot.pierce <= 0) shot.life = -1;
       }
     });
@@ -882,10 +991,12 @@ function updateEnemies(sim, dt) {
     const d = distance(enemy, target);
     const desiredDistance = enemy.ranged ? 245 : 0;
     const direction = d < desiredDistance ? -1 : 1;
-    enemy.vx = Math.cos(a) * enemy.speed * direction;
-    enemy.vy = Math.sin(a) * enemy.speed * direction;
+    const wobble = enemy.swims ? Math.sin(sim.elapsed * 4.1 + enemy.swim) * 0.62 : 0;
+    enemy.vx = Math.cos(a + wobble) * enemy.speed * direction;
+    enemy.vy = Math.sin(a + wobble) * enemy.speed * direction;
     enemy.x = clamp(enemy.x + enemy.vx * dt, 18, WORLD.width - 18);
     enemy.y = clamp(enemy.y + enemy.vy * dt, 18, WORLD.height - 18);
+    resolveObstacleCollision(enemy, enemy.radius + 8);
     if (enemy.explodes && d < enemy.radius + target.radius + 8) {
       hurtPlayer(sim, target, enemy.damage);
       enemy.dead = true;
@@ -905,7 +1016,7 @@ function updateGems(sim, dt) {
     if (d < player.pickup) gem.magnet = true;
     if (gem.magnet) {
       const a = angleTo(gem, player);
-      const speed = 290 + (player.pickup - Math.min(player.pickup, d)) * 8;
+      const speed = gem.vacuum ? 980 : 290 + (player.pickup - Math.min(player.pickup, d)) * 8;
       gem.x += Math.cos(a) * speed * dt;
       gem.y += Math.sin(a) * speed * dt;
     }
@@ -915,6 +1026,57 @@ function updateGems(sim, dt) {
     }
   });
   sim.gems = sim.gems.filter((gem) => !gem.collected);
+}
+
+function updatePickups(sim, dt) {
+  sim.pickups.forEach((pickup) => {
+    pickup.spin += dt * 2.2;
+    pickup.life -= dt;
+    const player = nearestAlivePlayer(sim, pickup);
+    if (!player) return;
+    if (distance(player, pickup) < player.radius + pickup.radius + 6) {
+      if (pickup.kind === "vacuum") activateVacuum(sim, player);
+      pickup.collected = true;
+    }
+  });
+  sim.pickups = sim.pickups.filter((pickup) => !pickup.collected && pickup.life > 0);
+}
+
+function activateVacuum(sim, player) {
+  sim.gems.forEach((gem) => {
+    gem.magnet = true;
+    gem.vacuum = true;
+  });
+  addBurst(sim, player.x, player.y, "#74f7ff", 38, 1.1);
+  sim.eventLog.unshift(`${player.name} triggered a vacuum surge.`);
+}
+
+function updateSimParticles(sim, dt) {
+  sim.particles.forEach((particle) => {
+    particle.x += particle.vx * dt;
+    particle.y += particle.vy * dt;
+    particle.life -= dt;
+    particle.age += dt;
+  });
+  sim.particles = sim.particles.filter((particle) => particle.life > 0).slice(-180);
+}
+
+function addBurst(sim, x, y, color, count, life) {
+  if (!sim?.particles) return;
+  for (let i = 0; i < count && sim.particles.length < 220; i += 1) {
+    const angle = Math.random() * TAU;
+    const speed = 45 + Math.random() * 170;
+    sim.particles.push({
+      x,
+      y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      radius: 2 + Math.random() * 4,
+      color,
+      life: life * (0.55 + Math.random() * 0.65),
+      age: 0
+    });
+  }
 }
 
 function gainSharedXp(sim, amount) {
@@ -1012,6 +1174,11 @@ function killEnemy(sim, enemy, ownerId) {
   }
   sim.gems.push({ x: enemy.x, y: enemy.y, value: enemy.xp, radius: enemy.boss ? 7 : 4.5 + Math.min(2.5, enemy.xp * 0.35), spin: Math.random() * TAU, magnet: false });
   if (enemy.boss) sim.gems.push({ x: enemy.x + 28, y: enemy.y, value: Math.floor(enemy.xp * 0.65), radius: 8, spin: 0, magnet: false });
+  const vacuumChance = enemy.boss ? 0.38 : enemy.kind === "novaShade" ? 0.014 : 0.006;
+  if (Math.random() < vacuumChance) {
+    sim.pickups.push({ kind: "vacuum", x: enemy.x, y: enemy.y, radius: 13, spin: Math.random() * TAU, life: 18 });
+  }
+  addBurst(sim, enemy.x, enemy.y, enemy.color, enemy.boss ? 24 : 7, enemy.boss ? 0.9 : 0.48);
 }
 
 function earnMoney(enemy, playerCount, player) {
@@ -1110,6 +1277,8 @@ function compactSnapshot(sim) {
     runMoney: sim.runMoney,
     draftTimer: sim.draftTimer,
     playerCount: sim.playerCount,
+    speedMultiplier: sim.speedMultiplier || 1,
+    obstacles: sim.obstacles || obstacleLayout,
     players: sim.players.map((player) => ({
       id: player.id,
       name: player.name,
@@ -1126,16 +1295,18 @@ function compactSnapshot(sim) {
       upgrades: player.upgrades.slice(-24),
       weapons: summarizeWeapons(player.weapons)
     })),
-    enemies: sim.enemies.slice(0, 180).map((enemy) => ({ x: enemy.x, y: enemy.y, radius: enemy.radius, color: enemy.color, boss: enemy.boss, hp: enemy.hp, maxHp: enemy.maxHp })),
+    enemies: sim.enemies.slice(0, 220).map((enemy) => ({ x: enemy.x, y: enemy.y, radius: enemy.radius, color: enemy.color, boss: enemy.boss, kind: enemy.kind, swim: enemy.swim, hp: enemy.hp, maxHp: enemy.maxHp })),
     gems: sim.gems.slice(0, 120).map((gem) => ({ x: gem.x, y: gem.y, radius: gem.radius, value: gem.value })),
+    pickups: sim.pickups.slice(0, 30).map((pickup) => ({ kind: pickup.kind, x: pickup.x, y: pickup.y, radius: pickup.radius, spin: pickup.spin })),
     projectiles: sim.projectiles.slice(0, 140).map((shot) => ({ x: shot.x, y: shot.y, radius: shot.radius, color: shot.color })),
     pulses: sim.pulses.map((pulse) => ({ x: pulse.x, y: pulse.y, radius: pulse.radius, color: pulse.color, age: pulse.age, life: pulse.life })),
+    particles: sim.particles.slice(-120).map((particle) => ({ x: particle.x, y: particle.y, radius: particle.radius, color: particle.color, life: particle.life, age: particle.age })),
     eventLog: sim.eventLog.slice(0, 8)
   };
 }
 
 function summarizeWeapons(weapons) {
-  return Object.fromEntries(Object.entries(weapons).map(([key, weapon]) => [key, { name: weapon.name, color: weapon.color, level: weapon.level, count: weapon.count || 0 }]));
+  return Object.fromEntries(Object.entries(weapons).map(([key, weapon]) => [key, { key, name: weapon.name, color: weapon.color, level: weapon.level, count: weapon.count || 0, description: weapon.description }]));
 }
 
 function updateHudFromSnapshot(snapshot) {
@@ -1168,10 +1339,40 @@ function updateLoadout(snapshot) {
       if (weapon.level <= 0) return;
       const chip = document.createElement("div");
       chip.className = "weapon-chip";
-      chip.innerHTML = `<strong>${weapon.name}</strong><span>Rank ${weapon.level}${weapon.count ? ` · ${weapon.count}x` : ""}</span>`;
+      const canvas = document.createElement("canvas");
+      canvas.className = "card-art";
+      canvas.width = 150;
+      canvas.height = 86;
+      chip.appendChild(canvas);
+      const body = document.createElement("div");
+      body.innerHTML = `<strong>${weapon.name}</strong><span>Rank ${weapon.level}${weapon.count ? ` · ${weapon.count}x` : ""}</span><p>${weapon.description || weaponCatalog[weapon.key]?.description || "A strange cosmic weapon."}</p>`;
+      chip.appendChild(body);
+      drawCardArt(canvas, weapon.key || weapon.name, weapon.color || player.color);
       weapons.appendChild(chip);
     });
     panel.appendChild(weapons);
+    const passiveList = (player.upgrades || []).filter((name) => !Object.values(player.weapons || {}).some((weapon) => weapon.name === name));
+    if (passiveList.length) {
+      const passiveWrap = document.createElement("div");
+      passiveWrap.className = "build-chips passive-chips";
+      [...new Set(passiveList)].forEach((name) => {
+        const meta = upgradeMeta[name] || { color: player.color, description: "A drafted passive upgrade." };
+        const card = document.createElement("div");
+        card.className = "weapon-chip passive-card";
+        const art = document.createElement("canvas");
+        art.className = "card-art";
+        art.width = 150;
+        art.height = 86;
+        card.appendChild(art);
+        const count = passiveList.filter((item) => item === name).length;
+        const body = document.createElement("div");
+        body.innerHTML = `<strong>${name}</strong><span>${count} upgrade${count === 1 ? "" : "s"}</span><p>${meta.description}</p>`;
+        card.appendChild(body);
+        drawCardArt(art, name, meta.color);
+        passiveWrap.appendChild(card);
+      });
+      panel.appendChild(passiveWrap);
+    }
     const upgrades = document.createElement("p");
     upgrades.className = "upgrade-history";
     upgrades.textContent = player.upgrades?.length ? `Choices: ${player.upgrades.join(", ")}` : "Choices: opening kit only";
@@ -1194,6 +1395,89 @@ function updateShopFromRoom() {
     row.innerHTML = `<div><span>${item.type} ${done ? "max" : `rank ${level}/${item.max}`}</span><strong>${item.name}</strong><span>${item.text}</span></div><b>${done ? "Owned" : `$${shopCost(roomPlayer.shop || {}, item)}`}</b>`;
     ui.shopList.appendChild(row);
   });
+}
+
+function drawCardArt(canvas, key, color) {
+  const artKey = String(key).toLowerCase();
+  const art = canvas.getContext("2d");
+  const w = canvas.width;
+  const h = canvas.height;
+  const gradient = art.createLinearGradient(0, 0, w, h);
+  gradient.addColorStop(0, "rgba(255,255,255,0.13)");
+  gradient.addColorStop(1, "rgba(0,0,0,0.28)");
+  art.fillStyle = "#080b19";
+  art.fillRect(0, 0, w, h);
+  art.fillStyle = gradient;
+  art.fillRect(0, 0, w, h);
+  const glow = art.createRadialGradient(w * 0.54, h * 0.5, 2, w * 0.54, h * 0.5, w * 0.48);
+  glow.addColorStop(0, color);
+  glow.addColorStop(1, "rgba(0,0,0,0)");
+  art.globalAlpha = 0.42;
+  art.fillStyle = glow;
+  art.fillRect(0, 0, w, h);
+  art.globalAlpha = 1;
+  art.strokeStyle = color;
+  art.lineWidth = 4;
+  art.fillStyle = color;
+  art.save();
+  art.translate(w / 2, h / 2);
+  if (artKey.includes("orbit")) {
+    art.beginPath();
+    art.ellipse(0, 0, 48, 18, -0.22, 0, TAU);
+    art.stroke();
+    for (let i = 0; i < 3; i += 1) {
+      const a = (i / 3) * TAU;
+      art.beginPath();
+      art.arc(Math.cos(a) * 40, Math.sin(a) * 16, 8, 0, TAU);
+      art.fill();
+    }
+  } else if (artKey.includes("crossbow")) {
+    art.beginPath();
+    art.moveTo(-42, 0);
+    art.lineTo(46, 0);
+    art.moveTo(14, -24);
+    art.quadraticCurveTo(42, 0, 14, 24);
+    art.moveTo(-8, -24);
+    art.quadraticCurveTo(-36, 0, -8, 24);
+    art.stroke();
+  } else if (artKey.includes("sigil")) {
+    art.beginPath();
+    art.arc(0, 0, 30, 0, TAU);
+    art.stroke();
+    art.beginPath();
+    for (let i = 0; i < 6; i += 1) {
+      const a = (i / 6) * TAU - Math.PI / 2;
+      const x = Math.cos(a) * 28;
+      const y = Math.sin(a) * 28;
+      if (i === 0) art.moveTo(x, y);
+      else art.lineTo(x, y);
+    }
+    art.closePath();
+    art.stroke();
+  } else if (artKey.includes("bats") || artKey.includes("swarm")) {
+    for (let i = 0; i < 3; i += 1) {
+      art.beginPath();
+      art.moveTo(-38 + i * 32, 2);
+      art.quadraticCurveTo(-26 + i * 32, -18, -12 + i * 32, 1);
+      art.quadraticCurveTo(-1 + i * 32, -18, 12 + i * 32, 1);
+      art.quadraticCurveTo(-2 + i * 32, 9, -12 + i * 32, 18);
+      art.quadraticCurveTo(-22 + i * 32, 9, -38 + i * 32, 2);
+      art.fill();
+    }
+  } else {
+    art.beginPath();
+    for (let i = 0; i < 8; i += 1) {
+      const a = (i / 8) * TAU;
+      const radius = i % 2 ? 18 : 38;
+      const x = Math.cos(a) * radius;
+      const y = Math.sin(a) * radius;
+      if (i === 0) art.moveTo(x, y);
+      else art.lineTo(x, y);
+    }
+    art.closePath();
+    art.fill();
+  }
+  art.restore();
 }
 
 function renderEventLog(events) {
@@ -1222,66 +1506,93 @@ function draw() {
   drawWorld(cam);
   if (!snapshot) return;
   drawGems(snapshot, cam);
+  drawPickups(snapshot, cam);
   drawProjectiles(snapshot, cam);
   drawEnemies(snapshot, cam);
   drawPlayers(snapshot, cam);
+  drawParticles(snapshot, cam);
 }
 
 function drawWorld(cam) {
   ctx.clearRect(0, 0, width, height);
-  const gradient = ctx.createLinearGradient(0, 0, 0, height);
-  gradient.addColorStop(0, "#080a17");
-  gradient.addColorStop(0.55, "#09111b");
-  gradient.addColorStop(1, "#06070d");
-  ctx.fillStyle = gradient;
+  const bg = ctx.createRadialGradient(width * 0.52, height * 0.42, 30, width * 0.52, height * 0.42, Math.max(width, height));
+  bg.addColorStop(0, "#191039");
+  bg.addColorStop(0.38, "#0a1231");
+  bg.addColorStop(0.72, "#070817");
+  bg.addColorStop(1, "#02030a");
+  ctx.fillStyle = bg;
   ctx.fillRect(0, 0, width, height);
-  drawMoon();
-  drawCastle(cam);
+  drawNebula(cam);
+  drawStars(cam);
+  drawDistantPlanets();
+  drawObstacles(state.render?.obstacles || obstacleLayout, cam);
   drawGroundGrid(cam);
 }
 
-function drawMoon() {
-  const mx = width * 0.72;
-  const my = height * 0.18;
-  const glow = ctx.createRadialGradient(mx, my, 10, mx, my, 190);
-  glow.addColorStop(0, "rgba(200, 246, 255, 0.78)");
-  glow.addColorStop(0.22, "rgba(73, 244, 255, 0.18)");
-  glow.addColorStop(1, "rgba(73, 244, 255, 0)");
-  ctx.fillStyle = glow;
-  ctx.beginPath();
-  ctx.arc(mx, my, 190, 0, TAU);
-  ctx.fill();
-  ctx.fillStyle = "rgba(233, 252, 255, 0.92)";
-  ctx.beginPath();
-  ctx.arc(mx, my, 38, 0, TAU);
-  ctx.fill();
+function drawNebula(cam) {
+  const drift = (performance.now() % 100000) / 100000;
+  [
+    { x: 0.18, y: 0.3, color: "rgba(166, 85, 255, 0.22)", r: 520 },
+    { x: 0.76, y: 0.24, color: "rgba(73, 244, 255, 0.14)", r: 460 },
+    { x: 0.48, y: 0.76, color: "rgba(255, 79, 135, 0.16)", r: 620 }
+  ].forEach((cloud, index) => {
+    const x = width * cloud.x - (cam.x * (0.015 + index * 0.005)) % width + Math.sin(drift * TAU + index) * 32;
+    const y = height * cloud.y - (cam.y * (0.012 + index * 0.004)) % height;
+    const nebula = ctx.createRadialGradient(x, y, 12, x, y, cloud.r);
+    nebula.addColorStop(0, cloud.color);
+    nebula.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = nebula;
+    ctx.beginPath();
+    ctx.arc(x, y, cloud.r, 0, TAU);
+    ctx.fill();
+  });
 }
 
-function drawCastle(cam) {
+function drawStars(cam) {
   ctx.save();
-  ctx.translate(-cam.x * 0.035, 0);
-  ctx.fillStyle = "rgba(5, 6, 12, 0.72)";
-  const baseY = height * 0.28;
-  for (let i = -1; i < 10; i += 1) {
-    const x = i * 220;
-    ctx.fillRect(x, baseY + 80, 170, height);
-    ctx.fillRect(x + 52, baseY, 66, 110);
+  starField.forEach((star) => {
+    const sx = wrap(star.x - cam.x * star.depth, width + 120) - 60;
+    const sy = wrap(star.y - cam.y * star.depth, height + 120) - 60;
+    const twinkle = 0.45 + Math.sin(performance.now() * 0.002 + star.phase) * 0.25 + star.alpha;
+    ctx.globalAlpha = clamp(twinkle, 0.18, 1);
+    ctx.fillStyle = star.color;
     ctx.beginPath();
-    ctx.moveTo(x + 52, baseY);
-    ctx.lineTo(x + 85, baseY - 46);
-    ctx.lineTo(x + 118, baseY);
+    ctx.arc(sx, sy, star.size, 0, TAU);
     ctx.fill();
-  }
+  });
   ctx.restore();
+}
+
+function drawDistantPlanets() {
+  distantPlanets.forEach((planet) => {
+    const x = width * planet.x;
+    const y = height * planet.y;
+    drawGlow(x, y, planet.r * 4, planet.color, 0.18);
+    if (planet.ring) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(-0.28);
+      ctx.strokeStyle = "rgba(255,255,255,0.34)";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, planet.r * 1.75, planet.r * 0.42, 0, 0, TAU);
+      ctx.stroke();
+      ctx.restore();
+    }
+    ctx.fillStyle = planet.color;
+    ctx.beginPath();
+    ctx.arc(x, y, planet.r, 0, TAU);
+    ctx.fill();
+  });
 }
 
 function drawGroundGrid(cam) {
   ctx.save();
   ctx.translate(-cam.x * cam.zoom, -cam.y * cam.zoom);
   ctx.scale(cam.zoom, cam.zoom);
-  ctx.strokeStyle = "rgba(73, 244, 255, 0.065)";
+  ctx.strokeStyle = "rgba(178, 95, 255, 0.052)";
   ctx.lineWidth = 1;
-  const step = 120;
+  const step = 180;
   const viewWidth = width / cam.zoom;
   const viewHeight = height / cam.zoom;
   for (let x = Math.floor(cam.x / step) * step; x <= cam.x + viewWidth + step; x += step) {
@@ -1299,14 +1610,64 @@ function drawGroundGrid(cam) {
   ctx.restore();
 }
 
+function drawObstacles(obstacles, cam) {
+  obstacles.forEach((obstacle) => {
+    const p = worldToScreen(obstacle, cam);
+    const r = obstacle.radius * cam.zoom;
+    if (p.x < -r * 3 || p.y < -r * 3 || p.x > width + r * 3 || p.y > height + r * 3) return;
+    drawGlow(p.x, p.y, r * 2.7, obstacle.color, 0.22);
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(-0.24);
+    ctx.strokeStyle = obstacle.ring;
+    ctx.lineWidth = Math.max(2, 8 * cam.zoom);
+    ctx.globalAlpha = 0.56;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, r * 1.75, r * 0.42, 0, 0, TAU);
+    ctx.stroke();
+    ctx.restore();
+    const shade = ctx.createRadialGradient(p.x - r * 0.35, p.y - r * 0.42, r * 0.1, p.x, p.y, r);
+    shade.addColorStop(0, "#ffffff");
+    shade.addColorStop(0.12, obstacle.color);
+    shade.addColorStop(1, "#121023");
+    ctx.fillStyle = shade;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, r, 0, TAU);
+    ctx.fill();
+  });
+}
+
 function drawGems(snapshot, cam) {
   snapshot.gems.forEach((gem) => {
     const p = worldToScreen(gem, cam);
-    drawGlow(p.x, p.y, 28, "rgba(73, 244, 255, 0.55)", 0.45);
+    drawGlow(p.x, p.y, 18, "rgba(73, 244, 255, 0.55)", 0.34);
     ctx.fillStyle = "#49f4ff";
     ctx.beginPath();
     ctx.arc(p.x, p.y, gem.radius, 0, TAU);
     ctx.fill();
+  });
+}
+
+function drawPickups(snapshot, cam) {
+  (snapshot.pickups || []).forEach((pickup) => {
+    const p = worldToScreen(pickup, cam);
+    const pulse = 1 + Math.sin(performance.now() * 0.006 + pickup.spin) * 0.12;
+    drawGlow(p.x, p.y, 50, "rgba(116, 247, 255, 0.75)", 0.48);
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate((pickup.spin || 0) + performance.now() * 0.002);
+    ctx.strokeStyle = "#74f7ff";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(0, 0, pickup.radius * pulse, 0, TAU);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-pickup.radius * 0.8, 0);
+    ctx.lineTo(pickup.radius * 0.8, 0);
+    ctx.moveTo(0, -pickup.radius * 0.8);
+    ctx.lineTo(0, pickup.radius * 0.8);
+    ctx.stroke();
+    ctx.restore();
   });
 }
 
@@ -1317,6 +1678,7 @@ function drawProjectiles(snapshot, cam) {
     ctx.globalAlpha = 1 - pulse.age / pulse.life;
     ctx.strokeStyle = pulse.color;
     ctx.lineWidth = 4;
+    drawGlow(p.x, p.y, pulse.radius * 0.42, pulse.color, 0.15);
     ctx.beginPath();
     ctx.arc(p.x, p.y, pulse.radius, 0, TAU);
     ctx.stroke();
@@ -1335,60 +1697,228 @@ function drawProjectiles(snapshot, cam) {
 function drawEnemies(snapshot, cam) {
   snapshot.enemies.forEach((enemy) => {
     const p = worldToScreen(enemy, cam);
-    if (p.x < -90 || p.y < -90 || p.x > width + 90 || p.y > height + 90) return;
-    drawGlow(p.x, p.y, enemy.radius * (enemy.boss ? 3.2 : 2.2), enemy.color, enemy.boss ? 0.34 : 0.22);
-    ctx.fillStyle = enemy.color;
-    ctx.strokeStyle = enemy.boss ? "#ffd166" : "rgba(255,255,255,0.7)";
-    ctx.lineWidth = enemy.boss ? 3 : 1.5;
-    ctx.beginPath();
-    ctx.ellipse(p.x, p.y, enemy.radius * 1.1, enemy.radius * 0.86, 0, 0, TAU);
-    ctx.fill();
-    ctx.stroke();
+    const size = enemy.radius * cam.zoom;
+    if (p.x < -120 || p.y < -120 || p.x > width + 120 || p.y > height + 120) return;
+    drawEnemySprite(enemy, p.x, p.y, Math.max(0.72, cam.zoom), snapshot.elapsed || 0);
   });
 }
 
 function drawPlayers(snapshot, cam) {
   snapshot.players.forEach((player) => {
     const p = worldToScreen(player, cam);
-    drawGlow(p.x, p.y, 54, player.color, player.alive ? 0.4 : 0.16);
+    drawGlow(p.x, p.y, 76, player.color, player.alive ? 0.34 : 0.16);
     ctx.save();
     ctx.translate(p.x, p.y);
     ctx.globalAlpha = player.alive ? 1 : 0.35;
     const bob = Math.sin((snapshot.elapsed || 0) * 4 + player.x * 0.01) * 2;
     ctx.translate(0, bob);
-    ctx.fillStyle = "rgba(8, 14, 28, 0.96)";
+    ctx.fillStyle = "rgba(7, 14, 28, 0.98)";
     ctx.strokeStyle = player.color;
-    ctx.lineWidth = 2.5;
+    ctx.lineWidth = 2.7;
     ctx.beginPath();
-    ctx.ellipse(0, 3, 23, 9, 0, 0, TAU);
+    ctx.ellipse(0, 5, 31, 10, 0, 0, TAU);
     ctx.fill();
     ctx.stroke();
+    ctx.fillStyle = "rgba(210, 250, 255, 0.28)";
+    ctx.beginPath();
+    ctx.ellipse(0, 1, 22, 5, 0, 0, TAU);
+    ctx.fill();
     ctx.fillStyle = player.color;
     ctx.globalAlpha *= 0.35;
     ctx.beginPath();
-    ctx.ellipse(0, 6, 31, 7, 0, 0, TAU);
+    ctx.ellipse(0, 10, 40, 8, 0, 0, TAU);
     ctx.fill();
     ctx.globalAlpha = player.alive ? 1 : 0.35;
-    ctx.fillStyle = "rgba(210, 250, 255, 0.9)";
+    ctx.fillStyle = "rgba(210, 250, 255, 0.92)";
     ctx.strokeStyle = "rgba(255, 255, 255, 0.72)";
     ctx.lineWidth = 1.4;
     ctx.beginPath();
-    ctx.arc(0, -5, 10, Math.PI, 0);
+    ctx.arc(0, -8, 12, Math.PI, 0);
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
-    for (let i = -1; i <= 1; i += 1) {
+    ctx.strokeStyle = "rgba(255,255,255,0.26)";
+    ctx.beginPath();
+    ctx.ellipse(0, 5, 31, 10, 0, Math.PI, 0);
+    ctx.stroke();
+    for (let i = -2; i <= 2; i += 1) {
       ctx.fillStyle = i === 0 ? "#ffffff" : player.color;
       ctx.beginPath();
-      ctx.arc(i * 12, 5, 2.8, 0, TAU);
+      ctx.arc(i * 11, 6, 2.4, 0, TAU);
       ctx.fill();
     }
+    ctx.fillStyle = "rgba(116,247,255,0.38)";
+    ctx.beginPath();
+    ctx.ellipse(0, 17, 15 + Math.sin((snapshot.elapsed || 0) * 12) * 4, 5, 0, 0, TAU);
+    ctx.fill();
     ctx.restore();
     ctx.fillStyle = player.color;
     ctx.font = "900 12px Segoe UI, system-ui";
     ctx.textAlign = "center";
     ctx.fillText(player.name, p.x, p.y - 26);
   });
+}
+
+function drawParticles(snapshot, cam) {
+  (snapshot.particles || []).forEach((particle) => {
+    const p = worldToScreen(particle, cam);
+    const alpha = clamp(particle.life / Math.max(0.01, particle.life + particle.age), 0.08, 0.9);
+    drawGlow(p.x, p.y, particle.radius * 5, particle.color, alpha * 0.32);
+    ctx.fillStyle = particle.color;
+    ctx.globalAlpha = alpha;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, particle.radius, 0, TAU);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  });
+}
+
+function drawEnemySprite(enemy, x, y, scale, time) {
+  const r = enemy.radius * scale;
+  const wobble = Math.sin(time * 5 + (enemy.swim || 0)) * 0.18;
+  drawGlow(x, y, r * (enemy.boss ? 4.2 : 2.6), enemy.color, enemy.boss ? 0.36 : 0.24);
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(wobble);
+  ctx.lineWidth = Math.max(1.2, 2 * scale);
+  ctx.strokeStyle = "rgba(255,255,255,0.72)";
+  ctx.fillStyle = enemy.color;
+  if (enemy.boss) drawBossEnemy(r, enemy.color, time);
+  else if (enemy.kind === "voidBat") drawVoidBat(r, enemy.color);
+  else if (enemy.kind === "spaceRat") drawSpaceRat(r, enemy.color, time);
+  else if (enemy.kind === "crystalKnight") drawCrystalKnight(r, enemy.color);
+  else if (enemy.kind === "plasmaCultist") drawPlasmaCultist(r, enemy.color, time);
+  else if (enemy.kind === "novaShade") drawNovaShade(r, enemy.color, time);
+  else drawStarMite(r, enemy.color);
+  ctx.restore();
+}
+
+function drawStarMite(r, color) {
+  ctx.fillStyle = color;
+  for (let i = 0; i < 6; i += 1) {
+    const a = (i / 6) * TAU;
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(a) * r * 0.35, Math.sin(a) * r * 0.35);
+    ctx.lineTo(Math.cos(a) * r * 1.1, Math.sin(a) * r * 1.1);
+    ctx.stroke();
+  }
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 0.62, 0, TAU);
+  ctx.fill();
+}
+
+function drawVoidBat(r, color) {
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(-r * 1.25, -r * 0.2);
+  ctx.quadraticCurveTo(-r * 0.3, -r * 1.05, 0, -r * 0.2);
+  ctx.quadraticCurveTo(r * 0.3, -r * 1.05, r * 1.25, -r * 0.2);
+  ctx.quadraticCurveTo(r * 0.34, r * 0.18, 0, r * 0.85);
+  ctx.quadraticCurveTo(-r * 0.34, r * 0.18, -r * 1.25, -r * 0.2);
+  ctx.fill();
+  ctx.stroke();
+}
+
+function drawSpaceRat(r, color, time) {
+  ctx.fillStyle = "#c89863";
+  ctx.beginPath();
+  ctx.ellipse(0, r * 0.08, r * 1.05, r * 0.58, 0, 0, TAU);
+  ctx.fill();
+  ctx.stroke();
+  ctx.strokeStyle = "#ffd166";
+  ctx.lineWidth = Math.max(1.5, r * 0.14);
+  ctx.beginPath();
+  ctx.moveTo(-r * 0.95, r * 0.12);
+  ctx.bezierCurveTo(-r * 1.5, r * (0.2 + Math.sin(time * 7) * 0.2), -r * 1.9, -r * 0.15, -r * 2.25, r * 0.2);
+  ctx.stroke();
+  ctx.fillStyle = "rgba(205,245,255,0.72)";
+  ctx.strokeStyle = "rgba(255,255,255,0.86)";
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  ctx.arc(r * 0.48, -r * 0.18, r * 0.46, 0, TAU);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#101622";
+  ctx.beginPath();
+  ctx.arc(r * 0.6, -r * 0.2, r * 0.11, 0, TAU);
+  ctx.fill();
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(-r * 0.1, r * 0.64, r * 0.16, 0, TAU);
+  ctx.arc(r * 0.38, r * 0.62, r * 0.16, 0, TAU);
+  ctx.fill();
+}
+
+function drawCrystalKnight(r, color) {
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(0, -r * 1.25);
+  ctx.lineTo(r * 0.95, -r * 0.2);
+  ctx.lineTo(r * 0.52, r * 1.0);
+  ctx.lineTo(-r * 0.52, r * 1.0);
+  ctx.lineTo(-r * 0.95, -r * 0.2);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.strokeStyle = "rgba(255,255,255,0.42)";
+  ctx.beginPath();
+  ctx.moveTo(0, -r * 1.05);
+  ctx.lineTo(0, r * 0.86);
+  ctx.moveTo(-r * 0.68, -r * 0.12);
+  ctx.lineTo(r * 0.68, -r * 0.12);
+  ctx.stroke();
+}
+
+function drawPlasmaCultist(r, color, time) {
+  ctx.fillStyle = "rgba(20,8,32,0.96)";
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, TAU);
+  ctx.fill();
+  ctx.strokeStyle = color;
+  ctx.stroke();
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(0, 0, r * (0.38 + Math.sin(time * 8) * 0.06), 0, TAU);
+  ctx.fill();
+  for (let i = 0; i < 3; i += 1) {
+    const a = time * 2 + (i / 3) * TAU;
+    ctx.beginPath();
+    ctx.arc(Math.cos(a) * r * 0.92, Math.sin(a) * r * 0.92, r * 0.14, 0, TAU);
+    ctx.fill();
+  }
+}
+
+function drawNovaShade(r, color, time) {
+  ctx.fillStyle = "rgba(255,184,74,0.78)";
+  ctx.beginPath();
+  for (let i = 0; i < 10; i += 1) {
+    const a = (i / 10) * TAU;
+    const point = r * (i % 2 ? 0.55 : 1.18 + Math.sin(time * 6) * 0.08);
+    const x = Math.cos(a) * point;
+    const y = Math.sin(a) * point;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+}
+
+function drawBossEnemy(r, color, time) {
+  ctx.fillStyle = "rgba(29, 8, 28, 0.96)";
+  ctx.beginPath();
+  ctx.ellipse(0, 0, r * 1.32, r, 0, 0, TAU);
+  ctx.fill();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = Math.max(2, r * 0.08);
+  ctx.stroke();
+  for (let i = 0; i < 5; i += 1) {
+    const a = time * 1.2 + (i / 5) * TAU;
+    ctx.fillStyle = i % 2 ? "#ffd166" : color;
+    ctx.beginPath();
+    ctx.arc(Math.cos(a) * r * 0.92, Math.sin(a) * r * 0.62, r * 0.16, 0, TAU);
+    ctx.fill();
+  }
 }
 
 function drawGlow(x, y, radius, color, alpha) {
@@ -1407,11 +1937,12 @@ function drawGlow(x, y, radius, color, alpha) {
 function cameraForRender(snapshot) {
   const players = snapshot?.players || [];
   const alive = players.filter((player) => player.alive);
-  const focus = alive.length ? alive : players;
+  const local = players.find((player) => player.id === clientId && player.alive) || players.find((player) => player.id === clientId);
+  const focus = renderCamera.follow && local ? [local] : alive.length ? alive : players;
   const x = focus.length ? focus.reduce((sum, player) => sum + player.x, 0) / focus.length : WORLD.width / 2;
   const y = focus.length ? focus.reduce((sum, player) => sum + player.y, 0) / focus.length : WORLD.height / 2;
   if (!renderCamera.initialized) {
-    renderCamera.zoom = width < 760 ? 0.72 : 0.64;
+    renderCamera.zoom = renderCamera.follow ? FOLLOW_ZOOM : width < 760 ? 0.72 : 0.48;
   }
   if (renderCamera.follow) {
     const viewWidth = width / renderCamera.zoom;

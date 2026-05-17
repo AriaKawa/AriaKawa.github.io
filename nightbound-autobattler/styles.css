@@ -95,6 +95,7 @@ button {
 .pause-button,
 .camera-button,
 .panel-button,
+.speed-button,
 .icon-button,
 .primary,
 .choice-card {
@@ -109,6 +110,7 @@ button {
 .pause-button,
 .camera-button,
 .panel-button,
+.speed-button,
 .icon-button {
   display: inline-flex;
   align-items: center;
@@ -136,6 +138,30 @@ button {
   pointer-events: auto;
 }
 
+.speed-control {
+  display: inline-flex;
+  gap: 0.18rem;
+  padding: 0.18rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(7, 10, 20, 0.62);
+  backdrop-filter: blur(14px);
+}
+
+.speed-button {
+  min-width: 38px;
+  min-height: 34px;
+  padding: 0.42rem 0.5rem;
+  color: var(--muted);
+  border-color: transparent;
+  background: transparent;
+}
+
+.speed-button.is-active {
+  color: #071015;
+  background: linear-gradient(135deg, var(--violet), var(--cyan));
+}
+
 .camera-button,
 .panel-button {
   min-width: 42px;
@@ -152,6 +178,7 @@ button {
 .pause-button:hover,
 .camera-button:hover,
 .panel-button:hover,
+.speed-button:hover,
 .icon-button:hover,
 .primary:hover,
 .choice-card:hover {
@@ -289,10 +316,12 @@ button {
 
 .weapon-chip {
   min-width: 128px;
-  padding: 0.58rem 0.7rem;
+  padding: 0.5rem;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.06);
+  background:
+    radial-gradient(circle at 30% 0%, rgba(255, 255, 255, 0.11), transparent 6rem),
+    rgba(255, 255, 255, 0.06);
 }
 
 .weapon-chip strong {
@@ -306,6 +335,22 @@ button {
   color: var(--muted);
   font-size: 0.78rem;
   font-weight: 800;
+}
+
+.weapon-chip p {
+  margin: 0.35rem 0 0;
+  color: #d4dfec;
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
+
+.card-art {
+  display: block;
+  width: 100%;
+  height: 76px;
+  margin-bottom: 0.52rem;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.18);
 }
 
 .build-card .weapon-chip {
@@ -477,6 +522,10 @@ button {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.48rem;
+}
+
+.passive-chips {
+  margin-top: 0.58rem;
 }
 
 .upgrade-history,
@@ -750,10 +799,21 @@ button {
   .pause-button,
   .camera-button,
   .panel-button,
+  .speed-button,
   .icon-button {
     min-height: 38px;
     padding: 0.55rem 0.68rem;
     font-size: 0.85rem;
+  }
+
+  .speed-control {
+    order: 4;
+    width: 100%;
+  }
+
+  .speed-button {
+    flex: 1;
+    padding: 0.45rem 0.3rem;
   }
 
   .touch-stick {
