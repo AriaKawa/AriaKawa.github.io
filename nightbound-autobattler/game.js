@@ -92,6 +92,7 @@ let width = 0;
 let height = 0;
 let dpr = 1;
 let lastFrame = performance.now();
+let renderCamera = { x: 0, y: 0, initialized: false };
 let services = null;
 let roomRef = null;
 let unsubscribeRoom = null;
@@ -345,8 +346,12 @@ function makeFighter(roomPlayer, index, playerCount) {
     color: roomPlayer.color || PLAYER_COLORS[index % PLAYER_COLORS.length],
     x: WORLD.width / 2 + Math.cos(angle) * 90,
     y: WORLD.height / 2 + Math.sin(angle) * 90,
+    vx: 0,
+    vy: 0,
+    steerX: 0,
+    steerY: 0,
     radius: 17,
-    speed: 225 + shopLevel(shop, "speed") * 10,
+    speed: 132 + shopLevel(shop, "speed") * 6,
     health: 100 + shopLevel(shop, "health") * 14,
     maxHealth: 100 + shopLevel(shop, "health") * 14,
     regen: 0.55 + shopLevel(shop, "regen") * 0.22,
@@ -387,7 +392,7 @@ function loop(now) {
   const dt = Math.min(0.05, (now - lastFrame) / 1000);
   lastFrame = now;
   if (state.isHost && state.sim && state.remoteRoom?.status === "playing") {
-    updateSimulation(state.sim, dt * 1.65);
+    updateSimulation(state.sim, dt * 1.18);
     state.render = state.sim;
     maybePublishSnapshot();
   }
@@ -419,10 +424,15 @@ function updatePlayers(sim, dt) {
   sim.players.forEach((player) => {
     if (!player.alive) return;
     const move = aiMove(sim, player);
-    if (move.moving) {
-      player.x = clamp(player.x + move.x * player.speed * dt, 28, WORLD.width - 28);
-      player.y = clamp(player.y + move.y * player.speed * dt, 28, WORLD.height - 28);
-      player.angle = Math.atan2(move.y, move.x);
+    const targetVx = move.moving ? move.x * player.speed : 0;
+    const targetVy = move.moving ? move.y * player.speed : 0;
+    const accel = 1 - Math.exp(-dt * 4.2);
+    player.vx += (targetVx - player.vx) * accel;
+    player.vy += (targetVy - player.vy) * accel;
+    player.x = clamp(player.x + player.vx * dt, 28, WORLD.width - 28);
+    player.y = clamp(player.y + player.vy * dt, 28, WORLD.height - 28);
+    if (Math.hypot(player.vx, player.vy) > 4) {
+      player.angle = Math.atan2(player.vy, player.vx);
     }
     player.hurtTimer = Math.max(0, player.hurtTimer - dt);
     player.health = Math.min(player.maxHealth, player.health + player.regen * dt);
@@ -443,33 +453,43 @@ function aiMove(sim, player) {
       nearest = enemy;
       nearestDistance = d;
     }
-    if (d < 250) {
-      const pressure = (250 - d) / 250;
-      x += (dx / d) * pressure * (enemy.boss ? 3.2 : 2.2);
-      y += (dy / d) * pressure * (enemy.boss ? 3.2 : 2.2);
+    if (d < 300) {
+      const pressure = (300 - d) / 300;
+      x += (dx / d) * pressure * (enemy.boss ? 2.45 : 1.72);
+      y += (dy / d) * pressure * (enemy.boss ? 2.45 : 1.72);
       closeThreats += 1;
     }
   });
 
   const gem = bestGemTarget(sim, player);
-  if (gem && (closeThreats < 5 || distance(player, gem) < player.pickup * 1.8)) {
+  if (gem && (closeThreats < 4 || distance(player, gem) < player.pickup * 1.45)) {
     const dx = gem.x - player.x;
     const dy = gem.y - player.y;
     const d = Math.hypot(dx, dy) || 1;
-    x += (dx / d) * 1.35;
-    y += (dy / d) * 1.35;
-  } else if (nearest && nearestDistance > 310) {
+    x += (dx / d) * 0.82;
+    y += (dy / d) * 0.82;
+  } else if (nearest && nearestDistance > 380) {
     const dx = nearest.x - player.x;
     const dy = nearest.y - player.y;
     const d = Math.hypot(dx, dy) || 1;
-    x += (dx / d) * 0.78;
-    y += (dy / d) * 0.78;
+    x += (dx / d) * 0.42;
+    y += (dy / d) * 0.42;
   }
 
-  x += (WORLD.width / 2 - player.x) / WORLD.width * 0.62;
-  y += (WORLD.height / 2 - player.y) / WORLD.height * 0.62;
+  x += (WORLD.width / 2 - player.x) / WORLD.width * 0.36;
+  y += (WORLD.height / 2 - player.y) / WORLD.height * 0.36;
   const length = Math.hypot(x, y) || 1;
-  return { x: x / length, y: y / length, moving: Math.abs(x) + Math.abs(y) > 0.05 };
+  const desiredX = x / length;
+  const desiredY = y / length;
+  const steerBlend = 0.08;
+  player.steerX += (desiredX - player.steerX) * steerBlend;
+  player.steerY += (desiredY - player.steerY) * steerBlend;
+  const steerLength = Math.hypot(player.steerX, player.steerY) || 1;
+  return {
+    x: player.steerX / steerLength,
+    y: player.steerY / steerLength,
+    moving: Math.abs(x) + Math.abs(y) > 0.08
+  };
 }
 
 function bestGemTarget(sim, player) {
@@ -942,6 +962,8 @@ function compactSnapshot(sim) {
       color: player.color,
       x: player.x,
       y: player.y,
+      vx: player.vx || 0,
+      vy: player.vy || 0,
       health: player.health,
       maxHealth: player.maxHealth,
       alive: player.alive,
@@ -1052,6 +1074,7 @@ function draw() {
 
 function drawWorld() {
   ctx.clearRect(0, 0, width, height);
+  const cam = cameraForRender(state.render);
   const gradient = ctx.createLinearGradient(0, 0, 0, height);
   gradient.addColorStop(0, "#080a17");
   gradient.addColorStop(0.55, "#09111b");
@@ -1059,8 +1082,8 @@ function drawWorld() {
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, width, height);
   drawMoon();
-  drawCastle();
-  drawGroundGrid(cameraForRender(state.render));
+  drawCastle(cam);
+  drawGroundGrid(cam);
 }
 
 function drawMoon() {
@@ -1080,10 +1103,9 @@ function drawMoon() {
   ctx.fill();
 }
 
-function drawCastle() {
-  const cam = cameraForRender(state.render);
+function drawCastle(cam) {
   ctx.save();
-  ctx.translate(-cam.x * 0.06, 0);
+  ctx.translate(-cam.x * 0.035, 0);
   ctx.fillStyle = "rgba(5, 6, 12, 0.72)";
   const baseY = height * 0.28;
   for (let i = -1; i < 10; i += 1) {
@@ -1101,20 +1123,23 @@ function drawCastle() {
 
 function drawGroundGrid(cam) {
   ctx.save();
-  ctx.translate(-cam.x, -cam.y);
+  ctx.translate(-cam.x * cam.zoom, -cam.y * cam.zoom);
+  ctx.scale(cam.zoom, cam.zoom);
   ctx.strokeStyle = "rgba(73, 244, 255, 0.065)";
   ctx.lineWidth = 1;
   const step = 120;
-  for (let x = Math.floor(cam.x / step) * step; x <= cam.x + width + step; x += step) {
+  const viewWidth = width / cam.zoom;
+  const viewHeight = height / cam.zoom;
+  for (let x = Math.floor(cam.x / step) * step; x <= cam.x + viewWidth + step; x += step) {
     ctx.beginPath();
     ctx.moveTo(x, cam.y);
-    ctx.lineTo(x, cam.y + height + step);
+    ctx.lineTo(x, cam.y + viewHeight + step);
     ctx.stroke();
   }
-  for (let y = Math.floor(cam.y / step) * step; y <= cam.y + height + step; y += step) {
+  for (let y = Math.floor(cam.y / step) * step; y <= cam.y + viewHeight + step; y += step) {
     ctx.beginPath();
     ctx.moveTo(cam.x, y);
-    ctx.lineTo(cam.x + width + step, y);
+    ctx.lineTo(cam.x + viewWidth + step, y);
     ctx.stroke();
   }
   ctx.restore();
@@ -1175,17 +1200,35 @@ function drawPlayers(snapshot) {
     ctx.save();
     ctx.translate(p.x, p.y);
     ctx.globalAlpha = player.alive ? 1 : 0.35;
-    ctx.fillStyle = "#0b1222";
+    const bob = Math.sin((snapshot.elapsed || 0) * 4 + player.x * 0.01) * 2;
+    ctx.translate(0, bob);
+    ctx.fillStyle = "rgba(8, 14, 28, 0.96)";
     ctx.strokeStyle = player.color;
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 2.5;
     ctx.beginPath();
-    ctx.moveTo(20, 0);
-    ctx.lineTo(-12, 16);
-    ctx.lineTo(-8, 0);
-    ctx.lineTo(-12, -16);
+    ctx.ellipse(0, 3, 23, 9, 0, 0, TAU);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = player.color;
+    ctx.globalAlpha *= 0.35;
+    ctx.beginPath();
+    ctx.ellipse(0, 6, 31, 7, 0, 0, TAU);
+    ctx.fill();
+    ctx.globalAlpha = player.alive ? 1 : 0.35;
+    ctx.fillStyle = "rgba(210, 250, 255, 0.9)";
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.72)";
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.arc(0, -5, 10, Math.PI, 0);
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
+    for (let i = -1; i <= 1; i += 1) {
+      ctx.fillStyle = i === 0 ? "#ffffff" : player.color;
+      ctx.beginPath();
+      ctx.arc(i * 12, 5, 2.8, 0, TAU);
+      ctx.fill();
+    }
     ctx.restore();
     ctx.fillStyle = player.color;
     ctx.font = "900 12px Segoe UI, system-ui";
@@ -1213,12 +1256,23 @@ function cameraForRender(snapshot) {
   const focus = alive.length ? alive : players;
   const x = focus.length ? focus.reduce((sum, player) => sum + player.x, 0) / focus.length : WORLD.width / 2;
   const y = focus.length ? focus.reduce((sum, player) => sum + player.y, 0) / focus.length : WORLD.height / 2;
-  return { x: clamp(x - width / 2, 0, Math.max(0, WORLD.width - width)), y: clamp(y - height / 2, 0, Math.max(0, WORLD.height - height)) };
+  const zoom = width < 760 ? 0.72 : 0.64;
+  const viewWidth = width / zoom;
+  const viewHeight = height / zoom;
+  const targetX = clamp(x - viewWidth / 2, 0, Math.max(0, WORLD.width - viewWidth));
+  const targetY = clamp(y - viewHeight / 2, 0, Math.max(0, WORLD.height - viewHeight));
+  if (!renderCamera.initialized) {
+    renderCamera = { x: targetX, y: targetY, initialized: true };
+  } else {
+    renderCamera.x += (targetX - renderCamera.x) * 0.055;
+    renderCamera.y += (targetY - renderCamera.y) * 0.055;
+  }
+  return { x: renderCamera.x, y: renderCamera.y, zoom };
 }
 
 function worldToScreen(entity, snapshot) {
   const cam = cameraForRender(snapshot);
-  return { x: entity.x - cam.x, y: entity.y - cam.y };
+  return { x: (entity.x - cam.x) * cam.zoom, y: (entity.y - cam.y) * cam.zoom };
 }
 
 function nearestEnemy(sim, origin, range) {
