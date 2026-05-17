@@ -60,7 +60,12 @@ button {
   inset: 0;
   width: 100%;
   height: 100%;
+  cursor: grab;
   touch-action: none;
+}
+
+#gameCanvas.is-camera-dragging {
+  cursor: grabbing;
 }
 
 .topbar,
@@ -88,6 +93,7 @@ button {
 
 .back-link,
 .pause-button,
+.camera-button,
 .primary,
 .choice-card {
   min-height: 42px;
@@ -98,7 +104,8 @@ button {
 }
 
 .back-link,
-.pause-button {
+.pause-button,
+.camera-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -117,8 +124,27 @@ button {
   box-shadow: 0 14px 34px rgba(73, 244, 255, 0.18);
 }
 
+.camera-controls {
+  display: inline-flex;
+  justify-content: end;
+  gap: 0.42rem;
+  pointer-events: auto;
+}
+
+.camera-button {
+  min-width: 42px;
+  color: var(--text);
+}
+
+.camera-button.is-active {
+  color: #071015;
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--green), var(--cyan));
+}
+
 .back-link:hover,
 .pause-button:hover,
+.camera-button:hover,
 .primary:hover,
 .choice-card:hover {
   transform: translateY(-1px);
@@ -601,11 +627,12 @@ button {
   }
 
   .topbar {
-    grid-template-columns: auto 1fr auto;
+    grid-template-columns: auto auto;
+    justify-content: space-between;
   }
 
   .brand {
-    padding: 0.38rem 0.55rem;
+    display: none;
   }
 
   .brand h1 {
@@ -617,10 +644,15 @@ button {
   }
 
   .back-link,
-  .pause-button {
+  .pause-button,
+  .camera-button {
     min-height: 38px;
     padding: 0.55rem 0.68rem;
     font-size: 0.85rem;
+  }
+
+  .camera-controls {
+    gap: 0.28rem;
   }
 
   .hud {

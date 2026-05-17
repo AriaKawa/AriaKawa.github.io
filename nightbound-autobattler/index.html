@@ -16,7 +16,12 @@
           <span>AI gothic survival lab</span>
           <h1>Nightbound Auto-Battler</h1>
         </div>
-        <button class="pause-button" id="pauseButton" type="button">Pause</button>
+        <div class="camera-controls" aria-label="Camera controls">
+          <button class="camera-button is-active" id="followButton" type="button" aria-pressed="true">Follow</button>
+          <button class="camera-button" id="zoomOutButton" type="button" aria-label="Zoom out">-</button>
+          <button class="camera-button" id="zoomInButton" type="button" aria-label="Zoom in">+</button>
+          <button class="pause-button" id="pauseButton" type="button">Pause</button>
+        </div>
       </header>
 
       <section class="hud hud-left" aria-label="Run stats">

@@ -43,6 +43,9 @@ const ui = {
   bossBanner: document.getElementById("bossBanner"),
   bossName: document.getElementById("bossName"),
   pauseButton: document.getElementById("pauseButton"),
+  followButton: document.getElementById("followButton"),
+  zoomInButton: document.getElementById("zoomInButton"),
+  zoomOutButton: document.getElementById("zoomOutButton"),
   restartButton: document.getElementById("restartButton")
 };
 
@@ -92,7 +95,17 @@ let width = 0;
 let height = 0;
 let dpr = 1;
 let lastFrame = performance.now();
-let renderCamera = { x: 0, y: 0, initialized: false };
+let renderCamera = {
+  x: 0,
+  y: 0,
+  zoom: 0.64,
+  follow: true,
+  snap: false,
+  initialized: false,
+  dragging: false,
+  dragX: 0,
+  dragY: 0
+};
 let services = null;
 let roomRef = null;
 let unsubscribeRoom = null;
@@ -139,6 +152,10 @@ async function boot() {
   ui.startButton.addEventListener("click", () => startMatch().catch((error) => setStatus(error.message)));
   ui.restartButton.addEventListener("click", () => startMatch().catch((error) => setStatus(error.message)));
   ui.pauseButton.addEventListener("click", togglePause);
+  ui.followButton.addEventListener("click", toggleFollowCamera);
+  ui.zoomInButton.addEventListener("click", () => zoomCamera(1.12));
+  ui.zoomOutButton.addEventListener("click", () => zoomCamera(0.88));
+  setupCameraInput();
 
   if (!hasFirebaseConfig()) {
     ui.roomStatus.textContent = "Firebase config missing.";
@@ -159,6 +176,82 @@ async function boot() {
 
 function setStatus(message) {
   ui.roomStatus.textContent = message;
+}
+
+function setupCameraInput() {
+  canvas.addEventListener("wheel", (event) => {
+    event.preventDefault();
+    zoomCamera(event.deltaY > 0 ? 0.9 : 1.1);
+  }, { passive: false });
+
+  canvas.addEventListener("pointerdown", (event) => {
+    if (event.button !== 0) return;
+    renderCamera.dragging = true;
+    renderCamera.dragX = event.clientX;
+    renderCamera.dragY = event.clientY;
+    canvas.classList.add("is-camera-dragging");
+    canvas.setPointerCapture?.(event.pointerId);
+  });
+
+  canvas.addEventListener("pointermove", (event) => {
+    if (!renderCamera.dragging) return;
+    const dx = event.clientX - renderCamera.dragX;
+    const dy = event.clientY - renderCamera.dragY;
+    renderCamera.dragX = event.clientX;
+    renderCamera.dragY = event.clientY;
+    setFollowCamera(false);
+    panCamera(-dx / renderCamera.zoom, -dy / renderCamera.zoom);
+  });
+
+  const stopCameraDrag = () => {
+    renderCamera.dragging = false;
+    canvas.classList.remove("is-camera-dragging");
+  };
+  window.addEventListener("pointerup", stopCameraDrag);
+  window.addEventListener("pointercancel", stopCameraDrag);
+}
+
+function setFollowCamera(enabled) {
+  renderCamera.follow = enabled;
+  ui.followButton.classList.toggle("is-active", enabled);
+  ui.followButton.setAttribute("aria-pressed", enabled ? "true" : "false");
+}
+
+function toggleFollowCamera() {
+  setFollowCamera(!renderCamera.follow);
+  if (renderCamera.follow) {
+    renderCamera.snap = true;
+  }
+}
+
+function zoomCamera(multiplier) {
+  setFollowCamera(false);
+  const before = screenToWorld(width / 2, height / 2);
+  renderCamera.zoom = clamp(renderCamera.zoom * multiplier, 0.38, 1.18);
+  renderCamera.x = before.x - width / 2 / renderCamera.zoom;
+  renderCamera.y = before.y - height / 2 / renderCamera.zoom;
+  clampCamera();
+}
+
+function panCamera(dx, dy) {
+  renderCamera.x += dx;
+  renderCamera.y += dy;
+  clampCamera();
+}
+
+function screenToWorld(x, y) {
+  return {
+    x: renderCamera.x + x / renderCamera.zoom,
+    y: renderCamera.y + y / renderCamera.zoom
+  };
+}
+
+function clampCamera() {
+  const viewWidth = width / renderCamera.zoom;
+  const viewHeight = height / renderCamera.zoom;
+  renderCamera.x = clamp(renderCamera.x, 0, Math.max(0, WORLD.width - viewWidth));
+  renderCamera.y = clamp(renderCamera.y, 0, Math.max(0, WORLD.height - viewHeight));
+  renderCamera.initialized = true;
 }
 
 function cleanName() {
@@ -572,11 +665,15 @@ function spawnEnemy(sim, kind, bossName) {
 
 function spawnPoint(margin) {
   const side = Math.floor(Math.random() * 4);
-  const cam = cameraForRender(state.render || state.sim);
-  if (side === 0) return { x: clamp(cam.x + Math.random() * width, 20, WORLD.width - 20), y: clamp(cam.y - margin, 20, WORLD.height - 20) };
-  if (side === 1) return { x: clamp(cam.x + width + margin, 20, WORLD.width - 20), y: clamp(cam.y + Math.random() * height, 20, WORLD.height - 20) };
-  if (side === 2) return { x: clamp(cam.x + Math.random() * width, 20, WORLD.width - 20), y: clamp(cam.y + height + margin, 20, WORLD.height - 20) };
-  return { x: clamp(cam.x - margin, 20, WORLD.width - 20), y: clamp(cam.y + Math.random() * height, 20, WORLD.height - 20) };
+  const zoom = renderCamera.zoom || (width < 760 ? 0.72 : 0.64);
+  const viewWidth = width / zoom;
+  const viewHeight = height / zoom;
+  const camX = renderCamera.initialized ? renderCamera.x : clamp(WORLD.width / 2 - viewWidth / 2, 0, Math.max(0, WORLD.width - viewWidth));
+  const camY = renderCamera.initialized ? renderCamera.y : clamp(WORLD.height / 2 - viewHeight / 2, 0, Math.max(0, WORLD.height - viewHeight));
+  if (side === 0) return { x: clamp(camX + Math.random() * viewWidth, 20, WORLD.width - 20), y: clamp(camY - margin, 20, WORLD.height - 20) };
+  if (side === 1) return { x: clamp(camX + viewWidth + margin, 20, WORLD.width - 20), y: clamp(camY + Math.random() * viewHeight, 20, WORLD.height - 20) };
+  if (side === 2) return { x: clamp(camX + Math.random() * viewWidth, 20, WORLD.width - 20), y: clamp(camY + viewHeight + margin, 20, WORLD.height - 20) };
+  return { x: clamp(camX - margin, 20, WORLD.width - 20), y: clamp(camY + Math.random() * viewHeight, 20, WORLD.height - 20) };
 }
 
 function updateWeapons(sim, dt) {
@@ -1063,18 +1160,18 @@ function showEnd(snapshot) {
 }
 
 function draw() {
-  drawWorld();
   const snapshot = state.render;
+  const cam = cameraForRender(snapshot);
+  drawWorld(cam);
   if (!snapshot) return;
-  drawGems(snapshot);
-  drawProjectiles(snapshot);
-  drawEnemies(snapshot);
-  drawPlayers(snapshot);
+  drawGems(snapshot, cam);
+  drawProjectiles(snapshot, cam);
+  drawEnemies(snapshot, cam);
+  drawPlayers(snapshot, cam);
 }
 
-function drawWorld() {
+function drawWorld(cam) {
   ctx.clearRect(0, 0, width, height);
-  const cam = cameraForRender(state.render);
   const gradient = ctx.createLinearGradient(0, 0, 0, height);
   gradient.addColorStop(0, "#080a17");
   gradient.addColorStop(0.55, "#09111b");
@@ -1145,9 +1242,9 @@ function drawGroundGrid(cam) {
   ctx.restore();
 }
 
-function drawGems(snapshot) {
+function drawGems(snapshot, cam) {
   snapshot.gems.forEach((gem) => {
-    const p = worldToScreen(gem, snapshot);
+    const p = worldToScreen(gem, cam);
     drawGlow(p.x, p.y, 28, "rgba(73, 244, 255, 0.55)", 0.45);
     ctx.fillStyle = "#49f4ff";
     ctx.beginPath();
@@ -1156,9 +1253,9 @@ function drawGems(snapshot) {
   });
 }
 
-function drawProjectiles(snapshot) {
+function drawProjectiles(snapshot, cam) {
   snapshot.pulses.forEach((pulse) => {
-    const p = worldToScreen(pulse, snapshot);
+    const p = worldToScreen(pulse, cam);
     ctx.save();
     ctx.globalAlpha = 1 - pulse.age / pulse.life;
     ctx.strokeStyle = pulse.color;
@@ -1169,7 +1266,7 @@ function drawProjectiles(snapshot) {
     ctx.restore();
   });
   snapshot.projectiles.forEach((shot) => {
-    const p = worldToScreen(shot, snapshot);
+    const p = worldToScreen(shot, cam);
     drawGlow(p.x, p.y, shot.radius * 4, shot.color, 0.58);
     ctx.fillStyle = shot.color;
     ctx.beginPath();
@@ -1178,9 +1275,9 @@ function drawProjectiles(snapshot) {
   });
 }
 
-function drawEnemies(snapshot) {
+function drawEnemies(snapshot, cam) {
   snapshot.enemies.forEach((enemy) => {
-    const p = worldToScreen(enemy, snapshot);
+    const p = worldToScreen(enemy, cam);
     if (p.x < -90 || p.y < -90 || p.x > width + 90 || p.y > height + 90) return;
     drawGlow(p.x, p.y, enemy.radius * (enemy.boss ? 3.2 : 2.2), enemy.color, enemy.boss ? 0.34 : 0.22);
     ctx.fillStyle = enemy.color;
@@ -1193,9 +1290,9 @@ function drawEnemies(snapshot) {
   });
 }
 
-function drawPlayers(snapshot) {
+function drawPlayers(snapshot, cam) {
   snapshot.players.forEach((player) => {
-    const p = worldToScreen(player, snapshot);
+    const p = worldToScreen(player, cam);
     drawGlow(p.x, p.y, 54, player.color, player.alive ? 0.4 : 0.16);
     ctx.save();
     ctx.translate(p.x, p.y);
@@ -1256,22 +1353,30 @@ function cameraForRender(snapshot) {
   const focus = alive.length ? alive : players;
   const x = focus.length ? focus.reduce((sum, player) => sum + player.x, 0) / focus.length : WORLD.width / 2;
   const y = focus.length ? focus.reduce((sum, player) => sum + player.y, 0) / focus.length : WORLD.height / 2;
-  const zoom = width < 760 ? 0.72 : 0.64;
-  const viewWidth = width / zoom;
-  const viewHeight = height / zoom;
-  const targetX = clamp(x - viewWidth / 2, 0, Math.max(0, WORLD.width - viewWidth));
-  const targetY = clamp(y - viewHeight / 2, 0, Math.max(0, WORLD.height - viewHeight));
   if (!renderCamera.initialized) {
-    renderCamera = { x: targetX, y: targetY, initialized: true };
-  } else {
-    renderCamera.x += (targetX - renderCamera.x) * 0.055;
-    renderCamera.y += (targetY - renderCamera.y) * 0.055;
+    renderCamera.zoom = width < 760 ? 0.72 : 0.64;
   }
-  return { x: renderCamera.x, y: renderCamera.y, zoom };
+  if (renderCamera.follow) {
+    const viewWidth = width / renderCamera.zoom;
+    const viewHeight = height / renderCamera.zoom;
+    const targetX = clamp(x - viewWidth / 2, 0, Math.max(0, WORLD.width - viewWidth));
+    const targetY = clamp(y - viewHeight / 2, 0, Math.max(0, WORLD.height - viewHeight));
+    if (!renderCamera.initialized || renderCamera.snap) {
+      renderCamera.x = targetX;
+      renderCamera.y = targetY;
+      renderCamera.initialized = true;
+      renderCamera.snap = false;
+    } else {
+      renderCamera.x += (targetX - renderCamera.x) * 0.055;
+      renderCamera.y += (targetY - renderCamera.y) * 0.055;
+    }
+  } else {
+    clampCamera();
+  }
+  return { x: renderCamera.x, y: renderCamera.y, zoom: renderCamera.zoom };
 }
 
-function worldToScreen(entity, snapshot) {
-  const cam = cameraForRender(snapshot);
+function worldToScreen(entity, cam) {
   return { x: (entity.x - cam.x) * cam.zoom, y: (entity.y - cam.y) * cam.zoom };
 }
 
