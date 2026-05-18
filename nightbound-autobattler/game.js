@@ -49,7 +49,15 @@ const ui = {
 };
 
 const TAU = Math.PI * 2;
-const WORLD = { width: 9000, height: 6500 };
+const WORLD = {
+  chunkSize: 1600,
+  tileSize: 1024,
+  spawnMin: 720,
+  spawnMax: 1280,
+  despawnEnemy: 3400,
+  despawnLoot: 3000,
+  obstacleChance: 0.32
+};
 const RUN_DURATION = 600;
 const ROOM_COLLECTION = "tables";
 const PLAYER_COLORS = ["#49f4ff", "#ff4f87", "#77ff9b", "#ffd166"];
@@ -66,10 +74,10 @@ const bossSchedule = [
 
 const enemyTypes = {
   starMite: { name: "Star Mite", hp: 16, speed: 70, damage: 7, radius: 10, xp: 2, color: "#70f5ff" },
-  voidBat: { name: "Void Bat", hp: 14, speed: 136, damage: 6, radius: 12, xp: 2, color: "#a56bff" },
-  spaceRat: { name: "Helmet Rat", hp: 34, speed: 96, damage: 10, radius: 15, xp: 4, color: "#f2d37b", swims: true },
-  crystalKnight: { name: "Crystal Knight", hp: 82, speed: 46, damage: 16, radius: 20, xp: 8, color: "#7dffdb" },
-  plasmaCultist: { name: "Plasma Cultist", hp: 42, speed: 58, damage: 8, radius: 16, xp: 6, color: "#ff5cb8", ranged: true },
+  voidBat: { name: "Void Ray", hp: 14, speed: 136, damage: 6, radius: 12, xp: 2, color: "#a56bff" },
+  spaceRat: { name: "Helmet Space Rat", hp: 34, speed: 96, damage: 10, radius: 15, xp: 4, color: "#f2d37b", swims: true },
+  crystalKnight: { name: "Crystal Drone", hp: 82, speed: 46, damage: 16, radius: 20, xp: 8, color: "#7dffdb" },
+  plasmaCultist: { name: "Plasma Caster", hp: 42, speed: 58, damage: 8, radius: 16, xp: 6, color: "#ff5cb8", ranged: true },
   novaShade: { name: "Nova Shade", hp: 32, speed: 94, damage: 24, radius: 16, xp: 5, color: "#ffb84a", explodes: true },
   boss: { name: "Boss", hp: 1150, speed: 40, damage: 28, radius: 40, xp: 58, color: "#ff395d" }
 };
@@ -88,19 +96,31 @@ const upgradeMeta = {
   "Silver Boots": { color: "#ffd166", description: "Increases AI movement speed and dodge spacing." }
 };
 
-const obstacleLayout = [
-  { id: "ringed-planet", x: 2350, y: 1720, radius: 245, color: "#6e55ff", ring: "#e6b6ff" },
-  { id: "amber-moon", x: 6320, y: 3120, radius: 190, color: "#ffba5d", ring: "#ff6b9e" },
-  { id: "cold-asteroid", x: 4500, y: 5220, radius: 155, color: "#7cd5ff", ring: "#b7f7ff" }
+const assetImages = {
+  background: loadAsset("assets/cosmic-space-tile.webp"),
+  enemies: loadAsset("assets/enemy-atlas.png")
+};
+
+const enemyAtlas = {
+  starMite: { col: 0, row: 0, scale: 3.25 },
+  voidBat: { col: 1, row: 0, scale: 4.65 },
+  spaceRat: { col: 2, row: 0, scale: 4.3 },
+  crystalKnight: { col: 3, row: 0, scale: 4.25 },
+  plasmaCultist: { col: 0, row: 1, scale: 4.45 },
+  novaShade: { col: 1, row: 1, scale: 4.35 },
+  boss: { col: 2, row: 1, scale: 4.8 },
+  prismBoss: { col: 3, row: 1, scale: 4.8 }
+};
+
+const obstacleKinds = [
+  { id: "violet-planet", color: "#7058ff", ring: "#f1b8ff", radius: [148, 255], ringed: true },
+  { id: "ember-moon", color: "#ffba5d", ring: "#ff6b9e", radius: [118, 205], ringed: false },
+  { id: "cold-asteroid", color: "#7cd5ff", ring: "#b7f7ff", radius: [96, 170], ringed: false },
+  { id: "opal-planet", color: "#7fffe4", ring: "#d8fbff", radius: [135, 235], ringed: true }
 ];
+const obstacleCache = new Map();
 
 const starField = makeStarField(230);
-const distantPlanets = [
-  { x: 0.17, y: 0.21, r: 74, color: "#7e5cff", ring: true },
-  { x: 0.81, y: 0.16, r: 52, color: "#ff67c7", ring: false },
-  { x: 0.62, y: 0.72, r: 38, color: "#6df7ff", ring: true }
-];
-
 const shopCatalog = [
   { id: "damage", name: "Honed Rituals", type: "Passive", max: 18, base: 35, scale: 1.36, text: "+8% all weapon damage." },
   { id: "health", name: "Crimson Training", type: "Passive", max: 16, base: 30, scale: 1.32, text: "+14 starting blood." },
@@ -312,6 +332,13 @@ function pointerDistance() {
   return Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
 }
 
+function loadAsset(src) {
+  const image = new Image();
+  image.decoding = "async";
+  image.src = src;
+  return image;
+}
+
 function setFollowCamera(enabled) {
   renderCamera.follow = enabled;
   ui.followButton.classList.toggle("is-active", enabled);
@@ -330,13 +357,13 @@ function zoomCamera(multiplier) {
   renderCamera.zoom = clamp(renderCamera.zoom * multiplier, MANUAL_ZOOM_MIN, MANUAL_ZOOM_MAX);
   renderCamera.x = before.x - width / 2 / renderCamera.zoom;
   renderCamera.y = before.y - height / 2 / renderCamera.zoom;
-  clampCamera();
+  settleCamera();
 }
 
 function panCamera(dx, dy) {
   renderCamera.x += dx;
   renderCamera.y += dy;
-  clampCamera();
+  settleCamera();
 }
 
 function screenToWorld(x, y) {
@@ -346,11 +373,9 @@ function screenToWorld(x, y) {
   };
 }
 
-function clampCamera() {
-  const viewWidth = width / renderCamera.zoom;
-  const viewHeight = height / renderCamera.zoom;
-  renderCamera.x = clamp(renderCamera.x, 0, Math.max(0, WORLD.width - viewWidth));
-  renderCamera.y = clamp(renderCamera.y, 0, Math.max(0, WORLD.height - viewHeight));
+function settleCamera() {
+  if (!Number.isFinite(renderCamera.x)) renderCamera.x = -width / 2 / Math.max(0.1, renderCamera.zoom);
+  if (!Number.isFinite(renderCamera.y)) renderCamera.y = -height / 2 / Math.max(0.1, renderCamera.zoom);
   renderCamera.initialized = true;
 }
 
@@ -384,12 +409,89 @@ function makeStarField(count) {
   }));
 }
 
+function chunkKey(cx, cy) {
+  return `${cx}:${cy}`;
+}
+
+function hashUnit(cx, cy, salt = 0) {
+  let value = Math.imul(cx, 374761393) ^ Math.imul(cy, 668265263) ^ Math.imul(salt + 17, 2246822519);
+  value = Math.imul(value ^ (value >>> 13), 1274126177);
+  return ((value ^ (value >>> 16)) >>> 0) / 4294967296;
+}
+
+function obstacleForChunk(cx, cy) {
+  const key = chunkKey(cx, cy);
+  if (obstacleCache.has(key)) return obstacleCache.get(key);
+  if (Math.abs(cx) <= 1 && Math.abs(cy) <= 1) {
+    obstacleCache.set(key, []);
+    return [];
+  }
+  const roll = hashUnit(cx, cy, 1);
+  if (roll > WORLD.obstacleChance) {
+    obstacleCache.set(key, []);
+    return [];
+  }
+  const kind = obstacleKinds[Math.floor(hashUnit(cx, cy, 2) * obstacleKinds.length) % obstacleKinds.length];
+  const sizeRoll = hashUnit(cx, cy, 3);
+  const radius = kind.radius[0] + (kind.radius[1] - kind.radius[0]) * sizeRoll;
+  const margin = radius + 180;
+  const span = WORLD.chunkSize - margin * 2;
+  const x = cx * WORLD.chunkSize + margin + hashUnit(cx, cy, 4) * span;
+  const y = cy * WORLD.chunkSize + margin + hashUnit(cx, cy, 5) * span;
+  const obstacle = {
+    id: `${kind.id}-${key}`,
+    kind: kind.id,
+    x,
+    y,
+    radius,
+    color: kind.color,
+    ring: kind.ring,
+    ringed: kind.ringed,
+    spin: hashUnit(cx, cy, 6) * TAU
+  };
+  obstacleCache.set(key, [obstacle]);
+  return [obstacle];
+}
+
+function obstaclesInRect(left, top, right, bottom) {
+  const margin = 420;
+  const minX = Math.floor((left - margin) / WORLD.chunkSize);
+  const maxX = Math.floor((right + margin) / WORLD.chunkSize);
+  const minY = Math.floor((top - margin) / WORLD.chunkSize);
+  const maxY = Math.floor((bottom + margin) / WORLD.chunkSize);
+  const obstacles = [];
+  for (let cx = minX; cx <= maxX; cx += 1) {
+    for (let cy = minY; cy <= maxY; cy += 1) {
+      obstacles.push(...obstacleForChunk(cx, cy));
+    }
+  }
+  return obstacles;
+}
+
+function obstaclesNearPoint(x, y, radius = 0) {
+  return obstaclesInRect(x - radius - 520, y - radius - 520, x + radius + 520, y + radius + 520);
+}
+
+function visibleObstacles(cam) {
+  const viewWidth = width / cam.zoom;
+  const viewHeight = height / cam.zoom;
+  return obstaclesInRect(cam.x, cam.y, cam.x + viewWidth, cam.y + viewHeight);
+}
+
+function snapshotObstacles(sim) {
+  const seen = new Map();
+  sim.players.forEach((player) => {
+    obstaclesNearPoint(player.x, player.y, 2200).forEach((obstacle) => seen.set(obstacle.id, obstacle));
+  });
+  return Array.from(seen.values()).slice(0, 24);
+}
+
 function insideObstacle(point, padding = 0) {
-  return obstacleLayout.some((obstacle) => distance(point, obstacle) < obstacle.radius + padding);
+  return obstaclesNearPoint(point.x, point.y, padding).some((obstacle) => distance(point, obstacle) < obstacle.radius + padding);
 }
 
 function resolveObstacleCollision(entity, padding = 0) {
-  obstacleLayout.forEach((obstacle) => {
+  obstaclesNearPoint(entity.x, entity.y, padding).forEach((obstacle) => {
     const dx = entity.x - obstacle.x;
     const dy = entity.y - obstacle.y;
     const d = Math.hypot(dx, dy) || 1;
@@ -564,7 +666,6 @@ function makeSimulation(room) {
     gems: [],
     pickups: [],
     particles: [],
-    obstacles: obstacleLayout,
     bossesSeen: [],
     eventLog: [`Shared XP enabled for ${playerCount} AI survivor${playerCount === 1 ? "" : "s"}.`],
     spawnBudget: 0,
@@ -584,8 +685,8 @@ function makeFighter(roomPlayer, index, playerCount) {
     id: roomPlayer.id,
     name: roomPlayer.name,
     color: roomPlayer.color || PLAYER_COLORS[index % PLAYER_COLORS.length],
-    x: WORLD.width / 2 + Math.cos(angle) * 90,
-    y: WORLD.height / 2 + Math.sin(angle) * 90,
+    x: Math.cos(angle) * 90,
+    y: Math.sin(angle) * 90,
     vx: 0,
     vy: 0,
     steerX: 0,
@@ -659,7 +760,7 @@ function updateSimulation(sim, dt) {
   updateGems(sim, dt);
   updatePickups(sim, dt);
   updateSimParticles(sim, dt);
-  sim.enemies = sim.enemies.filter((enemy) => !enemy.dead);
+  cleanupDistantEntities(sim);
   if (!sim.players.some((player) => player.alive)) endSimulation(sim, false);
 }
 
@@ -672,8 +773,8 @@ function updatePlayers(sim, dt) {
     const accel = 1 - Math.exp(-dt * 4.2);
     player.vx += (targetVx - player.vx) * accel;
     player.vy += (targetVy - player.vy) * accel;
-    player.x = clamp(player.x + player.vx * dt, 28, WORLD.width - 28);
-    player.y = clamp(player.y + player.vy * dt, 28, WORLD.height - 28);
+    player.x += player.vx * dt;
+    player.y += player.vy * dt;
     resolveObstacleCollision(player, player.radius + 6);
     if (Math.hypot(player.vx, player.vy) > 4) {
       player.angle = Math.atan2(player.vy, player.vx);
@@ -720,8 +821,16 @@ function aiMove(sim, player) {
     y += (dy / d) * 0.42;
   }
 
-  x += (WORLD.width / 2 - player.x) / WORLD.width * 0.36;
-  y += (WORLD.height / 2 - player.y) / WORLD.height * 0.36;
+  const pack = playerPackCenter(sim, player);
+  if (pack) {
+    const dx = pack.x - player.x;
+    const dy = pack.y - player.y;
+    const d = Math.hypot(dx, dy) || 1;
+    if (d > 520) {
+      x += (dx / d) * 0.28;
+      y += (dy / d) * 0.28;
+    }
+  }
   const length = Math.hypot(x, y) || 1;
   const desiredX = x / length;
   const desiredY = y / length;
@@ -733,6 +842,15 @@ function aiMove(sim, player) {
     x: player.steerX / steerLength,
     y: player.steerY / steerLength,
     moving: Math.abs(x) + Math.abs(y) > 0.08
+  };
+}
+
+function playerPackCenter(sim, current) {
+  const allies = sim.players.filter((player) => player.alive && player.id !== current.id);
+  if (!allies.length) return null;
+  return {
+    x: allies.reduce((sum, player) => sum + player.x, 0) / allies.length,
+    y: allies.reduce((sum, player) => sum + player.y, 0) / allies.length
   };
 }
 
@@ -789,7 +907,7 @@ function spawnEnemy(sim, kind, bossName) {
   const base = enemyTypes[kind];
   const minute = sim.elapsed / 60;
   const hpScale = 1 + minute * 0.2 + (sim.playerCount - 1) * 0.45;
-  const point = spawnPoint(kind === "boss" ? 190 : 115);
+  const point = spawnPoint(sim, kind === "boss" ? 190 : 115);
   sim.enemies.push({
     id: `${Date.now()}-${Math.random()}`,
     x: point.x,
@@ -817,22 +935,23 @@ function spawnEnemy(sim, kind, bossName) {
   });
 }
 
-function spawnPoint(margin) {
-  const side = Math.floor(Math.random() * 4);
-  const zoom = renderCamera.zoom || (width < 760 ? 0.72 : 0.64);
-  const viewWidth = width / zoom;
-  const viewHeight = height / zoom;
-  const camX = renderCamera.initialized ? renderCamera.x : clamp(WORLD.width / 2 - viewWidth / 2, 0, Math.max(0, WORLD.width - viewWidth));
-  const camY = renderCamera.initialized ? renderCamera.y : clamp(WORLD.height / 2 - viewHeight / 2, 0, Math.max(0, WORLD.height - viewHeight));
+function spawnPoint(sim, margin) {
+  const targets = sim.players.filter((player) => player.alive);
+  const fallback = targets[0] || sim.players[0] || { x: 0, y: 0 };
   for (let tries = 0; tries < 18; tries += 1) {
-    let point;
-    if (side === 0) point = { x: clamp(camX + Math.random() * viewWidth, 20, WORLD.width - 20), y: clamp(camY - margin, 20, WORLD.height - 20) };
-    else if (side === 1) point = { x: clamp(camX + viewWidth + margin, 20, WORLD.width - 20), y: clamp(camY + Math.random() * viewHeight, 20, WORLD.height - 20) };
-    else if (side === 2) point = { x: clamp(camX + Math.random() * viewWidth, 20, WORLD.width - 20), y: clamp(camY + viewHeight + margin, 20, WORLD.height - 20) };
-    else point = { x: clamp(camX - margin, 20, WORLD.width - 20), y: clamp(camY + Math.random() * viewHeight, 20, WORLD.height - 20) };
+    const target = targets[Math.floor(Math.random() * targets.length)] || fallback;
+    const angle = Math.random() * TAU;
+    const distance = WORLD.spawnMin + margin + Math.random() * (WORLD.spawnMax - WORLD.spawnMin);
+    const point = {
+      x: target.x + Math.cos(angle) * distance,
+      y: target.y + Math.sin(angle) * distance
+    };
     if (!insideObstacle(point, 80)) return point;
   }
-  return { x: WORLD.width / 2 + (Math.random() - 0.5) * 800, y: WORLD.height / 2 + (Math.random() - 0.5) * 800 };
+  return {
+    x: fallback.x + (Math.random() - 0.5) * 900,
+    y: fallback.y + (Math.random() - 0.5) * 900
+  };
 }
 
 function updateWeapons(sim, dt) {
@@ -994,8 +1113,8 @@ function updateEnemies(sim, dt) {
     const wobble = enemy.swims ? Math.sin(sim.elapsed * 4.1 + enemy.swim) * 0.62 : 0;
     enemy.vx = Math.cos(a + wobble) * enemy.speed * direction;
     enemy.vy = Math.sin(a + wobble) * enemy.speed * direction;
-    enemy.x = clamp(enemy.x + enemy.vx * dt, 18, WORLD.width - 18);
-    enemy.y = clamp(enemy.y + enemy.vy * dt, 18, WORLD.height - 18);
+    enemy.x += enemy.vx * dt;
+    enemy.y += enemy.vy * dt;
     resolveObstacleCollision(enemy, enemy.radius + 8);
     if (enemy.explodes && d < enemy.radius + target.radius + 8) {
       hurtPlayer(sim, target, enemy.damage);
@@ -1005,6 +1124,16 @@ function updateEnemies(sim, dt) {
       enemy.touchTimer = 0.62;
     }
   });
+}
+
+function cleanupDistantEntities(sim) {
+  sim.enemies = sim.enemies.filter((enemy) => !enemy.dead && (enemy.boss || isNearAnyPlayer(sim, enemy, WORLD.despawnEnemy)));
+  sim.gems = sim.gems.filter((gem) => gem.vacuum || isNearAnyPlayer(sim, gem, WORLD.despawnLoot)).slice(-260);
+  sim.pickups = sim.pickups.filter((pickup) => isNearAnyPlayer(sim, pickup, WORLD.despawnLoot)).slice(-32);
+}
+
+function isNearAnyPlayer(sim, entity, range) {
+  return sim.players.some((player) => player.alive && distance(player, entity) <= range);
 }
 
 function updateGems(sim, dt) {
@@ -1278,7 +1407,7 @@ function compactSnapshot(sim) {
     draftTimer: sim.draftTimer,
     playerCount: sim.playerCount,
     speedMultiplier: sim.speedMultiplier || 1,
-    obstacles: sim.obstacles || obstacleLayout,
+    obstacles: snapshotObstacles(sim),
     players: sim.players.map((player) => ({
       id: player.id,
       name: player.name,
@@ -1295,7 +1424,7 @@ function compactSnapshot(sim) {
       upgrades: player.upgrades.slice(-24),
       weapons: summarizeWeapons(player.weapons)
     })),
-    enemies: sim.enemies.slice(0, 220).map((enemy) => ({ x: enemy.x, y: enemy.y, radius: enemy.radius, color: enemy.color, boss: enemy.boss, kind: enemy.kind, swim: enemy.swim, hp: enemy.hp, maxHp: enemy.maxHp })),
+    enemies: sim.enemies.slice(0, 220).map((enemy) => ({ x: enemy.x, y: enemy.y, radius: enemy.radius, color: enemy.color, boss: enemy.boss, kind: enemy.kind, name: enemy.name, swim: enemy.swim, flash: enemy.flash, hp: enemy.hp, maxHp: enemy.maxHp })),
     gems: sim.gems.slice(0, 120).map((gem) => ({ x: gem.x, y: gem.y, radius: gem.radius, value: gem.value })),
     pickups: sim.pickups.slice(0, 30).map((pickup) => ({ kind: pickup.kind, x: pickup.x, y: pickup.y, radius: pickup.radius, spin: pickup.spin })),
     projectiles: sim.projectiles.slice(0, 140).map((shot) => ({ x: shot.x, y: shot.y, radius: shot.radius, color: shot.color })),
@@ -1515,18 +1644,44 @@ function draw() {
 
 function drawWorld(cam) {
   ctx.clearRect(0, 0, width, height);
-  const bg = ctx.createRadialGradient(width * 0.52, height * 0.42, 30, width * 0.52, height * 0.42, Math.max(width, height));
-  bg.addColorStop(0, "#191039");
-  bg.addColorStop(0.38, "#0a1231");
-  bg.addColorStop(0.72, "#070817");
-  bg.addColorStop(1, "#02030a");
-  ctx.fillStyle = bg;
+  drawSpaceTile(cam, 0.26, 1.45, 0.74);
+  drawSpaceTile(cam, 0.54, 0.9, 0.54);
+  const shade = ctx.createRadialGradient(width * 0.5, height * 0.44, 80, width * 0.5, height * 0.5, Math.max(width, height) * 0.74);
+  shade.addColorStop(0, "rgba(10, 14, 34, 0)");
+  shade.addColorStop(1, "rgba(1, 2, 10, 0.72)");
+  ctx.fillStyle = shade;
   ctx.fillRect(0, 0, width, height);
-  drawNebula(cam);
   drawStars(cam);
-  drawDistantPlanets();
-  drawObstacles(state.render?.obstacles || obstacleLayout, cam);
-  drawGroundGrid(cam);
+  drawObstacles(visibleObstacles(cam), cam);
+}
+
+function drawSpaceTile(cam, depth, scale, alpha) {
+  const image = assetImages.background;
+  if (!image.complete || !image.naturalWidth) {
+    ctx.fillStyle = "#040715";
+    ctx.fillRect(0, 0, width, height);
+    drawNebula(cam);
+    return;
+  }
+  const tile = WORLD.tileSize * scale * cam.zoom;
+  const offsetX = wrap(-cam.x * depth * cam.zoom, tile) - tile;
+  const offsetY = wrap(-cam.y * depth * cam.zoom, tile) - tile;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  for (let x = offsetX, ix = 0; x < width + tile; x += tile, ix += 1) {
+    for (let y = offsetY, iy = 0; y < height + tile; y += tile, iy += 1) {
+      drawMirroredTile(image, x, y, tile + 1, ix % 2 === 1, iy % 2 === 1);
+    }
+  }
+  ctx.restore();
+}
+
+function drawMirroredTile(image, x, y, size, flipX, flipY) {
+  ctx.save();
+  ctx.translate(x + (flipX ? size : 0), y + (flipY ? size : 0));
+  ctx.scale(flipX ? -1 : 1, flipY ? -1 : 1);
+  ctx.drawImage(image, 0, 0, size, size);
+  ctx.restore();
 }
 
 function drawNebula(cam) {
@@ -1563,69 +1718,24 @@ function drawStars(cam) {
   ctx.restore();
 }
 
-function drawDistantPlanets() {
-  distantPlanets.forEach((planet) => {
-    const x = width * planet.x;
-    const y = height * planet.y;
-    drawGlow(x, y, planet.r * 4, planet.color, 0.18);
-    if (planet.ring) {
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.rotate(-0.28);
-      ctx.strokeStyle = "rgba(255,255,255,0.34)";
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.ellipse(0, 0, planet.r * 1.75, planet.r * 0.42, 0, 0, TAU);
-      ctx.stroke();
-      ctx.restore();
-    }
-    ctx.fillStyle = planet.color;
-    ctx.beginPath();
-    ctx.arc(x, y, planet.r, 0, TAU);
-    ctx.fill();
-  });
-}
-
-function drawGroundGrid(cam) {
-  ctx.save();
-  ctx.translate(-cam.x * cam.zoom, -cam.y * cam.zoom);
-  ctx.scale(cam.zoom, cam.zoom);
-  ctx.strokeStyle = "rgba(178, 95, 255, 0.052)";
-  ctx.lineWidth = 1;
-  const step = 180;
-  const viewWidth = width / cam.zoom;
-  const viewHeight = height / cam.zoom;
-  for (let x = Math.floor(cam.x / step) * step; x <= cam.x + viewWidth + step; x += step) {
-    ctx.beginPath();
-    ctx.moveTo(x, cam.y);
-    ctx.lineTo(x, cam.y + viewHeight + step);
-    ctx.stroke();
-  }
-  for (let y = Math.floor(cam.y / step) * step; y <= cam.y + viewHeight + step; y += step) {
-    ctx.beginPath();
-    ctx.moveTo(cam.x, y);
-    ctx.lineTo(cam.x + viewWidth + step, y);
-    ctx.stroke();
-  }
-  ctx.restore();
-}
-
 function drawObstacles(obstacles, cam) {
   obstacles.forEach((obstacle) => {
     const p = worldToScreen(obstacle, cam);
     const r = obstacle.radius * cam.zoom;
     if (p.x < -r * 3 || p.y < -r * 3 || p.x > width + r * 3 || p.y > height + r * 3) return;
     drawGlow(p.x, p.y, r * 2.7, obstacle.color, 0.22);
-    ctx.save();
-    ctx.translate(p.x, p.y);
-    ctx.rotate(-0.24);
-    ctx.strokeStyle = obstacle.ring;
-    ctx.lineWidth = Math.max(2, 8 * cam.zoom);
-    ctx.globalAlpha = 0.56;
-    ctx.beginPath();
-    ctx.ellipse(0, 0, r * 1.75, r * 0.42, 0, 0, TAU);
-    ctx.stroke();
-    ctx.restore();
+    if (obstacle.ringed) {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(-0.24 + obstacle.spin * 0.08);
+      ctx.strokeStyle = obstacle.ring;
+      ctx.lineWidth = Math.max(2, 8 * cam.zoom);
+      ctx.globalAlpha = 0.56;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, r * 1.75, r * 0.42, 0, 0, TAU);
+      ctx.stroke();
+      ctx.restore();
+    }
     const shade = ctx.createRadialGradient(p.x - r * 0.35, p.y - r * 0.42, r * 0.1, p.x, p.y, r);
     shade.addColorStop(0, "#ffffff");
     shade.addColorStop(0.12, obstacle.color);
@@ -1777,6 +1887,7 @@ function drawEnemySprite(enemy, x, y, scale, time) {
   const r = enemy.radius * scale;
   const wobble = Math.sin(time * 5 + (enemy.swim || 0)) * 0.18;
   drawGlow(x, y, r * (enemy.boss ? 4.2 : 2.6), enemy.color, enemy.boss ? 0.36 : 0.24);
+  if (drawAtlasEnemy(enemy, x, y, r, wobble, time)) return;
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(wobble);
@@ -1791,6 +1902,42 @@ function drawEnemySprite(enemy, x, y, scale, time) {
   else if (enemy.kind === "novaShade") drawNovaShade(r, enemy.color, time);
   else drawStarMite(r, enemy.color);
   ctx.restore();
+}
+
+function drawAtlasEnemy(enemy, x, y, r, wobble, time) {
+  const image = assetImages.enemies;
+  if (!image.complete || !image.naturalWidth) return false;
+  const key = enemy.boss && /prism|singularity|maw/i.test(enemy.name || "") ? "prismBoss" : enemy.kind;
+  const meta = enemyAtlas[key] || enemyAtlas[enemy.kind] || enemyAtlas.starMite;
+  const cellW = image.naturalWidth / 4;
+  const cellH = image.naturalHeight / 2;
+  const size = r * meta.scale;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(wobble * (enemy.boss ? 0.55 : 1));
+  const pulse = enemy.boss ? 1 + Math.sin(time * 3) * 0.03 : 1;
+  ctx.globalAlpha = enemy.flash > 0 ? 0.68 : 1;
+  ctx.drawImage(
+    image,
+    meta.col * cellW,
+    meta.row * cellH,
+    cellW,
+    cellH,
+    -size * pulse,
+    -size * pulse,
+    size * 2 * pulse,
+    size * 2 * pulse
+  );
+  if (enemy.flash > 0) {
+    ctx.globalCompositeOperation = "screen";
+    ctx.globalAlpha = 0.42;
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath();
+    ctx.arc(0, 0, size * 0.52, 0, TAU);
+    ctx.fill();
+  }
+  ctx.restore();
+  return true;
 }
 
 function drawStarMite(r, color) {
@@ -1939,16 +2086,16 @@ function cameraForRender(snapshot) {
   const alive = players.filter((player) => player.alive);
   const local = players.find((player) => player.id === clientId && player.alive) || players.find((player) => player.id === clientId);
   const focus = renderCamera.follow && local ? [local] : alive.length ? alive : players;
-  const x = focus.length ? focus.reduce((sum, player) => sum + player.x, 0) / focus.length : WORLD.width / 2;
-  const y = focus.length ? focus.reduce((sum, player) => sum + player.y, 0) / focus.length : WORLD.height / 2;
+  const x = focus.length ? focus.reduce((sum, player) => sum + player.x, 0) / focus.length : 0;
+  const y = focus.length ? focus.reduce((sum, player) => sum + player.y, 0) / focus.length : 0;
   if (!renderCamera.initialized) {
     renderCamera.zoom = renderCamera.follow ? FOLLOW_ZOOM : width < 760 ? 0.72 : 0.48;
   }
   if (renderCamera.follow) {
     const viewWidth = width / renderCamera.zoom;
     const viewHeight = height / renderCamera.zoom;
-    const targetX = clamp(x - viewWidth / 2, 0, Math.max(0, WORLD.width - viewWidth));
-    const targetY = clamp(y - viewHeight / 2, 0, Math.max(0, WORLD.height - viewHeight));
+    const targetX = x - viewWidth / 2;
+    const targetY = y - viewHeight / 2;
     if (!renderCamera.initialized || renderCamera.snap) {
       renderCamera.x = targetX;
       renderCamera.y = targetY;
@@ -1959,7 +2106,7 @@ function cameraForRender(snapshot) {
       renderCamera.y += (targetY - renderCamera.y) * 0.055;
     }
   } else {
-    clampCamera();
+    settleCamera();
   }
   return { x: renderCamera.x, y: renderCamera.y, zoom: renderCamera.zoom };
 }
