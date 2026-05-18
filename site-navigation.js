@@ -3,8 +3,9 @@
   const parentByPage = {
     "games.html": "index.html",
     "education.html": "index.html",
-    "misc.html": "index.html",
-    "in-progress.html": "index.html",
+    "other.html": "index.html",
+    "misc.html": "other.html",
+    "in-progress.html": "other.html",
 
     "2048-rogue/index.html": "games.html",
     "nightbound-autobattler/index.html": "games.html",
@@ -31,13 +32,13 @@
     "type-helper.html": "education.html",
     "bass-guitar-frets.html": "education.html",
 
-    "voice-scale/index.html": "misc.html",
-    "movie-grid.html": "misc.html",
-    "Smash.html": "misc.html",
-    "league-tracker.html": "misc.html",
+    "voice-scale/index.html": "other.html",
+    "movie-grid.html": "other.html",
+    "Smash.html": "other.html",
+    "league-tracker.html": "other.html",
 
-    "AutoRogue/index.html": "in-progress.html",
-    "Council.html": "in-progress.html"
+    "AutoRogue/index.html": "other.html",
+    "Council.html": "other.html"
   };
 
   const backSelector = [

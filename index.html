@@ -59,80 +59,55 @@
                 <h1>Project Vault</h1>
                 <p class="landing__tagline">A private shelf for ideas, games, tools, and experiments.</p>
             </div>
-            <div class="landing__status-panel" aria-label="Site highlights">
-                <span>Saved</span>
-                <strong>20+</strong>
-                <span>Things</span>
-            </div>
         </header>
         <nav class="landing__nav" aria-label="Primary">
-            <div class="landing__rail">
-                <a class="tile tile--education" href="education.html">
-                    <span class="tile__glass"></span>
-                    <div class="tile__content">
-                        <p class="tile__eyebrow">Learn</p>
-                        <p class="tile__title">Education</p>
-                        <p class="tile__meta">Study tools</p>
-                    </div>
+            <div class="vault-categories">
+                <a class="vault-category vault-category--education" href="education.html">
+                    <span>Education Apps</span>
                 </a>
-                <a class="tile tile--games" href="games.html">
-                    <span class="tile__glass"></span>
-                    <div class="tile__content">
-                        <p class="tile__eyebrow">Play</p>
-                        <p class="tile__title">Games</p>
-                        <p class="tile__meta">Games</p>
-                    </div>
+                <a class="vault-category vault-category--games" href="games.html">
+                    <span>Games</span>
                 </a>
-                <a class="tile tile--progress" href="in-progress.html">
-                    <span class="tile__glass"></span>
-                    <div class="tile__content">
-                        <p class="tile__eyebrow">Build</p>
-                        <p class="tile__title">In Progress</p>
-                        <p class="tile__meta">Drafts</p>
-                    </div>
-                </a>
-                <a class="tile tile--misc" href="misc.html">
-                    <span class="tile__glass"></span>
-                    <div class="tile__content">
-                        <p class="tile__eyebrow">Explore</p>
-                        <p class="tile__title">Misc</p>
-                        <p class="tile__meta">Utilities</p>
-                    </div>
+                <a class="vault-category vault-category--other" href="other.html">
+                    <span>Other</span>
                 </a>
             </div>
         </nav>
 
-        <section class="popular" aria-labelledby="popular-picks-title">
-            <div class="popular__header">
-                <h2 class="popular__title" id="popular-picks-title">Popular Picks</h2>
+        <section class="favorites" aria-labelledby="favorites-title">
+            <div class="favorites__header">
+                <h2 class="favorites__title" id="favorites-title">Favorites</h2>
             </div>
 
-            <div class="popular__grid">
-                <a class="popular-card popular-card--highlight" href="league-tracker.html">
-                    <span class="popular-card__label">Season ready</span>
-                    <span class="popular-card__title">League Tracker</span>
-                    <span class="popular-card__meta">Log standings and match updates.</span>
-                </a>
-                <a class="popular-card" href="japanese-study.html">
-                    <span class="popular-card__label">Study</span>
-                    <span class="popular-card__title">Japanese Study</span>
-                    <span class="popular-card__meta">Practice vocab, kanji, and counters.</span>
-                </a>
-                <a class="popular-card" href="type-helper.html">
-                    <span class="popular-card__label">Trainer</span>
-                    <span class="popular-card__title">Pokémon Type Trainer</span>
-                    <span class="popular-card__meta">Master matchups in fast typing battles.</span>
-                </a>
-                <a class="popular-card" href="bass-guitar-frets.html">
-                    <span class="popular-card__label">Music</span>
-                    <span class="popular-card__title">Bass Guitar Frets</span>
-                    <span class="popular-card__meta">Memorize the neck with quick drills.</span>
-                </a>
-                <a class="popular-card" href="blackjack.html">
-                    <span class="popular-card__label">Casino</span>
-                    <span class="popular-card__title">Blackjack</span>
-                    <span class="popular-card__meta">Classic cards with a slick table feel.</span>
-                </a>
+            <div class="favorites__grid">
+                <article class="favorite-card is-favorited" data-favorite-card data-favorite-id="league-tracker">
+                    <button class="favorite-card__star" type="button" data-favorite-toggle aria-label="Remove League Tracker from favorites" aria-pressed="true"></button>
+                    <a class="favorite-card__link" href="league-tracker.html">
+                        <span class="favorite-card__label">Season Ready</span>
+                        <span class="favorite-card__title">League Tracker</span>
+                    </a>
+                </article>
+                <article class="favorite-card is-favorited" data-favorite-card data-favorite-id="japanese-study">
+                    <button class="favorite-card__star" type="button" data-favorite-toggle aria-label="Remove Japanese Study from favorites" aria-pressed="true"></button>
+                    <a class="favorite-card__link" href="japanese-study.html">
+                        <span class="favorite-card__label">Study</span>
+                        <span class="favorite-card__title">Japanese Study</span>
+                    </a>
+                </article>
+                <article class="favorite-card is-favorited" data-favorite-card data-favorite-id="pokemon-type-trainer">
+                    <button class="favorite-card__star" type="button" data-favorite-toggle aria-label="Remove Pokemon Type Trainer from favorites" aria-pressed="true"></button>
+                    <a class="favorite-card__link" href="type-helper.html">
+                        <span class="favorite-card__label">Trainer</span>
+                        <span class="favorite-card__title">Pokemon Type Trainer</span>
+                    </a>
+                </article>
+                <article class="favorite-card is-favorited" data-favorite-card data-favorite-id="bass-guitar-frets">
+                    <button class="favorite-card__star" type="button" data-favorite-toggle aria-label="Remove Bass Guitar Frets from favorites" aria-pressed="true"></button>
+                    <a class="favorite-card__link" href="bass-guitar-frets.html">
+                        <span class="favorite-card__label">Music</span>
+                        <span class="favorite-card__title">Bass Guitar Frets</span>
+                    </a>
+                </article>
             </div>
         </section>
     </main>
@@ -443,6 +418,102 @@
             updateUI();
         })();
 
+        (function setupFavorites() {
+            const cards = Array.from(document.querySelectorAll('[data-favorite-card]'));
+            if (cards.length === 0) {
+                return;
+            }
+
+            const storageKey = 'ak-home-favorites';
+            const defaultFavorites = cards
+                .map((card) => card instanceof HTMLElement ? card.dataset.favoriteId : '')
+                .filter(Boolean);
+            let favorites = new Set(defaultFavorites);
+            let storageAvailable = true;
+
+            function titleFor(card) {
+                return card.querySelector('.favorite-card__title')?.textContent?.trim() || 'this item';
+            }
+
+            function loadFavorites() {
+                try {
+                    const raw = window.localStorage.getItem(storageKey);
+                    if (!raw) {
+                        return new Set(defaultFavorites);
+                    }
+
+                    const parsed = JSON.parse(raw);
+                    if (!Array.isArray(parsed)) {
+                        return new Set(defaultFavorites);
+                    }
+
+                    return new Set(parsed.filter((value) => typeof value === 'string'));
+                } catch (error) {
+                    storageAvailable = false;
+                    console.warn('Favorite state unavailable', error);
+                    return new Set(defaultFavorites);
+                }
+            }
+
+            function saveFavorites() {
+                if (!storageAvailable) {
+                    return;
+                }
+
+                try {
+                    window.localStorage.setItem(storageKey, JSON.stringify(Array.from(favorites)));
+                } catch (error) {
+                    storageAvailable = false;
+                    console.warn('Unable to save favorites', error);
+                }
+            }
+
+            function renderCard(card) {
+                if (!(card instanceof HTMLElement)) {
+                    return;
+                }
+
+                const id = card.dataset.favoriteId;
+                const isFavorited = Boolean(id && favorites.has(id));
+                const button = card.querySelector('[data-favorite-toggle]');
+                card.classList.toggle('is-favorited', isFavorited);
+                card.classList.toggle('is-not-favorited', !isFavorited);
+
+                if (button instanceof HTMLButtonElement) {
+                    button.setAttribute('aria-pressed', String(isFavorited));
+                    button.setAttribute(
+                        'aria-label',
+                        `${isFavorited ? 'Remove' : 'Add'} ${titleFor(card)} ${isFavorited ? 'from' : 'to'} favorites`
+                    );
+                }
+            }
+
+            favorites = loadFavorites();
+            cards.forEach((card) => {
+                renderCard(card);
+                const button = card.querySelector('[data-favorite-toggle]');
+                if (!(button instanceof HTMLButtonElement) || !(card instanceof HTMLElement)) {
+                    return;
+                }
+
+                button.addEventListener('click', () => {
+                    const id = card.dataset.favoriteId;
+                    if (!id) {
+                        return;
+                    }
+
+                    if (favorites.has(id)) {
+                        favorites.delete(id);
+                    } else {
+                        favorites.add(id);
+                    }
+
+                    saveFavorites();
+                    renderCard(card);
+                });
+            });
+        })();
+
         (function setupCursorGlow() {
             const cursorGlowEnabled = false;
 
@@ -552,8 +623,7 @@
             if (currencyAmount) {
                 currencyAmount.textContent = '—';
             }
-            return;
-        }
+        } else {
 
         const outfitById = new Map(outfits.map((outfit) => [outfit.id, outfit]));
         const closetEntries = new Map();
@@ -947,6 +1017,7 @@
                 updateClosetUI();
             }
         });
+        }
     </script>
     <script src="site-navigation.js"></script>
 </body>
