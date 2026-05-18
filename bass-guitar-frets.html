@@ -6,229 +6,420 @@
   <title>Bass Fret Trainer</title>
   <style>
     :root{
-      --bg:#0b0f16;
-      --panel:#0f1726;
-      --text:#dbe4ff;
-      --accent:#74c7ff;
-      --glow:#45e0ff;
+      --bg:#090c12;
+      --surface:#111722;
+      --surface-2:#161f2d;
+      --text:#eef3ff;
+      --muted:#aab7ca;
+      --line:rgba(255,255,255,.1);
+      --teal:#48d6c5;
+      --amber:#ffc857;
+      --rose:#ff6b7a;
+      --wood:#9b6a3b;
+      --wood-dark:#5b3822;
     }
     *{box-sizing:border-box}
-    html,body{height:100%}
+    html,body{min-height:100%}
     body{
       margin:0;
-      background:radial-gradient(1200px 800px at 70% -10%, #142032 0%, var(--bg) 50%);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding:14px;
-      font-family:"Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+      background:
+        radial-gradient(900px 580px at 15% 8%, rgba(72,214,197,.18), transparent 58%),
+        radial-gradient(820px 560px at 86% 2%, rgba(255,200,87,.13), transparent 56%),
+        linear-gradient(180deg, #090c12 0%, #0d1119 58%, #080a0f 100%);
       color:var(--text);
+      font-family:"Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+      padding:16px;
+    }
+    button{
+      font:inherit;
     }
     .app{
-      width:min(1600px, 98vw);
-      background:linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.02));
-      border:1px solid rgba(255,255,255,.08);
-      border-radius:18px;
-      box-shadow: 0 20px 50px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.05);
+      width:min(1280px, 100%);
+      margin:0 auto;
+      border:1px solid var(--line);
+      border-radius:8px;
       overflow:hidden;
+      background:linear-gradient(180deg, rgba(17,23,34,.94), rgba(12,16,24,.98));
+      box-shadow:0 24px 60px rgba(0,0,0,.42);
     }
     .top-bar{
-      display:flex;
-      justify-content:space-between;
+      display:grid;
+      grid-template-columns:auto minmax(0,1fr) auto;
       align-items:center;
-      padding:14px 18px 10px;
-      gap:12px;
-      border-bottom:1px solid rgba(255,255,255,.07);
-      backdrop-filter: blur(10px);
-      background: linear-gradient(180deg, rgba(18,28,46,.85), rgba(18,28,46,.6));
+      gap:14px;
+      padding:14px 16px;
+      border-bottom:1px solid var(--line);
+      background:rgba(9,12,18,.72);
+    }
+    .back-button,
+    .control-button,
+    .note-button{
+      border:1px solid rgba(255,255,255,.14);
+      color:var(--text);
+      background:rgba(255,255,255,.055);
+      cursor:pointer;
+      transition:transform .14s ease, border-color .14s ease, background .14s ease, box-shadow .14s ease;
     }
     .back-button{
       display:inline-flex;
       align-items:center;
       gap:6px;
-      padding:6px 12px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.18);
-      background:rgba(9,14,22,.85);
-      color:var(--text);
-      font-weight:600;
-      cursor:pointer;
-      font:inherit;
+      min-height:38px;
+      padding:8px 12px;
+      border-radius:8px;
       white-space:nowrap;
+      font-weight:700;
     }
     .back-button:hover,
-    .back-button:focus-visible{
-      border-color:rgba(116,199,255,.6);
-      box-shadow:0 0 0 2px rgba(116,199,255,.25);
+    .back-button:focus-visible,
+    .control-button:hover,
+    .control-button:focus-visible,
+    .note-button:hover,
+    .note-button:focus-visible{
       outline:none;
+      border-color:rgba(72,214,197,.72);
+      box-shadow:0 0 0 3px rgba(72,214,197,.16);
     }
     h1{
       margin:0;
-      font-size:18px;
-      letter-spacing:0.3px;
+      font-size:clamp(20px, 3vw, 34px);
+      line-height:1;
+      letter-spacing:0;
     }
-    .hint{margin:0;color:rgba(219,228,255,.8);font-size:14px;}
-    .board{
-      position:relative;
-      width:100%;
-      aspect-ratio: 1600 / 721;
-      background:url("./bass.png");
-      background-size: 100% 100%;
-      background-position: center;
-      background-repeat: no-repeat;
-      isolation:isolate;
+    .hint{
+      margin:6px 0 0;
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.35;
+      letter-spacing:0;
     }
-    .board::before{
-      content:"";
-      position:absolute;
-      inset:0;
-      background: radial-gradient(130% 140% at 50% 105%, rgba(5,7,13,.72), transparent 55%);
-      pointer-events:none;
-      z-index:1;
+    .round-pill{
+      min-width:102px;
+      text-align:center;
+      padding:8px 10px;
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:8px;
+      color:#15201d;
+      background:linear-gradient(180deg, var(--amber), #f3ad34);
+      font-weight:800;
+      white-space:nowrap;
     }
-    .frets{
-      position:absolute;
-      inset:18% 4% 23% 10%;
-      pointer-events:none;
-      filter: drop-shadow(0 8px 18px rgba(0,0,0,.45));
-      z-index:2;
+    .trainer{
+      display:grid;
+      grid-template-columns:minmax(0, 1fr) 290px;
+      gap:0;
     }
-    .fret{
-      position:absolute;
-      inset:0 auto;
-      width:0.82%;
-      border:none;
-      background:transparent;
-      padding:0;
-      transform:translateX(-50%);
-      pointer-events:auto;
-      cursor:pointer;
-      outline:none;
+    .stage{
+      padding:18px;
+      min-width:0;
     }
-    .fret::after{
-      content:"";
-      position:absolute;
-      inset:10% -40%;
-      background:linear-gradient(180deg, rgba(255,255,255,.6), rgba(255,255,255,.05));
-      border-radius:999px;
-      box-shadow:
-        0 0 0 1px rgba(255,255,255,.12),
-        0 0 12px rgba(255,255,255,.08);
-      opacity:.25;
-      transition: all .18s ease;
-      mix-blend-mode: screen;
-    }
-    .fret::before{
-      content: attr(data-label);
-      position:absolute;
-      top:-26px;
-      left:50%;
-      transform:translateX(-50%);
-      font-size:12px;
-      color:rgba(219,228,255,.65);
-      letter-spacing:0.8px;
-      text-shadow:0 1px 2px rgba(0,0,0,.35);
-      opacity:0;
-      transition:opacity .18s ease;
-    }
-    .fret:is(:hover,:focus-visible){
-      outline:2px solid rgba(116,199,255,.55);
-      outline-offset:6px;
-      border-radius:12px;
-      z-index:1;
-    }
-    .fret:is(:hover,:focus-visible)::before{opacity:1;}
-    .fret.is-on::after{
-      opacity:1;
-      box-shadow:
-        0 0 0 1px rgba(255,255,255,.25),
-        0 0 20px 8px color-mix(in srgb, var(--glow) 65%, transparent),
-        0 0 40px 16px color-mix(in srgb, var(--glow) 65%, transparent);
-      background:linear-gradient(180deg,
-        color-mix(in srgb, var(--glow) 90%, white 15%),
-        color-mix(in srgb, var(--glow) 75%, black 10%));
-    }
-    .controls{
+    .question-row{
       display:flex;
       flex-wrap:wrap;
-      gap:10px;
-      padding:12px 16px 16px;
-      align-items:center;
-      background:linear-gradient(180deg, rgba(17,23,38,.9), rgba(10,13,20,.9));
-      border-top:1px solid rgba(255,255,255,.07);
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:12px;
     }
-    .controls label{font-size:13px;color:rgba(219,228,255,.85);display:flex;align-items:center;gap:6px;}
-    .controls input[type="color"]{
-      appearance:none;
-      width:38px;
-      height:30px;
-      border-radius:10px;
-      border:1px solid rgba(255,255,255,.15);
-      background:transparent;
-      cursor:pointer;
+    .prompt{
+      margin:0;
+      font-size:16px;
+      color:var(--muted);
+      line-height:1.35;
     }
-    .button{
-      background:linear-gradient(180deg, rgba(116,199,255,.16), rgba(116,199,255,.08));
-      border:1px solid rgba(116,199,255,.45);
+    .target-label{
+      display:block;
+      margin-top:4px;
       color:var(--text);
-      padding:10px 12px;
-      border-radius:12px;
-      cursor:pointer;
-      font-weight:600;
-      font-size:14px;
-      letter-spacing:0.2px;
-      transition:transform .12s ease, box-shadow .12s ease, background .12s ease;
+      font-size:clamp(24px, 4vw, 42px);
+      font-weight:850;
+      letter-spacing:0;
     }
-    .button.secondary{
-      background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.05));
-      border-color:rgba(255,255,255,.18);
-    }
-    .button:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(0,0,0,.35);}
-    .button:active{transform:translateY(0);}
-    .status{font-size:13px;color:rgba(219,228,255,.7);margin-left:auto;}
-    .pill{
-      display:inline-flex;
+    .feedback{
+      min-height:44px;
+      display:flex;
       align-items:center;
-      gap:6px;
-      padding:8px 10px;
-      border-radius:12px;
-      background:rgba(255,255,255,.04);
-      border:1px solid rgba(255,255,255,.08);
-      font-size:13px;
+      justify-content:flex-end;
+      text-align:right;
+      color:var(--muted);
+      font-weight:750;
+      line-height:1.25;
     }
-    @media (max-width: 720px){
-      h1{font-size:16px;}
-      .frets{inset:20% 4% 26% 11%;}
-      .fret::before{display:none;}
-      .controls{gap:8px;}
-      .button{flex:1 0 calc(50% - 8px);text-align:center;}
+    .feedback.correct{color:var(--teal)}
+    .feedback.wrong{color:var(--rose)}
+    .fretboard-shell{
+      position:relative;
+      width:100%;
+      overflow-x:auto;
+      border:1px solid rgba(255,255,255,.11);
+      border-radius:8px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.04), transparent 18%),
+        linear-gradient(90deg, #2a1710, #412516 9%, #744624 48%, #4d2e1b 100%);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.08), 0 18px 34px rgba(0,0,0,.3);
+    }
+    .fretboard{
+      display:block;
+      min-width:820px;
+      width:100%;
+      height:auto;
+    }
+    .wood-grain{
+      opacity:.34;
+      mix-blend-mode:screen;
+    }
+    .fret-wire{
+      stroke:#dad1bd;
+      stroke-width:5;
+      stroke-linecap:round;
+      filter:drop-shadow(0 2px 2px rgba(0,0,0,.55));
+    }
+    .nut{
+      stroke:#f1ead9;
+      stroke-width:12;
+      stroke-linecap:round;
+      filter:drop-shadow(0 3px 3px rgba(0,0,0,.55));
+    }
+    .string{
+      stroke:#f2ede4;
+      stroke-linecap:round;
+      filter:drop-shadow(0 2px 2px rgba(0,0,0,.45));
+    }
+    .string-label,
+    .fret-label{
+      fill:rgba(238,243,255,.72);
+      font-size:18px;
+      font-weight:800;
+      dominant-baseline:middle;
+      text-anchor:middle;
+    }
+    .fret-label{
+      font-size:14px;
+      fill:rgba(238,243,255,.52);
+    }
+    .marker-dot{
+      fill:rgba(238,243,255,.24);
+    }
+    .target-ring{
+      fill:rgba(72,214,197,.18);
+      stroke:var(--teal);
+      stroke-width:5;
+      filter:drop-shadow(0 0 9px rgba(72,214,197,.95)) drop-shadow(0 0 20px rgba(72,214,197,.55));
+    }
+    .target-core{
+      fill:#eafffb;
+      filter:drop-shadow(0 0 8px rgba(72,214,197,.8));
+    }
+    .open-highlight{
+      stroke:var(--teal);
+      stroke-width:4;
+      stroke-linecap:round;
+      opacity:.75;
+      filter:drop-shadow(0 0 12px rgba(72,214,197,.85));
+    }
+    .answers{
+      display:grid;
+      grid-template-columns:repeat(6, minmax(0, 1fr));
+      gap:10px;
+      margin-top:14px;
+    }
+    .note-button{
+      min-height:48px;
+      border-radius:8px;
+      font-weight:850;
+      font-size:17px;
+    }
+    .note-button.correct{
+      color:#08201c;
+      border-color:rgba(72,214,197,.95);
+      background:linear-gradient(180deg, #74f0df, var(--teal));
+    }
+    .note-button.wrong{
+      border-color:rgba(255,107,122,.9);
+      background:rgba(255,107,122,.2);
+    }
+    .note-button:disabled{
+      cursor:default;
+      opacity:.82;
+      transform:none;
+    }
+    .side-panel{
+      border-left:1px solid var(--line);
+      background:rgba(6,9,14,.34);
+      padding:18px;
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+    }
+    .stat-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+    }
+    .stat{
+      border:1px solid rgba(255,255,255,.1);
+      border-radius:8px;
+      padding:12px;
+      background:rgba(255,255,255,.045);
+    }
+    .stat span{
+      display:block;
+      color:var(--muted);
+      font-size:12px;
+      font-weight:750;
+    }
+    .stat strong{
+      display:block;
+      margin-top:4px;
+      font-size:26px;
+      line-height:1;
+    }
+    .control-stack{
+      display:grid;
+      gap:10px;
+    }
+    .control-button{
+      min-height:44px;
+      border-radius:8px;
+      font-weight:800;
+    }
+    .control-button.primary{
+      color:#08201c;
+      border-color:rgba(72,214,197,.88);
+      background:linear-gradient(180deg, #7cf5e5, var(--teal));
+    }
+    .control-button.warn{
+      color:#251505;
+      border-color:rgba(255,200,87,.9);
+      background:linear-gradient(180deg, #ffd97c, var(--amber));
+    }
+    .answer-key{
+      margin:0;
+      padding:12px;
+      min-height:74px;
+      border:1px solid rgba(255,255,255,.1);
+      border-radius:8px;
+      background:rgba(255,255,255,.04);
+      color:var(--muted);
+      line-height:1.45;
+      font-size:14px;
+    }
+    .answer-key strong{
+      color:var(--text);
+    }
+    @media (max-width: 880px){
+      body{padding:10px}
+      .top-bar{
+        grid-template-columns:1fr auto;
+      }
+      .back-button{
+        grid-column:1 / 2;
+        width:max-content;
+      }
+      .title-wrap{
+        grid-column:1 / -1;
+        grid-row:2;
+      }
+      .round-pill{
+        grid-column:2;
+        grid-row:1;
+      }
+      .trainer{
+        grid-template-columns:1fr;
+      }
+      .side-panel{
+        border-left:0;
+        border-top:1px solid var(--line);
+      }
+      .answers{
+        grid-template-columns:repeat(4, minmax(0, 1fr));
+      }
+      .feedback{
+        justify-content:flex-start;
+        text-align:left;
+      }
+    }
+    @media (max-width: 520px){
+      .stage,
+      .side-panel{
+        padding:12px;
+      }
+      .answers{
+        grid-template-columns:repeat(3, minmax(0, 1fr));
+      }
+      .note-button{
+        min-height:44px;
+      }
+      .stat strong{
+        font-size:22px;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="app" aria-label="Bass fret lighting trainer">
+  <div class="app" aria-label="Bass fret note trainer">
     <div class="top-bar">
-      <button class="back-button" type="button" data-back-button aria-label="Back">← Back</button>
-      <div>
-        <h1>Bass Fret Lighting</h1>
-        <p class="hint">Tap frets to toggle the glow, or use the randomizer and clear buttons.</p>
+      <button class="back-button" type="button" data-back-button aria-label="Back">&larr; Back</button>
+      <div class="title-wrap">
+        <h1>Bass Fret Trainer</h1>
+        <p class="hint">Name the highlighted note on a standard E A D G bass.</p>
       </div>
-      <div class="pill" aria-live="polite" data-status>Ready</div>
+      <div class="round-pill" aria-live="polite" data-round>Round 1</div>
     </div>
-    <div class="board" aria-label="Bass fretboard background image">
-      <div class="frets" aria-hidden="true"></div>
-    </div>
-    <div class="controls">
-      <label title="Change the color of the fret glow">
-        Glow
-        <input type="color" id="color-picker" value="#45e0ff" aria-label="Choose glow color" />
-      </label>
-      <button class="button" data-action="random">Random fret</button>
-      <button class="button" data-action="sequence">Play 4-step</button>
-      <button class="button secondary" data-action="clear">Clear</button>
-      <div class="status" data-count></div>
-    </div>
+
+    <main class="trainer">
+      <section class="stage" aria-label="Bass fretboard practice area">
+        <div class="question-row">
+          <p class="prompt">
+            What note is this?
+            <span class="target-label" data-target-label>E string, fret 5</span>
+          </p>
+          <div class="feedback" aria-live="polite" data-feedback>Choose a note.</div>
+        </div>
+
+        <div class="fretboard-shell">
+          <svg class="fretboard" viewBox="0 0 1200 420" role="img" aria-labelledby="fretboard-title fretboard-desc" data-fretboard>
+            <title id="fretboard-title">Bass fretboard</title>
+            <desc id="fretboard-desc">A rendered four string bass fretboard with a highlighted practice position.</desc>
+          </svg>
+        </div>
+
+        <div class="answers" data-answers aria-label="Note choices"></div>
+      </section>
+
+      <aside class="side-panel" aria-label="Practice stats and controls">
+        <div class="stat-grid">
+          <div class="stat">
+            <span>Score</span>
+            <strong data-score>0</strong>
+          </div>
+          <div class="stat">
+            <span>Streak</span>
+            <strong data-streak>0</strong>
+          </div>
+          <div class="stat">
+            <span>Answered</span>
+            <strong data-answered>0</strong>
+          </div>
+          <div class="stat">
+            <span>Accuracy</span>
+            <strong data-accuracy>0%</strong>
+          </div>
+        </div>
+
+        <div class="control-stack">
+          <button class="control-button primary" type="button" data-action="next">Next</button>
+          <button class="control-button warn" type="button" data-action="reveal">Reveal</button>
+          <button class="control-button" type="button" data-action="reset">Reset Score</button>
+        </div>
+
+        <p class="answer-key" data-answer-key>
+          <strong>Tip:</strong> Open strings are shown just before the nut. Fretted notes sit between the two fret wires.
+        </p>
+      </aside>
+    </main>
   </div>
+
   <script>
     const backButton = document.querySelector('[data-back-button]');
     if (backButton) {
@@ -241,97 +432,326 @@
       });
     }
 
-    const fretsEl = document.querySelector('.frets');
-    const statusEl = document.querySelector('[data-status]');
-    const countEl = document.querySelector('[data-count]');
-    const colorInput = document.querySelector('#color-picker');
+    const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+    const STRINGS = [
+      { name: 'G', note: 7, y: 102, width: 3.5 },
+      { name: 'D', note: 2, y: 170, width: 4.5 },
+      { name: 'A', note: 9, y: 238, width: 5.5 },
+      { name: 'E', note: 4, y: 306, width: 6.8 }
+    ];
+    const FRET_TOTAL = 20;
+    const GEOMETRY = {
+      nutX: 116,
+      openX: 72,
+      scaleX: 1036,
+      topY: 68,
+      bottomY: 326
+    };
 
-    const fretTotal = 20;
-    const fretStart = 13; // percentage start of the playable area
-    const fretEnd = 88;   // percentage end of the playable area
-    let sequenceTimer = null;
+    const svg = document.querySelector('[data-fretboard]');
+    const answersEl = document.querySelector('[data-answers]');
+    const targetLabelEl = document.querySelector('[data-target-label]');
+    const feedbackEl = document.querySelector('[data-feedback]');
+    const answerKeyEl = document.querySelector('[data-answer-key]');
+    const roundEl = document.querySelector('[data-round]');
+    const scoreEl = document.querySelector('[data-score]');
+    const streakEl = document.querySelector('[data-streak]');
+    const answeredEl = document.querySelector('[data-answered]');
+    const accuracyEl = document.querySelector('[data-accuracy]');
 
-    function fretPercent(n){
-      const relative = 1 - Math.pow(2, -n/12);
-      const maxRelative = 1 - Math.pow(2, -fretTotal/12);
-      return fretStart + (fretEnd - fretStart) * (relative / maxRelative);
+    const state = {
+      target: null,
+      round: 1,
+      score: 0,
+      streak: 0,
+      answered: 0,
+      locked: false
+    };
+
+    function svgEl(tag, attrs = {}) {
+      const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+      Object.entries(attrs).forEach(([key, value]) => el.setAttribute(key, value));
+      return el;
     }
 
-    function buildFrets(){
-      for(let i=1;i<=fretTotal;i++){
-        const btn = document.createElement('button');
-        btn.className = 'fret';
-        btn.type = 'button';
-        btn.dataset.fret = i;
-        btn.dataset.label = i;
-        btn.style.left = `${fretPercent(i)}%`;
-        btn.addEventListener('click', ()=> toggleFret(i));
-        fretsEl.appendChild(btn);
+    function fretRelative(fret) {
+      const maxRelative = 1 - Math.pow(2, -FRET_TOTAL / 12);
+      return (1 - Math.pow(2, -fret / 12)) / maxRelative;
+    }
+
+    function fretWireX(fret) {
+      return GEOMETRY.nutX + GEOMETRY.scaleX * fretRelative(fret);
+    }
+
+    function targetX(fret) {
+      if (fret === 0) {
+        return GEOMETRY.openX;
       }
-      updateStatus('Ready');
-      updateCount();
+      return (fretWireX(fret - 1) + fretWireX(fret)) / 2;
     }
 
-    function toggleFret(index, force){
-      const btn = fretsEl.querySelector(`[data-fret="${index}"]`);
-      if(!btn) return;
-      const shouldActivate = force ?? !btn.classList.contains('is-on');
-      btn.classList.toggle('is-on', shouldActivate);
-      btn.style.setProperty('--glow', colorInput.value);
-      updateCount();
-      updateStatus(shouldActivate ? `Fret ${index} lit` : `Fret ${index} cleared`);
+    function noteFor(string, fret) {
+      return NOTES[(string.note + fret) % NOTES.length];
     }
 
-    function clearFrets(){
-      fretsEl.querySelectorAll('.fret.is-on').forEach(btn => btn.classList.remove('is-on'));
-      updateCount();
-      updateStatus('All frets cleared');
+    function clearSvg() {
+      while (svg.firstChild) {
+        svg.removeChild(svg.firstChild);
+      }
     }
 
-    function randomFret(){
-      const random = 1 + Math.floor(Math.random() * fretTotal);
-      clearFrets();
-      toggleFret(random, true);
-      updateStatus(`Random fret ${random} lit`);
+    function renderFretboard() {
+      clearSvg();
+
+      const title = svgEl('title', { id: 'fretboard-title' });
+      title.textContent = 'Bass fretboard';
+      const desc = svgEl('desc', { id: 'fretboard-desc' });
+      desc.textContent = 'A rendered four string bass fretboard with a highlighted practice position.';
+      svg.append(title, desc);
+
+      const defs = svgEl('defs');
+      const boardGradient = svgEl('linearGradient', { id: 'boardGradient', x1: '0%', x2: '100%', y1: '0%', y2: '0%' });
+      boardGradient.append(
+        svgEl('stop', { offset: '0%', 'stop-color': '#2f1a12' }),
+        svgEl('stop', { offset: '36%', 'stop-color': '#764620' }),
+        svgEl('stop', { offset: '72%', 'stop-color': '#4d2d19' }),
+        svgEl('stop', { offset: '100%', 'stop-color': '#2a1710' })
+      );
+      defs.append(boardGradient);
+      svg.append(defs);
+
+      svg.append(svgEl('rect', {
+        x: '28',
+        y: '44',
+        width: '1128',
+        height: '304',
+        rx: '18',
+        fill: 'url(#boardGradient)'
+      }));
+
+      for (let i = 0; i < 15; i += 1) {
+        svg.append(svgEl('path', {
+          class: 'wood-grain',
+          d: `M ${60 + i * 72} ${74 + (i % 4) * 18} C ${150 + i * 52} ${44 + (i % 3) * 26}, ${190 + i * 58} ${168 + (i % 5) * 18}, ${330 + i * 34} ${126 + (i % 2) * 78}`,
+          fill: 'none',
+          stroke: i % 2 ? '#f2ba6a' : '#33170d',
+          'stroke-width': String(2 + (i % 3)),
+          'stroke-linecap': 'round'
+        }));
+      }
+
+      svg.append(svgEl('line', {
+        class: 'nut',
+        x1: GEOMETRY.nutX,
+        x2: GEOMETRY.nutX,
+        y1: GEOMETRY.topY - 20,
+        y2: GEOMETRY.bottomY + 20
+      }));
+
+      for (let fret = 1; fret <= FRET_TOTAL; fret += 1) {
+        const x = fretWireX(fret);
+        svg.append(svgEl('line', {
+          class: 'fret-wire',
+          x1: x.toFixed(2),
+          x2: x.toFixed(2),
+          y1: GEOMETRY.topY - 10,
+          y2: GEOMETRY.bottomY + 10
+        }));
+      }
+
+      [3, 5, 7, 9, 12, 15, 17, 19].forEach((fret) => {
+        const x = targetX(fret);
+        const ys = fret === 12 ? [142, 266] : [204];
+        ys.forEach((y) => {
+          svg.append(svgEl('circle', { class: 'marker-dot', cx: x.toFixed(2), cy: y, r: '11' }));
+        });
+      });
+
+      STRINGS.forEach((string) => {
+        svg.append(svgEl('line', {
+          class: 'string',
+          x1: '44',
+          x2: '1152',
+          y1: string.y,
+          y2: string.y,
+          'stroke-width': string.width
+        }));
+
+        const label = svgEl('text', { class: 'string-label', x: '26', y: string.y });
+        label.textContent = string.name;
+        svg.append(label);
+      });
+
+      for (let fret = 0; fret <= FRET_TOTAL; fret += 1) {
+        const label = svgEl('text', {
+          class: 'fret-label',
+          x: fret === 0 ? GEOMETRY.openX : targetX(fret).toFixed(2),
+          y: '382'
+        });
+        label.textContent = String(fret);
+        svg.append(label);
+      }
+
+      renderTarget();
     }
 
-    function playSequence(){
-      clearInterval(sequenceTimer);
-      clearFrets();
-      const steps = Array.from({length:4}, () => 1 + Math.floor(Math.random() * fretTotal));
-      let i = 0;
-      sequenceTimer = setInterval(() => {
-        if(i >= steps.length){
-          clearInterval(sequenceTimer);
-          updateStatus('Sequence complete');
-          return;
-        }
-        clearFrets();
-        toggleFret(steps[i], true);
-        updateStatus(`Step ${i+1} of 4: fret ${steps[i]}`);
-        i++;
-      }, 700);
+    function renderTarget() {
+      svg.querySelectorAll('[data-target-marker]').forEach((el) => el.remove());
+      if (!state.target) {
+        return;
+      }
+
+      const x = targetX(state.target.fret);
+      const y = state.target.string.y;
+
+      if (state.target.fret === 0) {
+        svg.append(svgEl('line', {
+          'data-target-marker': 'true',
+          class: 'open-highlight',
+          x1: '48',
+          x2: (GEOMETRY.nutX - 16).toString(),
+          y1: y,
+          y2: y
+        }));
+      }
+
+      svg.append(svgEl('circle', {
+        'data-target-marker': 'true',
+        class: 'target-ring',
+        cx: x.toFixed(2),
+        cy: y,
+        r: state.target.fret === 0 ? '20' : '18'
+      }));
+      svg.append(svgEl('circle', {
+        'data-target-marker': 'true',
+        class: 'target-core',
+        cx: x.toFixed(2),
+        cy: y,
+        r: '6'
+      }));
     }
 
-    function updateStatus(text){
-      statusEl.textContent = text;
+    function renderAnswers() {
+      answersEl.innerHTML = '';
+      NOTES.forEach((note) => {
+        const button = document.createElement('button');
+        button.className = 'note-button';
+        button.type = 'button';
+        button.textContent = note;
+        button.dataset.note = note;
+        button.addEventListener('click', () => chooseAnswer(note));
+        answersEl.appendChild(button);
+      });
     }
 
-    function updateCount(){
-      const active = fretsEl.querySelectorAll('.fret.is-on').length;
-      countEl.textContent = `${active} fret${active === 1 ? '' : 's'} lit`;
+    function setFeedback(message, type = '') {
+      feedbackEl.textContent = message;
+      feedbackEl.className = `feedback ${type}`.trim();
     }
 
-    document.querySelector('[data-action="clear"]').addEventListener('click', clearFrets);
-    document.querySelector('[data-action="random"]').addEventListener('click', randomFret);
-    document.querySelector('[data-action="sequence"]').addEventListener('click', playSequence);
-    colorInput.addEventListener('input', () => {
-      fretsEl.style.setProperty('--glow', colorInput.value);
-      fretsEl.querySelectorAll('.fret.is-on').forEach(btn => btn.style.setProperty('--glow', colorInput.value));
-    });
+    function updateStats() {
+      roundEl.textContent = `Round ${state.round}`;
+      scoreEl.textContent = String(state.score);
+      streakEl.textContent = String(state.streak);
+      answeredEl.textContent = String(state.answered);
+      accuracyEl.textContent = state.answered ? `${Math.round((state.score / state.answered) * 100)}%` : '0%';
+    }
 
-    buildFrets();
+    function updateTargetLabel() {
+      const fretText = state.target.fret === 0 ? 'open' : `fret ${state.target.fret}`;
+      targetLabelEl.textContent = `${state.target.string.name} string, ${fretText}`;
+    }
+
+    function setAnswerButtonsDisabled(disabled) {
+      answersEl.querySelectorAll('button').forEach((button) => {
+        button.disabled = disabled;
+      });
+    }
+
+    function clearAnswerButtonState() {
+      answersEl.querySelectorAll('button').forEach((button) => {
+        button.classList.remove('correct', 'wrong');
+        button.disabled = false;
+      });
+    }
+
+    function nextTarget() {
+      const string = STRINGS[Math.floor(Math.random() * STRINGS.length)];
+      const fret = Math.floor(Math.random() * (FRET_TOTAL + 1));
+      state.target = {
+        string,
+        fret,
+        answer: noteFor(string, fret)
+      };
+      state.locked = false;
+      clearAnswerButtonState();
+      updateTargetLabel();
+      setFeedback('Choose a note.');
+      answerKeyEl.innerHTML = '<strong>Tip:</strong> Open strings are shown just before the nut. Fretted notes sit between the two fret wires.';
+      renderTarget();
+      updateStats();
+    }
+
+    function chooseAnswer(note) {
+      if (state.locked || !state.target) {
+        return;
+      }
+
+      state.locked = true;
+      state.answered += 1;
+      setAnswerButtonsDisabled(true);
+
+      const selected = answersEl.querySelector(`[data-note="${note}"]`);
+      const correct = answersEl.querySelector(`[data-note="${state.target.answer}"]`);
+      correct.classList.add('correct');
+
+      if (note === state.target.answer) {
+        state.score += 1;
+        state.streak += 1;
+        setFeedback('Correct.', 'correct');
+      } else {
+        state.streak = 0;
+        selected.classList.add('wrong');
+        setFeedback(`Not quite. It is ${state.target.answer}.`, 'wrong');
+      }
+
+      answerKeyEl.innerHTML = `<strong>${state.target.string.name} string, ${state.target.fret === 0 ? 'open' : `fret ${state.target.fret}`}:</strong> ${state.target.answer}`;
+      updateStats();
+    }
+
+    function revealAnswer() {
+      if (!state.target) {
+        return;
+      }
+      state.locked = true;
+      setAnswerButtonsDisabled(true);
+      const correct = answersEl.querySelector(`[data-note="${state.target.answer}"]`);
+      correct.classList.add('correct');
+      setFeedback(`Answer: ${state.target.answer}`, 'correct');
+      answerKeyEl.innerHTML = `<strong>${state.target.string.name} string, ${state.target.fret === 0 ? 'open' : `fret ${state.target.fret}`}:</strong> ${state.target.answer}`;
+    }
+
+    function advanceRound() {
+      state.round += 1;
+      nextTarget();
+    }
+
+    function resetScore() {
+      state.score = 0;
+      state.streak = 0;
+      state.answered = 0;
+      state.round = 1;
+      nextTarget();
+    }
+
+    document.querySelector('[data-action="next"]').addEventListener('click', advanceRound);
+    document.querySelector('[data-action="reveal"]').addEventListener('click', revealAnswer);
+    document.querySelector('[data-action="reset"]').addEventListener('click', resetScore);
+
+    renderAnswers();
+    renderFretboard();
+    nextTarget();
   </script>
-    <script src="site-navigation.js"></script>
+  <script src="site-navigation.js"></script>
 </body>
 </html>
