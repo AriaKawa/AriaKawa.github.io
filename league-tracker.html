@@ -101,6 +101,36 @@
       border-color: transparent;
       color: #041408;
     }
+    #roleFilter {
+      display: inline-flex;
+      gap: 0.3rem;
+      padding: 0.2rem;
+      border: 1px solid var(--line);
+      border-radius: 9999px;
+      background: #101011;
+    }
+    .role-button {
+      justify-content: center;
+      width: 2.15rem;
+      height: 2.15rem;
+      min-height: 2.15rem;
+      padding: 0;
+      color: var(--muted);
+    }
+    .role-button svg {
+      width: 1.1rem;
+      height: 1.1rem;
+      fill: none;
+      stroke: currentColor;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-width: 2;
+    }
+    .role-button.active {
+      background: var(--text);
+      border-color: transparent;
+      color: #050506;
+    }
     #status {
       font-size: 0.8rem;
       color: var(--muted);
@@ -326,6 +356,23 @@
     <div class="header-row controls-row">
       <div id="controls">
         <input id="search" type="text" placeholder="Search champ..." disabled />
+        <div id="roleFilter" aria-label="Filter by role">
+          <button class="role-button" type="button" data-role="top" aria-label="Top" aria-pressed="false" title="Top" disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 19 5" /><path d="M9 5h10v10" /><path d="M5 14v5h5" /></svg>
+          </button>
+          <button class="role-button" type="button" data-role="jungle" aria-label="Jungle" aria-pressed="false" title="Jungle" disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21c3.5-3.3 6-6.5 6-10a6 6 0 0 0-12 0c0 3.5 2.5 6.7 6 10Z" /><path d="M12 15V7" /><path d="M8.5 11.5 12 15l3.5-3.5" /></svg>
+          </button>
+          <button class="role-button" type="button" data-role="middle" aria-label="Middle" aria-pressed="false" title="Middle" disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 9 9-9 9-9-9 9-9Z" /><path d="M8 12h8" /><path d="M12 8v8" /></svg>
+          </button>
+          <button class="role-button" type="button" data-role="bottom" aria-label="Bottom" aria-pressed="false" title="Bottom" disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 5 5 19" /><path d="M15 19H5V9" /><path d="M19 10V5h-5" /></svg>
+          </button>
+          <button class="role-button" type="button" data-role="support" aria-label="Support" aria-pressed="false" title="Support" disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 5 6v5c0 4.4 2.9 8.4 7 10 4.1-1.6 7-5.6 7-10V6l-7-3Z" /><path d="M12 8v7" /><path d="M8.5 11.5h7" /></svg>
+          </button>
+        </div>
         <button id="clear" disabled>Clear all</button>
         <button id="sortCompleted" class="active" disabled aria-pressed="true">Completed first</button>
         <div class="opgg-menu-wrap">
@@ -399,6 +446,7 @@
     const clearBtn = document.getElementById("clear");
     const searchInput = document.getElementById("search");
     const sortCompletedBtn = document.getElementById("sortCompleted");
+    const roleButtons = [...document.querySelectorAll(".role-button")];
     const accountSelect = document.getElementById("accountSelect");
     const newAccountInput = document.getElementById("newAccount");
     const addAccountBtn = document.getElementById("addAccount");
@@ -436,6 +484,7 @@
     let champsList = [];
     let filterText = "";
     let completedFirst = true;
+    let activeRole = "";
 
     function setAccountMessage(message = "", isError = false) {
       accountMessageEl.textContent = message;
@@ -627,6 +676,12 @@
         setOpggMenuOpen(false);
       }
     });
+    roleButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        activeRole = activeRole === button.dataset.role ? "" : button.dataset.role;
+        renderGrid();
+      });
+    });
 
     saveRiotIdBtn.addEventListener("click", saveRiotId);
     riotNameInput.addEventListener("input", previewOpggLinkFromFields);
@@ -646,6 +701,9 @@
       clearBtn.disabled = !enabled;
       searchInput.disabled = !enabled;
       sortCompletedBtn.disabled = !enabled;
+      roleButtons.forEach((button) => {
+        button.disabled = !enabled;
+      });
       importOpggBtn.disabled = !enabled || opggPasteInput.value.trim().length === 0;
     }
 
@@ -664,12 +722,66 @@
       return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
     }
 
+    const ROLE_ORDER = ["top", "jungle", "middle", "bottom", "support"];
+    const ROLE_CHAMPIONS = {
+      top: new Set([
+        "Aatrox", "Akali", "Ambessa", "Aurora", "Camille", "Chogath", "Darius", "DrMundo", "Fiora", "Gangplank",
+        "Garen", "Gnar", "Gragas", "Gwen", "Heimerdinger", "Illaoi", "Irelia", "Jax", "Jayce", "Kayle",
+        "Kennen", "Kled", "KSante", "Malphite", "Maokai", "Mordekaiser", "Nasus", "Olaf", "Ornn", "Pantheon",
+        "Poppy", "Quinn", "Renekton", "Rengar", "Riven", "Rumble", "Ryze", "Sett", "Shen", "Singed",
+        "Sion", "TahmKench", "Teemo", "Trundle", "Tryndamere", "Udyr", "Urgot", "Vayne", "Vladimir", "Volibear",
+        "Warwick", "MonkeyKing", "Yasuo", "Yone", "Yorick", "Zac", "Zaheen",
+      ]),
+      jungle: new Set([
+        "Amumu", "Belveth", "Brand", "Briar", "Diana", "DrMundo", "Ekko", "Elise", "Evelynn", "Fiddlesticks",
+        "Gragas", "Graves", "Gwen", "Hecarim", "Ivern", "JarvanIV", "Jax", "Karthus", "Kayn", "Khazix",
+        "Kindred", "LeeSin", "Lillia", "Maokai", "MasterYi", "Morgana", "Naafiri", "Nidalee", "Nocturne", "Nunu",
+        "Olaf", "Pantheon", "Poppy", "Qiyana", "Rammus", "RekSai", "Rengar", "Rumble", "Sejuani", "Shaco",
+        "Shyvana", "Skarner", "Sylas", "Taliyah", "Talon", "Trundle", "Udyr", "Vi", "Viego", "Volibear",
+        "Warwick", "MonkeyKing", "XinZhao", "Zac", "Zed", "Zyra",
+      ]),
+      middle: new Set([
+        "Ahri", "Akali", "Anivia", "Annie", "AurelionSol", "Aurora", "Azir", "Brand", "Cassiopeia", "Corki",
+        "Diana", "Ekko", "Fizz", "Galio", "Hwei", "Irelia", "Jayce", "Kassadin", "Katarina", "Kayle",
+        "Leblanc", "Lissandra", "Lucian", "Lux", "Malzahar", "Naafiri", "Neeko", "Orianna", "Qiyana", "Ryze",
+        "Seraphine", "Smolder", "Swain", "Sylas", "Syndra", "Taliyah", "Talon", "Tristana", "TwistedFate", "Veigar",
+        "Velkoz", "Vex", "Viktor", "Vladimir", "Xerath", "Yasuo", "Yone", "Zed", "Ziggs", "Zoe",
+      ]),
+      bottom: new Set([
+        "Aphelios", "Ashe", "Caitlyn", "Corki", "Draven", "Ezreal", "Jhin", "Jinx", "Kaisa", "Kalista",
+        "Karthus", "KogMaw", "Lucian", "MissFortune", "Nilah", "Samira", "Seraphine", "Sivir", "Smolder", "Swain",
+        "Syndra", "Tristana", "Twitch", "Varus", "Vayne", "Veigar", "Xayah", "Yasuo", "Zeri", "Ziggs",
+      ]),
+      support: new Set([
+        "Alistar", "Ashe", "Bard", "Blitzcrank", "Brand", "Braum", "Galio", "Heimerdinger", "Janna", "Karma",
+        "Leona", "Lulu", "Lux", "Maokai", "Milio", "Morgana", "Nami", "Nautilus", "Neeko", "Pantheon",
+        "Poppy", "Pyke", "Rakan", "Rell", "Renata", "Senna", "Seraphine", "Shen", "Sona", "Soraka",
+        "Swain", "TahmKench", "Taric", "Thresh", "Velkoz", "Xerath", "Yuumi", "Zilean", "Zyra",
+      ]),
+    };
+
+    function getChampionRoles(champ) {
+      const assigned = ROLE_ORDER.filter((role) => ROLE_CHAMPIONS[role].has(champ.id));
+      if (assigned.length > 0) {
+        return assigned;
+      }
+
+      const tags = new Set(champ.tags || []);
+      const fallback = new Set();
+      if (tags.has("Marksman")) fallback.add("bottom");
+      if (tags.has("Support")) fallback.add("support");
+      if (tags.has("Mage") || tags.has("Assassin")) fallback.add("middle");
+      if (tags.has("Fighter") || tags.has("Tank")) fallback.add("top");
+      return [...fallback];
+    }
+
     const EXTRA_CHAMPS = [
       {
         id: "Zaheen",
         name: "Zaheen",
         title: "",
         imgUrl: createPlaceholder("Zaheen"),
+        roles: ["top"],
       },
     ];
 
@@ -704,11 +816,18 @@
 
       sortCompletedBtn.classList.toggle("active", completedFirst);
       sortCompletedBtn.setAttribute("aria-pressed", completedFirst ? "true" : "false");
+      roleButtons.forEach((button) => {
+        const isActive = button.dataset.role === activeRole;
+        button.classList.toggle("active", isActive);
+        button.setAttribute("aria-pressed", isActive ? "true" : "false");
+      });
 
       const query = filterText.trim().toLowerCase();
-      const filtered = champsList.filter((champ) =>
-        champ.name.toLowerCase().includes(query)
-      );
+      const filtered = champsList.filter((champ) => {
+        const matchesSearch = champ.name.toLowerCase().includes(query);
+        const matchesRole = !activeRole || champ.roles?.includes(activeRole);
+        return matchesSearch && matchesRole;
+      });
 
       const toRender = completedFirst ? [...filtered] : filtered;
       if (completedFirst) {
@@ -941,10 +1060,16 @@
         const champsJson = await champsRes.json();
         const data = champsJson.data; // object keyed by champ id (Aatrox, Ahri, ...)
         const champs = Object.values(data)
-          .map((champ) => ({
-            ...champ,
-            imgUrl: `https://ddragon.leagueoflegends.com/cdn/${latest}/img/champion/${champ.image.full}`,
-          }))
+          .map((champ) => {
+            const champWithImage = {
+              ...champ,
+              imgUrl: `https://ddragon.leagueoflegends.com/cdn/${latest}/img/champion/${champ.image.full}`,
+            };
+            return {
+              ...champWithImage,
+              roles: getChampionRoles(champWithImage),
+            };
+          })
           .sort((a, b) => a.name.localeCompare(b.name));
 
         EXTRA_CHAMPS.forEach((extra) => {
