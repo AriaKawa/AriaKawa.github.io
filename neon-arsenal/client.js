@@ -68,6 +68,7 @@ let masterGain = null;
 let audioUnlocked = false;
 let fallbackAudio = null;
 let lastFireSound = 0;
+let lastHitSound = 0;
 let lastBossIncoming = "";
 let bossAlertText = "";
 let bossAlertUntil = 0;
@@ -343,7 +344,10 @@ function practiceFire(player, dt) {
     damage: d.bulletDamage * (barrel.damage || 1),
     life: 2.1,
   });
-  if (player.id === myId) playSfx("fire");
+  if (player.id === myId) {
+    playSfx("fire");
+    ui.sound.dataset.last = "fire";
+  }
 }
 
 function nearestPracticeTarget(player) {
@@ -859,7 +863,8 @@ function renderBossAlert() {
 function updateSoundUi() {
   if (!ui.sound) return;
   const state = audioCtx?.state || (audioUnlocked ? "on" : "off");
-  ui.sound.textContent = audioUnlocked && state !== "suspended" ? "Sound On" : "Enable Sound";
+  const last = ui.sound.dataset.last;
+  ui.sound.textContent = audioUnlocked && state !== "suspended" ? (last ? `Sound On: ${last}` : "Sound On") : "Enable Sound";
   ui.sound.dataset.state = audioUnlocked && state !== "suspended" ? "on" : "off";
 }
 
@@ -940,34 +945,48 @@ function playFallbackBeep() {
   fallbackAudio.play().catch(() => {});
 }
 
-function playSfx(kind) {
-  unlockAudio();
+function ensurePlayableAudio(kind) {
   if (!audioCtx || audioCtx.state !== "running") {
     if (kind === "ready" || kind === "upgrade") playFallbackBeep();
-    return;
+    return false;
   }
+  return true;
+}
+
+function playSfx(kind) {
+  if (!ensurePlayableAudio(kind)) return;
   if (kind === "fire") {
     const now = performance.now();
-    if (now - lastFireSound < 95) return;
+    if (now - lastFireSound < 70) return;
     lastFireSound = now;
-    tone(160, 0.06, "square", 0.08);
-    tone(80, 0.09, "sawtooth", 0.04, 0.012);
+    tone(190, 0.045, "square", 0.18);
+    tone(95, 0.06, "sawtooth", 0.12, 0.006);
+    if (ui.sound) ui.sound.dataset.last = "fire";
   } else if (kind === "hit") {
-    tone(420, 0.08, "triangle", 0.09);
-    tone(760, 0.055, "sine", 0.055, 0.025);
+    const now = performance.now();
+    if (now - lastHitSound < 55) return;
+    lastHitSound = now;
+    tone(420, 0.08, "triangle", 0.14);
+    tone(760, 0.055, "sine", 0.09, 0.025);
+    if (ui.sound) ui.sound.dataset.last = "hit";
   } else if (kind === "upgrade") {
     tone(520, 0.08, "sine", 0.09);
     tone(780, 0.1, "sine", 0.075, 0.07);
+    if (ui.sound) ui.sound.dataset.last = "upgrade";
   } else if (kind === "boss") {
     tone(96, 0.28, "sawtooth", 0.12);
     tone(144, 0.22, "square", 0.08, 0.09);
+    if (ui.sound) ui.sound.dataset.last = "boss";
   } else if (kind === "death") {
     tone(220, 0.16, "sawtooth", 0.11);
     tone(92, 0.22, "triangle", 0.09, 0.08);
+    if (ui.sound) ui.sound.dataset.last = "death";
   } else if (kind === "ready") {
     tone(330, 0.08, "triangle", 0.11);
     tone(660, 0.12, "sine", 0.09, 0.075);
+    if (ui.sound) ui.sound.dataset.last = "ready";
   }
+  updateSoundUi();
 }
 
 function renderTree() {
