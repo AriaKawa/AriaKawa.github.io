@@ -19,14 +19,14 @@ export const STAT_KEYS = [
 ];
 
 export const STATS = {
-  regen: { label: "Regen", short: "HR", color: "#28f0a6" },
-  maxHealth: { label: "Max Health", short: "HP", color: "#5de0ff" },
-  bodyDamage: { label: "Body", short: "BD", color: "#ff6b85" },
-  bulletSpeed: { label: "Bullet Speed", short: "BS", color: "#ffe45e" },
-  penetration: { label: "Penetration", short: "PN", color: "#8eb9ff" },
-  bulletDamage: { label: "Damage", short: "DM", color: "#c084ff" },
-  reload: { label: "Reload", short: "RL", color: "#ff8cf3" },
-  moveSpeed: { label: "Move Speed", short: "MS", color: "#ffbd72" },
+  regen: { label: "Health Regen", short: "Health Regen", color: "#28f0a6" },
+  maxHealth: { label: "Health", short: "Health", color: "#5de0ff" },
+  bodyDamage: { label: "Body Damage", short: "Body Damage", color: "#ff6b85" },
+  bulletSpeed: { label: "Bullet Speed", short: "Bullet Speed", color: "#ffe45e" },
+  penetration: { label: "Bullet Health", short: "Bullet Health", color: "#8eb9ff" },
+  bulletDamage: { label: "Damage", short: "Damage", color: "#c084ff" },
+  reload: { label: "Attack Speed", short: "Attack Speed", color: "#ff8cf3" },
+  moveSpeed: { label: "Movement Speed", short: "Movement Speed", color: "#ffbd72" },
 };
 
 export const STAT_PRESETS = {

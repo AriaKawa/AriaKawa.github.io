@@ -61,7 +61,7 @@ let ping = 0;
 let pingSentAt = 0;
 let camera = { x: WORLD.w / 2, y: WORLD.h / 2, shake: 0 };
 let pointer = { x: innerWidth / 2, y: innerHeight / 2, active: false };
-let input = { mx: 0, my: 0, firing: false, repel: false, autoFire: false, autoSpin: false, aim: 0, seq: 0 };
+let input = { mx: 0, my: 0, firing: false, repel: false, autoFire: true, autoSpin: false, aim: 0, seq: 0 };
 let keys = new Set();
 let particles = [];
 let practice = null;
@@ -230,7 +230,7 @@ function updateInput() {
   input.mx = mx;
   input.my = my;
   input.repel = keys.has("Shift");
-  input.firing = input.firing || keys.has(" ");
+  input.firing = keys.has(" ") || pointer.active;
   const player = getMe();
   if (player) {
     const worldPoint = screenToWorld(pointer.x, pointer.y);
@@ -713,7 +713,8 @@ function renderStats(me) {
     row.className = "stat-row";
     row.title = stat.label;
     const disabled = available <= 0 || value >= cap || cap === 0 ? "disabled" : "";
-    row.innerHTML = `<button ${disabled} data-stat="${key}">+</button><div><b>${stat.short}</b><div class="stat-row__bar"><span style="width:${cap ? value / cap * 100 : 0}%;background:${stat.color}"></span></div></div><small>${value}/${cap}</small>`;
+    row.style.setProperty("--stat-color", stat.color);
+    row.innerHTML = `<button ${disabled} data-stat="${key}">+</button><div class="stat-row__body"><b>${stat.label}</b><div class="stat-row__bar"><span style="width:${cap ? value / cap * 100 : 0}%;background:${stat.color}"></span></div></div><small>${value}/${cap}</small>`;
     ui.stats.appendChild(row);
   }
 }
@@ -796,14 +797,14 @@ function loop(time) {
   updateCamera(dt);
   draw(time);
   updateUi();
-  input.firing = keys.has(" ");
+  input.firing = keys.has(" ") || pointer.active;
   requestAnimationFrame(loop);
 }
 
 window.addEventListener("resize", resize);
 window.addEventListener("keydown", (event) => {
   keys.add(event.key);
-  if (event.key.toLowerCase() === "e") input.autoFire = !input.autoFire;
+  if (event.key.toLowerCase() === "e") input.autoFire = true;
   if (event.key.toLowerCase() === "c") input.autoSpin = !input.autoSpin;
   if (event.key.toLowerCase() === "y") {
     renderTree();
@@ -823,6 +824,10 @@ window.addEventListener("pointerdown", (event) => {
   if (event.button === 0) input.firing = true;
 });
 window.addEventListener("pointerup", () => {
+  input.firing = keys.has(" ") || pointer.active;
+});
+window.addEventListener("pointerleave", () => {
+  pointer.active = false;
   input.firing = keys.has(" ");
 });
 window.addEventListener("contextmenu", (event) => event.preventDefault());

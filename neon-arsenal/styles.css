@@ -288,17 +288,28 @@ button:hover {
 .stats-panel {
   left: 14px;
   bottom: 14px;
-  width: min(320px, calc(100vw - 28px));
+  width: min(380px, calc(100vw - 28px));
   padding: 10px;
 }
 
 .stat-row {
   display: grid;
-  grid-template-columns: 30px 1fr 36px;
+  grid-template-columns: 30px 1fr 40px;
   align-items: center;
   gap: 8px;
-  min-height: 30px;
+  min-height: 34px;
+  margin-top: 4px;
+  padding: 3px 6px 3px 0;
+  border-left: 4px solid var(--stat-color, transparent);
+  border-radius: 6px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--stat-color, transparent) 16%, transparent), transparent 72%);
   color: #e9f7ff;
+}
+
+.stat-row:first-child {
+  margin-top: 0;
+  border-left-color: transparent;
+  background: transparent;
 }
 
 .stat-row button {
@@ -325,9 +336,29 @@ button:hover {
   height: 100%;
 }
 
-.stat-row b,
+.stat-row__body {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.stat-row b {
+  overflow: hidden;
+  color: #f4fbff;
+  font-size: 12px;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .stat-row small {
   font-size: 11px;
+}
+
+.stat-row small {
+  color: #d8e8f6;
+  font-weight: 900;
+  text-align: right;
 }
 
 .class-panel {
