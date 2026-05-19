@@ -1910,6 +1910,7 @@ body:has(.landing) .landing__tagline {
 }
 
 /* Shared city backdrop and color pass for category tabs */
+body.category-page,
 body:has(.category) {
     min-height: 100vh;
     justify-content: center;
@@ -1920,6 +1921,7 @@ body:has(.category) {
         #07090e;
 }
 
+body.category-page::before,
 body:has(.category)::before {
     content: "";
     position: fixed;
@@ -1932,6 +1934,7 @@ body:has(.category)::before {
         radial-gradient(circle at 50% 42%, rgba(8, 12, 20, 0.06), rgba(8, 12, 20, 0.48) 72%);
 }
 
+body.category-page::after,
 body:has(.category)::after {
     content: "";
     position: fixed;
@@ -1948,6 +1951,7 @@ body:has(.category)::after {
     animation: vault-rain 1.2s linear infinite;
 }
 
+body.category-page .category,
 body:has(.category) .category {
     width: min(1180px, 100%);
     border-radius: 22px;
@@ -1961,6 +1965,7 @@ body:has(.category) .category {
     overflow: hidden;
 }
 
+body.category-page .category-card,
 body:has(.category) .category-card {
     --card-accent: rgba(72, 242, 213, 0.62);
     --card-accent-soft: rgba(72, 242, 213, 0.14);
@@ -1973,6 +1978,7 @@ body:has(.category) .category-card {
         rgba(12, 17, 28, 0.74);
 }
 
+body.category-page .category-card::before,
 body:has(.category) .category-card::before {
     content: "";
     position: absolute;
@@ -1985,37 +1991,46 @@ body:has(.category) .category-card::before {
     opacity: 0.88;
 }
 
+body.category-page .category-card:nth-child(6n + 2),
 body:has(.category) .category-card:nth-child(6n + 2) {
     --card-accent: rgba(255, 91, 146, 0.68);
     --card-accent-soft: rgba(255, 91, 146, 0.16);
 }
 
+body.category-page .category-card:nth-child(6n + 3),
 body:has(.category) .category-card:nth-child(6n + 3) {
     --card-accent: rgba(255, 209, 102, 0.72);
     --card-accent-soft: rgba(255, 209, 102, 0.16);
 }
 
+body.category-page .category-card:nth-child(6n + 4),
 body:has(.category) .category-card:nth-child(6n + 4) {
     --card-accent: rgba(155, 140, 255, 0.7);
     --card-accent-soft: rgba(155, 140, 255, 0.16);
 }
 
+body.category-page .category-card:nth-child(6n + 5),
 body:has(.category) .category-card:nth-child(6n + 5) {
     --card-accent: rgba(184, 243, 90, 0.64);
     --card-accent-soft: rgba(184, 243, 90, 0.14);
 }
 
+body.category-page .category-card:nth-child(6n),
 body:has(.category) .category-card:nth-child(6n) {
     --card-accent: rgba(255, 151, 74, 0.7);
     --card-accent-soft: rgba(255, 151, 74, 0.16);
 }
 
+body.category-page .category-card:hover,
+body.category-page .category-card:focus-visible,
 body:has(.category) .category-card:hover,
 body:has(.category) .category-card:focus-visible {
     border-color: color-mix(in srgb, var(--card-accent) 70%, rgba(255, 255, 255, 0.28));
     background-color: rgba(18, 26, 42, 0.82);
 }
 
+body.category-page .category-card[disabled],
+body.category-page .category-card.is-disabled,
 body:has(.category) .category-card[disabled],
 body:has(.category) .category-card.is-disabled {
     --card-accent: rgba(148, 163, 184, 0.5);
@@ -2023,12 +2038,14 @@ body:has(.category) .category-card.is-disabled {
 }
 
 @media (max-width: 720px) {
+    body.category-page,
     body:has(.category) {
         justify-content: flex-start;
         padding: 0.65rem;
         background-attachment: scroll;
     }
 
+    body.category-page .category,
     body:has(.category) .category {
         border-radius: 20px;
         padding: 0.9rem;
