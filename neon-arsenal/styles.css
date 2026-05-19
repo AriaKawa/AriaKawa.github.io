@@ -150,7 +150,6 @@ button:hover {
 .leaderboard,
 .stats-panel,
 .class-panel,
-.feed,
 .minimap,
 .boss-alert,
 .tree {
@@ -172,7 +171,6 @@ button:hover {
 .leaderboard,
 .stats-panel,
 .class-panel,
-.feed,
 .minimap,
 .boss-alert {
   border: 1px solid var(--line);
@@ -380,18 +378,6 @@ button:hover {
   font-size: 12px;
 }
 
-.feed {
-  left: 14px;
-  top: 88px;
-  display: grid;
-  gap: 6px;
-  width: min(320px, calc(100vw - 28px));
-  padding: 10px;
-  color: #c9d9e8;
-  font-size: 12px;
-  font-weight: 800;
-}
-
 .boss-alert {
   top: 88px;
   left: 50%;
@@ -408,6 +394,23 @@ button:hover {
 
 .boss-alert.active {
   display: block;
+  animation: bossPulse 3.6s ease-out both;
+}
+
+@keyframes bossPulse {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-10px) scale(0.98);
+  }
+  12%,
+  72% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-4px) scale(0.99);
+  }
 }
 
 .minimap {
@@ -481,8 +484,7 @@ button:hover {
     display: none;
   }
 
-  .leaderboard,
-  .feed {
+  .leaderboard {
     display: none;
   }
 

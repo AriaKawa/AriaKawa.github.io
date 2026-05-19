@@ -39,7 +39,6 @@ const ui = {
   leaderboard: document.querySelector("#leaderboard"),
   stats: document.querySelector("#statsPanel"),
   classes: document.querySelector("#classPanel"),
-  feed: document.querySelector("#feed"),
   bossAlert: document.querySelector("#bossAlert"),
   tree: document.querySelector("#treeOverlay"),
   moveStick: document.querySelector("#moveStick"),
@@ -63,6 +62,11 @@ let input = { mx: 0, my: 0, firing: false, repel: false, autoFire: true, autoSpi
 let keys = new Set();
 let particles = [];
 let practice = null;
+let audioCtx = null;
+let lastFireSound = 0;
+let lastBossIncoming = "";
+let bossAlertText = "";
+let bossAlertUntil = 0;
 
 function resize() {
   dpr = Math.min(devicePixelRatio || 1, 2);
@@ -76,6 +80,7 @@ function resize() {
 }
 
 function connect(name) {
+  unlockAudio();
   const protocol = location.protocol === "https:" ? "wss:" : "ws:";
   const url = `${protocol}//${location.host}`;
   ui.status.textContent = "Connecting...";
@@ -108,6 +113,7 @@ function connect(name) {
 }
 
 function startPractice() {
+  unlockAudio();
   mode = "practice";
   myId = "practice";
   ui.lobby.classList.add("hidden");
@@ -123,8 +129,8 @@ function startPractice() {
     shapes: [],
     bosses: [],
     leaderboard: [],
-    killFeed: [{ id: "feed0", text: "Practice arena initialized.", t: Date.now() }],
     bossAlert: "",
+    bossAlertUntil: 0,
     bossTimer: 28,
   };
   for (let i = 0; i < 190; i += 1) practice.shapes.push(makePracticeShape());
@@ -178,6 +184,7 @@ function sendInput() {
 }
 
 function upgradeStat(stat) {
+  playSfx("upgrade");
   if (mode === "online" && socket?.readyState === WebSocket.OPEN) {
     socket.send(JSON.stringify({ type: "upgradeStat", stat }));
   } else if (practice) {
@@ -192,6 +199,7 @@ function upgradeStat(stat) {
 }
 
 function upgradeTank(tank) {
+  playSfx("upgrade");
   if (mode === "online" && socket?.readyState === WebSocket.OPEN) {
     socket.send(JSON.stringify({ type: "upgradeTank", tank }));
   } else if (practice) {
@@ -284,9 +292,10 @@ function practiceStep(dt) {
     const def = BOSSES[type];
     practice.bosses.push({ id: `boss${Date.now()}`, type, x: rand(400, WORLD.w - 400), y: rand(400, WORLD.h - 400), hp: def.hp, maxHp: def.hp, spin: 0 });
     practice.bossAlert = `${def.name} has breached the arena.`;
-    practice.killFeed.unshift({ id: `feed${Date.now()}`, text: practice.bossAlert, t: Date.now() });
+    practice.bossAlertUntil = Date.now() + 800;
     practice.bossTimer = 80;
   }
+  if (practice.bossAlert && Date.now() > practice.bossAlertUntil) practice.bossAlert = "";
   for (const boss of practice.bosses) {
     boss.spin += dt;
     const a = angleTo(boss, player);
@@ -325,6 +334,7 @@ function practiceFire(player, dt) {
     damage: d.bulletDamage * (barrel.damage || 1),
     life: 2.1,
   });
+  if (player.id === myId) playSfx("fire");
 }
 
 function nearestPracticeTarget(player) {
@@ -421,11 +431,8 @@ function killPracticePlayer(player, attacker) {
   if (attacker && attacker.id !== player.id) {
     attacker.kills += 1;
     awardPractice(attacker, Math.max(220, Math.floor(player.score * 0.12)), "#ff62d2");
-    practice.killFeed.unshift({ id: `feed${Date.now()}`, text: `${attacker.name} rammed ${player.name} out of the arena.`, t: Date.now() });
-  } else {
-    practice.killFeed.unshift({ id: `feed${Date.now()}`, text: `${player.name} shattered on impact.`, t: Date.now() });
   }
-  practice.killFeed = practice.killFeed.slice(0, 8);
+  if (player.id === myId || attacker?.id === myId) playSfx("death");
 }
 
 function respawnPracticePlayer(player) {
@@ -443,7 +450,9 @@ function awardPractice(player, xp, color) {
   player.level = levelForXp(player.xp);
   if (player.level > old) {
     particles.push({ x: player.x, y: player.y, color: "#ffe45e", life: 0.8, max: 0.8, ring: true, r: 30 });
+    if (player.id === myId) playSfx("upgrade");
   }
+  if (player.id === myId) playSfx("hit");
   particles.push({ x: player.x + rand(-50, 50), y: player.y + rand(-50, 50), color, life: 0.5, max: 0.5, r: 5 });
 }
 
@@ -771,7 +780,6 @@ function updateUi() {
   renderStats(me);
   renderClasses(me);
   renderLeaderboard();
-  renderFeed();
   renderBossAlert();
 }
 
@@ -825,19 +833,61 @@ function renderLeaderboard() {
   }
 }
 
-function renderFeed() {
-  ui.feed.innerHTML = "";
-  for (const item of latest.killFeed || []) {
-    const div = document.createElement("div");
-    div.textContent = item.text;
-    ui.feed.appendChild(div);
+function renderBossAlert() {
+  const incoming = latest.bossAlert || "";
+  if (!incoming) lastBossIncoming = "";
+  if (incoming && incoming !== lastBossIncoming) {
+    lastBossIncoming = incoming;
+    bossAlertText = incoming;
+    bossAlertUntil = Date.now() + 3600;
+    playSfx("boss");
   }
+  const active = bossAlertText && Date.now() < bossAlertUntil;
+  ui.bossAlert.textContent = active ? bossAlertText : "";
+  ui.bossAlert.classList.toggle("active", Boolean(active));
 }
 
-function renderBossAlert() {
-  const text = latest.bossAlert || "";
-  ui.bossAlert.textContent = text;
-  ui.bossAlert.classList.toggle("active", Boolean(text));
+function unlockAudio() {
+  if (!audioCtx) audioCtx = new AudioContext();
+  if (audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
+}
+
+function tone(freq, duration, type = "sine", gain = 0.035, delay = 0) {
+  if (!audioCtx) return;
+  const now = audioCtx.currentTime + delay;
+  const osc = audioCtx.createOscillator();
+  const amp = audioCtx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, now);
+  amp.gain.setValueAtTime(0.0001, now);
+  amp.gain.exponentialRampToValueAtTime(gain, now + 0.015);
+  amp.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+  osc.connect(amp).connect(audioCtx.destination);
+  osc.start(now);
+  osc.stop(now + duration + 0.02);
+}
+
+function playSfx(kind) {
+  if (!audioCtx) return;
+  if (kind === "fire") {
+    const now = performance.now();
+    if (now - lastFireSound < 95) return;
+    lastFireSound = now;
+    tone(130, 0.055, "square", 0.018);
+    tone(70, 0.08, "sawtooth", 0.01, 0.012);
+  } else if (kind === "hit") {
+    tone(420, 0.07, "triangle", 0.022);
+    tone(760, 0.05, "sine", 0.014, 0.025);
+  } else if (kind === "upgrade") {
+    tone(520, 0.08, "sine", 0.026);
+    tone(780, 0.1, "sine", 0.022, 0.07);
+  } else if (kind === "boss") {
+    tone(96, 0.28, "sawtooth", 0.04);
+    tone(144, 0.22, "square", 0.025, 0.09);
+  } else if (kind === "death") {
+    tone(220, 0.16, "sawtooth", 0.035);
+    tone(92, 0.22, "triangle", 0.028, 0.08);
+  }
 }
 
 function renderTree() {
@@ -859,6 +909,7 @@ function loop(time) {
   updateInput();
   if (mode === "practice") practiceStep(dt);
   sendInput();
+  if (mode === "online" && (input.autoFire || input.firing) && getMe()?.respawn <= 0) playSfx("fire");
   updateCamera(dt);
   draw(time);
   updateUi();
@@ -868,6 +919,7 @@ function loop(time) {
 
 window.addEventListener("resize", resize);
 window.addEventListener("keydown", (event) => {
+  unlockAudio();
   keys.add(event.key);
   if (event.key.toLowerCase() === "e") input.autoFire = true;
   if (event.key.toLowerCase() === "c") input.autoSpin = !input.autoSpin;
@@ -883,6 +935,7 @@ window.addEventListener("pointermove", (event) => {
   pointer.y = event.clientY;
 });
 window.addEventListener("pointerdown", (event) => {
+  unlockAudio();
   pointer.active = true;
   pointer.x = event.clientX;
   pointer.y = event.clientY;
