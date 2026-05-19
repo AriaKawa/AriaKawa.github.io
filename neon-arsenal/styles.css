@@ -162,9 +162,10 @@ button:hover {
   left: 14px;
   right: 14px;
   display: grid;
-  grid-template-columns: minmax(150px, 230px) minmax(260px, 520px) minmax(90px, 140px);
+  grid-template-columns: minmax(150px, 230px) minmax(260px, 520px) minmax(90px, 140px) 112px;
   align-items: center;
   gap: 14px;
+  pointer-events: none;
 }
 
 .brand-chip,
@@ -183,6 +184,19 @@ button:hover {
 .brand-chip {
   min-height: 58px;
   padding: 10px 12px;
+}
+
+.sound-button {
+  min-height: 42px;
+  border-color: rgba(255, 228, 94, 0.45);
+  background: rgba(20, 24, 43, 0.9);
+  color: #fff4b8;
+  pointer-events: auto;
+}
+
+.sound-button[data-state="on"] {
+  border-color: rgba(98, 247, 165, 0.7);
+  color: #b8ffd8;
 }
 
 .brand-chip__dot {
@@ -477,11 +491,16 @@ button:hover {
 @media (max-width: 860px) {
   .top-hud {
     grid-template-columns: 1fr;
+    justify-items: end;
   }
 
   .brand-chip,
   .perf {
     display: none;
+  }
+
+  .sound-button {
+    width: 112px;
   }
 
   .leaderboard {

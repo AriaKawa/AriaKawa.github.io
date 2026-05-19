@@ -36,6 +36,7 @@ const ui = {
   xpLabel: document.querySelector("#xpLabel"),
   fps: document.querySelector("#fps"),
   ping: document.querySelector("#ping"),
+  sound: document.querySelector("#soundButton"),
   leaderboard: document.querySelector("#leaderboard"),
   stats: document.querySelector("#statsPanel"),
   classes: document.querySelector("#classPanel"),
@@ -64,6 +65,8 @@ let particles = [];
 let practice = null;
 let audioCtx = null;
 let masterGain = null;
+let audioUnlocked = false;
+let fallbackAudio = null;
 let lastFireSound = 0;
 let lastBossIncoming = "";
 let bossAlertText = "";
@@ -114,7 +117,10 @@ function connect(name) {
 }
 
 function startPractice() {
-  unlockAudio().then(() => playSfx("ready"));
+  unlockAudio().then(() => {
+    playSfx("ready");
+    playFallbackBeep();
+  });
   mode = "practice";
   myId = "practice";
   ui.lobby.classList.add("hidden");
@@ -850,20 +856,38 @@ function renderBossAlert() {
   ui.bossAlert.classList.toggle("active", Boolean(active));
 }
 
+function updateSoundUi() {
+  if (!ui.sound) return;
+  const state = audioCtx?.state || (audioUnlocked ? "on" : "off");
+  ui.sound.textContent = audioUnlocked && state !== "suspended" ? "Sound On" : "Enable Sound";
+  ui.sound.dataset.state = audioUnlocked && state !== "suspended" ? "on" : "off";
+}
+
 function unlockAudio() {
   const AudioCtor = window.AudioContext || window.webkitAudioContext;
-  if (!AudioCtor) return Promise.resolve(false);
+  if (!AudioCtor) {
+    updateSoundUi();
+    return Promise.resolve(false);
+  }
   if (!audioCtx) {
     audioCtx = new AudioCtor();
     masterGain = audioCtx.createGain();
-    masterGain.gain.value = 0.22;
+    masterGain.gain.value = 0.5;
     masterGain.connect(audioCtx.destination);
   }
-  if (audioCtx.state === "suspended") return audioCtx.resume().then(() => true).catch(() => false);
-  return Promise.resolve(true);
+  const done = () => {
+    audioUnlocked = audioCtx.state === "running";
+    updateSoundUi();
+    return audioUnlocked;
+  };
+  if (audioCtx.state === "suspended") return audioCtx.resume().then(done).catch(() => {
+    updateSoundUi();
+    return false;
+  });
+  return Promise.resolve(done());
 }
 
-function tone(freq, duration, type = "sine", gain = 0.035, delay = 0) {
+function tone(freq, duration, type = "sine", gain = 0.12, delay = 0) {
   if (!audioCtx) return;
   const now = audioCtx.currentTime + delay;
   const osc = audioCtx.createOscillator();
@@ -878,9 +902,50 @@ function tone(freq, duration, type = "sine", gain = 0.035, delay = 0) {
   osc.stop(now + duration + 0.02);
 }
 
+function fallbackWaveUrl() {
+  const sampleRate = 8000;
+  const seconds = 0.18;
+  const count = Math.floor(sampleRate * seconds);
+  const bytes = new Uint8Array(44 + count);
+  const view = new DataView(bytes.buffer);
+  const write = (offset, text) => [...text].forEach((char, i) => view.setUint8(offset + i, char.charCodeAt(0)));
+  write(0, "RIFF");
+  view.setUint32(4, 36 + count, true);
+  write(8, "WAVEfmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate, true);
+  view.setUint16(32, 1, true);
+  view.setUint16(34, 8, true);
+  write(36, "data");
+  view.setUint32(40, count, true);
+  for (let i = 0; i < count; i += 1) {
+    const t = i / sampleRate;
+    const envelope = 1 - i / count;
+    bytes[44 + i] = 128 + Math.floor(Math.sin(t * Math.PI * 2 * 660) * 70 * envelope);
+  }
+  let binary = "";
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte);
+  });
+  return `data:audio/wav;base64,${btoa(binary)}`;
+}
+
+function playFallbackBeep() {
+  if (!fallbackAudio) fallbackAudio = new Audio(fallbackWaveUrl());
+  fallbackAudio.currentTime = 0;
+  fallbackAudio.volume = 1;
+  fallbackAudio.play().catch(() => {});
+}
+
 function playSfx(kind) {
   unlockAudio();
-  if (!audioCtx) return;
+  if (!audioCtx || audioCtx.state !== "running") {
+    if (kind === "ready" || kind === "upgrade") playFallbackBeep();
+    return;
+  }
   if (kind === "fire") {
     const now = performance.now();
     if (now - lastFireSound < 95) return;
@@ -975,7 +1040,19 @@ ui.form.addEventListener("submit", (event) => {
   event.preventDefault();
   connect(ui.name.value || "Pilot");
 });
-ui.practice.addEventListener("click", startPractice);
+ui.sound.addEventListener("pointerdown", (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+  unlockAudio().then(() => {
+    playSfx("ready");
+    playFallbackBeep();
+  });
+});
+ui.practice.addEventListener("pointerdown", (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+  startPractice();
+});
 ui.stats.addEventListener("pointerdown", (event) => {
   const button = event.target.closest("[data-stat]");
   if (!button) return;
@@ -1020,4 +1097,5 @@ ui.moveStick.addEventListener("pointerup", () => {
 resize();
 drawBackground(0);
 renderTree();
+updateSoundUi();
 requestAnimationFrame(loop);
