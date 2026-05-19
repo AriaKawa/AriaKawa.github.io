@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Movie Taste Recommender - Aria &amp; Friends Project Vault</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="assets/css/movie-recommender.css">
+</head>
+<body class="movie-rec-page">
+  <main class="movie-rec-shell">
+    <header class="movie-rec-hero">
+      <button class="category__back" type="button" data-back-button aria-label="Back">
+        <span aria-hidden="true">&larr;</span>
+        <span>Back</span>
+      </button>
+      <div class="movie-rec-hero__copy">
+        <p class="movie-rec-kicker">AI Watchlist Builder</p>
+        <h1>Movie Taste Recommender</h1>
+        <p>
+          Upload your IMDb CSV or Letterboxd CSV/ZIP export. The browser parses your movies locally,
+          then sends a compact taste summary to a private AI function for recommendations.
+        </p>
+      </div>
+    </header>
+
+    <section class="movie-rec-panel movie-rec-upload" aria-labelledby="upload-title">
+      <div>
+        <p class="movie-rec-kicker">Step 1</p>
+        <h2 id="upload-title">Import your history</h2>
+        <p>
+          Works with Letterboxd account exports and IMDb ratings, watchlist, or list CSV files.
+          ZIP files are unpacked in your browser; raw files are not stored.
+        </p>
+      </div>
+      <label class="movie-rec-dropzone" for="movieFileInput" data-dropzone>
+        <span class="movie-rec-dropzone__icon" aria-hidden="true">+</span>
+        <span>
+          <strong>Choose CSV or ZIP files</strong>
+          <em>or drop them here</em>
+        </span>
+        <input id="movieFileInput" type="file" accept=".csv,.zip,text/csv,application/zip" multiple>
+      </label>
+      <div class="movie-rec-status" data-status role="status">Waiting for a movie export.</div>
+    </section>
+
+    <section class="movie-rec-panel movie-rec-preview" aria-labelledby="preview-title" data-preview hidden>
+      <div class="movie-rec-section-head">
+        <div>
+          <p class="movie-rec-kicker">Step 2</p>
+          <h2 id="preview-title">Taste profile preview</h2>
+        </div>
+        <button class="movie-rec-button movie-rec-button--ghost" type="button" data-reset>Reset</button>
+      </div>
+
+      <div class="movie-rec-stats" data-stats></div>
+
+      <div class="movie-rec-edit-grid">
+        <label>
+          Highest-rated favorites
+          <textarea data-favorites rows="8"></textarea>
+        </label>
+        <label>
+          Lowest-rated dislikes
+          <textarea data-dislikes rows="8"></textarea>
+        </label>
+        <label>
+          Genre and decade hints
+          <textarea data-hints rows="8"></textarea>
+        </label>
+      </div>
+
+      <label class="movie-rec-notes">
+        Extra instructions for the AI
+        <textarea data-notes rows="4" placeholder="Example: prioritize weird sci-fi, avoid superhero movies, include a few older films."></textarea>
+      </label>
+
+      <details class="movie-rec-details">
+        <summary>Parsed movies and ignored rows</summary>
+        <div class="movie-rec-movie-list" data-movie-list></div>
+        <div class="movie-rec-ignored" data-ignored></div>
+      </details>
+    </section>
+
+    <section class="movie-rec-panel movie-rec-actions" aria-labelledby="recommend-title">
+      <div>
+        <p class="movie-rec-kicker">Step 3</p>
+        <h2 id="recommend-title">Generate recommendations</h2>
+        <p>
+          The AI key stays in Firebase Functions. If the backend has not been deployed yet,
+          use the prompt button as a fallback with ChatGPT or Claude.
+        </p>
+      </div>
+      <label class="movie-rec-endpoint">
+        Function endpoint
+        <input data-endpoint type="url" value="https://us-central1-multiplayer-640ec.cloudfunctions.net/recommendMovies">
+      </label>
+      <div class="movie-rec-action-row">
+        <button class="movie-rec-button" type="button" data-generate disabled>Get recommendations</button>
+        <button class="movie-rec-button movie-rec-button--secondary" type="button" data-copy-prompt disabled>Copy AI prompt</button>
+      </div>
+    </section>
+
+    <section class="movie-rec-panel movie-rec-results" aria-labelledby="results-title" data-results hidden>
+      <div class="movie-rec-section-head">
+        <div>
+          <p class="movie-rec-kicker">Results</p>
+          <h2 id="results-title">Recommended watchlist</h2>
+        </div>
+        <div class="movie-rec-action-row movie-rec-action-row--compact">
+          <button class="movie-rec-button movie-rec-button--secondary" type="button" data-copy-results>Copy</button>
+          <button class="movie-rec-button movie-rec-button--ghost" type="button" data-export-results>Export JSON</button>
+        </div>
+      </div>
+      <p class="movie-rec-summary" data-taste-summary></p>
+      <ol class="movie-rec-rec-list" data-rec-list></ol>
+    </section>
+  </main>
+
+  <script type="module" src="assets/js/movie-recommender.js"></script>
+  <script src="site-navigation.js"></script>
+</body>
+</html>

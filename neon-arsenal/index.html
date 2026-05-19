@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Neon Arsenal Arena</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <canvas id="game" aria-label="Neon Arsenal Arena battlefield"></canvas>
+
+    <main class="shell">
+      <section class="lobby" id="lobby">
+        <div class="lobby__brand">
+          <span class="lobby__sigil"></span>
+          <div>
+            <p>Multiplayer geometric tank arena</p>
+            <h1>Neon Arsenal Arena</h1>
+          </div>
+        </div>
+        <form class="lobby__form" id="joinForm">
+          <label>
+            <span>Pilot name</span>
+            <input id="nameInput" maxlength="18" autocomplete="nickname" value="Pilot">
+          </label>
+          <div class="lobby__actions">
+            <button type="submit">Join Arena</button>
+            <button type="button" id="practiceButton">Practice</button>
+          </div>
+          <p id="serverStatus">Start the multiplayer server with <code>npm start</code>, or practice instantly.</p>
+        </form>
+      </section>
+
+      <section class="top-hud">
+        <div class="brand-chip">
+          <span class="brand-chip__dot"></span>
+          <div>
+            <strong>Neon Arsenal</strong>
+            <small id="connection">offline practice</small>
+          </div>
+        </div>
+        <div class="meters">
+          <div class="meter meter--health"><span id="healthFill"></span><b id="healthLabel">100</b></div>
+          <div class="meter meter--xp"><span id="xpFill"></span><b id="xpLabel">Lv 1</b></div>
+        </div>
+        <div class="perf"><span id="fps">60 fps</span><span id="ping">-- ms</span></div>
+      </section>
+
+      <aside class="leaderboard" aria-label="Leaderboard">
+        <h2>Leaderboard</h2>
+        <ol id="leaderboard"></ol>
+      </aside>
+
+      <aside class="stats-panel" id="statsPanel" aria-label="Stat upgrades"></aside>
+      <aside class="class-panel" id="classPanel" aria-label="Tank upgrades"></aside>
+      <aside class="build-panel" id="buildPanel" aria-label="Build presets"></aside>
+
+      <section class="feed" id="feed" aria-label="Kill feed"></section>
+      <section class="boss-alert" id="bossAlert"></section>
+      <section class="minimap"><canvas id="minimap" width="170" height="170" aria-label="Minimap"></canvas></section>
+      <section class="tree" id="treeOverlay" aria-label="Class tree"></section>
+
+      <section class="mobile-controls" aria-label="Touch controls">
+        <div id="moveStick" class="stick"><span></span></div>
+        <button id="touchFire" type="button">Fire</button>
+      </section>
+    </main>
+
+    <script type="module" src="client.js"></script>
+    <script src="../site-navigation.js"></script>
+  </body>
+</html>

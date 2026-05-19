@@ -33,6 +33,7 @@
     "bass-guitar-frets.html": "education.html",
 
     "voice-scale/index.html": "other.html",
+    "movie-recommender.html": "other.html",
     "movie-grid.html": "other.html",
     "Smash.html": "other.html",
     "league-tracker.html": "other.html",
