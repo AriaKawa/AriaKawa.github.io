@@ -261,9 +261,11 @@ button:hover {
 }
 
 .leaderboard {
-  top: 88px;
+  top: 14px;
   right: 14px;
   width: min(285px, calc(100vw - 28px));
+  max-height: calc(100vh - 230px);
+  overflow: hidden;
   padding: 12px;
 }
 
