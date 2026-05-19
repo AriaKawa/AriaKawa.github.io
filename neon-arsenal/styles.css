@@ -162,7 +162,7 @@ button:hover {
   left: 14px;
   right: 14px;
   display: grid;
-  grid-template-columns: minmax(150px, 230px) minmax(260px, 520px) minmax(90px, 140px) 150px;
+  grid-template-columns: minmax(150px, 230px) minmax(260px, 520px) minmax(90px, 140px) 46px;
   align-items: center;
   gap: 14px;
   pointer-events: none;
@@ -187,10 +187,12 @@ button:hover {
 }
 
 .sound-button {
+  width: 44px;
   min-height: 42px;
   border-color: rgba(255, 228, 94, 0.45);
   background: rgba(20, 24, 43, 0.9);
   color: #fff4b8;
+  font-size: 18px;
   pointer-events: auto;
   white-space: nowrap;
 }
@@ -501,7 +503,7 @@ button:hover {
   }
 
   .sound-button {
-    width: 150px;
+    width: 44px;
   }
 
   .leaderboard {

@@ -14,6 +14,7 @@ import {
   levelForXp,
   makeStats,
   maxStatForTank,
+  normalizeAngle,
   rand,
   spentStats,
   statPointsForLevel,
@@ -67,6 +68,7 @@ let audioCtx = null;
 let masterGain = null;
 let audioUnlocked = false;
 let fallbackAudio = null;
+let audioMuted = false;
 let lastFireSound = 0;
 let lastHitSound = 0;
 let lastBossIncoming = "";
@@ -164,6 +166,9 @@ function makePracticePlayer(id, name, bot) {
     deaths: 0,
     reload: 0,
     target: null,
+    aiTargetId: null,
+    aiRetarget: 0,
+    aiStrafe: Math.random() > 0.5 ? 1 : -1,
   };
   player.level = levelForXp(player.xp);
   player.health = derivedStats(player).maxHealth;
@@ -278,11 +283,18 @@ function practiceStep(dt) {
       continue;
     }
     bot.invuln = Math.max(0, (bot.invuln || 0) - dt);
-    const target = nearestPracticeTarget(bot);
-    bot.aim = angleTo(bot, target);
-    const close = Math.hypot(bot.x - target.x, bot.y - target.y) < 330 ? -0.5 : 1;
-    movePracticePlayer(bot, Math.cos(bot.aim) * close, Math.sin(bot.aim) * close, dt);
-    practiceFire(bot, dt);
+    const target = choosePracticeTarget(bot, dt);
+    if (target) {
+      const targetAngle = angleTo(bot, target);
+      bot.aim = turnToward(bot.aim, targetAngle, dt * 2.9);
+      const dist = Math.hypot(bot.x - target.x, bot.y - target.y);
+      const melee = TANKS[bot.tank]?.smasher;
+      const desired = melee ? 80 : 430;
+      const push = dist > desired + 80 ? 1 : dist < desired - 80 ? -0.75 : 0;
+      const strafe = push === 0 ? bot.aiStrafe * 0.72 : bot.aiStrafe * 0.18;
+      movePracticePlayer(bot, Math.cos(targetAngle) * push + Math.cos(targetAngle + Math.PI / 2) * strafe, Math.sin(targetAngle) * push + Math.sin(targetAngle + Math.PI / 2) * strafe, dt);
+      if (!melee && dist < 900) practiceFire(bot, dt);
+    }
     if (bot.level >= 15 && availableUpgrades(bot).length) bot.tank = availableUpgrades(bot)[0];
   }
   for (const bullet of practice.bullets) {
@@ -350,9 +362,34 @@ function practiceFire(player, dt) {
   }
 }
 
-function nearestPracticeTarget(player) {
-  const entities = [...practice.shapes, ...practice.players.filter((p) => p.id !== player.id), ...practice.bosses];
-  return entities.reduce((best, entity) => (Math.hypot(player.x - entity.x, player.y - entity.y) < Math.hypot(player.x - best.x, player.y - best.y) ? entity : best), entities[0]);
+function turnToward(current, target, amount) {
+  return current + clamp(normalizeAngle(target - current), -amount, amount);
+}
+
+function findPracticeEntity(id) {
+  return practice.shapes.find((shape) => shape.id === id && shape.hp > 0)
+    || practice.bosses.find((boss) => boss.id === id && boss.hp > 0)
+    || practice.players.find((player) => player.id === id && player.respawn <= 0);
+}
+
+function choosePracticeTarget(bot, dt) {
+  bot.aiRetarget -= dt;
+  const current = bot.aiTargetId ? findPracticeEntity(bot.aiTargetId) : null;
+  if (current && bot.aiRetarget > 0) return current;
+  const livingPlayers = practice.players.filter((player) => player.id !== bot.id && player.respawn <= 0);
+  const nearbyPlayers = livingPlayers.filter((player) => Math.hypot(bot.x - player.x, bot.y - player.y) < 760);
+  const entities = [
+    ...nearbyPlayers,
+    ...practice.shapes.filter((shape) => shape.hp > 0),
+    ...practice.bosses.filter((boss) => boss.hp > 0),
+  ];
+  if (!entities.length) return null;
+  entities.sort((a, b) => Math.hypot(bot.x - a.x, bot.y - a.y) - Math.hypot(bot.x - b.x, bot.y - b.y));
+  const target = entities[0];
+  bot.aiTargetId = target.id;
+  bot.aiRetarget = rand(0.7, 1.6);
+  if (Math.random() < 0.28) bot.aiStrafe *= -1;
+  return target;
 }
 
 function hitPractice(bullet) {
@@ -863,9 +900,16 @@ function renderBossAlert() {
 function updateSoundUi() {
   if (!ui.sound) return;
   const state = audioCtx?.state || (audioUnlocked ? "on" : "off");
-  const last = ui.sound.dataset.last;
-  ui.sound.textContent = audioUnlocked && state !== "suspended" ? (last ? `Sound On: ${last}` : "Sound On") : "Enable Sound";
-  ui.sound.dataset.state = audioUnlocked && state !== "suspended" ? "on" : "off";
+  const on = !audioMuted && audioUnlocked && state !== "suspended";
+  ui.sound.textContent = on ? "🔊" : "🔇";
+  ui.sound.setAttribute("aria-label", on ? "Mute sound" : "Unmute sound");
+  ui.sound.dataset.state = on ? "on" : "off";
+}
+
+function setMuted(muted) {
+  audioMuted = muted;
+  if (masterGain) masterGain.gain.value = audioMuted ? 0 : 0.5;
+  updateSoundUi();
 }
 
 function unlockAudio() {
@@ -877,7 +921,7 @@ function unlockAudio() {
   if (!audioCtx) {
     audioCtx = new AudioCtor();
     masterGain = audioCtx.createGain();
-    masterGain.gain.value = 0.5;
+    masterGain.gain.value = audioMuted ? 0 : 0.5;
     masterGain.connect(audioCtx.destination);
   }
   const done = () => {
@@ -939,6 +983,7 @@ function fallbackWaveUrl() {
 }
 
 function playFallbackBeep() {
+  if (audioMuted) return;
   if (!fallbackAudio) fallbackAudio = new Audio(fallbackWaveUrl());
   fallbackAudio.currentTime = 0;
   fallbackAudio.volume = 1;
@@ -946,6 +991,7 @@ function playFallbackBeep() {
 }
 
 function ensurePlayableAudio(kind) {
+  if (audioMuted) return false;
   if (!audioCtx || audioCtx.state !== "running") {
     if (kind === "ready" || kind === "upgrade") playFallbackBeep();
     return false;
@@ -1062,10 +1108,12 @@ ui.form.addEventListener("submit", (event) => {
 ui.sound.addEventListener("pointerdown", (event) => {
   event.preventDefault();
   event.stopPropagation();
-  unlockAudio().then(() => {
-    playSfx("ready");
-    playFallbackBeep();
-  });
+  if (audioUnlocked && !audioMuted) {
+    setMuted(true);
+    return;
+  }
+  setMuted(false);
+  unlockAudio().then(() => playSfx("ready"));
 });
 ui.practice.addEventListener("pointerdown", (event) => {
   event.preventDefault();
