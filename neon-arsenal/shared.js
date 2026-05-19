@@ -21,7 +21,7 @@ export const STAT_KEYS = [
 export const STATS = {
   regen: { label: "Health Regen", short: "Health Regen", color: "#28f0a6" },
   maxHealth: { label: "Health", short: "Health", color: "#5de0ff" },
-  bodyDamage: { label: "Body Damage", short: "Body Damage", color: "#ff6b85" },
+  bodyDamage: { label: "Melee Damage", short: "Melee Damage", color: "#ff6b85" },
   bulletSpeed: { label: "Bullet Speed", short: "Bullet Speed", color: "#ffe45e" },
   penetration: { label: "Bullet Health", short: "Bullet Health", color: "#8eb9ff" },
   bulletDamage: { label: "Damage", short: "Damage", color: "#c084ff" },
@@ -311,10 +311,12 @@ export function derivedStats(player) {
   const tank = TANKS[player.tank] || TANKS.basic;
   const levelScale = 1 + Math.max(0, player.level - 1) * 0.008;
   const maxHealth = (100 + (stats.maxHealth || 0) * 22) * levelScale * (tank.smasher ? 1.28 : 1);
+  const bodyDamage = (10 + (stats.bodyDamage || 0) * 4.2) * (tank.smasher ? 1.65 : 1) + (tank.spike ? 26 : 0);
   return {
     radius: (tank.body || 28) + Math.max(0, player.level - 1) * 0.16,
     maxHealth,
-    bodyDamage: 10 + (stats.bodyDamage || 0) * 4.2 + (tank.spike ? 26 : 0),
+    bodyDamage,
+    collisionResistance: tank.smasher ? 0.48 : 1,
     regenPerSecond: (stats.regen || 0) * 0.95 + 5,
     activeRegenPerSecond: (stats.regen || 0) * 1.45,
     moveSpeed: (168 + (stats.moveSpeed || 0) * 12) * (tank.smasher ? 1.09 : 1),

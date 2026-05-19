@@ -50,6 +50,7 @@ import {
   const d = derivedStats(player);
   assert.ok(d.maxHealth > 300);
   assert.ok(d.bodyDamage > 50);
+  assert.ok(d.collisionResistance < 1);
 }
 
 {

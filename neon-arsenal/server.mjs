@@ -552,22 +552,22 @@ function collideBodies(players, dt) {
       const def = SHAPES[shape.type];
       if (distance(player, shape) < d.radius + def.radius) {
         damageShape(shape, d.bodyDamage * dt * 7, player);
-        damagePlayer(player, Math.max(5, def.hp * 0.06) * dt * 4, null);
+        damagePlayer(player, Math.max(5, def.hp * 0.06) * dt * 4 * d.collisionResistance, null);
       }
     }
     for (const boss of state.bosses) {
       const def = BOSSES[boss.type];
       if (distance(player, boss) < d.radius + def.radius) {
         damageBoss(boss, d.bodyDamage * dt * 5, player);
-        damagePlayer(player, 34 * dt, null);
+        damagePlayer(player, 34 * dt * d.collisionResistance, null);
       }
     }
     for (const other of players) {
       if (other === player || other.respawn > 0 || other.invuln > 0) continue;
       const od = derivedStats(other);
       if (distance(player, other) < d.radius + od.radius) {
-        damagePlayer(other, d.bodyDamage * dt * 3.5, player);
-        damagePlayer(player, od.bodyDamage * dt * 3.5, other);
+        damagePlayer(other, d.bodyDamage * dt * 3.5 * od.collisionResistance, player);
+        damagePlayer(player, od.bodyDamage * dt * 3.5 * d.collisionResistance, other);
       }
     }
   }

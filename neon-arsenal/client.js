@@ -143,8 +143,8 @@ function makePracticePlayer(id, name, bot) {
     aim: rand(-Math.PI, Math.PI),
     tank: "basic",
     stats: makeStats(),
-    xp: bot ? rand(0, 3600) : 0,
-    score: 0,
+    xp: bot ? rand(0, 3600) : LEVEL_XP[45],
+    score: bot ? 0 : LEVEL_XP[45],
     health: 100,
     respawn: 0,
     invuln: 1.8,
@@ -186,7 +186,10 @@ function upgradeStat(stat) {
     const player = practice.players.find((p) => p.id === myId);
     if (!player || spentStats(player.stats) >= statPointsForLevel(player.level)) return;
     if ((player.stats[stat] || 0) >= maxStatForTank(player.tank, stat)) return;
+    const before = derivedStats(player).maxHealth;
     player.stats[stat] += 1;
+    const after = derivedStats(player).maxHealth;
+    player.health = Math.min(after, player.health + Math.max(0, after - before));
   }
 }
 
@@ -195,7 +198,10 @@ function upgradeTank(tank) {
     socket.send(JSON.stringify({ type: "upgradeTank", tank }));
   } else if (practice) {
     const player = practice.players.find((p) => p.id === myId);
-    if (player && availableUpgrades(player).includes(tank)) player.tank = tank;
+    if (player && availableUpgrades(player).includes(tank)) {
+      player.tank = tank;
+      player.health = Math.min(derivedStats(player).maxHealth, player.health + 40);
+    }
   }
 }
 
@@ -262,9 +268,19 @@ function practiceStep(dt) {
   const player = practice.players.find((p) => p.id === myId);
   if (!player) return;
   player.aim = input.aim;
-  movePracticePlayer(player, input.mx, input.my, dt);
-  if (input.firing || input.autoFire) practiceFire(player, dt);
+  if (player.respawn > 0) {
+    player.respawn -= dt;
+    if (player.respawn <= 0) respawnPracticePlayer(player);
+  } else {
+    movePracticePlayer(player, input.mx, input.my, dt);
+    if (input.firing || input.autoFire) practiceFire(player, dt);
+  }
   for (const bot of practice.players.filter((p) => p.bot)) {
+    if (bot.respawn > 0) {
+      bot.respawn -= dt;
+      if (bot.respawn <= 0) respawnPracticePlayer(bot);
+      continue;
+    }
     const target = nearestPracticeTarget(bot);
     bot.aim = angleTo(bot, target);
     const close = Math.hypot(bot.x - target.x, bot.y - target.y) < 330 ? -0.5 : 1;
@@ -279,6 +295,7 @@ function practiceStep(dt) {
     hitPractice(bullet);
   }
   practice.bullets = practice.bullets.filter((b) => b.life > 0 && b.hp > 0);
+  collidePracticeBodies(dt);
   for (const shape of practice.shapes) shape.spin += dt;
   practice.shapes = practice.shapes.filter((s) => s.hp > 0);
   while (practice.shapes.length < 190) practice.shapes.push(makePracticeShape());
@@ -356,6 +373,87 @@ function hitPractice(bullet) {
       return;
     }
   }
+  for (const player of practice.players) {
+    if (player.id === bullet.ownerId || player.respawn > 0) continue;
+    const d = derivedStats(player);
+    if (Math.hypot(bullet.x - player.x, bullet.y - player.y) < (bullet.r || 8) + d.radius) {
+      damagePracticePlayer(player, bullet.damage, owner);
+      bullet.hp -= d.bodyDamage;
+      return;
+    }
+  }
+}
+
+function collidePracticeBodies(dt) {
+  const players = practice.players.filter((p) => p.respawn <= 0);
+  for (const player of players) {
+    const d = derivedStats(player);
+    for (const shape of practice.shapes) {
+      if (shape.hp <= 0) continue;
+      const def = SHAPES[shape.type];
+      if (Math.hypot(player.x - shape.x, player.y - shape.y) < d.radius + def.radius) {
+        shape.hp -= d.bodyDamage * dt * 7;
+        damagePracticePlayer(player, Math.max(5, def.hp * 0.06) * dt * 4 * d.collisionResistance, null);
+        pushApart(player, shape, d.radius + def.radius);
+        if (shape.hp <= 0) awardPractice(player, def.xp, def.color);
+      }
+    }
+    for (const boss of practice.bosses) {
+      if (boss.hp <= 0) continue;
+      const def = BOSSES[boss.type];
+      if (Math.hypot(player.x - boss.x, player.y - boss.y) < d.radius + def.radius) {
+        boss.hp -= d.bodyDamage * dt * 5;
+        damagePracticePlayer(player, 34 * dt * d.collisionResistance, null);
+        pushApart(player, boss, d.radius + def.radius);
+        if (boss.hp <= 0) awardPractice(player, def.xp, def.color);
+      }
+    }
+    for (const other of players) {
+      if (other.id <= player.id) continue;
+      const od = derivedStats(other);
+      if (Math.hypot(player.x - other.x, player.y - other.y) < d.radius + od.radius) {
+        damagePracticePlayer(other, d.bodyDamage * dt * 3.5 * od.collisionResistance, player);
+        damagePracticePlayer(player, od.bodyDamage * dt * 3.5 * d.collisionResistance, other);
+        pushApart(player, other, d.radius + od.radius);
+      }
+    }
+  }
+}
+
+function pushApart(a, b, minDistance) {
+  const dx = a.x - b.x;
+  const dy = a.y - b.y;
+  const dist = Math.max(1, Math.hypot(dx, dy));
+  const overlap = Math.max(0, minDistance - dist);
+  a.x = clamp(a.x + dx / dist * overlap * 0.28, 35, WORLD.w - 35);
+  a.y = clamp(a.y + dy / dist * overlap * 0.28, 35, WORLD.h - 35);
+}
+
+function damagePracticePlayer(player, amount, attacker) {
+  if (player.respawn > 0) return;
+  player.health -= amount;
+  if (player.health <= 0) killPracticePlayer(player, attacker);
+}
+
+function killPracticePlayer(player, attacker) {
+  player.deaths += 1;
+  player.health = 0;
+  player.respawn = player.bot ? 1.2 : 1.8;
+  if (attacker && attacker.id !== player.id) {
+    attacker.kills += 1;
+    awardPractice(attacker, Math.max(220, Math.floor(player.score * 0.12)), "#ff62d2");
+    practice.killFeed.unshift({ id: `feed${Date.now()}`, text: `${attacker.name} rammed ${player.name} out of the arena.`, t: Date.now() });
+  } else {
+    practice.killFeed.unshift({ id: `feed${Date.now()}`, text: `${player.name} shattered on impact.`, t: Date.now() });
+  }
+  practice.killFeed = practice.killFeed.slice(0, 8);
+}
+
+function respawnPracticePlayer(player) {
+  player.x = rand(160, WORLD.w - 160);
+  player.y = rand(160, WORLD.h - 160);
+  player.health = derivedStats(player).maxHealth;
+  player.respawn = 0;
 }
 
 function awardPractice(player, xp, color) {
