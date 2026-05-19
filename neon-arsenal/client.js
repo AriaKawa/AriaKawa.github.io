@@ -3,7 +3,6 @@ import {
   LEVEL_XP,
   SHAPES,
   STAT_KEYS,
-  STAT_PRESETS,
   STATS,
   TANKS,
   TAU,
@@ -40,7 +39,6 @@ const ui = {
   leaderboard: document.querySelector("#leaderboard"),
   stats: document.querySelector("#statsPanel"),
   classes: document.querySelector("#classPanel"),
-  builds: document.querySelector("#buildPanel"),
   feed: document.querySelector("#feed"),
   bossAlert: document.querySelector("#bossAlert"),
   tree: document.querySelector("#treeOverlay"),
@@ -147,7 +145,7 @@ function makePracticePlayer(id, name, bot) {
     score: bot ? 0 : LEVEL_XP[45],
     health: 100,
     respawn: 0,
-    invuln: 1.8,
+    invuln: 0,
     kills: 0,
     deaths: 0,
     reload: 0,
@@ -205,27 +203,6 @@ function upgradeTank(tank) {
   }
 }
 
-function applyPreset(preset) {
-  if (mode === "online" && socket?.readyState === WebSocket.OPEN) {
-    socket.send(JSON.stringify({ type: "preset", preset }));
-    return;
-  }
-  const def = STAT_PRESETS[preset];
-  const player = practice?.players.find((p) => p.id === myId);
-  if (!def || !player) return;
-  for (let i = 0; i < 40; i += 1) {
-    let changed = false;
-    for (const [stat, target] of Object.entries(def.stats)) {
-      if ((player.stats[stat] || 0) < target) {
-        const before = player.stats[stat] || 0;
-        upgradeStat(stat);
-        changed = changed || (player.stats[stat] || 0) > before;
-      }
-    }
-    if (!changed) break;
-  }
-}
-
 function updateInput() {
   let mx = 0;
   let my = 0;
@@ -268,6 +245,7 @@ function practiceStep(dt) {
   const player = practice.players.find((p) => p.id === myId);
   if (!player) return;
   player.aim = input.aim;
+  player.invuln = Math.max(0, (player.invuln || 0) - dt);
   if (player.respawn > 0) {
     player.respawn -= dt;
     if (player.respawn <= 0) respawnPracticePlayer(player);
@@ -281,6 +259,7 @@ function practiceStep(dt) {
       if (bot.respawn <= 0) respawnPracticePlayer(bot);
       continue;
     }
+    bot.invuln = Math.max(0, (bot.invuln || 0) - dt);
     const target = nearestPracticeTarget(bot);
     bot.aim = angleTo(bot, target);
     const close = Math.hypot(bot.x - target.x, bot.y - target.y) < 330 ? -0.5 : 1;
@@ -454,6 +433,7 @@ function respawnPracticePlayer(player) {
   player.y = rand(160, WORLD.h - 160);
   player.health = derivedStats(player).maxHealth;
   player.respawn = 0;
+  player.invuln = 0;
 }
 
 function awardPractice(player, xp, color) {
@@ -790,7 +770,6 @@ function updateUi() {
   ui.ping.textContent = mode === "online" ? `${ping} ms` : "local";
   renderStats(me);
   renderClasses(me);
-  renderBuilds();
   renderLeaderboard();
   renderFeed();
   renderBossAlert();
@@ -834,18 +813,6 @@ function renderClasses(me) {
     button.textContent = TANKS[tank]?.name || tank;
     button.title = `Upgrade to ${button.textContent}`;
     ui.classes.appendChild(button);
-  }
-}
-
-function renderBuilds() {
-  if (ui.builds.childElementCount) return;
-  for (const [id, preset] of Object.entries(STAT_PRESETS)) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.dataset.preset = id;
-    button.textContent = preset.name;
-    button.title = preset.name;
-    ui.builds.appendChild(button);
   }
 }
 
@@ -941,17 +908,19 @@ ui.form.addEventListener("submit", (event) => {
   connect(ui.name.value || "Pilot");
 });
 ui.practice.addEventListener("click", startPractice);
-ui.stats.addEventListener("click", (event) => {
+ui.stats.addEventListener("pointerdown", (event) => {
   const button = event.target.closest("[data-stat]");
-  if (button) upgradeStat(button.dataset.stat);
+  if (!button) return;
+  event.preventDefault();
+  event.stopPropagation();
+  upgradeStat(button.dataset.stat);
 });
-ui.classes.addEventListener("click", (event) => {
+ui.classes.addEventListener("pointerdown", (event) => {
   const button = event.target.closest("[data-tank]");
-  if (button) upgradeTank(button.dataset.tank);
-});
-ui.builds.addEventListener("click", (event) => {
-  const button = event.target.closest("[data-preset]");
-  if (button) applyPreset(button.dataset.preset);
+  if (!button) return;
+  event.preventDefault();
+  event.stopPropagation();
+  upgradeTank(button.dataset.tank);
 });
 ui.touchFire.addEventListener("pointerdown", () => {
   input.firing = true;

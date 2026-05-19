@@ -150,7 +150,6 @@ button:hover {
 .leaderboard,
 .stats-panel,
 .class-panel,
-.build-panel,
 .feed,
 .minimap,
 .boss-alert,
@@ -173,7 +172,6 @@ button:hover {
 .leaderboard,
 .stats-panel,
 .class-panel,
-.build-panel,
 .feed,
 .minimap,
 .boss-alert {
@@ -290,6 +288,7 @@ button:hover {
   bottom: 14px;
   width: min(380px, calc(100vw - 28px));
   padding: 10px;
+  pointer-events: auto;
 }
 
 .stat-row {
@@ -372,23 +371,13 @@ button:hover {
   width: min(560px, calc(100vw - 360px));
   min-height: 52px;
   padding: 9px;
+  pointer-events: auto;
 }
 
-.class-panel button,
-.build-panel button {
+.class-panel button {
   min-height: 34px;
   padding: 0 12px;
   font-size: 12px;
-}
-
-.build-panel {
-  right: 14px;
-  bottom: 14px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 7px;
-  width: 270px;
-  padding: 10px;
 }
 
 .feed {
@@ -423,7 +412,7 @@ button:hover {
 
 .minimap {
   right: 14px;
-  bottom: 178px;
+  bottom: 14px;
   width: 180px;
   height: 180px;
   padding: 5px;
@@ -493,8 +482,7 @@ button:hover {
   }
 
   .leaderboard,
-  .feed,
-  .build-panel {
+  .feed {
     display: none;
   }
 
