@@ -63,6 +63,7 @@ let keys = new Set();
 let particles = [];
 let practice = null;
 let audioCtx = null;
+let masterGain = null;
 let lastFireSound = 0;
 let lastBossIncoming = "";
 let bossAlertText = "";
@@ -113,7 +114,7 @@ function connect(name) {
 }
 
 function startPractice() {
-  unlockAudio();
+  unlockAudio().then(() => playSfx("ready"));
   mode = "practice";
   myId = "practice";
   ui.lobby.classList.add("hidden");
@@ -184,6 +185,7 @@ function sendInput() {
 }
 
 function upgradeStat(stat) {
+  unlockAudio();
   playSfx("upgrade");
   if (mode === "online" && socket?.readyState === WebSocket.OPEN) {
     socket.send(JSON.stringify({ type: "upgradeStat", stat }));
@@ -199,6 +201,7 @@ function upgradeStat(stat) {
 }
 
 function upgradeTank(tank) {
+  unlockAudio();
   playSfx("upgrade");
   if (mode === "online" && socket?.readyState === WebSocket.OPEN) {
     socket.send(JSON.stringify({ type: "upgradeTank", tank }));
@@ -848,8 +851,16 @@ function renderBossAlert() {
 }
 
 function unlockAudio() {
-  if (!audioCtx) audioCtx = new AudioContext();
-  if (audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
+  const AudioCtor = window.AudioContext || window.webkitAudioContext;
+  if (!AudioCtor) return Promise.resolve(false);
+  if (!audioCtx) {
+    audioCtx = new AudioCtor();
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = 0.22;
+    masterGain.connect(audioCtx.destination);
+  }
+  if (audioCtx.state === "suspended") return audioCtx.resume().then(() => true).catch(() => false);
+  return Promise.resolve(true);
 }
 
 function tone(freq, duration, type = "sine", gain = 0.035, delay = 0) {
@@ -862,31 +873,35 @@ function tone(freq, duration, type = "sine", gain = 0.035, delay = 0) {
   amp.gain.setValueAtTime(0.0001, now);
   amp.gain.exponentialRampToValueAtTime(gain, now + 0.015);
   amp.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-  osc.connect(amp).connect(audioCtx.destination);
+  osc.connect(amp).connect(masterGain || audioCtx.destination);
   osc.start(now);
   osc.stop(now + duration + 0.02);
 }
 
 function playSfx(kind) {
+  unlockAudio();
   if (!audioCtx) return;
   if (kind === "fire") {
     const now = performance.now();
     if (now - lastFireSound < 95) return;
     lastFireSound = now;
-    tone(130, 0.055, "square", 0.018);
-    tone(70, 0.08, "sawtooth", 0.01, 0.012);
+    tone(160, 0.06, "square", 0.08);
+    tone(80, 0.09, "sawtooth", 0.04, 0.012);
   } else if (kind === "hit") {
-    tone(420, 0.07, "triangle", 0.022);
-    tone(760, 0.05, "sine", 0.014, 0.025);
+    tone(420, 0.08, "triangle", 0.09);
+    tone(760, 0.055, "sine", 0.055, 0.025);
   } else if (kind === "upgrade") {
-    tone(520, 0.08, "sine", 0.026);
-    tone(780, 0.1, "sine", 0.022, 0.07);
+    tone(520, 0.08, "sine", 0.09);
+    tone(780, 0.1, "sine", 0.075, 0.07);
   } else if (kind === "boss") {
-    tone(96, 0.28, "sawtooth", 0.04);
-    tone(144, 0.22, "square", 0.025, 0.09);
+    tone(96, 0.28, "sawtooth", 0.12);
+    tone(144, 0.22, "square", 0.08, 0.09);
   } else if (kind === "death") {
-    tone(220, 0.16, "sawtooth", 0.035);
-    tone(92, 0.22, "triangle", 0.028, 0.08);
+    tone(220, 0.16, "sawtooth", 0.11);
+    tone(92, 0.22, "triangle", 0.09, 0.08);
+  } else if (kind === "ready") {
+    tone(330, 0.08, "triangle", 0.11);
+    tone(660, 0.12, "sine", 0.09, 0.075);
   }
 }
 
