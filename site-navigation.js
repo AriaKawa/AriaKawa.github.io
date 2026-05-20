@@ -37,6 +37,7 @@
     "movie-grid.html": "other.html",
     "Smash.html": "other.html",
     "league-tracker.html": "other.html",
+    "innuendo-tee.html": "other.html",
 
     "AutoRogue/index.html": "other.html",
     "Council.html": "other.html"

@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Innuendo Tee Lab - Aria &amp; Friends Project Vault</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #17120d;
+      --panel: #fff8ec;
+      --ink: #20170f;
+      --muted: #6f5f51;
+      --line: rgba(32, 23, 15, 0.16);
+      --accent: #ff6f61;
+      --accent-strong: #c8424c;
+      --mint: #77d6b5;
+      --gold: #ffca58;
+      --shirt: #f7efe3;
+      --print: #1f1710;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      color: var(--ink);
+      font-family: "Plus Jakarta Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at 12% 12%, rgba(255, 202, 88, 0.24), transparent 28rem),
+        radial-gradient(circle at 88% 14%, rgba(119, 214, 181, 0.28), transparent 24rem),
+        linear-gradient(135deg, #28190f 0%, #17120d 52%, #24171b 100%);
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    .tee-shell {
+      width: min(1180px, calc(100% - 32px));
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: 28px 0 40px;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 24px;
+    }
+
+    .tee-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+      color: #fff8ec;
+    }
+
+    .category__back {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 42px;
+      padding: 0 14px;
+      border: 1px solid rgba(255, 248, 236, 0.24);
+      border-radius: 999px;
+      color: inherit;
+      background: rgba(255, 248, 236, 0.1);
+      cursor: pointer;
+    }
+
+    .category__back:hover,
+    .category__back:focus-visible {
+      background: rgba(255, 248, 236, 0.18);
+      outline: none;
+    }
+
+    .tee-hero {
+      max-width: 680px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .tee-kicker {
+      margin: 0;
+      color: var(--gold);
+      font-size: 0.76rem;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      color: #fff8ec;
+      font-size: clamp(2.35rem, 5vw, 5rem);
+      line-height: 0.95;
+      letter-spacing: 0;
+    }
+
+    .tee-hero p:not(.tee-kicker) {
+      margin: 0;
+      max-width: 56ch;
+      color: rgba(255, 248, 236, 0.78);
+      line-height: 1.65;
+    }
+
+    .tee-stage {
+      display: grid;
+      grid-template-columns: minmax(320px, 1fr) minmax(300px, 420px);
+      gap: 22px;
+      align-items: stretch;
+    }
+
+    .shirt-area,
+    .tee-controls {
+      border: 1px solid rgba(255, 248, 236, 0.2);
+      border-radius: 8px;
+      background: rgba(255, 248, 236, 0.9);
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
+    }
+
+    .shirt-area {
+      min-height: 610px;
+      padding: clamp(18px, 4vw, 44px);
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(255, 248, 236, 0.84)),
+        repeating-linear-gradient(45deg, rgba(32, 23, 15, 0.05) 0 2px, transparent 2px 14px);
+    }
+
+    .shirt-wrap {
+      width: min(520px, 100%);
+      aspect-ratio: 0.82;
+      position: relative;
+      display: grid;
+      place-items: center;
+      filter: drop-shadow(0 28px 38px rgba(32, 23, 15, 0.24));
+    }
+
+    .shirt {
+      position: relative;
+      width: 70%;
+      height: 78%;
+      border-radius: 20% 20% 13% 13% / 12% 12% 7% 7%;
+      background:
+        radial-gradient(circle at 50% -4%, rgba(255, 255, 255, 0.55) 0 16%, transparent 17%),
+        linear-gradient(90deg, rgba(0, 0, 0, 0.08), transparent 22%, transparent 78%, rgba(0, 0, 0, 0.07)),
+        var(--shirt);
+      display: grid;
+      place-items: center;
+      transition: background-color 0.2s ease, transform 0.2s ease;
+    }
+
+    .shirt::before,
+    .shirt::after {
+      content: "";
+      position: absolute;
+      top: 9%;
+      width: 35%;
+      height: 30%;
+      background:
+        linear-gradient(90deg, rgba(0, 0, 0, 0.09), transparent 62%),
+        var(--shirt);
+      z-index: -1;
+    }
+
+    .shirt::before {
+      left: -25%;
+      border-radius: 38% 8% 28% 20%;
+      transform: rotate(18deg);
+    }
+
+    .shirt::after {
+      right: -25%;
+      border-radius: 8% 38% 20% 28%;
+      transform: rotate(-18deg) scaleX(-1);
+    }
+
+    .collar {
+      position: absolute;
+      top: 4%;
+      left: 50%;
+      width: 34%;
+      aspect-ratio: 1.45;
+      border: 10px solid rgba(32, 23, 15, 0.18);
+      border-top: 0;
+      border-radius: 0 0 999px 999px;
+      transform: translateX(-50%);
+      background: rgba(255, 255, 255, 0.18);
+    }
+
+    .shirt-print {
+      width: min(75%, 310px);
+      min-height: 165px;
+      padding: 18px;
+      display: grid;
+      place-items: center;
+      color: var(--print);
+      text-align: center;
+      font-size: clamp(1.55rem, 4vw, 2.7rem);
+      font-weight: 800;
+      line-height: 1.02;
+      letter-spacing: 0;
+      text-transform: uppercase;
+      overflow-wrap: anywhere;
+      transform: rotate(-1.5deg);
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+    }
+
+    .tee-controls {
+      padding: 22px;
+      display: grid;
+      align-content: start;
+      gap: 20px;
+      background: var(--panel);
+    }
+
+    .control-group {
+      display: grid;
+      gap: 10px;
+    }
+
+    .control-label {
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .button-row,
+    .swatch-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .tee-button,
+    .swatch {
+      min-height: 44px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--ink);
+      background: #fffaf0;
+      cursor: pointer;
+      transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .tee-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 0 16px;
+      font-weight: 800;
+    }
+
+    .tee-button--primary {
+      flex: 1 1 190px;
+      color: white;
+      border-color: transparent;
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+    }
+
+    .tee-button:hover,
+    .tee-button:focus-visible,
+    .swatch:hover,
+    .swatch:focus-visible {
+      transform: translateY(-2px);
+      border-color: rgba(32, 23, 15, 0.36);
+      box-shadow: 0 10px 20px rgba(32, 23, 15, 0.12);
+      outline: none;
+    }
+
+    .segmented {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .segmented input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .segmented span {
+      display: grid;
+      min-height: 42px;
+      place-items: center;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fffaf0;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .segmented input:checked + span {
+      color: #fff8ec;
+      border-color: transparent;
+      background: #20170f;
+    }
+
+    .swatch {
+      width: 44px;
+      padding: 0;
+      background: var(--value);
+    }
+
+    .swatch.is-selected {
+      outline: 3px solid rgba(255, 111, 97, 0.32);
+      outline-offset: 2px;
+    }
+
+    .phrase-box {
+      min-height: 84px;
+      padding: 14px;
+      border: 1px dashed rgba(32, 23, 15, 0.24);
+      border-radius: 8px;
+      display: grid;
+      align-items: center;
+      background: #fffaf0;
+      color: var(--ink);
+      font-size: 1.2rem;
+      font-weight: 800;
+      line-height: 1.25;
+    }
+
+    .tiny-note {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.55;
+    }
+
+    @media (max-width: 860px) {
+      .tee-header {
+        display: grid;
+      }
+
+      .tee-stage {
+        grid-template-columns: 1fr;
+      }
+
+      .shirt-area {
+        min-height: 520px;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .tee-shell {
+        width: min(100% - 20px, 1180px);
+        padding-top: 18px;
+      }
+
+      .shirt-area,
+      .tee-controls {
+        padding: 16px;
+      }
+
+      .segmented {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="tee-shell">
+    <header class="tee-header">
+      <button class="category__back" type="button" data-back-button aria-label="Back">
+        <span aria-hidden="true">&larr;</span>
+        <span>Back</span>
+      </button>
+      <div class="tee-hero">
+        <p class="tee-kicker">Misc Program</p>
+        <h1>Innuendo Tee Lab</h1>
+        <p>
+          Spin up a novelty shirt slogan from a pile of playful double meanings, then shuffle the fabric and ink until it looks ready for a questionable party.
+        </p>
+      </div>
+    </header>
+
+    <section class="tee-stage" aria-label="Innuendo tee generator">
+      <div class="shirt-area">
+        <div class="shirt-wrap" aria-live="polite">
+          <div class="shirt" data-shirt>
+            <span class="collar" aria-hidden="true"></span>
+            <div class="shirt-print" data-shirt-print>Nice fit, suspicious intentions</div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="tee-controls" aria-label="Generator controls">
+        <div class="control-group">
+          <span class="control-label">Spice level</span>
+          <div class="segmented" data-levels>
+            <label>
+              <input type="radio" name="level" value="tame" checked>
+              <span>Tame</span>
+            </label>
+            <label>
+              <input type="radio" name="level" value="flirty">
+              <span>Flirty</span>
+            </label>
+            <label>
+              <input type="radio" name="level" value="saucy">
+              <span>Saucy</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <span class="control-label">Current shirt text</span>
+          <div class="phrase-box" data-phrase-box>Nice fit, suspicious intentions</div>
+        </div>
+
+        <div class="control-group">
+          <span class="control-label">Fabric</span>
+          <div class="swatch-row" data-shirt-swatches></div>
+        </div>
+
+        <div class="control-group">
+          <span class="control-label">Ink</span>
+          <div class="swatch-row" data-ink-swatches></div>
+        </div>
+
+        <div class="button-row">
+          <button class="tee-button tee-button--primary" type="button" data-generate>Generate slogan</button>
+          <button class="tee-button" type="button" data-randomize>Random colors</button>
+          <button class="tee-button" type="button" data-copy>Copy text</button>
+        </div>
+
+        <p class="tiny-note">
+          The joke bank stays suggestive and punny: grown-up double entendres, no explicit descriptions, no server, no saving.
+        </p>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    const slogans = {
+      tame: [
+        "Nice fit, suspicious intentions",
+        "Ask me about my staying power",
+        "Professionally overdressed for mischief",
+        "Buttoned up, barely",
+        "Good posture, bad ideas",
+        "Handle with charm",
+        "This shirt knows too much",
+        "Soft launch, hard stare",
+        "Premium cuddle adjacent",
+        "Fluent in prolonged eye contact"
+      ],
+      flirty: [
+        "I put the tease in expertise",
+        "Certified trouble in a cotton blend",
+        "Ask nicely, results may vary",
+        "I came for the snacks",
+        "Low battery, high tension",
+        "Nice package, wrong address",
+        "Currently accepting bold proposals",
+        "Soft fabric, firm boundaries",
+        "This is my second-best pickup line",
+        "Consent enthusiast, chaos apprentice"
+      ],
+      saucy: [
+        "Skilled with my hands and my alibis",
+        "Hot and bothered by bad typography",
+        "Morning person after enough compliments",
+        "I make eye contact with the menu",
+        "Not a snack, a full bad decision",
+        "My safe word is sale",
+        "For best results, read twice",
+        "Well handled under pressure",
+        "Built for comfort, wired for trouble",
+        "Loose fit, tight alibi"
+      ]
+    };
+
+    const shirtColors = ["#f7efe3", "#ffca58", "#77d6b5", "#8fc7ff", "#f7a6c0", "#20170f", "#b7a0ff"];
+    const inkColors = ["#20170f", "#fff8ec", "#c8424c", "#155c4d", "#304d8f", "#6d3a11", "#f7efe3"];
+
+    const printEl = document.querySelector("[data-shirt-print]");
+    const phraseBox = document.querySelector("[data-phrase-box]");
+    const generateButton = document.querySelector("[data-generate]");
+    const randomizeButton = document.querySelector("[data-randomize]");
+    const copyButton = document.querySelector("[data-copy]");
+    const shirtSwatches = document.querySelector("[data-shirt-swatches]");
+    const inkSwatches = document.querySelector("[data-ink-swatches]");
+
+    let lastSlogan = printEl.textContent.trim();
+    let currentShirt = shirtColors[0];
+    let currentInk = inkColors[0];
+
+    function currentLevel() {
+      return document.querySelector("input[name='level']:checked").value;
+    }
+
+    function pickRandom(items) {
+      return items[Math.floor(Math.random() * items.length)];
+    }
+
+    function updateSlogan(nextSlogan) {
+      lastSlogan = nextSlogan;
+      printEl.textContent = nextSlogan;
+      phraseBox.textContent = nextSlogan;
+    }
+
+    function generateSlogan() {
+      const pool = slogans[currentLevel()];
+      let nextSlogan = pickRandom(pool);
+
+      if (pool.length > 1) {
+        while (nextSlogan === lastSlogan) {
+          nextSlogan = pickRandom(pool);
+        }
+      }
+
+      updateSlogan(nextSlogan);
+    }
+
+    function applyColors() {
+      document.documentElement.style.setProperty("--shirt", currentShirt);
+      document.documentElement.style.setProperty("--print", currentInk);
+
+      shirtSwatches.querySelectorAll(".swatch").forEach((swatch) => {
+        swatch.classList.toggle("is-selected", swatch.dataset.color === currentShirt);
+      });
+      inkSwatches.querySelectorAll(".swatch").forEach((swatch) => {
+        swatch.classList.toggle("is-selected", swatch.dataset.color === currentInk);
+      });
+    }
+
+    function buildSwatches(container, colors, onSelect) {
+      colors.forEach((color) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "swatch";
+        button.dataset.color = color;
+        button.style.setProperty("--value", color);
+        button.setAttribute("aria-label", `Use ${color}`);
+        button.addEventListener("click", () => onSelect(color));
+        container.appendChild(button);
+      });
+    }
+
+    function randomizeColors() {
+      currentShirt = pickRandom(shirtColors);
+      currentInk = pickRandom(inkColors);
+
+      if (currentShirt === currentInk) {
+        currentInk = inkColors.find((color) => color !== currentShirt) || inkColors[0];
+      }
+
+      applyColors();
+    }
+
+    buildSwatches(shirtSwatches, shirtColors, (color) => {
+      currentShirt = color;
+      applyColors();
+    });
+
+    buildSwatches(inkSwatches, inkColors, (color) => {
+      currentInk = color;
+      applyColors();
+    });
+
+    generateButton.addEventListener("click", generateSlogan);
+    randomizeButton.addEventListener("click", randomizeColors);
+    copyButton.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(lastSlogan);
+        copyButton.textContent = "Copied";
+      } catch {
+        copyButton.textContent = "Copy failed";
+      }
+      window.setTimeout(() => {
+        copyButton.textContent = "Copy text";
+      }, 1300);
+    });
+
+    document.querySelectorAll("input[name='level']").forEach((input) => {
+      input.addEventListener("change", generateSlogan);
+    });
+
+    applyColors();
+  </script>
+  <script src="site-navigation.js"></script>
+</body>
+</html>
