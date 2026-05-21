@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Market Scout</title>
-    <link rel="stylesheet" href="styles.css?v=20260521-simple" />
+    <link rel="stylesheet" href="styles.css?v=20260521-board" />
   </head>
   <body>
     <main class="app-shell">
@@ -25,16 +25,32 @@
             <input id="locationInput" name="location" type="text" autocomplete="address-level2" placeholder="Troy, MO" />
           </label>
 
-          <a class="primary-action" id="facebookLink" target="_blank" rel="noreferrer">
-            Search Facebook Marketplace
-          </a>
+          <div class="action-row">
+            <a class="primary-action" id="facebookLink" target="_blank" rel="noreferrer">Open Facebook</a>
+            <a class="primary-action primary-action--blue" id="ebayLink" target="_blank" rel="noreferrer">Open eBay</a>
+          </div>
         </form>
 
         <p class="status" id="searchStatus">Type an item and city to start.</p>
       </section>
 
+      <section class="results-panel" aria-labelledby="resultsTitle">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">Combined board</p>
+            <h2 id="resultsTitle">Top results</h2>
+          </div>
+          <div class="panel-actions">
+            <button class="quiet-button" id="pasteBtn" type="button">Paste collected results</button>
+            <button class="quiet-button" id="clearBtn" type="button">Clear</button>
+          </div>
+        </div>
+        <div id="resultsGrid" class="results-grid"></div>
+      </section>
+
       <details class="advanced-panel">
         <summary>More options</summary>
+
         <div class="advanced-grid">
           <label>
             Radius
@@ -62,17 +78,50 @@
           <button class="quiet-button" id="copyTermsBtn" type="button">Copy terms</button>
         </div>
 
-        <div class="link-grid">
-          <a class="secondary-action" id="ebayLink" target="_blank" rel="noreferrer">Search eBay</a>
-          <a class="secondary-action" id="soldLink" target="_blank" rel="noreferrer">eBay sold comps</a>
+        <div class="collector-box">
+          <div>
+            <span class="section-label">Collector bookmarklet</span>
+            <p class="note">Drag this to your bookmarks bar. Open Facebook or eBay search results, then click the bookmark to copy visible listings with real page image URLs.</p>
+          </div>
+          <a class="bookmarklet" id="collectorBookmarklet">Collect listings</a>
         </div>
 
-        <p class="note">
-          Facebook uses your Marketplace account location. The city field is saved here so the search is clear, and eBay searches use your item terms.
-        </p>
+        <div class="import-box">
+          <label>
+            Manual import
+            <textarea id="importInput" rows="5" spellcheck="false" placeholder="Paste collector JSON here if clipboard import is blocked"></textarea>
+          </label>
+          <button class="secondary-action" id="importBtn" type="button">Import pasted JSON</button>
+        </div>
+
+        <div class="link-grid">
+          <a class="secondary-action" id="soldLink" target="_blank" rel="noreferrer">eBay sold comps</a>
+          <button class="secondary-action" id="exportBtn" type="button">Export board</button>
+        </div>
       </details>
     </main>
 
-    <script src="app.js?v=20260521-simple"></script>
+    <template id="resultTemplate">
+      <article class="result-card">
+        <div class="result-image">
+          <img alt="" />
+          <span class="source-pill"></span>
+        </div>
+        <div class="result-body">
+          <div class="result-title-row">
+            <h3></h3>
+            <strong class="price"></strong>
+          </div>
+          <p class="meta"></p>
+          <p class="description"></p>
+          <div class="score-row">
+            <span class="score-pill"></span>
+            <a class="secondary-action" target="_blank" rel="noreferrer">Open</a>
+          </div>
+        </div>
+      </article>
+    </template>
+
+    <script src="app.js?v=20260521-board"></script>
   </body>
 </html>
