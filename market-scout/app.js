@@ -1,4 +1,4 @@
-const storageKey = "market-scout-state-v2";
+const storageKey = "market-scout-state-v3";
 
 const defaultSettings = {
   query: "bass guitar",
@@ -24,7 +24,7 @@ const sampleListings = [
     posted: "Today",
     url: "https://www.facebook.com/marketplace/search/?query=squier%20classic%20vibe%20jazz%20bass",
     description: "Natural finish, upgraded strings, minor buckle rash. Includes gig bag.",
-    image: "",
+    image: sampleImage("Jazz Bass", "#b7792f", "#f0c071"),
   },
   {
     id: crypto.randomUUID(),
@@ -36,7 +36,7 @@ const sampleListings = [
     posted: "Buy it now",
     url: "https://www.ebay.com/sch/i.html?_nkw=sterling+sub+ray4+bass",
     description: "Clean used listing with shipping included. Good comp anchor for local offers.",
-    image: "",
+    image: sampleImage("SUB Ray4", "#111820", "#c9a968"),
   },
   {
     id: crypto.randomUUID(),
@@ -48,7 +48,7 @@ const sampleListings = [
     posted: "2 days ago",
     url: "https://www.facebook.com/marketplace/search/?query=ibanez%20sr300e",
     description: "Active electronics, very clean, open to reasonable offers.",
-    image: "",
+    image: sampleImage("Ibanez SR", "#265a8e", "#54a0d4"),
   },
   {
     id: crypto.randomUUID(),
@@ -60,7 +60,7 @@ const sampleListings = [
     posted: "New listing",
     url: "https://www.ebay.com/sch/i.html?_nkw=yamaha+trbx174+bass",
     description: "Comparable eBay listing for quick price ceiling checks.",
-    image: "",
+    image: sampleImage("Yamaha TRBX", "#8f2639", "#d2485d"),
   },
   {
     id: crypto.randomUUID(),
@@ -72,7 +72,7 @@ const sampleListings = [
     posted: "Today",
     url: "https://www.facebook.com/marketplace/search/?query=fender%20rumble%2040",
     description: "Practice amp in great condition. Useful bundle target.",
-    image: "",
+    image: sampleImage("Rumble 40", "#1e2524", "#d8b96d"),
   },
   {
     id: crypto.randomUUID(),
@@ -84,7 +84,7 @@ const sampleListings = [
     posted: "1 week ago",
     url: "https://www.facebook.com/marketplace/search/?query=broken%20bass%20guitar",
     description: "Needs wiring work. Selling as-is.",
-    image: "",
+    image: sampleImage("Parts", "#6b4025", "#d15b4b"),
   },
   {
     id: crypto.randomUUID(),
@@ -96,7 +96,7 @@ const sampleListings = [
     posted: "Yesterday",
     url: "https://www.facebook.com/marketplace/search/?query=sterling%20sub%20ray4",
     description: "Blue finish, plays well. Moving sale price.",
-    image: "",
+    image: sampleImage("Ray4 Blue", "#174c8f", "#2f7bd0"),
   },
 ];
 
@@ -105,6 +105,7 @@ const state = {
   favorites: new Set(),
   savedSearches: [],
   activeFilter: "all",
+  autoTerms: true,
 };
 
 const els = {
@@ -117,6 +118,9 @@ const els = {
   minScoreValue: document.querySelector("#minScoreValue"),
   include: document.querySelector("#includeInput"),
   exclude: document.querySelector("#excludeInput"),
+  autoTerms: document.querySelector("#autoTermsBtn"),
+  termStrip: document.querySelector("#termStrip"),
+  termPreview: document.querySelector("#termPreview"),
   sort: document.querySelector("#sortInput"),
   view: document.querySelector("#viewInput"),
   importInput: document.querySelector("#importInput"),
@@ -130,11 +134,158 @@ const els = {
   soldCompsLink: document.querySelector("#soldCompsLink"),
 };
 
+const baseExcludeTerms = [
+  "broken",
+  "for parts",
+  "parts only",
+  "not working",
+  "trade only",
+  "wanted",
+  "iso",
+  "read description",
+];
+
+const keywordProfiles = [
+  {
+    name: "storage",
+    pattern: /\b(ssd|nvme|m\.?2|solid state|storage|hard drive)\b/i,
+    include: ["ssd", "nvme", "m.2", "sata ssd", "samsung", "crucial", "wd", "western digital", "kingston", "sandisk", "1tb", "2tb", "970 evo", "980 pro", "990 pro"],
+    exclude: ["hdd", "hard drive", "enclosure only", "adapter only", "caddy only", "used heavily"],
+  },
+  {
+    name: "bass",
+    pattern: /\b(bass|guitar|instrument|amp)\b/i,
+    include: ["fender", "squier", "ibanez", "yamaha", "sterling", "music man", "jazz bass", "p bass", "active bass", "rumble"],
+    exclude: ["case only", "strings only"],
+  },
+  {
+    name: "graphics",
+    pattern: /\b(gpu|graphics|rtx|radeon|video card)\b/i,
+    include: ["gpu", "graphics card", "rtx", "geforce", "nvidia", "radeon", "amd", "4070", "3080", "3060 ti", "rx 6700", "rx 6800"],
+    exclude: ["mining rig", "box only", "artifacting", "no display"],
+  },
+  {
+    name: "laptop",
+    pattern: /\b(laptop|macbook|thinkpad|chromebook|notebook)\b/i,
+    include: ["laptop", "macbook", "thinkpad", "dell", "hp", "lenovo", "asus", "16gb", "512gb", "i7", "ryzen"],
+    exclude: ["icloud locked", "bios locked", "cracked screen", "no charger"],
+  },
+  {
+    name: "camera",
+    pattern: /\b(camera|lens|dslr|mirrorless|canon|nikon|sony)\b/i,
+    include: ["camera", "lens", "canon", "nikon", "sony", "fuji", "mirrorless", "dslr", "sigma", "tamron"],
+    exclude: ["body cap only", "fungus", "haze", "for repair"],
+  },
+  {
+    name: "console",
+    pattern: /\b(ps5|playstation|xbox|switch|console|steam deck)\b/i,
+    include: ["ps5", "playstation", "xbox", "series x", "nintendo switch", "oled", "steam deck", "controller", "bundle"],
+    exclude: ["account only", "banned", "digital code", "shell only"],
+  },
+  {
+    name: "phone",
+    pattern: /\b(iphone|ipad|phone|pixel|galaxy|tablet)\b/i,
+    include: ["iphone", "ipad", "pixel", "galaxy", "samsung", "unlocked", "128gb", "256gb", "pro max", "cellular"],
+    exclude: ["icloud locked", "blacklisted", "bad imei", "cracked back"],
+  },
+  {
+    name: "desk",
+    pattern: /\b(chair|desk|office|herman miller|steelcase)\b/i,
+    include: ["chair", "desk", "office", "herman miller", "aeron", "steelcase", "leap", "standing desk"],
+    exclude: ["stained", "missing parts", "needs repair"],
+  },
+];
+
+const sampleImageByTitle = new Map(sampleListings.map((listing) => [normalizeTitle(listing.title), listing.image]));
+
 function normalizeList(value) {
   return value
     .split(",")
     .map((item) => item.trim().toLowerCase())
     .filter(Boolean);
+}
+
+function sampleImage(label, accent, secondary) {
+  const safeLabel = escapeSvg(label);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 420" role="img" aria-label="${safeLabel} listing image"><rect width="640" height="420" fill="#0b1013"/><path d="M0 300h640v120H0z" fill="#070a0c"/><circle cx="178" cy="226" r="96" fill="${accent}"/><circle cx="228" cy="244" r="66" fill="${secondary}" opacity=".92"/><rect x="252" y="193" width="296" height="26" rx="13" fill="#211915" transform="rotate(-6 252 193)"/><rect x="520" y="154" width="86" height="42" rx="14" fill="#15100d" transform="rotate(-6 520 154)"/><rect x="208" y="218" width="76" height="20" rx="4" fill="#080b0d"/><g stroke="#f2eadb" stroke-width="3" opacity=".88"><path d="M255 200l346-38"/><path d="M256 207l346-38"/><path d="M257 214l346-38"/><path d="M258 221l346-38"/></g><text x="38" y="370" fill="#eff7f2" font-family="Arial, sans-serif" font-size="42" font-weight="800">${safeLabel}</text></svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+function escapeSvg(value = "") {
+  return String(value).replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&apos;",
+  }[char]));
+}
+
+function normalizeTitle(value = "") {
+  return String(value).toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+function uniqueTerms(terms) {
+  const seen = new Set();
+  return terms
+    .map((term) => term.trim().toLowerCase())
+    .filter(Boolean)
+    .filter((term) => {
+      if (seen.has(term)) return false;
+      seen.add(term);
+      return true;
+    });
+}
+
+function tokenizeQuery(query) {
+  const stopWords = new Set(["the", "and", "with", "for", "near", "used", "new", "cheap", "good"]);
+  return query
+    .toLowerCase()
+    .replace(/[^a-z0-9. ]+/g, " ")
+    .split(/\s+/)
+    .filter((term) => term.length > 1 && !stopWords.has(term));
+}
+
+function keywordProfileFor(query) {
+  return keywordProfiles.find((profile) => profile.pattern.test(query)) || null;
+}
+
+function generatedKeywordSet(query) {
+  const profile = keywordProfileFor(query);
+  const tokens = tokenizeQuery(query);
+  const include = uniqueTerms([
+    query.toLowerCase(),
+    ...tokens,
+    ...(profile?.include || []),
+  ]).slice(0, 18);
+  const exclude = uniqueTerms([
+    ...baseExcludeTerms,
+    ...(profile?.exclude || []),
+  ]).slice(0, 16);
+
+  return { include, exclude, profileName: profile?.name || "general" };
+}
+
+function updateAutoTerms(force = false) {
+  if (!force && !state.autoTerms) return;
+  const generated = generatedKeywordSet(els.query.value.trim());
+  els.include.value = generated.include.join(",");
+  els.exclude.value = generated.exclude.join(",");
+  state.autoTerms = true;
+  renderTermPreview(generated.include);
+}
+
+function renderTermPreview(terms = normalizeList(els.include.value)) {
+  [els.termStrip, els.termPreview].forEach((container) => {
+    container.replaceChildren();
+    terms.slice(0, 10).forEach((term) => {
+      const chip = document.createElement("span");
+      chip.textContent = term;
+      container.append(chip);
+    });
+  });
+  els.autoTerms.classList.toggle("active", state.autoTerms);
+  els.autoTerms.textContent = state.autoTerms ? "Auto terms on" : "Auto terms";
 }
 
 function money(value) {
@@ -249,6 +400,7 @@ function render() {
   const visible = sortListings(enrichedListings());
   els.minScoreValue.textContent = els.minScore.value;
   els.soldCompsLink.href = buildEbaySoldUrl();
+  renderTermPreview();
   els.listingArea.className = els.view.value === "list" ? "listing-grid list" : "listing-grid";
   els.listingArea.replaceChildren();
 
@@ -270,6 +422,7 @@ function renderCard(listing) {
   const card = els.cardTemplate.content.firstElementChild.cloneNode(true);
   const favorite = card.querySelector(".favorite");
   const thumb = card.querySelector(".thumb");
+  const image = card.querySelector(".thumb-image");
   const sourcePill = card.querySelector(".source-pill");
   const title = card.querySelector("h3");
   const price = card.querySelector(".price");
@@ -288,8 +441,19 @@ function renderCard(listing) {
     render();
   });
 
-  if (listing.image) thumb.style.backgroundImage = `url("${listing.image}")`;
-  else thumb.style.backgroundImage = fallbackImage(listing.title, listing.source);
+  thumb.style.backgroundImage = fallbackImage(listing.title, listing.source);
+  thumb.classList.toggle("has-image", Boolean(listing.image));
+  if (listing.image) {
+    image.src = listing.image;
+    image.alt = `${listing.title || "Listing"} photo`;
+    image.hidden = false;
+    image.addEventListener("error", () => {
+      image.hidden = true;
+      thumb.classList.remove("has-image");
+    }, { once: true });
+  } else {
+    image.hidden = true;
+  }
 
   sourcePill.classList.toggle("ebay", listing.source === "ebay");
   sourcePill.textContent = listing.source === "ebay" ? "eBay" : "Facebook";
@@ -333,6 +497,11 @@ function fallbackImage(title = "", source = "facebook") {
   const hue = [...title].reduce((sum, char) => sum + char.charCodeAt(0), 0) % 360;
   const accent = source === "ebay" ? 214 : hue;
   return `linear-gradient(135deg, hsl(${accent} 36% 77%), hsl(${(hue + 54) % 360} 42% 90%))`;
+}
+
+function sampleImageForTitle(title = "") {
+  const normalized = normalizeTitle(title);
+  return sampleImageByTitle.get(normalized) || "";
 }
 
 function renderStats(visible) {
@@ -392,6 +561,9 @@ function applySearch(search) {
   Object.entries({ ...defaultSettings, ...search }).forEach(([key, value]) => {
     if (els[key]) els[key].value = value;
   });
+  state.autoTerms = search.autoTerms ?? true;
+  if (state.autoTerms) updateAutoTerms(true);
+  else renderTermPreview();
   render();
 }
 
@@ -416,6 +588,7 @@ function currentSettingsForStorage() {
     exclude: els.exclude.value,
     sort: els.sort.value,
     view: els.view.value,
+    autoTerms: state.autoTerms,
   };
 }
 
@@ -501,7 +674,7 @@ function cleanListing(row) {
     distance: Number(String(row.distance || "").replace(/[^0-9.]/g, "")) || 0,
     url: row.url || row.link || "",
     posted: row.posted || row.date || "",
-    image: row.image || row.thumbnail || "",
+    image: row.image || row.imageUrl || row.thumbnail || row.thumbnailUrl || row.picture || row.photo || sampleImageForTitle(row.title || row.name),
     description: row.description || row.notes || "",
   };
 }
@@ -530,6 +703,8 @@ function hydrate() {
     Object.entries({ ...defaultSettings, ...(saved.settings || {}) }).forEach(([key, value]) => {
       if (els[key]) els[key].value = value;
     });
+    state.autoTerms = saved.settings?.autoTerms ?? true;
+    if (state.autoTerms) updateAutoTerms(true);
     state.activeFilter = saved.activeFilter || "all";
     document.querySelectorAll(".chip").forEach((chip) => {
       chip.classList.toggle("active", chip.dataset.filter === state.activeFilter);
@@ -543,6 +718,8 @@ function resetSettings() {
   Object.entries(defaultSettings).forEach(([key, value]) => {
     if (els[key]) els[key].value = value;
   });
+  state.autoTerms = true;
+  updateAutoTerms(true);
   state.activeFilter = "all";
   document.querySelectorAll(".chip").forEach((chip) => {
     chip.classList.toggle("active", chip.dataset.filter === "all");
@@ -559,6 +736,10 @@ document.querySelector("#openBothBtn").addEventListener("click", () => {
 
 document.querySelector("#saveSearchBtn").addEventListener("click", saveCurrentSearch);
 document.querySelector("#resetBtn").addEventListener("click", resetSettings);
+els.autoTerms.addEventListener("click", () => {
+  updateAutoTerms(true);
+  render();
+});
 
 document.querySelector("#clearSavedBtn").addEventListener("click", () => {
   state.savedSearches = [];
@@ -600,10 +781,23 @@ document.querySelectorAll(".chip").forEach((chip) => {
   });
 });
 
-[els.query, els.city, els.radius, els.maxPrice, els.source, els.minScore, els.include, els.exclude, els.sort, els.view].forEach((input) => {
+[els.city, els.radius, els.maxPrice, els.source, els.minScore, els.exclude, els.sort, els.view].forEach((input) => {
   input.addEventListener("input", render);
   input.addEventListener("change", render);
 });
 
+els.query.addEventListener("input", () => {
+  updateAutoTerms();
+  render();
+});
+
+els.include.addEventListener("input", () => {
+  state.autoTerms = false;
+  renderTermPreview();
+  render();
+});
+
 hydrate();
+if (state.autoTerms) updateAutoTerms(true);
+else renderTermPreview();
 render();

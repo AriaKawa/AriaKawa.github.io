@@ -28,6 +28,7 @@
               Item or category
               <input id="queryInput" type="text" value="bass guitar" placeholder="bass guitar, camera lens, desk chair" />
             </label>
+            <div class="term-strip" id="termStrip" aria-label="Generated keyword terms"></div>
             <div class="search-card__row">
               <label>
                 City
@@ -111,9 +112,13 @@
               <span class="range-value"><span id="minScoreValue">0</span> match score</span>
             </label>
             <label>
-              Keywords to include
+              <span class="field-head">
+                <span>Keywords to include</span>
+                <button class="mini-button" id="autoTermsBtn" type="button">Auto terms</button>
+              </span>
               <input id="includeInput" type="text" value="fender,squier,ibanez,yamaha,sterling,music man,jazz bass,p bass" />
             </label>
+            <div class="term-preview" id="termPreview" aria-label="Active keyword terms"></div>
             <label>
               Keywords to hide
               <input id="excludeInput" type="text" value="case only,broken,parts,trade only,wanted,iso" />
@@ -139,8 +144,8 @@
               </div>
               <button class="ghost-button" id="loadSampleBtn" type="button">Sample</button>
             </div>
-            <p class="hint">Paste CSV or JSON from listings you can access. Fields: source, title, price, location, distance, url, posted, image, description.</p>
-            <textarea id="importInput" rows="8" spellcheck="false" placeholder="source,title,price,location,distance,url,posted&#10;facebook,Squier Classic Vibe Jazz Bass,280,Plano,18,https://...,Today"></textarea>
+            <p class="hint">Paste CSV or JSON from listings you can access. Cards show photos when the row includes an image or thumbnail URL.</p>
+            <textarea id="importInput" rows="8" spellcheck="false" placeholder="source,title,price,location,distance,url,posted,image,description&#10;facebook,Squier Classic Vibe Jazz Bass,280,Plano,18,https://...,Today,https://...jpg,Natural finish"></textarea>
             <button class="secondary-button secondary-button--full" id="importBtn" type="button">Import rows</button>
           </section>
         </aside>
@@ -185,6 +190,7 @@
       <article class="listing-card">
         <button class="favorite" title="Save listing" aria-label="Save listing" type="button">+</button>
         <div class="thumb">
+          <img class="thumb-image" alt="" hidden />
           <span class="source-pill"></span>
         </div>
         <div class="listing-body">
