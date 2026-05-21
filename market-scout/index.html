@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Market Scout</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="hero">
+        <nav class="hero__nav" aria-label="Page">
+          <a class="back-link" href="../misc.html">Back</a>
+          <button class="icon-button" id="exportBtn" type="button" title="Export listings" aria-label="Export listings">
+            <span aria-hidden="true">EX</span>
+          </button>
+        </nav>
+        <section class="hero__grid">
+          <div class="hero__copy">
+            <p class="eyebrow">Buyer research console</p>
+            <h1>Market Scout</h1>
+            <p class="lede">
+              Build repeatable Facebook Marketplace and eBay searches, score pasted listings, and keep the best flips in one clean workspace.
+            </p>
+          </div>
+          <div class="search-card" aria-label="Search launcher">
+            <label>
+              Item or category
+              <input id="queryInput" type="text" value="bass guitar" placeholder="bass guitar, camera lens, desk chair" />
+            </label>
+            <div class="search-card__row">
+              <label>
+                City
+                <input id="cityInput" type="text" value="Dallas, TX" placeholder="Austin, TX" />
+              </label>
+              <label>
+                Radius
+                <select id="radiusInput">
+                  <option value="5">5 mi</option>
+                  <option value="10">10 mi</option>
+                  <option value="25" selected>25 mi</option>
+                  <option value="50">50 mi</option>
+                  <option value="100">100 mi</option>
+                  <option value="250">250 mi</option>
+                </select>
+              </label>
+              <label>
+                Max
+                <input id="maxPriceInput" type="number" min="0" step="5" value="450" />
+              </label>
+            </div>
+            <div class="launcher">
+              <button class="primary-button" id="openFacebookBtn" type="button">
+                <span class="button-mark" aria-hidden="true">FB</span>
+                Facebook
+              </button>
+              <button class="primary-button primary-button--blue" id="openEbayBtn" type="button">
+                <span class="button-mark" aria-hidden="true">EB</span>
+                eBay
+              </button>
+              <button class="secondary-button" id="openBothBtn" type="button">Open both</button>
+            </div>
+            <div class="aux-links">
+              <a id="soldCompsLink" target="_blank" rel="noreferrer">eBay sold comps</a>
+              <button class="ghost-button" id="saveSearchBtn" type="button">Save search</button>
+            </div>
+          </div>
+        </section>
+      </header>
+
+      <section class="metrics" aria-label="Listing summary">
+        <article>
+          <span>Matches</span>
+          <strong id="matchCount">0</strong>
+        </article>
+        <article>
+          <span>Likely deals</span>
+          <strong id="dealCount">0</strong>
+        </article>
+        <article>
+          <span>Average price</span>
+          <strong id="avgPrice">$0</strong>
+        </article>
+        <article>
+          <span>Source mix</span>
+          <strong id="sourceMix">0 / 0</strong>
+        </article>
+      </section>
+
+      <section class="workspace">
+        <aside class="sidebar" aria-label="Filters and imports">
+          <section class="panel">
+            <div class="section-title">
+              <div>
+                <p class="microcopy">Filters</p>
+                <h2>Signal controls</h2>
+              </div>
+              <button class="ghost-button" id="resetBtn" type="button">Reset</button>
+            </div>
+            <label>
+              Source
+              <select id="sourceInput">
+                <option value="all">Facebook and eBay</option>
+                <option value="facebook">Facebook only</option>
+                <option value="ebay">eBay only</option>
+              </select>
+            </label>
+            <label>
+              Minimum score
+              <input id="minScoreInput" type="range" min="0" max="100" step="5" value="0" />
+              <span class="range-value"><span id="minScoreValue">0</span> match score</span>
+            </label>
+            <label>
+              Keywords to include
+              <input id="includeInput" type="text" value="fender,squier,ibanez,yamaha,sterling,music man,jazz bass,p bass" />
+            </label>
+            <label>
+              Keywords to hide
+              <input id="excludeInput" type="text" value="case only,broken,parts,trade only,wanted,iso" />
+            </label>
+          </section>
+
+          <section class="panel">
+            <div class="section-title">
+              <div>
+                <p class="microcopy">Saved</p>
+                <h2>Search profiles</h2>
+              </div>
+              <button class="ghost-button" id="clearSavedBtn" type="button">Clear</button>
+            </div>
+            <div id="savedSearches" class="saved-list"></div>
+          </section>
+
+          <section class="panel">
+            <div class="section-title">
+              <div>
+                <p class="microcopy">Data</p>
+                <h2>Import listings</h2>
+              </div>
+              <button class="ghost-button" id="loadSampleBtn" type="button">Sample</button>
+            </div>
+            <p class="hint">Paste CSV or JSON from listings you can access. Fields: source, title, price, location, distance, url, posted, image, description.</p>
+            <textarea id="importInput" rows="8" spellcheck="false" placeholder="source,title,price,location,distance,url,posted&#10;facebook,Squier Classic Vibe Jazz Bass,280,Plano,18,https://...,Today"></textarea>
+            <button class="secondary-button secondary-button--full" id="importBtn" type="button">Import rows</button>
+          </section>
+        </aside>
+
+        <section class="results" aria-label="Listings">
+          <div class="toolbar">
+            <div class="quick-filters" role="group" aria-label="Quick filters">
+              <button class="chip active" data-filter="all" type="button">All</button>
+              <button class="chip" data-filter="deals" type="button">Deals</button>
+              <button class="chip" data-filter="nearby" type="button">Nearby</button>
+              <button class="chip" data-filter="facebook" type="button">Facebook</button>
+              <button class="chip" data-filter="ebay" type="button">eBay</button>
+              <button class="chip" data-filter="favorites" type="button">Saved</button>
+            </div>
+            <div class="toolbar__controls">
+              <label class="compact">
+                Sort
+                <select id="sortInput">
+                  <option value="score">Best match</option>
+                  <option value="priceAsc">Price low</option>
+                  <option value="priceDesc">Price high</option>
+                  <option value="distanceAsc">Distance</option>
+                  <option value="newest">Newest</option>
+                </select>
+              </label>
+              <label class="compact">
+                View
+                <select id="viewInput">
+                  <option value="cards">Cards</option>
+                  <option value="list">List</option>
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <div id="listingArea" class="listing-grid"></div>
+        </section>
+      </section>
+    </main>
+
+    <template id="listingCardTemplate">
+      <article class="listing-card">
+        <button class="favorite" title="Save listing" aria-label="Save listing" type="button">+</button>
+        <div class="thumb">
+          <span class="source-pill"></span>
+        </div>
+        <div class="listing-body">
+          <div class="listing-head">
+            <h3></h3>
+            <strong class="price"></strong>
+          </div>
+          <p class="meta"></p>
+          <p class="description"></p>
+          <div class="badges"></div>
+          <div class="listing-actions">
+            <a class="secondary-button" target="_blank" rel="noreferrer">Open listing</a>
+            <button class="ghost-button copy-link" type="button">Copy link</button>
+          </div>
+        </div>
+      </article>
+    </template>
+
+    <script src="app.js"></script>
+  </body>
+</html>
