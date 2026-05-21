@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Expansion.io Blob</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <canvas id="game" aria-label="Expansion.io blob map"></canvas>
+
+    <header class="hud" aria-label="Command status">
+      <div class="brand">
+        <span class="mark" aria-hidden="true"></span>
+        <div>
+          <h1>Expansion.io Blob</h1>
+          <p id="statusLine">Blobs online</p>
+        </div>
+      </div>
+      <div id="playerBadge" class="player-badge" aria-label="Player identity">
+        <span></span>
+        <b>You are Auric Command</b>
+      </div>
+      <div class="stats" aria-label="Strategic resources">
+        <div><span id="money">0</span><small>money</small></div>
+        <div><span id="troops">0</span><small>reserves</small></div>
+        <div><span id="income">+0</span><small>income</small></div>
+        <div><span id="share">0%</span><small>map</small></div>
+      </div>
+    </header>
+
+    <aside class="command" aria-label="Orders">
+      <div class="toolbar" role="group" aria-label="Order modes">
+        <div class="expansion-picker">
+          <button id="expansionBtn" class="active" type="button" title="Choose expansion stance">Expansion <b id="expansionLabel">Free</b></button>
+          <div id="expansionMenu" class="expansion-menu" aria-label="Expansion stance choices">
+            <button type="button" data-expansion="radius">Radius</button>
+            <button type="button" data-expansion="blitz">Blitz</button>
+            <button type="button" data-expansion="direction">Direction</button>
+            <button type="button" data-expansion="free">Free</button>
+          </div>
+        </div>
+        <button id="factoryBtn" type="button" title="Build factory">Factory <b>$80</b></button>
+        <button id="barracksBtn" type="button" title="Build barracks">Barracks <b>$70</b></button>
+        <button id="depotBtn" type="button" title="Build supply depot">Depot <b>$60</b></button>
+        <button id="nukeBtn" class="nuke-btn" type="button" title="Launch test nuke">Nuke <b>$0</b></button>
+      </div>
+      <div class="toolbar slim" role="group" aria-label="Map overlays">
+        <button id="frontBtn" class="active" type="button" title="Show fronts">Front</button>
+        <button id="supplyBtn" type="button" title="Show supply">Supply</button>
+        <button id="clearBtn" type="button" title="Clear military focus">Clear</button>
+      </div>
+      <div class="intel" aria-label="Selected region">
+        <strong id="selectedName">No region selected</strong>
+        <span id="selectedMeta">Paint a border or place a building.</span>
+      </div>
+    </aside>
+
+    <footer class="controls" aria-label="Game controls">
+      <button id="startBtn" type="button">Start</button>
+      <button id="pauseBtn" type="button">Pause</button>
+      <button id="speedBtn" type="button">1x</button>
+      <button id="resetBtn" type="button">Reset</button>
+      <div class="meter" aria-label="Victory progress"><i id="victoryFill"></i></div>
+    </footer>
+
+    <section id="splash" class="splash" aria-label="Start game">
+      <h2>Expansion.io Blob</h2>
+      <p>Continuous color fields, steady growth, and pressure-driven warfare across a massive theater.</p>
+      <button id="splashStart" type="button">Deploy</button>
+    </section>
+
+    <script src="game.js"></script>
+  </body>
+</html>

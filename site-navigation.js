@@ -8,6 +8,7 @@
     "in-progress.html": "other.html",
 
     "2048-rogue/index.html": "games.html",
+    "expansion-io-blob/index.html": "games.html",
     "nightbound-autobattler/index.html": "games.html",
     "nightbound-survivors/index.html": "games.html",
     "rat-royale/index.html": "games.html",
