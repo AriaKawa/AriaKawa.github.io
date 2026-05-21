@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Starwake Conquest</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <canvas id="game" aria-label="Starwake Conquest tactical star map"></canvas>
+
+  <header class="hud hud--top" aria-label="Match status">
+    <a class="back-link" href="../games.html" aria-label="Back to games">Back</a>
+    <div class="brand">
+      <span class="brand__mark" aria-hidden="true"></span>
+      <div>
+        <h1>Starwake Conquest</h1>
+        <p id="statusLine">Claim the sector before the rival fleets do.</p>
+      </div>
+    </div>
+    <div class="score-strip" id="scoreStrip" aria-label="Empire standings"></div>
+  </header>
+
+  <aside class="hud command-panel" aria-label="Command controls">
+    <div class="command-panel__section">
+      <span class="eyebrow">Fleet Order</span>
+      <div class="send-toggle" role="group" aria-label="Fleet send size">
+        <button class="is-active" type="button" data-send="0.35">35%</button>
+        <button type="button" data-send="0.5">50%</button>
+        <button type="button" data-send="0.75">75%</button>
+        <button type="button" data-send="1">All</button>
+      </div>
+    </div>
+    <div class="command-panel__section">
+      <span class="eyebrow">Match</span>
+      <div class="button-row">
+        <button id="pauseBtn" type="button">Pause</button>
+        <button id="restartBtn" type="button">Restart</button>
+      </div>
+      <div class="button-row">
+        <button class="is-active" type="button" data-speed="1">1x</button>
+        <button type="button" data-speed="1.5">1.5x</button>
+        <button type="button" data-speed="2.25">2.25x</button>
+      </div>
+    </div>
+    <div class="command-panel__section intel">
+      <span class="eyebrow">Selection</span>
+      <strong id="selectedTitle">No fleet selected</strong>
+      <p id="selectedMeta">Click one of your yellow planets, then click any target.</p>
+    </div>
+  </aside>
+
+  <footer class="hud tip-bar" aria-label="Controls">
+    <span>Click or drag to select your planets</span>
+    <span>Click a target to launch</span>
+    <span>Space pauses</span>
+  </footer>
+
+  <section class="splash" id="splash" aria-label="Start match">
+    <div class="splash__panel">
+      <span class="splash__kicker">Real-time planet conquest</span>
+      <h2>Starwake Conquest</h2>
+      <p>Grow fleets, capture neutral worlds, and outmaneuver three rival commanders in a fast, clean sector war.</p>
+      <div class="splash__actions">
+        <button id="startBtn" type="button">Start Battle</button>
+        <button id="quickBtn" type="button">Random Sector</button>
+      </div>
+    </div>
+  </section>
+
+  <script src="game.js"></script>
+</body>
+</html>
