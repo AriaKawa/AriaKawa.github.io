@@ -9,35 +9,23 @@
   <body>
     <canvas id="arena" aria-label="Ron.io neon light-cycle arena"></canvas>
 
-    <header class="hud">
-      <div class="brand">
-        <span class="brand__core" aria-hidden="true"></span>
-        <div>
-          <h1>Ron.io</h1>
-          <p>cardinal light-cycle survival with a growing laser wake</p>
-        </div>
+    <section class="stats" aria-label="Run stats">
+      <div><strong id="score">0</strong><span>score</span></div>
+      <div><strong id="length">36</strong><span>laser</span></div>
+      <div><strong id="kos">0</strong><span>KOs</span></div>
+      <div><strong id="best">0</strong><span>best</span></div>
+      <div class="ult">
+        <div><span>Hop</span><strong id="hopLabel">0%</strong></div>
+        <i><b id="hopFill"></b></i>
       </div>
-      <div class="stats" aria-label="Run stats">
-        <div><strong id="score">0</strong><span>score</span></div>
-        <div><strong id="length">28</strong><span>laser</span></div>
-        <div><strong id="kos">0</strong><span>KOs</span></div>
-        <div><strong id="best">0</strong><span>best</span></div>
-      </div>
-    </header>
+    </section>
 
-    <aside class="console" aria-label="Bike controls">
-      <div class="meter">
-        <div>
-          <span>Overdrive</span>
-          <strong id="boostLabel">Ready</strong>
-        </div>
-        <i><b id="boostFill"></b></i>
-      </div>
-      <div class="buttons">
-        <button id="pause" type="button">Pause</button>
-        <button id="restart" type="button">Restart</button>
-      </div>
+    <aside class="leaderboard" aria-label="Leaderboard">
+      <h2>Leaderboard</h2>
+      <ol id="leaderboard"></ol>
     </aside>
+
+    <canvas id="minimap" class="minimap" aria-label="Ron.io minimap"></canvas>
 
     <nav class="dpad" aria-label="Touch movement controls">
       <button type="button" data-dir="up" aria-label="Turn up">▲</button>
@@ -47,9 +35,9 @@
     </nav>
 
     <section id="menu" class="menu">
-      <p class="eyebrow">Light Cycle .io</p>
-      <h2>Grow the beam, box in rival riders, and survive the circuit.</h2>
-      <p>Move with arrows or WASD. Turns are four-directional only. Collect datastreams to lengthen your laser, hold Space for overdrive, and do not cross any beam.</p>
+      <p class="eyebrow">Ron.io</p>
+      <h1>Race the dark lanes.</h1>
+      <p>Move with arrows or WASD. The map is huge, side gates wrap like a maze, tunnels spit you elsewhere, and Space spends a charged Hop to clear one laser line.</p>
       <button id="start" type="button">Enter The Circuit</button>
     </section>
 
