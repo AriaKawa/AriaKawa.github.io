@@ -192,6 +192,7 @@ function createPlayer(id, name, x, y, palette, ai = true) {
     outside: false,
     trailPoints: [],
     trailCells: new Set(),
+    trailOrder: [],
     lastOwn: { x, y },
     kills: 0,
     score: 0,
@@ -267,6 +268,7 @@ function clearTrail(p) {
     if (trailOwner[i] === p.id) trailOwner[i] = NEUTRAL;
   }
   p.trailCells.clear();
+  p.trailOrder.length = 0;
   p.trailPoints.length = 0;
   p.outside = false;
 }
@@ -417,6 +419,7 @@ function respawnBot(p) {
   p.outside = false;
   p.trailPoints = [];
   p.trailCells = new Set();
+  p.trailOrder = [];
   p.lastOwn = { x: p.x, y: p.y };
   claimDisk(p.id, p.x, p.y, 82);
 }
@@ -490,7 +493,12 @@ function thinkBot(p, dt) {
 function addTrailCell(p, idx) {
   if (idx < 0) return;
   const existing = trailOwner[idx];
-  if (existing === p.id && p.trailCells.size > 8) {
+  if (existing === p.id) {
+    const last = p.trailOrder[p.trailOrder.length - 1];
+    const isRecent = p.trailOrder.slice(-10).includes(idx);
+    if (idx === last || isRecent) return;
+  }
+  if (existing === p.id && p.trailCells.size > 12) {
     eliminate(p.id, p.id);
     return;
   }
@@ -498,7 +506,10 @@ function addTrailCell(p, idx) {
     eliminate(existing, p.id);
   }
   trailOwner[idx] = p.id;
-  p.trailCells.add(idx);
+  if (!p.trailCells.has(idx)) {
+    p.trailCells.add(idx);
+    p.trailOrder.push(idx);
+  }
 }
 
 function updatePlayer(p, dt) {
@@ -545,6 +556,7 @@ function updatePlayer(p, dt) {
     p.outside = true;
     p.trailPoints = [{ x: p.lastOwn.x, y: p.lastOwn.y }];
     p.trailCells.clear();
+    p.trailOrder.length = 0;
   }
 
   const lastPoint = p.trailPoints[p.trailPoints.length - 1];
