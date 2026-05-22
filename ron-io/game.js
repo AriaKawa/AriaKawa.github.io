@@ -94,7 +94,7 @@
   }
 
   function resize() {
-    dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+    dpr = 1;
     canvas.width = Math.floor(window.innerWidth * dpr);
     canvas.height = Math.floor(window.innerHeight * dpr);
     canvas.style.width = `${window.innerWidth}px`;
@@ -148,13 +148,13 @@
     pickups = [];
     particles = [];
     player = createRider("player", "YOU", 95, 62, "right", "#33f4ff", true, 0);
-    bots = names.slice(0, 10).map((name, index) => {
+    bots = names.slice(0, 6).map((name, index) => {
       const spot = randomOpenCell(24);
       return createRider(`bot-${index}`, name, spot.x, spot.y, ["up", "down", "left", "right"][index % 4], colors[index % colors.length], false, index + 1);
     });
     seedTrail(player, 10);
     bots.forEach((bot) => seedTrail(bot, 7));
-    while (pickups.length < 120) spawnPickup();
+    while (pickups.length < 60) spawnPickup();
     menu.classList.add("is-hidden");
     syncCamera(true);
     syncHud();
@@ -239,7 +239,7 @@
       if (rider.alive) moveRider(rider);
       else if (!rider.isPlayer) tickRespawn(rider);
     });
-    while (pickups.length < 120) spawnPickup();
+    while (pickups.length < 60) spawnPickup();
     stepMs = Math.max(56, 74 - Math.floor(score / 900) * 2);
     syncHud();
   }
@@ -482,7 +482,7 @@
   function draw(time = 0) {
     syncCamera();
     ctx.clearRect(0, 0, viewport.w, viewport.h);
-    drawBackdrop(time);
+    drawBackdrop();
     drawTunnels(time);
     drawPickups(time);
     [...bots, player].forEach((rider) => rider && drawRider(rider));
@@ -491,66 +491,17 @@
     if (frameCount % 8 === 0) drawMinimap();
   }
 
-  function drawBackdrop(time) {
-    ctx.fillStyle = "#010205";
+  function drawBackdrop() {
+    ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, viewport.w, viewport.h);
-
-    const worldW = world.w * cell;
-    const worldH = world.h * cell;
     const start = toScreen(0, 0);
-    const laneW = cell * 7;
-    for (let x = -((camera.x % laneW) + laneW); x < viewport.w + laneW; x += laneW) {
-      const shine = 0.04 + Math.sin((x + time / 26) / 90) * 0.014;
-      ctx.fillStyle = `rgba(26, 42, 58, ${shine})`;
-      ctx.fillRect(x, 0, laneW * 0.36, viewport.h);
-    }
-
-    drawFloorGrid();
-
-    const glow = ctx.createRadialGradient(viewport.w / 2, viewport.h / 2, 20, viewport.w / 2, viewport.h / 2, Math.max(viewport.w, viewport.h) * 0.72);
-    glow.addColorStop(0, "rgba(38, 140, 178, 0.11)");
-    glow.addColorStop(1, "rgba(0, 0, 0, 0)");
-    ctx.fillStyle = glow;
-    ctx.fillRect(0, 0, viewport.w, viewport.h);
-
-    drawWalls(start.x, start.y, worldW, worldH, time);
+    drawWalls(start.x, start.y, world.w * cell, world.h * cell);
   }
 
-  function drawFloorGrid() {
-    const spacing = cell * 4;
-    const major = spacing * 4;
-    const startX = -((camera.x % spacing) + spacing);
-    const startY = -((camera.y % spacing) + spacing);
-
-    ctx.save();
-    ctx.lineWidth = 1;
-    for (let x = startX; x < viewport.w + spacing; x += spacing) {
-      const worldX = camera.x + x;
-      const isMajor = Math.abs(worldX % major) < 1;
-      ctx.strokeStyle = isMajor ? "rgba(51, 244, 255, 0.085)" : "rgba(51, 244, 255, 0.035)";
-      ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, viewport.h);
-      ctx.stroke();
-    }
-    for (let y = startY; y < viewport.h + spacing; y += spacing) {
-      const worldY = camera.y + y;
-      const isMajor = Math.abs(worldY % major) < 1;
-      ctx.strokeStyle = isMajor ? "rgba(255, 43, 214, 0.07)" : "rgba(51, 244, 255, 0.03)";
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(viewport.w, y);
-      ctx.stroke();
-    }
-    ctx.restore();
-  }
-
-  function drawWalls(x, y, w, h, time) {
+  function drawWalls(x, y, w, h) {
     ctx.save();
     ctx.strokeStyle = "rgba(51, 244, 255, 0.82)";
     ctx.lineWidth = 3;
-    ctx.shadowColor = "#33f4ff";
-    ctx.shadowBlur = 18 + Math.sin(time / 300) * 4;
     ctx.beginPath();
     ctx.moveTo(x + cell, y + cell);
     ctx.lineTo(x + w - cell, y + cell);
@@ -581,8 +532,6 @@
         ctx.save();
         ctx.strokeStyle = tunnel.color;
         ctx.lineWidth = 3;
-        ctx.shadowColor = tunnel.color;
-        ctx.shadowBlur = 22;
         ctx.beginPath();
         ctx.arc(p.x, p.y, cell * (0.75 + Math.sin(time / 180) * 0.06), 0, Math.PI * 2);
         ctx.stroke();
@@ -600,12 +549,9 @@
       if (p.x < -30 || p.y < -30 || p.x > viewport.w + 30 || p.y > viewport.h + 30) return;
       const pulse = 0.22 + Math.sin(time / 180 + pickup.phase) * 0.08;
       ctx.fillStyle = pickup.value > 5 ? "#ffd166" : "#ffffff";
-      ctx.shadowColor = pickup.value > 5 ? "#ffd166" : "#33f4ff";
-      ctx.shadowBlur = 6;
       ctx.beginPath();
       ctx.arc(p.x, p.y, cell * pulse, 0, Math.PI * 2);
       ctx.fill();
-      ctx.shadowBlur = 0;
     });
   }
 
@@ -614,9 +560,8 @@
     ctx.save();
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    ctx.shadowColor = rider.color;
-    ctx.shadowBlur = rider.isPlayer ? 4 : 0;
-    for (let i = 1; i < rider.trail.length; i += 1) {
+    const firstVisibleSegment = Math.max(1, rider.trail.length - 180);
+    for (let i = firstVisibleSegment; i < rider.trail.length; i += 1) {
       const a = rider.trail[i - 1];
       const b = rider.trail[i];
       if (b.skip || Math.abs(a.x - b.x) + Math.abs(a.y - b.y) > 2) continue;
@@ -655,20 +600,16 @@
     ctx.globalAlpha = rider.ghost ? 0.58 : 1;
 
     ctx.fillStyle = hexToRgba(rider.color, 0.18);
-    ctx.shadowColor = rider.color;
-    ctx.shadowBlur = rider.isPlayer ? 14 : 8;
     ctx.beginPath();
     ctx.ellipse(0, 0, spriteW * 0.52, spriteH * 0.82, 0, 0, Math.PI * 2);
     ctx.fill();
 
     if (bikeImage.complete && bikeImage.naturalWidth) {
-      ctx.shadowBlur = 0;
       ctx.drawImage(bikeImage, -spriteW / 2, -spriteH / 2, spriteW, spriteH);
     } else {
       drawFallbackBike(spriteW, spriteH, rider, skin);
     }
 
-    ctx.shadowBlur = 0;
     ctx.fillStyle = rider.color;
     ctx.beginPath();
     ctx.moveTo(spriteW * 0.56, 0);
@@ -705,19 +646,16 @@
       if (p.x < -30 || p.y < -30 || p.x > viewport.w + 30 || p.y > viewport.h + 30) return;
       ctx.globalAlpha = Math.max(0, particle.life / 44);
       ctx.fillStyle = particle.color;
-      ctx.shadowColor = particle.color;
-      ctx.shadowBlur = 0;
       ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
     });
     ctx.globalAlpha = 1;
-    ctx.shadowBlur = 0;
   }
 
   function drawMinimap() {
     const w = minimap.clientWidth;
     const h = minimap.clientHeight;
     mini.clearRect(0, 0, w, h);
-    mini.fillStyle = "rgba(1, 4, 9, 0.86)";
+    mini.fillStyle = "#000";
     mini.fillRect(0, 0, w, h);
     const sx = w / world.w;
     const sy = h / world.h;
@@ -725,18 +663,11 @@
     mini.lineWidth = 1;
     mini.strokeRect(1, 1, w - 2, h - 2);
 
+    mini.strokeStyle = "rgba(255, 255, 255, 0.55)";
+    mini.strokeRect(camera.x / cell * sx, camera.y / cell * sy, viewport.w / cell * sx, viewport.h / cell * sy);
+
     [...bots, player].forEach((rider) => {
       if (!rider || !rider.alive) return;
-      mini.strokeStyle = hexToRgba(rider.color, rider.isPlayer ? 0.8 : 0.46);
-      mini.lineWidth = rider.isPlayer ? 1.8 : 1;
-      mini.beginPath();
-      rider.trail.forEach((segment, index) => {
-        const x = segment.x * sx;
-        const y = segment.y * sy;
-        if (index === 0 || segment.skip) mini.moveTo(x, y);
-        else mini.lineTo(x, y);
-      });
-      mini.stroke();
       mini.fillStyle = rider.color;
       mini.beginPath();
       mini.arc(rider.x * sx, rider.y * sy, rider.isPlayer ? 3.2 : 2.1, 0, Math.PI * 2);
