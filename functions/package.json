@@ -9,7 +9,7 @@
   "scripts": {
     "lint": "node --check index.js",
     "serve": "firebase emulators:start --only functions",
-    "deploy": "firebase deploy --only functions:recommendMovies"
+    "deploy": "firebase deploy --only functions:recommendMovies,functions:studyMineDistractors"
   },
   "dependencies": {
     "firebase-admin": "^12.7.0",

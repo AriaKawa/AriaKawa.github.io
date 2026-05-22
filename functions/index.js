@@ -67,6 +67,41 @@ exports.recommendMovies = onRequest(
   }
 );
 
+exports.studyMineDistractors = onRequest(
+  {
+    cors: false,
+    memory: "256MiB",
+    timeoutSeconds: 60,
+    secrets: [openAiApiKey]
+  },
+  async (req, res) => {
+    if (!applyCors(req, res)) {
+      return;
+    }
+
+    if (req.method === "OPTIONS") {
+      res.status(204).send("");
+      return;
+    }
+
+    if (req.method !== "POST") {
+      res.status(405).json({ error: "Use POST for Study Mine distractors." });
+      return;
+    }
+
+    try {
+      const payload = validateStudyMinePayload(req.body);
+      const distractors = await callOpenAiForStudyMine(payload);
+      res.json({ distractors });
+    } catch (error) {
+      console.error("studyMineDistractors failed", error);
+      res.status(error.statusCode || 500).json({
+        error: error.publicMessage || "Unable to generate distractors right now."
+      });
+    }
+  }
+);
+
 function applyCors(req, res) {
   const origin = req.headers.origin || "";
   const allowedOrigins = (process.env.ALLOWED_ORIGINS || DEFAULT_ALLOWED_ORIGINS.join(","))
@@ -126,6 +161,24 @@ function validatePayload(body) {
     },
     options: { recommendationCount }
   };
+}
+
+function validateStudyMinePayload(body) {
+  if (!body || typeof body !== "object") {
+    throw publicError(400, "Request body must be JSON.");
+  }
+
+  const front = cleanString(body.front, 1200);
+  const answer = cleanString(body.answer, 500);
+  const deckContext = Array.isArray(body.deckContext)
+    ? body.deckContext.map((item) => cleanString(item, 220)).filter(Boolean).slice(0, 20)
+    : [];
+
+  if (!front || !answer) {
+    throw publicError(400, "front and answer are required.");
+  }
+
+  return { front, answer, deckContext };
 }
 
 function cleanString(value, maxLength) {
@@ -248,6 +301,101 @@ async function callOpenAi(payload) {
   }
 }
 
+async function callOpenAiForStudyMine(payload) {
+  const apiKey = openAiApiKey.value();
+  if (!apiKey) {
+    throw publicError(500, "OPENAI_API_KEY is not configured for this Firebase Function.");
+  }
+
+  const response = await fetch("https://api.openai.com/v1/responses", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${apiKey}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model: process.env.OPENAI_MODEL || DEFAULT_MODEL,
+      input: [
+        {
+          role: "system",
+          content: [
+            {
+              type: "input_text",
+              text: [
+                "Generate exactly three concise, plausible multiple-choice distractors for a study flashcard.",
+                "Do not include the correct answer.",
+                "Keep each option similar in style, topic, and length to the correct answer.",
+                "Return only JSON matching the schema."
+              ].join(" ")
+            }
+          ]
+        },
+        {
+          role: "user",
+          content: [
+            {
+              type: "input_text",
+              text: JSON.stringify({
+                task: "Create Study Mine quiz distractors.",
+                cardFront: payload.front,
+                correctAnswer: payload.answer,
+                nearbyDeckAnswers: payload.deckContext
+              })
+            }
+          ]
+        }
+      ],
+      text: {
+        format: {
+          type: "json_schema",
+          name: "study_mine_distractors",
+          strict: true,
+          schema: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              distractors: {
+                type: "array",
+                minItems: 3,
+                maxItems: 3,
+                items: { type: "string" }
+              }
+            },
+            required: ["distractors"]
+          }
+        }
+      },
+      max_output_tokens: 900
+    })
+  });
+
+  const data = await response.json().catch(() => null);
+  if (!response.ok) {
+    const message = data?.error?.message || `OpenAI request failed with status ${response.status}.`;
+    throw publicError(502, message);
+  }
+
+  const outputText = data.output_text || extractOutputText(data);
+  if (!outputText) {
+    throw publicError(502, "OpenAI returned an empty response.");
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(outputText);
+  } catch (error) {
+    console.error("Failed to parse Study Mine JSON", outputText, error);
+    throw publicError(502, "OpenAI returned a response that was not valid JSON.");
+  }
+
+  const distractors = normalizeStudyMineDistractors(payload.answer, parsed.distractors);
+  if (distractors.length !== 3) {
+    throw publicError(502, "OpenAI returned an invalid distractor set.");
+  }
+
+  return distractors;
+}
+
 function extractOutputText(data) {
   const output = Array.isArray(data?.output) ? data.output : [];
   return output
@@ -272,6 +420,24 @@ function normalizeAiResult(result) {
       match: cleanString(item.match, 700)
     })).filter((item) => item.title)
   };
+}
+
+function normalizeStudyMineDistractors(answer, distractors) {
+  const seen = new Set([cleanString(answer, 500).toLowerCase()]);
+  const clean = [];
+  const values = Array.isArray(distractors) ? distractors : [];
+
+  for (const distractor of values) {
+    const value = cleanString(distractor, 240);
+    const key = value.toLowerCase();
+    if (!value || seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    clean.push(value);
+  }
+
+  return clean.slice(0, 3);
 }
 
 function publicError(statusCode, publicMessage) {

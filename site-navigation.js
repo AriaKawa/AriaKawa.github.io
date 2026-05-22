@@ -29,6 +29,7 @@
     "matthew-quiz.html": "games.html",
 
     "japanese-study.html": "education.html",
+    "study-mine/index.html": "education.html",
     "pokemon.html": "education.html",
     "type-helper.html": "education.html",
     "bass-guitar-frets.html": "education.html",
