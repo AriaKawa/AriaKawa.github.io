@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Kingdom.io</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <canvas id="game" aria-label="Kingdom.io battlefield"></canvas>
+
+    <header class="hud" aria-label="Kingdom status">
+      <div class="brand">
+        <span class="crest" aria-hidden="true"></span>
+        <div>
+          <h1>Kingdom.io</h1>
+          <p id="status">Raise borders, not blades.</p>
+        </div>
+      </div>
+      <div class="stats" aria-label="Resources">
+        <div><span id="gold">0</span><small>gold</small></div>
+        <div><span id="food">0</span><small>food</small></div>
+        <div><span id="land">0%</span><small>land</small></div>
+        <div><span id="alive">0</span><small>kingdoms</small></div>
+      </div>
+    </header>
+
+    <aside class="build-panel" aria-label="Build menu">
+      <div class="build-buttons" role="group" aria-label="Buildings">
+        <button id="farmBtn" class="active" type="button" data-build="farm" title="Farm: improves food and gold income">
+          <span class="mini farm"></span>
+          <b>Farm</b>
+          <small>25g</small>
+        </button>
+        <button id="barracksBtn" type="button" data-build="barracks" title="Barracks: improves passive defense">
+          <span class="mini barracks"></span>
+          <b>Barracks</b>
+          <small>45g 15f</small>
+        </button>
+        <button id="towerBtn" type="button" data-build="tower" title="Watchtower: protects nearby land">
+          <span class="mini tower"></span>
+          <b>Tower</b>
+          <small>55g 10f</small>
+        </button>
+      </div>
+      <div class="intel">
+        <strong id="selected">Farm selected</strong>
+        <span id="hint">WASD to trace loops. Click your land to build.</span>
+      </div>
+    </aside>
+
+    <footer class="controls" aria-label="Match controls">
+      <button id="startBtn" type="button">Start</button>
+      <button id="pauseBtn" type="button">Pause</button>
+      <button id="resetBtn" type="button">Reset</button>
+      <div class="meter" aria-label="Victory progress"><i id="victory"></i></div>
+    </footer>
+
+    <section id="splash" class="splash" aria-label="Start screen">
+      <h2>Kingdom.io</h2>
+      <p>Draw borders with your royal trail, then fill your realm with tiny farms, barracks, and watchtowers.</p>
+      <button id="splashStart" type="button">Crown Up</button>
+    </section>
+
+    <script src="game.js"></script>
+  </body>
+</html>
