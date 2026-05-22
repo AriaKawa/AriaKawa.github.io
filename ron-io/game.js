@@ -121,6 +121,8 @@
       name,
       x,
       y,
+      prevX: x,
+      prevY: y,
       dir,
       nextDir: dir,
       color,
@@ -144,6 +146,10 @@
     score = 0;
     kos = 0;
     accumulator = 0;
+    lastRender = 0;
+    frameCount = 0;
+    leaderboardTick = 0;
+    stepMs = 74;
     occupied.clear();
     pickups = [];
     particles = [];
@@ -320,23 +326,29 @@
   }
 
   function placeRider(rider, x, y, skipLine = false) {
-    rider.x = x;
-    rider.y = y;
-    const tunnel = tunnelAt(x, y);
+    const fromX = rider.x;
+    const fromY = rider.y;
+    let targetX = x;
+    let targetY = y;
+    const tunnel = tunnelAt(targetX, targetY);
     if (tunnel) {
-      burst(x, y, tunnel.tunnel.color, 18);
-      rider.x = tunnel.exit.x;
-      rider.y = tunnel.exit.y;
+      burst(targetX, targetY, tunnel.tunnel.color, 18);
+      targetX = tunnel.exit.x;
+      targetY = tunnel.exit.y;
       skipLine = true;
-      burst(rider.x, rider.y, tunnel.tunnel.color, 18);
+      burst(targetX, targetY, tunnel.tunnel.color, 18);
     }
 
-    const riderKey = key(rider.x, rider.y);
+    const riderKey = key(targetX, targetY);
     if (occupied.has(riderKey)) {
       wreck(rider, occupied.get(riderKey));
       return;
     }
 
+    rider.prevX = skipLine ? targetX : fromX;
+    rider.prevY = skipLine ? targetY : fromY;
+    rider.x = targetX;
+    rider.y = targetY;
     rider.trail.push({ x: rider.x, y: rider.y, skip: skipLine });
     occupied.set(riderKey, rider.id);
     const pickup = pickupAt(rider.x, rider.y);
@@ -401,6 +413,8 @@
     const spot = randomOpenCell(28);
     bot.x = spot.x;
     bot.y = spot.y;
+    bot.prevX = spot.x;
+    bot.prevY = spot.y;
     bot.dir = ["up", "down", "left", "right"][Math.floor(Math.random() * 4)];
     bot.nextDir = bot.dir;
     bot.maxTrail = 28 + Math.floor(Math.random() * 22);
@@ -560,8 +574,9 @@
     ctx.save();
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
+    const rendered = interpolatedRiderPosition(rider);
     const firstVisibleSegment = Math.max(1, rider.trail.length - 180);
-    for (let i = firstVisibleSegment; i < rider.trail.length; i += 1) {
+    for (let i = firstVisibleSegment; i < rider.trail.length - 1; i += 1) {
       const a = rider.trail[i - 1];
       const b = rider.trail[i];
       if (b.skip || Math.abs(a.x - b.x) + Math.abs(a.y - b.y) > 2) continue;
@@ -576,10 +591,38 @@
       ctx.lineTo(end.x, end.y);
       ctx.stroke();
     }
-    const p = toScreen(rider.x + 0.5, rider.y + 0.5);
+    drawActiveTrailSegment(rider, rendered);
+    const p = toScreen(rendered.x + 0.5, rendered.y + 0.5);
     drawBike(rider, p);
     ctx.globalAlpha = 1;
     ctx.restore();
+  }
+
+  function interpolatedRiderPosition(rider) {
+    const distanceMoved = Math.abs(rider.x - rider.prevX) + Math.abs(rider.y - rider.prevY);
+    if (distanceMoved === 0 || distanceMoved > 2) return { x: rider.x, y: rider.y };
+    const t = Math.max(0, Math.min(1, accumulator / stepMs));
+    const eased = t * t * (3 - 2 * t);
+    return {
+      x: rider.prevX + (rider.x - rider.prevX) * eased,
+      y: rider.prevY + (rider.y - rider.prevY) * eased
+    };
+  }
+
+  function drawActiveTrailSegment(rider, rendered) {
+    if (rider.trail.length < 2) return;
+    const tail = rider.trail[rider.trail.length - 2];
+    const head = rider.trail[rider.trail.length - 1];
+    if (head.skip || Math.abs(tail.x - head.x) + Math.abs(tail.y - head.y) > 2) return;
+    const start = toScreen(tail.x + 0.5, tail.y + 0.5);
+    const end = toScreen(rendered.x + 0.5, rendered.y + 0.5);
+    if (!lineNearScreen(start, end)) return;
+    ctx.strokeStyle = hexToRgba(rider.color, rider.ghost ? 0.36 : 0.9);
+    ctx.lineWidth = rider.isPlayer ? 4.5 : 3.4;
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y);
+    ctx.lineTo(end.x, end.y);
+    ctx.stroke();
   }
 
   function drawBike(rider, p) {
@@ -695,7 +738,7 @@
         accumulator -= stepMs;
       }
     }
-    if (time - lastRender >= 1000 / 30) {
+    if (time - lastRender >= 1000 / 60) {
       draw(time);
       lastRender = time;
     }
