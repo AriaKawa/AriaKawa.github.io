@@ -3,6 +3,7 @@
   const ctx = canvas.getContext("2d");
   const minimap = document.getElementById("minimap");
   const mini = minimap.getContext("2d");
+  const bikeImage = new Image();
   const scoreEl = document.getElementById("score");
   const lengthEl = document.getElementById("length");
   const kosEl = document.getElementById("kos");
@@ -13,8 +14,10 @@
   const menu = document.getElementById("menu");
   const startBtn = document.getElementById("start");
 
+  bikeImage.src = "assets/bike-sprite.png";
+
   const world = { w: 190, h: 125 };
-  const cell = 13;
+  const cell = 16;
   const gateSize = 13;
   const gateTop = Math.floor(world.h / 2 - gateSize / 2);
   const gateBottom = gateTop + gateSize;
@@ -54,10 +57,13 @@
   let running = false;
   let gameOver = false;
   let last = 0;
+  let lastRender = 0;
   let accumulator = 0;
   let stepMs = 74;
   let camera = { x: 0, y: 0 };
   let viewport = { w: 0, h: 0 };
+  let frameCount = 0;
+  let leaderboardTick = 0;
   let player;
   let bots = [];
   let pickups = [];
@@ -142,7 +148,7 @@
     pickups = [];
     particles = [];
     player = createRider("player", "YOU", 95, 62, "right", "#33f4ff", true, 0);
-    bots = names.map((name, index) => {
+    bots = names.slice(0, 10).map((name, index) => {
       const spot = randomOpenCell(24);
       return createRider(`bot-${index}`, name, spot.x, spot.y, ["up", "down", "left", "right"][index % 4], colors[index % colors.length], false, index + 1);
     });
@@ -423,7 +429,8 @@
     const hop = player ? player.hopCharge : 0;
     hopFill.style.transform = `scaleX(${Math.max(0, Math.min(1, hop))})`;
     hopLabel.textContent = hop >= 1 ? "Ready" : `${Math.floor(hop * 100)}%`;
-    renderLeaderboard();
+    leaderboardTick += 1;
+    if (leaderboardTick % 5 === 0) renderLeaderboard();
   }
 
   function renderLeaderboard() {
@@ -480,8 +487,8 @@
     drawPickups(time);
     [...bots, player].forEach((rider) => rider && drawRider(rider));
     drawParticles();
-    drawMinimap();
-    requestAnimationFrame(loop);
+    frameCount += 1;
+    if (frameCount % 8 === 0) drawMinimap();
   }
 
   function drawBackdrop(time) {
@@ -493,10 +500,12 @@
     const start = toScreen(0, 0);
     const laneW = cell * 7;
     for (let x = -((camera.x % laneW) + laneW); x < viewport.w + laneW; x += laneW) {
-      const shine = 0.05 + Math.sin((x + time / 26) / 90) * 0.018;
+      const shine = 0.04 + Math.sin((x + time / 26) / 90) * 0.014;
       ctx.fillStyle = `rgba(26, 42, 58, ${shine})`;
       ctx.fillRect(x, 0, laneW * 0.36, viewport.h);
     }
+
+    drawFloorGrid();
 
     const glow = ctx.createRadialGradient(viewport.w / 2, viewport.h / 2, 20, viewport.w / 2, viewport.h / 2, Math.max(viewport.w, viewport.h) * 0.72);
     glow.addColorStop(0, "rgba(38, 140, 178, 0.11)");
@@ -505,6 +514,35 @@
     ctx.fillRect(0, 0, viewport.w, viewport.h);
 
     drawWalls(start.x, start.y, worldW, worldH, time);
+  }
+
+  function drawFloorGrid() {
+    const spacing = cell * 4;
+    const major = spacing * 4;
+    const startX = -((camera.x % spacing) + spacing);
+    const startY = -((camera.y % spacing) + spacing);
+
+    ctx.save();
+    ctx.lineWidth = 1;
+    for (let x = startX; x < viewport.w + spacing; x += spacing) {
+      const worldX = camera.x + x;
+      const isMajor = Math.abs(worldX % major) < 1;
+      ctx.strokeStyle = isMajor ? "rgba(51, 244, 255, 0.085)" : "rgba(51, 244, 255, 0.035)";
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, viewport.h);
+      ctx.stroke();
+    }
+    for (let y = startY; y < viewport.h + spacing; y += spacing) {
+      const worldY = camera.y + y;
+      const isMajor = Math.abs(worldY % major) < 1;
+      ctx.strokeStyle = isMajor ? "rgba(255, 43, 214, 0.07)" : "rgba(51, 244, 255, 0.03)";
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(viewport.w, y);
+      ctx.stroke();
+    }
+    ctx.restore();
   }
 
   function drawWalls(x, y, w, h, time) {
@@ -563,7 +601,7 @@
       const pulse = 0.22 + Math.sin(time / 180 + pickup.phase) * 0.08;
       ctx.fillStyle = pickup.value > 5 ? "#ffd166" : "#ffffff";
       ctx.shadowColor = pickup.value > 5 ? "#ffd166" : "#33f4ff";
-      ctx.shadowBlur = 18;
+      ctx.shadowBlur = 6;
       ctx.beginPath();
       ctx.arc(p.x, p.y, cell * pulse, 0, Math.PI * 2);
       ctx.fill();
@@ -577,7 +615,7 @@
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.shadowColor = rider.color;
-    ctx.shadowBlur = rider.isPlayer ? 24 : 15;
+    ctx.shadowBlur = rider.isPlayer ? 4 : 0;
     for (let i = 1; i < rider.trail.length; i += 1) {
       const a = rider.trail[i - 1];
       const b = rider.trail[i];
@@ -587,7 +625,7 @@
       if (!lineNearScreen(start, end)) continue;
       const alpha = 0.22 + i / rider.trail.length * 0.78;
       ctx.strokeStyle = hexToRgba(rider.color, rider.ghost ? alpha * 0.42 : alpha);
-      ctx.lineWidth = rider.isPlayer ? 5 : 4;
+      ctx.lineWidth = rider.isPlayer ? 4.5 : 3.4;
       ctx.beginPath();
       ctx.moveTo(start.x, start.y);
       ctx.lineTo(end.x, end.y);
@@ -607,96 +645,53 @@
       up: -Math.PI / 2
     }[rider.dir];
     const skin = rider.skin || bikeSkins[0];
-    const scale = rider.isPlayer ? 1.1 : 0.98;
-    const length = cell * 2.18 * scale;
-    const width = cell * 0.92 * scale;
-    const wheelRadius = cell * 0.31 * scale;
-    const front = length * 0.38;
-    const rear = -length * 0.36;
+    const scale = rider.isPlayer ? 1.12 : 1;
+    const spriteW = cell * 4.2 * scale;
+    const spriteH = spriteW * (bikeImage.naturalHeight && bikeImage.naturalWidth ? bikeImage.naturalHeight / bikeImage.naturalWidth : 0.32);
 
     ctx.save();
     ctx.translate(p.x, p.y);
     ctx.rotate(angle);
     ctx.globalAlpha = rider.ghost ? 0.58 : 1;
 
+    ctx.fillStyle = hexToRgba(rider.color, 0.18);
     ctx.shadowColor = rider.color;
-    ctx.shadowBlur = rider.isPlayer ? 28 : 18;
-    ctx.strokeStyle = rider.color;
-    ctx.lineWidth = 2;
-    drawWheel(front, 0, wheelRadius, rider.color);
-    drawWheel(rear, 0, wheelRadius * 0.92, rider.color);
-
-    ctx.shadowBlur = rider.isPlayer ? 18 : 12;
-    ctx.fillStyle = skin.chassis;
-    ctx.strokeStyle = rider.color;
-    ctx.lineWidth = 2;
+    ctx.shadowBlur = rider.isPlayer ? 14 : 8;
     ctx.beginPath();
-    ctx.moveTo(length * 0.48, 0);
-    ctx.lineTo(length * 0.18, -width * 0.52);
-    ctx.lineTo(-length * 0.18, -width * 0.44);
-    ctx.lineTo(-length * 0.48, -width * 0.16);
-    ctx.lineTo(-length * 0.5, width * 0.16);
-    ctx.lineTo(-length * 0.18, width * 0.44);
-    ctx.lineTo(length * 0.18, width * 0.52);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = skin.visor;
-    ctx.shadowColor = skin.visor;
-    ctx.shadowBlur = 18;
-    ctx.beginPath();
-    ctx.ellipse(length * 0.12, 0, width * 0.2, width * 0.34, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 0, spriteW * 0.52, spriteH * 0.82, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.strokeStyle = skin.accent;
-    ctx.lineWidth = 1.6;
-    ctx.shadowColor = skin.accent;
-    ctx.shadowBlur = 10;
-    ctx.beginPath();
-    ctx.moveTo(-length * 0.24, -width * 0.25);
-    ctx.lineTo(length * 0.28, -width * 0.16);
-    ctx.moveTo(-length * 0.24, width * 0.25);
-    ctx.lineTo(length * 0.28, width * 0.16);
-    ctx.stroke();
+    if (bikeImage.complete && bikeImage.naturalWidth) {
+      ctx.shadowBlur = 0;
+      ctx.drawImage(bikeImage, -spriteW / 2, -spriteH / 2, spriteW, spriteH);
+    } else {
+      drawFallbackBike(spriteW, spriteH, rider, skin);
+    }
 
-    ctx.strokeStyle = skin.trim;
-    ctx.lineWidth = 2;
-    ctx.shadowColor = skin.trim;
-    ctx.shadowBlur = 14;
-    ctx.beginPath();
-    ctx.moveTo(length * 0.34, -width * 0.58);
-    ctx.lineTo(length * 0.53, -width * 0.7);
-    ctx.moveTo(length * 0.34, width * 0.58);
-    ctx.lineTo(length * 0.53, width * 0.7);
-    ctx.stroke();
-
+    ctx.shadowBlur = 0;
     ctx.fillStyle = rider.color;
-    ctx.shadowColor = rider.color;
-    ctx.shadowBlur = 16;
     ctx.beginPath();
-    ctx.moveTo(length * 0.58, 0);
-    ctx.lineTo(length * 0.34, -width * 0.16);
-    ctx.lineTo(length * 0.34, width * 0.16);
+    ctx.moveTo(spriteW * 0.56, 0);
+    ctx.lineTo(spriteW * 0.4, -spriteH * 0.18);
+    ctx.lineTo(spriteW * 0.4, spriteH * 0.18);
     ctx.closePath();
     ctx.fill();
 
     ctx.restore();
   }
 
-  function drawWheel(x, y, radius, color) {
-    ctx.fillStyle = "#02050a";
-    ctx.strokeStyle = color;
+  function drawFallbackBike(spriteW, spriteH, rider, skin) {
+    ctx.fillStyle = skin.chassis;
+    ctx.strokeStyle = rider.color;
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.moveTo(spriteW * 0.48, 0);
+    ctx.lineTo(spriteW * 0.12, -spriteH * 0.5);
+    ctx.lineTo(-spriteW * 0.42, -spriteH * 0.26);
+    ctx.lineTo(-spriteW * 0.5, spriteH * 0.26);
+    ctx.lineTo(spriteW * 0.12, spriteH * 0.5);
+    ctx.closePath();
     ctx.fill();
-    ctx.stroke();
-
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.arc(x, y, radius * 0.45, 0, Math.PI * 2);
     ctx.stroke();
   }
 
@@ -711,7 +706,7 @@
       ctx.globalAlpha = Math.max(0, particle.life / 44);
       ctx.fillStyle = particle.color;
       ctx.shadowColor = particle.color;
-      ctx.shadowBlur = 12;
+      ctx.shadowBlur = 0;
       ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
     });
     ctx.globalAlpha = 1;
@@ -769,7 +764,11 @@
         accumulator -= stepMs;
       }
     }
-    draw(time);
+    if (time - lastRender >= 1000 / 30) {
+      draw(time);
+      lastRender = time;
+    }
+    requestAnimationFrame(loop);
   }
 
   window.addEventListener("resize", resize);
