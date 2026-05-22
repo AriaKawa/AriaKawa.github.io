@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>City Claim.io</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <canvas id="game" aria-label="City Claim.io arena"></canvas>
+
+    <header class="hud" aria-label="Run status">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <div>
+          <h1>City Claim.io</h1>
+          <p id="statusLine">Draw a route, close the loop, raise a city.</p>
+        </div>
+      </div>
+
+      <div class="stats" aria-label="Scoreboard">
+        <div><strong id="score">0</strong><span>score</span></div>
+        <div><strong id="share">0%</strong><span>claim</span></div>
+        <div><strong id="kills">0</strong><span>cuts</span></div>
+        <div><strong id="rank">#1</strong><span>rank</span></div>
+      </div>
+    </header>
+
+    <aside class="panel" aria-label="Player settings">
+      <div class="skin-row">
+        <button class="skin active" type="button" data-skin="0" title="Crownlight skin"><i></i><span>Crownlight</span></button>
+        <button class="skin" type="button" data-skin="1" title="Harbor skin"><i></i><span>Harbor</span></button>
+        <button class="skin" type="button" data-skin="2" title="Arcology skin"><i></i><span>Arcology</span></button>
+      </div>
+      <button id="restartBtn" type="button" title="Restart run">Restart</button>
+    </aside>
+
+    <section id="splash" class="splash" aria-label="Start screen">
+      <div>
+        <h2>City Claim.io</h2>
+        <p>Carve territory, close loops, and watch your city climb out of the map.</p>
+        <button id="startBtn" type="button">Start Run</button>
+      </div>
+    </section>
+
+    <script src="game.js"></script>
+  </body>
+</html>
