@@ -13,7 +13,6 @@ const ui = {
   splash: document.querySelector("#splash"),
   splashStart: document.querySelector("#splashStart"),
   start: document.querySelector("#startBtn"),
-  pause: document.querySelector("#pauseBtn"),
   reset: document.querySelector("#resetBtn"),
   buildButtons: [...document.querySelectorAll("[data-build]")]
 };
@@ -45,8 +44,8 @@ let H = 0;
 let dpr = 1;
 let last = 0;
 let running = false;
-let paused = false;
 let ended = false;
+let playerHalted = false;
 let selectedBuild = "farm";
 let kingdoms = [];
 let player = null;
@@ -185,8 +184,8 @@ function initGame() {
   for (const k of kingdoms) claimDisk(k.id, k.homeX, k.homeY, 4);
   selectedBuild = "farm";
   running = false;
-  paused = false;
   ended = false;
+  playerHalted = false;
   matchTime = 0;
   last = 0;
   updateBuildButtons();
@@ -217,7 +216,6 @@ function setStatus(text) {
 
 function startGame() {
   running = true;
-  paused = false;
   ui.splash.classList.add("hidden");
   setStatus("The crown is moving.");
 }
@@ -449,10 +447,18 @@ function updatePlayerDirection() {
     const len = Math.hypot(dx, dy);
     player.dirX = dx / len;
     player.dirY = dy / len;
+    playerHalted = false;
+  } else if (playerHalted) {
+    player.dirX = 0;
+    player.dirY = 0;
   }
 }
 
 function updateLeader(k, dt) {
+  if (!Number.isFinite(k.dirX) || !Number.isFinite(k.dirY)) {
+    k.dirX = 1;
+    k.dirY = 0;
+  }
   const speed = k.ai ? 5.15 : 6.25;
   k.x = clamp(k.x + k.dirX * speed * dt, 0.25, COLS - 0.25);
   k.y = clamp(k.y + k.dirY * speed * dt, 0.25, ROWS - 0.25);
@@ -590,7 +596,7 @@ function updateParticles(dt) {
 }
 
 function update(dt) {
-  if (!running || paused || ended) return;
+  if (!running || ended) return;
   matchTime += dt;
   updatePlayerDirection();
   updateEconomy(dt);
@@ -854,7 +860,7 @@ canvas.addEventListener("pointerdown", e => {
     ui.hint.textContent = "Build only on your empty territory with enough resources.";
     setStatus("The royal builders cannot place that there.");
   } else {
-    ui.hint.textContent = "WASD to trace loops. Click your land to build.";
+    ui.hint.textContent = "WASD to trace loops. Space stops your leader. Click your land to build.";
   }
   updateUI(true);
 });
@@ -866,8 +872,13 @@ window.addEventListener("keydown", e => {
     e.preventDefault();
   }
   if (key === " ") {
-    paused = !paused;
-    setStatus(paused ? "The court is paused." : "The crown is moving.");
+    e.preventDefault();
+    playerHalted = true;
+    if (player) {
+      player.dirX = 0;
+      player.dirY = 0;
+    }
+    setStatus("The crown is holding position.");
   }
 });
 
@@ -893,10 +904,6 @@ ui.splashStart.addEventListener("click", () => {
 });
 
 ui.start.addEventListener("click", startGame);
-ui.pause.addEventListener("click", () => {
-  paused = !paused;
-  setStatus(paused ? "The court is paused." : "The crown is moving.");
-});
 ui.reset.addEventListener("click", () => {
   ui.splash.classList.remove("hidden");
   ui.splash.querySelector("h2").textContent = "Kingdom.io";
