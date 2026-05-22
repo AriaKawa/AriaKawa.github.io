@@ -26,6 +26,14 @@
   };
   const colors = ["#ff2bd6", "#ffd166", "#8fff64", "#a978ff", "#ff6b6b", "#52f26d", "#ff9f1c", "#ff7bf1", "#7cf7ff", "#b5ff3d", "#ffbd59", "#7c8cff", "#f45d7b"];
   const names = ["Byte", "Vanta", "Cipher", "Flux", "Arc", "Glint", "Vector", "Prism", "Quanta", "Ghost", "Volt", "Nova", "Pixel"];
+  const bikeSkins = [
+    { name: "Circuit Ronin", chassis: "#061b25", accent: "#ffffff", visor: "#33f4ff", trim: "#ff2bd6" },
+    { name: "Hotwire", chassis: "#210513", accent: "#ffd166", visor: "#ff2bd6", trim: "#ff6b6b" },
+    { name: "Volt Fang", chassis: "#102006", accent: "#edff8c", visor: "#8fff64", trim: "#33f4ff" },
+    { name: "Purple Ghost", chassis: "#120b28", accent: "#efe7ff", visor: "#a978ff", trim: "#ff7bf1" },
+    { name: "Solar Blade", chassis: "#251105", accent: "#fff1bb", visor: "#ff9f1c", trim: "#ffd166" },
+    { name: "Blue Shift", chassis: "#061427", accent: "#dff7ff", visor: "#7cf7ff", trim: "#7c8cff" }
+  ];
   const keyDirs = {
     ArrowUp: "up",
     KeyW: "up",
@@ -101,7 +109,7 @@
     return dirs[a].x + dirs[b].x === 0 && dirs[a].y + dirs[b].y === 0;
   }
 
-  function createRider(id, name, x, y, dir, color, isPlayer = false) {
+  function createRider(id, name, x, y, dir, color, isPlayer = false, skinIndex = 0) {
     return {
       id,
       name,
@@ -119,7 +127,8 @@
       points: 0,
       hopCharge: isPlayer ? 0 : Math.random() * 0.7,
       hopQueued: false,
-      ghost: 0
+      ghost: 0,
+      skin: bikeSkins[skinIndex % bikeSkins.length]
     };
   }
 
@@ -132,10 +141,10 @@
     occupied.clear();
     pickups = [];
     particles = [];
-    player = createRider("player", "YOU", 95, 62, "right", "#33f4ff", true);
+    player = createRider("player", "YOU", 95, 62, "right", "#33f4ff", true, 0);
     bots = names.map((name, index) => {
       const spot = randomOpenCell(24);
-      return createRider(`bot-${index}`, name, spot.x, spot.y, ["up", "down", "left", "right"][index % 4], colors[index % colors.length]);
+      return createRider(`bot-${index}`, name, spot.x, spot.y, ["up", "down", "left", "right"][index % 4], colors[index % colors.length], false, index + 1);
     });
     seedTrail(player, 10);
     bots.forEach((bot) => seedTrail(bot, 7));
@@ -585,21 +594,110 @@
       ctx.stroke();
     }
     const p = toScreen(rider.x + 0.5, rider.y + 0.5);
+    drawBike(rider, p);
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+
+  function drawBike(rider, p) {
+    const angle = {
+      right: 0,
+      down: Math.PI / 2,
+      left: Math.PI,
+      up: -Math.PI / 2
+    }[rider.dir];
+    const skin = rider.skin || bikeSkins[0];
+    const scale = rider.isPlayer ? 1.1 : 0.98;
+    const length = cell * 2.18 * scale;
+    const width = cell * 0.92 * scale;
+    const wheelRadius = cell * 0.31 * scale;
+    const front = length * 0.38;
+    const rear = -length * 0.36;
+
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(angle);
     ctx.globalAlpha = rider.ghost ? 0.58 : 1;
-    ctx.fillStyle = "#04080d";
+
+    ctx.shadowColor = rider.color;
+    ctx.shadowBlur = rider.isPlayer ? 28 : 18;
+    ctx.strokeStyle = rider.color;
+    ctx.lineWidth = 2;
+    drawWheel(front, 0, wheelRadius, rider.color);
+    drawWheel(rear, 0, wheelRadius * 0.92, rider.color);
+
+    ctx.shadowBlur = rider.isPlayer ? 18 : 12;
+    ctx.fillStyle = skin.chassis;
     ctx.strokeStyle = rider.color;
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.arc(p.x, p.y, cell * 0.52, 0, Math.PI * 2);
+    ctx.moveTo(length * 0.48, 0);
+    ctx.lineTo(length * 0.18, -width * 0.52);
+    ctx.lineTo(-length * 0.18, -width * 0.44);
+    ctx.lineTo(-length * 0.48, -width * 0.16);
+    ctx.lineTo(-length * 0.5, width * 0.16);
+    ctx.lineTo(-length * 0.18, width * 0.44);
+    ctx.lineTo(length * 0.18, width * 0.52);
+    ctx.closePath();
     ctx.fill();
     ctx.stroke();
-    ctx.fillStyle = rider.color;
-    const nose = dirs[rider.dir];
+
+    ctx.fillStyle = skin.visor;
+    ctx.shadowColor = skin.visor;
+    ctx.shadowBlur = 18;
     ctx.beginPath();
-    ctx.arc(p.x + nose.x * cell * 0.26, p.y + nose.y * cell * 0.26, cell * 0.16, 0, Math.PI * 2);
+    ctx.ellipse(length * 0.12, 0, width * 0.2, width * 0.34, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.globalAlpha = 1;
+
+    ctx.strokeStyle = skin.accent;
+    ctx.lineWidth = 1.6;
+    ctx.shadowColor = skin.accent;
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.moveTo(-length * 0.24, -width * 0.25);
+    ctx.lineTo(length * 0.28, -width * 0.16);
+    ctx.moveTo(-length * 0.24, width * 0.25);
+    ctx.lineTo(length * 0.28, width * 0.16);
+    ctx.stroke();
+
+    ctx.strokeStyle = skin.trim;
+    ctx.lineWidth = 2;
+    ctx.shadowColor = skin.trim;
+    ctx.shadowBlur = 14;
+    ctx.beginPath();
+    ctx.moveTo(length * 0.34, -width * 0.58);
+    ctx.lineTo(length * 0.53, -width * 0.7);
+    ctx.moveTo(length * 0.34, width * 0.58);
+    ctx.lineTo(length * 0.53, width * 0.7);
+    ctx.stroke();
+
+    ctx.fillStyle = rider.color;
+    ctx.shadowColor = rider.color;
+    ctx.shadowBlur = 16;
+    ctx.beginPath();
+    ctx.moveTo(length * 0.58, 0);
+    ctx.lineTo(length * 0.34, -width * 0.16);
+    ctx.lineTo(length * 0.34, width * 0.16);
+    ctx.closePath();
+    ctx.fill();
+
     ctx.restore();
+  }
+
+  function drawWheel(x, y, radius, color) {
+    ctx.fillStyle = "#02050a";
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(x, y, radius * 0.45, 0, Math.PI * 2);
+    ctx.stroke();
   }
 
   function lineNearScreen(a, b) {
