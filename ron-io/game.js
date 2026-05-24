@@ -3,7 +3,6 @@
   const ctx = canvas.getContext("2d");
   const minimap = document.getElementById("minimap");
   const mini = minimap.getContext("2d");
-  const bikeImage = new Image();
   const scoreEl = document.getElementById("score");
   const lengthEl = document.getElementById("length");
   const kosEl = document.getElementById("kos");
@@ -13,8 +12,6 @@
   const leaderboardEl = document.getElementById("leaderboard");
   const menu = document.getElementById("menu");
   const startBtn = document.getElementById("start");
-
-  bikeImage.src = "assets/bike-sprite.png";
 
   const world = { w: 190, h: 125 };
   const cell = 16;
@@ -528,14 +525,33 @@
     ctx.lineTo(x + cell, y + cell);
     ctx.stroke();
 
-    ctx.strokeStyle = "rgba(255, 43, 214, 0.72)";
-    ctx.beginPath();
-    ctx.moveTo(x + cell, y + gateTop * cell);
-    ctx.lineTo(x + cell, y + gateBottom * cell);
-    ctx.moveTo(x + w - cell, y + gateTop * cell);
-    ctx.lineTo(x + w - cell, y + gateBottom * cell);
-    ctx.stroke();
+    drawGateMouth(x + cell, y, -1);
+    drawGateMouth(x + w - cell, y, 1);
     ctx.restore();
+  }
+
+  function drawGateMouth(edgeX, y, side) {
+    const top = y + gateTop * cell;
+    const bottom = y + gateBottom * cell;
+    const lip = cell * 0.95;
+    ctx.strokeStyle = "rgba(255, 43, 214, 0.78)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(edgeX, top);
+    ctx.lineTo(edgeX + lip * side, top);
+    ctx.moveTo(edgeX, bottom);
+    ctx.lineTo(edgeX + lip * side, bottom);
+    ctx.stroke();
+
+    ctx.fillStyle = "rgba(255, 43, 214, 0.72)";
+    const chevronX = edgeX + lip * 0.58 * side;
+    const mid = (top + bottom) / 2;
+    ctx.beginPath();
+    ctx.moveTo(chevronX + cell * 0.28 * side, mid);
+    ctx.lineTo(chevronX - cell * 0.2 * side, mid - cell * 0.32);
+    ctx.lineTo(chevronX - cell * 0.2 * side, mid + cell * 0.32);
+    ctx.closePath();
+    ctx.fill();
   }
 
   function drawTunnels(time) {
@@ -633,50 +649,46 @@
       up: -Math.PI / 2
     }[rider.dir];
     const skin = rider.skin || bikeSkins[0];
-    const scale = rider.isPlayer ? 1.12 : 1;
-    const spriteW = cell * 4.2 * scale;
-    const spriteH = spriteW * (bikeImage.naturalHeight && bikeImage.naturalWidth ? bikeImage.naturalHeight / bikeImage.naturalWidth : 0.32);
+    const length = cell * (rider.isPlayer ? 1.75 : 1.55);
+    const height = cell * (rider.isPlayer ? 0.78 : 0.68);
+    const wheel = height * 0.34;
 
     ctx.save();
     ctx.translate(p.x, p.y);
     ctx.rotate(angle);
     ctx.globalAlpha = rider.ghost ? 0.58 : 1;
 
-    ctx.fillStyle = hexToRgba(rider.color, 0.18);
-    ctx.beginPath();
-    ctx.ellipse(0, 0, spriteW * 0.52, spriteH * 0.82, 0, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.fillStyle = hexToRgba(rider.color, 0.16);
+    ctx.fillRect(-length * 0.52, -height * 0.5, length * 0.88, height);
 
-    if (bikeImage.complete && bikeImage.naturalWidth) {
-      ctx.drawImage(bikeImage, -spriteW / 2, -spriteH / 2, spriteW, spriteH);
-    } else {
-      drawFallbackBike(spriteW, spriteH, rider, skin);
-    }
-
-    ctx.fillStyle = rider.color;
-    ctx.beginPath();
-    ctx.moveTo(spriteW * 0.56, 0);
-    ctx.lineTo(spriteW * 0.4, -spriteH * 0.18);
-    ctx.lineTo(spriteW * 0.4, spriteH * 0.18);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.restore();
-  }
-
-  function drawFallbackBike(spriteW, spriteH, rider, skin) {
     ctx.fillStyle = skin.chassis;
     ctx.strokeStyle = rider.color;
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(spriteW * 0.48, 0);
-    ctx.lineTo(spriteW * 0.12, -spriteH * 0.5);
-    ctx.lineTo(-spriteW * 0.42, -spriteH * 0.26);
-    ctx.lineTo(-spriteW * 0.5, spriteH * 0.26);
-    ctx.lineTo(spriteW * 0.12, spriteH * 0.5);
+    ctx.moveTo(length * 0.54, 0);
+    ctx.lineTo(length * 0.12, -height * 0.5);
+    ctx.lineTo(-length * 0.48, -height * 0.34);
+    ctx.lineTo(-length * 0.48, height * 0.34);
+    ctx.lineTo(length * 0.12, height * 0.5);
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
+
+    ctx.fillStyle = skin.accent;
+    ctx.beginPath();
+    ctx.moveTo(length * 0.38, 0);
+    ctx.lineTo(length * 0.12, -height * 0.18);
+    ctx.lineTo(length * 0.12, height * 0.18);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = rider.color;
+    ctx.fillRect(-length * 0.4, -height * 0.54, wheel, height * 0.16);
+    ctx.fillRect(-length * 0.4, height * 0.38, wheel, height * 0.16);
+    ctx.fillRect(length * 0.12, -height * 0.54, wheel, height * 0.16);
+    ctx.fillRect(length * 0.12, height * 0.38, wheel, height * 0.16);
+
+    ctx.restore();
   }
 
   function lineNearScreen(a, b) {
