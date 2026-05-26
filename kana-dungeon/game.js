@@ -1,5 +1,5 @@
 const SAVE_KEY = "kana-dungeon-save-v1";
-const SAVE_VERSION = 1;
+const SAVE_VERSION = 2;
 const TAU = Math.PI * 2;
 
 export const KANA_PROMPTS = [
@@ -164,10 +164,10 @@ const ENEMY_TYPES = [
 ];
 
 const BIOMES = [
-  { name: "Lantern Halls", floor: 1, tint: "#62f0df" },
-  { name: "Echo Vault", floor: 6, tint: "#a987ff" },
-  { name: "Crystal Steps", floor: 12, tint: "#ff668f" },
-  { name: "Moon Gate", floor: 20, tint: "#ffd36a" }
+  { name: "Lantern Halls", floor: 1, tint: "#62f0df", shadow: "#071625", accent: "#ffd36a" },
+  { name: "Echo Vault", floor: 21, tint: "#a987ff", shadow: "#120b25", accent: "#c06dff" },
+  { name: "Crystal Steps", floor: 41, tint: "#ff668f", shadow: "#210b18", accent: "#62f0df" },
+  { name: "Moon Gate", floor: 61, tint: "#ffd36a", shadow: "#201609", accent: "#ffffff" }
 ];
 
 const SHOP = [
@@ -299,7 +299,6 @@ function createInitialState(now = Date.now()) {
     version: SAVE_VERSION,
     gold: 90,
     floor: 1,
-    room: 1,
     kills: 0,
     totalGold: 0,
     totalCorrect: 0,
@@ -310,8 +309,10 @@ function createInitialState(now = Date.now()) {
     party: ["hero"],
     upgrades: { power: 0, speed: 0, study: 0, loot: 0, depth: 0 },
     enemy,
-    lootLog: ["The guild enters the lantern hall."],
-    boostUntil: 0,
+    battle: createBattleState(),
+    partyGuard: 100,
+    lootLog: ["The guild takes formation."],
+    boostTurns: 0,
     lastSavedAt: now
   };
 }
@@ -337,7 +338,10 @@ function mergeState(base, parsed) {
     upgrades: { ...base.upgrades, ...(parsed.upgrades || {}) },
     party: Array.isArray(parsed.party) && parsed.party.length ? parsed.party.filter((id) => PARTY.some((p) => p.id === id)) : base.party,
     lootLog: Array.isArray(parsed.lootLog) ? parsed.lootLog.slice(0, 5) : base.lootLog,
-    enemy: parsed.enemy && Number.isFinite(parsed.enemy.hp) ? parsed.enemy : base.enemy
+    enemy: parsed.enemy && Number.isFinite(parsed.enemy.hp) ? parsed.enemy : base.enemy,
+    battle: parsed.battle && parsed.battle.phase ? parsed.battle : base.battle,
+    partyGuard: Number.isFinite(parsed.partyGuard) ? parsed.partyGuard : base.partyGuard,
+    boostTurns: Number.isFinite(parsed.boostTurns) ? parsed.boostTurns : parsed.boostUntil > Date.now() ? 2 : base.boostTurns
   };
 }
 
@@ -358,14 +362,16 @@ function resetGame() {
 function applyOffline(next, elapsedMs, now) {
   const seconds = Math.min(Math.max(0, elapsedMs / 1000), 60 * 60 * 4);
   if (seconds < 8) return { ...next, lastSavedAt: now };
-  const dps = Math.max(1, getDps(next, now));
+  const partyPower = Math.max(1, getBattlePower(next));
   let remaining = seconds;
   let kills = 0;
   let gold = 0;
   while (remaining > 0.5 && kills < 1200) {
-    const needed = Math.max(0.7, next.enemy.hp / dps + 0.5);
+    const rounds = Math.max(1, Math.ceil(next.enemy.hp / partyPower));
+    const needed = rounds * getRoundSeconds(next);
     if (needed > remaining) {
-      next.enemy.hp = Math.max(1, next.enemy.hp - dps * remaining);
+      const partialRounds = Math.floor(remaining / getRoundSeconds(next));
+      next.enemy.hp = Math.max(1, next.enemy.hp - partialRounds * partyPower);
       break;
     }
     remaining -= needed;
@@ -375,10 +381,11 @@ function applyOffline(next, elapsedMs, now) {
     next.totalGold += reward;
     next.kills += 1;
     kills += 1;
-    advanceRoom(next);
+    advanceFloor(next);
     next.enemy = spawnEnemy(next.floor, next.upgrades.depth);
+    next.battle = createBattleState();
   }
-  if (kills > 0) addLog(next, `Offline: ${kills} clears, +${formatNumber(gold)} gold.`);
+  if (kills > 0) addLog(next, `Offline: ${kills} fights, +${formatNumber(gold)} gold.`);
   return { ...next, lastSavedAt: now };
 }
 
@@ -393,9 +400,11 @@ function loop(now) {
 
 function tick(dt, now) {
   autoSaveTimer += dt;
-  const dps = getDps(state, now);
-  state.enemy.hp -= dps * dt;
-  maybeAutoHitEffects(dt, now);
+  state.battle.timer -= dt;
+  if (state.battle.timer <= 0) {
+    performBattleTurn(now);
+  }
+  maybeBoostRunes(dt);
   updateParticles(dt);
   if (state.enemy.hp <= 0) defeatEnemy(now);
   updateUI();
@@ -405,32 +414,122 @@ function tick(dt, now) {
   }
 }
 
-function maybeAutoHitEffects(dt, now) {
-  state.hitTimer = (state.hitTimer || 0) - dt;
-  const interval = Math.max(0.18, 0.72 / getAttackRate(state));
-  if (state.hitTimer <= 0) {
-    state.hitTimer = interval;
-    const member = PARTY.find((entry) => entry.id === state.party[Math.floor(Math.random() * state.party.length)]) || PARTY[0];
-    hitBursts.push({
-      x: width * (0.64 + Math.random() * 0.08),
-      y: getLaneY() - 42 - Math.random() * 46,
-      color: member.color,
-      age: 0,
-      life: 0.45,
-      kind: Math.random() > 0.5 ? "slash" : "spark"
-    });
-    if (Math.random() < 0.22) {
-      floaters.push({
-        text: `${Math.round(getMemberPower(member, state))}`,
-        x: width * 0.7,
-        y: getLaneY() - 100,
-        color: member.color,
-        age: 0,
-        life: 0.7
-      });
+function createBattleState() {
+  return {
+    phase: "party",
+    actorIndex: 0,
+    timer: 0.75,
+    round: 1,
+    message: "Party turn"
+  };
+}
+
+function performBattleTurn(now) {
+  if (state.enemy.hp <= 0) return;
+  if (state.battle.phase === "party") {
+    const memberId = state.party[state.battle.actorIndex] || state.party[0];
+    const member = PARTY.find((entry) => entry.id === memberId) || PARTY[0];
+    const damage = Math.round(getMemberPower(member, state) * (state.boostTurns > 0 ? 1.45 : 1));
+    state.enemy.hp -= damage;
+    state.battle.message = `${member.name} hits for ${damage}.`;
+    createHitBurst(member, damage);
+    if (state.enemy.hp <= 0) return;
+    state.battle.actorIndex += 1;
+    if (state.battle.actorIndex >= state.party.length) {
+      state.battle.phase = "enemy";
+      state.battle.actorIndex = 0;
+      state.battle.timer = 0.8;
+      state.battle.message = `${state.enemy.name} prepares.`;
+    } else {
+      state.battle.timer = getTurnDelay(state);
     }
+    return;
   }
-  if (state.boostUntil > now && Math.random() < dt * 2.5) {
+
+  const damage = Math.round(getEnemyDamage(state.enemy, state.floor));
+  state.partyGuard = Math.max(0, state.partyGuard - damage);
+  state.battle.message = `${state.enemy.name} strikes for ${damage}.`;
+  createEnemyBurst(damage);
+  if (state.partyGuard <= 0) {
+    const lost = Math.min(state.gold, Math.max(8, Math.round(state.floor * 3)));
+    state.gold -= lost;
+    state.partyGuard = 100;
+    addLog(state, `Party regroups: -${lost} gold.`);
+  }
+  if (state.boostTurns > 0) state.boostTurns -= 1;
+  state.battle.phase = "party";
+  state.battle.actorIndex = 0;
+  state.battle.round += 1;
+  state.battle.timer = getTurnDelay(state);
+}
+
+function createHitBurst(member, damage) {
+  const target = getEnemyAnchor();
+  hitBursts.push({
+    x: target.x + Math.random() * 22 - 11,
+    y: target.y - 54 - Math.random() * 56,
+    color: member.color,
+    age: 0,
+    life: 0.45,
+    kind: Math.random() > 0.5 ? "slash" : "spark"
+  });
+  floaters.push({
+    text: `${damage}`,
+    x: target.x,
+    y: target.y - 112,
+    color: member.color,
+    age: 0,
+    life: 0.75
+  });
+}
+
+function createEnemyBurst(damage) {
+  const target = getPartyAnchor();
+  hitBursts.push({
+    x: target.x,
+    y: target.y - 66,
+    color: state.enemy.color,
+    age: 0,
+    life: 0.45,
+    kind: "spark"
+  });
+  floaters.push({
+    text: `-${damage}`,
+    x: target.x,
+    y: target.y - 110,
+    color: "#ff5368",
+    age: 0,
+    life: 0.75
+  });
+}
+
+function createStudyStrike(prompt) {
+  const damage = Math.round(getBattlePower(state) * (1.1 + state.upgrades.study * 0.08));
+  state.enemy.hp -= damage;
+  state.boostTurns += 2;
+  state.battle.message = `${prompt.kana} cast hits for ${damage}.`;
+  const target = getEnemyAnchor();
+  hitBursts.push({
+    x: target.x,
+    y: target.y - 92,
+    color: "#62f0df",
+    age: 0,
+    life: 0.62,
+    kind: "rune"
+  });
+  floaters.push({
+    text: `${damage}`,
+    x: target.x + 28,
+    y: target.y - 132,
+    color: "#62f0df",
+    age: 0,
+    life: 0.9
+  });
+  if (state.enemy.hp <= 0) defeatEnemy(performance.now());
+}
+
+function maybeBoostRunes(dt) {
+  if (state.boostTurns > 0 && Math.random() < dt * 2.5) {
     hitBursts.push({
       x: width * (0.48 + Math.random() * 0.2),
       y: getLaneY() - 96 - Math.random() * 80,
@@ -464,13 +563,14 @@ function defeatEnemy(now) {
   state.gold += reward;
   state.totalGold += reward;
   state.kills += 1;
-  addLog(state, `Cleared ${state.enemy.name}: +${reward} gold.`);
+  addLog(state, `${state.enemy.boss ? "Boss" : "Fight"} won: +${reward} gold.`);
   burstCoins(reward);
   maybeFindItem();
-  advanceRoom(state);
+  advanceFloor(state);
   state.enemy = spawnEnemy(state.floor, state.upgrades.depth);
-  state.hitTimer = 0.08;
-  if (state.kills % 4 === 0) {
+  state.battle = createBattleState();
+  state.partyGuard = Math.min(100, state.partyGuard + 18);
+  if (state.enemy.boss || state.floor % 20 === 1) {
     flashScreen();
   }
   saveGame({ ...state, lastSavedAt: now });
@@ -487,22 +587,28 @@ function maybeFindItem() {
   addLog(state, `Found ${item}: +${bonus} gold.`);
 }
 
-function advanceRoom(next) {
-  next.room += 1;
-  if (next.room > 4) {
-    next.room = 1;
-    next.floor += 1;
-    addLog(next, `Floor ${next.floor} opens.`);
+function advanceFloor(next) {
+  next.floor += 1;
+  if (next.floor % 20 === 1) {
+    addLog(next, `${getBiome(next.floor).name} opens.`);
+  } else if (isBossFloor(next.floor)) {
+    addLog(next, `Boss waits on floor ${next.floor}.`);
+  } else {
+    addLog(next, `Floor ${next.floor} begins.`);
   }
 }
 
 function spawnEnemy(floor, depthLevel) {
-  const index = Math.min(ENEMY_TYPES.length - 1, Math.floor((floor - 1) / 3) % ENEMY_TYPES.length);
+  const boss = isBossFloor(floor);
+  const index = boss ? Math.min(ENEMY_TYPES.length - 1, Math.floor(floor / 10) % ENEMY_TYPES.length) : Math.min(ENEMY_TYPES.length - 1, Math.floor((floor - 1) / 4) % ENEMY_TYPES.length);
   const type = ENEMY_TYPES[index];
-  const scale = 1 + (floor - 1) * 0.17 + depthLevel * 0.28;
+  const scale = (1 + (floor - 1) * 0.15 + depthLevel * 0.26) * (boss ? 3.15 : 1);
   const maxHp = Math.round(type.hp * scale);
   return {
     ...type,
+    id: boss ? `${type.id}-boss` : type.id,
+    name: boss ? bossName(type, floor) : type.name,
+    boss,
     maxHp,
     hp: maxHp,
     bornAt: performance?.now ? performance.now() : Date.now()
@@ -511,18 +617,19 @@ function spawnEnemy(floor, depthLevel) {
 
 function getEnemyReward(next, enemy) {
   const floorBonus = next.floor * 8 + next.upgrades.depth * 16;
-  const boost = Date.now() < next.boostUntil ? 1.12 : 1;
-  return Math.round((enemy.gold + floorBonus) * boost);
+  const bossBonus = enemy.boss ? 4.5 : 1;
+  return Math.round((enemy.gold + floorBonus) * bossBonus);
 }
 
-function getDps(next, now = Date.now()) {
-  const base = next.party.reduce((sum, id) => {
+function getDps(next) {
+  return getBattlePower(next);
+}
+
+function getBattlePower(next) {
+  return next.party.reduce((sum, id) => {
     const member = PARTY.find((entry) => entry.id === id) || PARTY[0];
     return sum + getMemberPower(member, next);
-  }, 0);
-  const rate = getAttackRate(next);
-  const boost = now < next.boostUntil ? 1.55 : 1;
-  return base * rate * boost;
+  }, 0) * (next.boostTurns > 0 ? 1.18 : 1);
 }
 
 function getMemberPower(member, next) {
@@ -531,6 +638,27 @@ function getMemberPower(member, next) {
 
 function getAttackRate(next) {
   return 1 + next.upgrades.speed * 0.1;
+}
+
+function getTurnDelay(next) {
+  return Math.max(0.42, 1.08 / getAttackRate(next));
+}
+
+function getRoundSeconds(next) {
+  return next.party.length * getTurnDelay(next) + 1.05;
+}
+
+function getEnemyDamage(enemy, floor) {
+  return (enemy.boss ? 18 : 8) + floor * (enemy.boss ? 1.8 : 0.7);
+}
+
+function isBossFloor(floor) {
+  return floor > 0 && floor % 10 === 0;
+}
+
+function bossName(type, floor) {
+  const titles = ["Oathbound", "Gloom", "Crystal", "Moonlit"];
+  return `${titles[Math.floor(floor / 10) % titles.length]} ${type.name}`;
 }
 
 function handleAnswer(event) {
@@ -544,9 +672,9 @@ function handleAnswer(event) {
     state.totalCorrect += 1;
     state.streak += 1;
     state.bestStreak = Math.max(state.bestStreak, state.streak);
-    state.boostUntil = Date.now() + 9000 + state.upgrades.study * 900;
+    createStudyStrike(prompt);
     addLog(state, `Kana cast: +${reward} gold, ${state.streak} streak.`);
-    ui.feedback.textContent = `Correct. ${prompt.kana} = ${prompt.answer}. Combat boosted.`;
+    ui.feedback.textContent = `Correct. ${prompt.kana} = ${prompt.answer}. Bonus strike fired.`;
     markPrompt("is-correct");
     flashScreen();
   } else {
@@ -672,7 +800,7 @@ function updateUI() {
   ui.gold.textContent = formatNumber(state.gold);
   ui.dps.textContent = getDps(state).toFixed(1);
   ui.party.textContent = `${state.party.length}/4`;
-  ui.enemyKind.textContent = `Room ${state.room}`;
+  ui.enemyKind.textContent = `${state.enemy.boss ? "Boss" : "Floor"} ${state.floor} - ${state.battle.phase === "party" ? "Party turn" : "Enemy turn"}`;
   ui.enemyName.textContent = state.enemy.name;
   const hpPct = Math.max(0, Math.min(1, state.enemy.hp / state.enemy.maxHp));
   ui.enemyHpFill.style.width = `${hpPct * 100}%`;
@@ -737,9 +865,10 @@ function draw(time) {
 
 function drawBackground(time) {
   const image = assets.background;
+  const biome = getBiome(state.floor);
   if (!image.complete || !image.naturalWidth) {
     const gradient = ctx.createLinearGradient(0, 0, 0, height);
-    gradient.addColorStop(0, "#111827");
+    gradient.addColorStop(0, biome.shadow);
     gradient.addColorStop(1, "#05070c");
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, width, height);
@@ -750,12 +879,15 @@ function drawBackground(time) {
   const drawW = image.naturalWidth * scale;
   const drawH = image.naturalHeight * scale;
   const baseY = Math.min(0, laneY - drawH * 0.68);
-  const drift = (time * 18) % drawW;
-  for (let x = -drift; x < width + drawW; x += drawW) {
-    ctx.drawImage(image, x, baseY, drawW, drawH);
-  }
-  ctx.fillStyle = "rgba(2, 4, 10, 0.28)";
+  ctx.drawImage(image, (width - drawW) / 2, baseY, drawW, drawH);
+  ctx.fillStyle = "rgba(2, 4, 10, 0.35)";
   ctx.fillRect(0, 0, width, height);
+  ctx.save();
+  ctx.globalAlpha = 0.2;
+  ctx.fillStyle = biome.shadow;
+  ctx.fillRect(0, 0, width, height);
+  ctx.restore();
+  drawSceneSet(time, biome);
 }
 
 function drawGroundGlow() {
@@ -767,6 +899,62 @@ function drawGroundGlow() {
   ctx.fillRect(0, laneY - 120, width, height - laneY + 120);
   ctx.fillStyle = "rgba(98, 240, 223, 0.12)";
   ctx.fillRect(0, laneY + 5, width, 3);
+  ctx.fillStyle = "rgba(255,255,255,0.08)";
+  ctx.fillRect(width * 0.5 - 2, laneY - 168, 4, 174);
+  ctx.fillStyle = "rgba(0,0,0,0.28)";
+  ctx.beginPath();
+  ctx.ellipse(width * 0.28, laneY - 10, Math.max(90, width * 0.17), 22, 0, 0, TAU);
+  ctx.ellipse(width * 0.72, laneY - 10, Math.max(74, width * 0.13), 20, 0, 0, TAU);
+  ctx.fill();
+}
+
+function drawSceneSet(time, biome) {
+  const tier = Math.floor((state.floor - 1) / 20);
+  const laneY = getLaneY();
+  ctx.save();
+  ctx.globalAlpha = 0.55;
+  ctx.strokeStyle = biome.accent;
+  ctx.lineWidth = 2;
+  if (tier % 4 === 0) {
+    for (let i = 0; i < 5; i += 1) {
+      const x = width * (0.12 + i * 0.19);
+      drawCrystalCluster(x, laneY - 24, 22 + i * 3, biome.accent);
+    }
+  } else if (tier % 4 === 1) {
+    for (let i = 0; i < 4; i += 1) {
+      const x = width * (0.18 + i * 0.22);
+      ctx.beginPath();
+      ctx.arc(x, laneY - 190 + Math.sin(time + i) * 4, 18 + i * 2, 0, TAU);
+      ctx.stroke();
+      drawGlow(x, laneY - 190, 80, biome.accent, 0.1);
+    }
+  } else if (tier % 4 === 2) {
+    for (let i = 0; i < 7; i += 1) {
+      const x = width * (i / 6);
+      ctx.beginPath();
+      ctx.moveTo(x, laneY - 6);
+      ctx.lineTo(x + 38, laneY - 110 - (i % 3) * 28);
+      ctx.lineTo(x + 70, laneY - 6);
+      ctx.stroke();
+    }
+  } else {
+    ctx.beginPath();
+    ctx.arc(width * 0.5, laneY - 230, 78 + Math.sin(time) * 5, 0, TAU);
+    ctx.stroke();
+    drawGlow(width * 0.5, laneY - 230, 180, biome.accent, 0.18);
+  }
+  ctx.restore();
+}
+
+function drawCrystalCluster(x, y, size, color) {
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(x, y - size);
+  ctx.lineTo(x + size * 0.38, y);
+  ctx.lineTo(x, y + size * 0.3);
+  ctx.lineTo(x - size * 0.38, y);
+  ctx.closePath();
+  ctx.fill();
 }
 
 function drawParty(time) {
@@ -776,7 +964,7 @@ function drawParty(time) {
     const x = width * 0.26 + index * Math.min(70, width * 0.07) + Math.sin(time * 4 + index) * 5;
     const y = laneY + Math.sin(time * 8 + index * 1.7) * 3;
     drawSprite(member.sprite, x, y, getSpriteScale(member.sprite, true), false, time);
-    if (Date.now() < state.boostUntil) {
+    if (state.boostTurns > 0) {
       drawGlow(x, y - 58, 68, member.color, 0.22);
     }
   });
@@ -931,6 +1119,14 @@ function getSpriteScale(index, partyMember) {
 
 function getLaneY() {
   return Math.min(height - 130, Math.max(390, height * 0.74));
+}
+
+function getPartyAnchor() {
+  return { x: width * 0.3, y: getLaneY() };
+}
+
+function getEnemyAnchor() {
+  return { x: width * 0.72, y: getLaneY() };
 }
 
 function getBiome(floor) {
