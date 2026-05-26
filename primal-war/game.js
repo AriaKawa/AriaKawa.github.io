@@ -95,17 +95,17 @@ const SPRITES = {
     { x: 1154, y: 340, w: 190, h: 176, ox: 92, oy: 144 },
   ],
   clubber: {
-    idle: [{ x: 428, y: 82, w: 150, h: 220, ox: 76, oy: 194, trim: { left: 30, right: 28 } }],
+    idle: [{ x: 424, y: 82, w: 165, h: 220, ox: 78, oy: 194 }],
     walk: [
-      { x: 548, y: 82, w: 160, h: 220, ox: 78, oy: 194, trim: { left: 32, right: 34 } },
-      { x: 684, y: 82, w: 160, h: 220, ox: 78, oy: 194, trim: { left: 30, right: 34 } },
+      { x: 574, y: 82, w: 155, h: 220, ox: 76, oy: 194 },
+      { x: 718, y: 82, w: 162, h: 220, ox: 82, oy: 194 },
     ],
     attack: [
-      { x: 806, y: 72, w: 176, h: 230, ox: 88, oy: 204, trim: { left: 28, right: 44 } },
-      { x: 936, y: 78, w: 190, h: 224, ox: 96, oy: 198, trim: { left: 28, right: 50 } },
+      { x: 818, y: 72, w: 176, h: 230, ox: 88, oy: 204 },
+      { x: 962, y: 78, w: 180, h: 224, ox: 94, oy: 198 },
     ],
-    hurt: [{ x: 684, y: 82, w: 160, h: 220, ox: 78, oy: 194, trim: { left: 30, right: 34 } }],
-    death: [{ x: 936, y: 78, w: 190, h: 224, ox: 96, oy: 198, trim: { left: 28, right: 50 } }],
+    hurt: [{ x: 718, y: 82, w: 162, h: 220, ox: 82, oy: 194 }],
+    death: [{ x: 962, y: 78, w: 180, h: 224, ox: 94, oy: 198 }],
   },
   hurler: {
     idle: [{ x: 18, y: 322, w: 168, h: 210, ox: 82, oy: 184 }],
@@ -815,88 +815,14 @@ function drawUnits() {
       ctx.save();
       ctx.globalAlpha = 0.65;
       ctx.filter = "brightness(1.85) saturate(1.2)";
-      drawUnitSprite(unit, frame, unit.y + bob, def.scale, flip);
+      drawSprite(frame, unit.x, unit.y + bob, def.scale, flip);
       ctx.restore();
     } else {
-      drawUnitSprite(unit, frame, unit.y + bob, def.scale, flip);
+      drawSprite(frame, unit.x, unit.y + bob, def.scale, flip);
     }
     ctx.globalAlpha = 1;
     if (!unit.dead) drawUnitHp(unit);
   }
-}
-
-function drawUnitSprite(unit, frame, y, scale, flip) {
-  if (unit.type === "clubber") {
-    drawClubberBody(frame, unit.x, y, scale, flip);
-    drawCleanClub(unit, y, scale, flip);
-    return;
-  }
-  drawSprite(frame, unit.x, y, scale, flip);
-}
-
-function drawClubberBody(frame, x, y, scale, flip) {
-  if (!assets.atlas || !frame) return;
-  const trim = frame.trim || { left: 0, right: 0, top: 0, bottom: 0 };
-  const sx = frame.x + (trim.left || 0);
-  const sy = frame.y + (trim.top || 0);
-  const sw = Math.max(1, frame.w - (trim.left || 0) - (trim.right || 0));
-  const sh = Math.max(1, frame.h - (trim.top || 0) - (trim.bottom || 0));
-  const dx = (-frame.ox + (trim.left || 0)) * scale;
-  const dy = (-frame.oy + (trim.top || 0)) * scale;
-  ctx.save();
-  ctx.translate(x, y);
-  if (flip) ctx.scale(-1, 1);
-  ctx.drawImage(
-    assets.atlas,
-    sx,
-    sy,
-    sw,
-    sh,
-    dx,
-    dy,
-    sw * scale,
-    sh * scale,
-  );
-  ctx.restore();
-}
-
-function drawCleanClub(unit, y, scale, flip) {
-  const dir = flip ? -1 : 1;
-  const attackLean = unit.state === "attack" ? Math.min(1, unit.attackProgress * 1.8) : 0;
-  const lift = unit.state === "attack" ? -18 * attackLean : Math.sin(state.time * 7 + unit.x * 0.02) * 2;
-  const gripX = unit.x + dir * (14 * scale);
-  const gripY = y - 86 * scale + lift;
-  const tipX = unit.x + dir * ((unit.state === "attack" ? 76 : 58) * scale);
-  const tipY = y - (unit.state === "attack" ? 104 : 92) * scale + lift;
-  ctx.save();
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
-  ctx.strokeStyle = "#342319";
-  ctx.lineWidth = 15 * scale;
-  ctx.beginPath();
-  ctx.moveTo(gripX, gripY);
-  ctx.lineTo(tipX, tipY);
-  ctx.stroke();
-  ctx.strokeStyle = "#8b5b2d";
-  ctx.lineWidth = 9 * scale;
-  ctx.beginPath();
-  ctx.moveTo(gripX, gripY);
-  ctx.lineTo(tipX, tipY);
-  ctx.stroke();
-  ctx.translate(tipX, tipY);
-  ctx.rotate(dir * -0.18);
-  ctx.fillStyle = "#6f6756";
-  ctx.strokeStyle = "#2d241d";
-  ctx.lineWidth = 3 * scale;
-  ctx.beginPath();
-  ctx.ellipse(0, 0, 19 * scale, 13 * scale, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.stroke();
-  ctx.fillStyle = "rgba(255,255,255,.25)";
-  ctx.beginPath();
-  ctx.ellipse(-5 * scale, -5 * scale, 6 * scale, 3 * scale, -0.35, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
 }
 
 function frameFor(unit, set) {
