@@ -815,14 +815,81 @@ function drawUnits() {
       ctx.save();
       ctx.globalAlpha = 0.65;
       ctx.filter = "brightness(1.85) saturate(1.2)";
-      drawSprite(frame, unit.x, unit.y + bob, def.scale, flip);
+      drawUnitSprite(unit, frame, unit.y + bob, def.scale, flip);
       ctx.restore();
     } else {
-      drawSprite(frame, unit.x, unit.y + bob, def.scale, flip);
+      drawUnitSprite(unit, frame, unit.y + bob, def.scale, flip);
     }
     ctx.globalAlpha = 1;
     if (!unit.dead) drawUnitHp(unit);
   }
+}
+
+function drawUnitSprite(unit, frame, y, scale, flip) {
+  if (unit.type === "clubber") {
+    drawClubberBody(frame, unit.x, y, scale, flip);
+    drawCleanClub(unit, y, scale, flip);
+    return;
+  }
+  drawSprite(frame, unit.x, y, scale, flip);
+}
+
+function drawClubberBody(frame, x, y, scale, flip) {
+  if (!assets.atlas || !frame) return;
+  ctx.save();
+  ctx.translate(x, y);
+  if (flip) ctx.scale(-1, 1);
+  ctx.drawImage(
+    assets.atlas,
+    frame.x,
+    frame.y,
+    Math.max(1, frame.w - 34),
+    frame.h,
+    -frame.ox * scale,
+    -frame.oy * scale,
+    Math.max(1, frame.w - 34) * scale,
+    frame.h * scale,
+  );
+  ctx.restore();
+}
+
+function drawCleanClub(unit, y, scale, flip) {
+  const dir = flip ? -1 : 1;
+  const attackLean = unit.state === "attack" ? Math.min(1, unit.attackProgress * 1.8) : 0;
+  const lift = unit.state === "attack" ? -18 * attackLean : Math.sin(state.time * 7 + unit.x * 0.02) * 2;
+  const gripX = unit.x + dir * (14 * scale);
+  const gripY = y - 86 * scale + lift;
+  const tipX = unit.x + dir * ((unit.state === "attack" ? 76 : 58) * scale);
+  const tipY = y - (unit.state === "attack" ? 104 : 92) * scale + lift;
+  ctx.save();
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.strokeStyle = "#342319";
+  ctx.lineWidth = 15 * scale;
+  ctx.beginPath();
+  ctx.moveTo(gripX, gripY);
+  ctx.lineTo(tipX, tipY);
+  ctx.stroke();
+  ctx.strokeStyle = "#8b5b2d";
+  ctx.lineWidth = 9 * scale;
+  ctx.beginPath();
+  ctx.moveTo(gripX, gripY);
+  ctx.lineTo(tipX, tipY);
+  ctx.stroke();
+  ctx.translate(tipX, tipY);
+  ctx.rotate(dir * -0.18);
+  ctx.fillStyle = "#6f6756";
+  ctx.strokeStyle = "#2d241d";
+  ctx.lineWidth = 3 * scale;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, 19 * scale, 13 * scale, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "rgba(255,255,255,.25)";
+  ctx.beginPath();
+  ctx.ellipse(-5 * scale, -5 * scale, 6 * scale, 3 * scale, -0.35, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
 }
 
 function frameFor(unit, set) {
