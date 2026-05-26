@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Kana Dungeon</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="game-shell">
+      <canvas id="gameCanvas" aria-label="Kana Dungeon idle crawler"></canvas>
+
+      <header class="topbar">
+        <a class="back-link" href="../education.html" aria-label="Back to education">Back</a>
+        <div class="brand">
+          <span>Kana Dungeon</span>
+          <strong id="floorLabel">Floor 1</strong>
+        </div>
+        <div class="toolbar" aria-label="Game controls">
+          <button class="icon-button" id="guideButton" type="button">Guide</button>
+          <button class="icon-button" id="shopButton" type="button">Shop</button>
+          <button class="icon-button" id="resetButton" type="button" title="Reset save">Reset</button>
+        </div>
+      </header>
+
+      <section class="hud hud-left" aria-label="Run stats">
+        <div class="stat">
+          <span>Gold</span>
+          <strong id="goldReadout">0</strong>
+        </div>
+        <div class="stat">
+          <span>DPS</span>
+          <strong id="dpsReadout">0</strong>
+        </div>
+        <div class="stat">
+          <span>Party</span>
+          <strong id="partyReadout">1</strong>
+        </div>
+      </section>
+
+      <section class="hud hud-right" aria-label="Enemy stats">
+        <div class="enemy-card">
+          <span id="enemyKind">Slime</span>
+          <strong id="enemyName">Lantern Slime</strong>
+          <i><b id="enemyHpFill"></b></i>
+          <small id="enemyHpText">10 / 10</small>
+        </div>
+        <div class="loot-log" id="lootLog" aria-live="polite"></div>
+      </section>
+
+      <section class="study-panel" aria-label="Kana prompt">
+        <div class="prompt-card">
+          <div>
+            <span id="promptGroup">base kana</span>
+            <strong id="kanaPrompt">かな</strong>
+          </div>
+          <form id="answerForm" autocomplete="off">
+            <label class="sr-only" for="answerInput">Romaji answer</label>
+            <input id="answerInput" name="answer" inputmode="latin" autocapitalize="none" spellcheck="false" placeholder="type romaji">
+            <button type="submit">Cast</button>
+          </form>
+          <p id="studyFeedback">Strict Hepburn. Correct answers boost the next fight.</p>
+        </div>
+      </section>
+
+      <section class="drawer-overlay" id="shopDrawer" hidden>
+        <div class="drawer">
+          <header class="drawer-head">
+            <div>
+              <span>Spend gold</span>
+              <strong>Guild Shop</strong>
+            </div>
+            <button class="icon-button" id="closeShopButton" type="button">Close</button>
+          </header>
+          <div class="shop-grid" id="shopGrid"></div>
+        </div>
+      </section>
+
+      <section class="drawer-overlay" id="guideDrawer" hidden>
+        <div class="drawer guide-drawer">
+          <header class="drawer-head">
+            <div>
+              <span>No kanji zone</span>
+              <strong>Kana Guide</strong>
+            </div>
+            <button class="icon-button" id="closeGuideButton" type="button">Close</button>
+          </header>
+          <div class="guide-tabs" role="tablist" aria-label="Kana guide sections">
+            <button class="guide-tab is-active" type="button" data-guide-tab="base">Base</button>
+            <button class="guide-tab" type="button" data-guide-tab="marks">Marks</button>
+            <button class="guide-tab" type="button" data-guide-tab="combo">Combos</button>
+            <button class="guide-tab" type="button" data-guide-tab="small">Small</button>
+          </div>
+          <div id="guideContent" class="guide-content"></div>
+        </div>
+      </section>
+
+      <div class="screen-flash" id="screenFlash"></div>
+    </main>
+
+    <script type="module" src="game.js"></script>
+    <script src="../site-navigation.js"></script>
+  </body>
+</html>

@@ -1,0 +1,603 @@
+:root {
+  --bg: #05070c;
+  --panel: rgba(9, 13, 22, 0.78);
+  --panel-strong: rgba(12, 17, 29, 0.96);
+  --line: rgba(255, 255, 255, 0.18);
+  --text: #f7fbff;
+  --muted: #a9b7ca;
+  --gold: #ffd36a;
+  --teal: #62f0df;
+  --rose: #ff668f;
+  --violet: #a987ff;
+  --green: #8df1a5;
+  --danger: #ff5368;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+  color: var(--text);
+  background: var(--bg);
+  font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+button,
+input,
+a {
+  font: inherit;
+}
+
+button {
+  border: 0;
+}
+
+.game-shell {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  min-height: 560px;
+  overflow: hidden;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 24% 10%, rgba(98, 240, 223, 0.16), transparent 24rem),
+    radial-gradient(circle at 78% 18%, rgba(255, 102, 143, 0.14), transparent 26rem),
+    #05070c;
+}
+
+#gameCanvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.topbar,
+.hud,
+.study-panel,
+.drawer-overlay,
+.screen-flash {
+  position: absolute;
+  z-index: 2;
+}
+
+.topbar {
+  top: clamp(0.7rem, 2vw, 1.1rem);
+  left: clamp(0.7rem, 2vw, 1.1rem);
+  right: clamp(0.7rem, 2vw, 1.1rem);
+  z-index: 4;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.65rem;
+  align-items: center;
+  pointer-events: none;
+}
+
+.back-link,
+.icon-button,
+.guide-tab,
+.shop-card,
+.prompt-card button {
+  min-height: 40px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+  pointer-events: auto;
+}
+
+.back-link,
+.icon-button,
+.guide-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.58rem 0.82rem;
+  color: var(--text);
+  font-weight: 900;
+  text-decoration: none;
+  border: 1px solid var(--line);
+  background: rgba(7, 11, 20, 0.72);
+  backdrop-filter: blur(14px);
+}
+
+.back-link:hover,
+.icon-button:hover,
+.guide-tab:hover,
+.shop-card:hover:not(:disabled),
+.prompt-card button:hover {
+  transform: translateY(-1px);
+}
+
+.brand {
+  justify-self: center;
+  min-height: 46px;
+  display: grid;
+  place-items: center;
+  padding: 0.45rem 1rem;
+  text-align: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(7, 11, 20, 0.72);
+  backdrop-filter: blur(14px);
+  pointer-events: auto;
+}
+
+.brand span,
+.stat span,
+.enemy-card span,
+.drawer-head span,
+.shop-card span,
+.prompt-card span,
+.guide-block span {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.brand strong {
+  margin-top: 0.08rem;
+  color: var(--gold);
+  font-size: 1.02rem;
+  line-height: 1;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: end;
+  gap: 0.4rem;
+  pointer-events: auto;
+}
+
+.hud {
+  display: grid;
+  gap: 0.52rem;
+  top: 5.7rem;
+}
+
+.hud-left {
+  left: clamp(0.7rem, 2vw, 1.1rem);
+  width: min(172px, 28vw);
+}
+
+.hud-right {
+  right: clamp(0.7rem, 2vw, 1.1rem);
+  width: min(268px, 34vw);
+}
+
+.stat,
+.enemy-card,
+.prompt-card,
+.drawer,
+.loot-log {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(14px);
+}
+
+.stat {
+  padding: 0.68rem 0.78rem;
+}
+
+.stat strong {
+  display: block;
+  margin-top: 0.12rem;
+  font-size: 1.22rem;
+  line-height: 1;
+}
+
+.enemy-card {
+  padding: 0.78rem 0.86rem;
+}
+
+.enemy-card strong {
+  display: block;
+  margin-top: 0.12rem;
+  font-size: 1.05rem;
+}
+
+.enemy-card i {
+  display: block;
+  height: 0.52rem;
+  margin-top: 0.65rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.13);
+}
+
+.enemy-card b {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--rose), var(--gold));
+  box-shadow: 0 0 18px rgba(255, 102, 143, 0.5);
+}
+
+.enemy-card small {
+  display: block;
+  margin-top: 0.35rem;
+  color: #d4dfed;
+  font-weight: 800;
+}
+
+.loot-log {
+  display: grid;
+  gap: 0.35rem;
+  max-height: 136px;
+  overflow: hidden;
+  padding: 0.58rem;
+  color: #dce7f5;
+  font-size: 0.8rem;
+}
+
+.loot-log p {
+  margin: 0;
+  padding: 0.42rem 0.48rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.study-panel {
+  left: 50%;
+  bottom: clamp(0.75rem, 2vw, 1.2rem);
+  z-index: 5;
+  width: min(760px, calc(100vw - 2rem));
+  transform: translateX(-50%);
+}
+
+.prompt-card {
+  display: grid;
+  grid-template-columns: auto minmax(260px, 1fr);
+  gap: 0.78rem;
+  align-items: center;
+  padding: 0.75rem;
+}
+
+.prompt-card strong {
+  display: block;
+  margin-top: 0.08rem;
+  font-size: clamp(2.3rem, 7vw, 4rem);
+  line-height: 0.95;
+  letter-spacing: 0;
+}
+
+.prompt-card form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.48rem;
+}
+
+.prompt-card input {
+  width: 100%;
+  min-height: 46px;
+  padding: 0.7rem 0.8rem;
+  color: var(--text);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  outline: 0;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.prompt-card input:focus {
+  border-color: rgba(98, 240, 223, 0.72);
+  box-shadow: 0 0 0 3px rgba(98, 240, 223, 0.13);
+}
+
+.prompt-card button {
+  padding: 0.7rem 1rem;
+  color: #071017;
+  font-weight: 1000;
+  background: linear-gradient(135deg, var(--teal), var(--gold));
+  box-shadow: 0 14px 34px rgba(98, 240, 223, 0.22);
+}
+
+.prompt-card p {
+  grid-column: 2;
+  margin: -0.3rem 0 0;
+  color: #d5e2f0;
+  font-size: 0.86rem;
+  font-weight: 750;
+}
+
+.prompt-card.is-correct {
+  border-color: rgba(141, 241, 165, 0.7);
+  box-shadow: 0 0 32px rgba(141, 241, 165, 0.24);
+}
+
+.prompt-card.is-wrong {
+  border-color: rgba(255, 83, 104, 0.7);
+  box-shadow: 0 0 32px rgba(255, 83, 104, 0.2);
+}
+
+.drawer-overlay {
+  inset: 0;
+  z-index: 8;
+  display: flex;
+  justify-content: flex-end;
+  align-items: stretch;
+  padding: clamp(0.75rem, 2vw, 1.25rem);
+  background: rgba(2, 4, 10, 0.46);
+  backdrop-filter: blur(4px);
+}
+
+.drawer-overlay[hidden] {
+  display: none;
+}
+
+.drawer {
+  width: min(452px, 100%);
+  max-height: 100%;
+  overflow: auto;
+  padding: 0.85rem;
+  background: var(--panel-strong);
+}
+
+.guide-drawer {
+  width: min(720px, 100%);
+}
+
+.drawer-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.drawer-head strong {
+  display: block;
+  margin-top: 0.08rem;
+  font-size: 1.35rem;
+}
+
+.shop-grid {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.shop-card {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.65rem;
+  align-items: center;
+  padding: 0.68rem;
+  color: var(--text);
+  text-align: left;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background:
+    radial-gradient(circle at 12% 0%, rgba(98, 240, 223, 0.12), transparent 8rem),
+    rgba(255, 255, 255, 0.06);
+}
+
+.shop-card:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.shop-card strong {
+  display: block;
+  margin-top: 0.08rem;
+  font-size: 1rem;
+}
+
+.shop-card p {
+  margin: 0.24rem 0 0;
+  color: #cad7e7;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.shop-card b {
+  color: var(--gold);
+  white-space: nowrap;
+}
+
+.guide-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.38rem;
+  margin-bottom: 0.75rem;
+}
+
+.guide-tab.is-active {
+  color: #071017;
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--teal), var(--violet));
+}
+
+.guide-content {
+  display: grid;
+  gap: 0.72rem;
+}
+
+.guide-block {
+  padding: 0.72rem;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.guide-block h3 {
+  margin: 0 0 0.55rem;
+  font-size: 1rem;
+}
+
+.guide-block p {
+  margin: 0.45rem 0 0;
+  color: #d3deeb;
+  line-height: 1.55;
+}
+
+.kana-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
+  gap: 0.38rem;
+}
+
+.kana-cell {
+  min-height: 58px;
+  display: grid;
+  place-items: center;
+  padding: 0.38rem;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.14);
+}
+
+.kana-cell b {
+  display: block;
+  font-size: 1.35rem;
+}
+
+.kana-cell small {
+  display: block;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.screen-flash {
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(circle at center, rgba(98, 240, 223, 0.22), transparent 34rem);
+}
+
+.screen-flash.is-on {
+  animation: flash 0.5s ease-out;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+@keyframes flash {
+  0% { opacity: 0.9; }
+  100% { opacity: 0; }
+}
+
+@media (max-width: 860px) {
+  .game-shell {
+    min-height: 100vh;
+  }
+
+  .topbar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+  }
+
+  .brand {
+    order: 3;
+    width: 100%;
+  }
+
+  .hud {
+    top: 7.8rem;
+  }
+
+  .hud-left {
+    width: min(148px, 34vw);
+  }
+
+  .hud-right {
+    width: min(218px, 46vw);
+  }
+
+  .loot-log {
+    display: none;
+  }
+
+  .study-panel {
+    width: calc(100vw - 1rem);
+    bottom: 0.5rem;
+  }
+
+  .prompt-card {
+    grid-template-columns: 1fr;
+  }
+
+  .prompt-card p {
+    grid-column: auto;
+    margin-top: -0.2rem;
+  }
+}
+
+@media (max-width: 560px) {
+  .toolbar {
+    gap: 0.28rem;
+  }
+
+  .back-link,
+  .icon-button,
+  .guide-tab {
+    min-height: 36px;
+    padding: 0.5rem 0.58rem;
+    font-size: 0.84rem;
+  }
+
+  .hud {
+    top: 7.45rem;
+  }
+
+  .hud-left {
+    left: 0.45rem;
+  }
+
+  .hud-right {
+    right: 0.45rem;
+  }
+
+  .stat {
+    padding: 0.5rem 0.58rem;
+  }
+
+  .stat strong {
+    font-size: 1rem;
+  }
+
+  .enemy-card {
+    padding: 0.58rem;
+  }
+
+  .enemy-card strong {
+    font-size: 0.92rem;
+  }
+
+  .prompt-card form {
+    grid-template-columns: 1fr;
+  }
+
+  .prompt-card button {
+    width: 100%;
+  }
+
+  .drawer-overlay {
+    padding: 0.55rem;
+  }
+}
