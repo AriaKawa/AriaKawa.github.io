@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Riftbound Realms</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <main class="shell">
+        <section class="game-frame" aria-label="Riftbound Realms game">
+            <canvas id="gameCanvas" width="1280" height="720" aria-label="Riftbound Realms battlefield"></canvas>
+
+            <div class="hud hud--top">
+                <div class="brand">
+                    <span class="brand__mark">RR</span>
+                    <div>
+                        <h1>Riftbound Realms</h1>
+                        <p id="zoneLabel">Shardfen Realm</p>
+                    </div>
+                </div>
+                <div class="vitals" aria-label="Character vitals">
+                    <div class="meter">
+                        <span>HP</span>
+                        <strong id="hpText">100 / 100</strong>
+                        <i id="hpFill"></i>
+                    </div>
+                    <div class="meter meter--xp">
+                        <span>LV</span>
+                        <strong id="levelText">1</strong>
+                        <i id="xpFill"></i>
+                    </div>
+                </div>
+                <div class="scorebar">
+                    <span id="classLabel">Iron Vow</span>
+                    <strong id="scoreText">0 fame</strong>
+                </div>
+            </div>
+
+            <aside class="panel panel--left">
+                <div class="minimap">
+                    <canvas id="miniCanvas" width="148" height="148" aria-label="Realm map"></canvas>
+                </div>
+                <div class="leaderboard">
+                    <h2>Raiders</h2>
+                    <ol id="leaderboardList"></ol>
+                </div>
+            </aside>
+
+            <aside class="panel panel--right">
+                <div class="equipment">
+                    <h2>Equipment</h2>
+                    <div class="slots">
+                        <button class="slot" data-slot="weapon" type="button"><span>Weapon</span><strong id="slotWeapon">Empty</strong></button>
+                        <button class="slot" data-slot="armor" type="button"><span>Armor</span><strong id="slotArmor">Empty</strong></button>
+                        <button class="slot" data-slot="charm" type="button"><span>Charm</span><strong id="slotCharm">Empty</strong></button>
+                    </div>
+                </div>
+                <div class="inventory">
+                    <div class="inventory__header">
+                        <h2>Pack</h2>
+                        <button id="sortButton" class="tiny-button" type="button" title="Sort pack">Sort</button>
+                    </div>
+                    <div id="inventoryGrid" class="inventory-grid" aria-label="Inventory"></div>
+                    <p id="itemHint" class="item-hint">No item selected.</p>
+                </div>
+            </aside>
+
+            <div class="actions">
+                <button id="portalButton" class="action-button" type="button" hidden>Enter Portal</button>
+                <button id="returnButton" class="action-button" type="button" hidden>Return Realm</button>
+                <button id="autoButton" class="action-button action-button--ghost" type="button" aria-pressed="true">Auto Fire</button>
+            </div>
+
+            <section id="classScreen" class="modal" aria-labelledby="classTitle">
+                <div class="modal__inner">
+                    <div class="modal__header">
+                        <span class="eyebrow">Local-first MMO-lite</span>
+                        <h2 id="classTitle">Choose a riftbound class</h2>
+                    </div>
+                    <div id="classGrid" class="class-grid"></div>
+                    <div class="modal__footer">
+                        <div>
+                            <span>Best run</span>
+                            <strong id="bestRunText">0 fame</strong>
+                        </div>
+                        <button id="continueButton" type="button">Begin Run</button>
+                    </div>
+                </div>
+            </section>
+
+            <section id="deathScreen" class="modal modal--death" hidden aria-labelledby="deathTitle">
+                <div class="modal__inner modal__inner--narrow">
+                    <span class="eyebrow">Fallen in the rift</span>
+                    <h2 id="deathTitle">Your echo returns to the gate.</h2>
+                    <p id="deathStats">0 fame claimed.</p>
+                    <button id="restartButton" type="button">New Run</button>
+                </div>
+            </section>
+        </section>
+    </main>
+    <script src="game.js"></script>
+</body>
+</html>
