@@ -95,17 +95,17 @@ const SPRITES = {
     { x: 1154, y: 340, w: 190, h: 176, ox: 92, oy: 144 },
   ],
   clubber: {
-    idle: [{ x: 428, y: 82, w: 150, h: 220, ox: 76, oy: 194 }],
+    idle: [{ x: 428, y: 82, w: 150, h: 220, ox: 76, oy: 194, trim: { left: 30, right: 28 } }],
     walk: [
-      { x: 548, y: 82, w: 160, h: 220, ox: 78, oy: 194 },
-      { x: 684, y: 82, w: 160, h: 220, ox: 78, oy: 194 },
+      { x: 548, y: 82, w: 160, h: 220, ox: 78, oy: 194, trim: { left: 32, right: 34 } },
+      { x: 684, y: 82, w: 160, h: 220, ox: 78, oy: 194, trim: { left: 30, right: 34 } },
     ],
     attack: [
-      { x: 806, y: 72, w: 176, h: 230, ox: 88, oy: 204 },
-      { x: 936, y: 78, w: 190, h: 224, ox: 96, oy: 198 },
+      { x: 806, y: 72, w: 176, h: 230, ox: 88, oy: 204, trim: { left: 28, right: 44 } },
+      { x: 936, y: 78, w: 190, h: 224, ox: 96, oy: 198, trim: { left: 28, right: 50 } },
     ],
-    hurt: [{ x: 684, y: 82, w: 160, h: 220, ox: 78, oy: 194 }],
-    death: [{ x: 936, y: 78, w: 190, h: 224, ox: 96, oy: 198 }],
+    hurt: [{ x: 684, y: 82, w: 160, h: 220, ox: 78, oy: 194, trim: { left: 30, right: 34 } }],
+    death: [{ x: 936, y: 78, w: 190, h: 224, ox: 96, oy: 198, trim: { left: 28, right: 50 } }],
   },
   hurler: {
     idle: [{ x: 18, y: 322, w: 168, h: 210, ox: 82, oy: 184 }],
@@ -836,19 +836,26 @@ function drawUnitSprite(unit, frame, y, scale, flip) {
 
 function drawClubberBody(frame, x, y, scale, flip) {
   if (!assets.atlas || !frame) return;
+  const trim = frame.trim || { left: 0, right: 0, top: 0, bottom: 0 };
+  const sx = frame.x + (trim.left || 0);
+  const sy = frame.y + (trim.top || 0);
+  const sw = Math.max(1, frame.w - (trim.left || 0) - (trim.right || 0));
+  const sh = Math.max(1, frame.h - (trim.top || 0) - (trim.bottom || 0));
+  const dx = (-frame.ox + (trim.left || 0)) * scale;
+  const dy = (-frame.oy + (trim.top || 0)) * scale;
   ctx.save();
   ctx.translate(x, y);
   if (flip) ctx.scale(-1, 1);
   ctx.drawImage(
     assets.atlas,
-    frame.x,
-    frame.y,
-    Math.max(1, frame.w - 34),
-    frame.h,
-    -frame.ox * scale,
-    -frame.oy * scale,
-    Math.max(1, frame.w - 34) * scale,
-    frame.h * scale,
+    sx,
+    sy,
+    sw,
+    sh,
+    dx,
+    dy,
+    sw * scale,
+    sh * scale,
   );
   ctx.restore();
 }
