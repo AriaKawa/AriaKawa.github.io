@@ -7,6 +7,7 @@
     "misc.html": "other.html",
     "in-progress.html": "other.html",
 
+    "arcforge-duel/index.html": "games.html",
     "2048-rogue/index.html": "games.html",
     "primal-war/index.html": "games.html",
     "expansion-io-blob/index.html": "games.html",
