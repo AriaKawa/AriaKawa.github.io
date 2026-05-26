@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Primal War</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div class="brand">
+          <span class="age-chip">Stone Age</span>
+          <h1>Primal War</h1>
+        </div>
+        <div class="stats" aria-live="polite">
+          <div><span>Gold</span><b id="gold">0</b></div>
+          <div><span>XP</span><b id="xp">0</b></div>
+          <div><span>Speed</span><b id="speed">1x</b></div>
+        </div>
+      </header>
+
+      <section class="battle-wrap">
+        <canvas id="game" width="1366" height="768" aria-label="Primal War battlefield"></canvas>
+        <div id="banner" class="banner hidden"></div>
+      </section>
+
+      <section class="command-bar">
+        <div class="base-panel">
+          <div>
+            <span>Your Cave</span>
+            <strong id="playerHp">1600 / 1600</strong>
+          </div>
+          <div class="meter"><i id="playerHpBar"></i></div>
+        </div>
+
+        <div class="actions" aria-label="Battle commands">
+          <button data-buy="clubber" title="Fast melee unit. Cheap pressure and reliable body blocking.">
+            <span class="icon club"></span>
+            <b>Clubber</b>
+            <small>55g</small>
+          </button>
+          <button data-buy="hurler" title="Ranged unit. Throws stones from behind the front line.">
+            <span class="icon stone"></span>
+            <b>Hurler</b>
+            <small>85g</small>
+          </button>
+          <button data-buy="raptor" title="Heavy rider. Expensive, fast, and hard to stop.">
+            <span class="icon claw"></span>
+            <b>Raptor</b>
+            <small>165g</small>
+          </button>
+          <button id="turretBtn" title="Build one rock-sling turret above your cave.">
+            <span class="icon turret"></span>
+            <b>Turret</b>
+            <small>190g</small>
+          </button>
+          <button id="specialBtn" class="special" title="Call down a Stone Rain attack on the enemy side.">
+            <span class="icon meteor"></span>
+            <b>Stone Rain</b>
+            <small>120xp</small>
+          </button>
+          <button class="locked" title="The vertical slice focuses on a polished first age." disabled>
+            <span class="icon lock"></span>
+            <b>Next Age</b>
+            <small>Locked</small>
+          </button>
+        </div>
+
+        <div class="base-panel enemy">
+          <div>
+            <span>Enemy Cave</span>
+            <strong id="enemyHp">1600 / 1600</strong>
+          </div>
+          <div class="meter"><i id="enemyHpBar"></i></div>
+        </div>
+      </section>
+
+      <footer class="utility">
+        <button id="pauseBtn">Pause</button>
+        <button id="speedBtn">Speed x2</button>
+        <button id="restartBtn">Restart</button>
+        <p id="status">Buy units, build one turret, and break the enemy cave.</p>
+      </footer>
+    </main>
+    <script src="game.js"></script>
+  </body>
+</html>
