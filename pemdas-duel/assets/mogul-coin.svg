@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-labelledby="title desc">
+  <title id="title">Mogul coin</title>
+  <desc id="desc">A shiny gold coin marked with a math symbol.</desc>
+  <defs>
+    <linearGradient id="coinFace" x1="36" y1="28" x2="194" y2="212" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff3c4"/>
+      <stop offset=".42" stop-color="#ffd36f"/>
+      <stop offset="1" stop-color="#b86d16"/>
+    </linearGradient>
+    <linearGradient id="coinRim" x1="42" y1="18" x2="204" y2="220" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff9d8"/>
+      <stop offset=".24" stop-color="#f7c85c"/>
+      <stop offset=".7" stop-color="#8a4b0f"/>
+      <stop offset="1" stop-color="#ffe49a"/>
+    </linearGradient>
+  </defs>
+  <circle cx="120" cy="120" r="104" fill="#2b073e"/>
+  <circle cx="120" cy="120" r="92" fill="url(#coinRim)"/>
+  <circle cx="120" cy="120" r="74" fill="url(#coinFace)"/>
+  <path d="M74 120h92M120 74v92" fill="none" stroke="#2b073e" stroke-width="16" stroke-linecap="round"/>
+  <circle cx="120" cy="120" r="46" fill="none" stroke="#2b073e" stroke-width="9" opacity=".28"/>
+</svg>

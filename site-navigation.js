@@ -19,6 +19,7 @@
     "neon-ouroboros/index.html": "games.html",
     "RatRace.html": "games.html",
     "blackjack.html": "games.html",
+    "pemdas-duel/index.html": "games.html",
     "type-off/index.html": "games.html",
     "trolley-game.html": "games.html",
     "thing-vs-thing.html": "games.html",
