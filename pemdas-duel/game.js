@@ -20,6 +20,7 @@ import {
 import { firebaseConfig } from "../assets/js/firebase-config.js";
 
 const targetScore = 5;
+const revealDurationMs = 4000;
 const roomsPath = "pemdasDuelRooms";
 const playerStorageKey = "pemdas-duel-player-id";
 const nameStorageKey = "pemdas-duel-name";
@@ -37,6 +38,9 @@ const els = {
   roundState: document.querySelector("[data-round-state]"),
   playerCards: Array.from(document.querySelectorAll("[data-player-card]")),
   question: document.querySelector("[data-question]"),
+  answerReveal: document.querySelector("[data-answer-reveal]"),
+  answerValue: document.querySelector("[data-answer-value]"),
+  countdownValue: document.querySelector("[data-countdown-value]"),
   answerForm: document.querySelector("[data-answer-form]"),
   answer: document.querySelector("[data-answer]"),
   submit: document.querySelector("[data-submit]"),
@@ -49,6 +53,7 @@ const els = {
   celebrationNewMatch: document.querySelector("[data-celebration-new-match]"),
   winnerText: document.querySelector("[data-winner-text]"),
   winnerSubtext: document.querySelector("[data-winner-subtext]"),
+  finalAnswer: document.querySelector("[data-final-answer]"),
 };
 
 const app = initializeApp(firebaseConfig);
@@ -62,6 +67,8 @@ let currentRoomCode = "";
 let currentRoom = null;
 let unsubscribeRoom = null;
 let lastQuestionId = "";
+let revealTimer = null;
+let revealAdvancePending = false;
 
 els.name.value = localStorage.getItem(nameStorageKey) || "";
 
@@ -135,6 +142,7 @@ async function createRoom() {
     targetScore,
     questionNumber: 1,
     question: makeQuestion(1),
+    reveal: null,
     winnerId: "",
     lastAnswer: null,
     createdAt: serverTimestamp(),
@@ -221,10 +229,13 @@ function renderRoom() {
   const localPlayer = players.find((player) => player.id === playerId);
   const status = currentRoom.status || "lobby";
   const question = currentRoom.question || null;
+  const reveal = currentRoom.reveal || null;
 
   els.copyRoom.textContent = currentRoomCode;
   els.roundState.textContent = labelStatus(status);
-  els.question.textContent = question?.expression || "Ready?";
+  els.question.textContent = status === "revealing" && reveal?.expression
+    ? reveal.expression
+    : question?.expression || "Ready?";
   els.ready.textContent = localPlayer?.ready ? "Unready" : "Ready";
   els.ready.disabled = status !== "lobby";
   els.start.disabled = !canStart(players);
@@ -240,11 +251,13 @@ function renderRoom() {
   }
 
   renderPlayers(players);
+  renderAnswerReveal();
   renderNotice(players);
   renderCelebration(players);
 }
 
 function labelStatus(status) {
+  if (status === "revealing") return "Answer reveal";
   if (status === "playing") return "Live question";
   if (status === "finished") return "Finished";
   return "Lobby";
@@ -298,6 +311,8 @@ function renderPips(container, score) {
 function getPlayerStatus(player) {
   if (currentRoom.status === "finished" && currentRoom.winnerId === player.id) return "Champion";
   if (currentRoom.status === "finished") return `${player.score || 0} points`;
+  if (currentRoom.status === "revealing" && player.answerState === "hit") return "Scored";
+  if (currentRoom.status === "revealing") return "Watching answer";
   if (currentRoom.status === "playing" && player.answerState === "miss") return "Recalculating";
   if (currentRoom.status === "playing" && player.answerState === "hit") return "Scored";
   if (currentRoom.status === "playing") return `${player.score || 0} points`;
@@ -307,7 +322,20 @@ function getPlayerStatus(player) {
 function renderNotice(players) {
   if (currentRoom.status === "finished") {
     const winner = players.find((player) => player.id === currentRoom.winnerId);
-    setGameNotice(winner ? `${winner.name} hit five points first.` : "Match finished.");
+    const answer = currentRoom.reveal ? formatAnswer(currentRoom.reveal.answer) : "";
+    setGameNotice(winner ? `${winner.name} hit five points first. Final answer: ${answer}.` : "Match finished.");
+    return;
+  }
+
+  if (currentRoom.status === "revealing") {
+    const reveal = currentRoom.reveal;
+    if (!reveal) {
+      setGameNotice("Answer revealed.");
+      return;
+    }
+    const countdown = getRevealCountdown(reveal.endsAt);
+    const nextText = reveal.final ? "Match ends" : "Next question";
+    setGameNotice(`${reveal.name} scored. Correct answer: ${formatAnswer(reveal.answer)}. ${nextText} in ${countdown}.`);
     return;
   }
 
@@ -328,6 +356,35 @@ function renderNotice(players) {
   }
 }
 
+function renderAnswerReveal() {
+  const reveal = currentRoom.reveal;
+  const isVisible = currentRoom.status === "revealing" && reveal;
+  els.answerReveal.hidden = !isVisible;
+  clearInterval(revealTimer);
+  revealTimer = null;
+
+  if (!isVisible) {
+    revealAdvancePending = false;
+    return;
+  }
+
+  els.answerValue.textContent = formatAnswer(reveal.answer);
+
+  const tick = () => {
+    const countdown = getRevealCountdown(reveal.endsAt);
+    els.countdownValue.textContent = reveal.final
+      ? `Match ends in ${countdown}`
+      : `Next question in ${countdown}`;
+
+    if (Date.now() >= reveal.endsAt) {
+      advanceReveal();
+    }
+  };
+
+  tick();
+  revealTimer = setInterval(tick, 200);
+}
+
 function renderCelebration(players) {
   const finished = currentRoom.status === "finished";
   els.celebration.hidden = !finished;
@@ -337,6 +394,12 @@ function renderCelebration(players) {
   const winnerName = winner?.name || "Winner";
   els.winnerText.textContent = `${winnerName} wins`;
   els.winnerSubtext.textContent = `${winnerName} claimed ${targetScore} points in PEMDAS Duel.`;
+  if (currentRoom.reveal) {
+    els.finalAnswer.hidden = false;
+    els.finalAnswer.textContent = `Final answer: ${currentRoom.reveal.expression} = ${formatAnswer(currentRoom.reveal.answer)}`;
+  } else {
+    els.finalAnswer.hidden = true;
+  }
   els.celebrationNewMatch.textContent = isHost() ? "New match" : "Host starts rematch";
 }
 
@@ -357,6 +420,7 @@ async function startMatch() {
     winnerId: "",
     questionNumber: 1,
     question: makeQuestion(1),
+    reveal: null,
     lastAnswer: null,
     startedAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
@@ -397,6 +461,7 @@ async function submitAnswer(event) {
 async function awardPoint(questionId) {
   const nextNumber = (currentRoom.questionNumber || 1) + 1;
   const nextQuestion = makeQuestion(nextNumber);
+  const revealEndsAt = Date.now() + revealDurationMs;
   const result = await runTransaction(getRoomRef(), (room) => {
     if (!room || room.status !== "playing" || room.winnerId) return undefined;
     if (!room.question || room.question.id !== questionId) return undefined;
@@ -404,6 +469,7 @@ async function awardPoint(questionId) {
 
     const player = room.players[playerId];
     const nextScore = (player.score || 0) + 1;
+    const solvedQuestion = room.question;
     player.score = nextScore;
     player.streak = (player.streak || 0) + 1;
     player.answerState = "hit";
@@ -416,17 +482,26 @@ async function awardPoint(questionId) {
       playerId,
       name: player.name || "Player",
       questionId,
+      expression: solvedQuestion.expression,
+      answer: solvedQuestion.answer,
       at: Date.now(),
     };
+    room.reveal = {
+      playerId,
+      name: player.name || "Player",
+      questionId,
+      expression: solvedQuestion.expression,
+      answer: solvedQuestion.answer,
+      endsAt: revealEndsAt,
+      final: nextScore >= (room.targetScore || targetScore),
+      nextNumber,
+      nextQuestion,
+    };
+    room.status = "revealing";
     room.updatedAt = Date.now();
 
     if (nextScore >= (room.targetScore || targetScore)) {
-      room.status = "finished";
       room.winnerId = playerId;
-      room.finishedAt = Date.now();
-    } else {
-      room.questionNumber = nextNumber;
-      room.question = nextQuestion;
     }
 
     return room;
@@ -439,6 +514,37 @@ async function awardPoint(questionId) {
   }
 }
 
+async function advanceReveal() {
+  if (!currentRoom || currentRoom.status !== "revealing" || !currentRoom.reveal) return;
+  if (revealAdvancePending) return;
+  revealAdvancePending = true;
+  const revealId = currentRoom.reveal.questionId;
+
+  await runTransaction(getRoomRef(), (room) => {
+    if (!room || room.status !== "revealing" || !room.reveal) return undefined;
+    if (room.reveal.questionId !== revealId || Date.now() < room.reveal.endsAt) return undefined;
+
+    if (room.reveal.final) {
+      room.status = "finished";
+      room.finishedAt = Date.now();
+      room.updatedAt = Date.now();
+      return room;
+    }
+
+    room.status = "playing";
+    room.questionNumber = room.reveal.nextNumber;
+    room.question = room.reveal.nextQuestion || makeQuestion(room.reveal.nextNumber || 1);
+    room.reveal = null;
+    Object.keys(room.players || {}).forEach((id) => {
+      room.players[id].answerState = "";
+    });
+    room.updatedAt = Date.now();
+    return room;
+  }).catch(() => {}).finally(() => {
+    revealAdvancePending = false;
+  });
+}
+
 async function newMatch() {
   if (!isHost() || !currentRoom) return;
   const players = getPlayers();
@@ -447,6 +553,7 @@ async function newMatch() {
     winnerId: "",
     questionNumber: 1,
     question: makeQuestion(1),
+    reveal: null,
     lastAnswer: null,
     updatedAt: serverTimestamp(),
   };
@@ -478,6 +585,9 @@ async function leaveRoom(removePlayer = true) {
   els.lobby.hidden = false;
   els.arena.hidden = true;
   els.celebration.hidden = true;
+  clearInterval(revealTimer);
+  revealTimer = null;
+  revealAdvancePending = false;
 }
 
 function parseAnswer(value) {
@@ -499,6 +609,18 @@ function parseAnswer(value) {
 
 function isCorrect(given, expected) {
   return Math.abs(given - expected) < 0.01;
+}
+
+function formatAnswer(answer) {
+  if (!Number.isFinite(Number(answer))) return "--";
+  return Number(answer).toLocaleString(undefined, {
+    maximumFractionDigits: 2,
+    minimumFractionDigits: Number.isInteger(Number(answer)) ? 0 : 1,
+  });
+}
+
+function getRevealCountdown(endsAt) {
+  return Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
 }
 
 function makeQuestion(round) {
