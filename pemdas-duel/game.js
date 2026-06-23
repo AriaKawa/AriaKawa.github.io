@@ -21,10 +21,12 @@ import { firebaseConfig } from "../assets/js/firebase-config.js";
 
 const targetScore = 5;
 const countdownDurationMs = 3000;
+const roundDurationMs = 20000;
 const revealDurationMs = 4000;
 const roomsPath = "pemdasDuelRooms";
 const playerStorageKey = "pemdas-duel-player-id";
 const nameStorageKey = "pemdas-duel-name";
+const aiPlayerId = "ai-test-player";
 
 const els = {
   lobby: document.querySelector("[data-lobby]"),
@@ -42,6 +44,8 @@ const els = {
   roomControls: document.querySelector("[data-room-controls]"),
   matchCountdown: document.querySelector("[data-match-countdown]"),
   matchCountdownValue: document.querySelector("[data-match-countdown-value]"),
+  roundClock: document.querySelector("[data-round-clock]"),
+  roundClockValue: document.querySelector("[data-round-clock-value]"),
   question: document.querySelector("[data-question]"),
   answerReveal: document.querySelector("[data-answer-reveal]"),
   answerValue: document.querySelector("[data-answer-value]"),
@@ -50,6 +54,7 @@ const els = {
   answer: document.querySelector("[data-answer]"),
   submit: document.querySelector("[data-submit]"),
   ready: document.querySelector("[data-ready]"),
+  aiPlayer: document.querySelector("[data-ai-player]"),
   start: document.querySelector("[data-start]"),
   newMatch: document.querySelector("[data-new-match]"),
   leave: document.querySelector("[data-leave]"),
@@ -74,8 +79,16 @@ let unsubscribeRoom = null;
 let lastQuestionId = "";
 let countdownTimer = null;
 let countdownAdvancePending = false;
+let lastCountdownTick = null;
+let roundTimer = null;
+let roundTimeoutPending = false;
+let lastRoundTick = null;
 let revealTimer = null;
 let revealAdvancePending = false;
+let lastRevealTick = null;
+let lastCorrectSoundId = "";
+let audioContext = null;
+let audioUnlocked = false;
 
 els.name.value = localStorage.getItem(nameStorageKey) || "";
 
@@ -118,6 +131,47 @@ function setGameNotice(text) {
   els.gameNotice.textContent = text;
 }
 
+function unlockAudio() {
+  try {
+    audioContext ||= new (window.AudioContext || window.webkitAudioContext)();
+    if (audioContext.state === "suspended") {
+      audioContext.resume();
+    }
+    audioUnlocked = true;
+  } catch {
+    audioUnlocked = false;
+  }
+}
+
+function playSound(kind) {
+  if (!audioUnlocked || !audioContext) return;
+
+  if (kind === "correct") {
+    playTone(620, 0, 0.08, "sine", 0.035);
+    playTone(880, 0.08, 0.12, "sine", 0.03);
+  } else if (kind === "wrong") {
+    playTone(260, 0, 0.09, "triangle", 0.035);
+    playTone(185, 0.09, 0.12, "triangle", 0.028);
+  } else if (kind === "tick") {
+    playTone(720, 0, 0.045, "sine", 0.02);
+  }
+}
+
+function playTone(frequency, delay, duration, type, volume) {
+  const start = audioContext.currentTime + delay;
+  const oscillator = audioContext.createOscillator();
+  const gain = audioContext.createGain();
+  oscillator.type = type;
+  oscillator.frequency.setValueAtTime(frequency, start);
+  gain.gain.setValueAtTime(0.0001, start);
+  gain.gain.exponentialRampToValueAtTime(volume, start + 0.012);
+  gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+  oscillator.connect(gain);
+  gain.connect(audioContext.destination);
+  oscillator.start(start);
+  oscillator.stop(start + duration + 0.02);
+}
+
 async function ensureAuth() {
   return new Promise((resolve, reject) => {
     const stop = onAuthStateChanged(auth, async (nextUser) => {
@@ -150,6 +204,7 @@ async function createRoom() {
     questionNumber: 1,
     question: null,
     countdownEndsAt: 0,
+    roundEndsAt: 0,
     reveal: null,
     winnerId: "",
     lastAnswer: null,
@@ -254,6 +309,7 @@ function renderRoom() {
   els.start.disabled = !canStart(players);
   els.newMatch.disabled = !isHost();
   els.celebrationNewMatch.disabled = !isHost();
+  renderAiControl(players);
   els.answer.disabled = status !== "playing";
   els.submit.disabled = status !== "playing";
 
@@ -265,6 +321,7 @@ function renderRoom() {
 
   renderPlayers(players);
   renderMatchCountdown();
+  renderRoundTimer();
   renderAnswerReveal();
   renderNotice(players);
   renderCelebration(players);
@@ -283,6 +340,13 @@ function canStart(players) {
     && currentRoom?.status === "lobby"
     && players.length === 2
     && players.every((player) => player.ready);
+}
+
+function renderAiControl(players) {
+  const aiPlayer = players.find((player) => player.isAi);
+  els.aiPlayer.hidden = !isHost();
+  els.aiPlayer.textContent = aiPlayer ? "Remove AI player" : "Add AI player";
+  els.aiPlayer.disabled = currentRoom?.status !== "lobby" || (!aiPlayer && players.length >= 2);
 }
 
 function renderPlayers(players) {
@@ -305,8 +369,12 @@ function renderPlayers(players) {
     }
 
     const badges = [];
-    if (player.id === currentRoom.hostId) badges.push("Host");
-    if (player.id === playerId) badges.push("You");
+    if (player.isAi) {
+      badges.push("AI");
+    } else {
+      if (player.id === currentRoom.hostId) badges.push("Host");
+      if (player.id === playerId) badges.push("You");
+    }
     role.textContent = badges.length ? badges.join(" / ") : `Seat ${index + 1}`;
     name.textContent = player.name || "Player";
     status.textContent = getPlayerStatus(player);
@@ -326,6 +394,8 @@ function renderPips(container, score) {
 function getPlayerStatus(player) {
   if (currentRoom.status === "finished" && currentRoom.winnerId === player.id) return "Champion";
   if (currentRoom.status === "finished") return `${player.score || 0} points`;
+  if (player.isAi && currentRoom.status === "lobby") return "Idle test player";
+  if (player.isAi && currentRoom.status === "playing") return "Idle";
   if (currentRoom.status === "countdown") return "Locked in";
   if (currentRoom.status === "revealing" && player.answerState === "hit") return "Scored";
   if (currentRoom.status === "revealing") return "Watching answer";
@@ -351,7 +421,8 @@ function renderNotice(players) {
     }
     const countdown = getRevealCountdown(reveal.endsAt);
     const nextText = reveal.final ? "Match ends" : "Next question";
-    setGameNotice(`${reveal.name} scored. Correct answer: ${formatAnswer(reveal.answer)}. ${nextText} in ${countdown}.`);
+    const prefix = reveal.timedOut ? "Time's up" : `${reveal.name} scored`;
+    setGameNotice(`${prefix}. Correct answer: ${formatAnswer(reveal.answer)}. ${nextText} in ${countdown}.`);
     return;
   }
 
@@ -362,7 +433,9 @@ function renderNotice(players) {
 
   if (currentRoom.status === "playing") {
     const last = currentRoom.lastAnswer;
-    setGameNotice(last?.name ? `${last.name} scored. Next question is live.` : "Solve the expression first to score.");
+    setGameNotice(last?.name && !last.timedOut
+      ? `${last.name} scored. Next question is live.`
+      : "Solve the expression first to score.");
     return;
   }
 
@@ -385,12 +458,17 @@ function renderMatchCountdown() {
 
   if (!isVisible) {
     countdownAdvancePending = false;
+    lastCountdownTick = null;
     return;
   }
 
   const tick = () => {
     const count = Math.max(1, Math.ceil(((currentRoom.countdownEndsAt || Date.now()) - Date.now()) / 1000));
     els.matchCountdownValue.textContent = String(count);
+    if (count !== lastCountdownTick) {
+      lastCountdownTick = count;
+      playSound("tick");
+    }
 
     if (Date.now() >= (currentRoom.countdownEndsAt || 0)) {
       advanceCountdown();
@@ -399,6 +477,37 @@ function renderMatchCountdown() {
 
   tick();
   countdownTimer = setInterval(tick, 120);
+}
+
+function renderRoundTimer() {
+  const isVisible = currentRoom.status === "playing" && currentRoom.roundEndsAt;
+  els.roundClock.hidden = !isVisible;
+  clearInterval(roundTimer);
+  roundTimer = null;
+
+  if (!isVisible) {
+    roundTimeoutPending = false;
+    lastRoundTick = null;
+    els.roundClock.classList.remove("is-urgent");
+    return;
+  }
+
+  const tick = () => {
+    const count = getRoundCountdown(currentRoom.roundEndsAt);
+    els.roundClockValue.textContent = `${count}s`;
+    els.roundClock.classList.toggle("is-urgent", count <= 5);
+    if (count !== lastRoundTick) {
+      lastRoundTick = count;
+      if (count > 0 && count <= 5) playSound("tick");
+    }
+
+    if (Date.now() >= currentRoom.roundEndsAt) {
+      advanceRoundTimeout();
+    }
+  };
+
+  tick();
+  roundTimer = setInterval(tick, 200);
 }
 
 function renderAnswerReveal() {
@@ -410,7 +519,13 @@ function renderAnswerReveal() {
 
   if (!isVisible) {
     revealAdvancePending = false;
+    lastRevealTick = null;
     return;
+  }
+
+  if (!reveal.timedOut && reveal.questionId && reveal.questionId !== lastCorrectSoundId) {
+    lastCorrectSoundId = reveal.questionId;
+    playSound("correct");
   }
 
   els.answerValue.textContent = formatAnswer(reveal.answer);
@@ -420,6 +535,10 @@ function renderAnswerReveal() {
     els.countdownValue.textContent = reveal.final
       ? `Match ends in ${countdown}`
       : `Next question in ${countdown}`;
+    if (countdown !== lastRevealTick) {
+      lastRevealTick = countdown;
+      if (countdown > 0) playSound("tick");
+    }
 
     if (Date.now() >= reveal.endsAt) {
       advanceReveal();
@@ -457,6 +576,33 @@ async function toggleReady() {
   });
 }
 
+async function toggleAiPlayer() {
+  if (!isHost() || !currentRoom || currentRoom.status !== "lobby") return;
+  const players = getPlayers();
+  const existingAi = players.find((player) => player.isAi);
+
+  if (existingAi) {
+    await remove(getPlayerRef(currentRoomCode, existingAi.id));
+    return;
+  }
+
+  if (players.length >= 2) {
+    setGameNotice("The room already has two players.");
+    return;
+  }
+
+  await set(getPlayerRef(currentRoomCode, aiPlayerId), {
+    name: "AI Player",
+    isAi: true,
+    ready: true,
+    score: 0,
+    streak: 0,
+    answerState: "",
+    joinedAt: Date.now(),
+    lastSeen: serverTimestamp(),
+  });
+}
+
 async function startMatch() {
   const players = getPlayers();
   if (!canStart(players)) return;
@@ -467,6 +613,7 @@ async function startMatch() {
     questionNumber: 1,
     question: makeQuestion(1),
     countdownEndsAt: now + countdownDurationMs,
+    roundEndsAt: 0,
     reveal: null,
     lastAnswer: null,
     startedAt: serverTimestamp(),
@@ -477,6 +624,9 @@ async function startMatch() {
     updates[`players/${player.id}/score`] = 0;
     updates[`players/${player.id}/streak`] = 0;
     updates[`players/${player.id}/answerState`] = "";
+    if (player.isAi) {
+      updates[`players/${player.id}/ready`] = true;
+    }
   });
 
   await update(getRoomRef(), updates);
@@ -493,6 +643,7 @@ async function advanceCountdown() {
 
     room.status = "playing";
     room.startedAt = Date.now();
+    room.roundEndsAt = Date.now() + roundDurationMs;
     room.updatedAt = Date.now();
     if (!room.question) {
       room.question = makeQuestion(room.questionNumber || 1);
@@ -500,6 +651,55 @@ async function advanceCountdown() {
     return room;
   }).catch(() => {}).finally(() => {
     countdownAdvancePending = false;
+  });
+}
+
+async function advanceRoundTimeout() {
+  if (!currentRoom || currentRoom.status !== "playing" || !currentRoom.question) return;
+  if (roundTimeoutPending) return;
+  roundTimeoutPending = true;
+  const questionId = currentRoom.question.id;
+
+  await runTransaction(getRoomRef(), (room) => {
+    if (!room || room.status !== "playing" || room.winnerId) return undefined;
+    if (!room.question || room.question.id !== questionId) return undefined;
+    if (Date.now() < (room.roundEndsAt || 0)) return undefined;
+
+    const timedQuestion = room.question;
+    const nextNumber = (room.questionNumber || 1) + 1;
+    const now = Date.now();
+    room.lastAnswer = {
+      playerId: "",
+      name: "Time",
+      questionId,
+      expression: timedQuestion.expression,
+      answer: timedQuestion.answer,
+      at: now,
+      timedOut: true,
+    };
+    room.reveal = {
+      playerId: "",
+      name: "Time",
+      questionId,
+      expression: timedQuestion.expression,
+      answer: timedQuestion.answer,
+      endsAt: now + revealDurationMs,
+      final: false,
+      timedOut: true,
+      nextNumber,
+      nextQuestion: makeQuestion(nextNumber),
+    };
+    room.status = "revealing";
+    room.roundEndsAt = 0;
+    room.updatedAt = now;
+
+    Object.keys(room.players || {}).forEach((id) => {
+      room.players[id].answerState = "";
+    });
+
+    return room;
+  }).catch(() => {}).finally(() => {
+    roundTimeoutPending = false;
   });
 }
 
@@ -514,6 +714,7 @@ async function submitAnswer(event) {
   }
 
   if (!isCorrect(answer, currentRoom.question.answer)) {
+    playSound("wrong");
     await update(getPlayerRef(), {
       answerState: "miss",
       lastSeen: serverTimestamp(),
@@ -566,6 +767,7 @@ async function awardPoint(questionId) {
       nextQuestion,
     };
     room.status = "revealing";
+    room.roundEndsAt = 0;
     room.updatedAt = Date.now();
 
     if (nextScore >= (room.targetScore || targetScore)) {
@@ -603,6 +805,7 @@ async function advanceReveal() {
     room.questionNumber = room.reveal.nextNumber;
     room.question = room.reveal.nextQuestion || makeQuestion(room.reveal.nextNumber || 1);
     room.reveal = null;
+    room.roundEndsAt = Date.now() + roundDurationMs;
     Object.keys(room.players || {}).forEach((id) => {
       room.players[id].answerState = "";
     });
@@ -622,13 +825,14 @@ async function newMatch() {
     questionNumber: 1,
     question: null,
     countdownEndsAt: 0,
+    roundEndsAt: 0,
     reveal: null,
     lastAnswer: null,
     updatedAt: serverTimestamp(),
   };
 
   players.forEach((player) => {
-    updates[`players/${player.id}/ready`] = false;
+    updates[`players/${player.id}/ready`] = Boolean(player.isAi);
     updates[`players/${player.id}/score`] = 0;
     updates[`players/${player.id}/streak`] = 0;
     updates[`players/${player.id}/answerState`] = "";
@@ -658,9 +862,17 @@ async function leaveRoom(removePlayer = true) {
   clearInterval(countdownTimer);
   countdownTimer = null;
   countdownAdvancePending = false;
+  lastCountdownTick = null;
+  clearInterval(roundTimer);
+  roundTimer = null;
+  roundTimeoutPending = false;
+  lastRoundTick = null;
+  els.roundClock.hidden = true;
+  els.roundClock.classList.remove("is-urgent");
   clearInterval(revealTimer);
   revealTimer = null;
   revealAdvancePending = false;
+  lastRevealTick = null;
 }
 
 function parseAnswer(value) {
@@ -694,6 +906,10 @@ function formatAnswer(answer) {
 
 function getRevealCountdown(endsAt) {
   return Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
+}
+
+function getRoundCountdown(endsAt) {
+  return Math.max(0, Math.ceil(((endsAt || Date.now()) - Date.now()) / 1000));
 }
 
 function makeQuestion(round) {
@@ -790,7 +1006,10 @@ els.name.addEventListener("input", () => {
   localStorage.setItem(nameStorageKey, cleanName(els.name.value));
 });
 
+document.addEventListener("pointerdown", unlockAudio, { once: true });
+document.addEventListener("keydown", unlockAudio, { once: true });
 els.ready.addEventListener("click", () => toggleReady());
+els.aiPlayer.addEventListener("click", () => toggleAiPlayer());
 els.start.addEventListener("click", () => startMatch());
 els.newMatch.addEventListener("click", () => newMatch());
 els.celebrationNewMatch.addEventListener("click", () => newMatch());

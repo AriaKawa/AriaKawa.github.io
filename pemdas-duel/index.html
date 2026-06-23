@@ -90,6 +90,10 @@
           <strong>PEMDAS</strong>
           <span></span>
         </div>
+        <div class="round-clock" data-round-clock hidden aria-live="polite">
+          <span>Time</span>
+          <strong data-round-clock-value>20s</strong>
+        </div>
         <div class="problem-card">
           <p class="problem-text" data-question>Ready?</p>
           <div class="answer-reveal" data-answer-reveal hidden>
@@ -110,6 +114,7 @@
 
       <section class="controls" data-room-controls aria-label="Game controls">
         <button type="button" data-ready>Ready</button>
+        <button type="button" data-ai-player>Add AI player</button>
         <button class="primary" type="button" data-start disabled>Start match</button>
         <button type="button" data-new-match disabled>New match</button>
       </section>

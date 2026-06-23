@@ -405,6 +405,37 @@ input:focus {
   background: var(--line);
 }
 
+.round-clock {
+  justify-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  border: 1px solid rgba(255, 233, 189, 0.34);
+  border-radius: 999px;
+  padding: 0 16px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--gold-soft);
+  font-weight: 900;
+}
+
+.round-clock span {
+  color: var(--teal);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+}
+
+.round-clock strong {
+  min-width: 36px;
+  color: var(--gold);
+  text-align: right;
+}
+
+.round-clock.is-urgent {
+  border-color: rgba(255, 109, 122, 0.82);
+  color: #ffd6dc;
+}
+
 .problem-card {
   min-height: 330px;
   padding: 28px;
