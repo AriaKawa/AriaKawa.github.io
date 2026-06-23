@@ -21,11 +21,13 @@ import { firebaseConfig } from "../assets/js/firebase-config.js";
 
 const targetScore = 5;
 const countdownDurationMs = 3000;
-const roundDurationMs = 20000;
+const roundDurationMs = 5000;
 const revealDurationMs = 4000;
+const difficulties = ["easy", "medium", "hard"];
 const roomsPath = "pemdasDuelRooms";
 const playerStorageKey = "pemdas-duel-player-id";
 const nameStorageKey = "pemdas-duel-name";
+const difficultyStorageKey = "pemdas-duel-difficulty";
 const aiPlayerId = "ai-test-player";
 
 const els = {
@@ -42,10 +44,12 @@ const els = {
   playerCards: Array.from(document.querySelectorAll("[data-player-card]")),
   battleSections: Array.from(document.querySelectorAll("[data-battle-ui]")),
   roomControls: document.querySelector("[data-room-controls]"),
+  difficultyOptions: Array.from(document.querySelectorAll("[data-difficulty-option]")),
   matchCountdown: document.querySelector("[data-match-countdown]"),
   matchCountdownValue: document.querySelector("[data-match-countdown-value]"),
   roundClock: document.querySelector("[data-round-clock]"),
   roundClockValue: document.querySelector("[data-round-clock-value]"),
+  problemCard: document.querySelector("[data-problem-card]"),
   question: document.querySelector("[data-question]"),
   answerReveal: document.querySelector("[data-answer-reveal]"),
   answerValue: document.querySelector("[data-answer-value]"),
@@ -63,7 +67,11 @@ const els = {
   celebrationNewMatch: document.querySelector("[data-celebration-new-match]"),
   winnerText: document.querySelector("[data-winner-text]"),
   winnerSubtext: document.querySelector("[data-winner-subtext]"),
-  finalAnswer: document.querySelector("[data-final-answer]"),
+  matchSummary: document.querySelector("[data-match-summary]"),
+  finalQuestion: document.querySelector("[data-final-question]"),
+  finalCorrectAnswer: document.querySelector("[data-final-correct-answer]"),
+  finalGuesses: document.querySelector("[data-final-guesses]"),
+  finalScoreboard: document.querySelector("[data-final-scoreboard]"),
 };
 
 const app = initializeApp(firebaseConfig);
@@ -76,6 +84,7 @@ let playerId = getPlayerId();
 let currentRoomCode = "";
 let currentRoom = null;
 let unsubscribeRoom = null;
+let selectedDifficulty = normalizeDifficulty(localStorage.getItem(difficultyStorageKey));
 let lastQuestionId = "";
 let countdownTimer = null;
 let countdownAdvancePending = false;
@@ -103,6 +112,14 @@ function getPlayerId() {
 
 function cleanName(value) {
   return value.replace(/\s+/g, " ").trim().slice(0, 18) || "Math mogul";
+}
+
+function normalizeDifficulty(value) {
+  return difficulties.includes(value) ? value : "medium";
+}
+
+function getRoomDifficulty(room = currentRoom) {
+  return normalizeDifficulty(room?.difficulty || selectedDifficulty);
 }
 
 function makeRoomCode() {
@@ -201,10 +218,12 @@ async function createRoom() {
     hostId: playerId,
     status: "lobby",
     targetScore,
+    difficulty: selectedDifficulty,
     questionNumber: 1,
     question: null,
     countdownEndsAt: 0,
     roundEndsAt: 0,
+    roundGuesses: {},
     reveal: null,
     winnerId: "",
     lastAnswer: null,
@@ -299,6 +318,7 @@ function renderRoom() {
   els.question.textContent = status === "revealing" && reveal?.expression
     ? reveal.expression
     : question?.expression || "Ready?";
+  els.problemCard.classList.toggle("is-revealing", status === "revealing" && Boolean(reveal));
   const isBattleVisible = status === "playing" || status === "revealing";
   els.battleSections.forEach((section) => {
     section.hidden = !isBattleVisible;
@@ -310,6 +330,7 @@ function renderRoom() {
   els.newMatch.disabled = !isHost();
   els.celebrationNewMatch.disabled = !isHost();
   renderAiControl(players);
+  renderDifficultyControls(status);
   els.answer.disabled = status !== "playing";
   els.submit.disabled = status !== "playing";
 
@@ -347,6 +368,17 @@ function renderAiControl(players) {
   els.aiPlayer.hidden = !isHost();
   els.aiPlayer.textContent = aiPlayer ? "Remove AI player" : "Add AI player";
   els.aiPlayer.disabled = currentRoom?.status !== "lobby" || (!aiPlayer && players.length >= 2);
+}
+
+function renderDifficultyControls(status = currentRoom?.status || "lobby") {
+  const activeDifficulty = currentRoom ? getRoomDifficulty() : selectedDifficulty;
+  els.difficultyOptions.forEach((button) => {
+    const isActive = button.dataset.difficultyOption === activeDifficulty;
+    const isRoomButton = Boolean(button.closest("[data-room-difficulty]"));
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
+    button.disabled = isRoomButton && (!currentRoom || !isHost() || status !== "lobby");
+  });
 }
 
 function renderPlayers(players) {
@@ -558,13 +590,58 @@ function renderCelebration(players) {
   const winnerName = winner?.name || "Winner";
   els.winnerText.textContent = `${winnerName} wins`;
   els.winnerSubtext.textContent = `${winnerName} claimed ${targetScore} points in PEMDAS Duel.`;
-  if (currentRoom.reveal) {
-    els.finalAnswer.hidden = false;
-    els.finalAnswer.textContent = `Final answer: ${currentRoom.reveal.expression} = ${formatAnswer(currentRoom.reveal.answer)}`;
-  } else {
-    els.finalAnswer.hidden = true;
-  }
+  renderMatchSummary(players, winner);
   els.celebrationNewMatch.textContent = isHost() ? "New match" : "Host starts rematch";
+}
+
+function renderMatchSummary(players, winner) {
+  const reveal = currentRoom.reveal;
+  els.matchSummary.hidden = !reveal;
+  if (!reveal) return;
+
+  els.finalQuestion.textContent = reveal.expression || "--";
+  els.finalCorrectAnswer.textContent = formatAnswer(reveal.answer);
+  els.finalGuesses.innerHTML = "";
+  els.finalScoreboard.innerHTML = "";
+
+  players.forEach((player) => {
+    const guess = reveal.guesses?.[player.id] || {
+      answerText: "No answer",
+      status: "No answer",
+      correct: false,
+    };
+    appendSummaryRow(
+      els.finalGuesses,
+      player.name || "Player",
+      guess.answerText,
+      guess.status,
+      guess.correct ? "is-correct" : "",
+    );
+    appendSummaryRow(
+      els.finalScoreboard,
+      player.name || "Player",
+      `${player.score || 0}/${targetScore}`,
+      player.id === winner?.id ? "Winner" : "Final score",
+      player.id === winner?.id ? "is-correct" : "",
+    );
+  });
+}
+
+function appendSummaryRow(container, label, value, meta, className = "") {
+  const row = document.createElement("div");
+  row.className = `summary-row ${className}`.trim();
+
+  const labelEl = document.createElement("span");
+  labelEl.textContent = label;
+
+  const valueEl = document.createElement("strong");
+  valueEl.textContent = value;
+
+  const metaEl = document.createElement("em");
+  metaEl.textContent = meta;
+
+  row.append(labelEl, valueEl, metaEl);
+  container.appendChild(row);
 }
 
 async function toggleReady() {
@@ -603,17 +680,34 @@ async function toggleAiPlayer() {
   });
 }
 
+async function chooseDifficulty(value) {
+  const difficulty = normalizeDifficulty(value);
+  selectedDifficulty = difficulty;
+  localStorage.setItem(difficultyStorageKey, difficulty);
+  renderDifficultyControls();
+
+  if (!currentRoom || !isHost() || currentRoom.status !== "lobby") return;
+
+  await update(getRoomRef(), {
+    difficulty,
+    updatedAt: serverTimestamp(),
+  });
+}
+
 async function startMatch() {
   const players = getPlayers();
   if (!canStart(players)) return;
   const now = Date.now();
+  const difficulty = getRoomDifficulty();
   const updates = {
     status: "countdown",
     winnerId: "",
+    difficulty,
     questionNumber: 1,
-    question: makeQuestion(1),
+    question: makeQuestion(1, difficulty),
     countdownEndsAt: now + countdownDurationMs,
     roundEndsAt: 0,
+    roundGuesses: {},
     reveal: null,
     lastAnswer: null,
     startedAt: serverTimestamp(),
@@ -646,7 +740,7 @@ async function advanceCountdown() {
     room.roundEndsAt = Date.now() + roundDurationMs;
     room.updatedAt = Date.now();
     if (!room.question) {
-      room.question = makeQuestion(room.questionNumber || 1);
+      room.question = makeQuestion(room.questionNumber || 1, getRoomDifficulty(room));
     }
     return room;
   }).catch(() => {}).finally(() => {
@@ -668,6 +762,8 @@ async function advanceRoundTimeout() {
     const timedQuestion = room.question;
     const nextNumber = (room.questionNumber || 1) + 1;
     const now = Date.now();
+    const difficulty = getRoomDifficulty(room);
+    const guesses = summarizeGuesses(room.players, room.roundGuesses || {});
     room.lastAnswer = {
       playerId: "",
       name: "Time",
@@ -676,6 +772,7 @@ async function advanceRoundTimeout() {
       answer: timedQuestion.answer,
       at: now,
       timedOut: true,
+      guesses,
     };
     room.reveal = {
       playerId: "",
@@ -686,8 +783,9 @@ async function advanceRoundTimeout() {
       endsAt: now + revealDurationMs,
       final: false,
       timedOut: true,
+      guesses,
       nextNumber,
-      nextQuestion: makeQuestion(nextNumber),
+      nextQuestion: makeQuestion(nextNumber, difficulty),
     };
     room.status = "revealing";
     room.roundEndsAt = 0;
@@ -715,21 +813,25 @@ async function submitAnswer(event) {
 
   if (!isCorrect(answer, currentRoom.question.answer)) {
     playSound("wrong");
-    await update(getPlayerRef(), {
-      answerState: "miss",
-      lastSeen: serverTimestamp(),
+    const localPlayer = getPlayers().find((player) => player.id === playerId);
+    await update(getRoomRef(), {
+      [`players/${playerId}/answerState`]: "miss",
+      [`players/${playerId}/lastSeen`]: serverTimestamp(),
+      [`roundGuesses/${playerId}`]: makeGuess(localPlayer, answer, false),
+      updatedAt: serverTimestamp(),
     });
     setGameNotice("Not quite.");
     els.answer.select();
     return;
   }
 
-  await awardPoint(currentRoom.question.id);
+  await awardPoint(currentRoom.question.id, answer);
 }
 
-async function awardPoint(questionId) {
+async function awardPoint(questionId, submittedAnswer) {
   const nextNumber = (currentRoom.questionNumber || 1) + 1;
-  const nextQuestion = makeQuestion(nextNumber);
+  const difficulty = getRoomDifficulty();
+  const nextQuestion = makeQuestion(nextNumber, difficulty);
   const revealEndsAt = Date.now() + revealDurationMs;
   const result = await runTransaction(getRoomRef(), (room) => {
     if (!room || room.status !== "playing" || room.winnerId) return undefined;
@@ -739,6 +841,9 @@ async function awardPoint(questionId) {
     const player = room.players[playerId];
     const nextScore = (player.score || 0) + 1;
     const solvedQuestion = room.question;
+    room.roundGuesses = room.roundGuesses || {};
+    room.roundGuesses[playerId] = makeGuess(player, submittedAnswer, true);
+    const guesses = summarizeGuesses(room.players, room.roundGuesses);
     player.score = nextScore;
     player.streak = (player.streak || 0) + 1;
     player.answerState = "hit";
@@ -754,6 +859,7 @@ async function awardPoint(questionId) {
       expression: solvedQuestion.expression,
       answer: solvedQuestion.answer,
       at: Date.now(),
+      guesses,
     };
     room.reveal = {
       playerId,
@@ -763,6 +869,7 @@ async function awardPoint(questionId) {
       answer: solvedQuestion.answer,
       endsAt: revealEndsAt,
       final: nextScore >= (room.targetScore || targetScore),
+      guesses,
       nextNumber,
       nextQuestion,
     };
@@ -803,9 +910,10 @@ async function advanceReveal() {
 
     room.status = "playing";
     room.questionNumber = room.reveal.nextNumber;
-    room.question = room.reveal.nextQuestion || makeQuestion(room.reveal.nextNumber || 1);
+    room.question = room.reveal.nextQuestion || makeQuestion(room.reveal.nextNumber || 1, getRoomDifficulty(room));
     room.reveal = null;
     room.roundEndsAt = Date.now() + roundDurationMs;
+    room.roundGuesses = {};
     Object.keys(room.players || {}).forEach((id) => {
       room.players[id].answerState = "";
     });
@@ -826,6 +934,7 @@ async function newMatch() {
     question: null,
     countdownEndsAt: 0,
     roundEndsAt: 0,
+    roundGuesses: {},
     reveal: null,
     lastAnswer: null,
     updatedAt: serverTimestamp(),
@@ -859,6 +968,7 @@ async function leaveRoom(removePlayer = true) {
   els.arena.hidden = true;
   els.matchCountdown.hidden = true;
   els.celebration.hidden = true;
+  renderDifficultyControls();
   clearInterval(countdownTimer);
   countdownTimer = null;
   countdownAdvancePending = false;
@@ -904,6 +1014,29 @@ function formatAnswer(answer) {
   });
 }
 
+function makeGuess(player, answer, correct) {
+  return {
+    name: player?.name || "Player",
+    answer: Number(answer),
+    answerText: formatAnswer(answer),
+    status: correct ? "Correct" : "Miss",
+    correct,
+    at: Date.now(),
+  };
+}
+
+function summarizeGuesses(playersById = {}, guesses = {}) {
+  return Object.fromEntries(Object.entries(playersById).map(([id, player]) => {
+    const guess = guesses[id];
+    return [id, {
+      name: player?.name || guess?.name || "Player",
+      answerText: guess?.answerText || "No answer",
+      status: guess?.status || "No answer",
+      correct: Boolean(guess?.correct),
+    }];
+  }));
+}
+
 function getRevealCountdown(endsAt) {
   return Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
 }
@@ -912,57 +1045,129 @@ function getRoundCountdown(endsAt) {
   return Math.max(0, Math.ceil(((endsAt || Date.now()) - Date.now()) / 1000));
 }
 
-function makeQuestion(round) {
-  const builders = [
-    () => {
+function makeQuestion(round, difficulty = "medium") {
+  const builders = questionBuilders[normalizeDifficulty(difficulty)] || questionBuilders.medium;
+  return builders[Math.floor(Math.random() * builders.length)](round);
+}
+
+const questionBuilders = {
+  easy: [
+    (round) => {
+      const a = randomInt(4, 18);
+      const b = randomInt(2, 8);
+      const c = randomInt(2, 6);
+      return question(`${a}+${b}\u00d7${c}`, a + b * c, round, "easy");
+    },
+    (round) => {
+      const a = randomInt(2, 10);
+      const b = randomInt(2, 9);
+      const c = randomInt(3, 12);
+      return question(`${a}\u00d7${b}\u2212${c}`, a * b - c, round, "easy");
+    },
+    (round) => {
+      const a = randomInt(3, 10);
+      const b = randomInt(2, 8);
+      const c = randomInt(2, 5);
+      return question(`(${a}+${b})\u00d7${c}`, (a + b) * c, round, "easy");
+    },
+    (round) => {
+      const a = randomInt(18, 40);
+      const b = randomInt(4, 15);
+      const c = randomInt(2, 9);
+      return question(`${a}\u2212${b}+${c}`, a - b + c, round, "easy");
+    },
+  ],
+  medium: [
+    (round) => {
       const a = randomInt(4, 12);
       const b = randomInt(3, 12);
       const c = randomOdd(5, 17);
-      return question(`${a}×${b}−${c}÷2`, a * b - c / 2, round);
+      return question(`${a}\u00d7${b}\u2212${c}\u00f72`, a * b - c / 2, round, "medium");
     },
-    () => {
+    (round) => {
       const a = randomInt(3, 9);
       const b = randomInt(2, 8);
       const c = randomInt(3, 7);
       const d = randomInt(4, 14);
-      return question(`(${a}+${b})×${c}−${d}`, (a + b) * c - d, round);
+      return question(`(${a}+${b})\u00d7${c}\u2212${d}`, (a + b) * c - d, round, "medium");
     },
-    () => {
+    (round) => {
       const a = randomInt(4, 11);
       const b = randomInt(2, 9);
       const c = randomInt(3, 8);
-      return question(`${a}²+${b}×${c}`, a ** 2 + b * c, round);
+      return question(`${a}\u00b2+${b}\u00d7${c}`, a ** 2 + b * c, round, "medium");
     },
-    () => {
+    (round) => {
       const a = randomInt(12, 35);
       const b = randomInt(3, 9);
       const c = randomInt(2, 8);
       const d = randomInt(4, 12);
-      return question(`${a}+${b}×${c}−${d}`, a + b * c - d, round);
+      return question(`${a}+${b}\u00d7${c}\u2212${d}`, a + b * c - d, round, "medium");
     },
-    () => {
+    (round) => {
       const c = randomInt(2, 5);
       const a = c * randomInt(3, 8);
       const b = c * randomInt(2, 6);
       const d = randomInt(5, 18);
-      return question(`(${a}+${b})÷${c}+${d}`, (a + b) / c + d, round);
+      return question(`(${a}+${b})\u00f7${c}+${d}`, (a + b) / c + d, round, "medium");
     },
-    () => {
+    (round) => {
       const a = randomInt(3, 8);
       const b = randomInt(4, 10);
       const c = randomInt(2, 7);
       const d = randomInt(6, 16);
-      return question(`${a}×(${b}+${c})−${d}`, a * (b + c) - d, round);
+      return question(`${a}\u00d7(${b}+${c})\u2212${d}`, a * (b + c) - d, round, "medium");
     },
-  ];
+  ],
+  hard: [
+    (round) => {
+      const a = randomInt(8, 18);
+      const b = randomInt(5, 14);
+      const c = randomInt(3, 9);
+      const d = randomInt(4, 11);
+      const e = randomInt(15, 38);
+      return question(`(${a}+${b})\u00d7(${c}+${d})\u2212${e}`, (a + b) * (c + d) - e, round, "hard");
+    },
+    (round) => {
+      const a = randomInt(7, 14);
+      const b = randomInt(4, 11);
+      const c = randomInt(3, 9);
+      const d = randomInt(2, 8);
+      const e = randomInt(10, 28);
+      return question(`${a}\u00b2+${b}\u00d7(${c}+${d})\u2212${e}`, a ** 2 + b * (c + d) - e, round, "hard");
+    },
+    (round) => {
+      const d = randomInt(2, 6);
+      const a = randomInt(5, 12);
+      const b = randomInt(4, 10);
+      const c = d * randomInt(3, 9);
+      const e = randomInt(8, 24);
+      return question(`(${a}\u00d7${b}+${c})\u00f7${d}+${e}`, (a * b + c) / d + e, round, "hard");
+    },
+    (round) => {
+      const a = randomInt(4, 9);
+      const b = randomInt(5, 13);
+      const c = randomInt(3, 9);
+      const d = randomInt(2, 6);
+      const e = randomInt(18, 42);
+      return question(`${a}\u00d7(${b}+${c}\u00d7${d})\u2212${e}`, a * (b + c * d) - e, round, "hard");
+    },
+    (round) => {
+      const c = randomInt(2, 5);
+      const sum = c * randomInt(4, 8);
+      const a = randomInt(2, sum - 2);
+      const b = sum - a;
+      const d = randomInt(8, 30);
+      return question(`(${a}+${b})\u00b2\u00f7${c}\u2212${d}`, (a + b) ** 2 / c - d, round, "hard");
+    },
+  ],
+};
 
-  return builders[Math.floor(Math.random() * builders.length)]();
-}
-
-function question(expression, answer, round) {
+function question(expression, answer, round, difficulty) {
   return {
     id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
     round,
+    difficulty,
     expression,
     answer: Math.round(answer * 100) / 100,
   };
@@ -1008,6 +1213,14 @@ els.name.addEventListener("input", () => {
 
 document.addEventListener("pointerdown", unlockAudio, { once: true });
 document.addEventListener("keydown", unlockAudio, { once: true });
+els.difficultyOptions.forEach((button) => {
+  button.addEventListener("click", () => {
+    chooseDifficulty(button.dataset.difficultyOption).catch((error) => {
+      console.error(error);
+      setGameNotice("Could not update difficulty.");
+    });
+  });
+});
 els.ready.addEventListener("click", () => toggleReady());
 els.aiPlayer.addEventListener("click", () => toggleAiPlayer());
 els.start.addEventListener("click", () => startMatch());
@@ -1025,3 +1238,5 @@ ensureAuth().catch((error) => {
   setConnection("Auth blocked", false);
   setLobbyNotice("Firebase sign-in is blocked. Enable Anonymous Auth, then refresh.");
 });
+
+renderDifficultyControls();

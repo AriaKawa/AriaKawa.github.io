@@ -35,6 +35,15 @@
           <input data-name type="text" maxlength="18" autocomplete="nickname" placeholder="Math mogul">
         </label>
 
+        <section class="difficulty-picker" aria-label="Difficulty">
+          <span>Difficulty</span>
+          <div class="segmented-control">
+            <button type="button" data-difficulty-option="easy" aria-pressed="false">Easy</button>
+            <button type="button" data-difficulty-option="medium" aria-pressed="true">Medium</button>
+            <button type="button" data-difficulty-option="hard" aria-pressed="false">Hard</button>
+          </div>
+        </section>
+
         <div class="lobby-actions">
           <button class="primary" type="button" data-create-room>Create room</button>
           <form class="join-form" data-join-form>
@@ -92,9 +101,9 @@
         </div>
         <div class="round-clock" data-round-clock hidden aria-live="polite">
           <span>Time</span>
-          <strong data-round-clock-value>20s</strong>
+          <strong data-round-clock-value>5s</strong>
         </div>
-        <div class="problem-card">
+        <div class="problem-card" data-problem-card>
           <p class="problem-text" data-question>Ready?</p>
           <div class="answer-reveal" data-answer-reveal hidden>
             <span>Correct answer</span>
@@ -113,6 +122,14 @@
       </form>
 
       <section class="controls" data-room-controls aria-label="Game controls">
+        <div class="difficulty-picker room-difficulty" data-room-difficulty aria-label="Room difficulty">
+          <span>Difficulty</span>
+          <div class="segmented-control">
+            <button type="button" data-difficulty-option="easy" aria-pressed="false">Easy</button>
+            <button type="button" data-difficulty-option="medium" aria-pressed="true">Medium</button>
+            <button type="button" data-difficulty-option="hard" aria-pressed="false">Hard</button>
+          </div>
+        </div>
         <button type="button" data-ready>Ready</button>
         <button type="button" data-ai-player>Add AI player</button>
         <button class="primary" type="button" data-start disabled>Start match</button>
@@ -138,7 +155,26 @@
         <p class="label">Vault claimed</p>
         <h2 data-winner-text>Winner</h2>
         <p data-winner-subtext>First to five points.</p>
-        <p class="final-answer" data-final-answer hidden>Final answer: --</p>
+        <section class="match-summary" data-match-summary hidden aria-label="Final scoreboard">
+          <div class="summary-block">
+            <span>Winning question</span>
+            <strong data-final-question>--</strong>
+          </div>
+          <div class="summary-block answer-summary">
+            <span>Correct answer</span>
+            <strong data-final-correct-answer>--</strong>
+          </div>
+          <div class="summary-grid">
+            <section>
+              <h3>Guessed answers</h3>
+              <div class="summary-list" data-final-guesses></div>
+            </section>
+            <section>
+              <h3>Scoreboard</h3>
+              <div class="summary-list" data-final-scoreboard></div>
+            </section>
+          </div>
+        </section>
         <button class="primary" type="button" data-celebration-new-match>New match</button>
       </div>
     </section>
