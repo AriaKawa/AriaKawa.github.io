@@ -21,7 +21,8 @@ import { firebaseConfig } from "../assets/js/firebase-config.js";
 
 const targetScore = 5;
 const countdownDurationMs = 3000;
-const roundDurationMs = 5000;
+// Round timer disabled: questions no longer expire automatically.
+const roundDurationMs = 0;
 const revealDurationMs = 4000;
 const difficulties = ["easy", "medium", "hard"];
 const roomsPath = "pemdasDuelRooms";
@@ -512,34 +513,16 @@ function renderMatchCountdown() {
 }
 
 function renderRoundTimer() {
-  const isVisible = currentRoom.status === "playing" && currentRoom.roundEndsAt;
-  els.roundClock.hidden = !isVisible;
+  // Round timer disabled: keep the clock hidden and never auto-timeout a question.
+  els.roundClock.hidden = true;
   clearInterval(roundTimer);
   roundTimer = null;
-
-  if (!isVisible) {
-    roundTimeoutPending = false;
-    lastRoundTick = null;
-    els.roundClock.classList.remove("is-urgent");
-    return;
+  roundTimeoutPending = false;
+  lastRoundTick = null;
+  els.roundClock.classList.remove("is-urgent");
+  if (els.roundClockValue) {
+    els.roundClockValue.textContent = "";
   }
-
-  const tick = () => {
-    const count = getRoundCountdown(currentRoom.roundEndsAt);
-    els.roundClockValue.textContent = `${count}s`;
-    els.roundClock.classList.toggle("is-urgent", count <= 5);
-    if (count !== lastRoundTick) {
-      lastRoundTick = count;
-      if (count > 0 && count <= 5) playSound("tick");
-    }
-
-    if (Date.now() >= currentRoom.roundEndsAt) {
-      advanceRoundTimeout();
-    }
-  };
-
-  tick();
-  roundTimer = setInterval(tick, 200);
 }
 
 function renderAnswerReveal() {
@@ -737,7 +720,7 @@ async function advanceCountdown() {
 
     room.status = "playing";
     room.startedAt = Date.now();
-    room.roundEndsAt = Date.now() + roundDurationMs;
+    room.roundEndsAt = 0;
     room.updatedAt = Date.now();
     if (!room.question) {
       room.question = makeQuestion(room.questionNumber || 1, getRoomDifficulty(room));
@@ -912,7 +895,7 @@ async function advanceReveal() {
     room.questionNumber = room.reveal.nextNumber;
     room.question = room.reveal.nextQuestion || makeQuestion(room.reveal.nextNumber || 1, getRoomDifficulty(room));
     room.reveal = null;
-    room.roundEndsAt = Date.now() + roundDurationMs;
+    room.roundEndsAt = 0;
     room.roundGuesses = {};
     Object.keys(room.players || {}).forEach((id) => {
       room.players[id].answerState = "";
