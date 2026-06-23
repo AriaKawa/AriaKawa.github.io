@@ -46,10 +46,11 @@
         <p class="notice" data-lobby-notice>Firebase lobby ready.</p>
       </section>
 
-      <aside class="preview-board" aria-label="PEMDAS preview">
-        <div class="preview-tab">PEMDAS</div>
-        <div class="preview-card">
-          <span>8×10−5÷2</span>
+      <aside class="preview-board" aria-label="Lobby preview">
+        <div class="preview-tab">Lobby</div>
+        <div class="preview-card lobby-preview-card">
+          <img src="assets/mogul-coin.svg" alt="" width="150" height="150">
+          <span>Ready room</span>
         </div>
       </aside>
     </section>
@@ -83,7 +84,7 @@
         </article>
       </section>
 
-      <section class="problem-stage" aria-label="Current PEMDAS problem">
+      <section class="problem-stage" data-battle-ui aria-label="Current PEMDAS problem" hidden>
         <div class="stage-header">
           <span></span>
           <strong>PEMDAS</strong>
@@ -99,7 +100,7 @@
         </div>
       </section>
 
-      <form class="answer-panel" data-answer-form>
+      <form class="answer-panel" data-answer-form data-battle-ui hidden>
         <label class="field answer-field">
           <span>Your answer</span>
           <input data-answer type="text" inputmode="decimal" autocomplete="off" placeholder="77.5" disabled>
@@ -107,13 +108,20 @@
         <button class="primary submit-answer" type="submit" data-submit disabled>Submit</button>
       </form>
 
-      <section class="controls" aria-label="Game controls">
+      <section class="controls" data-room-controls aria-label="Game controls">
         <button type="button" data-ready>Ready</button>
         <button class="primary" type="button" data-start disabled>Start match</button>
         <button type="button" data-new-match disabled>New match</button>
       </section>
 
       <p class="notice game-notice" data-game-notice>Waiting for players.</p>
+    </section>
+
+    <section class="match-countdown" data-match-countdown hidden aria-live="polite">
+      <div class="countdown-card">
+        <p class="label">Match starts in</p>
+        <strong data-match-countdown-value>3</strong>
+      </div>
     </section>
 
     <section class="celebration" data-celebration hidden aria-live="polite">

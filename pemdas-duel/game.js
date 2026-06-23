@@ -20,6 +20,7 @@ import {
 import { firebaseConfig } from "../assets/js/firebase-config.js";
 
 const targetScore = 5;
+const countdownDurationMs = 3000;
 const revealDurationMs = 4000;
 const roomsPath = "pemdasDuelRooms";
 const playerStorageKey = "pemdas-duel-player-id";
@@ -37,6 +38,10 @@ const els = {
   copyRoom: document.querySelector("[data-copy-room]"),
   roundState: document.querySelector("[data-round-state]"),
   playerCards: Array.from(document.querySelectorAll("[data-player-card]")),
+  battleSections: Array.from(document.querySelectorAll("[data-battle-ui]")),
+  roomControls: document.querySelector("[data-room-controls]"),
+  matchCountdown: document.querySelector("[data-match-countdown]"),
+  matchCountdownValue: document.querySelector("[data-match-countdown-value]"),
   question: document.querySelector("[data-question]"),
   answerReveal: document.querySelector("[data-answer-reveal]"),
   answerValue: document.querySelector("[data-answer-value]"),
@@ -67,6 +72,8 @@ let currentRoomCode = "";
 let currentRoom = null;
 let unsubscribeRoom = null;
 let lastQuestionId = "";
+let countdownTimer = null;
+let countdownAdvancePending = false;
 let revealTimer = null;
 let revealAdvancePending = false;
 
@@ -141,7 +148,8 @@ async function createRoom() {
     status: "lobby",
     targetScore,
     questionNumber: 1,
-    question: makeQuestion(1),
+    question: null,
+    countdownEndsAt: 0,
     reveal: null,
     winnerId: "",
     lastAnswer: null,
@@ -236,6 +244,11 @@ function renderRoom() {
   els.question.textContent = status === "revealing" && reveal?.expression
     ? reveal.expression
     : question?.expression || "Ready?";
+  const isBattleVisible = status === "playing" || status === "revealing";
+  els.battleSections.forEach((section) => {
+    section.hidden = !isBattleVisible;
+  });
+  els.roomControls.hidden = status !== "lobby";
   els.ready.textContent = localPlayer?.ready ? "Unready" : "Ready";
   els.ready.disabled = status !== "lobby";
   els.start.disabled = !canStart(players);
@@ -251,12 +264,14 @@ function renderRoom() {
   }
 
   renderPlayers(players);
+  renderMatchCountdown();
   renderAnswerReveal();
   renderNotice(players);
   renderCelebration(players);
 }
 
 function labelStatus(status) {
+  if (status === "countdown") return "Starting";
   if (status === "revealing") return "Answer reveal";
   if (status === "playing") return "Live question";
   if (status === "finished") return "Finished";
@@ -311,6 +326,7 @@ function renderPips(container, score) {
 function getPlayerStatus(player) {
   if (currentRoom.status === "finished" && currentRoom.winnerId === player.id) return "Champion";
   if (currentRoom.status === "finished") return `${player.score || 0} points`;
+  if (currentRoom.status === "countdown") return "Locked in";
   if (currentRoom.status === "revealing" && player.answerState === "hit") return "Scored";
   if (currentRoom.status === "revealing") return "Watching answer";
   if (currentRoom.status === "playing" && player.answerState === "miss") return "Recalculating";
@@ -339,6 +355,11 @@ function renderNotice(players) {
     return;
   }
 
+  if (currentRoom.status === "countdown") {
+    setGameNotice("Match starting.");
+    return;
+  }
+
   if (currentRoom.status === "playing") {
     const last = currentRoom.lastAnswer;
     setGameNotice(last?.name ? `${last.name} scored. Next question is live.` : "Solve the expression first to score.");
@@ -354,6 +375,30 @@ function renderNotice(players) {
   } else {
     setGameNotice("Waiting for the host to start.");
   }
+}
+
+function renderMatchCountdown() {
+  const isVisible = currentRoom.status === "countdown";
+  els.matchCountdown.hidden = !isVisible;
+  clearInterval(countdownTimer);
+  countdownTimer = null;
+
+  if (!isVisible) {
+    countdownAdvancePending = false;
+    return;
+  }
+
+  const tick = () => {
+    const count = Math.max(1, Math.ceil(((currentRoom.countdownEndsAt || Date.now()) - Date.now()) / 1000));
+    els.matchCountdownValue.textContent = String(count);
+
+    if (Date.now() >= (currentRoom.countdownEndsAt || 0)) {
+      advanceCountdown();
+    }
+  };
+
+  tick();
+  countdownTimer = setInterval(tick, 120);
 }
 
 function renderAnswerReveal() {
@@ -415,11 +460,13 @@ async function toggleReady() {
 async function startMatch() {
   const players = getPlayers();
   if (!canStart(players)) return;
+  const now = Date.now();
   const updates = {
-    status: "playing",
+    status: "countdown",
     winnerId: "",
     questionNumber: 1,
     question: makeQuestion(1),
+    countdownEndsAt: now + countdownDurationMs,
     reveal: null,
     lastAnswer: null,
     startedAt: serverTimestamp(),
@@ -433,6 +480,27 @@ async function startMatch() {
   });
 
   await update(getRoomRef(), updates);
+}
+
+async function advanceCountdown() {
+  if (!currentRoom || currentRoom.status !== "countdown") return;
+  if (countdownAdvancePending) return;
+  countdownAdvancePending = true;
+
+  await runTransaction(getRoomRef(), (room) => {
+    if (!room || room.status !== "countdown") return undefined;
+    if (Date.now() < (room.countdownEndsAt || 0)) return undefined;
+
+    room.status = "playing";
+    room.startedAt = Date.now();
+    room.updatedAt = Date.now();
+    if (!room.question) {
+      room.question = makeQuestion(room.questionNumber || 1);
+    }
+    return room;
+  }).catch(() => {}).finally(() => {
+    countdownAdvancePending = false;
+  });
 }
 
 async function submitAnswer(event) {
@@ -552,7 +620,8 @@ async function newMatch() {
     status: "lobby",
     winnerId: "",
     questionNumber: 1,
-    question: makeQuestion(1),
+    question: null,
+    countdownEndsAt: 0,
     reveal: null,
     lastAnswer: null,
     updatedAt: serverTimestamp(),
@@ -584,7 +653,11 @@ async function leaveRoom(removePlayer = true) {
   els.answer.value = "";
   els.lobby.hidden = false;
   els.arena.hidden = true;
+  els.matchCountdown.hidden = true;
   els.celebration.hidden = true;
+  clearInterval(countdownTimer);
+  countdownTimer = null;
+  countdownAdvancePending = false;
   clearInterval(revealTimer);
   revealTimer = null;
   revealAdvancePending = false;

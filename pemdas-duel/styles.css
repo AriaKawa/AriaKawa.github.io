@@ -178,6 +178,7 @@ input:focus {
 .player-card,
 .answer-panel,
 .controls,
+.countdown-card,
 .celebration-card {
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -285,6 +286,19 @@ input:focus {
   font-weight: 900;
   line-height: 1;
   text-align: center;
+}
+
+.lobby-preview-card {
+  align-content: center;
+  gap: 20px;
+}
+
+.lobby-preview-card img {
+  filter: drop-shadow(0 20px 22px rgba(35, 0, 56, 0.26));
+}
+
+.lobby-preview-card span {
+  font-size: 4.4rem;
 }
 
 .arena {
@@ -464,6 +478,37 @@ input:focus {
 
 .game-notice {
   min-height: 24px;
+}
+
+.match-countdown {
+  position: fixed;
+  inset: 0;
+  z-index: 18;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    radial-gradient(circle at 50% 42%, rgba(255, 209, 122, 0.22), transparent 34%),
+    rgba(14, 0, 24, 0.92);
+  background-size: 48px 48px, auto, auto;
+}
+
+.countdown-card {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  width: min(720px, 100%);
+  padding: 48px 28px;
+  text-align: center;
+}
+
+.countdown-card strong {
+  font-family: "Barlow Condensed", Inter, system-ui, sans-serif;
+  color: var(--gold);
+  font-size: clamp(8rem, 32vw, 19rem);
+  line-height: 0.82;
+  text-shadow: 0 20px 52px rgba(0, 0, 0, 0.42);
 }
 
 .celebration {
