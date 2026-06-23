@@ -99,10 +99,6 @@
           <strong>PEMDAS</strong>
           <span></span>
         </div>
-        <div class="round-clock" data-round-clock hidden aria-live="polite">
-          <span>Time</span>
-          <strong data-round-clock-value>5s</strong>
-        </div>
         <div class="problem-card" data-problem-card>
           <p class="problem-text" data-question>Ready?</p>
           <div class="answer-reveal" data-answer-reveal hidden>
@@ -116,7 +112,7 @@
       <form class="answer-panel" data-answer-form data-battle-ui hidden>
         <label class="field answer-field">
           <span>Your answer</span>
-          <input data-answer type="text" inputmode="decimal" autocomplete="off" placeholder="77.5" disabled>
+          <input data-answer type="text" inputmode="decimal" autocomplete="off" placeholder="answer here" disabled>
         </label>
         <button class="primary submit-answer" type="submit" data-submit disabled>Submit</button>
       </form>
@@ -156,24 +152,16 @@
         <h2 data-winner-text>Winner</h2>
         <p data-winner-subtext>First to five points.</p>
         <section class="match-summary" data-match-summary hidden aria-label="Final scoreboard">
-          <div class="summary-block">
-            <span>Winning question</span>
-            <strong data-final-question>--</strong>
+          <div class="summary-tabs" role="tablist" aria-label="Match summary tabs">
+            <button class="is-active" type="button" data-summary-tab="rounds" aria-pressed="true">Questions</button>
+            <button type="button" data-summary-tab="scoreboard" aria-pressed="false">Scoreboard</button>
           </div>
-          <div class="summary-block answer-summary">
-            <span>Correct answer</span>
-            <strong data-final-correct-answer>--</strong>
-          </div>
-          <div class="summary-grid">
-            <section>
-              <h3>Guessed answers</h3>
-              <div class="summary-list" data-final-guesses></div>
-            </section>
-            <section>
-              <h3>Scoreboard</h3>
-              <div class="summary-list" data-final-scoreboard></div>
-            </section>
-          </div>
+          <section class="summary-pane" data-summary-pane="rounds">
+            <div class="round-review-list" data-round-review-list></div>
+          </section>
+          <section class="summary-pane" data-summary-pane="scoreboard" hidden>
+            <div class="summary-list scoreboard-list" data-final-scoreboard></div>
+          </section>
         </section>
         <button class="primary" type="button" data-celebration-new-match>New match</button>
       </div>

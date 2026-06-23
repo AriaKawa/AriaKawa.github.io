@@ -21,8 +21,6 @@ import { firebaseConfig } from "../assets/js/firebase-config.js";
 
 const targetScore = 5;
 const countdownDurationMs = 3000;
-// Round timer disabled: questions no longer expire automatically.
-const roundDurationMs = 0;
 const revealDurationMs = 4000;
 const difficulties = ["easy", "medium", "hard"];
 const roomsPath = "pemdasDuelRooms";
@@ -48,8 +46,6 @@ const els = {
   difficultyOptions: Array.from(document.querySelectorAll("[data-difficulty-option]")),
   matchCountdown: document.querySelector("[data-match-countdown]"),
   matchCountdownValue: document.querySelector("[data-match-countdown-value]"),
-  roundClock: document.querySelector("[data-round-clock]"),
-  roundClockValue: document.querySelector("[data-round-clock-value]"),
   problemCard: document.querySelector("[data-problem-card]"),
   question: document.querySelector("[data-question]"),
   answerReveal: document.querySelector("[data-answer-reveal]"),
@@ -69,9 +65,9 @@ const els = {
   winnerText: document.querySelector("[data-winner-text]"),
   winnerSubtext: document.querySelector("[data-winner-subtext]"),
   matchSummary: document.querySelector("[data-match-summary]"),
-  finalQuestion: document.querySelector("[data-final-question]"),
-  finalCorrectAnswer: document.querySelector("[data-final-correct-answer]"),
-  finalGuesses: document.querySelector("[data-final-guesses]"),
+  summaryTabs: Array.from(document.querySelectorAll("[data-summary-tab]")),
+  summaryPanes: Array.from(document.querySelectorAll("[data-summary-pane]")),
+  roundReviewList: document.querySelector("[data-round-review-list]"),
   finalScoreboard: document.querySelector("[data-final-scoreboard]"),
 };
 
@@ -90,9 +86,6 @@ let lastQuestionId = "";
 let countdownTimer = null;
 let countdownAdvancePending = false;
 let lastCountdownTick = null;
-let roundTimer = null;
-let roundTimeoutPending = false;
-let lastRoundTick = null;
 let revealTimer = null;
 let revealAdvancePending = false;
 let lastRevealTick = null;
@@ -223,8 +216,8 @@ async function createRoom() {
     questionNumber: 1,
     question: null,
     countdownEndsAt: 0,
-    roundEndsAt: 0,
     roundGuesses: {},
+    roundHistory: {},
     reveal: null,
     winnerId: "",
     lastAnswer: null,
@@ -343,7 +336,6 @@ function renderRoom() {
 
   renderPlayers(players);
   renderMatchCountdown();
-  renderRoundTimer();
   renderAnswerReveal();
   renderNotice(players);
   renderCelebration(players);
@@ -512,19 +504,6 @@ function renderMatchCountdown() {
   countdownTimer = setInterval(tick, 120);
 }
 
-function renderRoundTimer() {
-  // Round timer disabled: keep the clock hidden and never auto-timeout a question.
-  els.roundClock.hidden = true;
-  clearInterval(roundTimer);
-  roundTimer = null;
-  roundTimeoutPending = false;
-  lastRoundTick = null;
-  els.roundClock.classList.remove("is-urgent");
-  if (els.roundClockValue) {
-    els.roundClockValue.textContent = "";
-  }
-}
-
 function renderAnswerReveal() {
   const reveal = currentRoom.reveal;
   const isVisible = currentRoom.status === "revealing" && reveal;
@@ -578,28 +557,18 @@ function renderCelebration(players) {
 }
 
 function renderMatchSummary(players, winner) {
-  const reveal = currentRoom.reveal;
-  els.matchSummary.hidden = !reveal;
-  if (!reveal) return;
+  const history = getRoundHistory();
+  els.matchSummary.hidden = !history.length;
+  if (!history.length) return;
 
-  els.finalQuestion.textContent = reveal.expression || "--";
-  els.finalCorrectAnswer.textContent = formatAnswer(reveal.answer);
-  els.finalGuesses.innerHTML = "";
+  els.roundReviewList.innerHTML = "";
   els.finalScoreboard.innerHTML = "";
 
+  history.forEach((round) => {
+    appendRoundReview(round, players);
+  });
+
   players.forEach((player) => {
-    const guess = reveal.guesses?.[player.id] || {
-      answerText: "No answer",
-      status: "No answer",
-      correct: false,
-    };
-    appendSummaryRow(
-      els.finalGuesses,
-      player.name || "Player",
-      guess.answerText,
-      guess.status,
-      guess.correct ? "is-correct" : "",
-    );
     appendSummaryRow(
       els.finalScoreboard,
       player.name || "Player",
@@ -608,6 +577,66 @@ function renderMatchSummary(players, winner) {
       player.id === winner?.id ? "is-correct" : "",
     );
   });
+}
+
+function getRoundHistory() {
+  return Object.values(currentRoom.roundHistory || {})
+    .sort((a, b) => (a.round || 0) - (b.round || 0));
+}
+
+function appendRoundReview(round, players) {
+  const card = document.createElement("article");
+  card.className = "round-review-card";
+
+  const header = document.createElement("div");
+  header.className = "round-review-header";
+
+  const label = document.createElement("span");
+  label.textContent = `Question ${round.round || ""}`.trim();
+
+  const expression = document.createElement("strong");
+  expression.textContent = round.expression || "--";
+
+  const answer = document.createElement("em");
+  answer.textContent = `Correct answer: ${round.answerText || formatAnswer(round.answer)}`;
+
+  header.append(label, expression, answer);
+  card.appendChild(header);
+
+  const answers = document.createElement("div");
+  answers.className = "round-answer-grid";
+
+  players.forEach((player) => {
+    const playerReview = document.createElement("section");
+    playerReview.className = "player-answer-review";
+
+    const name = document.createElement("h3");
+    name.textContent = player.name || "Player";
+
+    const attempts = round.guesses?.[player.id]?.attempts || [];
+    const attemptList = document.createElement("div");
+    attemptList.className = "attempt-list";
+
+    if (!attempts.length) {
+      const empty = document.createElement("span");
+      empty.className = "answer-chip is-empty";
+      empty.textContent = "No answer typed";
+      attemptList.appendChild(empty);
+    } else {
+      attempts.forEach((attempt) => {
+        const chip = document.createElement("span");
+        chip.className = `answer-chip ${attempt.correct ? "is-correct" : "is-wrong"}`;
+        chip.textContent = attempt.answerText;
+        attemptList.appendChild(chip);
+      });
+    }
+
+    playerReview.append(name, attemptList);
+    answers.appendChild(playerReview);
+  });
+
+  card.appendChild(answers);
+  els.roundReviewList.appendChild(card);
 }
 
 function appendSummaryRow(container, label, value, meta, className = "") {
@@ -625,6 +654,18 @@ function appendSummaryRow(container, label, value, meta, className = "") {
 
   row.append(labelEl, valueEl, metaEl);
   container.appendChild(row);
+}
+
+function setSummaryTab(activeTab) {
+  els.summaryTabs.forEach((button) => {
+    const isActive = button.dataset.summaryTab === activeTab;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
+  });
+
+  els.summaryPanes.forEach((pane) => {
+    pane.hidden = pane.dataset.summaryPane !== activeTab;
+  });
 }
 
 async function toggleReady() {
@@ -689,8 +730,8 @@ async function startMatch() {
     questionNumber: 1,
     question: makeQuestion(1, difficulty),
     countdownEndsAt: now + countdownDurationMs,
-    roundEndsAt: 0,
     roundGuesses: {},
+    roundHistory: {},
     reveal: null,
     lastAnswer: null,
     startedAt: serverTimestamp(),
@@ -720,7 +761,6 @@ async function advanceCountdown() {
 
     room.status = "playing";
     room.startedAt = Date.now();
-    room.roundEndsAt = 0;
     room.updatedAt = Date.now();
     if (!room.question) {
       room.question = makeQuestion(room.questionNumber || 1, getRoomDifficulty(room));
@@ -728,59 +768,6 @@ async function advanceCountdown() {
     return room;
   }).catch(() => {}).finally(() => {
     countdownAdvancePending = false;
-  });
-}
-
-async function advanceRoundTimeout() {
-  if (!currentRoom || currentRoom.status !== "playing" || !currentRoom.question) return;
-  if (roundTimeoutPending) return;
-  roundTimeoutPending = true;
-  const questionId = currentRoom.question.id;
-
-  await runTransaction(getRoomRef(), (room) => {
-    if (!room || room.status !== "playing" || room.winnerId) return undefined;
-    if (!room.question || room.question.id !== questionId) return undefined;
-    if (Date.now() < (room.roundEndsAt || 0)) return undefined;
-
-    const timedQuestion = room.question;
-    const nextNumber = (room.questionNumber || 1) + 1;
-    const now = Date.now();
-    const difficulty = getRoomDifficulty(room);
-    const guesses = summarizeGuesses(room.players, room.roundGuesses || {});
-    room.lastAnswer = {
-      playerId: "",
-      name: "Time",
-      questionId,
-      expression: timedQuestion.expression,
-      answer: timedQuestion.answer,
-      at: now,
-      timedOut: true,
-      guesses,
-    };
-    room.reveal = {
-      playerId: "",
-      name: "Time",
-      questionId,
-      expression: timedQuestion.expression,
-      answer: timedQuestion.answer,
-      endsAt: now + revealDurationMs,
-      final: false,
-      timedOut: true,
-      guesses,
-      nextNumber,
-      nextQuestion: makeQuestion(nextNumber, difficulty),
-    };
-    room.status = "revealing";
-    room.roundEndsAt = 0;
-    room.updatedAt = now;
-
-    Object.keys(room.players || {}).forEach((id) => {
-      room.players[id].answerState = "";
-    });
-
-    return room;
-  }).catch(() => {}).finally(() => {
-    roundTimeoutPending = false;
   });
 }
 
@@ -797,10 +784,12 @@ async function submitAnswer(event) {
   if (!isCorrect(answer, currentRoom.question.answer)) {
     playSound("wrong");
     const localPlayer = getPlayers().find((player) => player.id === playerId);
+    const attemptKey = makeAttemptKey();
     await update(getRoomRef(), {
       [`players/${playerId}/answerState`]: "miss",
       [`players/${playerId}/lastSeen`]: serverTimestamp(),
-      [`roundGuesses/${playerId}`]: makeGuess(localPlayer, answer, false),
+      [`roundGuesses/${playerId}/name`]: localPlayer?.name || "Player",
+      [`roundGuesses/${playerId}/attempts/${attemptKey}`]: makeGuess(answer, false),
       updatedAt: serverTimestamp(),
     });
     setGameNotice("Not quite.");
@@ -825,8 +814,12 @@ async function awardPoint(questionId, submittedAnswer) {
     const nextScore = (player.score || 0) + 1;
     const solvedQuestion = room.question;
     room.roundGuesses = room.roundGuesses || {};
-    room.roundGuesses[playerId] = makeGuess(player, submittedAnswer, true);
+    room.roundGuesses[playerId] = room.roundGuesses[playerId] || { name: player.name || "Player", attempts: {} };
+    room.roundGuesses[playerId].name = player.name || "Player";
+    room.roundGuesses[playerId].attempts = room.roundGuesses[playerId].attempts || {};
+    room.roundGuesses[playerId].attempts[makeAttemptKey()] = makeGuess(submittedAnswer, true);
     const guesses = summarizeGuesses(room.players, room.roundGuesses);
+    const historyEntry = makeRoundHistoryEntry(solvedQuestion, guesses, nextScore >= (room.targetScore || targetScore), playerId);
     player.score = nextScore;
     player.streak = (player.streak || 0) + 1;
     player.answerState = "hit";
@@ -843,6 +836,7 @@ async function awardPoint(questionId, submittedAnswer) {
       answer: solvedQuestion.answer,
       at: Date.now(),
       guesses,
+      historyEntry,
     };
     room.reveal = {
       playerId,
@@ -853,11 +847,13 @@ async function awardPoint(questionId, submittedAnswer) {
       endsAt: revealEndsAt,
       final: nextScore >= (room.targetScore || targetScore),
       guesses,
+      historyEntry,
       nextNumber,
       nextQuestion,
     };
+    room.roundHistory = room.roundHistory || {};
+    room.roundHistory[solvedQuestion.id] = historyEntry;
     room.status = "revealing";
-    room.roundEndsAt = 0;
     room.updatedAt = Date.now();
 
     if (nextScore >= (room.targetScore || targetScore)) {
@@ -895,7 +891,6 @@ async function advanceReveal() {
     room.questionNumber = room.reveal.nextNumber;
     room.question = room.reveal.nextQuestion || makeQuestion(room.reveal.nextNumber || 1, getRoomDifficulty(room));
     room.reveal = null;
-    room.roundEndsAt = 0;
     room.roundGuesses = {};
     Object.keys(room.players || {}).forEach((id) => {
       room.players[id].answerState = "";
@@ -916,8 +911,8 @@ async function newMatch() {
     questionNumber: 1,
     question: null,
     countdownEndsAt: 0,
-    roundEndsAt: 0,
     roundGuesses: {},
+    roundHistory: {},
     reveal: null,
     lastAnswer: null,
     updatedAt: serverTimestamp(),
@@ -956,12 +951,6 @@ async function leaveRoom(removePlayer = true) {
   countdownTimer = null;
   countdownAdvancePending = false;
   lastCountdownTick = null;
-  clearInterval(roundTimer);
-  roundTimer = null;
-  roundTimeoutPending = false;
-  lastRoundTick = null;
-  els.roundClock.hidden = true;
-  els.roundClock.classList.remove("is-urgent");
   clearInterval(revealTimer);
   revealTimer = null;
   revealAdvancePending = false;
@@ -997,9 +986,12 @@ function formatAnswer(answer) {
   });
 }
 
-function makeGuess(player, answer, correct) {
+function makeAttemptKey() {
+  return `${Date.now()}-${Math.floor(Math.random() * 100000)}`;
+}
+
+function makeGuess(answer, correct) {
   return {
-    name: player?.name || "Player",
     answer: Number(answer),
     answerText: formatAnswer(answer),
     status: correct ? "Correct" : "Miss",
@@ -1010,22 +1002,37 @@ function makeGuess(player, answer, correct) {
 
 function summarizeGuesses(playersById = {}, guesses = {}) {
   return Object.fromEntries(Object.entries(playersById).map(([id, player]) => {
-    const guess = guesses[id];
+    const playerGuesses = guesses[id] || {};
+    const attempts = Object.values(playerGuesses.attempts || {})
+      .sort((a, b) => (a.at || 0) - (b.at || 0));
+    const lastAttempt = attempts[attempts.length - 1];
     return [id, {
-      name: player?.name || guess?.name || "Player",
-      answerText: guess?.answerText || "No answer",
-      status: guess?.status || "No answer",
-      correct: Boolean(guess?.correct),
+      name: player?.name || playerGuesses.name || "Player",
+      attempts,
+      answerText: lastAttempt?.answerText || "No answer",
+      status: lastAttempt?.status || "No answer",
+      correct: attempts.some((attempt) => attempt.correct),
     }];
   }));
 }
 
-function getRevealCountdown(endsAt) {
-  return Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
+function makeRoundHistoryEntry(question, guesses, final, winnerId) {
+  return {
+    id: question.id,
+    round: question.round,
+    difficulty: question.difficulty,
+    expression: question.expression,
+    answer: question.answer,
+    answerText: formatAnswer(question.answer),
+    guesses,
+    final,
+    winnerId,
+    solvedAt: Date.now(),
+  };
 }
 
-function getRoundCountdown(endsAt) {
-  return Math.max(0, Math.ceil(((endsAt || Date.now()) - Date.now()) / 1000));
+function getRevealCountdown(endsAt) {
+  return Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
 }
 
 function makeQuestion(round, difficulty = "medium") {
@@ -1203,6 +1210,9 @@ els.difficultyOptions.forEach((button) => {
       setGameNotice("Could not update difficulty.");
     });
   });
+});
+els.summaryTabs.forEach((button) => {
+  button.addEventListener("click", () => setSummaryTab(button.dataset.summaryTab));
 });
 els.ready.addEventListener("click", () => toggleReady());
 els.aiPlayer.addEventListener("click", () => toggleAiPlayer());

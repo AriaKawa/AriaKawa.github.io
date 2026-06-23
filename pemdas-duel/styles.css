@@ -439,37 +439,6 @@ input:focus {
   background: var(--line);
 }
 
-.round-clock {
-  justify-self: center;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 42px;
-  border: 1px solid rgba(255, 233, 189, 0.34);
-  border-radius: 999px;
-  padding: 0 16px;
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--gold-soft);
-  font-weight: 900;
-}
-
-.round-clock span {
-  color: var(--teal);
-  font-size: 0.78rem;
-  text-transform: uppercase;
-}
-
-.round-clock strong {
-  min-width: 36px;
-  color: var(--gold);
-  text-align: right;
-}
-
-.round-clock.is-urgent {
-  border-color: rgba(255, 109, 122, 0.82);
-  color: #ffd6dc;
-}
-
 .problem-card {
   min-height: 330px;
   padding: 28px;
@@ -640,9 +609,33 @@ input:focus {
   text-align: left;
 }
 
+.summary-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  padding: 5px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(16, 0, 27, 0.52);
+}
+
+.summary-tabs button {
+  min-height: 42px;
+  border-color: transparent;
+  border-radius: 6px;
+}
+
+.summary-tabs button.is-active {
+  border-color: rgba(255, 233, 189, 0.9);
+  background: linear-gradient(180deg, var(--gold-soft), var(--gold));
+  color: var(--purple);
+}
+
 .summary-block,
 .summary-grid section,
-.summary-row {
+.summary-row,
+.round-review-card,
+.player-answer-review {
   border: 1px solid rgba(255, 233, 189, 0.3);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.08);
@@ -728,6 +721,90 @@ input:focus {
   color: var(--teal);
 }
 
+.round-review-list {
+  display: grid;
+  gap: 12px;
+}
+
+.round-review-card {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.round-review-header {
+  display: grid;
+  gap: 6px;
+}
+
+.round-review-header span,
+.round-review-header em,
+.player-answer-review h3 {
+  margin: 0;
+  color: var(--teal);
+  font-size: 0.78rem;
+  font-style: normal;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.round-review-header strong {
+  color: var(--gold-soft);
+  font-size: clamp(1.55rem, 4vw, 2.5rem);
+  line-height: 1;
+  overflow-wrap: anywhere;
+}
+
+.round-review-header em {
+  color: var(--gold);
+}
+
+.round-answer-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.player-answer-review {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding: 10px;
+}
+
+.attempt-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.answer-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0 12px;
+  color: var(--ink);
+  font-weight: 900;
+}
+
+.answer-chip.is-correct {
+  border-color: rgba(70, 228, 194, 0.84);
+  background: rgba(70, 228, 194, 0.18);
+  color: #bfffee;
+}
+
+.answer-chip.is-wrong {
+  border-color: rgba(255, 109, 122, 0.84);
+  background: rgba(255, 109, 122, 0.18);
+  color: #ffd6dc;
+}
+
+.answer-chip.is-empty {
+  color: var(--muted);
+}
+
 .celebration-card button {
   min-width: 180px;
   margin-top: 10px;
@@ -805,7 +882,8 @@ input:focus {
   .room-strip,
   .score-row,
   .answer-panel,
-  .summary-grid {
+  .summary-grid,
+  .round-answer-grid {
     grid-template-columns: 1fr;
   }
 
