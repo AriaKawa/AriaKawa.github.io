@@ -23,7 +23,7 @@ const targetScore = 5;
 const countdownDurationMs = 3000;
 const revealDurationMs = 4000;
 const difficulties = ["easy", "medium", "hard"];
-const modes = ["pemdas", "fractions"];
+const modes = ["pemdas", "fractions", "polynomials"];
 const roomsPath = "pemdasDuelRooms";
 const playerStorageKey = "pemdas-duel-player-id";
 const nameStorageKey = "pemdas-duel-name";
@@ -131,6 +131,7 @@ function getRoomMode(room = currentRoom) {
 }
 
 function getModeLabel(mode = getRoomMode()) {
+  if (mode === "polynomials") return "Polynomials";
   return mode === "fractions" ? "Fractions" : "PEMDAS";
 }
 
@@ -1128,6 +1129,10 @@ function parseIntegerFraction(value) {
 }
 
 function isCorrectAnswer(rawAnswer, currentQuestion) {
+  if (currentQuestion.mode === "polynomials") {
+    return normalizePolynomialAnswer(rawAnswer) === normalizePolynomialAnswer(currentQuestion.expectedText || currentQuestion.answerText);
+  }
+
   if (currentQuestion.mode === "fractions") {
     const expectedNumerator = currentQuestion.expectedNumerator;
     const expectedDenominator = currentQuestion.expectedDenominator;
@@ -1145,6 +1150,17 @@ function isCorrectAnswer(rawAnswer, currentQuestion) {
 
   const answer = parseAnswer(rawAnswer);
   return answer !== null && Math.abs(answer - currentQuestion.answer) < 0.01;
+}
+
+function normalizePolynomialAnswer(value) {
+  return cleanAnswerInput(value)
+    .toLowerCase()
+    .replace(/\u2212/g, "-")
+    .replace(/\u00b2/g, "^2")
+    .replace(/\u00b3/g, "^3")
+    .replace(/\*/g, "")
+    .replace(/\+-/g, "-")
+    .replace(/^\+/, "");
 }
 
 function formatAnswer(answer) {
@@ -1223,7 +1239,12 @@ function getRevealCountdown(endsAt) {
 }
 
 function makeQuestion(round, difficulty = "medium", mode = "pemdas") {
-  const bank = normalizeMode(mode) === "fractions" ? fractionQuestionBuilders : questionBuilders;
+  const activeMode = normalizeMode(mode);
+  const bank = activeMode === "polynomials"
+    ? polynomialQuestionBuilders
+    : activeMode === "fractions"
+      ? fractionQuestionBuilders
+      : questionBuilders;
   const builders = bank[normalizeDifficulty(difficulty)] || bank.medium;
   return builders[Math.floor(Math.random() * builders.length)](round);
 }
@@ -1397,6 +1418,84 @@ const fractionQuestionBuilders = {
   ],
 };
 
+const polynomialQuestionBuilders = {
+  easy: [
+    (round) => {
+      const a = randomInt(2, 9);
+      const b = randomInt(2, 9);
+      const c = randomInt(1, 8);
+      const d = randomInt(1, 8);
+      return polynomialQuestion(`Simplify: ${a}x+${b}x+${c}+${d}`, `${a + b}x+${c + d}`, round, "easy");
+    },
+    (round) => {
+      const a = randomInt(5, 14);
+      const b = randomInt(1, 6);
+      const c = randomInt(2, 8);
+      return polynomialQuestion(`Simplify: ${a}x\u2212${b}x+${c}`, `${a - b}x+${c}`, round, "easy");
+    },
+    (round) => {
+      const a = randomInt(2, 7);
+      const b = randomInt(1, 6);
+      const c = randomInt(1, 5);
+      return polynomialQuestion(`Simplify: ${a}x+${b}+${c}x`, `${a + c}x+${b}`, round, "easy");
+    },
+  ],
+  medium: [
+    (round) => {
+      const a = randomInt(2, 8);
+      const b = randomInt(2, 9);
+      const c = randomInt(1, 9);
+      return polynomialQuestion(`Expand: ${a}(x+${b})+${c}`, `${a}x+${a * b + c}`, round, "medium");
+    },
+    (round) => {
+      const a = randomInt(2, 7);
+      const b = randomInt(1, 8);
+      const c = randomInt(2, 9);
+      return polynomialQuestion(`Expand: ${a}(x\u2212${b})+${c}x`, `${a + c}x-${a * b}`, round, "medium");
+    },
+    (round) => {
+      const a = randomInt(2, 6);
+      const b = randomInt(2, 8);
+      const c = randomInt(1, 7);
+      const d = randomInt(1, 6);
+      return polynomialQuestion(`Simplify: ${a}x\u00b2+${b}x\u2212${c}x+${d}`, `${a}x^2+${b - c}x+${d}`, round, "medium");
+    },
+    (round) => {
+      const a = randomInt(2, 5);
+      const b = randomInt(2, 8);
+      const c = randomInt(1, 6);
+      return polynomialQuestion(`Expand: (x+${b})${a}+${c}x`, `${a + c}x+${a * b}`, round, "medium");
+    },
+  ],
+  hard: [
+    (round) => {
+      const a = randomInt(2, 5);
+      const b = randomInt(2, 9);
+      const c = randomInt(1, 8);
+      return polynomialQuestion(`Expand: ${a}x(x+${b})+${c}x`, `${a}x^2+${a * b + c}x`, round, "hard");
+    },
+    (round) => {
+      const a = randomInt(2, 6);
+      const b = randomInt(2, 8);
+      const c = randomInt(1, 7);
+      return polynomialQuestion(`Expand: (x+${a})(x+${b})+${c}`, `x^2+${a + b}x+${a * b + c}`, round, "hard");
+    },
+    (round) => {
+      const a = randomInt(2, 6);
+      const b = randomInt(2, 7);
+      const c = randomInt(1, 6);
+      return polynomialQuestion(`Simplify: ${a}x\u00b2+${b}x\u00b2\u2212${c}x+${a + c}x`, `${a + b}x^2+${a}x`, round, "hard");
+    },
+    (round) => {
+      const a = randomInt(2, 5);
+      const b = randomInt(1, 7);
+      const c = randomInt(2, 6);
+      const constant = a * b;
+      return polynomialQuestion(`Expand: ${a}x(x\u2212${b})+${c}`, `${a}x^2-${constant}x+${c}`, round, "hard");
+    },
+  ],
+};
+
 function question(expression, answer, round, difficulty, mode = "pemdas", extra = {}) {
   return {
     id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
@@ -1408,6 +1507,17 @@ function question(expression, answer, round, difficulty, mode = "pemdas", extra 
     answerText: extra.answerText || formatAnswer(answer),
     ...extra,
   };
+}
+
+function polynomialQuestion(expression, answerText, round, difficulty) {
+  return question(expression, 0, round, difficulty, "polynomials", {
+    answerText: displayPolynomial(answerText),
+    expectedText: answerText,
+  });
+}
+
+function displayPolynomial(value) {
+  return value.replace(/\^2/g, "\u00b2").replace(/\+-/g, "-");
 }
 
 function fractionQuestion(round, difficulty, baseNumerator, baseDenominator, multiplier) {
