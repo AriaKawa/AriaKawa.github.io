@@ -35,6 +35,14 @@
           <input data-name type="text" maxlength="18" autocomplete="nickname" placeholder="Math mogul">
         </label>
 
+        <section class="mode-picker" aria-label="Quiz type">
+          <span>Quiz type</span>
+          <div class="segmented-control two-up">
+            <button type="button" data-mode-option="pemdas" aria-pressed="true">PEMDAS</button>
+            <button type="button" data-mode-option="fractions" aria-pressed="false">Fractions</button>
+          </div>
+        </section>
+
         <section class="difficulty-picker" aria-label="Difficulty">
           <span>Difficulty</span>
           <div class="segmented-control">
@@ -93,10 +101,10 @@
         </article>
       </section>
 
-      <section class="problem-stage" data-battle-ui aria-label="Current PEMDAS problem" hidden>
+      <section class="problem-stage" data-battle-ui aria-label="Current math problem" hidden>
         <div class="stage-header">
           <span></span>
-          <strong>PEMDAS</strong>
+          <strong data-mode-label>PEMDAS</strong>
           <span></span>
         </div>
         <div class="problem-card" data-problem-card>
@@ -112,12 +120,20 @@
       <form class="answer-panel" data-answer-form data-battle-ui hidden>
         <label class="field answer-field">
           <span>Your answer</span>
-          <input data-answer type="text" inputmode="decimal" autocomplete="off" placeholder="answer here" disabled>
+          <input data-answer type="text" inputmode="text" autocomplete="off" placeholder="answer here" disabled>
         </label>
         <button class="primary submit-answer" type="submit" data-submit disabled>Submit</button>
+        <button class="give-up-answer" type="button" data-give-up disabled>IDK</button>
       </form>
 
       <section class="controls" data-room-controls aria-label="Game controls">
+        <div class="mode-picker room-mode" data-room-mode aria-label="Room quiz type">
+          <span>Quiz type</span>
+          <div class="segmented-control two-up">
+            <button type="button" data-mode-option="pemdas" aria-pressed="true">PEMDAS</button>
+            <button type="button" data-mode-option="fractions" aria-pressed="false">Fractions</button>
+          </div>
+        </div>
         <div class="difficulty-picker room-difficulty" data-room-difficulty aria-label="Room difficulty">
           <span>Difficulty</span>
           <div class="segmented-control">

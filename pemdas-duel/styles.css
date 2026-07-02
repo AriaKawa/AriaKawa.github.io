@@ -215,7 +215,8 @@ input:focus {
   font-weight: 800;
 }
 
-.difficulty-picker {
+.difficulty-picker,
+.mode-picker {
   display: grid;
   gap: 8px;
   margin-top: 16px;
@@ -232,6 +233,10 @@ input:focus {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: rgba(16, 0, 27, 0.52);
+}
+
+.segmented-control.two-up {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .segmented-control button {
@@ -496,7 +501,7 @@ input:focus {
 
 .answer-panel {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1fr auto auto;
   align-items: end;
   gap: 12px;
   padding: 14px;
@@ -513,6 +518,13 @@ input:focus {
   min-height: 56px;
 }
 
+.give-up-answer {
+  min-width: 98px;
+  min-height: 56px;
+  border-color: rgba(255, 109, 122, 0.6);
+  color: #ffd6dc;
+}
+
 .controls {
   display: flex;
   flex-wrap: wrap;
@@ -526,7 +538,8 @@ input:focus {
   padding: 0 14px;
 }
 
-.room-difficulty {
+.room-difficulty,
+.room-mode {
   min-width: min(100%, 360px);
   margin-top: 0;
 }

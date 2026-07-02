@@ -23,10 +23,12 @@ const targetScore = 5;
 const countdownDurationMs = 3000;
 const revealDurationMs = 4000;
 const difficulties = ["easy", "medium", "hard"];
+const modes = ["pemdas", "fractions"];
 const roomsPath = "pemdasDuelRooms";
 const playerStorageKey = "pemdas-duel-player-id";
 const nameStorageKey = "pemdas-duel-name";
 const difficultyStorageKey = "pemdas-duel-difficulty";
+const modeStorageKey = "pemdas-duel-mode";
 const aiPlayerId = "ai-test-player";
 
 const els = {
@@ -44,9 +46,11 @@ const els = {
   battleSections: Array.from(document.querySelectorAll("[data-battle-ui]")),
   roomControls: document.querySelector("[data-room-controls]"),
   difficultyOptions: Array.from(document.querySelectorAll("[data-difficulty-option]")),
+  modeOptions: Array.from(document.querySelectorAll("[data-mode-option]")),
   matchCountdown: document.querySelector("[data-match-countdown]"),
   matchCountdownValue: document.querySelector("[data-match-countdown-value]"),
   problemCard: document.querySelector("[data-problem-card]"),
+  modeLabel: document.querySelector("[data-mode-label]"),
   question: document.querySelector("[data-question]"),
   answerReveal: document.querySelector("[data-answer-reveal]"),
   answerValue: document.querySelector("[data-answer-value]"),
@@ -54,6 +58,7 @@ const els = {
   answerForm: document.querySelector("[data-answer-form]"),
   answer: document.querySelector("[data-answer]"),
   submit: document.querySelector("[data-submit]"),
+  giveUp: document.querySelector("[data-give-up]"),
   ready: document.querySelector("[data-ready]"),
   aiPlayer: document.querySelector("[data-ai-player]"),
   start: document.querySelector("[data-start]"),
@@ -82,6 +87,7 @@ let currentRoomCode = "";
 let currentRoom = null;
 let unsubscribeRoom = null;
 let selectedDifficulty = normalizeDifficulty(localStorage.getItem(difficultyStorageKey));
+let selectedMode = normalizeMode(localStorage.getItem(modeStorageKey));
 let lastQuestionId = "";
 let countdownTimer = null;
 let countdownAdvancePending = false;
@@ -112,8 +118,20 @@ function normalizeDifficulty(value) {
   return difficulties.includes(value) ? value : "medium";
 }
 
+function normalizeMode(value) {
+  return modes.includes(value) ? value : "pemdas";
+}
+
 function getRoomDifficulty(room = currentRoom) {
   return normalizeDifficulty(room?.difficulty || selectedDifficulty);
+}
+
+function getRoomMode(room = currentRoom) {
+  return normalizeMode(room?.mode || selectedMode);
+}
+
+function getModeLabel(mode = getRoomMode()) {
+  return mode === "fractions" ? "Fractions" : "PEMDAS";
 }
 
 function makeRoomCode() {
@@ -213,10 +231,12 @@ async function createRoom() {
     status: "lobby",
     targetScore,
     difficulty: selectedDifficulty,
+    mode: selectedMode,
     questionNumber: 1,
     question: null,
     countdownEndsAt: 0,
     roundGuesses: {},
+    roundGiveUps: {},
     roundHistory: {},
     reveal: null,
     winnerId: "",
@@ -306,9 +326,11 @@ function renderRoom() {
   const status = currentRoom.status || "lobby";
   const question = currentRoom.question || null;
   const reveal = currentRoom.reveal || null;
+  const localGaveUp = currentRoom.roundGiveUps?.[playerId];
 
   els.copyRoom.textContent = currentRoomCode;
   els.roundState.textContent = labelStatus(status);
+  els.modeLabel.textContent = getModeLabel();
   els.question.textContent = status === "revealing" && reveal?.expression
     ? reveal.expression
     : question?.expression || "Ready?";
@@ -324,9 +346,12 @@ function renderRoom() {
   els.newMatch.disabled = !isHost();
   els.celebrationNewMatch.disabled = !isHost();
   renderAiControl(players);
+  renderModeControls(status);
   renderDifficultyControls(status);
-  els.answer.disabled = status !== "playing";
-  els.submit.disabled = status !== "playing";
+  els.answer.disabled = status !== "playing" || Boolean(localGaveUp);
+  els.submit.disabled = status !== "playing" || Boolean(localGaveUp);
+  els.giveUp.disabled = status !== "playing" || Boolean(localGaveUp);
+  els.giveUp.textContent = localGaveUp ? "IDK sent" : "IDK";
 
   if (status === "playing" && question?.id && question.id !== lastQuestionId) {
     lastQuestionId = question.id;
@@ -368,6 +393,17 @@ function renderDifficultyControls(status = currentRoom?.status || "lobby") {
   els.difficultyOptions.forEach((button) => {
     const isActive = button.dataset.difficultyOption === activeDifficulty;
     const isRoomButton = Boolean(button.closest("[data-room-difficulty]"));
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
+    button.disabled = isRoomButton && (!currentRoom || !isHost() || status !== "lobby");
+  });
+}
+
+function renderModeControls(status = currentRoom?.status || "lobby") {
+  const activeMode = currentRoom ? getRoomMode() : selectedMode;
+  els.modeOptions.forEach((button) => {
+    const isActive = button.dataset.modeOption === activeMode;
+    const isRoomButton = Boolean(button.closest("[data-room-mode]"));
     button.classList.toggle("is-active", isActive);
     button.setAttribute("aria-pressed", String(isActive));
     button.disabled = isRoomButton && (!currentRoom || !isHost() || status !== "lobby");
@@ -425,6 +461,7 @@ function getPlayerStatus(player) {
   if (currentRoom.status === "revealing" && player.answerState === "hit") return "Scored";
   if (currentRoom.status === "revealing") return "Watching answer";
   if (currentRoom.status === "playing" && player.answerState === "miss") return "Recalculating";
+  if (currentRoom.status === "playing" && player.answerState === "gave-up") return "Gave up";
   if (currentRoom.status === "playing" && player.answerState === "hit") return "Scored";
   if (currentRoom.status === "playing") return `${player.score || 0} points`;
   return player.ready ? "Ready" : "Waiting";
@@ -433,7 +470,7 @@ function getPlayerStatus(player) {
 function renderNotice(players) {
   if (currentRoom.status === "finished") {
     const winner = players.find((player) => player.id === currentRoom.winnerId);
-    const answer = currentRoom.reveal ? formatAnswer(currentRoom.reveal.answer) : "";
+    const answer = currentRoom.reveal ? getAnswerText(currentRoom.reveal) : "";
     setGameNotice(winner ? `${winner.name} hit five points first. Final answer: ${answer}.` : "Match finished.");
     return;
   }
@@ -446,8 +483,8 @@ function renderNotice(players) {
     }
     const countdown = getRevealCountdown(reveal.endsAt);
     const nextText = reveal.final ? "Match ends" : "Next question";
-    const prefix = reveal.timedOut ? "Time's up" : `${reveal.name} scored`;
-    setGameNotice(`${prefix}. Correct answer: ${formatAnswer(reveal.answer)}. ${nextText} in ${countdown}.`);
+    const prefix = reveal.skipped ? "Both players gave up" : `${reveal.name} scored`;
+    setGameNotice(`${prefix}. Correct answer: ${getAnswerText(reveal)}. ${nextText} in ${countdown}.`);
     return;
   }
 
@@ -458,9 +495,13 @@ function renderNotice(players) {
 
   if (currentRoom.status === "playing") {
     const last = currentRoom.lastAnswer;
+    if (currentRoom.roundGiveUps?.[playerId]) {
+      setGameNotice("You gave up. Waiting for the other seat to answer or give up.");
+      return;
+    }
     setGameNotice(last?.name && !last.timedOut
       ? `${last.name} scored. Next question is live.`
-      : "Solve the expression first to score.");
+      : `Solve the ${getModeLabel().toLowerCase()} question first to score.`);
     return;
   }
 
@@ -517,12 +558,12 @@ function renderAnswerReveal() {
     return;
   }
 
-  if (!reveal.timedOut && reveal.questionId && reveal.questionId !== lastCorrectSoundId) {
+  if (!reveal.skipped && reveal.questionId && reveal.questionId !== lastCorrectSoundId) {
     lastCorrectSoundId = reveal.questionId;
     playSound("correct");
   }
 
-  els.answerValue.textContent = formatAnswer(reveal.answer);
+  els.answerValue.textContent = getAnswerText(reveal);
 
   const tick = () => {
     const countdown = getRevealCountdown(reveal.endsAt);
@@ -551,7 +592,7 @@ function renderCelebration(players) {
   const winner = players.find((player) => player.id === currentRoom.winnerId);
   const winnerName = winner?.name || "Winner";
   els.winnerText.textContent = `${winnerName} wins`;
-  els.winnerSubtext.textContent = `${winnerName} claimed ${targetScore} points in PEMDAS Duel.`;
+  els.winnerSubtext.textContent = `${winnerName} claimed ${targetScore} points in ${getModeLabel()} Duel.`;
   renderMatchSummary(players, winner);
   els.celebrationNewMatch.textContent = isHost() ? "New match" : "Host starts rematch";
 }
@@ -718,19 +759,36 @@ async function chooseDifficulty(value) {
   });
 }
 
+async function chooseMode(value) {
+  const mode = normalizeMode(value);
+  selectedMode = mode;
+  localStorage.setItem(modeStorageKey, mode);
+  renderModeControls();
+
+  if (!currentRoom || !isHost() || currentRoom.status !== "lobby") return;
+
+  await update(getRoomRef(), {
+    mode,
+    updatedAt: serverTimestamp(),
+  });
+}
+
 async function startMatch() {
   const players = getPlayers();
   if (!canStart(players)) return;
   const now = Date.now();
   const difficulty = getRoomDifficulty();
+  const mode = getRoomMode();
   const updates = {
     status: "countdown",
     winnerId: "",
     difficulty,
+    mode,
     questionNumber: 1,
-    question: makeQuestion(1, difficulty),
+    question: makeQuestion(1, difficulty, mode),
     countdownEndsAt: now + countdownDurationMs,
     roundGuesses: {},
+    roundGiveUps: {},
     roundHistory: {},
     reveal: null,
     lastAnswer: null,
@@ -763,7 +821,7 @@ async function advanceCountdown() {
     room.startedAt = Date.now();
     room.updatedAt = Date.now();
     if (!room.question) {
-      room.question = makeQuestion(room.questionNumber || 1, getRoomDifficulty(room));
+      room.question = makeQuestion(room.questionNumber || 1, getRoomDifficulty(room), getRoomMode(room));
     }
     return room;
   }).catch(() => {}).finally(() => {
@@ -775,13 +833,13 @@ async function submitAnswer(event) {
   event.preventDefault();
   if (!currentRoom || currentRoom.status !== "playing" || !currentRoom.question) return;
 
-  const answer = parseAnswer(els.answer.value);
-  if (answer === null) {
-    setGameNotice("Enter a number.");
+  const rawAnswer = cleanAnswerInput(els.answer.value);
+  if (!rawAnswer) {
+    setGameNotice(currentRoom.question.mode === "fractions" ? "Enter a simplified fraction." : "Enter a number.");
     return;
   }
 
-  if (!isCorrect(answer, currentRoom.question.answer)) {
+  if (!isCorrectAnswer(rawAnswer, currentRoom.question)) {
     playSound("wrong");
     const localPlayer = getPlayers().find((player) => player.id === playerId);
     const attemptKey = makeAttemptKey();
@@ -789,7 +847,7 @@ async function submitAnswer(event) {
       [`players/${playerId}/answerState`]: "miss",
       [`players/${playerId}/lastSeen`]: serverTimestamp(),
       [`roundGuesses/${playerId}/name`]: localPlayer?.name || "Player",
-      [`roundGuesses/${playerId}/attempts/${attemptKey}`]: makeGuess(answer, false),
+      [`roundGuesses/${playerId}/attempts/${attemptKey}`]: makeGuess(rawAnswer, false),
       updatedAt: serverTimestamp(),
     });
     setGameNotice("Not quite.");
@@ -797,13 +855,14 @@ async function submitAnswer(event) {
     return;
   }
 
-  await awardPoint(currentRoom.question.id, answer);
+  await awardPoint(currentRoom.question.id, rawAnswer);
 }
 
 async function awardPoint(questionId, submittedAnswer) {
   const nextNumber = (currentRoom.questionNumber || 1) + 1;
   const difficulty = getRoomDifficulty();
-  const nextQuestion = makeQuestion(nextNumber, difficulty);
+  const mode = getRoomMode();
+  const nextQuestion = makeQuestion(nextNumber, difficulty, mode);
   const revealEndsAt = Date.now() + revealDurationMs;
   const result = await runTransaction(getRoomRef(), (room) => {
     if (!room || room.status !== "playing" || room.winnerId) return undefined;
@@ -834,6 +893,7 @@ async function awardPoint(questionId, submittedAnswer) {
       questionId,
       expression: solvedQuestion.expression,
       answer: solvedQuestion.answer,
+      answerText: getAnswerText(solvedQuestion),
       at: Date.now(),
       guesses,
       historyEntry,
@@ -844,6 +904,7 @@ async function awardPoint(questionId, submittedAnswer) {
       questionId,
       expression: solvedQuestion.expression,
       answer: solvedQuestion.answer,
+      answerText: getAnswerText(solvedQuestion),
       endsAt: revealEndsAt,
       final: nextScore >= (room.targetScore || targetScore),
       guesses,
@@ -870,6 +931,81 @@ async function awardPoint(questionId, submittedAnswer) {
   }
 }
 
+async function giveUpQuestion() {
+  if (!currentRoom || currentRoom.status !== "playing" || !currentRoom.question) return;
+  const questionId = currentRoom.question.id;
+  const revealEndsAt = Date.now() + revealDurationMs;
+
+  const result = await runTransaction(getRoomRef(), (room) => {
+    if (!room || room.status !== "playing" || room.winnerId) return undefined;
+    if (!room.question || room.question.id !== questionId) return undefined;
+    if (!room.players || !room.players[playerId]) return undefined;
+
+    const player = room.players[playerId];
+    room.roundGuesses = room.roundGuesses || {};
+    room.roundGiveUps = room.roundGiveUps || {};
+    if (room.roundGiveUps[playerId]) return room;
+    room.roundGuesses[playerId] = room.roundGuesses[playerId] || { name: player.name || "Player", attempts: {} };
+    room.roundGuesses[playerId].name = player.name || "Player";
+    room.roundGuesses[playerId].attempts = room.roundGuesses[playerId].attempts || {};
+    room.roundGuesses[playerId].attempts[makeAttemptKey()] = makeGiveUp();
+    room.roundGiveUps[playerId] = true;
+    player.answerState = "gave-up";
+
+    const players = Object.entries(room.players);
+    const everyoneGaveUp = players.length >= 2
+      && players.every(([id, seat]) => seat.isAi || room.roundGiveUps?.[id]);
+
+    if (!everyoneGaveUp) {
+      room.updatedAt = Date.now();
+      return room;
+    }
+
+    const skippedQuestion = room.question;
+    const nextNumber = (room.questionNumber || 1) + 1;
+    const nextQuestion = makeQuestion(nextNumber, getRoomDifficulty(room), getRoomMode(room));
+    const guesses = summarizeGuesses(room.players, room.roundGuesses);
+    const historyEntry = makeRoundHistoryEntry(skippedQuestion, guesses, false, "");
+
+    room.lastAnswer = {
+      playerId: "",
+      name: "Both players",
+      skipped: true,
+      questionId,
+      expression: skippedQuestion.expression,
+      answer: skippedQuestion.answer,
+      answerText: getAnswerText(skippedQuestion),
+      at: Date.now(),
+      guesses,
+      historyEntry,
+    };
+    room.reveal = {
+      playerId: "",
+      name: "Both players",
+      skipped: true,
+      questionId,
+      expression: skippedQuestion.expression,
+      answer: skippedQuestion.answer,
+      answerText: getAnswerText(skippedQuestion),
+      endsAt: revealEndsAt,
+      final: false,
+      guesses,
+      historyEntry,
+      nextNumber,
+      nextQuestion,
+    };
+    room.roundHistory = room.roundHistory || {};
+    room.roundHistory[skippedQuestion.id] = historyEntry;
+    room.status = "revealing";
+    room.updatedAt = Date.now();
+    return room;
+  });
+
+  if (result.committed) {
+    els.answer.value = "";
+  }
+}
+
 async function advanceReveal() {
   if (!currentRoom || currentRoom.status !== "revealing" || !currentRoom.reveal) return;
   if (revealAdvancePending) return;
@@ -889,9 +1025,10 @@ async function advanceReveal() {
 
     room.status = "playing";
     room.questionNumber = room.reveal.nextNumber;
-    room.question = room.reveal.nextQuestion || makeQuestion(room.reveal.nextNumber || 1, getRoomDifficulty(room));
+    room.question = room.reveal.nextQuestion || makeQuestion(room.reveal.nextNumber || 1, getRoomDifficulty(room), getRoomMode(room));
     room.reveal = null;
     room.roundGuesses = {};
+    room.roundGiveUps = {};
     Object.keys(room.players || {}).forEach((id) => {
       room.players[id].answerState = "";
     });
@@ -912,6 +1049,7 @@ async function newMatch() {
     question: null,
     countdownEndsAt: 0,
     roundGuesses: {},
+    roundGiveUps: {},
     roundHistory: {},
     reveal: null,
     lastAnswer: null,
@@ -955,10 +1093,15 @@ async function leaveRoom(removePlayer = true) {
   revealTimer = null;
   revealAdvancePending = false;
   lastRevealTick = null;
+  renderModeControls();
+}
+
+function cleanAnswerInput(value) {
+  return String(value).trim().replace(/\s+/g, "");
 }
 
 function parseAnswer(value) {
-  const normalized = value.trim().replace(",", ".");
+  const normalized = cleanAnswerInput(value).replace(",", ".");
   if (!normalized) return null;
 
   const fraction = normalized.match(/^(-?\d+(?:\.\d+)?)\s*\/\s*(-?\d+(?:\.\d+)?)$/);
@@ -974,8 +1117,34 @@ function parseAnswer(value) {
   return Number.isFinite(number) ? number : null;
 }
 
-function isCorrect(given, expected) {
-  return Math.abs(given - expected) < 0.01;
+function parseIntegerFraction(value) {
+  const match = cleanAnswerInput(value).match(/^(-?\d+)\/(-?\d+)$/);
+  if (!match) return null;
+  const numerator = Number(match[1]);
+  const denominator = Number(match[2]);
+  if (!Number.isInteger(numerator) || !Number.isInteger(denominator) || denominator === 0) return null;
+  const sign = denominator < 0 ? -1 : 1;
+  return { numerator: numerator * sign, denominator: Math.abs(denominator) };
+}
+
+function isCorrectAnswer(rawAnswer, currentQuestion) {
+  if (currentQuestion.mode === "fractions") {
+    const expectedNumerator = currentQuestion.expectedNumerator;
+    const expectedDenominator = currentQuestion.expectedDenominator;
+    const fraction = parseIntegerFraction(rawAnswer);
+
+    if (expectedDenominator === 1) {
+      const numericAnswer = parseAnswer(rawAnswer);
+      return numericAnswer !== null && Math.abs(numericAnswer - expectedNumerator) < 0.01;
+    }
+
+    return Boolean(fraction)
+      && fraction.numerator === expectedNumerator
+      && fraction.denominator === expectedDenominator;
+  }
+
+  const answer = parseAnswer(rawAnswer);
+  return answer !== null && Math.abs(answer - currentQuestion.answer) < 0.01;
 }
 
 function formatAnswer(answer) {
@@ -986,16 +1155,33 @@ function formatAnswer(answer) {
   });
 }
 
+function getAnswerText(answerSource) {
+  return answerSource?.answerText || formatAnswer(answerSource?.answer);
+}
+
 function makeAttemptKey() {
   return `${Date.now()}-${Math.floor(Math.random() * 100000)}`;
 }
 
-function makeGuess(answer, correct) {
+function makeGuess(rawAnswer, correct) {
+  const answerText = cleanAnswerInput(rawAnswer) || "No answer";
+  const numericAnswer = parseAnswer(answerText);
   return {
-    answer: Number(answer),
-    answerText: formatAnswer(answer),
+    answer: numericAnswer ?? "",
+    answerText,
     status: correct ? "Correct" : "Miss",
     correct,
+    at: Date.now(),
+  };
+}
+
+function makeGiveUp() {
+  return {
+    answer: "",
+    answerText: "IDK",
+    status: "Gave up",
+    correct: false,
+    gaveUp: true,
     at: Date.now(),
   };
 }
@@ -1021,9 +1207,10 @@ function makeRoundHistoryEntry(question, guesses, final, winnerId) {
     id: question.id,
     round: question.round,
     difficulty: question.difficulty,
+    mode: question.mode || "pemdas",
     expression: question.expression,
     answer: question.answer,
-    answerText: formatAnswer(question.answer),
+    answerText: getAnswerText(question),
     guesses,
     final,
     winnerId,
@@ -1035,8 +1222,9 @@ function getRevealCountdown(endsAt) {
   return Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
 }
 
-function makeQuestion(round, difficulty = "medium") {
-  const builders = questionBuilders[normalizeDifficulty(difficulty)] || questionBuilders.medium;
+function makeQuestion(round, difficulty = "medium", mode = "pemdas") {
+  const bank = normalizeMode(mode) === "fractions" ? fractionQuestionBuilders : questionBuilders;
+  const builders = bank[normalizeDifficulty(difficulty)] || bank.medium;
   return builders[Math.floor(Math.random() * builders.length)](round);
 }
 
@@ -1046,25 +1234,31 @@ const questionBuilders = {
       const a = randomInt(4, 18);
       const b = randomInt(2, 8);
       const c = randomInt(2, 6);
-      return question(`${a}+${b}\u00d7${c}`, a + b * c, round, "easy");
+      return question(`${a}+${b}\u00d7${c}`, a + b * c, round, "easy", "pemdas");
     },
     (round) => {
       const a = randomInt(2, 10);
       const b = randomInt(2, 9);
       const c = randomInt(3, 12);
-      return question(`${a}\u00d7${b}\u2212${c}`, a * b - c, round, "easy");
+      return question(`${a}\u00d7${b}\u2212${c}`, a * b - c, round, "easy", "pemdas");
     },
     (round) => {
       const a = randomInt(3, 10);
       const b = randomInt(2, 8);
       const c = randomInt(2, 5);
-      return question(`(${a}+${b})\u00d7${c}`, (a + b) * c, round, "easy");
+      return question(`${c}(${a}+${b})`, c * (a + b), round, "easy", "pemdas");
     },
     (round) => {
       const a = randomInt(18, 40);
       const b = randomInt(4, 15);
       const c = randomInt(2, 9);
-      return question(`${a}\u2212${b}+${c}`, a - b + c, round, "easy");
+      return question(`${a}\u2212(${b}\u2212${c})`, a - (b - c), round, "easy", "pemdas");
+    },
+    (round) => {
+      const a = randomInt(2, 8);
+      const b = randomInt(2, 6);
+      const c = randomInt(3, 11);
+      return question(`${a}\u00b2+${c}\u2212${b}`, a ** 2 + c - b, round, "easy", "pemdas");
     },
   ],
   medium: [
@@ -1072,41 +1266,55 @@ const questionBuilders = {
       const a = randomInt(4, 12);
       const b = randomInt(3, 12);
       const c = randomOdd(5, 17);
-      return question(`${a}\u00d7${b}\u2212${c}\u00f72`, a * b - c / 2, round, "medium");
+      return question(`${a}\u00d7${b}\u2212${c}\u00f72`, a * b - c / 2, round, "medium", "pemdas");
     },
     (round) => {
       const a = randomInt(3, 9);
       const b = randomInt(2, 8);
       const c = randomInt(3, 7);
       const d = randomInt(4, 14);
-      return question(`(${a}+${b})\u00d7${c}\u2212${d}`, (a + b) * c - d, round, "medium");
+      return question(`${c}(${a}+${b})\u2212${d}`, (a + b) * c - d, round, "medium", "pemdas");
     },
     (round) => {
       const a = randomInt(4, 11);
       const b = randomInt(2, 9);
       const c = randomInt(3, 8);
-      return question(`${a}\u00b2+${b}\u00d7${c}`, a ** 2 + b * c, round, "medium");
+      return question(`${a}\u00b2+${b}\u00d7${c}`, a ** 2 + b * c, round, "medium", "pemdas");
     },
     (round) => {
       const a = randomInt(12, 35);
       const b = randomInt(3, 9);
       const c = randomInt(2, 8);
       const d = randomInt(4, 12);
-      return question(`${a}+${b}\u00d7${c}\u2212${d}`, a + b * c - d, round, "medium");
+      return question(`${a}+${b}\u00d7${c}\u2212${d}`, a + b * c - d, round, "medium", "pemdas");
     },
     (round) => {
       const c = randomInt(2, 5);
       const a = c * randomInt(3, 8);
       const b = c * randomInt(2, 6);
       const d = randomInt(5, 18);
-      return question(`(${a}+${b})\u00f7${c}+${d}`, (a + b) / c + d, round, "medium");
+      return question(`(${a}+${b})\u00f7${c}+${d}`, (a + b) / c + d, round, "medium", "pemdas");
     },
     (round) => {
       const a = randomInt(3, 8);
       const b = randomInt(4, 10);
       const c = randomInt(2, 7);
       const d = randomInt(6, 16);
-      return question(`${a}\u00d7(${b}+${c})\u2212${d}`, a * (b + c) - d, round, "medium");
+      return question(`${a}(${b}+${c})\u2212${d}`, a * (b + c) - d, round, "medium", "pemdas");
+    },
+    (round) => {
+      const a = randomInt(2, 7);
+      const b = randomInt(3, 9);
+      const c = randomInt(2, 5);
+      const d = randomInt(4, 12);
+      return question(`${d}+(${a}+${b})${c}`, d + (a + b) * c, round, "medium", "pemdas");
+    },
+    (round) => {
+      const a = randomInt(20, 60);
+      const b = randomInt(2, 6);
+      const c = randomInt(4, 11);
+      const d = randomInt(2, 9);
+      return question(`${a}\u2212${b}(${c}\u2212${d})`, a - b * (c - d), round, "medium", "pemdas");
     },
   ],
   hard: [
@@ -1116,7 +1324,7 @@ const questionBuilders = {
       const c = randomInt(3, 9);
       const d = randomInt(4, 11);
       const e = randomInt(15, 38);
-      return question(`(${a}+${b})\u00d7(${c}+${d})\u2212${e}`, (a + b) * (c + d) - e, round, "hard");
+      return question(`(${a}+${b})(${c}+${d})\u2212${e}`, (a + b) * (c + d) - e, round, "hard", "pemdas");
     },
     (round) => {
       const a = randomInt(7, 14);
@@ -1124,7 +1332,7 @@ const questionBuilders = {
       const c = randomInt(3, 9);
       const d = randomInt(2, 8);
       const e = randomInt(10, 28);
-      return question(`${a}\u00b2+${b}\u00d7(${c}+${d})\u2212${e}`, a ** 2 + b * (c + d) - e, round, "hard");
+      return question(`${a}\u00b2+${b}(${c}+${d})\u2212${e}`, a ** 2 + b * (c + d) - e, round, "hard", "pemdas");
     },
     (round) => {
       const d = randomInt(2, 6);
@@ -1132,7 +1340,7 @@ const questionBuilders = {
       const b = randomInt(4, 10);
       const c = d * randomInt(3, 9);
       const e = randomInt(8, 24);
-      return question(`(${a}\u00d7${b}+${c})\u00f7${d}+${e}`, (a * b + c) / d + e, round, "hard");
+      return question(`(${a}\u00d7${b}+${c})\u00f7${d}+${e}`, (a * b + c) / d + e, round, "hard", "pemdas");
     },
     (round) => {
       const a = randomInt(4, 9);
@@ -1140,7 +1348,7 @@ const questionBuilders = {
       const c = randomInt(3, 9);
       const d = randomInt(2, 6);
       const e = randomInt(18, 42);
-      return question(`${a}\u00d7(${b}+${c}\u00d7${d})\u2212${e}`, a * (b + c * d) - e, round, "hard");
+      return question(`${a}(${b}+${c}\u00d7${d})\u2212${e}`, a * (b + c * d) - e, round, "hard", "pemdas");
     },
     (round) => {
       const c = randomInt(2, 5);
@@ -1148,19 +1356,93 @@ const questionBuilders = {
       const a = randomInt(2, sum - 2);
       const b = sum - a;
       const d = randomInt(8, 30);
-      return question(`(${a}+${b})\u00b2\u00f7${c}\u2212${d}`, (a + b) ** 2 / c - d, round, "hard");
+      return question(`(${a}+${b})\u00b2\u00f7${c}\u2212${d}`, (a + b) ** 2 / c - d, round, "hard", "pemdas");
+    },
+    (round) => {
+      const a = randomInt(2, 6);
+      const b = randomInt(3, 8);
+      const c = randomInt(2, 6);
+      const d = randomInt(5, 16);
+      const e = randomInt(2, 5);
+      return question(`${a}(${b}+${c})\u00b2\u2212${d}\u00f7${e}`, a * (b + c) ** 2 - d / e, round, "hard", "pemdas");
+    },
+    (round) => {
+      const a = randomInt(2, 8);
+      const b = randomInt(3, 9);
+      const c = randomInt(2, 7);
+      const d = randomInt(10, 30);
+      const e = randomInt(2, 6);
+      return question(`(${a}+${b})(${c}+${e})+${d}\u00f7${e}`, (a + b) * (c + e) + d / e, round, "hard", "pemdas");
     },
   ],
 };
 
-function question(expression, answer, round, difficulty) {
+const fractionQuestionBuilders = {
+  easy: [
+    (round) => fractionQuestion(round, "easy", randomInt(2, 6), randomInt(2, 5), randomInt(2, 4)),
+    (round) => fractionQuestion(round, "easy", randomInt(1, 5), randomInt(3, 8), randomInt(2, 5)),
+    (round) => fractionQuestion(round, "easy", randomInt(3, 9), randomInt(4, 10), randomInt(2, 3)),
+  ],
+  medium: [
+    (round) => fractionQuestion(round, "medium", randomInt(2, 11), randomInt(3, 13), randomInt(3, 8)),
+    (round) => fractionQuestion(round, "medium", randomInt(5, 14), randomInt(6, 18), randomInt(2, 9)),
+    (round) => fractionQuestion(round, "medium", randomInt(1, 9), randomInt(8, 22), randomInt(4, 10)),
+    (round) => fractionQuestion(round, "medium", randomInt(7, 18), randomInt(5, 16), randomInt(3, 7)),
+  ],
+  hard: [
+    (round) => fractionQuestion(round, "hard", randomInt(11, 29), randomInt(13, 35), randomInt(6, 14)),
+    (round) => fractionQuestion(round, "hard", randomInt(5, 21), randomInt(22, 48), randomInt(7, 18)),
+    (round) => fractionQuestion(round, "hard", randomInt(17, 36), randomInt(9, 28), randomInt(5, 16)),
+    (round) => fractionQuestion(round, "hard", randomInt(3, 15), randomInt(31, 64), randomInt(8, 20)),
+  ],
+};
+
+function question(expression, answer, round, difficulty, mode = "pemdas", extra = {}) {
   return {
     id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
     round,
     difficulty,
+    mode,
     expression,
     answer: Math.round(answer * 100) / 100,
+    answerText: extra.answerText || formatAnswer(answer),
+    ...extra,
   };
+}
+
+function fractionQuestion(round, difficulty, baseNumerator, baseDenominator, multiplier) {
+  const simplified = simplifyFraction(baseNumerator, baseDenominator);
+  const numerator = simplified.numerator * multiplier;
+  const denominator = simplified.denominator * multiplier;
+  const answerText = simplified.denominator === 1
+    ? String(simplified.numerator)
+    : `${simplified.numerator}/${simplified.denominator}`;
+
+  return question(`${numerator}/${denominator}`, simplified.numerator / simplified.denominator, round, difficulty, "fractions", {
+    answerText,
+    expectedNumerator: simplified.numerator,
+    expectedDenominator: simplified.denominator,
+  });
+}
+
+function simplifyFraction(numerator, denominator) {
+  const divisor = gcd(Math.abs(numerator), Math.abs(denominator));
+  const sign = denominator < 0 ? -1 : 1;
+  return {
+    numerator: (numerator / divisor) * sign,
+    denominator: Math.abs(denominator / divisor),
+  };
+}
+
+function gcd(a, b) {
+  let left = a;
+  let right = b;
+  while (right !== 0) {
+    const next = left % right;
+    left = right;
+    right = next;
+  }
+  return left || 1;
 }
 
 function randomInt(min, max) {
@@ -1211,6 +1493,14 @@ els.difficultyOptions.forEach((button) => {
     });
   });
 });
+els.modeOptions.forEach((button) => {
+  button.addEventListener("click", () => {
+    chooseMode(button.dataset.modeOption).catch((error) => {
+      console.error(error);
+      setGameNotice("Could not update quiz type.");
+    });
+  });
+});
 els.summaryTabs.forEach((button) => {
   button.addEventListener("click", () => setSummaryTab(button.dataset.summaryTab));
 });
@@ -1221,6 +1511,7 @@ els.newMatch.addEventListener("click", () => newMatch());
 els.celebrationNewMatch.addEventListener("click", () => newMatch());
 els.leave.addEventListener("click", () => leaveRoom());
 els.answerForm.addEventListener("submit", submitAnswer);
+els.giveUp.addEventListener("click", () => giveUpQuestion());
 
 window.addEventListener("beforeunload", () => {
   if (currentRoomCode) remove(getPlayerRef());
@@ -1233,3 +1524,4 @@ ensureAuth().catch((error) => {
 });
 
 renderDifficultyControls();
+renderModeControls();
