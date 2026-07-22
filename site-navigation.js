@@ -30,6 +30,7 @@
     "reaction-time.html": "games.html",
     "tapple.html": "games.html",
     "matthew-quiz.html": "games.html",
+    "is-that-ai/index.html": "games.html",
 
     "japanese-study.html": "education.html",
     "study-mine/index.html": "education.html",

@@ -616,6 +616,81 @@ a {
     font-weight: 700;
 }
 
+.category-card--is-that-ai {
+    min-height: 220px;
+    overflow: hidden;
+    border-color: rgba(255, 139, 55, 0.48);
+    background:
+        radial-gradient(circle at 12% 18%, rgba(255, 132, 34, 0.34), transparent 38%),
+        radial-gradient(circle at 94% 88%, rgba(165, 112, 255, 0.32), transparent 42%),
+        linear-gradient(145deg, rgba(18, 12, 22, 0.98), rgba(9, 7, 13, 0.98));
+    color: #fffaf5;
+}
+
+.category-card--is-that-ai::before {
+    position: absolute;
+    top: -42px;
+    right: -34px;
+    width: 122px;
+    height: 122px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 50%;
+    box-shadow:
+        0 0 0 18px rgba(255, 132, 34, 0.05),
+        0 0 0 38px rgba(165, 112, 255, 0.035);
+    content: "";
+}
+
+.category-card--is-that-ai:hover,
+.category-card--is-that-ai:focus-visible {
+    border-color: rgba(255, 157, 63, 0.78);
+    box-shadow: 0 34px 75px rgba(25, 9, 35, 0.78), 0 0 34px rgba(255, 132, 34, 0.14);
+}
+
+.category-card__tag {
+    position: relative;
+    z-index: 1;
+    width: fit-content;
+    padding: 0.34rem 0.58rem;
+    border: 1px solid rgba(255, 157, 63, 0.45);
+    border-radius: 999px;
+    background: rgba(255, 132, 34, 0.13);
+    color: #ffc18a;
+    font-size: 0.64rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.category-card--is-that-ai .category-card__title,
+.category-card--is-that-ai .category-card__description,
+.category-card__launch {
+    position: relative;
+    z-index: 1;
+}
+
+.category-card--is-that-ai .category-card__title {
+    font-size: clamp(1.3rem, 2.7vw, 1.65rem);
+}
+
+.category-card--is-that-ai .category-card__description {
+    color: rgba(255, 250, 245, 0.74);
+}
+
+.category-card__launch {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: auto;
+    padding-top: 0.7rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    color: #ffb777;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
 .category-card__icon-strip {
     display: flex;
     align-items: center;

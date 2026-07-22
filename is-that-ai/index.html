@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0b0711">
+  <meta name="description" content="Listen closely, vote fast, and decide whether each song was made by AI or a human artist.">
+  <title>Is That AI? — Music Guessing Game</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=20260722">
+</head>
+<body>
+  <div class="ambient ambient--orange" aria-hidden="true"></div>
+  <div class="ambient ambient--violet" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <a class="back-link" href="../games.html" data-nav-back aria-label="Back to Games">
+      <span aria-hidden="true">←</span>
+      <span>Games</span>
+    </a>
+    <a class="wordmark" href="./" aria-label="Is That AI home">
+      <span class="wordmark__pulse" aria-hidden="true"></span>
+      <span>IS THAT <strong>AI?</strong></span>
+    </a>
+    <div class="connection-pill" id="connectionPill" role="status">
+      <span class="connection-pill__dot" aria-hidden="true"></span>
+      <span id="connectionText">Connecting</span>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <section class="screen screen--home is-active" id="homeScreen" aria-labelledby="homeTitle">
+      <div class="hero-copy">
+        <p class="eyebrow"><span></span> The music origin challenge</p>
+        <h1 id="homeTitle">Can you hear the <em>difference?</em></h1>
+        <p class="hero-copy__lede">Ten mystery tracks. Thirty seconds each. Decide whether every song came from a human mind or a machine.</p>
+        <div class="rule-strip" aria-label="Game overview">
+          <div><strong>10</strong><span>Rounds</span></div>
+          <div><strong>30s</strong><span>To vote</span></div>
+          <div><strong>2</strong><span>Choices</span></div>
+        </div>
+      </div>
+
+      <div class="entry-card">
+        <div class="entry-card__topline">
+          <span>Join the listening room</span>
+          <span class="live-label"><i></i> Live multiplayer</span>
+        </div>
+        <label class="field-label" for="nameInput">Your display name</label>
+        <input class="text-input" id="nameInput" type="text" maxlength="20" autocomplete="nickname" placeholder="What should we call you?">
+
+        <button class="primary-button" id="createRoomButton" type="button">
+          <span>Create a room</span>
+          <span aria-hidden="true">→</span>
+        </button>
+
+        <div class="or-divider"><span>or join a friend</span></div>
+
+        <div class="join-row">
+          <label class="sr-only" for="roomCodeInput">Room code</label>
+          <input class="text-input text-input--code" id="roomCodeInput" type="text" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ROOM CODE">
+          <button class="secondary-button" id="joinRoomButton" type="button">Join room</button>
+        </div>
+        <p class="form-status" id="homeStatus" role="status" aria-live="polite"></p>
+      </div>
+
+      <div class="how-card">
+        <span class="how-card__number">01</span>
+        <div><strong>Listen anywhere</strong><p>Replay the 15-second preview or scrub to a different part of the track.</p></div>
+      </div>
+      <div class="how-card">
+        <span class="how-card__number">02</span>
+        <div><strong>Lock your call</strong><p>Pick AI or Human before the room timer ends.</p></div>
+      </div>
+      <div class="how-card">
+        <span class="how-card__number">03</span>
+        <div><strong>Watch the reveal</strong><p>See every vote, the real answer, and who got it right.</p></div>
+      </div>
+    </section>
+
+    <section class="screen screen--lobby" id="lobbyScreen" aria-labelledby="lobbyTitle" hidden>
+      <div class="lobby-heading">
+        <p class="eyebrow"><span></span> Listening room</p>
+        <h1 id="lobbyTitle">Get everyone <em>in the room.</em></h1>
+        <p>Share the code, then the host can start all ten rounds.</p>
+      </div>
+
+      <aside class="room-code-card">
+        <span class="room-code-card__label">Room code</span>
+        <strong id="roomCodeDisplay">-----</strong>
+        <button class="copy-button" id="copyInviteButton" type="button">Copy invite link</button>
+      </aside>
+
+      <div class="lobby-panel">
+        <div class="panel-heading">
+          <div>
+            <p class="panel-kicker">Players</p>
+            <h2><span id="playerCount">0</span> in the room</h2>
+          </div>
+          <span class="waiting-badge"><i></i> Waiting</span>
+        </div>
+        <ul class="player-list" id="lobbyPlayerList"></ul>
+        <p class="host-note" id="hostNote"></p>
+        <div class="lobby-actions">
+          <button class="primary-button primary-button--start" id="startGameButton" type="button">Start 10 rounds <span aria-hidden="true">→</span></button>
+          <button class="text-button" id="leaveLobbyButton" type="button">Leave room</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen screen--countdown" id="countdownScreen" aria-labelledby="countdownTitle" hidden>
+      <div class="countdown-mark" aria-hidden="true"><span></span><span></span><span></span></div>
+      <p class="eyebrow"><span></span> Round <b id="countdownRound">1</b> of 10</p>
+      <h1 id="countdownTitle">Listen closely.</h1>
+      <div class="countdown-number" id="countdownNumber">3</div>
+      <p>The mystery track is about to drop.</p>
+    </section>
+
+    <section class="screen screen--game" id="gameScreen" aria-labelledby="gameTrackTitle" hidden>
+      <div class="round-hud">
+        <div class="round-hud__item">
+          <span>Round</span>
+          <strong><b id="roundNumber">1</b> / 10</strong>
+        </div>
+        <div class="round-hud__progress" aria-hidden="true"><span id="roundProgress"></span></div>
+        <div class="round-hud__item round-hud__item--right">
+          <span>Votes locked</span>
+          <strong><b id="answeredCount">0</b> / <b id="activePlayerCount">0</b></strong>
+        </div>
+      </div>
+
+      <div class="game-stage">
+        <div class="timer-ring" id="timerRing" style="--progress: 1">
+          <div><strong id="roundTimer">30</strong><span>seconds</span></div>
+        </div>
+
+        <article class="track-card">
+          <div class="track-card__header">
+            <div class="track-index" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+            <div>
+              <p>Mystery track <span id="trackNumber">01</span></p>
+              <h1 id="gameTrackTitle">Origin unknown</h1>
+            </div>
+            <span class="preview-badge">15 sec preview</span>
+          </div>
+
+          <div class="waveform" id="waveform" aria-hidden="true"></div>
+
+          <div class="player-controls">
+            <button class="play-button" id="playButton" type="button" aria-label="Play 15-second preview">
+              <span class="play-icon" aria-hidden="true"></span>
+            </button>
+            <div class="scrubber-wrap">
+              <input id="audioScrubber" class="audio-scrubber" type="range" min="0" max="180" step="0.1" value="0" aria-label="Choose a position in the song">
+              <div class="time-row"><span id="audioCurrentTime">0:00</span><span id="audioDuration">3:00</span></div>
+            </div>
+          </div>
+          <p class="audio-note" id="audioNote">Pick any point in the song, then press play for a 15-second preview.</p>
+          <audio id="trackAudio" preload="metadata"></audio>
+        </article>
+
+        <section class="vote-panel" aria-labelledby="voteTitle">
+          <div class="vote-panel__heading">
+            <p class="panel-kicker">Make your call</p>
+            <h2 id="voteTitle">Who made this track?</h2>
+          </div>
+          <div class="vote-grid">
+            <button class="vote-button vote-button--ai" id="voteAiButton" type="button">
+              <span class="vote-button__icon" aria-hidden="true">AI</span>
+              <span><strong>Artificial Intelligence</strong><small>Generated by a model</small></span>
+              <i aria-hidden="true">→</i>
+            </button>
+            <button class="vote-button vote-button--human" id="voteHumanButton" type="button">
+              <span class="vote-button__icon" aria-hidden="true">H</span>
+              <span><strong>Human Artist</strong><small>Written and performed by people</small></span>
+              <i aria-hidden="true">→</i>
+            </button>
+          </div>
+          <p class="vote-status" id="voteStatus" role="status" aria-live="polite">Your choice locks in immediately.</p>
+        </section>
+      </div>
+    </section>
+
+    <section class="screen screen--reveal" id="revealScreen" aria-labelledby="revealTitle" hidden>
+      <div class="reveal-topline">
+        <span>Round <b id="revealRound">1</b> of 10</span>
+        <span>Next round in <b id="revealTimer">7</b>s</span>
+      </div>
+      <div class="reveal-answer">
+        <p id="revealEyebrow">Votes locked. Revealing origin…</p>
+        <h1 id="revealTitle">AI or Human?</h1>
+        <p id="revealSubtitle">Every player has made their call.</p>
+      </div>
+      <div class="pick-columns">
+        <section class="pick-column pick-column--ai" id="aiPickColumn">
+          <div class="pick-column__heading"><span class="choice-orb">AI</span><div><p>Picked</p><h2>Artificial Intelligence</h2></div><strong id="aiPickCount">0</strong></div>
+          <ul id="aiPickerList"></ul>
+          <span class="verdict-stamp" aria-hidden="true"></span>
+        </section>
+        <div class="versus-mark" aria-hidden="true">VS</div>
+        <section class="pick-column pick-column--human" id="humanPickColumn">
+          <div class="pick-column__heading"><span class="choice-orb">H</span><div><p>Picked</p><h2>Human Artist</h2></div><strong id="humanPickCount">0</strong></div>
+          <ul id="humanPickerList"></ul>
+          <span class="verdict-stamp" aria-hidden="true"></span>
+        </section>
+      </div>
+      <p class="unanswered-line" id="unansweredLine" hidden></p>
+    </section>
+
+    <section class="screen screen--results" id="resultsScreen" aria-labelledby="resultsTitle" hidden>
+      <div class="results-heading">
+        <p class="eyebrow"><span></span> Final results</p>
+        <h1 id="resultsTitle">The room has <em>spoken.</em></h1>
+        <p>Ten tracks later, here is who could really hear the difference.</p>
+      </div>
+
+      <div class="podium" id="podium" aria-label="Top three players"></div>
+
+      <section class="leaderboard-panel">
+        <div class="panel-heading">
+          <div><p class="panel-kicker">Final ranking</p><h2>Most correct answers</h2></div>
+          <span class="score-label">Score / 10</span>
+        </div>
+        <ol class="leaderboard" id="leaderboard"></ol>
+      </section>
+
+      <section class="scorecard-panel">
+        <div class="panel-heading">
+          <div><p class="panel-kicker">Round breakdown</p><h2>Who chose what</h2></div>
+          <span class="score-label">✓ correct &nbsp; × wrong</span>
+        </div>
+        <div class="score-table-wrap">
+          <table class="score-table" id="scoreTable"></table>
+        </div>
+      </section>
+
+      <div class="results-actions">
+        <button class="primary-button" id="playAgainButton" type="button">Play again <span aria-hidden="true">↻</span></button>
+        <button class="secondary-button" id="leaveResultsButton" type="button">Back to home</button>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="game.js?v=20260722"></script>
+  <script src="../site-navigation.js"></script>
+</body>
+</html>
