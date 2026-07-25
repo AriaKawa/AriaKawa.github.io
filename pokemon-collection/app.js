@@ -26,7 +26,10 @@ const SETS = {
     sv1: { code: "SV01", name: "Scarlet & Violet" },
     sv2: { code: "SV02", name: "Paldea Evolved" },
     sv3: { code: "SV03", name: "Obsidian Flames" },
-    sv6: { code: "SV06", name: "Twilight Masquerade" }
+    sv6: { code: "SV06", name: "Twilight Masquerade" },
+    sv2d: { code: "SV2D", name: "Clay Burst" },
+    sv2p: { code: "SV2P", name: "Snow Hazard" },
+    sv5m: { code: "SV5M", name: "Cyber Judge" }
 };
 
 const cards = [
@@ -67,7 +70,7 @@ const cards = [
     { name: "Stonjourner V", number: "115/202", setId: "swsh1", image: "115", quantity: 1 },
     { name: "Greedent V", number: "217/264", setId: "swsh8", image: "217", quantity: 1 },
     { name: "Galarian Sirfetch'd V", number: "SWSH043", setId: "swshp", image: "SWSH043", quantity: 1 },
-    { name: "Alcremie V", number: "022/073", setId: "swsh35", image: "22", quantity: 1 },
+    { name: "Alcremie V", number: "064/072", setId: "swsh45", image: "64", quantity: 1 },
     { name: "Medicham V", number: "083/203", setId: "swsh7", image: "83", quantity: 1 },
     { name: "Torkoal V", number: "188/202", setId: "swsh1", image: "188", quantity: 1 },
     { name: "Metagross V", number: "112/198", setId: "swsh6", image: "112", quantity: 1 },
@@ -97,7 +100,7 @@ const cards = [
     { name: "Fuecoco", number: "201/193", setId: "sv2", image: "201", quantity: 1 },
     { name: "Paldean Clodsire ex", number: "130/193", setId: "sv2", image: "130", quantity: 1 },
     { name: "Smeargle", number: "15/15", setId: "mcd22", image: "15", quantity: 2 },
-    { name: "Bellibolt ex", number: "237/193", setId: "sv2", image: "237", quantity: 1 },
+    { name: "Bellibolt", number: "201/197", setId: "sv3", image: "201", quantity: 1 },
     { name: "Revavroom ex", number: "224/197", setId: "sv3", image: "224", quantity: 1 },
     { name: "Comfey", number: "079/196", setId: "swsh11", image: "79", quantity: 1 },
     { name: "Jubilife Village", number: "212/189", setId: "swsh10", image: "212", quantity: 1 },
@@ -127,32 +130,118 @@ const cards = [
     { name: "Hatterene V", number: "065/159", setId: "swsh12pt5", image: "65", quantity: 1 },
     { name: "Roxanne", number: "GG66/GG70", setId: "swsh12pt5gg", image: "GG66", quantity: 1 },
     { name: "Lapras", number: "GG05/GG70", setId: "swsh12pt5gg", image: "GG05", quantity: 1 },
-    { name: "Elesa's Sparkle", number: "147/159", setId: "swsh12pt5", image: "147", quantity: 1 }
+    { name: "Elesa's Sparkle", number: "147/159", setId: "swsh12pt5", image: "147", quantity: 1 },
+    {
+        name: "Saguaro",
+        number: "095/071",
+        setId: "sv2d",
+        image: "095",
+        quantity: 1,
+        imageLow: "https://assets.tcgdex.net/ja/SV/SV2D/095/low.webp",
+        imageHigh: "https://assets.tcgdex.net/ja/SV/SV2D/095/high.webp"
+    },
+    {
+        name: "Miraidon",
+        number: "052/071",
+        setId: "sv5m",
+        image: "052",
+        quantity: 1,
+        imageLow: "https://www.serebii.net/card/cyberjudge/52.jpg",
+        imageHigh: "https://www.serebii.net/card/cyberjudge/52.jpg"
+    },
+    {
+        name: "Bramblin",
+        number: "072/071",
+        setId: "sv2p",
+        image: "072",
+        quantity: 1,
+        imageLow: "https://assets.tcgdex.net/ja/SV/SV2P/072/low.webp",
+        imageHigh: "https://assets.tcgdex.net/ja/SV/SV2P/072/high.webp"
+    }
 ];
 
+const inventoryRows = Array.isArray(window.POKEMON_INVENTORY) ? window.POKEMON_INVENTORY : [];
+const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
+const PRICE_CACHE_KEY = "ariakawa-pokemon-tcg-prices-v3";
+const PRICE_CACHE_MAX_AGE = 6 * 60 * 60 * 1000;
+
+function inventoryKey(name, number) {
+    return `${name.trim().toLocaleLowerCase()}|${number.trim().toLocaleUpperCase()}`;
+}
+
+const inventoryByCard = new Map(
+    inventoryRows.map((entry) => [inventoryKey(entry.name, entry.number), entry])
+);
+
+cards.forEach((card, index) => {
+    const inventory = inventoryByCard.get(inventoryKey(card.name, card.number));
+    card.collectionIndex = index;
+    card.apiId = card.imageLow ? null : `${card.setId}-${card.image}`;
+    card.quantity = inventory?.quantity ?? card.quantity;
+    card.language = inventory?.language ?? "English";
+    card.variant = inventory?.variant ?? "Holofoil";
+    card.unitPrice = inventory?.unitPrice ?? 0;
+    card.lineValue = inventory?.lineValue ?? card.unitPrice * card.quantity;
+    card.inventorySet = inventory?.set ?? SETS[card.setId]?.name ?? card.setId;
+});
+
+const unmatchedInventory = inventoryRows.filter(
+    (entry) => !cards.some((card) => inventoryKey(card.name, card.number) === inventoryKey(entry.name, entry.number))
+);
+if (unmatchedInventory.length) {
+    console.warn("Inventory entries without gallery artwork:", unmatchedInventory);
+}
+
 const grid = document.querySelector("#card-grid");
-const searchInput = document.querySelector("#card-search");
 const setFilter = document.querySelector("#set-filter");
 const sortSelect = document.querySelector("#sort-cards");
-const resultsCopy = document.querySelector("#results-copy");
 const emptyState = document.querySelector("#empty-state");
-const clearFilters = document.querySelector("#clear-filters");
+const priceCheckerButton = document.querySelector("#price-checker");
+const showPricesButton = document.querySelector("#show-prices");
+const controlRail = document.querySelector(".control-rail");
 const dialog = document.querySelector("#card-dialog");
 const dialogImage = document.querySelector("#dialog-image");
 const dialogName = document.querySelector("#dialog-card-name");
 const dialogSet = document.querySelector("#dialog-set");
 const dialogNumber = document.querySelector("#dialog-number");
 const dialogQuantity = document.querySelector("#dialog-quantity");
+const dialogVariant = document.querySelector("#dialog-variant");
+const dialogPrice = document.querySelector("#dialog-price");
+const dialogMarketLink = document.querySelector("#dialog-market-link");
 
-let visibleCards = cards.map((card, index) => ({ ...card, collectionIndex: index }));
+let visibleCards = [...cards];
 let activeIndex = 0;
+let priceRefreshPromise = null;
 
 function imageUrl(card, highResolution = false) {
+    if (card.imageLow) {
+        return highResolution ? card.imageHigh : card.imageLow;
+    }
     return `https://images.pokemontcg.io/${card.setId}/${card.image}${highResolution ? "_hires" : ""}.png`;
 }
 
 function setDetails(card) {
-    return SETS[card.setId] || { code: card.setId.toUpperCase(), name: card.setId.toUpperCase() };
+    return SETS[card.setId] || { code: card.setId.toUpperCase(), name: card.inventorySet || card.setId.toUpperCase() };
+}
+
+function cardPrice(card) {
+    return Number.isFinite(card.livePrice) ? card.livePrice : card.unitPrice;
+}
+
+function cardLineValue(card) {
+    return cardPrice(card) * card.quantity;
+}
+
+function fallbackTcgplayerUrl(card) {
+    const query = encodeURIComponent(`${card.name} ${card.inventorySet} ${card.number}`);
+    return `https://www.tcgplayer.com/search/pokemon/product?productLineName=pokemon&q=${query}&view=grid`;
+}
+
+function priceSourceLabel(card) {
+    if (card.liveUpdatedAt) {
+        return `TCGplayer · ${card.liveUpdatedAt}`;
+    }
+    return card.language === "Japanese" ? "Saved Japanese market" : "Saved market value";
 }
 
 function populateSetFilter() {
@@ -181,12 +270,14 @@ function createCardTile(card, index) {
     button.dataset.index = index;
     button.setAttribute(
         "aria-label",
-        `View ${card.name}, ${card.number}, ${set.name}${card.quantity > 1 ? `, ${card.quantity} copies` : ""}`
+        `View ${card.name}, ${card.number}, ${set.name}, ${money.format(cardPrice(card))}${card.quantity > 1 ? `, ${card.quantity} copies` : ""}`
     );
 
     const image = document.createElement("img");
     image.src = imageUrl(card);
-    image.srcset = `${imageUrl(card)} 245w, ${imageUrl(card, true)} 734w`;
+    if (imageUrl(card) !== imageUrl(card, true)) {
+        image.srcset = `${imageUrl(card)} 245w, ${imageUrl(card, true)} 734w`;
+    }
     image.sizes = "(max-width: 640px) 48vw, (max-width: 900px) 31vw, (max-width: 1250px) 23vw, 18vw";
     image.alt = `${card.name} ${card.number}`;
     image.decoding = "async";
@@ -214,7 +305,22 @@ function createCardTile(card, index) {
         button.append(badge);
     }
 
-    item.append(button);
+    const hoverPrice = document.createElement("span");
+    hoverPrice.className = "hover-price";
+    hoverPrice.innerHTML = `<strong>${money.format(cardPrice(card))}</strong><span>${priceSourceLabel(card)}</span>`;
+    button.append(hoverPrice);
+
+    const priceRow = document.createElement("div");
+    priceRow.className = "card-price-row";
+    const unitLabel = document.createElement("strong");
+    unitLabel.textContent = money.format(cardPrice(card));
+    const detailLabel = document.createElement("span");
+    detailLabel.textContent = card.quantity > 1
+        ? `${money.format(cardLineValue(card))} total`
+        : priceSourceLabel(card);
+    priceRow.append(unitLabel, detailLabel);
+
+    item.append(button, priceRow);
     return item;
 }
 
@@ -223,38 +329,28 @@ function compareSetAndNumber(left, right) {
     if (setDifference !== 0) {
         return setDifference;
     }
-
     return left.image.localeCompare(right.image, undefined, { numeric: true });
 }
 
 function updateCollection() {
-    const query = searchInput.value.trim().toLocaleLowerCase();
     const selectedSet = setFilter.value;
-
-    visibleCards = cards
-        .map((card, index) => ({ ...card, collectionIndex: index }))
-        .filter((card) => {
-            const set = setDetails(card);
-            const searchable = `${card.name} ${card.number} ${set.code} ${set.name}`.toLocaleLowerCase();
-            return (selectedSet === "all" || card.setId === selectedSet) && searchable.includes(query);
-        });
+    visibleCards = cards.filter((card) => selectedSet === "all" || card.setId === selectedSet);
 
     if (sortSelect.value === "name") {
         visibleCards.sort((left, right) => left.name.localeCompare(right.name) || compareSetAndNumber(left, right));
     } else if (sortSelect.value === "set") {
         visibleCards.sort(compareSetAndNumber);
+    } else if (sortSelect.value === "value-desc") {
+        visibleCards.sort((left, right) => cardPrice(right) - cardPrice(left) || left.name.localeCompare(right.name));
+    } else if (sortSelect.value === "value-asc") {
+        visibleCards.sort((left, right) => cardPrice(left) - cardPrice(right) || left.name.localeCompare(right.name));
+    } else {
+        visibleCards.sort((left, right) => left.collectionIndex - right.collectionIndex);
     }
 
     grid.replaceChildren(...visibleCards.map(createCardTile));
     emptyState.hidden = visibleCards.length !== 0;
     grid.hidden = visibleCards.length === 0;
-
-    const visibleCopies = visibleCards.reduce((sum, card) => sum + card.quantity, 0);
-    if (visibleCards.length === cards.length) {
-        resultsCopy.textContent = `${visibleCards.length} cards · ${visibleCopies} copies`;
-    } else {
-        resultsCopy.textContent = `${visibleCards.length} matching ${visibleCards.length === 1 ? "card" : "cards"}`;
-    }
 }
 
 function showCard(index) {
@@ -271,6 +367,9 @@ function showCard(index) {
     dialogSet.textContent = `${set.name} · ${set.code}`;
     dialogNumber.textContent = `Collector number ${card.number}`;
     dialogQuantity.textContent = card.quantity === 1 ? "1 copy in the collection" : `${card.quantity} copies in the collection`;
+    dialogVariant.textContent = `${card.language} · ${card.variant}`;
+    dialogPrice.textContent = `${money.format(cardPrice(card))} market`;
+    dialogMarketLink.href = card.tcgplayerUrl || fallbackTcgplayerUrl(card);
 
     if (!dialog.open) {
         dialog.showModal();
@@ -281,30 +380,180 @@ function moveDialog(direction) {
     if (visibleCards.length < 2) {
         return;
     }
+    showCard((activeIndex + direction + visibleCards.length) % visibleCards.length);
+}
 
-    const nextIndex = (activeIndex + direction + visibleCards.length) % visibleCards.length;
-    showCard(nextIndex);
+function preferredMarketPrice(card, priceGroups) {
+    const variant = card.variant.toLocaleLowerCase();
+    const preferredKeys = variant.includes("reverse")
+        ? ["reverseHolofoil", "holofoil", "normal"]
+        : variant.includes("normal")
+            ? ["normal", "holofoil", "reverseHolofoil"]
+            : ["holofoil", "reverseHolofoil", "normal"];
+
+    for (const key of preferredKeys) {
+        const market = priceGroups?.[key]?.market;
+        if (Number.isFinite(market)) {
+            return market;
+        }
+    }
+
+    for (const group of Object.values(priceGroups || {})) {
+        if (Number.isFinite(group?.market)) {
+            return group.market;
+        }
+    }
+    return null;
+}
+
+function applyLivePriceRecords(records) {
+    const recordById = new Map(records.map((record) => [record.id, record]));
+    cards.forEach((card) => {
+        if (!card.apiId) {
+            return;
+        }
+        const record = recordById.get(card.apiId);
+        const market = preferredMarketPrice(card, record?.tcgplayer?.prices);
+        if (Number.isFinite(market)) {
+            card.livePrice = market;
+            card.liveUpdatedAt = record.tcgplayer.updatedAt;
+            card.tcgplayerUrl = record.tcgplayer.url;
+        }
+    });
+}
+
+function readPriceCache() {
+    try {
+        const cached = JSON.parse(window.localStorage.getItem(PRICE_CACHE_KEY) || "null");
+        if (!cached || Date.now() - cached.savedAt > PRICE_CACHE_MAX_AGE || !Array.isArray(cached.records)) {
+            return null;
+        }
+        return cached.records;
+    } catch {
+        return null;
+    }
+}
+
+function writePriceCache(records) {
+    try {
+        window.localStorage.setItem(PRICE_CACHE_KEY, JSON.stringify({ savedAt: Date.now(), records }));
+    } catch {
+        // Prices still work for this visit when storage is unavailable.
+    }
+}
+
+async function fetchLivePrices() {
+    const cached = readPriceCache();
+    if (cached) {
+        return cached;
+    }
+
+    const apiIds = cards.filter((card) => card.apiId).map((card) => card.apiId);
+    const batches = [];
+    for (let index = 0; index < apiIds.length; index += 20) {
+        batches.push(apiIds.slice(index, index + 20));
+    }
+
+    async function requestBatch(batch) {
+        let lastStatus = 0;
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+            const params = new URLSearchParams({
+                q: batch.map((id) => `id:${id}`).join(" OR "),
+                select: "id,tcgplayer",
+                pageSize: "250"
+            });
+            const response = await fetch(`https://api.pokemontcg.io/v2/cards?${params}`);
+            if (response.ok) {
+                const payload = await response.json();
+                return payload.data || [];
+            }
+            lastStatus = response.status;
+            await new Promise((resolve) => window.setTimeout(resolve, 450 * (attempt + 1)));
+        }
+        throw new Error(`Price request failed: ${lastStatus}`);
+    }
+
+    const records = [];
+    for (const batch of batches) {
+        try {
+            records.push(...await requestBatch(batch));
+        } catch (error) {
+            console.warn("A TCGplayer price batch was unavailable.", error);
+        }
+    }
+    if (!records.length) {
+        throw new Error("No live prices were returned.");
+    }
+    if (records.length >= Math.floor(apiIds.length * 0.8)) {
+        writePriceCache(records);
+    }
+    return records;
+}
+
+function ensureLivePrices() {
+    if (priceRefreshPromise) {
+        return priceRefreshPromise;
+    }
+
+    priceCheckerButton.dataset.status = "refreshing";
+    priceCheckerButton.title = "Refreshing TCGplayer market prices";
+    priceRefreshPromise = fetchLivePrices()
+        .then((records) => {
+            applyLivePriceRecords(records);
+            priceCheckerButton.dataset.status = "live";
+            priceCheckerButton.title = "TCGplayer market prices are current";
+            updateCollection();
+            if (dialog.open) {
+                showCard(activeIndex);
+            }
+        })
+        .catch((error) => {
+            console.warn("Live price refresh unavailable; using saved prices.", error);
+            priceCheckerButton.dataset.status = "saved";
+            priceCheckerButton.title = "Using saved market prices";
+        });
+
+    return priceRefreshPromise;
+}
+
+function togglePressed(button, force) {
+    const nextState = typeof force === "boolean"
+        ? force
+        : button.getAttribute("aria-pressed") !== "true";
+    button.setAttribute("aria-pressed", String(nextState));
+    return nextState;
 }
 
 grid.addEventListener("click", (event) => {
     const button = event.target.closest(".card-button");
-    if (!button) {
-        return;
+    if (button) {
+        showCard(Number(button.dataset.index));
     }
-
-    showCard(Number(button.dataset.index));
 });
 
-searchInput.addEventListener("input", updateCollection);
 setFilter.addEventListener("change", updateCollection);
-sortSelect.addEventListener("change", updateCollection);
-
-clearFilters.addEventListener("click", () => {
-    searchInput.value = "";
-    setFilter.value = "all";
-    sortSelect.value = "collection";
+sortSelect.addEventListener("change", () => {
     updateCollection();
-    searchInput.focus();
+    if (sortSelect.value.startsWith("value-")) {
+        ensureLivePrices();
+    }
+});
+
+priceCheckerButton.addEventListener("click", () => {
+    const enabled = togglePressed(priceCheckerButton);
+    document.body.classList.toggle("price-checker-enabled", enabled);
+    if (enabled) {
+        ensureLivePrices();
+    }
+});
+
+showPricesButton.addEventListener("click", () => {
+    const enabled = togglePressed(showPricesButton);
+    document.body.classList.toggle("show-prices", enabled);
+    showPricesButton.textContent = enabled ? "Hide prices" : "Show prices";
+    if (enabled) {
+        ensureLivePrices();
+    }
 });
 
 document.querySelector("#dialog-close").addEventListener("click", () => dialog.close());
@@ -321,7 +570,6 @@ document.addEventListener("keydown", (event) => {
     if (!dialog.open) {
         return;
     }
-
     if (event.key === "ArrowLeft") {
         moveDialog(-1);
     } else if (event.key === "ArrowRight") {
@@ -329,9 +577,12 @@ document.addEventListener("keydown", (event) => {
     }
 });
 
-document.querySelector("#unique-count").textContent = cards.length;
-document.querySelector("#copy-count").textContent = cards.reduce((sum, card) => sum + card.quantity, 0);
-document.querySelector("#set-count").textContent = new Set(cards.map((card) => card.setId)).size;
+window.addEventListener("scroll", () => {
+    controlRail.classList.toggle("is-scrolled", window.scrollY > 24);
+}, { passive: true });
+
+document.querySelector("#total-card-count").textContent =
+    `${cards.reduce((sum, card) => sum + card.quantity, 0)} cards`;
 
 populateSetFilter();
 updateCollection();

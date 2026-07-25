@@ -6,11 +6,11 @@
     <meta name="theme-color" content="#111515">
     <meta
         name="description"
-        content="AriaKawa's personal Pokémon Trading Card Game collection."
+        content="Browse AriaKawa's Pokémon card collection with live TCGplayer market prices."
     >
     <meta property="og:type" content="website">
     <meta property="og:title" content="Pokémon Card Collection — AriaKawa">
-    <meta property="og:description" content="Browse 98 unique cards from AriaKawa's personal Pokémon TCG collection.">
+    <meta property="og:description" content="Browse 101 unique cards from AriaKawa's personal Pokémon TCG collection.">
     <meta property="og:url" content="https://ariakawa.github.io/pokemon-collection/">
     <meta property="og:image" content="https://ariakawa.github.io/pokemon-collection/og.png">
     <meta property="og:image:width" content="1536">
@@ -18,7 +18,7 @@
     <meta property="og:image:alt" content="AriaKawa Pokémon Collection with five abstract elemental trading cards">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Pokémon Card Collection — AriaKawa">
-    <meta name="twitter:description" content="Browse 98 unique cards from AriaKawa's personal Pokémon TCG collection.">
+    <meta name="twitter:description" content="Browse 101 unique cards from AriaKawa's personal Pokémon TCG collection.">
     <meta name="twitter:image" content="https://ariakawa.github.io/pokemon-collection/og.png">
     <title>Pokémon Card Collection — AriaKawa</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -31,69 +31,43 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <header class="collection-header">
-        <div class="collection-header__inner">
+    <main>
+        <nav class="control-rail" aria-label="Collection controls">
             <a class="back-link" href="../other.html" aria-label="Back to the Other projects page">
                 <span aria-hidden="true">←</span>
                 <span>Project Vault</span>
             </a>
 
-            <div class="collection-heading">
-                <p class="eyebrow">AriaKawa · Card Vault</p>
-                <h1>Pokémon collection</h1>
-                <p class="collection-intro">
-                    A visual binder of full arts, promos, trainer galleries, and longtime favorites.
-                </p>
+            <div class="control-rail__center">
+                <label class="select-control">
+                    <span class="sr-only">Filter by set</span>
+                    <select id="set-filter">
+                        <option value="all">All sets</option>
+                    </select>
+                </label>
+
+                <label class="select-control">
+                    <span class="sr-only">Sort cards</span>
+                    <select id="sort-cards">
+                        <option value="collection">Collection order</option>
+                        <option value="name">Name A–Z</option>
+                        <option value="set">Set &amp; number</option>
+                        <option value="value-desc">Value: high to low</option>
+                        <option value="value-asc">Value: low to high</option>
+                    </select>
+                </label>
             </div>
 
-            <div class="collection-stats" aria-label="Collection totals">
-                <div class="stat">
-                    <strong id="unique-count">98</strong>
-                    <span>unique cards</span>
-                </div>
-                <div class="stat">
-                    <strong id="copy-count">103</strong>
-                    <span>total cards</span>
-                </div>
-                <div class="stat">
-                    <strong id="set-count">28</strong>
-                    <span>sets</span>
-                </div>
+            <div class="control-rail__actions">
+                <button class="control-button" id="price-checker" type="button" aria-pressed="false">
+                    <span class="status-dot" aria-hidden="true"></span>
+                    <span>Price checker</span>
+                </button>
+                <button class="control-button" id="show-prices" type="button" aria-pressed="false">
+                    Show prices
+                </button>
             </div>
-        </div>
-    </header>
-
-    <main>
-        <section class="collection-tools" aria-label="Collection controls">
-            <label class="search-control">
-                <span class="sr-only">Search cards</span>
-                <span class="search-icon" aria-hidden="true"></span>
-                <input
-                    id="card-search"
-                    type="search"
-                    autocomplete="off"
-                    placeholder="Search the collection"
-                >
-            </label>
-
-            <label class="select-control">
-                <span class="sr-only">Filter by set</span>
-                <select id="set-filter">
-                    <option value="all">All sets</option>
-                </select>
-            </label>
-
-            <label class="select-control">
-                <span class="sr-only">Sort cards</span>
-                <select id="sort-cards">
-                    <option value="collection">Collection order</option>
-                    <option value="name">Name A–Z</option>
-                    <option value="set">Set &amp; number</option>
-                </select>
-            </label>
-
-            <p class="results-copy" id="results-copy" aria-live="polite"></p>
-        </section>
+        </nav>
 
         <section>
             <h2 class="sr-only">Cards</h2>
@@ -101,8 +75,7 @@
             <div class="empty-state" id="empty-state" hidden>
                 <span class="empty-state__orb" aria-hidden="true"></span>
                 <h2>No cards found</h2>
-                <p>Try another Pokémon, set, or card number.</p>
-                <button type="button" id="clear-filters">Clear filters</button>
+                <p>Choose another set to keep browsing.</p>
             </div>
         </section>
     </main>
@@ -121,6 +94,11 @@
                 <h2 id="dialog-card-name"></h2>
                 <p class="dialog-number" id="dialog-number"></p>
                 <p class="dialog-quantity" id="dialog-quantity"></p>
+                <p class="dialog-variant" id="dialog-variant"></p>
+                <div class="dialog-market">
+                    <span class="dialog-price" id="dialog-price"></span>
+                    <a id="dialog-market-link" target="_blank" rel="noopener noreferrer">View on TCGplayer ↗</a>
+                </div>
                 <p class="dialog-hint">Use the arrow keys to move through the collection.</p>
             </div>
 
@@ -128,10 +106,9 @@
         </div>
     </dialog>
 
-    <footer>
-        <p>Pokémon card imagery provided by the Pokémon TCG API. Pokémon and Pokémon character names are trademarks of Nintendo.</p>
-    </footer>
+    <div class="card-count" id="total-card-count" aria-label="Total card count">106 cards</div>
 
+    <script src="inventory.js"></script>
     <script src="app.js"></script>
     <script src="../site-navigation.js"></script>
 </body>
