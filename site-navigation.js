@@ -44,6 +44,7 @@
     "Smash.html": "other.html",
     "league-tracker.html": "other.html",
     "innuendo-tee.html": "other.html",
+    "pokemon-collection/index.html": "other.html",
 
     "AutoRogue/index.html": "other.html",
     "Council.html": "other.html"

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#111515">
+    <meta
+        name="description"
+        content="AriaKawa's personal Pokémon Trading Card Game collection."
+    >
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Pokémon Card Collection — AriaKawa">
+    <meta property="og:description" content="Browse 98 unique cards from AriaKawa's personal Pokémon TCG collection.">
+    <meta property="og:url" content="https://ariakawa.github.io/pokemon-collection/">
+    <meta property="og:image" content="https://ariakawa.github.io/pokemon-collection/og.png">
+    <meta property="og:image:width" content="1536">
+    <meta property="og:image:height" content="1024">
+    <meta property="og:image:alt" content="AriaKawa Pokémon Collection with five abstract elemental trading cards">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Pokémon Card Collection — AriaKawa">
+    <meta name="twitter:description" content="Browse 98 unique cards from AriaKawa's personal Pokémon TCG collection.">
+    <meta name="twitter:image" content="https://ariakawa.github.io/pokemon-collection/og.png">
+    <title>Pokémon Card Collection — AriaKawa</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://images.pokemontcg.io">
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@600;700;800&display=swap"
+        rel="stylesheet"
+    >
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="collection-header">
+        <div class="collection-header__inner">
+            <a class="back-link" href="../other.html" aria-label="Back to the Other projects page">
+                <span aria-hidden="true">←</span>
+                <span>Project Vault</span>
+            </a>
+
+            <div class="collection-heading">
+                <p class="eyebrow">AriaKawa · Card Vault</p>
+                <h1>Pokémon collection</h1>
+                <p class="collection-intro">
+                    A visual binder of full arts, promos, trainer galleries, and longtime favorites.
+                </p>
+            </div>
+
+            <div class="collection-stats" aria-label="Collection totals">
+                <div class="stat">
+                    <strong id="unique-count">98</strong>
+                    <span>unique cards</span>
+                </div>
+                <div class="stat">
+                    <strong id="copy-count">103</strong>
+                    <span>total cards</span>
+                </div>
+                <div class="stat">
+                    <strong id="set-count">28</strong>
+                    <span>sets</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section class="collection-tools" aria-label="Collection controls">
+            <label class="search-control">
+                <span class="sr-only">Search cards</span>
+                <span class="search-icon" aria-hidden="true"></span>
+                <input
+                    id="card-search"
+                    type="search"
+                    autocomplete="off"
+                    placeholder="Search the collection"
+                >
+            </label>
+
+            <label class="select-control">
+                <span class="sr-only">Filter by set</span>
+                <select id="set-filter">
+                    <option value="all">All sets</option>
+                </select>
+            </label>
+
+            <label class="select-control">
+                <span class="sr-only">Sort cards</span>
+                <select id="sort-cards">
+                    <option value="collection">Collection order</option>
+                    <option value="name">Name A–Z</option>
+                    <option value="set">Set &amp; number</option>
+                </select>
+            </label>
+
+            <p class="results-copy" id="results-copy" aria-live="polite"></p>
+        </section>
+
+        <section>
+            <h2 class="sr-only">Cards</h2>
+            <div class="card-grid" id="card-grid" role="list"></div>
+            <div class="empty-state" id="empty-state" hidden>
+                <span class="empty-state__orb" aria-hidden="true"></span>
+                <h2>No cards found</h2>
+                <p>Try another Pokémon, set, or card number.</p>
+                <button type="button" id="clear-filters">Clear filters</button>
+            </div>
+        </section>
+    </main>
+
+    <dialog class="card-dialog" id="card-dialog" aria-labelledby="dialog-card-name">
+        <div class="dialog-shell">
+            <button class="dialog-close" id="dialog-close" type="button" aria-label="Close card preview">×</button>
+            <button class="dialog-nav dialog-nav--previous" id="dialog-previous" type="button" aria-label="Previous card">←</button>
+
+            <div class="dialog-card-image">
+                <img id="dialog-image" alt="">
+            </div>
+
+            <div class="dialog-details">
+                <p class="dialog-kicker" id="dialog-set"></p>
+                <h2 id="dialog-card-name"></h2>
+                <p class="dialog-number" id="dialog-number"></p>
+                <p class="dialog-quantity" id="dialog-quantity"></p>
+                <p class="dialog-hint">Use the arrow keys to move through the collection.</p>
+            </div>
+
+            <button class="dialog-nav dialog-nav--next" id="dialog-next" type="button" aria-label="Next card">→</button>
+        </div>
+    </dialog>
+
+    <footer>
+        <p>Pokémon card imagery provided by the Pokémon TCG API. Pokémon and Pokémon character names are trademarks of Nintendo.</p>
+    </footer>
+
+    <script src="app.js"></script>
+    <script src="../site-navigation.js"></script>
+</body>
+</html>
