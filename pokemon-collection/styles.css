@@ -100,15 +100,13 @@ main {
     border-radius: 999px;
     background: rgba(12, 16, 15, 0);
     content: "";
-    backdrop-filter: blur(0);
-    transition: background 180ms ease, border-color 180ms ease, backdrop-filter 180ms ease;
+    transition: background 180ms ease, border-color 180ms ease;
 }
 
 .control-rail.is-scrolled::before {
     border-color: var(--line);
-    background: rgba(12, 16, 15, 0.84);
-    box-shadow: 0 15px 38px rgba(0, 0, 0, 0.28);
-    backdrop-filter: blur(16px);
+    background: rgba(12, 16, 15, 0.97);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.24);
 }
 
 .back-link {
@@ -237,6 +235,11 @@ select:focus-visible,
 .card-tile {
     position: relative;
     min-width: 0;
+    content-visibility: auto;
+    contain-intrinsic-size: auto 440px;
+}
+
+.card-tile--intro {
     animation: card-in 380ms both;
     animation-delay: min(calc(var(--card-index) * 14ms), 300ms);
 }
@@ -261,7 +264,7 @@ select:focus-visible,
     border: 0;
     border-radius: 4.6% / 3.35%;
     background: transparent;
-    box-shadow: var(--shadow);
+    box-shadow: 0 12px 26px rgba(0, 0, 0, 0.34);
     transition: transform 180ms ease, filter 180ms ease, box-shadow 180ms ease;
 }
 
@@ -443,7 +446,6 @@ select:focus-visible,
     font-weight: 800;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    backdrop-filter: blur(12px);
 }
 
 .card-dialog {

@@ -263,6 +263,9 @@ function createCardTile(card, index) {
     const set = setDetails(card);
     const item = document.createElement("article");
     item.className = "card-tile";
+    if (index < 10) {
+        item.classList.add("card-tile--intro");
+    }
     item.setAttribute("role", "listitem");
     item.style.setProperty("--card-index", index);
 
@@ -277,10 +280,8 @@ function createCardTile(card, index) {
 
     const image = document.createElement("img");
     image.src = imageUrl(card);
-    if (imageUrl(card) !== imageUrl(card, true)) {
-        image.srcset = `${imageUrl(card)} 245w, ${imageUrl(card, true)} 734w`;
-    }
-    image.sizes = "(max-width: 640px) 48vw, (max-width: 900px) 31vw, (max-width: 1250px) 23vw, 18vw";
+    image.width = 245;
+    image.height = 342;
     image.alt = `${card.name} ${card.number}`;
     image.decoding = "async";
     image.loading = index < 10 ? "eager" : "lazy";
@@ -579,8 +580,21 @@ document.addEventListener("keydown", (event) => {
     }
 });
 
+let controlRailScrolled = false;
+let scrollFramePending = false;
 window.addEventListener("scroll", () => {
-    controlRail.classList.toggle("is-scrolled", window.scrollY > 24);
+    if (scrollFramePending) {
+        return;
+    }
+    scrollFramePending = true;
+    window.requestAnimationFrame(() => {
+        const nextScrolled = window.scrollY > 24;
+        if (nextScrolled !== controlRailScrolled) {
+            controlRailScrolled = nextScrolled;
+            controlRail.classList.toggle("is-scrolled", nextScrolled);
+        }
+        scrollFramePending = false;
+    });
 }, { passive: true });
 
 document.querySelector("#total-card-count").textContent =
