@@ -1,4 +1,4 @@
-const SETS = {
+const LEGACY_SETS = {
     swsh1: { code: "SWSH01", name: "Sword & Shield" },
     swsh3: { code: "SWSH03", name: "Darkness Ablaze" },
     swsh4: { code: "SWSH04", name: "Vivid Voltage" },
@@ -32,7 +32,7 @@ const SETS = {
     sv5m: { code: "SV5M", name: "Cyber Judge" }
 };
 
-const cards = [
+const legacyCards = [
     { name: "Garbodor V", number: "100/203", setId: "swsh7", image: "100", quantity: 1 },
     { name: "Garbodor VMAX", number: "101/203", setId: "swsh7", image: "101", quantity: 2 },
     { name: "Galarian Perrserker V", number: "129/196", setId: "swsh11", image: "129", quantity: 1 },
@@ -160,9 +160,11 @@ const cards = [
     }
 ];
 
+const SETS = window.POKEMON_SETS;
+const cards = window.POKEMON_CARDS;
 const inventoryRows = Array.isArray(window.POKEMON_INVENTORY) ? window.POKEMON_INVENTORY : [];
 const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
-const PRICE_CACHE_KEY = "ariakawa-pokemon-tcg-prices-v3";
+const PRICE_CACHE_KEY = "ariakawa-pokemon-tcg-prices-v4";
 const PRICE_CACHE_MAX_AGE = 6 * 60 * 60 * 1000;
 
 function inventoryKey(name, number) {
@@ -450,8 +452,8 @@ async function fetchLivePrices() {
 
     const apiIds = cards.filter((card) => card.apiId).map((card) => card.apiId);
     const batches = [];
-    for (let index = 0; index < apiIds.length; index += 20) {
-        batches.push(apiIds.slice(index, index + 20));
+    for (let index = 0; index < apiIds.length; index += 4) {
+        batches.push(apiIds.slice(index, index + 4));
     }
 
     async function requestBatch(batch) {
