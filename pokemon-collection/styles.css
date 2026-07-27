@@ -239,6 +239,12 @@ select:focus-visible,
     contain-intrinsic-size: auto 440px;
 }
 
+.card-tile:hover,
+.card-tile:focus-within {
+    z-index: 3;
+    content-visibility: visible;
+}
+
 .card-tile--intro {
     animation: card-in 380ms both;
     animation-delay: min(calc(var(--card-index) * 14ms), 300ms);
