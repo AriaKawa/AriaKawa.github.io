@@ -289,6 +289,7 @@ select:focus-visible,
 .card-button img {
     display: block;
     width: 100%;
+    height: auto;
     aspect-ratio: 245 / 342;
     border-radius: inherit;
     object-fit: cover;
