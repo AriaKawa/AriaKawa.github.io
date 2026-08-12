@@ -6,8 +6,8 @@
     <meta name="theme-color" content="#11130f" />
     <meta name="description" content="Deadroad.io — deploy, defend, and reclaim a persistent zombie-infested continent." />
     <title>Deadroad.io</title>
-    <script type="module" crossorigin src="./assets/index-CGZZnhC6.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-D8OHySnP.css">
+    <script type="module" crossorigin src="./assets/index-BsYP9Ecn.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-C-m_YS5B.css">
   </head>
   <body>
     <main id="game-shell">
@@ -25,6 +25,39 @@
         </div>
         <p id="menu-status">Local continent server required on port 2567.</p>
         <div id="credits-panel" hidden>Original procedural placeholder art. No external game assets used.</div>
+      </section>
+
+      <section id="globe-deploy" class="globe-deploy" hidden>
+        <div id="globe-canvas" class="globe-canvas"></div>
+        <header class="globe-topbar">
+          <div class="brand-small"><i></i> DEADROAD.IO <span>COLONY WORLD // ORBITAL ROADWATCH</span></div>
+          <div class="globe-protection"><small id="globe-mode">COMMANDER MODE // PROTECTED</small><strong>NO CORE · NO PERSONAL HORDE</strong></div>
+          <button id="globe-back-button" class="key-button">ESC // BACK</button>
+        </header>
+        <aside class="globe-inspector panel">
+          <div class="eyebrow">ORBITAL DEPLOYMENT SURVEY</div>
+          <h2 id="globe-region">Rotate the colony world</h2>
+          <div class="state-line"><span id="globe-state" class="state safe">PROTECTED</span><span>ROADWATCH 87.9</span></div>
+          <div class="globe-grid">
+            <div><small>BIOME</small><strong id="globe-biome">—</strong></div><div><small>TERRAIN</small><strong id="globe-terrain">—</strong></div>
+            <div class="wide"><small>ROAD ACCESS</small><strong id="globe-road">Hover a world tile</strong></div>
+            <div class="wide"><small>RIVER ACCESS</small><strong id="globe-river">—</strong></div>
+            <div class="wide"><small>NEARBY SIGNALS</small><strong id="globe-nearby">No tile selected</strong></div>
+            <div><small>THREAT</small><strong id="globe-threat">—</strong></div><div><small>INFESTATION</small><strong id="globe-infestation">—</strong></div>
+          </div>
+          <p id="globe-recommend">Drag to survey. Click a tile, then choose a pulsing roadside site.</p>
+          <button id="globe-focus-button" class="ghost-button">[F] FOCUS SELECTION</button>
+          <button id="globe-deploy-button" class="primary-button" disabled>SELECT A WORLD TILE</button>
+        </aside>
+        <aside class="globe-controls panel">
+          <div><kbd>DRAG</kbd><span>Rotate planet</span></div><div><kbd>WHEEL</kbd><span>Zoom</span></div>
+          <div><kbd>WASD</kbd><span>Slow rotate</span></div><div><kbd>Q / E</kbd><span>Orbit</span></div>
+          <div><kbd>F</kbd><span>Focus site</span></div><div><kbd>M</kbd><span>Map layer</span></div>
+          <div><kbd>F3</kbd><span>Debug</span></div><div><kbd>RMB</kbd><span>Clear</span></div>
+        </aside>
+        <div class="globe-legend"><span class="safe">SAFE</span><span class="contested">CONTESTED</span><span class="infested">INFESTED</span><span class="overrun">OVERRUN</span><b>◈ DEPLOYMENT SITE</b></div>
+        <div id="globe-tooltip" class="globe-tooltip" hidden></div>
+        <div class="globe-transmission">THE DEAD OWN THE OLD ROADS. PICK WHERE WE TAKE ONE BACK.</div>
       </section>
 
       <section id="hud" class="hud" hidden>
