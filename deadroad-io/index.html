@@ -6,8 +6,8 @@
     <meta name="theme-color" content="#11130f" />
     <meta name="description" content="Deadroad.io — deploy, defend, and reclaim a persistent zombie-infested continent." />
     <title>Deadroad.io</title>
-    <script type="module" crossorigin src="./assets/index-BOtSxmMb.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-BbX8R4a3.css">
+    <script type="module" crossorigin src="./assets/index-CGZZnhC6.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-D8OHySnP.css">
   </head>
   <body>
     <main id="game-shell">
@@ -47,6 +47,7 @@
             <div><dt>HOSTILES</dt><dd id="zombie-value">0 ON ROAD</dd></div>
           </dl>
           <p id="selection-copy">You are protected in Commander Mode. Select a cyan roadside lot in safe or contested territory.</p>
+          <div class="field-rule"><i></i><span>Roads are enemy lanes. Bases deploy beside roads.</span></div>
           <button id="deploy-button" class="primary-button" disabled>SELECT A LOT</button>
           <button id="redeploy-button" class="ghost-button" hidden>REDEPLOY CONVOY</button>
         </aside>
@@ -56,6 +57,7 @@
         <aside class="controls panel">
           <div><kbd>WASD</kbd><span>Pan</span></div><div><kbd>Wheel</kbd><span>Zoom</span></div>
           <div><kbd>B</kbd><span>Build</span></div><div><kbd>T</kbd><span>Redeploy</span></div>
+          <div><kbd>F3</kbd><span>Debug map</span></div><div><kbd>M</kbd><span>War map</span></div>
         </aside>
 
         <section id="build-menu" class="build-menu panel">
@@ -71,7 +73,7 @@
           <div class="map-header"><div><span class="eyebrow">ROADWATCH STRATEGIC DISPLAY</span><h2>CONTINENT 01 // FRONT LINE</h2></div><button id="map-close">×</button></div>
           <canvas id="continent-map" width="900" height="540"></canvas>
           <div class="map-legend"><span class="safe">SAFE</span><span class="contested">CONTESTED</span><span class="infested">INFESTED</span><span class="overrun">OVERRUN</span><span class="reclaiming">RECLAIMING</span></div>
-          <p>90,000 × 60,000 theater. Gold corridors are interstate-scale highways, gray lines are regional roads, and brown traces are dirt access roads.</p>
+          <p>6,000 × 4,000 Midwest Deadroad theater. Gold corridors are highways, gray routes are secondary roads, brown tracks are local service access, and red marks are horde origins.</p>
         </div>
       </section>
     </main>
