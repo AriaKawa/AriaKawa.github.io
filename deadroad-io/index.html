@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#11130f" />
+    <meta name="description" content="Deadroad.io — deploy, defend, and reclaim a persistent zombie-infested continent." />
+    <title>Deadroad.io</title>
+    <script type="module" crossorigin src="./assets/index-DPV4E-2K.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-BbX8R4a3.css">
+  </head>
+  <body>
+    <main id="game-shell">
+      <div id="game" aria-label="Deadroad.io battlefield"></div>
+
+      <section id="main-menu" class="menu-screen">
+        <div class="menu-kicker">ROADWATCH NETWORK // CONTINENT 01</div>
+        <h1>DEADROAD<span>.IO</span></h1>
+        <p class="tagline">Deploy. Defend. Reclaim the continent.</p>
+        <label for="commander-name">COMMANDER CALLSIGN</label>
+        <input id="commander-name" maxlength="18" value="Roadwarden" autocomplete="off" />
+        <button id="play-button" class="primary-button">PLAY <b>CONTINENT</b></button>
+        <div class="menu-actions">
+          <button id="local-button">LOCAL TEST</button><button id="credits-button">CREDITS</button>
+        </div>
+        <p id="menu-status">Local continent server required on port 2567.</p>
+        <div id="credits-panel" hidden>Original procedural placeholder art. No external game assets used.</div>
+      </section>
+
+      <section id="hud" class="hud" hidden>
+        <header class="topbar">
+          <div class="brand-small"><i></i> DEADROAD.IO <span>CONTINENT 01</span></div>
+          <div class="resource"><small>SCRAP</small><strong id="scrap-value">250</strong></div>
+          <div class="resource"><small>SIGNAL</small><strong id="signal-value">0</strong></div>
+          <div class="resource"><small>THREAT</small><strong id="threat-value">—</strong></div>
+          <button id="map-button" class="key-button">[M] CONTINENT</button>
+        </header>
+
+        <aside class="mission-panel panel">
+          <div class="eyebrow">ACTIVE SECTOR</div>
+          <h2 id="territory-name">Choose a roadside lot</h2>
+          <div class="state-line"><span id="territory-state" class="state safe">OBSERVER</span><span id="pressure-value">0% PRESSURE</span></div>
+          <div class="meter"><i id="pressure-fill"></i></div>
+          <dl>
+            <div><dt>CORE</dt><dd id="base-status">NOT DEPLOYED</dd></div>
+            <div><dt>CONTRACT</dt><dd id="wave-value">NO ACTIVE HORDE</dd></div>
+            <div><dt>HOSTILES</dt><dd id="zombie-value">0 ON ROAD</dd></div>
+          </dl>
+          <p id="selection-copy">You are protected in Commander Mode. Select a cyan roadside lot in safe or contested territory.</p>
+          <button id="deploy-button" class="primary-button" disabled>SELECT A LOT</button>
+          <button id="redeploy-button" class="ghost-button" hidden>REDEPLOY CONVOY</button>
+        </aside>
+
+        <aside class="radio panel"><div class="eyebrow">SURVIVOR RADIO // 87.9</div><p id="radio-message">Roadwatch online.</p></aside>
+
+        <aside class="controls panel">
+          <div><kbd>WASD</kbd><span>Pan</span></div><div><kbd>Wheel</kbd><span>Zoom</span></div>
+          <div><kbd>B</kbd><span>Build</span></div><div><kbd>T</kbd><span>Redeploy</span></div>
+        </aside>
+
+        <section id="build-menu" class="build-menu panel">
+          <div class="build-heading"><div><span class="eyebrow">DEFENSE FABRICATOR</span><b>SELECT TOWER, THEN CLICK A BUILD PAD</b></div><button id="build-close">×</button></div>
+          <div id="tower-cards"></div>
+        </section>
+
+        <div id="notice" role="status"></div>
+      </section>
+
+      <section id="map-overlay" class="map-overlay" hidden>
+        <div class="map-card panel">
+          <div class="map-header"><div><span class="eyebrow">ROADWATCH STRATEGIC DISPLAY</span><h2>CONTINENT 01 // FRONT LINE</h2></div><button id="map-close">×</button></div>
+          <canvas id="continent-map" width="900" height="540"></canvas>
+          <div class="map-legend"><span class="safe">SAFE</span><span class="contested">CONTESTED</span><span class="infested">INFESTED</span><span class="overrun">OVERRUN</span><span class="reclaiming">RECLAIMING</span></div>
+          <p>Bright links mark the reclaim lattice. Deep overrun sectors stay locked until the front advances.</p>
+        </div>
+      </section>
+    </main>
+    <script src="./vendor/colyseus.js"></script>
+  </body>
+</html>
