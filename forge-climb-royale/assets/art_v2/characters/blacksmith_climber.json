@@ -1,0 +1,48 @@
+{
+  "frameWidth": 32,
+  "frameHeight": 32,
+  "animations": {
+    "idle": {
+      "start": 0,
+      "end": 3,
+      "frameRate": 6,
+      "repeat": -1
+    },
+    "charge_start": {
+      "start": 4,
+      "end": 5,
+      "frameRate": 8,
+      "repeat": 0
+    },
+    "charge_loop": {
+      "start": 6,
+      "end": 9,
+      "frameRate": 8,
+      "repeat": -1
+    },
+    "jump": {
+      "start": 10,
+      "end": 11,
+      "frameRate": 8,
+      "repeat": 0
+    },
+    "fall": {
+      "start": 12,
+      "end": 13,
+      "frameRate": 8,
+      "repeat": -1
+    },
+    "land": {
+      "start": 14,
+      "end": 15,
+      "frameRate": 10,
+      "repeat": 0
+    },
+    "eliminated": {
+      "start": 16,
+      "end": 17,
+      "frameRate": 6,
+      "repeat": 0
+    }
+  }
+}
