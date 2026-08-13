@@ -6,8 +6,8 @@
     <meta name="theme-color" content="#11130f" />
     <meta name="description" content="Deadroad.io — deploy, defend, and reclaim a persistent zombie-infested continent." />
     <title>Deadroad.io</title>
-    <script type="module" crossorigin src="./assets/index-DvAYvt8X.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-BeJmFhkl.css">
+    <script type="module" crossorigin src="./assets/index-hczWCV4R.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-BR3tqmGI.css">
   </head>
   <body>
     <main id="game-shell">
@@ -44,6 +44,8 @@
             <div class="wide"><small>RIVER ACCESS</small><strong id="globe-river">—</strong></div>
             <div class="wide"><small>NEARBY SIGNALS</small><strong id="globe-nearby">No tile selected</strong></div>
             <div><small>THREAT</small><strong id="globe-threat">—</strong></div><div><small>INFESTATION</small><strong id="globe-infestation">—</strong></div>
+            <div class="wide"><small>DEPLOYMENT STATUS</small><strong id="globe-deployment">SURVEY REQUIRED</strong></div>
+            <div><small>STARTING SCRAP</small><strong id="globe-scrap">—</strong></div><div><small>FIRST HORDE</small><strong id="globe-horde">—</strong></div>
           </div>
           <p id="globe-recommend">Drag to survey. Click a tile, then choose a pulsing roadside site.</p>
           <button id="globe-random-button" class="random-button">[R] RANDOM SAFE DROP</button>
@@ -56,7 +58,7 @@
           <div><kbd>F</kbd><span>Focus site</span></div><div><kbd>M</kbd><span>Map layer</span></div>
           <div><kbd>R</kbd><span>Random drop</span></div><div><kbd>RMB</kbd><span>Clear</span></div>
         </aside>
-        <div class="globe-legend"><span class="safe">SAFE</span><span class="contested">CONTESTED</span><span class="infested">INFESTED</span><span class="overrun">OVERRUN</span><b>◈ DEPLOYMENT SITE</b></div>
+        <div class="globe-legend"><small>THREAT</small><span class="threat-0">0</span><span class="threat-1">1</span><span class="threat-2">2</span><span class="threat-3">3</span><span class="threat-4">4</span><span class="threat-5">5</span><b>◈ DEPLOYMENT SITE</b></div>
         <div id="globe-tooltip" class="globe-tooltip" hidden></div>
         <div class="globe-transmission">THE DEAD OWN THE OLD ROADS. PICK WHERE WE TAKE ONE BACK.</div>
       </section>
