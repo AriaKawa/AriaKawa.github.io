@@ -6,8 +6,8 @@
     <meta name="theme-color" content="#11130f" />
     <meta name="description" content="Deadroad.io — deploy, defend, and reclaim a persistent zombie-infested continent." />
     <title>Deadroad.io</title>
-    <script type="module" crossorigin src="./assets/index-CVL2wqe-.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-B1hsCAlX.css">
+    <script type="module" crossorigin src="./assets/index-DBiIJ9E0.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-BmT6zcRJ.css">
   </head>
   <body>
     <main id="game-shell">
@@ -40,13 +40,13 @@
           <h2 id="globe-region">Rotate the colony world</h2>
           <div class="state-line"><span id="globe-state" class="state safe">PROTECTED</span><span>ROADWATCH 87.9</span></div>
           <div class="globe-grid">
-            <div><small>BIOME</small><strong id="globe-biome">—</strong></div><div><small>TERRAIN</small><strong id="globe-terrain">—</strong></div>
-            <div class="wide"><small>ROAD ACCESS</small><strong id="globe-road">Hover a world tile</strong></div>
-            <div class="wide"><small>RIVER ACCESS</small><strong id="globe-river">—</strong></div>
-            <div class="wide"><small>NEARBY SIGNALS</small><strong id="globe-nearby">No tile selected</strong></div>
+            <div><small>ZOMBIE PRESSURE</small><strong id="globe-biome">—</strong></div><div><small>SUPPLY</small><strong id="globe-terrain">—</strong></div>
+            <div class="wide"><small>ALLIED OPERATIONS</small><strong id="globe-road">Hover a frontline sector</strong></div>
+            <div class="wide"><small>AI OPERATIONS</small><strong id="globe-river">—</strong></div>
+            <div class="wide"><small>DEPLOYMENT SITES</small><strong id="globe-nearby">No sector selected</strong></div>
             <div><small>THREAT</small><strong id="globe-threat">—</strong></div><div><small>INFESTATION</small><strong id="globe-infestation">—</strong></div>
-            <div class="wide"><small>DEPLOYMENT STATUS</small><strong id="globe-deployment">SURVEY REQUIRED</strong></div>
-            <div><small>STARTING SCRAP</small><strong id="globe-scrap">—</strong></div><div><small>FIRST HORDE</small><strong id="globe-horde">—</strong></div>
+            <div class="wide"><small>RECOMMENDED ACTION</small><strong id="globe-deployment">SURVEY REQUIRED</strong></div>
+            <div><small>OPERATION SCRAP</small><strong id="globe-scrap">—</strong></div><div><small>FIRST HORDE</small><strong id="globe-horde">—</strong></div>
           </div>
           <p id="globe-recommend">Drag to survey. Click a tile, then choose a pulsing roadside site.</p>
           <button id="globe-random-button" class="random-button">[R] RANDOM SAFE DROP</button>
@@ -71,6 +71,7 @@
           <div class="resource"><small>SIGNAL</small><strong id="signal-value">0</strong></div>
           <div class="resource"><small>THREAT</small><strong id="threat-value">—</strong></div>
           <button id="map-button" class="key-button">[M] CONTINENT</button>
+          <button id="war-globe-button" class="key-button">WAR GLOBE</button>
         </header>
 
         <aside class="mission-panel panel">
@@ -79,6 +80,11 @@
           <div class="state-line"><span id="territory-state" class="state safe">OBSERVER</span><span id="pressure-value">0% PRESSURE</span></div>
           <div class="meter"><i id="pressure-fill"></i></div>
           <dl>
+            <div><dt>SECTOR</dt><dd id="sector-name">NO OPERATION</dd></div>
+            <div><dt>WAR STATE</dt><dd id="sector-war-state">COMMANDER MODE</dd></div>
+            <div><dt>SUPPLY</dt><dd id="sector-supply">—</dd></div>
+            <div><dt>ALLIED OPS</dt><dd id="sector-allied">—</dd></div>
+            <div><dt>CONTRIBUTION</dt><dd id="sector-contribution">0</dd></div>
             <div><dt>CORE</dt><dd id="base-status">NOT DEPLOYED</dd></div>
             <div><dt>CONTRACT</dt><dd id="wave-value">NO ACTIVE HORDE</dd></div>
             <div><dt>HOSTILES</dt><dd id="zombie-value">0 ON ROAD</dd></div>
@@ -89,11 +95,11 @@
           <button id="redeploy-button" class="ghost-button" hidden>REDEPLOY CONVOY</button>
         </aside>
 
-        <aside class="radio panel"><div class="eyebrow">SURVIVOR RADIO // 87.9</div><p id="radio-message">Roadwatch online.</p></aside>
+        <aside class="radio panel"><div class="eyebrow">SECTOR ACTIVITY // ROADWATCH 87.9</div><p id="radio-message">Roadwatch online.</p><ul id="sector-feed" aria-label="Sector activity feed"></ul></aside>
 
         <aside class="controls panel">
           <div><kbd>WASD</kbd><span>Pan</span></div><div><kbd>Wheel</kbd><span>Zoom</span></div>
-          <div><kbd>B</kbd><span>Build</span></div><div><kbd>T</kbd><span>Redeploy</span></div>
+          <div><kbd>B</kbd><span>Build</span></div><div><kbd>T</kbd><span>Pack convoy</span></div>
           <div><kbd>F3</kbd><span>Debug map</span></div><div><kbd>M</kbd><span>War map</span></div>
         </aside>
 
