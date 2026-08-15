@@ -6,8 +6,8 @@
     <meta name="theme-color" content="#11130f" />
     <meta name="description" content="Deadroad.io — deploy, defend, and reclaim a persistent zombie-infested continent." />
     <title>Deadroad.io</title>
-    <script type="module" crossorigin src="./assets/index-CLpqSeJo.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-1FYWgBaX.css">
+    <script type="module" crossorigin src="./assets/index-DrEcDMWU.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-BNV8jrGe.css">
   </head>
   <body>
     <main id="game-shell">
@@ -75,6 +75,14 @@
           <button id="war-globe-button" class="key-button">WAR GLOBE</button>
         </header>
 
+        <aside id="tactical-zoom-panel" class="tactical-zoom panel" aria-label="Tactical map scale">
+          <div><small>VIEW</small><strong id="tactical-view">BASE</strong></div>
+          <div><small>SECTOR</small><strong id="tactical-sector">AMERICAS</strong></div>
+          <div><small>PRESSURE</small><strong id="tactical-pressure">—</strong></div>
+          <div><small>OPS NEARBY</small><strong id="tactical-operations">0</strong></div>
+          <button id="return-base-button" hidden>RETURN TO BASE</button>
+        </aside>
+
         <aside class="mission-panel panel">
           <div class="eyebrow">ACTIVE SECTOR</div>
           <h2 id="territory-name">Choose a roadside lot</h2>
@@ -102,6 +110,7 @@
           <div><kbd>WASD</kbd><span>Pan</span></div><div><kbd>Wheel</kbd><span>Zoom</span></div>
           <div><kbd>B</kbd><span>Build</span></div><div><kbd>T</kbd><span>Pack convoy</span></div>
           <div><kbd>F3</kbd><span>Debug map</span></div><div><kbd>M</kbd><span>War map</span></div>
+          <div><kbd>F</kbd><span>Return to base</span></div><div><kbd>Wheel</kbd><span>Scale view</span></div>
         </aside>
 
         <aside class="squad-panel panel" aria-label="Base squad status">
@@ -125,7 +134,7 @@
           <div class="map-header"><div><span class="eyebrow">ROADWATCH STRATEGIC DISPLAY</span><h2>CONTINENT 01 // FRONT LINE</h2></div><button id="map-close">×</button></div>
           <canvas id="continent-map" width="900" height="540"></canvas>
           <div class="map-legend"><span class="safe">SAFE</span><span class="contested">CONTESTED</span><span class="infested">INFESTED</span><span class="overrun">OVERRUN</span><span class="reclaiming">RECLAIMING</span></div>
-          <p>6,000 × 4,000 Midwest Deadroad theater. Gold corridors are highways, gray routes are secondary roads, brown tracks are local service access, and red marks are horde origins.</p>
+          <p>Americas Theater. Major highways cross state and national borders; local roads and active defenses appear as you move toward the battlefield.</p>
         </div>
       </section>
     </main>
