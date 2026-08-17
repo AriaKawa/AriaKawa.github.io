@@ -6,8 +6,8 @@
     <meta name="theme-color" content="#11130f" />
     <meta name="description" content="Deadroad.io — deploy, defend, and reclaim a persistent zombie-infested continent." />
     <title>Deadroad.io</title>
-    <script type="module" crossorigin src="./assets/index-BuBDZD8D.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-DQZ713Cv.css">
+    <script type="module" crossorigin src="./assets/index-CmAGAric.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-BD8YbakY.css">
   </head>
   <body>
     <main id="game-shell">
@@ -77,25 +77,32 @@
       </section>
 
       <section id="hud" class="hud" hidden>
-        <header class="topbar">
-          <div class="brand-small"><i></i> DEADROAD.IO <span>CONTINENT 01</span></div>
-          <div class="resource"><small>SCRAP</small><strong id="scrap-value">250</strong></div>
-          <div class="resource"><small>SIGNAL</small><strong id="signal-value">0</strong></div>
-          <div class="resource"><small>THREAT</small><strong id="threat-value">—</strong></div>
-          <button id="map-button" class="key-button">[M] CONTINENT</button>
-          <button id="war-globe-button" class="key-button">WAR GLOBE</button>
+        <header class="topbar hud-topbar">
+          <div class="brand-small hud-brand"><i></i><span class="brand-name">DEADROAD.IO</span><small><b id="tactical-view">BASE</b> · <span id="tactical-sector">AMERICAS</span></small></div>
+          <div class="wave-objective" aria-live="polite"><strong id="hud-wave-status">ROADWATCH READY</strong><span id="hud-objective">Deploy beside a marked road</span></div>
+          <div class="resource-row" aria-label="Operation resources">
+            <div class="resource"><small>SCRAP</small><strong id="scrap-value">250</strong></div>
+            <div class="resource"><small>SIGNAL</small><strong id="signal-value">0</strong></div>
+            <div class="resource"><small>THREAT</small><strong id="threat-value">—</strong></div>
+          </div>
+          <button id="map-button" class="hud-button">WAR MAP <kbd>M</kbd></button>
+          <button id="war-globe-button" class="hud-button">WAR GLOBE</button>
+          <button id="help-button" class="hud-button icon-button" aria-label="Open help">?</button>
         </header>
 
-        <aside id="tactical-zoom-panel" class="tactical-zoom panel" aria-label="Tactical map scale">
-          <div><small>VIEW</small><strong id="tactical-view">BASE</strong></div>
-          <div><small>SECTOR</small><strong id="tactical-sector">AMERICAS</strong></div>
-          <div><small>PRESSURE</small><strong id="tactical-pressure">—</strong></div>
-          <div><small>OPS NEARBY</small><strong id="tactical-operations">0</strong></div>
-          <button id="return-base-button" hidden>RETURN TO BASE</button>
+        <button id="sector-summary-button" class="sector-summary panel" aria-controls="sector-panel">
+          <span><small>SECTOR</small><strong id="sector-summary-name">AMERICAS</strong></span>
+          <span><small>PRESSURE</small><strong id="tactical-pressure">—</strong></span>
+          <span><small>STATE</small><strong id="sector-summary-state">OBSERVER</strong></span>
+        </button>
+
+        <aside id="tactical-zoom-panel" class="tactical-zoom" aria-label="Tactical map scale">
+          <span id="tactical-operations" hidden>0</span>
+          <button id="return-base-button" class="hud-button" hidden>RETURN TO BASE <kbd>F</kbd></button>
         </aside>
 
-        <aside class="mission-panel panel">
-          <div class="eyebrow">ACTIVE SECTOR</div>
+        <aside id="sector-panel" class="mission-panel hud-drawer panel closed" aria-label="Sector details" aria-hidden="true">
+          <div class="drawer-heading"><div class="eyebrow">SECTOR DETAILS</div><button class="drawer-close" data-close-panel aria-label="Close sector details">×</button></div>
           <h2 id="territory-name">Choose a roadside lot</h2>
           <div class="state-line"><span id="territory-state" class="state safe">OBSERVER</span><span id="pressure-value">0% PRESSURE</span></div>
           <div class="meter"><i id="pressure-fill"></i></div>
@@ -108,14 +115,21 @@
             <div><dt>CORE</dt><dd id="base-status">NOT DEPLOYED</dd></div>
             <div><dt>CONTRACT</dt><dd id="wave-value">NO ACTIVE HORDE</dd></div>
             <div><dt>HOSTILES</dt><dd id="zombie-value">0 ON ROAD</dd></div>
-            <div><dt>HORDE SOURCE</dt><dd id="contract-source">—</dd></div>
-            <div><dt>ROUTE DANGER</dt><dd id="contract-danger">—</dd></div>
-            <div><dt>DEFENSE PADS</dt><dd id="contract-pads">—</dd></div>
           </dl>
           <p id="selection-copy">You are protected in Commander Mode. Select a cyan roadside lot in safe or contested territory.</p>
           <div class="field-rule"><i></i><span>Roads are enemy lanes. Bases deploy beside roads.</span></div>
           <button id="deploy-button" class="primary-button" disabled>SELECT A LOT</button>
           <button id="redeploy-button" class="ghost-button" hidden>REDEPLOY CONVOY</button>
+        </aside>
+
+        <aside id="contract-panel" class="hud-drawer panel closed" aria-label="Contract details" aria-hidden="true">
+          <div class="drawer-heading"><div><div class="eyebrow">CURRENT CONTRACT</div><h2 id="contract-title">NO ACTIVE CONTRACT</h2></div><button class="drawer-close" data-close-panel aria-label="Close contract details">×</button></div>
+          <dl class="drawer-stats">
+            <div><dt>HORDE SOURCE</dt><dd id="contract-source">—</dd></div>
+            <div><dt>ROUTE DANGER</dt><dd id="contract-danger">—</dd></div>
+            <div><dt>DEFENSE PADS</dt><dd id="contract-pads">—</dd></div>
+          </dl>
+          <p id="contract-instructions">Roads are enemy lanes. Bases deploy beside roads. Build defenses along the marked route and protect the command core.</p>
         </aside>
 
         <aside id="core-health" class="core-health panel" aria-label="Command core health" hidden>
@@ -124,24 +138,42 @@
           <small id="core-health-state">PROTECTED</small>
         </aside>
 
-        <aside class="radio panel"><div class="eyebrow">SECTOR ACTIVITY // ROADWATCH 87.9</div><p id="radio-message">Roadwatch online.</p><ul id="sector-feed" aria-label="Sector activity feed"></ul></aside>
+        <aside class="activity-toast panel" aria-live="polite"><i></i><p id="radio-message">Roadwatch online.</p></aside>
 
-        <aside class="controls panel">
-          <div><kbd>WASD</kbd><span>Pan</span></div><div><kbd>Wheel</kbd><span>Zoom</span></div>
-          <div><kbd>B</kbd><span>Build</span></div><div><kbd>T</kbd><span>Pack convoy</span></div>
-          <div><kbd>F3</kbd><span>Debug map</span></div><div><kbd>M</kbd><span>War map</span></div>
-          <div><kbd>F</kbd><span>Return to base</span></div><div><kbd>Wheel</kbd><span>Scale view</span></div>
+        <aside id="activity-panel" class="hud-drawer panel closed" aria-label="Sector activity" aria-hidden="true">
+          <div class="drawer-heading"><div><div class="eyebrow">ROADWATCH 87.9</div><h2>SECTOR ACTIVITY</h2></div><button class="drawer-close" data-close-panel aria-label="Close activity">×</button></div>
+          <ul id="sector-feed" aria-label="Sector activity feed"></ul>
         </aside>
 
-        <aside class="squad-panel panel" aria-label="Base squad status">
-          <div class="eyebrow">SQUAD // SHARED OPERATION</div>
+        <aside id="help-panel" class="hud-drawer panel closed" aria-label="Help and controls" aria-hidden="true">
+          <div class="drawer-heading"><div><div class="eyebrow">FIELD MANUAL</div><h2>CONTROLS</h2></div><button class="drawer-close" data-close-panel aria-label="Close help">×</button></div>
+          <div class="controls-grid">
+            <div><kbd>WASD</kbd><span>Pan battlefield</span></div><div><kbd>WHEEL</kbd><span>Zoom view</span></div>
+            <div><kbd>B</kbd><span>Open build dock</span></div><div><kbd>F</kbd><span>Return to base</span></div>
+            <div><kbd>M</kbd><span>Open war map</span></div><div><kbd>F3</kbd><span>Debug overlay</span></div>
+            <div><kbd>ESC</kbd><span>Cancel / close</span></div><div><kbd>RMB</kbd><span>Cancel build mode</span></div>
+          </div>
+        </aside>
+
+        <aside id="squad-panel" class="squad-panel hud-drawer panel closed" aria-label="Base squad status" aria-hidden="true">
+          <div class="drawer-heading"><div class="eyebrow">SQUAD // SHARED OPERATION</div><button class="drawer-close" data-close-panel aria-label="Close squad">×</button></div>
           <div class="squad-heading"><strong id="squad-beacon-status">BEACON NOT BUILT</strong><span id="squad-joinable">JOINABLE: NO</span></div>
           <div id="squad-slots" class="squad-slots">0 / 0 SLOTS FILLED</div>
           <div id="squad-roster" class="squad-roster"><p>Build a Squad Beacon on a tower pad to let other commanders join this base.</p></div>
           <div class="squad-actions"><button id="squad-call-button" disabled>CALL FOR BACKUP</button><button id="squad-toggle-button" disabled>OPEN BASE</button></div>
         </aside>
 
-        <section id="build-menu" class="build-menu panel">
+        <nav class="action-dock" aria-label="HUD panels">
+          <button id="sector-button" class="hud-button">SECTOR</button>
+          <button id="contract-button" class="hud-button">CONTRACT</button>
+          <button id="squad-button" class="hud-button" disabled title="Build a Squad Beacon to open this.">SQUAD</button>
+          <button id="activity-button" class="hud-button">ACTIVITY <span id="activity-count" hidden>0</span></button>
+          <button id="dock-help-button" class="hud-button">HELP</button>
+        </nav>
+
+        <button id="build-button" class="build-button" disabled>BUILD <kbd>B</kbd></button>
+
+        <section id="build-menu" class="build-menu panel closed" aria-hidden="true">
           <div class="build-heading"><div><span class="eyebrow">DEFENSE FABRICATOR</span><b>SELECT TOWER, THEN CLICK A BUILD PAD</b></div><button id="build-close">×</button></div>
           <div id="tower-cards"></div>
         </section>
