@@ -6,8 +6,8 @@
     <meta name="theme-color" content="#11130f" />
     <meta name="description" content="Deadroad.io — deploy, defend, and reclaim a persistent zombie-infested continent." />
     <title>Deadroad.io</title>
-    <script type="module" crossorigin src="./assets/index-DimAJtIr.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-DvZkcByY.css">
+    <script type="module" crossorigin src="./assets/index-iQoQiU8L.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-DQZ713Cv.css">
   </head>
   <body>
     <main id="game-shell">
@@ -116,6 +116,12 @@
           <div class="field-rule"><i></i><span>Roads are enemy lanes. Bases deploy beside roads.</span></div>
           <button id="deploy-button" class="primary-button" disabled>SELECT A LOT</button>
           <button id="redeploy-button" class="ghost-button" hidden>REDEPLOY CONVOY</button>
+        </aside>
+
+        <aside id="core-health" class="core-health panel" aria-label="Command core health" hidden>
+          <div class="core-health-heading"><span>COMMAND CORE</span><strong id="core-health-value">1000 / 1000</strong></div>
+          <div class="core-health-meter"><i id="core-health-fill"></i></div>
+          <small id="core-health-state">PROTECTED</small>
         </aside>
 
         <aside class="radio panel"><div class="eyebrow">SECTOR ACTIVITY // ROADWATCH 87.9</div><p id="radio-message">Roadwatch online.</p><ul id="sector-feed" aria-label="Sector activity feed"></ul></aside>
