@@ -6,8 +6,8 @@
     <meta name="theme-color" content="#11130f" />
     <meta name="description" content="Deadroad.io — deploy, defend, and reclaim a persistent zombie-infested continent." />
     <title>Deadroad.io</title>
-    <script type="module" crossorigin src="./assets/index-CmAGAric.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-BD8YbakY.css">
+    <script type="module" crossorigin src="./assets/index-7vAcUzDE.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-DcvhpwcR.css">
   </head>
   <body>
     <main id="game-shell">
@@ -138,10 +138,9 @@
           <small id="core-health-state">PROTECTED</small>
         </aside>
 
-        <aside class="activity-toast panel" aria-live="polite"><i></i><p id="radio-message">Roadwatch online.</p></aside>
-
         <aside id="activity-panel" class="hud-drawer panel closed" aria-label="Sector activity" aria-hidden="true">
           <div class="drawer-heading"><div><div class="eyebrow">ROADWATCH 87.9</div><h2>SECTOR ACTIVITY</h2></div><button class="drawer-close" data-close-panel aria-label="Close activity">×</button></div>
+          <p id="radio-message" class="activity-current" aria-live="polite">Roadwatch online.</p>
           <ul id="sector-feed" aria-label="Sector activity feed"></ul>
         </aside>
 
@@ -168,7 +167,6 @@
           <button id="contract-button" class="hud-button">CONTRACT</button>
           <button id="squad-button" class="hud-button" disabled title="Build a Squad Beacon to open this.">SQUAD</button>
           <button id="activity-button" class="hud-button">ACTIVITY <span id="activity-count" hidden>0</span></button>
-          <button id="dock-help-button" class="hud-button">HELP</button>
         </nav>
 
         <button id="build-button" class="build-button" disabled>BUILD <kbd>B</kbd></button>
@@ -177,6 +175,8 @@
           <div class="build-heading"><div><span class="eyebrow">DEFENSE FABRICATOR</span><b>SELECT TOWER, THEN CLICK A BUILD PAD</b></div><button id="build-close">×</button></div>
           <div id="tower-cards"></div>
         </section>
+
+        <div id="core-hit-effect" class="core-hit-effect" aria-hidden="true"></div>
 
         <div id="notice" role="status"></div>
       </section>
