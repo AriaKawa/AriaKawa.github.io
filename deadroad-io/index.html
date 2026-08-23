@@ -6,8 +6,8 @@
     <meta name="theme-color" content="#11130f" />
     <meta name="description" content="Deadroad.io — deploy, defend, and reclaim a persistent zombie-infested continent." />
     <title>Deadroad.io</title>
-    <script type="module" crossorigin src="./assets/index-fWS9pwec.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-CYTAC_o7.css">
+    <script type="module" crossorigin src="./assets/index-BhP_JHqC.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-CN3RY9xG.css">
   </head>
   <body>
     <main id="game-shell">
@@ -82,6 +82,7 @@
           <div class="wave-objective" aria-live="polite"><strong id="hud-wave-status">ROADWATCH READY</strong><span id="hud-objective">Deploy beside a marked road</span></div>
           <div class="resource-row" aria-label="Operation resources">
             <div class="resource"><small>SCRAP</small><strong id="scrap-value">250</strong></div>
+            <div class="resource"><small>FUEL</small><strong id="fuel-value">100</strong></div>
             <div class="resource"><small>SIGNAL</small><strong id="signal-value">0</strong></div>
             <div class="resource"><small>THREAT</small><strong id="threat-value">—</strong></div>
           </div>
@@ -147,9 +148,11 @@
         <aside id="help-panel" class="hud-drawer panel closed" aria-label="Help and controls" aria-hidden="true">
           <div class="drawer-heading"><div><div class="eyebrow">FIELD MANUAL</div><h2>CONTROLS</h2></div><button class="drawer-close" data-close-panel aria-label="Close help">×</button></div>
           <div class="controls-grid">
-            <div><kbd>WASD</kbd><span>Pan battlefield</span></div><div><kbd>WHEEL</kbd><span>Zoom view</span></div>
+            <div><kbd>WASD</kbd><span>Pan / drive packed convoy</span></div><div><kbd>ARROWS</kbd><span>Pan while driving</span></div>
             <div><kbd>B</kbd><span>Open build dock</span></div><div><kbd>F</kbd><span>Return to base</span></div>
-            <div><kbd>M</kbd><span>Open war map</span></div><div><kbd>F3</kbd><span>Debug overlay</span></div>
+            <div><kbd>P</kbd><span>Pack all turrets & drive</span></div><div><kbd>E / SPACE</kbd><span>Deploy stopped convoy</span></div>
+            <div><kbd>M</kbd><span>Open war map</span></div><div><kbd>F</kbd><span>Follow vehicle / return to base</span></div>
+            <div><kbd>WHEEL</kbd><span>Zoom view</span></div><div><kbd>F3</kbd><span>Debug overlay</span></div>
             <div><kbd>ESC</kbd><span>Cancel / close</span></div><div><kbd>RMB</kbd><span>Cancel build mode</span></div>
           </div>
         </aside>
@@ -167,7 +170,14 @@
           <button id="contract-button" class="hud-button">CONTRACT</button>
           <button id="squad-button" class="hud-button" disabled title="Build a Squad Beacon to open this.">SQUAD</button>
           <button id="activity-button" class="hud-button">ACTIVITY <span id="activity-count" hidden>0</span></button>
+          <button id="pack-button" class="hud-button" disabled>PACK ALL &amp; DRIVE <kbd>P</kbd></button>
         </nav>
+
+        <section id="convoy-actions" class="convoy-actions" hidden aria-label="Convoy deployment controls">
+          <div class="deployment-readout"><small>COMMAND VEHICLE</small><strong id="deployment-validity">Find a roadside deployment site</strong><span id="stowed-turrets">STOWED TURRETS: 0</span></div>
+          <button id="deploy-core-button" class="deploy-core-button" disabled>DEPLOY BASE <kbd>E</kbd></button>
+          <button id="follow-vehicle-button" class="hud-button">FOLLOW VEHICLE</button>
+        </section>
 
         <button id="build-button" class="build-button" disabled>BUILD <kbd>B</kbd></button>
 
