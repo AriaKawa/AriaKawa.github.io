@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#11130f" />
     <meta name="description" content="Deadroad.io — deploy, defend, and reclaim a persistent zombie-infested continent." />
     <title>Deadroad.io</title>
-    <script type="module" crossorigin src="./assets/index-C5z9NTfl.js"></script>
+    <script type="module" crossorigin src="./assets/index-b2WaZOYh.js"></script>
     <link rel="stylesheet" crossorigin href="./assets/index-CN3RY9xG.css">
   </head>
   <body>
@@ -41,26 +41,26 @@
           <div class="state-line"><span id="globe-state" class="state safe">PROTECTED</span><span>ROADWATCH 87.9</span></div>
           <div class="globe-grid">
             <div><small>ZOMBIE PRESSURE</small><strong id="globe-biome">—</strong></div><div><small>SUPPLY</small><strong id="globe-terrain">—</strong></div>
-            <div class="wide"><small>ALLIED OPERATIONS</small><strong id="globe-road">Hover a frontline sector</strong></div>
-            <div class="wide"><small>AI OPERATIONS</small><strong id="globe-river">—</strong></div>
-            <div class="wide"><small>DEPLOYMENT SITES</small><strong id="globe-nearby">No sector selected</strong></div>
+            <div class="wide"><small>HIGHWAY BACKBONE</small><strong id="globe-road">Major highways visible</strong></div>
+            <div class="wide"><small>ENTRY MODE</small><strong id="globe-river">Free location selection</strong></div>
+            <div class="wide"><small>LOCATION STATUS</small><strong id="globe-nearby">Click USA land to enter</strong></div>
             <div><small>THREAT</small><strong id="globe-threat">—</strong></div><div><small>INFESTATION</small><strong id="globe-infestation">—</strong></div>
             <div class="wide"><small>RECOMMENDED ACTION</small><strong id="globe-deployment">SURVEY REQUIRED</strong></div>
-            <div><small>OPERATION SCRAP</small><strong id="globe-scrap">—</strong></div><div><small>FIRST HORDE</small><strong id="globe-horde">—</strong></div>
+            <div><small>ENTRY SUPPLIES</small><strong id="globe-scrap">—</strong></div><div><small>HORDE ROUTING</small><strong id="globe-horde">AFTER BASE DEPLOYMENT</strong></div>
           </div>
-          <p id="globe-recommend">Drag to survey. Click a tile, then choose a pulsing roadside site.</p>
+          <p id="globe-recommend">Drag to survey, then click any supported USA land location to enter.</p>
           <button id="globe-random-button" class="random-button">[R] RANDOM SAFE DROP</button>
           <button id="globe-focus-button" class="ghost-button">[F] FOCUS SELECTION</button>
-          <button id="globe-deploy-button" class="primary-button" disabled>SELECT A WORLD TILE</button>
+          <button id="globe-deploy-button" class="primary-button" disabled>CLICK USA LAND TO ENTER</button>
         </aside>
         <aside class="globe-controls panel">
           <div><kbd>DRAG</kbd><span>Rotate planet</span></div><div><kbd>WHEEL</kbd><span>Zoom</span></div>
           <div><kbd>WASD</kbd><span>Slow rotate</span></div><div><kbd>Q / E</kbd><span>Orbit</span></div>
-          <div><kbd>F</kbd><span>Focus site</span></div><div><kbd>M</kbd><span>Map layer</span></div>
+          <div><kbd>F</kbd><span>Focus location</span></div><div><kbd>M</kbd><span>Map layer</span></div>
           <div><kbd>R</kbd><span>Random drop</span></div><div><kbd>RMB</kbd><span>Clear</span></div>
           <button id="globe-territories-button" class="territory-toggle" hidden>[V] TERRITORIES ON</button>
         </aside>
-        <div class="globe-legend"><small>THREAT</small><span class="threat-0">0</span><span class="threat-1">1</span><span class="threat-2">2</span><span class="threat-3">3</span><span class="threat-4">4</span><span class="threat-5">5</span><b>◈ DEPLOYMENT SITE</b></div>
+        <div class="globe-legend"><small>THREAT</small><span class="threat-0">0</span><span class="threat-1">1</span><span class="threat-2">2</span><span class="threat-3">3</span><span class="threat-4">4</span><span class="threat-5">5</span><b>CLICK LAND // FREE ENTRY</b></div>
         <div id="globe-tooltip" class="globe-tooltip" hidden></div>
         <div class="globe-transmission">THE DEAD OWN THE OLD ROADS. PICK WHERE WE TAKE ONE BACK.</div>
       </section>
@@ -79,7 +79,7 @@
       <section id="hud" class="hud" hidden>
         <header class="topbar hud-topbar">
           <div class="brand-small hud-brand"><i></i><span class="brand-name">DEADROAD.IO</span><small><b id="tactical-view">BASE</b> · <span id="tactical-sector">AMERICAS</span></small></div>
-          <div class="wave-objective" aria-live="polite"><strong id="hud-wave-status">ROADWATCH READY</strong><span id="hud-objective">Deploy beside a marked road</span></div>
+          <div class="wave-objective" aria-live="polite"><strong id="hud-wave-status">ROADWATCH READY</strong><span id="hud-objective">Drive the command vehicle and deploy beside a road</span></div>
           <div class="resource-row" aria-label="Operation resources">
             <div class="resource"><small>SCRAP</small><strong id="scrap-value">250</strong></div>
             <div class="resource"><small>FUEL</small><strong id="fuel-value">100</strong></div>
@@ -104,7 +104,7 @@
 
         <aside id="sector-panel" class="mission-panel hud-drawer panel closed" aria-label="Sector details" aria-hidden="true">
           <div class="drawer-heading"><div class="eyebrow">SECTOR DETAILS</div><button class="drawer-close" data-close-panel aria-label="Close sector details">×</button></div>
-          <h2 id="territory-name">Choose a roadside lot</h2>
+          <h2 id="territory-name">Convoy entering sector</h2>
           <div class="state-line"><span id="territory-state" class="state safe">OBSERVER</span><span id="pressure-value">0% PRESSURE</span></div>
           <div class="meter"><i id="pressure-fill"></i></div>
           <dl>
@@ -117,9 +117,9 @@
             <div><dt>CONTRACT</dt><dd id="wave-value">NO ACTIVE HORDE</dd></div>
             <div><dt>HOSTILES</dt><dd id="zombie-value">0 ON ROAD</dd></div>
           </dl>
-          <p id="selection-copy">You are protected in Commander Mode. Select a cyan roadside lot in safe or contested territory.</p>
+          <p id="selection-copy">Drive the mobile command vehicle, stop beside a road, and deploy the base where you choose.</p>
           <div class="field-rule"><i></i><span>Roads are enemy lanes. Bases deploy beside roads.</span></div>
-          <button id="deploy-button" class="primary-button" disabled>SELECT A LOT</button>
+          <button id="deploy-button" class="primary-button" disabled>CONVOY ENTRY ACTIVE</button>
           <button id="redeploy-button" class="ghost-button" hidden>REDEPLOY CONVOY</button>
         </aside>
 
@@ -174,7 +174,7 @@
         </nav>
 
         <section id="convoy-actions" class="convoy-actions" hidden aria-label="Convoy deployment controls">
-          <div class="deployment-readout"><small>COMMAND VEHICLE</small><strong id="deployment-validity">Find a roadside deployment site</strong><span id="stowed-turrets">STOWED TURRETS: 0</span></div>
+          <div class="deployment-readout"><small>COMMAND VEHICLE</small><strong id="deployment-validity">Find valid roadside terrain</strong><span id="stowed-turrets">STOWED TURRETS: 0</span></div>
           <button id="deploy-core-button" class="deploy-core-button" disabled>DEPLOY BASE <kbd>E</kbd></button>
           <button id="follow-vehicle-button" class="hud-button">FOLLOW VEHICLE</button>
         </section>
