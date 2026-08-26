@@ -2,7 +2,7 @@ import { readFile, access } from "node:fs/promises";
 import { resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "../scraproad");
-const required = ["index.html", "ASSET_CREDITS.md", "THIRD_PARTY_LICENSES.txt"];
+const required = ["index.html", "ASSET_CREDITS.md", "THIRD_PARTY_LICENSES.txt", "assets/cloudy-sky.png", "assets/nitro-games.wav"];
 for (const file of required) await access(resolve(root, file));
 
 const html = await readFile(resolve(root, "index.html"), "utf8");
@@ -36,6 +36,9 @@ const sceneChecks = [
   ["ramp surface collision", /function rampSample/],
   ["ramp runtime smoke route", /physics-smoke.*ramp/],
   ["solid prop colliders", /boxColliders/],
+  ["height-aware prop colliders", /vehicle\.position\.y > obstacle\.top/],
+  ["looping quiet soundtrack", /soundtrack\.loop = true[\s\S]*soundtrack\.volume = \.12/],
+  ["cloudy environment map", /cloudy-sky\.png[\s\S]*scene\.environment = skyTexture/],
   ["arena boundary", /ARENA_RADIUS = 116/],
   ["recovery control", /event\.code==="KeyR"\)resetVehicle/],
   ["chase camera", /function updateCamera/],

@@ -24,7 +24,7 @@ type Pickup = { group: THREE.Group; part: VehiclePart | null; repair?: number; c
 type Target = { group: THREE.Group; health: number; alive: boolean; hitFlash: number };
 type Bullet = { mesh: THREE.Mesh; velocity: THREE.Vector3; life: number };
 type DustParticle = { mesh: THREE.Mesh; life: number; velocity: THREE.Vector3 };
-type Obstacle = { position: THREE.Vector3; radius: number; label: string };
+type Obstacle = { position: THREE.Vector3; radius: number; top: number; label: string };
 type BoxCollider = { position: THREE.Vector3; halfWidth: number; halfLength: number; rotation: number; label: string };
 type RampSurface = {
   group: THREE.Group;
@@ -54,18 +54,25 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.08;
+renderer.toneMappingExposure = 1.18;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xc27a4c);
-scene.fog = new THREE.FogExp2(0xb86f45, 0.0068);
+scene.background = new THREE.Color(0x7d8992);
+scene.fog = new THREE.FogExp2(0x89919a, 0.0057);
+const skyTexture = new THREE.TextureLoader().load("./assets/cloudy-sky.png");
+skyTexture.mapping = THREE.EquirectangularReflectionMapping;
+skyTexture.colorSpace = THREE.SRGBColorSpace;
+scene.background = skyTexture;
+scene.backgroundIntensity = .82;
+scene.environment = skyTexture;
+scene.environmentIntensity = .42;
 
 const camera = new THREE.PerspectiveCamera(58, innerWidth / innerHeight, 0.1, 520);
 camera.position.set(0, 7, -11);
 
-const hemi = new THREE.HemisphereLight(0xffd8a1, 0x3d352c, 2.4);
+const hemi = new THREE.HemisphereLight(0xdde8f2, 0x493c31, 2.75);
 scene.add(hemi);
-const sun = new THREE.DirectionalLight(0xffd39d, 3.2);
+const sun = new THREE.DirectionalLight(0xfff0cf, 3.75);
 sun.position.set(-28, 42, -18);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
@@ -180,7 +187,7 @@ function addScrapGate(x: number, z: number, rotation: number): void {
   gate.position.set(x, getGroundHeight(x, z), z); gate.rotation.y = rotation; scene.add(gate);
   for (const side of [-6, 6]) {
     const offset = new THREE.Vector3(side, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), rotation);
-    obstacles.push({ position: new THREE.Vector3(x + offset.x, 0, z + offset.z), radius: .85, label: "gate post" });
+    obstacles.push({ position: new THREE.Vector3(x + offset.x, 0, z + offset.z), radius: .85, top: getGroundHeight(x + offset.x, z + offset.z) + 5.5, label: "gate post" });
   }
 }
 
@@ -199,14 +206,16 @@ function addWorldProps(): void {
     const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(size, 0), rockMaterial);
     rock.scale.y = .65 + (index % 3) * .12; rock.rotation.set(index*.7, index*.4, index*.2);
     rock.position.set(x, getGroundHeight(x,z) + size*.5, z); rock.castShadow = rock.receiveShadow = true;
-    scene.add(rock); obstacles.push({ position: new THREE.Vector3(x,0,z), radius: size*.78, label: "rock" });
+    const ground = getGroundHeight(x, z);
+    const top = ground + size * .5 + size * rock.scale.y;
+    scene.add(rock); obstacles.push({ position: new THREE.Vector3(x,0,z), radius: size*.78, top, label: "rock" });
   });
   const barrelMaterial = new THREE.MeshStandardMaterial({ color: 0x8e3b22, roughness: .65, metalness: .55 });
   [[-37,22],[68,31],[-74,-17],[28,78],[76,-11]].forEach(([x,z]) => {
     for (let i=0;i<3;i++) {
       const barrel = new THREE.Mesh(new THREE.CylinderGeometry(.48,.48,1.35,12), barrelMaterial);
       barrel.position.set(x+i*.9, getGroundHeight(x+i*.9,z)+.68, z+(i%2)*.65); barrel.castShadow=true; scene.add(barrel);
-      obstacles.push({ position:new THREE.Vector3(x+i*.9,0,z+(i%2)*.65), radius:.55, label: "barrel" });
+      obstacles.push({ position:new THREE.Vector3(x+i*.9,0,z+(i%2)*.65), radius:.55, top:getGroundHeight(x+i*.9,z+(i%2)*.65)+1.35, label: "barrel" });
     }
   });
   for (let i=0;i<32;i++) {
@@ -257,8 +266,10 @@ function resolveBoxCollision(collider: BoxCollider): boolean {
 function registerPhysicsDebug(): void {
   const material = new THREE.MeshBasicMaterial({ color: 0xff8d3a, wireframe: true, transparent: true, opacity: .65 });
   for (const obstacle of obstacles) {
-    const marker = new THREE.Mesh(new THREE.CylinderGeometry(obstacle.radius + VEHICLE_RADIUS, obstacle.radius + VEHICLE_RADIUS, .12, 18), material);
-    marker.position.set(obstacle.position.x, getGroundHeight(obstacle.position.x, obstacle.position.z) + .12, obstacle.position.z);
+    const ground = getGroundHeight(obstacle.position.x, obstacle.position.z);
+    const height = Math.max(.12, obstacle.top - ground);
+    const marker = new THREE.Mesh(new THREE.CylinderGeometry(obstacle.radius + VEHICLE_RADIUS, obstacle.radius + VEHICLE_RADIUS, height, 18), material);
+    marker.position.set(obstacle.position.x, ground + height * .5, obstacle.position.z);
     marker.visible = false; scene.add(marker); debugVisuals.push(marker);
   }
 }
@@ -363,6 +374,22 @@ const bulletMaterial=new THREE.MeshBasicMaterial({color:0xffcf5a});
 const dustMaterial=new THREE.MeshBasicMaterial({color:0xc18a59,transparent:true,opacity:.35,depthWrite:false});
 let lastShot=0; let messageTimer=0; let paused=false; let cameraMode=0; let elapsed=0;
 const rampSmokeTest = new URLSearchParams(location.search).get("physics-smoke") === "ramp";
+const soundtrack = new Audio("./assets/nitro-games.wav");
+soundtrack.loop = true;
+soundtrack.volume = .12;
+soundtrack.preload = "metadata";
+soundtrack.id = "soundtrack";
+soundtrack.hidden = true;
+soundtrack.dataset.playback = "waiting-for-interaction";
+document.body.append(soundtrack);
+
+function startSoundtrack(): void {
+  if (!soundtrack.paused) return;
+  soundtrack.dataset.playback = "starting";
+  soundtrack.play()
+    .then(() => { soundtrack.dataset.playback = "playing"; })
+    .catch(() => { soundtrack.dataset.playback = "blocked"; });
+}
 const input=new Set<string>(); const mouse=new THREE.Vector2(0,.15); const aimPoint=new THREE.Vector3();
 const raycaster=new THREE.Raycaster(); const aimPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
 const currentAimDirection = new THREE.Vector3(0, 0, 1);
@@ -445,6 +472,7 @@ function updateVehicle(dt:number): void {
   const arenaDistance=Math.hypot(vehicle.position.x,vehicle.position.z);
   if(arenaDistance>ARENA_RADIUS-2){const nx=vehicle.position.x/arenaDistance,nz=vehicle.position.z/arenaDistance;vehicle.position.x=nx*(ARENA_RADIUS-2);vehicle.position.z=nz*(ARENA_RADIUS-2);collided=true;showMessage("BOUNDARY IMPACT // TURN BACK");}
   for(const obstacle of obstacles){
+    if(vehicle.position.y > obstacle.top)continue;
     const dx=vehicle.position.x-obstacle.position.x,dz=vehicle.position.z-obstacle.position.z,dist=Math.hypot(dx,dz),min=obstacle.radius+VEHICLE_RADIUS;
     if(dist<min){const nx=dist>.001?dx/dist:Math.sin(vehicle.heading),nz=dist>.001?dz/dist:Math.cos(vehicle.heading);vehicle.position.x=obstacle.position.x+nx*min;vehicle.position.z=obstacle.position.z+nz*min;collided=true;}
   }
@@ -540,6 +568,8 @@ window.addEventListener("keydown",event=>{if(["KeyW","KeyA","KeyS","KeyD","Space
 window.addEventListener("keyup",event=>input.delete(event.code));
 canvas.addEventListener("pointermove",event=>{const bounds=canvas.getBoundingClientRect();mouse.x=(event.clientX-bounds.left)/bounds.width*2-1;mouse.y=-(event.clientY-bounds.top)/bounds.height*2+1;const crosshair=getElement("crosshair");crosshair.style.left=`${event.clientX}px`;crosshair.style.top=`${event.clientY}px`;});
 canvas.addEventListener("pointerdown",event=>{if(event.button===0)shoot();});
+window.addEventListener("keydown", startSoundtrack, { capture: true });
+window.addEventListener("pointerdown", startSoundtrack, { capture: true });
 canvas.addEventListener("contextmenu",event=>event.preventDefault());
 getElement("help-button").addEventListener("click",()=>toggleControls());getElement("controls-close").addEventListener("click",()=>toggleControls(false));getElement("resume-button").addEventListener("click",()=>togglePause(false));
 document.querySelectorAll<HTMLButtonElement>("[data-key]").forEach(button=>{const code=button.dataset.key??"";const press=(event:PointerEvent)=>{event.preventDefault();if(code==="Fire")shoot();else input.add(code);};const release=(event:PointerEvent)=>{event.preventDefault();input.delete(code);};button.addEventListener("pointerdown",press);button.addEventListener("pointerup",release);button.addEventListener("pointercancel",release);button.addEventListener("pointerleave",release);});

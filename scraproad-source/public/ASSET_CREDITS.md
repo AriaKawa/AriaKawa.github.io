@@ -1,6 +1,11 @@
 # Scraproad Arena asset credits
 
-Scraproad Arena uses no downloaded third-party art, models, textures, audio, or fonts in its 3D scene. The vehicle, weapon, terrain, props, pickups, targets, particles, and effects are original procedural geometry and materials created for this prototype.
+The vehicle, weapon, terrain, props, pickups, targets, particles, and effects are original procedural geometry and materials created for this prototype.
+
+## Original media
+
+- **Nitro Games** — Original soundtrack supplied by the site owner. Used as quiet looping background music.
+- **Cloudy sky panorama** — Original AI-generated environment texture created for Scraproad Arena with OpenAI ImageGen.
 
 ## Runtime library
 
