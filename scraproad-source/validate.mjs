@@ -2,7 +2,20 @@ import { readFile, access } from "node:fs/promises";
 import { resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "../scraproad");
-const required = ["index.html", "ASSET_CREDITS.md", "THIRD_PARTY_LICENSES.txt", "assets/cloudy-sky.png", "assets/nitro-games.wav"];
+const required = [
+  "index.html", "ASSET_CREDITS.md", "THIRD_PARTY_LICENSES.txt", "assets/cloudy-sky.png", "assets/nitro-games.wav",
+  "assets/scraproad/vehicles/kenney-suv.glb",
+  "assets/scraproad/vehicles/Textures/colormap.png",
+  "assets/scraproad/arena/kenney-ramp.glb",
+  "assets/scraproad/arena/kenney-barrier-wall.glb",
+  "assets/scraproad/arena/kenney-pylon.glb",
+  "assets/scraproad/props/kenney-crate.glb",
+  "assets/scraproad/props/kenney-debris-tire.glb",
+  "assets/scraproad/props/kenney-debris-bumper.glb",
+  "assets/scraproad/props/Textures/colormap.png",
+  "assets/scraproad/licenses/kenney-car-kit.txt",
+  "assets/scraproad/licenses/kenney-racing-kit.txt",
+];
 for (const file of required) await access(resolve(root, file));
 
 const html = await readFile(resolve(root, "index.html"), "utf8");
@@ -23,6 +36,12 @@ for (const [label, pattern] of checks) {
 const sceneChecks = [
   ["terrain", /addArena\(\)/],
   ["vehicle", /buildCar\(\)/],
+  ["licensed GLB loader", /new GLTFLoader\(\)/],
+  ["central asset manifest", /scraproadAssetManifest/],
+  ["Kenney SUV visual", /kenney-car-kit-suv/],
+  ["animated imported wheel nodes", /vehicle\.wheelNodes/],
+  ["licensed arena ramp visual", /kenney-racing-kit-ramp/],
+  ["licensed arena barrier visual", /kenney-racing-kit-barrier/],
   ["roof weapon mount", /const turret = new THREE\.Group/],
   ["barrel pitch mount", /const barrelPivot = new THREE\.Group/],
   ["mouse world ray", /intersectObjects\(aimSurfaces/],
@@ -53,4 +72,4 @@ if ((source.match(/addRamp\(/g) ?? []).length < 6) throw new Error("Expected at 
 const assetPaths = [...html.matchAll(/(?:src|href)="\.\/(assets\/[^\"]+)"/g)].map((match) => match[1]);
 for (const asset of assetPaths) await access(resolve(root, asset));
 
-console.log(`Scraproad production validation passed (${sceneChecks.length} gameplay systems, 5 ramps, 6 pickups, 8 targets, and ${required.length + assetPaths.length} files checked).`);
+console.log(`Scraproad production validation passed (${sceneChecks.length} gameplay/asset systems, 5 ramps, 6 pickups, 8 targets, and ${required.length + assetPaths.length} files checked).`);
