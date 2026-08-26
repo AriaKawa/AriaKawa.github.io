@@ -1,0 +1,8 @@
+{
+  "name": "last-lot-prototype",
+  "private": true,
+  "scripts": {
+    "check": "node validate.mjs",
+    "build": "node validate.mjs"
+  }
+}
