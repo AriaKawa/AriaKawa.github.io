@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#15130f" />
+    <meta name="description" content="Scraproad Arena — drive, loot vehicle parts, and test your roof gun in a dusty 3D combat proving ground." />
+    <meta property="og:title" content="Scraproad Arena" />
+    <meta property="og:description" content="A browser-playable 3D vehicle combat prototype." />
+    <title>Scraproad Arena</title>
+    <script type="module" crossorigin src="./assets/index-OC_HbcZ8.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-BylEqaDU.css">
+  </head>
+  <body>
+    <main id="app">
+      <canvas id="game" aria-label="Scraproad Arena 3D combat driving game"></canvas>
+
+      <header class="topbar">
+        <div class="brand"><span class="brand__mark">SR</span><div><b>SCRAPROAD</b><small>ARENA // TEST GROUND 01</small></div></div>
+        <div id="objective" class="objective"><small>FIELD TEST</small><b>Collect parts. Break targets. Keep moving.</b></div>
+        <button id="help-button" class="icon-button" type="button" aria-label="Toggle controls">?</button>
+      </header>
+
+      <aside class="vitals panel" aria-label="Vehicle status">
+        <div class="vital-heading"><span>HULL INTEGRITY</span><strong id="health-value">100</strong></div>
+        <div class="bar"><i id="health-bar"></i></div>
+        <div class="readouts">
+          <div><small>SPEED</small><strong><span id="speed-value">0</span> <em>KM/H</em></strong></div>
+          <div><small>BOOST</small><strong><span id="boost-value">100</span><em>%</em></strong></div>
+          <div><small>TARGETS</small><strong><span id="target-value">8</span><em>LEFT</em></strong></div>
+        </div>
+      </aside>
+
+      <aside class="loadout panel" aria-label="Equipped vehicle parts">
+        <div class="eyebrow">RIG LOADOUT</div>
+        <dl>
+          <div><dt>ROOF</dt><dd id="weapon-part">SCRAP MG</dd></div>
+          <div><dt>TIRES</dt><dd id="tires-part">STANDARD</dd></div>
+          <div><dt>ENGINE</dt><dd id="engine-part">STANDARD</dd></div>
+          <div><dt>ARMOR</dt><dd id="armor-part">NONE</dd></div>
+        </dl>
+        <div class="ammo"><span>AMMO</span><b>∞</b><small id="weapon-state">READY</small></div>
+      </aside>
+
+      <aside id="radar" class="radar panel" aria-label="Arena radar">
+        <canvas id="radar-canvas" width="160" height="160"></canvas>
+        <span>N</span><small>PICKUPS <i></i> TARGETS <b></b></small>
+      </aside>
+
+      <section id="controls" class="controls panel" aria-label="Controls">
+        <div class="controls__heading"><div><span>DRIVER FIELD MANUAL</span><b>ARCADE VEHICLE SYSTEMS</b></div><button id="controls-close" type="button" aria-label="Close controls">×</button></div>
+        <div class="control-grid">
+          <div><kbd>W / S</kbd><span>Accelerate / brake & reverse</span></div>
+          <div><kbd>A / D</kbd><span>Steer</span></div>
+          <div><kbd>SPACE</kbd><span>Handbrake drift</span></div>
+          <div><kbd>SHIFT</kbd><span>Nitro boost</span></div>
+          <div><kbd>MOUSE</kbd><span>Aim roof weapon</span></div>
+          <div><kbd>LMB / F</kbd><span>Fire</span></div>
+          <div><kbd>R</kbd><span>Reset vehicle</span></div>
+          <div><kbd>C</kbd><span>Switch camera</span></div>
+          <div><kbd>ESC</kbd><span>Pause / help</span></div>
+        </div>
+      </section>
+
+      <div id="message" class="message" role="status" aria-live="polite"></div>
+      <div id="crosshair" class="crosshair" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+
+      <section id="pause" class="pause" hidden>
+        <div class="pause__card panel"><span>RADIO SILENCE</span><h2>ARENA PAUSED</h2><p>Press <kbd>ESC</kbd> to get back on the road.</p><button id="resume-button" type="button">RESUME RUN</button></div>
+      </section>
+
+      <div class="touch-controls" aria-label="Touch controls">
+        <div class="touch-steer"><button data-key="KeyA" aria-label="Steer left">◀</button><button data-key="KeyD" aria-label="Steer right">▶</button></div>
+        <div class="touch-drive"><button data-key="KeyW" aria-label="Accelerate">▲</button><button data-key="KeyS" aria-label="Brake">▼</button><button data-key="Fire" class="touch-fire" aria-label="Fire">FIRE</button></div>
+      </div>
+    </main>
+  </body>
+</html>
