@@ -3,12 +3,16 @@ import "./style.css";
 
 type VehiclePartSlot = "roof_weapon" | "front_weapon" | "tires" | "engine" | "armor";
 type VehicleStats = {
-  maxSpeed: number;
-  acceleration: number;
-  grip: number;
-  turnRate: number;
   maxHealth: number;
+  acceleration: number;
+  maxSpeed: number;
+  handling: number;
+  traction: number;
+  boostPower?: number;
+  armor?: number;
   weaponDamage: number;
+  fireRate: number;
+  projectileSpeed: number;
 };
 type VehiclePart = {
   id: string;
@@ -20,10 +24,20 @@ type Pickup = { group: THREE.Group; part: VehiclePart | null; repair?: number; c
 type Target = { group: THREE.Group; health: number; alive: boolean; hitFlash: number };
 type Bullet = { mesh: THREE.Mesh; velocity: THREE.Vector3; life: number };
 type DustParticle = { mesh: THREE.Mesh; life: number; velocity: THREE.Vector3 };
-type Obstacle = { position: THREE.Vector3; radius: number };
+type Obstacle = { position: THREE.Vector3; radius: number; label: string };
+type BoxCollider = { position: THREE.Vector3; halfWidth: number; halfLength: number; rotation: number; label: string };
+type RampSurface = {
+  group: THREE.Group;
+  deck: THREE.Mesh;
+  position: THREE.Vector3;
+  rotation: number;
+  width: number;
+  length: number;
+  baseHeight: number;
+  rise: number;
+};
 
-const canvas = document.querySelector<HTMLCanvasElement>("#game");
-if (!canvas) throw new Error("Game canvas not found");
+const canvas = getElement<HTMLCanvasElement>("game");
 
 const ui = {
   health: getElement("health-value"), healthBar: getElement("health-bar"), speed: getElement("speed-value"),
@@ -44,9 +58,9 @@ renderer.toneMappingExposure = 1.08;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xc27a4c);
-scene.fog = new THREE.FogExp2(0xb86f45, 0.0125);
+scene.fog = new THREE.FogExp2(0xb86f45, 0.0068);
 
-const camera = new THREE.PerspectiveCamera(58, innerWidth / innerHeight, 0.1, 260);
+const camera = new THREE.PerspectiveCamera(58, innerWidth / innerHeight, 0.1, 520);
 camera.position.set(0, 7, -11);
 
 const hemi = new THREE.HemisphereLight(0xffd8a1, 0x3d352c, 2.4);
@@ -55,7 +69,7 @@ const sun = new THREE.DirectionalLight(0xffd39d, 3.2);
 sun.position.set(-28, 42, -18);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
-sun.shadow.camera.left = -55; sun.shadow.camera.right = 55; sun.shadow.camera.top = 55; sun.shadow.camera.bottom = -55;
+sun.shadow.camera.left = -125; sun.shadow.camera.right = 125; sun.shadow.camera.top = 125; sun.shadow.camera.bottom = -125;
 scene.add(sun);
 
 const warm = new THREE.MeshStandardMaterial({ color: 0x9f3d22, roughness: .78, metalness: .26 });
@@ -63,17 +77,25 @@ const metal = new THREE.MeshStandardMaterial({ color: 0x272a29, roughness: .55, 
 const darkMetal = new THREE.MeshStandardMaterial({ color: 0x151717, roughness: .67, metalness: .72 });
 const sand = new THREE.MeshStandardMaterial({ color: 0x8f603f, roughness: 1, metalness: 0 });
 const rubber = new THREE.MeshStandardMaterial({ color: 0x101111, roughness: .9, metalness: .08 });
+const ARENA_RADIUS = 116;
+const VEHICLE_RADIUS = 1.35;
+const ramps: RampSurface[] = [];
+const obstacles: Obstacle[] = [];
+const boxColliders: BoxCollider[] = [];
+const aimSurfaces: THREE.Object3D[] = [];
+const debugVisuals: THREE.Object3D[] = [];
+let debugPhysics = false;
 
 function getGroundHeight(x: number, z: number): number {
-  const northHill = 3.4 * Math.exp(-((x - 19) ** 2 + (z - 23) ** 2) / 210);
-  const westRise = 2.3 * Math.exp(-((x + 28) ** 2 + (z - 5) ** 2) / 150);
-  const southBump = 1.8 * Math.exp(-((x - 12) ** 2 + (z + 30) ** 2) / 100);
-  const texture = Math.sin(x * .16) * Math.cos(z * .13) * .22 + Math.sin((x + z) * .08) * .16;
+  const northHill = 3.4 * Math.exp(-((x - 42) ** 2 + (z - 50) ** 2) / 520);
+  const westRise = 2.5 * Math.exp(-((x + 64) ** 2 + (z - 8) ** 2) / 430);
+  const southBump = 2.1 * Math.exp(-((x - 24) ** 2 + (z + 65) ** 2) / 340);
+  const texture = Math.sin(x * .105) * Math.cos(z * .09) * .18 + Math.sin((x + z) * .055) * .14;
   return northHill + westRise + southBump + texture;
 }
 
 function addArena(): void {
-  const geometry = new THREE.PlaneGeometry(120, 120, 70, 70);
+  const geometry = new THREE.PlaneGeometry(250, 250, 100, 100);
   geometry.rotateX(-Math.PI / 2);
   const positions = geometry.attributes.position;
   for (let index = 0; index < positions.count; index++) {
@@ -83,50 +105,69 @@ function addArena(): void {
   geometry.computeVertexNormals();
   const ground = new THREE.Mesh(geometry, sand);
   ground.receiveShadow = true;
-  scene.add(ground);
+  ground.name = "arena-ground-aim-surface";
+  scene.add(ground); aimSurfaces.push(ground);
 
   const trackMaterial = new THREE.MeshStandardMaterial({ color: 0x50392b, roughness: 1, transparent: true, opacity: .84 });
-  for (let segment = 0; segment < 30; segment++) {
-    const angle = segment / 30 * Math.PI * 2;
-    const next = (segment + 1) / 30 * Math.PI * 2;
-    const x = Math.sin(angle) * 37;
-    const z = Math.cos(angle) * 30;
-    const nx = Math.sin(next) * 37;
-    const nz = Math.cos(next) * 30;
-    const strip = new THREE.Mesh(new THREE.BoxGeometry(7.2, .055, Math.hypot(nx - x, nz - z) + .7), trackMaterial);
+  for (let segment = 0; segment < 40; segment++) {
+    const angle = segment / 40 * Math.PI * 2;
+    const next = (segment + 1) / 40 * Math.PI * 2;
+    const x = Math.sin(angle) * 82;
+    const z = Math.cos(angle) * 69;
+    const nx = Math.sin(next) * 82;
+    const nz = Math.cos(next) * 69;
+    const strip = new THREE.Mesh(new THREE.BoxGeometry(11, .055, Math.hypot(nx - x, nz - z) + .8), trackMaterial);
     strip.position.set((x + nx) / 2, getGroundHeight((x + nx) / 2, (z + nz) / 2) + .05, (z + nz) / 2);
     strip.rotation.y = Math.atan2(nx - x, nz - z);
     strip.receiveShadow = true;
     scene.add(strip);
   }
 
-  const arenaRing = new THREE.Mesh(new THREE.RingGeometry(57, 58, 80), new THREE.MeshBasicMaterial({ color: 0x5a2c20, side: THREE.DoubleSide }));
+  const arenaRing = new THREE.Mesh(new THREE.RingGeometry(ARENA_RADIUS - 1, ARENA_RADIUS, 96), new THREE.MeshBasicMaterial({ color: 0x5a2c20, side: THREE.DoubleSide }));
   arenaRing.rotateX(-Math.PI / 2);
   arenaRing.position.y = .12;
   scene.add(arenaRing);
 
-  addRamp(-13, -2, Math.PI * .43);
-  addRamp(29, -12, -Math.PI * .7);
-  addRamp(-31, 22, Math.PI * .12);
-  addScrapGate(0, 38);
-  addScrapGate(0, -38);
+  addRamp(-20, -5, Math.PI * .43);
+  addRamp(58, -28, -Math.PI * .7);
+  addRamp(-66, 43, Math.PI * .12);
+  addRamp(26, 62, Math.PI * .92);
+  addRamp(-53, -61, -Math.PI * .34);
+  addScrapGate(0, 84, 0);
+  addScrapGate(0, -84, Math.PI);
+
+  addBarrier(-35, 30, .2, 16);
+  addBarrier(45, 24, -.75, 19);
+  addBarrier(-43, -28, .72, 18);
+  addBarrier(35, -57, -.2, 15);
+  for (let segment = 0; segment < 24; segment++) {
+    const angle = segment / 24 * Math.PI * 2;
+    addBarrier(Math.sin(angle) * (ARENA_RADIUS - 2), Math.cos(angle) * (ARENA_RADIUS - 2), angle, 12, true);
+  }
 }
 
 function addRamp(x: number, z: number, rotation: number): void {
+  const width = 8.5, length = 14, rise = 3.8;
+  const slope = Math.asin(rise / length);
+  const baseHeight = getGroundHeight(x - Math.sin(rotation) * length * .5, z - Math.cos(rotation) * length * .5);
   const ramp = new THREE.Group();
-  const deck = new THREE.Mesh(new THREE.BoxGeometry(6.5, .45, 9), metal);
-  deck.rotation.x = -.18;
-  deck.position.y = 1.05;
+  const deck = new THREE.Mesh(new THREE.BoxGeometry(width, .5, length), metal);
+  deck.rotation.x = -slope;
+  deck.position.y = rise * .5 + .01;
+  deck.name = "ramp-collider-surface";
   deck.castShadow = deck.receiveShadow = true;
   ramp.add(deck);
-  for (const side of [-2.8, 2.8]) {
-    const rail = new THREE.Mesh(new THREE.BoxGeometry(.18, .6, 9.2), warm);
-    rail.position.set(side, 1.3, 0); rail.rotation.x = -.18; rail.castShadow = true; ramp.add(rail);
+  for (const side of [-width * .46, width * .46]) {
+    const rail = new THREE.Mesh(new THREE.BoxGeometry(.2, .72, length + .2), warm);
+    rail.position.set(side, rise * .5 + .42, 0); rail.rotation.x = -slope; rail.castShadow = true; ramp.add(rail);
   }
-  ramp.position.set(x, getGroundHeight(x, z), z); ramp.rotation.y = rotation; scene.add(ramp);
+  ramp.position.set(x, baseHeight, z); ramp.rotation.y = rotation; scene.add(ramp);
+  const surface: RampSurface = { group: ramp, deck, position: new THREE.Vector3(x, baseHeight, z), rotation, width, length, baseHeight, rise };
+  ramps.push(surface); aimSurfaces.push(deck);
+  const helper = new THREE.BoxHelper(deck, 0x5dff8a); helper.visible = false; scene.add(helper); debugVisuals.push(helper);
 }
 
-function addScrapGate(x: number, z: number): void {
+function addScrapGate(x: number, z: number, rotation: number): void {
   const gate = new THREE.Group();
   for (const side of [-6, 6]) {
     const post = new THREE.Mesh(new THREE.BoxGeometry(.7, 5.5, .7), darkMetal);
@@ -136,32 +177,89 @@ function addScrapGate(x: number, z: number): void {
   top.position.y = 5.2; top.rotation.z = .02; top.castShadow = true; gate.add(top);
   const sign = new THREE.Mesh(new THREE.BoxGeometry(5.5, 1.45, .2), warm);
   sign.position.set(0, 4.6, -.5); gate.add(sign);
-  gate.position.set(x, getGroundHeight(x, z), z); scene.add(gate);
+  gate.position.set(x, getGroundHeight(x, z), z); gate.rotation.y = rotation; scene.add(gate);
+  for (const side of [-6, 6]) {
+    const offset = new THREE.Vector3(side, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), rotation);
+    obstacles.push({ position: new THREE.Vector3(x + offset.x, 0, z + offset.z), radius: .85, label: "gate post" });
+  }
 }
 
-const obstacles: Obstacle[] = [];
+function addBarrier(x: number, z: number, rotation: number, length: number, boundary = false): void {
+  const material = new THREE.MeshStandardMaterial({ color: boundary ? 0x633829 : 0x6e4a35, roughness: .88, metalness: .22 });
+  const barrier = new THREE.Mesh(new THREE.BoxGeometry(length, 1.35, .8), material);
+  barrier.position.set(x, getGroundHeight(x, z) + .68, z); barrier.rotation.y = rotation; barrier.castShadow = barrier.receiveShadow = true; scene.add(barrier);
+  boxColliders.push({ position: new THREE.Vector3(x, 0, z), halfWidth: length * .5, halfLength: .4, rotation, label: boundary ? "arena wall" : "scrap barrier" });
+  const helper = new THREE.BoxHelper(barrier, 0xffb347); helper.visible = false; scene.add(helper); debugVisuals.push(helper);
+}
+
 function addWorldProps(): void {
   const rockMaterial = new THREE.MeshStandardMaterial({ color: 0x5d5044, roughness: 1 });
-  const placements = [[-42,-20,2.4],[-45,14,2.8],[43,-28,2.2],[47,8,3.2],[31,37,2],[-22,39,2.6],[8,16,1.5],[-9,-31,1.7],[22,-3,1.8]];
+  const placements = [[-88,-36,3.4],[-91,28,3.8],[86,-57,3.2],[92,19,4.2],[62,75,3],[-49,82,3.6],[15,34,2.2],[-18,-67,2.7],[51,-5,2.8],[-70,-78,3.2],[77,52,2.5]];
   placements.forEach(([x,z,size], index) => {
     const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(size, 0), rockMaterial);
     rock.scale.y = .65 + (index % 3) * .12; rock.rotation.set(index*.7, index*.4, index*.2);
     rock.position.set(x, getGroundHeight(x,z) + size*.5, z); rock.castShadow = rock.receiveShadow = true;
-    scene.add(rock); obstacles.push({ position: new THREE.Vector3(x,0,z), radius: size*.75 });
+    scene.add(rock); obstacles.push({ position: new THREE.Vector3(x,0,z), radius: size*.78, label: "rock" });
   });
   const barrelMaterial = new THREE.MeshStandardMaterial({ color: 0x8e3b22, roughness: .65, metalness: .55 });
-  [[-18,11],[34,14],[-36,-7],[14,34],[38,-5]].forEach(([x,z]) => {
+  [[-37,22],[68,31],[-74,-17],[28,78],[76,-11]].forEach(([x,z]) => {
     for (let i=0;i<3;i++) {
       const barrel = new THREE.Mesh(new THREE.CylinderGeometry(.48,.48,1.35,12), barrelMaterial);
       barrel.position.set(x+i*.9, getGroundHeight(x+i*.9,z)+.68, z+(i%2)*.65); barrel.castShadow=true; scene.add(barrel);
-      obstacles.push({ position:new THREE.Vector3(x+i*.9,0,z+(i%2)*.65), radius:.55 });
+      obstacles.push({ position:new THREE.Vector3(x+i*.9,0,z+(i%2)*.65), radius:.55, label: "barrel" });
     }
   });
-  for (let i=0;i<20;i++) {
-    const angle = i/20*Math.PI*2;
+  for (let i=0;i<32;i++) {
+    const angle = i/32*Math.PI*2;
     const tire = new THREE.Mesh(new THREE.TorusGeometry(.5,.18,8,14), rubber);
-    tire.position.set(Math.sin(angle)*(49+(i%2)*2), 1.1, Math.cos(angle)*(45+(i%3)));
+    tire.position.set(Math.sin(angle)*(104+(i%2)*2), 1.1, Math.cos(angle)*(102+(i%3)));
     tire.rotation.set(Math.PI/2,angle,i*.5); tire.castShadow=true; scene.add(tire);
+  }
+}
+
+function rampSample(x: number, z: number): { ramp: RampSurface; height: number; localZ: number } | null {
+  for (const ramp of ramps) {
+    const dx = x - ramp.position.x, dz = z - ramp.position.z;
+    const localX = dx * Math.cos(ramp.rotation) - dz * Math.sin(ramp.rotation);
+    const localZ = dx * Math.sin(ramp.rotation) + dz * Math.cos(ramp.rotation);
+    if (Math.abs(localX) <= ramp.width * .5 && localZ >= -ramp.length * .5 && localZ <= ramp.length * .5) {
+      return { ramp, height: ramp.baseHeight + (localZ / ramp.length + .5) * ramp.rise + .25, localZ };
+    }
+  }
+  return null;
+}
+
+function getDriveHeight(x: number, z: number): number {
+  return rampSample(x, z)?.height ?? getGroundHeight(x, z);
+}
+
+function resolveBoxCollision(collider: BoxCollider): boolean {
+  const dx = vehicle.position.x - collider.position.x, dz = vehicle.position.z - collider.position.z;
+  const cosine = Math.cos(collider.rotation), sine = Math.sin(collider.rotation);
+  const localX = dx * cosine - dz * sine, localZ = dx * sine + dz * cosine;
+  const closestX = THREE.MathUtils.clamp(localX, -collider.halfWidth, collider.halfWidth);
+  const closestZ = THREE.MathUtils.clamp(localZ, -collider.halfLength, collider.halfLength);
+  let pushX = localX - closestX, pushZ = localZ - closestZ;
+  const distance = Math.hypot(pushX, pushZ);
+  if (distance >= VEHICLE_RADIUS) return false;
+  let correction: number;
+  if (distance < .001) {
+    const escapeX = collider.halfWidth + VEHICLE_RADIUS - Math.abs(localX);
+    const escapeZ = collider.halfLength + VEHICLE_RADIUS - Math.abs(localZ);
+    if (escapeX < escapeZ) { pushX = Math.sign(localX || 1); pushZ = 0; correction = escapeX + .02; }
+    else { pushX = 0; pushZ = Math.sign(localZ || 1); correction = escapeZ + .02; }
+  } else { pushX /= distance; pushZ /= distance; correction = VEHICLE_RADIUS - distance + .02; }
+  const worldX = pushX * cosine + pushZ * sine, worldZ = -pushX * sine + pushZ * cosine;
+  vehicle.position.x += worldX * correction; vehicle.position.z += worldZ * correction;
+  return true;
+}
+
+function registerPhysicsDebug(): void {
+  const material = new THREE.MeshBasicMaterial({ color: 0xff8d3a, wireframe: true, transparent: true, opacity: .65 });
+  for (const obstacle of obstacles) {
+    const marker = new THREE.Mesh(new THREE.CylinderGeometry(obstacle.radius + VEHICLE_RADIUS, obstacle.radius + VEHICLE_RADIUS, .12, 18), material);
+    marker.position.set(obstacle.position.x, getGroundHeight(obstacle.position.x, obstacle.position.z) + .12, obstacle.position.z);
+    marker.visible = false; scene.add(marker); debugVisuals.push(marker);
   }
 }
 
@@ -169,6 +267,7 @@ const car = new THREE.Group();
 const wheels: THREE.Mesh[] = [];
 const frontWheelPivots: THREE.Group[] = [];
 const turret = new THREE.Group();
+const barrelPivot = new THREE.Group();
 let muzzle: THREE.Object3D;
 
 function buildCar(): void {
@@ -193,24 +292,41 @@ function buildCar(): void {
   const mount = new THREE.Mesh(new THREE.CylinderGeometry(.58,.68,.2,12),metal); mount.position.y=2.32; mount.castShadow=true; car.add(mount);
   turret.position.y=2.47; car.add(turret);
   const receiver = new THREE.Mesh(new THREE.BoxGeometry(.46,.4,.9),darkMetal); receiver.position.z=.14; receiver.castShadow=true; turret.add(receiver);
-  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(.08,.11,2.15,10),metal); barrel.rotation.x=Math.PI/2; barrel.position.set(0,.07,1.35); barrel.castShadow=true; turret.add(barrel);
+  barrelPivot.position.set(0,.07,.34); turret.add(barrelPivot);
+  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(.08,.11,2.15,10),metal); barrel.rotation.x=Math.PI/2; barrel.position.z=1.01; barrel.castShadow=true; barrelPivot.add(barrel);
   const shield = new THREE.Mesh(new THREE.BoxGeometry(1.05,.62,.12),warm); shield.position.set(0,.06,.25); shield.rotation.x=-.1; turret.add(shield);
-  muzzle = new THREE.Object3D(); muzzle.position.set(0,.07,2.46); turret.add(muzzle);
-  car.position.set(0,getGroundHeight(0,-18),-18); scene.add(car);
+  muzzle = new THREE.Object3D(); muzzle.position.z=2.12; barrelPivot.add(muzzle);
+  car.position.set(0,getGroundHeight(0,-28),-28); scene.add(car);
 }
 
-const defaultStats: VehicleStats = { maxSpeed: 25, acceleration: 18, grip: 1, turnRate: 1.7, maxHealth: 100, weaponDamage: 15 };
+// Upgrade cards can mutate this single structure between rounds. Future systems:
+// TODO: RoundManager, UpgradeCardDraft, OpponentVehicleAI, BetweenRoundScreen.
+const defaultStats: VehicleStats = {
+  maxHealth: 100,
+  acceleration: 16.5,
+  maxSpeed: 27,
+  handling: 1.62,
+  traction: 7.4,
+  boostPower: 1.3,
+  armor: 0,
+  weaponDamage: 15,
+  fireRate: 6.7,
+  projectileSpeed: 58,
+};
 const stats: VehicleStats = { ...defaultStats };
 const equipped: Partial<Record<VehiclePartSlot, VehiclePart>> = {};
-const vehicle = { position: new THREE.Vector3(0,0,-18), heading: 0, speed: 0, health: 100, boost: 100, collisionCooldown: 0 };
+const vehicle = {
+  position: new THREE.Vector3(0,0,-28), heading: 0, speed: 0, driftAngle: 0, verticalVelocity: 0,
+  grounded: true, activeRamp: null as RampSurface | null, health: 100, boost: 100, collisionCooldown: 0,
+};
 
 type PartPickupKind = "tires" | "engine" | "armor" | "weapon";
 type PickupKind = PartPickupKind | "repair";
 const partCatalog: Record<PartPickupKind, VehiclePart> = {
-  tires: { id:"better-tires", name:"All-Terrain Tires", slot:"tires", stats:{ grip:1.36, turnRate:2.0 } },
+  tires: { id:"better-tires", name:"All-Terrain Tires", slot:"tires", stats:{ traction:9.2, handling:1.85 } },
   engine: { id:"turbo-engine", name:"Turbo V8", slot:"engine", stats:{ maxSpeed:32, acceleration:24 } },
-  armor: { id:"armor-plates", name:"Riveted Armor", slot:"armor", stats:{ maxHealth:145 } },
-  weapon: { id:"roof-machine-gun", name:"Twin Roof MG", slot:"roof_weapon", stats:{ weaponDamage:24 } },
+  armor: { id:"armor-plates", name:"Riveted Armor", slot:"armor", stats:{ maxHealth:145, armor:.22 } },
+  weapon: { id:"roof-machine-gun", name:"Twin Roof MG", slot:"roof_weapon", stats:{ weaponDamage:24, fireRate:10.5, projectileSpeed:68 } },
 };
 
 const pickups: Pickup[] = [];
@@ -246,15 +362,29 @@ const bullets: Bullet[]=[]; const dust: DustParticle[]=[];
 const bulletMaterial=new THREE.MeshBasicMaterial({color:0xffcf5a});
 const dustMaterial=new THREE.MeshBasicMaterial({color:0xc18a59,transparent:true,opacity:.35,depthWrite:false});
 let lastShot=0; let messageTimer=0; let paused=false; let cameraMode=0; let elapsed=0;
+const rampSmokeTest = new URLSearchParams(location.search).get("physics-smoke") === "ramp";
 const input=new Set<string>(); const mouse=new THREE.Vector2(0,.15); const aimPoint=new THREE.Vector3();
 const raycaster=new THREE.Raycaster(); const aimPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
+const currentAimDirection = new THREE.Vector3(0, 0, 1);
+let aimReady = false;
+const groundCrosshair = new THREE.Group();
+const crosshairMaterial = new THREE.MeshBasicMaterial({ color: 0xffc85c, transparent: true, opacity: .92, depthTest: false });
+const crosshairRing = new THREE.Mesh(new THREE.RingGeometry(.65, .82, 24), crosshairMaterial);
+crosshairRing.rotation.x = -Math.PI / 2; groundCrosshair.add(crosshairRing);
+for (const rotation of [0, Math.PI / 2]) {
+  const line = new THREE.Mesh(new THREE.BoxGeometry(2.25, .025, .08), crosshairMaterial);
+  line.rotation.y = rotation; line.position.y = .015; groundCrosshair.add(line);
+}
+groundCrosshair.renderOrder = 10; scene.add(groundCrosshair);
 
 function shoot(): void {
-  const now=performance.now(); if(paused || now-lastShot < (equipped.roof_weapon?95:150)) return; lastShot=now;
+  const now=performance.now(); if(paused || !aimReady || now-lastShot < 1000/stats.fireRate) return; lastShot=now;
   const origin=new THREE.Vector3();muzzle.getWorldPosition(origin);
-  const yaw=car.rotation.y+turret.rotation.y; const direction=new THREE.Vector3(Math.sin(yaw),.01,Math.cos(yaw)).normalize();
-  const mesh=new THREE.Mesh(new THREE.SphereGeometry(.09,7,5),bulletMaterial);mesh.position.copy(origin);scene.add(mesh);
-  bullets.push({mesh,velocity:direction.multiplyScalar(equipped.roof_weapon?60:48),life:1.45});
+  const direction=aimPoint.clone().sub(origin).normalize(); currentAimDirection.copy(direction);
+  const mesh=new THREE.Mesh(new THREE.BoxGeometry(.09,.09,.72),bulletMaterial);mesh.position.copy(origin);
+  mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),direction);scene.add(mesh);
+  bullets.push({mesh,velocity:direction.multiplyScalar(stats.projectileSpeed),life:2.35});
+  canvas.dataset.shotsFired=String(Number(canvas.dataset.shotsFired??0)+1);
   ui.weaponState.textContent="FIRING"; setTimeout(()=>{if(ui.weaponState.textContent==="FIRING")ui.weaponState.textContent="READY";},80);
   const flash=new THREE.PointLight(0xff8a24,8,5,2);flash.position.copy(origin);scene.add(flash);setTimeout(()=>scene.remove(flash),45);
 }
@@ -297,20 +427,54 @@ function updateVehicle(dt:number): void {
   vehicle.collisionCooldown=Math.max(0,vehicle.collisionCooldown-dt);
   const forward=input.has("KeyW")?1:0;const reverse=input.has("KeyS")?1:0;const steer=(input.has("KeyA")?1:0)-(input.has("KeyD")?1:0);const drifting=input.has("Space");
   const boosting=input.has("ShiftLeft")&&forward>0&&vehicle.boost>0;
-  if(forward)vehicle.speed+=stats.acceleration*(boosting?1.75:1)*dt;
-  if(reverse)vehicle.speed-=vehicle.speed>1?stats.acceleration*2.2*dt:stats.acceleration*.62*dt;
+  if(forward)vehicle.speed+=stats.acceleration*(boosting?(stats.boostPower??1.3):1)*dt;
+  if(reverse)vehicle.speed-=vehicle.speed>1?stats.acceleration*2.35*dt:stats.acceleration*.68*dt;
   if(boosting){vehicle.boost=Math.max(0,vehicle.boost-24*dt);}else vehicle.boost=Math.min(100,vehicle.boost+9*dt);
-  const maxForward=stats.maxSpeed*(boosting?1.28:1);vehicle.speed=THREE.MathUtils.clamp(vehicle.speed,-10,maxForward);
-  if(!forward&&!reverse){const drag=(drifting?3.6:1.7)*dt;vehicle.speed=Math.abs(vehicle.speed)<=drag?0:vehicle.speed-Math.sign(vehicle.speed)*drag;}
-  const speedRatio=Math.min(Math.abs(vehicle.speed)/12,1);const reverseSign=vehicle.speed>=0?1:-1;
-  vehicle.heading+=steer*stats.turnRate*(.18+speedRatio*.82)*(drifting?1.48:1)*reverseSign*dt;
-  const moveScale=drifting?.78:1;vehicle.position.x+=Math.sin(vehicle.heading)*vehicle.speed*moveScale*dt;vehicle.position.z+=Math.cos(vehicle.heading)*vehicle.speed*moveScale*dt;
-  const arenaDistance=Math.hypot(vehicle.position.x,vehicle.position.z);if(arenaDistance>55){const nx=vehicle.position.x/arenaDistance,nz=vehicle.position.z/arenaDistance;vehicle.position.x=nx*55;vehicle.position.z=nz*55;vehicle.speed*=-.25;hitVehicle(7);showMessage("BOUNDARY IMPACT // TURN BACK");}
-  for(const obstacle of obstacles){const dx=vehicle.position.x-obstacle.position.x,dz=vehicle.position.z-obstacle.position.z,dist=Math.hypot(dx,dz),min=obstacle.radius+1.25;if(dist<min){vehicle.position.x=obstacle.position.x+dx/dist*min;vehicle.position.z=obstacle.position.z+dz/dist*min;if(Math.abs(vehicle.speed)>6){hitVehicle(Math.round(Math.abs(vehicle.speed)*.45));showMessage("SCRAP COLLISION // HULL DAMAGED");}vehicle.speed*=-.2;}}
-  vehicle.position.y=getGroundHeight(vehicle.position.x,vehicle.position.z)+.06;
-  const frontY=getGroundHeight(vehicle.position.x+Math.sin(vehicle.heading)*2,vehicle.position.z+Math.cos(vehicle.heading)*2);const backY=getGroundHeight(vehicle.position.x-Math.sin(vehicle.heading)*2,vehicle.position.z-Math.cos(vehicle.heading)*2);
-  const rightY=getGroundHeight(vehicle.position.x+Math.cos(vehicle.heading)*1.2,vehicle.position.z-Math.sin(vehicle.heading)*1.2);const leftY=getGroundHeight(vehicle.position.x-Math.cos(vehicle.heading)*1.2,vehicle.position.z+Math.sin(vehicle.heading)*1.2);
-  const pitch=Math.atan2(backY-frontY,4);const roll=Math.atan2(leftY-rightY,2.4)+(drifting?steer*.06*speedRatio:0);
+  const maxForward=stats.maxSpeed*(boosting?(stats.boostPower??1.3):1);vehicle.speed=THREE.MathUtils.clamp(vehicle.speed,-11,maxForward);
+  if(!forward&&!reverse){const drag=(drifting?4.4:2.15)*dt;vehicle.speed=Math.abs(vehicle.speed)<=drag?0:vehicle.speed-Math.sign(vehicle.speed)*drag;}
+  const speedRatio=Math.min(Math.abs(vehicle.speed)/stats.maxSpeed,1);const reverseSign=vehicle.speed>=0?1:-1;
+  const steeringAuthority=.2+speedRatio*.8-(Math.max(0,speedRatio-.72)*.34);
+  vehicle.heading+=steer*stats.handling*steeringAuthority*(drifting?1.3:1)*reverseSign*dt;
+  const targetDrift=drifting&&speedRatio>.16?-steer*.28*speedRatio*reverseSign:0;
+  vehicle.driftAngle=THREE.MathUtils.damp(vehicle.driftAngle,targetDrift,drifting?4.2:stats.traction,dt);
+  const moveAngle=vehicle.heading+vehicle.driftAngle;
+  const previousPosition=vehicle.position.clone();
+  vehicle.position.x+=Math.sin(moveAngle)*vehicle.speed*dt;vehicle.position.z+=Math.cos(moveAngle)*vehicle.speed*dt;
+
+  let collided=false;
+  const arenaDistance=Math.hypot(vehicle.position.x,vehicle.position.z);
+  if(arenaDistance>ARENA_RADIUS-2){const nx=vehicle.position.x/arenaDistance,nz=vehicle.position.z/arenaDistance;vehicle.position.x=nx*(ARENA_RADIUS-2);vehicle.position.z=nz*(ARENA_RADIUS-2);collided=true;showMessage("BOUNDARY IMPACT // TURN BACK");}
+  for(const obstacle of obstacles){
+    const dx=vehicle.position.x-obstacle.position.x,dz=vehicle.position.z-obstacle.position.z,dist=Math.hypot(dx,dz),min=obstacle.radius+VEHICLE_RADIUS;
+    if(dist<min){const nx=dist>.001?dx/dist:Math.sin(vehicle.heading),nz=dist>.001?dz/dist:Math.cos(vehicle.heading);vehicle.position.x=obstacle.position.x+nx*min;vehicle.position.z=obstacle.position.z+nz*min;collided=true;}
+  }
+  for(const collider of boxColliders) if(resolveBoxCollision(collider)) collided=true;
+
+  const rampBefore=vehicle.activeRamp;
+  let rampNow=rampSample(vehicle.position.x,vehicle.position.z);
+  if(rampNow&&rampNow.ramp!==rampBefore&&rampNow.height>vehicle.position.y+.85){
+    vehicle.position.x=previousPosition.x;vehicle.position.z=previousPosition.z;rampNow=rampSample(vehicle.position.x,vehicle.position.z);collided=true;
+  }
+  if(collided){if(Math.abs(vehicle.speed)>6){hitVehicle(Math.round(Math.abs(vehicle.speed)*.32));showMessage("SCRAP COLLISION // HULL DAMAGED");}vehicle.speed*=-.18;vehicle.driftAngle*=.25;}
+
+  rampNow=rampSample(vehicle.position.x,vehicle.position.z);
+  if(rampNow){
+    vehicle.activeRamp=rampNow.ramp;vehicle.grounded=true;vehicle.verticalVelocity=0;vehicle.position.y=rampNow.height+.06;
+  }else{
+    const ground=getGroundHeight(vehicle.position.x,vehicle.position.z)+.06;
+    if(rampBefore&&vehicle.position.y>ground+.45){
+      const travelAlignment=Math.cos(moveAngle-rampBefore.rotation);
+      vehicle.verticalVelocity=Math.max(0,vehicle.speed*travelAlignment*rampBefore.rise/rampBefore.length);
+      vehicle.grounded=false;
+    }
+    vehicle.activeRamp=null;
+    if(!vehicle.grounded){vehicle.verticalVelocity-=12.5*dt;vehicle.position.y+=vehicle.verticalVelocity*dt;if(vehicle.position.y<=ground){vehicle.position.y=ground;vehicle.verticalVelocity=0;vehicle.grounded=true;}}
+    else vehicle.position.y=ground;
+  }
+
+  const frontY=getDriveHeight(vehicle.position.x+Math.sin(vehicle.heading)*2,vehicle.position.z+Math.cos(vehicle.heading)*2);const backY=getDriveHeight(vehicle.position.x-Math.sin(vehicle.heading)*2,vehicle.position.z-Math.cos(vehicle.heading)*2);
+  const rightY=getDriveHeight(vehicle.position.x+Math.cos(vehicle.heading)*1.2,vehicle.position.z-Math.sin(vehicle.heading)*1.2);const leftY=getDriveHeight(vehicle.position.x-Math.cos(vehicle.heading)*1.2,vehicle.position.z+Math.sin(vehicle.heading)*1.2);
+  const pitch=vehicle.grounded?Math.atan2(backY-frontY,4):0;const roll=(vehicle.grounded?Math.atan2(leftY-rightY,2.4):0)+(drifting?steer*.055*speedRatio:0);
   car.position.lerp(new THREE.Vector3(vehicle.position.x,vehicle.position.y,vehicle.position.z),1-Math.exp(-12*dt));car.rotation.set(pitch,vehicle.heading,roll,"YXZ");
   wheels.forEach(wheel=>wheel.rotation.x+=vehicle.speed*dt/.57);frontWheelPivots.forEach(pivot=>pivot.rotation.y=THREE.MathUtils.damp(pivot.rotation.y,-steer*.38,12,dt));
   for(const pickup of pickups){if(!pickup.collected&&pickup.group.position.distanceTo(car.position)<2.25)equipPickup(pickup);}
@@ -318,15 +482,31 @@ function updateVehicle(dt:number): void {
   spawnDust(dt);
 }
 
-function hitVehicle(amount:number):void{if(vehicle.collisionCooldown>0)return;vehicle.collisionCooldown=.45;vehicle.health=Math.max(0,vehicle.health-amount);if(vehicle.health<=0){showMessage("RIG DISABLED // RESETTING");setTimeout(resetVehicle,900);}}
+function hitVehicle(amount:number):void{if(vehicle.collisionCooldown>0)return;vehicle.collisionCooldown=.45;vehicle.health=Math.max(0,vehicle.health-amount*(1-(stats.armor??0)));if(vehicle.health<=0){showMessage("RIG DISABLED // RESETTING");setTimeout(resetVehicle,900);}}
 
-function updateAim(): void {
-  raycaster.setFromCamera(mouse,camera);aimPlane.constant=-(car.position.y+.7);raycaster.ray.intersectPlane(aimPlane,aimPoint);
-  if(Number.isFinite(aimPoint.x)){const dx=aimPoint.x-car.position.x,dz=aimPoint.z-car.position.z;const worldYaw=Math.atan2(dx,dz);let local=worldYaw-vehicle.heading;local=Math.atan2(Math.sin(local),Math.cos(local));turret.rotation.y=THREE.MathUtils.damp(turret.rotation.y,local,10,1/60);}
+function updateAim(dt:number): void {
+  raycaster.setFromCamera(mouse,camera);
+  const hit = raycaster.intersectObjects(aimSurfaces, false)[0];
+  if (hit) aimPoint.copy(hit.point);
+  else {
+    aimPlane.constant = 0;
+    if (!raycaster.ray.intersectPlane(aimPlane, aimPoint)) return;
+    aimPoint.y = getDriveHeight(aimPoint.x, aimPoint.z);
+  }
+  const turretWorld = new THREE.Vector3(); turret.getWorldPosition(turretWorld);
+  const dx=aimPoint.x-turretWorld.x,dz=aimPoint.z-turretWorld.z;
+  if (Math.hypot(dx,dz) < 1.8) return;
+  const worldYaw=Math.atan2(dx,dz);let local=worldYaw-vehicle.heading;local=Math.atan2(Math.sin(local),Math.cos(local));
+  turret.rotation.y=THREE.MathUtils.damp(turret.rotation.y,local,12,dt);
+  const pitch = -Math.atan2(aimPoint.y - turretWorld.y, Math.hypot(dx,dz));
+  barrelPivot.rotation.x = THREE.MathUtils.damp(barrelPivot.rotation.x, THREE.MathUtils.clamp(pitch,-.42,.2), 11, dt);
+  currentAimDirection.copy(aimPoint).sub(turretWorld).normalize(); aimReady = true;
+  groundCrosshair.position.copy(aimPoint); groundCrosshair.position.y += .09;
+  groundCrosshair.scale.setScalar(1 + Math.sin(elapsed * 5) * .06);
 }
 
 function updateProjectiles(dt:number): void {
-  for(let i=bullets.length-1;i>=0;i--){const bullet=bullets[i];bullet.mesh.position.addScaledVector(bullet.velocity,dt);bullet.life-=dt;let hit=false;for(const target of targets){if(target.alive&&bullet.mesh.position.distanceTo(target.group.position.clone().add(new THREE.Vector3(0,1.4,0)))<1){damageTarget(target,stats.weaponDamage);hit=true;break;}}if(hit||bullet.life<=0){scene.remove(bullet.mesh);bullets.splice(i,1);}}
+  for(let i=bullets.length-1;i>=0;i--){const bullet=bullets[i];bullet.mesh.position.addScaledVector(bullet.velocity,dt);bullet.life-=dt;let hit=false;for(const target of targets){if(target.alive&&bullet.mesh.position.distanceTo(target.group.position.clone().add(new THREE.Vector3(0,1.4,0)))<1){damageTarget(target,stats.weaponDamage);hit=true;break;}}const hitTerrain=bullet.life<2.28&&bullet.mesh.position.y<=getDriveHeight(bullet.mesh.position.x,bullet.mesh.position.z)+.08;if(hit||hitTerrain||bullet.life<=0){scene.remove(bullet.mesh);bullets.splice(i,1);}}
   for(let i=dust.length-1;i>=0;i--){const p=dust[i];p.life-=dt;p.mesh.position.addScaledVector(p.velocity,dt);p.velocity.y-=3.5*dt;p.mesh.scale.multiplyScalar(1+dt*.55);const material=p.mesh.material as THREE.MeshBasicMaterial;material.opacity=Math.max(0,Math.min(material.opacity,p.life*.45));if(p.life<=0){scene.remove(p.mesh);material.dispose();dust.splice(i,1);}}
   for(const target of targets){if(!target.alive)continue;if(target.hitFlash>0){target.hitFlash-=dt;const body=target.group.getObjectByName("target-body") as THREE.Mesh<THREE.BufferGeometry,THREE.MeshStandardMaterial>;body.material.emissive.setHex(0xff6b2c);}else{const body=target.group.getObjectByName("target-body") as THREE.Mesh<THREE.BufferGeometry,THREE.MeshStandardMaterial>;body.material.emissive.setHex(0x000000);}}
 }
@@ -334,29 +514,31 @@ function updateProjectiles(dt:number): void {
 const cameraLook=new THREE.Vector3();
 function updateCamera(dt:number): void {
   const forward=new THREE.Vector3(Math.sin(vehicle.heading),0,Math.cos(vehicle.heading));
-  const desired=cameraMode===0?vehicle.position.clone().addScaledVector(forward,-9.5).add(new THREE.Vector3(0,5.4,0)):vehicle.position.clone().add(new THREE.Vector3(0,15.5,-.01));
+  const desired=cameraMode===0?vehicle.position.clone().addScaledVector(forward,-11.5).add(new THREE.Vector3(0,6.3,0)):vehicle.position.clone().add(new THREE.Vector3(0,23,-.01));
   camera.position.lerp(desired,1-Math.exp(-5*dt));const look=vehicle.position.clone().addScaledVector(forward,cameraMode===0?4:0).add(new THREE.Vector3(0,1.2,0));cameraLook.lerp(look,1-Math.exp(-8*dt));camera.lookAt(cameraLook);
 }
 
 function updatePickups(dt:number):void{for(const pickup of pickups){if(pickup.collected)continue;pickup.group.rotation.y+=dt*.8;const item=pickup.group.children[2];item.position.y=1.1+Math.sin(elapsed*2.4+pickup.group.position.x)*.18;}}
 
-function updateHud():void{ui.speed.textContent=String(Math.round(Math.abs(vehicle.speed)*4.2));ui.boost.textContent=String(Math.round(vehicle.boost));ui.health.textContent=String(Math.round(vehicle.health));ui.healthBar.style.width=`${vehicle.health/stats.maxHealth*100}%`;}
+function updateHud():void{ui.speed.textContent=String(Math.round(Math.abs(vehicle.speed)*4.2));ui.boost.textContent=String(Math.round(vehicle.boost));ui.health.textContent=String(Math.round(vehicle.health));ui.healthBar.style.width=`${vehicle.health/stats.maxHealth*100}%`;canvas.dataset.groundContact=vehicle.grounded?(vehicle.activeRamp?"ramp":"terrain"):"airborne";canvas.dataset.aimRay=aimReady?"locked":"searching";canvas.dataset.aimPoint=`${aimPoint.x.toFixed(1)},${aimPoint.y.toFixed(1)},${aimPoint.z.toFixed(1)}`;canvas.dataset.vehiclePosition=`${vehicle.position.x.toFixed(1)},${vehicle.position.y.toFixed(1)},${vehicle.position.z.toFixed(1)}`;if(rampSmokeTest&&vehicle.activeRamp)canvas.dataset.rampDriveUp="passed";if(rampSmokeTest&&!vehicle.grounded&&canvas.dataset.rampDriveUp==="passed")canvas.dataset.rampLaunch="passed";}
 
-function drawRadar():void{const context=ui.radar.getContext("2d");if(!context)return;const size=160,center=80,scale=1.15;context.clearRect(0,0,size,size);context.strokeStyle="rgba(213,183,119,.13)";context.lineWidth=1;for(const radius of [24,48,72]){context.beginPath();context.arc(center,center,radius,0,Math.PI*2);context.stroke();}context.beginPath();context.moveTo(center,8);context.lineTo(center,152);context.moveTo(8,center);context.lineTo(152,center);context.stroke();const plot=(x:number,z:number,color:string,radius:number)=>{const dx=(x-vehicle.position.x)*scale,dz=(z-vehicle.position.z)*scale;const angle=-vehicle.heading;const px=dx*Math.cos(angle)-dz*Math.sin(angle),py=dx*Math.sin(angle)+dz*Math.cos(angle);if(Math.hypot(px,py)>73)return;context.fillStyle=color;context.beginPath();context.arc(center+px,center-py,radius,0,Math.PI*2);context.fill();};pickups.forEach(p=>{if(!p.collected)plot(p.group.position.x,p.group.position.z,"#57dbe3",2.7)});targets.forEach(t=>{if(t.alive)plot(t.group.position.x,t.group.position.z,"#ef6846",3)});context.save();context.translate(center,center);context.fillStyle="#f3ce79";context.beginPath();context.moveTo(0,-7);context.lineTo(5,6);context.lineTo(0,3);context.lineTo(-5,6);context.closePath();context.fill();context.restore();}
+function drawRadar():void{const context=ui.radar.getContext("2d");if(!context)return;const size=160,center=80,scale=.58;context.clearRect(0,0,size,size);context.strokeStyle="rgba(213,183,119,.13)";context.lineWidth=1;for(const radius of [24,48,72]){context.beginPath();context.arc(center,center,radius,0,Math.PI*2);context.stroke();}context.beginPath();context.moveTo(center,8);context.lineTo(center,152);context.moveTo(8,center);context.lineTo(152,center);context.stroke();const plot=(x:number,z:number,color:string,radius:number)=>{const dx=(x-vehicle.position.x)*scale,dz=(z-vehicle.position.z)*scale;const angle=-vehicle.heading;const px=dx*Math.cos(angle)-dz*Math.sin(angle),py=dx*Math.sin(angle)+dz*Math.cos(angle);if(Math.hypot(px,py)>73)return;context.fillStyle=color;context.beginPath();context.arc(center+px,center-py,radius,0,Math.PI*2);context.fill();};pickups.forEach(p=>{if(!p.collected)plot(p.group.position.x,p.group.position.z,"#57dbe3",2.7)});targets.forEach(t=>{if(t.alive)plot(t.group.position.x,t.group.position.z,"#ef6846",3)});context.save();context.translate(center,center);context.fillStyle="#f3ce79";context.beginPath();context.moveTo(0,-7);context.lineTo(5,6);context.lineTo(0,3);context.lineTo(-5,6);context.closePath();context.fill();context.restore();}
 
-function resetVehicle():void{vehicle.position.set(0,0,-18);vehicle.position.y=getGroundHeight(0,-18);vehicle.heading=0;vehicle.speed=0;vehicle.health=Math.max(vehicle.health,Math.min(stats.maxHealth,65));vehicle.boost=100;car.position.copy(vehicle.position);showMessage("RIG RECOVERED // SYSTEMS ONLINE");}
+function resetVehicle():void{vehicle.position.set(0,getGroundHeight(0,-28)+.06,-28);vehicle.heading=0;vehicle.speed=0;vehicle.driftAngle=0;vehicle.verticalVelocity=0;vehicle.grounded=true;vehicle.activeRamp=null;vehicle.health=Math.max(vehicle.health,Math.min(stats.maxHealth,65));vehicle.boost=100;car.position.copy(vehicle.position);car.rotation.set(0,0,0);showMessage("RIG RECOVERED // SYSTEMS ONLINE");}
 
 function togglePause(force?:boolean):void{paused=force??!paused;ui.pause.hidden=!paused;}
 function toggleControls(show?:boolean):void{ui.controls.classList.toggle("closed",show===undefined?!ui.controls.classList.contains("closed"):!show);}
 
-addArena();addWorldProps();buildCar();
-createPickup(-23,-18,"tires");createPickup(22,9,"engine");createPickup(36,-25,"armor");createPickup(-4,28,"weapon");createPickup(-35,27,"repair");createPickup(14,-36,"repair");
-createTarget(-14,8,.4);createTarget(11,18,-.5);createTarget(28,27,1.2);createTarget(39,2,-1.2);createTarget(21,-23,2.5);createTarget(-12,-35,.2);createTarget(-35,-22,-.8);createTarget(-41,12,1.6);
-showMessage("ENGINE LIVE // FIND THE GLOWING PARTS");setTimeout(()=>toggleControls(false),4200);
+addArena();addWorldProps();registerPhysicsDebug();buildCar();
+createPickup(-44,-34,"tires");createPickup(43,17,"engine");createPickup(73,-49,"armor");createPickup(-9,57,"weapon");createPickup(-76,53,"repair");createPickup(31,-78,"repair");
+createTarget(-29,16,.4);createTarget(21,36,-.5);createTarget(59,57,1.2);createTarget(81,5,-1.2);createTarget(43,-48,2.5);createTarget(-25,-72,.2);createTarget(-70,-44,-.8);createTarget(-84,22,1.6);
+canvas.dataset.prototype="scraproad-1v1-foundation";canvas.dataset.arenaRadius=String(ARENA_RADIUS);canvas.dataset.rampColliders=String(ramps.length);canvas.dataset.majorColliders=String(obstacles.length+boxColliders.length);canvas.dataset.shotsFired="0";
+if(rampSmokeTest){const ramp=ramps[0];const offset=new THREE.Vector3(0,0,-ramp.length*.5-3).applyAxisAngle(new THREE.Vector3(0,1,0),ramp.rotation);vehicle.position.set(ramp.position.x+offset.x,getGroundHeight(ramp.position.x+offset.x,ramp.position.z+offset.z)+.06,ramp.position.z+offset.z);vehicle.heading=ramp.rotation;car.position.copy(vehicle.position);canvas.dataset.rampDriveUp="pending";canvas.dataset.rampLaunch="pending";input.add("KeyW");window.setTimeout(()=>{input.delete("KeyW");canvas.dataset.physicsSmoke="complete";},2600);}
+showMessage(rampSmokeTest?"RAMP SMOKE TEST // AUTO DRIVE":"1V1 PROVING GROUND // PHYSICS ONLINE");setTimeout(()=>toggleControls(false),4200);
 
-window.addEventListener("keydown",event=>{if(["KeyW","KeyA","KeyS","KeyD","Space","ShiftLeft","KeyF"].includes(event.code))event.preventDefault();if(event.repeat)return;if(event.code==="Escape"){togglePause();return;}if(event.code==="KeyR")resetVehicle();if(event.code==="KeyC"){cameraMode=(cameraMode+1)%2;showMessage(cameraMode?"CAMERA // OVERWATCH":"CAMERA // CHASE");}if(event.code==="KeyF")shoot();input.add(event.code);});
+window.addEventListener("keydown",event=>{if(["KeyW","KeyA","KeyS","KeyD","Space","ShiftLeft","KeyF"].includes(event.code))event.preventDefault();if(event.repeat)return;if(event.code==="Escape"){togglePause();return;}if(event.code==="KeyR")resetVehicle();if(event.code==="KeyC"){cameraMode=(cameraMode+1)%2;showMessage(cameraMode?"CAMERA // OVERWATCH":"CAMERA // CHASE");}if(event.code==="KeyB"){debugPhysics=!debugPhysics;debugVisuals.forEach(item=>item.visible=debugPhysics);showMessage(debugPhysics?`PHYSICS DEBUG // ${vehicle.grounded?"GROUNDED":"AIRBORNE"}`:"PHYSICS DEBUG // OFF");}if(event.code==="KeyF")shoot();input.add(event.code);});
 window.addEventListener("keyup",event=>input.delete(event.code));
-canvas.addEventListener("pointermove",event=>{mouse.x=event.clientX/innerWidth*2-1;mouse.y=-(event.clientY/innerHeight)*2+1;});
+canvas.addEventListener("pointermove",event=>{const bounds=canvas.getBoundingClientRect();mouse.x=(event.clientX-bounds.left)/bounds.width*2-1;mouse.y=-(event.clientY-bounds.top)/bounds.height*2+1;const crosshair=getElement("crosshair");crosshair.style.left=`${event.clientX}px`;crosshair.style.top=`${event.clientY}px`;});
 canvas.addEventListener("pointerdown",event=>{if(event.button===0)shoot();});
 canvas.addEventListener("contextmenu",event=>event.preventDefault());
 getElement("help-button").addEventListener("click",()=>toggleControls());getElement("controls-close").addEventListener("click",()=>toggleControls(false));getElement("resume-button").addEventListener("click",()=>togglePause(false));
@@ -364,7 +546,7 @@ document.querySelectorAll<HTMLButtonElement>("[data-key]").forEach(button=>{cons
 window.addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight,false);renderer.setPixelRatio(Math.min(devicePixelRatio,1.8));});
 
 const clock=new THREE.Clock();let radarAccumulator=0;
-function animate():void{requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.04);if(!paused){elapsed+=dt;updateVehicle(dt);updateAim();updateProjectiles(dt);updatePickups(dt);updateCamera(dt);updateHud();radarAccumulator+=dt;if(radarAccumulator>.08){radarAccumulator=0;drawRadar();}}renderer.render(scene,camera);}
+function animate():void{requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.04);if(!paused){elapsed+=dt;updateVehicle(dt);updateCamera(dt);updateAim(dt);updateProjectiles(dt);updatePickups(dt);updateHud();radarAccumulator+=dt;if(radarAccumulator>.08){radarAccumulator=0;drawRadar();}}renderer.render(scene,camera);}
 animate();
 
 function getElement<T extends HTMLElement=HTMLElement>(id:string):T{const element=document.getElementById(id);if(!element)throw new Error(`Missing #${id}`);return element as T;}
