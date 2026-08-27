@@ -1,6 +1,8 @@
 import type { RacekartAssetKey } from "../../assets/scraproadRacekartManifest";
 
-export type ScraproadLevelId = "dustring";
+import type { OvalBowlConfig } from "./OvalBowlSurface";
+
+export type ScraproadLevelId = "dustring" | "ovalbowl";
 export type PickupKind = "tires" | "engine" | "armor" | "weapon" | "repair";
 
 export type AssetPlacement = {
@@ -32,6 +34,8 @@ export type ScraproadArenaLayout = {
   callsign: string;
   description: string;
   difficulty: string;
+  arenaKind: "ring" | "oval-bowl";
+  bowl?: OvalBowlConfig;
   radius: number;
   ringInnerRadius: number;
   ringOuterRadius: number;
@@ -57,6 +61,7 @@ export const scraproadArenaLayouts: Record<ScraproadLevelId, ScraproadArenaLayou
     callsign: "LEVEL 01 // SCRAP RING",
     description: "One clean combat loop with an open center, four readable jumps, and an east-side target lane.",
     difficulty: "COMBAT READY",
+    arenaKind: "ring",
     radius: 100,
     ringInnerRadius: 60,
     ringOuterRadius: 88,
@@ -97,6 +102,43 @@ export const scraproadArenaLayouts: Record<ScraproadLevelId, ScraproadArenaLayou
       { x: -24, z: 73, kind: "weapon" },
       { x: 24, z: -73, kind: "armor" },
       { x: -7, z: -38, kind: "repair" },
+    ],
+  },
+  ovalbowl: {
+    id: "ovalbowl",
+    name: "Oval Bowl",
+    callsign: "ARENA 02 // WALL-RIDE BOWL",
+    description: "A clean capsule stadium with a wide fighting floor and one continuous, drivable banked wall.",
+    difficulty: "WALL RIDE READY",
+    arenaKind: "oval-bowl",
+    radius: 112,
+    ringInnerRadius: 42,
+    ringOuterRadius: 62,
+    bowl: { straightHalfLength: 46, flatRadius: 42, outerRadius: 62, wallRise: 16.5 },
+    spawn: { x: 0, z: -22, heading: 0 },
+    opponentSpawn: { x: 0, z: 22, heading: half },
+    objective: "Own the open floor. Carry speed into the bank. Clear four test targets.",
+    surfaces: [],
+    track: [],
+    terrain: [],
+    props: [
+      { asset: "stuntRailing", x: -63.2, z: -17, rotation: quarter, scale: 8, label: "west rim racing rail south" },
+      { asset: "stuntRailing", x: -63.2, z: 17, rotation: quarter, scale: 8, label: "west rim racing rail north" },
+      { asset: "stuntRailing", x: 63.2, z: -17, rotation: quarter, scale: 8, label: "east rim racing rail south" },
+      { asset: "stuntRailing", x: 63.2, z: 17, rotation: quarter, scale: 8, label: "east rim racing rail north" },
+    ],
+    barriers: [],
+    targets: [
+      { x: -12, z: 0, rotation: quarter },
+      { x: 12, z: 0, rotation: -quarter },
+      { x: 0, z: -32, rotation: 0 },
+      { x: 38, z: 24, rotation: -quarter },
+    ],
+    pickups: [
+      { x: -20, z: -18, kind: "tires" },
+      { x: 20, z: 18, kind: "engine" },
+      { x: 0, z: 30, kind: "weapon" },
+      { x: 0, z: -35, kind: "repair" },
     ],
   },
 };

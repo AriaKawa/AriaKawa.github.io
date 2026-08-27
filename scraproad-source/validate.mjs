@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "../scraproad");
 const racekartModels = [
-  "Prop_Track_Ramp", "Prop_Decorative_Fence_Railing",
+  "Prop_Track_Ramp", "Prop_Track_Ramp_Railing", "Prop_Decorative_Fence_Railing",
   "Prop_Decorative_Rock_2", "Prop_Decorative_Rock_5",
   "Prop_Decorative_Hay_Bale_Box",
 ];
@@ -28,6 +28,7 @@ for (const file of required) await access(resolve(root, file));
 const html = await readFile(resolve(root, "index.html"), "utf8");
 const source = await readFile(resolve(import.meta.dirname, "src/main.ts"), "utf8");
 const colliderSource = await readFile(resolve(import.meta.dirname, "src/game/scraproad/DriveSurfaceCollider.ts"), "utf8");
+const ovalSource = await readFile(resolve(import.meta.dirname, "src/game/scraproad/OvalBowlSurface.ts"), "utf8");
 const racekartManifest = await readFile(resolve(import.meta.dirname, "src/assets/scraproadRacekartManifest.ts"), "utf8");
 const layouts = await readFile(resolve(import.meta.dirname, "src/game/scraproad/ScraproadArenaLayout.ts"), "utf8");
 const checks = [
@@ -37,6 +38,7 @@ const checks = [
   ["controls", /id="controls"/],
   ["level selector", /id="level-select"/],
   ["Dust Ring deploy button", /data-level="dustring"/],
+  ["Oval Bowl deploy button", /data-level="ovalbowl"/],
   ["compiled module", /assets\/.*\.js/],
   ["compiled stylesheet", /assets\/.*\.css/],
 ];
@@ -58,6 +60,9 @@ const sceneChecks = [
   ["driveable Racekart visual", /racekart-hilly-driveable/],
   ["Racekart arena fence", /racekart-hilly-arena-fence/],
   ["continuous circular track", /continuous-circular-ring-track/],
+  ["continuous oval wall ride mesh", /oval-bowl-continuous-wall-ride-surface/],
+  ["solid oval outer boundary", /oval-bowl-solid-outer-boundary/],
+  ["matching oval collider debug", /oval-bowl-matching-collider-debug/],
   ["central combat bowl", /central-combat-bowl/],
   ["ring lane markers", /ring-lane-marker/],
   ["roof weapon mount", /const turret = new THREE\.Group/],
@@ -75,7 +80,7 @@ const sceneChecks = [
   ["visual asset heightfields", /buildHeightfieldCollider\(object/],
   ["visual collider takes drive priority", /sampleHeightfield\(collider, x, z\)[\s\S]*best \?\? analyticRampSample/],
   ["async collider deployment", /await addArena\(\); await addWorldProps\(\)/],
-  ["collider source telemetry", /colliderSource="visual-asset-heightfields"/],
+  ["collider source telemetry", /colliderSource=activeLayout\.arenaKind==="oval-bowl"\?"shared-oval-surface":"visual-asset-heightfields"/],
   ["contact point debug", /contactDebug\.position\.set/],
   ["visual collider error telemetry", /dataset\.heightMismatch/],
   ["ramp runtime smoke route", /physics-smoke.*ramp/],
@@ -100,6 +105,11 @@ const sceneChecks = [
   ["target lane audit", /dataset\.targetArea/],
   ["future opponent spawn", /opponent-spawn-placeholder/],
   ["recovery control", /event\.code==="KeyR"\)resetVehicle/],
+  ["automatic outside recovery", /OUT OF BOUNDS \/\/ AUTO RECOVERY/],
+  ["oval boundary clamp", /clampToOvalBowl\(activeLayout\.bowl/],
+  ["wall surface grip", /rampNow\.ramp\.kind==="wall"[\s\S]*wallRideGrip/],
+  ["wall ride runtime smoke route", /function runWallRideSuite[\s\S]*wallRideSmoke/],
+  ["shared oval collision telemetry", /bowlCollision = "shared-mathematical-surface"/],
   ["chase camera", /function updateCamera/],
 ];
 for (const [label, pattern] of sceneChecks) {
@@ -114,10 +124,25 @@ const colliderChecks = [
 for (const [label, pattern] of colliderChecks) {
   if (!pattern.test(colliderSource)) throw new Error(`Missing ${label} implementation`);
 }
+const ovalChecks = [
+  ["capsule surface sampler", /function sampleOvalBowl/],
+  ["smooth wall transition", /progress \* progress \* \(3 - 2 \* progress\)/],
+  ["surface normal", /new THREE\.Vector3\(-outwardX \* slope, 1, -outwardZ \* slope\)\.normalize/],
+  ["generated floor collision geometry", /function createOvalFloorGeometry/],
+  ["generated bank collision geometry", /function createOvalBankGeometry/],
+  ["enclosed rim curtain", /function createOvalRimCurtainGeometry/],
+];
+for (const [label, pattern] of ovalChecks) {
+  if (!pattern.test(ovalSource)) throw new Error(`Missing ${label} implementation`);
+}
 for (const key of ["stuntRamp", "fence", "rockWide", "rockTall", "hayBale"]) {
   if (!racekartManifest.includes(`${key}: asset(`)) throw new Error(`Missing ${key} from Racekart asset manifest`);
 }
 if (!layouts.includes("dustring: {")) throw new Error("Missing Dust Ring arena layout");
+if (!layouts.includes("ovalbowl: {")) throw new Error("Missing Oval Bowl arena layout");
+if (!/ovalbowl:[\s\S]*arenaKind: "oval-bowl"[\s\S]*bowl: \{ straightHalfLength: 46, flatRadius: 42, outerRadius: 62, wallRise: 16\.5 \}/.test(layouts)) throw new Error("Oval Bowl capsule dimensions are missing");
+if ((layouts.match(/asset: "stuntRailing"/g) ?? []).length !== 4) throw new Error("Oval Bowl must use four restrained Racing Assets rim railings");
+if (!/ovalbowl:[\s\S]*targets: \[[\s\S]*\{ x: 38, z: 24/.test(layouts)) throw new Error("Oval Bowl target set is missing");
 if ((layouts.match(/\{ asset: "stuntRamp", kind: "ramp"/g) ?? []).length !== 4) throw new Error("Expected exactly 4 placed ramp surfaces");
 if (/\{ asset: "[^"]+", kind: "bridge"/.test(layouts)) throw new Error("Dust Ring must not include bridge or loop stunt chains");
 if ((layouts.match(/kind: "repair"/g) ?? []).length < 1) throw new Error("Expected a repair pickup");
@@ -127,4 +152,4 @@ if (/dustbowl|stuntworks|bridge deck|mega jump/i.test(layouts)) throw new Error(
 const assetPaths = [...html.matchAll(/(?:src|href)="\.\/(assets\/[^\"]+)"/g)].map((match) => match[1]);
 for (const asset of assetPaths) await access(resolve(root, asset));
 
-console.log(`Scraproad production validation passed (${sceneChecks.length} gameplay/asset systems, 1 circular combat arena, ${racekartModels.length} selected Racekart Hilly models, and ${required.length + assetPaths.length} files checked).`);
+console.log(`Scraproad production validation passed (${sceneChecks.length} gameplay/asset systems, 2 selectable arenas including the shared-surface Oval Bowl, ${racekartModels.length} selected Racekart Hilly models, and ${required.length + assetPaths.length} files checked).`);

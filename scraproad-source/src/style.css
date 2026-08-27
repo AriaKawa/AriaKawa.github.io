@@ -46,11 +46,13 @@ button { font: inherit; color: inherit; }
 .level-select__card { position:relative; width:min(860px,100%); padding:30px; border-color:rgba(242,177,79,.32); }
 .level-select h1 { margin:9px 0 5px; font:800 clamp(30px,5vw,52px)/.95 'Barlow Condensed'; letter-spacing:.02em; }
 .level-select__card > p { margin:0 0 24px; color:#a99b87; font-size:13px; }
-.level-grid { display:grid; grid-template-columns:minmax(0,560px); justify-content:center; gap:14px; }
+.level-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); justify-content:center; gap:14px; }
 .level-card { position:relative; min-height:210px; padding:22px; overflow:hidden; border:1px solid rgba(255,255,255,.12); color:#f4ead6; background:linear-gradient(145deg,rgba(84,70,47,.86),rgba(28,27,22,.94)); text-align:left; cursor:pointer; transition:transform .18s,border-color .18s,filter .18s; }
 .level-card::after { content:""; position:absolute; width:180px; height:180px; right:-65px; bottom:-85px; border:26px solid rgba(255,255,255,.035); border-radius:50%; }
 .level-card:hover,.level-card:focus-visible { transform:translateY(-3px); border-color:#e3a342; filter:brightness(1.08); outline:none; }
 .level-card--wild { background:linear-gradient(145deg,rgba(126,54,31,.9),rgba(35,26,21,.95)); }
+.level-card--bowl { background:linear-gradient(145deg,rgba(83,67,54,.94),rgba(27,31,30,.97)); }
+.level-card--bowl::before { content:""; position:absolute; width:72%; height:58%; right:-8%; top:18%; border:14px solid rgba(197,107,55,.12); border-radius:50%; transform:rotate(-8deg); }
 .level-card > span { display:flex; justify-content:space-between; color:#d9ac66; font:700 10px Inter; letter-spacing:.14em; }
 .level-card > span i { color:#8fc896; font-style:normal; }
 .level-card--wild > span i { color:#ef805c; }

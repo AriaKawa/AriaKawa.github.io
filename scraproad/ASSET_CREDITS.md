@@ -8,7 +8,7 @@
 - **Source:** https://fertile-soil-productions.itch.io/modular-racekart-track-hilly-terrain-theme
 - **License:** Creative Commons Zero (CC0) 1.0 Universal / public domain dedication.
 - **Pack listing:** Name your own price; more than 200 low-poly modular terrain, track, bridge, incline, and prop pieces.
-- **Use in Scraproad:** Terrain accents, outer-loop track sections, banked pieces, stunt ramps, elevated bridge routes, arena fences, rocks, hay obstacles, and spawn arches in both selectable arenas.
+- **Use in Scraproad:** Arena 1 keeps its stunt ramps, fences, rocks, and hay obstacles. Arena 2 uses four `Prop_Track_Ramp_Railing` pieces as restrained metal accents along the oval rim; its continuous drivable bank is original generated geometry rather than a stretched decorative asset.
 - **Files included:** A curated set of 20 OBJ/MTL pairs under `assets/scraproad/racekart-hilly/`; the complete source archive is not redistributed.
 - **Local license/source note:** `assets/scraproad/racekart-hilly/LICENSE-CC0.txt`
 

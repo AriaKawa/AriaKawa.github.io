@@ -8,15 +8,15 @@
     <meta property="og:title" content="Scraproad Arena" />
     <meta property="og:description" content="A browser-playable 3D vehicle combat prototype." />
     <title>Scraproad Arena</title>
-    <script type="module" crossorigin src="./assets/index-Ch8ErBmB.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-BfPWfNSJ.css">
+    <script type="module" crossorigin src="./assets/index-DzKE_KRx.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-BicD0fBN.css">
   </head>
   <body>
     <main id="app">
       <canvas id="game" aria-label="Scraproad Arena 3D combat driving game"></canvas>
 
       <header class="topbar">
-        <div class="brand"><span class="brand__mark">SR</span><div><b>SCRAPROAD</b><small>1V1 ARENA // PROVING GROUND</small></div></div>
+        <div class="brand"><span class="brand__mark">SR</span><div><b>SCRAPROAD</b><small>1V1 ARENA // TWO PROVING GROUNDS</small></div></div>
         <div id="objective" class="objective"><small>LEVEL 01 // SCRAP RING</small><b>Run the circuit. Hit the ramps. Clear the targets.</b></div>
         <button id="help-button" class="icon-button" type="button" aria-label="Toggle controls">?</button>
       </header>
@@ -51,17 +51,23 @@
         <div class="level-select__backdrop"></div>
         <div class="level-select__card panel">
           <span class="eyebrow">SCRAPROAD // ROUND ZERO</span>
-          <h1 id="level-select-title">ENTER THE DUST RING</h1>
-          <p>A simple circular combat arena built for clean lines, deliberate jumps, and moving target practice.</p>
+          <h1 id="level-select-title">CHOOSE YOUR ARENA</h1>
+          <p>Keep it grounded in the original proving ground, or carry speed up the walls of the new oval bowl.</p>
           <div class="level-grid">
             <button class="level-card level-card--safe" type="button" data-level="dustring">
-              <span>LEVEL 01 <i>COMBAT READY</i></span>
-              <strong>DUST RING</strong>
+              <span>ARENA 01 <i>COMBAT READY</i></span>
+              <strong>PROVING GROUND</strong>
               <small>Wide circular track · open combat bowl · four ramps · target lane</small>
               <b>DEPLOY RIG</b>
             </button>
+            <button class="level-card level-card--bowl" type="button" data-level="ovalbowl">
+              <span>ARENA 02 <i>WALL RIDE READY</i></span>
+              <strong>OVAL BOWL</strong>
+              <small>Open capsule field · continuous banked wall · four test targets · clean 1v1 space</small>
+              <b>RIDE THE WALL</b>
+            </button>
           </div>
-          <small class="level-select__credit">Built with the CC0 Modular Racekart Track — Hilly Terrain Theme.</small>
+          <small class="level-select__credit">Stadium accents use the local CC0 Modular Racekart Track — Hilly Terrain Theme asset pack.</small>
         </div>
       </section>
 
