@@ -4,6 +4,13 @@ import { scraproadAssetManifest } from "./assets/scraproadAssetManifest";
 import "./style.css";
 
 type VehiclePartSlot = "roof_weapon" | "front_weapon" | "tires" | "engine" | "armor";
+type WeaponStats = {
+  fireRate: number;
+  damage: number;
+  projectileSpeed: number;
+  range: number;
+  automatic?: boolean;
+};
 type VehicleStats = {
   maxHealth: number;
   acceleration: number;
@@ -47,10 +54,11 @@ const ui = {
   tires: getElement("tires-part"), engine: getElement("engine-part"), armor: getElement("armor-part"),
   weaponState: getElement("weapon-state"), message: getElement("message"), controls: getElement("controls"),
   pause: getElement("pause"), objective: getElement("objective"), radar: getElement<HTMLCanvasElement>("radar-canvas"),
+  debug: getElement("physics-debug"),
 };
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 1.8));
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
 renderer.setSize(innerWidth, innerHeight, false);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -83,7 +91,7 @@ function loadAssetTemplate(path: string): Promise<THREE.Group> {
       imported.position.set(-center.x, -bounds.min.y, -center.z);
       imported.traverse(object => {
         if (!(object instanceof THREE.Mesh)) return;
-        object.castShadow = true;
+        object.castShadow = false;
         object.receiveShadow = true;
         const materials = Array.isArray(object.material) ? object.material : [object.material];
         for (const material of materials) {
@@ -123,7 +131,7 @@ scene.add(hemi);
 const sun = new THREE.DirectionalLight(0xfff0cf, 3.75);
 sun.position.set(-28, 42, -18);
 sun.castShadow = true;
-sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.mapSize.set(1536, 1536);
 sun.shadow.camera.left = -125; sun.shadow.camera.right = 125; sun.shadow.camera.top = 125; sun.shadow.camera.bottom = -125;
 scene.add(sun);
 
@@ -133,7 +141,13 @@ const darkMetal = new THREE.MeshStandardMaterial({ color: 0x151717, roughness: .
 const sand = new THREE.MeshStandardMaterial({ color: 0x9a6b49, roughness: 1, metalness: 0, vertexColors: true });
 const rubber = new THREE.MeshStandardMaterial({ color: 0x101111, roughness: .9, metalness: .08 });
 const ARENA_RADIUS = 116;
-const VEHICLE_RADIUS = 1.35;
+const VEHICLE_COLLIDER_RADIUS = 1.12;
+const VEHICLE_COLLIDER_HALF_LENGTH = .95;
+const VEHICLE_COLLIDER_HEIGHT = .72;
+const FIXED_TIMESTEP = 1 / 60;
+const MAX_FRAME_DELTA = .1;
+const MAX_PHYSICS_STEPS = 5;
+const RAMP_ENTRY_BLEND = 1.15;
 const ramps: RampSurface[] = [];
 const obstacles: Obstacle[] = [];
 const boxColliders: BoxCollider[] = [];
@@ -220,11 +234,11 @@ function addRamp(x: number, z: number, rotation: number): void {
   deck.rotation.x = -slope;
   deck.position.y = rise * .5 + .01;
   deck.name = "ramp-collider-surface";
-  deck.castShadow = deck.receiveShadow = true;
+  deck.castShadow = false; deck.receiveShadow = true;
   ramp.add(deck);
   for (const side of [-width * .46, width * .46]) {
     const rail = new THREE.Mesh(new THREE.BoxGeometry(.2, .72, length + .2), warm);
-    rail.position.set(side, rise * .5 + .42, 0); rail.rotation.x = -slope; rail.castShadow = true; ramp.add(rail);
+    rail.position.set(side, rise * .5 + .42, 0); rail.rotation.x = -slope; rail.castShadow = false; rail.receiveShadow = true; ramp.add(rail);
   }
   ramp.position.set(x, baseHeight, z); ramp.rotation.y = rotation; scene.add(ramp);
   instantiateAsset(scraproadAssetManifest.arena.ramp).then(asset => {
@@ -242,10 +256,10 @@ function addScrapGate(x: number, z: number, rotation: number): void {
   const gate = new THREE.Group();
   for (const side of [-6, 6]) {
     const post = new THREE.Mesh(new THREE.BoxGeometry(.7, 5.5, .7), darkMetal);
-    post.position.set(side, 2.75, 0); post.rotation.z = side > 0 ? -.07 : .07; post.castShadow = true; gate.add(post);
+    post.position.set(side, 2.75, 0); post.rotation.z = side > 0 ? -.07 : .07; post.receiveShadow = true; gate.add(post);
   }
   const top = new THREE.Mesh(new THREE.BoxGeometry(13, .75, .75), metal);
-  top.position.y = 5.2; top.rotation.z = .02; top.castShadow = true; gate.add(top);
+  top.position.y = 5.2; top.rotation.z = .02; top.receiveShadow = true; gate.add(top);
   const sign = new THREE.Mesh(new THREE.BoxGeometry(5.5, 1.45, .2), warm);
   sign.position.set(0, 4.6, -.5); gate.add(sign);
   gate.position.set(x, getGroundHeight(x, z), z); gate.rotation.y = rotation; scene.add(gate);
@@ -258,7 +272,7 @@ function addScrapGate(x: number, z: number, rotation: number): void {
 function addBarrier(x: number, z: number, rotation: number, length: number, boundary = false): void {
   const material = new THREE.MeshStandardMaterial({ color: boundary ? 0x633829 : 0x6e4a35, roughness: .88, metalness: .22 });
   const barrier = new THREE.Mesh(new THREE.BoxGeometry(length, 1.35, .8), material);
-  barrier.position.set(x, getGroundHeight(x, z) + .68, z); barrier.rotation.y = rotation; barrier.castShadow = barrier.receiveShadow = true;
+  barrier.position.set(x, getGroundHeight(x, z) + .68, z); barrier.rotation.y = rotation; barrier.castShadow = false; barrier.receiveShadow = true;
   barrier.material.transparent = true; barrier.material.opacity = .12; barrier.material.depthWrite = false; scene.add(barrier);
   instantiateAsset(scraproadAssetManifest.arena.barrier).then(asset => {
     asset.name = "kenney-racing-kit-barrier";
@@ -277,7 +291,7 @@ function addWorldProps(): void {
   placements.forEach(([x,z,size], index) => {
     const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(size, 0), rockMaterial);
     rock.scale.y = .65 + (index % 3) * .12; rock.rotation.set(index*.7, index*.4, index*.2);
-    rock.position.set(x, getGroundHeight(x,z) + size*.5, z); rock.castShadow = rock.receiveShadow = true;
+    rock.position.set(x, getGroundHeight(x,z) + size*.5, z); rock.castShadow = false; rock.receiveShadow = true;
     const ground = getGroundHeight(x, z);
     const top = ground + size * .5 + size * rock.scale.y;
     scene.add(rock); obstacles.push({ position: new THREE.Vector3(x,0,z), radius: size*.78, top, label: "rock" });
@@ -286,12 +300,11 @@ function addWorldProps(): void {
   [[-37,22],[68,31],[-74,-17],[28,78],[76,-11]].forEach(([x,z]) => {
     for (let i=0;i<3;i++) {
       const barrel = new THREE.Mesh(new THREE.CylinderGeometry(.48,.48,1.35,12), barrelMaterial);
-      barrel.position.set(x+i*.9, getGroundHeight(x+i*.9,z)+.68, z+(i%2)*.65); barrel.castShadow=true; scene.add(barrel);
+      barrel.position.set(x+i*.9, getGroundHeight(x+i*.9,z)+.68, z+(i%2)*.65); barrel.receiveShadow=true; scene.add(barrel);
       for (const rimY of [-.52, .52]) {
         const rim = new THREE.Mesh(new THREE.TorusGeometry(.49, .055, 6, 12), darkMetal);
-        rim.rotation.x = Math.PI / 2; rim.position.copy(barrel.position); rim.position.y += rimY; rim.castShadow = true; scene.add(rim);
+        rim.rotation.x = Math.PI / 2; rim.position.copy(barrel.position); rim.position.y += rimY; rim.receiveShadow = true; scene.add(rim);
       }
-      obstacles.push({ position:new THREE.Vector3(x+i*.9,0,z+(i%2)*.65), radius:.55, top:getGroundHeight(x+i*.9,z+(i%2)*.65)+1.35, label: "barrel" });
     }
   });
   for (let i=0;i<32;i++) {
@@ -330,8 +343,15 @@ function rampSample(x: number, z: number): { ramp: RampSurface; height: number; 
     const dx = x - ramp.position.x, dz = z - ramp.position.z;
     const localX = dx * Math.cos(ramp.rotation) - dz * Math.sin(ramp.rotation);
     const localZ = dx * Math.sin(ramp.rotation) + dz * Math.cos(ramp.rotation);
-    if (Math.abs(localX) <= ramp.width * .5 && localZ >= -ramp.length * .5 && localZ <= ramp.length * .5) {
-      return { ramp, height: ramp.baseHeight + (localZ / ramp.length + .5) * ramp.rise + .25, localZ };
+    const entry = -ramp.length * .5;
+    if (Math.abs(localX) <= ramp.width * .5 && localZ >= entry - RAMP_ENTRY_BLEND && localZ <= ramp.length * .5) {
+      const rampProgress = THREE.MathUtils.clamp((localZ - entry) / ramp.length, 0, 1);
+      const rampHeight = ramp.baseHeight + rampProgress * ramp.rise + .25;
+      if (localZ < entry) {
+        const blend = THREE.MathUtils.smoothstep(localZ, entry - RAMP_ENTRY_BLEND, entry);
+        return { ramp, height: THREE.MathUtils.lerp(getGroundHeight(x, z), rampHeight, blend), localZ };
+      }
+      return { ramp, height: rampHeight, localZ };
     }
   }
   return null;
@@ -341,24 +361,41 @@ function getDriveHeight(x: number, z: number): number {
   return rampSample(x, z)?.height ?? getGroundHeight(x, z);
 }
 
-function resolveBoxCollision(collider: BoxCollider): boolean {
-  const dx = vehicle.position.x - collider.position.x, dz = vehicle.position.z - collider.position.z;
+function resolveBoxCollision(collider: BoxCollider, sampleOffset: number): boolean {
+  const sampleX = vehicle.position.x + Math.sin(vehicle.heading) * sampleOffset;
+  const sampleZ = vehicle.position.z + Math.cos(vehicle.heading) * sampleOffset;
+  const dx = sampleX - collider.position.x, dz = sampleZ - collider.position.z;
   const cosine = Math.cos(collider.rotation), sine = Math.sin(collider.rotation);
   const localX = dx * cosine - dz * sine, localZ = dx * sine + dz * cosine;
   const closestX = THREE.MathUtils.clamp(localX, -collider.halfWidth, collider.halfWidth);
   const closestZ = THREE.MathUtils.clamp(localZ, -collider.halfLength, collider.halfLength);
   let pushX = localX - closestX, pushZ = localZ - closestZ;
   const distance = Math.hypot(pushX, pushZ);
-  if (distance >= VEHICLE_RADIUS) return false;
+  if (distance >= VEHICLE_COLLIDER_RADIUS) return false;
   let correction: number;
   if (distance < .001) {
-    const escapeX = collider.halfWidth + VEHICLE_RADIUS - Math.abs(localX);
-    const escapeZ = collider.halfLength + VEHICLE_RADIUS - Math.abs(localZ);
+    const escapeX = collider.halfWidth + VEHICLE_COLLIDER_RADIUS - Math.abs(localX);
+    const escapeZ = collider.halfLength + VEHICLE_COLLIDER_RADIUS - Math.abs(localZ);
     if (escapeX < escapeZ) { pushX = Math.sign(localX || 1); pushZ = 0; correction = escapeX + .02; }
     else { pushX = 0; pushZ = Math.sign(localZ || 1); correction = escapeZ + .02; }
-  } else { pushX /= distance; pushZ /= distance; correction = VEHICLE_RADIUS - distance + .02; }
+  } else { pushX /= distance; pushZ /= distance; correction = VEHICLE_COLLIDER_RADIUS - distance + .02; }
   const worldX = pushX * cosine + pushZ * sine, worldZ = -pushX * sine + pushZ * cosine;
   vehicle.position.x += worldX * correction; vehicle.position.z += worldZ * correction;
+  return true;
+}
+
+function resolveObstacleCollision(obstacle: Obstacle, sampleOffset: number): boolean {
+  const sampleX = vehicle.position.x + Math.sin(vehicle.heading) * sampleOffset;
+  const sampleZ = vehicle.position.z + Math.cos(vehicle.heading) * sampleOffset;
+  const dx = sampleX - obstacle.position.x, dz = sampleZ - obstacle.position.z;
+  const distance = Math.hypot(dx, dz);
+  const minimum = obstacle.radius + VEHICLE_COLLIDER_RADIUS;
+  if (distance >= minimum) return false;
+  const normalX = distance > .001 ? dx / distance : Math.sin(vehicle.heading);
+  const normalZ = distance > .001 ? dz / distance : Math.cos(vehicle.heading);
+  const correction = minimum - distance + .02;
+  vehicle.position.x += normalX * correction;
+  vehicle.position.z += normalZ * correction;
   return true;
 }
 
@@ -367,7 +404,7 @@ function registerPhysicsDebug(): void {
   for (const obstacle of obstacles) {
     const ground = getGroundHeight(obstacle.position.x, obstacle.position.z);
     const height = Math.max(.12, obstacle.top - ground);
-    const marker = new THREE.Mesh(new THREE.CylinderGeometry(obstacle.radius + VEHICLE_RADIUS, obstacle.radius + VEHICLE_RADIUS, height, 18), material);
+    const marker = new THREE.Mesh(new THREE.CylinderGeometry(obstacle.radius, obstacle.radius, height, 18), material);
     marker.position.set(obstacle.position.x, ground + height * .5, obstacle.position.z);
     marker.visible = false; scene.add(marker); debugVisuals.push(marker);
   }
@@ -379,6 +416,7 @@ const frontWheelPivots: THREE.Object3D[] = [];
 const turret = new THREE.Group();
 const barrelPivot = new THREE.Group();
 let muzzle: THREE.Object3D;
+let vehicleColliderDebug: THREE.Mesh;
 
 function buildCar(): void {
   const fallback = new THREE.Group();
@@ -403,6 +441,7 @@ function buildCar(): void {
     const dustyTint = new THREE.Color(0xd8b08d);
     model.traverse(object => {
       if (!(object instanceof THREE.Mesh)) return;
+      object.castShadow = true;
       const sourceMaterials = Array.isArray(object.material) ? object.material : [object.material];
       const tintedMaterials = sourceMaterials.map(source => {
         const material = source.clone();
@@ -457,6 +496,13 @@ function buildCar(): void {
   const muzzleGlow = new THREE.Mesh(new THREE.RingGeometry(.055,.13,10),new THREE.MeshBasicMaterial({color:0xff8b35}));
   muzzleGlow.position.z=2.63; barrelPivot.add(muzzleGlow);
   muzzle = new THREE.Object3D(); muzzle.position.z=2.66; barrelPivot.add(muzzle);
+  vehicleColliderDebug = new THREE.Mesh(
+    new THREE.BoxGeometry(VEHICLE_COLLIDER_RADIUS * 2, VEHICLE_COLLIDER_HEIGHT, (VEHICLE_COLLIDER_HALF_LENGTH + VEHICLE_COLLIDER_RADIUS) * 2),
+    new THREE.MeshBasicMaterial({ color: 0x4cfff0, wireframe: true, transparent: true, opacity: .8 }),
+  );
+  vehicleColliderDebug.position.y = .52;
+  vehicleColliderDebug.visible = false;
+  car.add(vehicleColliderDebug);
   car.position.set(0,getGroundHeight(0,-28),-28); scene.add(car);
 }
 
@@ -475,10 +521,17 @@ const defaultStats: VehicleStats = {
   projectileSpeed: 58,
 };
 const stats: VehicleStats = { ...defaultStats };
+const weaponStats: WeaponStats = {
+  fireRate: stats.fireRate,
+  damage: stats.weaponDamage,
+  projectileSpeed: stats.projectileSpeed,
+  range: 136,
+  automatic: false,
+};
 const equipped: Partial<Record<VehiclePartSlot, VehiclePart>> = {};
 const vehicle = {
   position: new THREE.Vector3(0,0,-28), heading: 0, speed: 0, driftAngle: 0, verticalVelocity: 0,
-  grounded: true, activeRamp: null as RampSurface | null, health: 100, boost: 100, collisionCooldown: 0,
+  pitch: 0, roll: 0, grounded: true, activeRamp: null as RampSurface | null, health: 100, boost: 100, collisionCooldown: 0,
 };
 
 type PartPickupKind = "tires" | "engine" | "armor" | "weapon";
@@ -522,8 +575,15 @@ function createTarget(x:number,z:number,rotation:number): void {
 const bullets: Bullet[]=[]; const dust: DustParticle[]=[];
 const bulletMaterial=new THREE.MeshBasicMaterial({color:0xffcf5a});
 const dustMaterial=new THREE.MeshBasicMaterial({color:0xc18a59,transparent:true,opacity:.35,depthWrite:false});
-let lastShot=0; let messageTimer=0; let paused=false; let cameraMode=0; let elapsed=0;
+const bulletGeometry = new THREE.BoxGeometry(.09,.09,.72);
+const dustGeometry = new THREE.SphereGeometry(.3,6,4);
+const debrisGeometry = new THREE.DodecahedronGeometry(.14,0);
+const muzzleFlash = new THREE.PointLight(0xff8a24, 8, 5, 2);
+muzzleFlash.visible = false; scene.add(muzzleFlash);
+let fireCooldown=0; let isFireHeld=false; let muzzleFlashLife=0; let weaponStateLife=0;
+let messageTimer=0; let paused=false; let cameraMode=0; let elapsed=0;
 const rampSmokeTest = new URLSearchParams(location.search).get("physics-smoke") === "ramp";
+const holdFireSmokeTest = new URLSearchParams(location.search).get("input-smoke") === "hold-fire";
 const soundtrack = new Audio("./assets/nitro-games.wav");
 soundtrack.loop = true;
 soundtrack.volume = .12;
@@ -554,29 +614,50 @@ for (const rotation of [0, Math.PI / 2]) {
 }
 groundCrosshair.renderOrder = 10; scene.add(groundCrosshair);
 
-function shoot(): void {
-  const now=performance.now(); if(paused || !aimReady || now-lastShot < 1000/stats.fireRate) return; lastShot=now;
-  const origin=new THREE.Vector3();muzzle.getWorldPosition(origin);
-  const direction=aimPoint.clone().sub(origin).normalize(); currentAimDirection.copy(direction);
-  const mesh=new THREE.Mesh(new THREE.BoxGeometry(.09,.09,.72),bulletMaterial);mesh.position.copy(origin);
-  mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),direction);scene.add(mesh);
-  bullets.push({mesh,velocity:direction.multiplyScalar(stats.projectileSpeed),life:2.35});
+const shotOrigin = new THREE.Vector3();
+const shotDirection = new THREE.Vector3();
+const projectileForward = new THREE.Vector3(0,0,1);
+
+function shoot(): boolean {
+  if(paused || vehicle.health<=0 || !aimReady || fireCooldown > 0 || bullets.length >= 120) return false;
+  fireCooldown = 1 / weaponStats.fireRate;
+  muzzle.getWorldPosition(shotOrigin);
+  shotDirection.copy(aimPoint).sub(shotOrigin).normalize(); currentAimDirection.copy(shotDirection);
+  const mesh=new THREE.Mesh(bulletGeometry,bulletMaterial);mesh.position.copy(shotOrigin);
+  mesh.quaternion.setFromUnitVectors(projectileForward,shotDirection);scene.add(mesh);
+  bullets.push({mesh,velocity:shotDirection.clone().multiplyScalar(weaponStats.projectileSpeed),life:weaponStats.range/weaponStats.projectileSpeed});
   canvas.dataset.shotsFired=String(Number(canvas.dataset.shotsFired??0)+1);
-  ui.weaponState.textContent="FIRING"; setTimeout(()=>{if(ui.weaponState.textContent==="FIRING")ui.weaponState.textContent="READY";},80);
-  const flash=new THREE.PointLight(0xff8a24,8,5,2);flash.position.copy(origin);scene.add(flash);setTimeout(()=>scene.remove(flash),45);
+  ui.weaponState.textContent="FIRING"; weaponStateLife=.08;
+  muzzleFlash.position.copy(shotOrigin); muzzleFlash.visible=true; muzzleFlashLife=.045;
+  return true;
+}
+
+function setFireHeld(held: boolean): void {
+  isFireHeld = held;
+  canvas.dataset.fireHeld = String(held);
+  if (held) shoot();
+}
+
+function updateWeapon(dt: number): void {
+  fireCooldown = Math.max(0, fireCooldown - dt);
+  weaponStateLife = Math.max(0, weaponStateLife - dt);
+  muzzleFlashLife = Math.max(0, muzzleFlashLife - dt);
+  if (weaponStateLife === 0 && ui.weaponState.textContent === "FIRING") ui.weaponState.textContent = "READY";
+  if (muzzleFlashLife === 0) muzzleFlash.visible = false;
+  if (isFireHeld) shoot();
 }
 
 function spawnDust(dt:number): void {
-  if(Math.abs(vehicle.speed)<3 || Math.random()>dt*Math.min(Math.abs(vehicle.speed),20)*1.8) return;
+  if(dust.length>=80 || Math.abs(vehicle.speed)<3 || Math.random()>dt*Math.min(Math.abs(vehicle.speed),20)*1.5) return;
   const behind=new THREE.Vector3(-Math.sin(vehicle.heading)*2,0,-Math.cos(vehicle.heading)*2);
-  const mesh=new THREE.Mesh(new THREE.SphereGeometry(.18+Math.random()*.22,6,4),dustMaterial.clone());
+  const mesh=new THREE.Mesh(dustGeometry,dustMaterial.clone());mesh.scale.setScalar(.6+Math.random()*.7);
   mesh.position.copy(vehicle.position).add(behind).add(new THREE.Vector3((Math.random()-.5)*1.8,.25,(Math.random()-.5)*.8));scene.add(mesh);
   dust.push({mesh,life:.7+Math.random()*.5,velocity:new THREE.Vector3((Math.random()-.5)*.5,.45+Math.random()*.3,(Math.random()-.5)*.5)});
 }
 
 function explode(position:THREE.Vector3): void {
-  for(let i=0;i<14;i++){
-    const mesh=new THREE.Mesh(new THREE.DodecahedronGeometry(.08+Math.random()*.14,0),new THREE.MeshBasicMaterial({color:i%3===0?0xffc34e:0xb84a29}));
+  for(let i=0;i<Math.min(12,80-dust.length);i++){
+    const mesh=new THREE.Mesh(debrisGeometry,new THREE.MeshBasicMaterial({color:i%3===0?0xffc34e:0xb84a29}));mesh.scale.setScalar(.6+Math.random());
     mesh.position.copy(position).add(new THREE.Vector3(0,1.4,0));scene.add(mesh);
     dust.push({mesh,life:.7+Math.random()*.8,velocity:new THREE.Vector3((Math.random()-.5)*7,2+Math.random()*5,(Math.random()-.5)*7)});
   }
@@ -591,6 +672,7 @@ function equipPickup(pickup:Pickup): void {
   pickup.collected=true;scene.remove(pickup.group);
   if(pickup.repair){vehicle.health=Math.min(stats.maxHealth,vehicle.health+pickup.repair);showMessage(`REPAIR KIT // HULL RESTORED +${pickup.repair}`);return;}
   if(!pickup.part)return;equipped[pickup.part.slot]=pickup.part;Object.assign(stats,pickup.part.stats);
+  weaponStats.fireRate=stats.fireRate;weaponStats.damage=stats.weaponDamage;weaponStats.projectileSpeed=stats.projectileSpeed;
   if(pickup.part.slot==="armor"){vehicle.health=Math.min(stats.maxHealth,vehicle.health+45);ui.armor.textContent="RIVETED";}
   if(pickup.part.slot==="engine")ui.engine.textContent="TURBO V8";
   if(pickup.part.slot==="tires")ui.tires.textContent="ALL-TERRAIN";
@@ -615,24 +697,26 @@ function updateVehicle(dt:number): void {
   const targetDrift=drifting&&speedRatio>.16?-steer*.28*speedRatio*reverseSign:0;
   vehicle.driftAngle=THREE.MathUtils.damp(vehicle.driftAngle,targetDrift,drifting?4.2:stats.traction,dt);
   const moveAngle=vehicle.heading+vehicle.driftAngle;
-  const previousPosition=vehicle.position.clone();
   vehicle.position.x+=Math.sin(moveAngle)*vehicle.speed*dt;vehicle.position.z+=Math.cos(moveAngle)*vehicle.speed*dt;
 
   let collided=false;
   const arenaDistance=Math.hypot(vehicle.position.x,vehicle.position.z);
-  if(arenaDistance>ARENA_RADIUS-2){const nx=vehicle.position.x/arenaDistance,nz=vehicle.position.z/arenaDistance;vehicle.position.x=nx*(ARENA_RADIUS-2);vehicle.position.z=nz*(ARENA_RADIUS-2);collided=true;showMessage("BOUNDARY IMPACT // TURN BACK");}
+  const boundaryLimit=ARENA_RADIUS-(VEHICLE_COLLIDER_HALF_LENGTH+VEHICLE_COLLIDER_RADIUS);
+  if(arenaDistance>boundaryLimit){const nx=vehicle.position.x/arenaDistance,nz=vehicle.position.z/arenaDistance;vehicle.position.x=nx*boundaryLimit;vehicle.position.z=nz*boundaryLimit;collided=true;showMessage("BOUNDARY IMPACT // TURN BACK");}
   for(const obstacle of obstacles){
-    if(vehicle.position.y > obstacle.top)continue;
-    const dx=vehicle.position.x-obstacle.position.x,dz=vehicle.position.z-obstacle.position.z,dist=Math.hypot(dx,dz),min=obstacle.radius+VEHICLE_RADIUS;
-    if(dist<min){const nx=dist>.001?dx/dist:Math.sin(vehicle.heading),nz=dist>.001?dz/dist:Math.cos(vehicle.heading);vehicle.position.x=obstacle.position.x+nx*min;vehicle.position.z=obstacle.position.z+nz*min;collided=true;}
+    if(vehicle.position.y > obstacle.top+.2)continue;
+    for(const offset of [-VEHICLE_COLLIDER_HALF_LENGTH,0,VEHICLE_COLLIDER_HALF_LENGTH]) {
+      if(resolveObstacleCollision(obstacle,offset))collided=true;
+    }
   }
-  for(const collider of boxColliders) if(resolveBoxCollision(collider)) collided=true;
+  for(const collider of boxColliders) {
+    for(const offset of [-VEHICLE_COLLIDER_HALF_LENGTH,0,VEHICLE_COLLIDER_HALF_LENGTH]) {
+      if(resolveBoxCollision(collider,offset))collided=true;
+    }
+  }
 
   const rampBefore=vehicle.activeRamp;
   let rampNow=rampSample(vehicle.position.x,vehicle.position.z);
-  if(rampNow&&rampNow.ramp!==rampBefore&&rampNow.height>vehicle.position.y+.85){
-    vehicle.position.x=previousPosition.x;vehicle.position.z=previousPosition.z;rampNow=rampSample(vehicle.position.x,vehicle.position.z);collided=true;
-  }
   if(collided){if(Math.abs(vehicle.speed)>6){hitVehicle(Math.round(Math.abs(vehicle.speed)*.32));showMessage("SCRAP COLLISION // HULL DAMAGED");}vehicle.speed*=-.18;vehicle.driftAngle*=.25;}
 
   rampNow=rampSample(vehicle.position.x,vehicle.position.z);
@@ -652,11 +736,10 @@ function updateVehicle(dt:number): void {
 
   const frontY=getDriveHeight(vehicle.position.x+Math.sin(vehicle.heading)*2,vehicle.position.z+Math.cos(vehicle.heading)*2);const backY=getDriveHeight(vehicle.position.x-Math.sin(vehicle.heading)*2,vehicle.position.z-Math.cos(vehicle.heading)*2);
   const rightY=getDriveHeight(vehicle.position.x+Math.cos(vehicle.heading)*1.2,vehicle.position.z-Math.sin(vehicle.heading)*1.2);const leftY=getDriveHeight(vehicle.position.x-Math.cos(vehicle.heading)*1.2,vehicle.position.z+Math.sin(vehicle.heading)*1.2);
-  const pitch=vehicle.grounded?Math.atan2(backY-frontY,4):0;const roll=(vehicle.grounded?Math.atan2(leftY-rightY,2.4):0)+(drifting?steer*.055*speedRatio:0);
-  car.position.lerp(new THREE.Vector3(vehicle.position.x,vehicle.position.y,vehicle.position.z),1-Math.exp(-12*dt));car.rotation.set(pitch,vehicle.heading,roll,"YXZ");
+  vehicle.pitch=vehicle.grounded?Math.atan2(backY-frontY,4):0;vehicle.roll=(vehicle.grounded?Math.atan2(leftY-rightY,2.4):0)+(drifting?steer*.055*speedRatio:0);
   wheels.forEach(wheel=>wheel.rotation.x+=vehicle.speed*dt/.57);frontWheelPivots.forEach(pivot=>pivot.rotation.y=THREE.MathUtils.damp(pivot.rotation.y,-steer*.38,12,dt));
-  for(const pickup of pickups){if(!pickup.collected&&pickup.group.position.distanceTo(car.position)<2.25)equipPickup(pickup);}
-  for(const target of targets){if(target.alive&&target.group.position.distanceTo(car.position)<1.85&&Math.abs(vehicle.speed)>5){damageTarget(target,Math.abs(vehicle.speed)*1.8);vehicle.speed*=-.35;hitVehicle(4);}}
+  for(const pickup of pickups){if(!pickup.collected&&pickup.group.position.distanceTo(vehicle.position)<2.25)equipPickup(pickup);}
+  for(const target of targets){if(target.alive&&target.group.position.distanceTo(vehicle.position)<1.85&&Math.abs(vehicle.speed)>5){damageTarget(target,Math.abs(vehicle.speed)*1.8);vehicle.speed*=-.35;hitVehicle(4);}}
   spawnDust(dt);
 }
 
@@ -684,16 +767,23 @@ function updateAim(dt:number): void {
 }
 
 function updateProjectiles(dt:number): void {
-  for(let i=bullets.length-1;i>=0;i--){const bullet=bullets[i];bullet.mesh.position.addScaledVector(bullet.velocity,dt);bullet.life-=dt;let hit=false;for(const target of targets){if(target.alive&&bullet.mesh.position.distanceTo(target.group.position.clone().add(new THREE.Vector3(0,1.4,0)))<1){damageTarget(target,stats.weaponDamage);hit=true;break;}}const hitTerrain=bullet.life<2.28&&bullet.mesh.position.y<=getDriveHeight(bullet.mesh.position.x,bullet.mesh.position.z)+.08;if(hit||hitTerrain||bullet.life<=0){scene.remove(bullet.mesh);bullets.splice(i,1);}}
+  for(let i=bullets.length-1;i>=0;i--){const bullet=bullets[i];bullet.mesh.position.addScaledVector(bullet.velocity,dt);bullet.life-=dt;let hit=false;for(const target of targets){if(!target.alive)continue;const dx=bullet.mesh.position.x-target.group.position.x,dy=bullet.mesh.position.y-target.group.position.y-1.4,dz=bullet.mesh.position.z-target.group.position.z;if(dx*dx+dy*dy+dz*dz<1){damageTarget(target,weaponStats.damage);hit=true;break;}}const hitTerrain=bullet.mesh.position.y<=getDriveHeight(bullet.mesh.position.x,bullet.mesh.position.z)+.08;if(hit||hitTerrain||bullet.life<=0){scene.remove(bullet.mesh);bullets.splice(i,1);}}
   for(let i=dust.length-1;i>=0;i--){const p=dust[i];p.life-=dt;p.mesh.position.addScaledVector(p.velocity,dt);p.velocity.y-=3.5*dt;p.mesh.scale.multiplyScalar(1+dt*.55);const material=p.mesh.material as THREE.MeshBasicMaterial;material.opacity=Math.max(0,Math.min(material.opacity,p.life*.45));if(p.life<=0){scene.remove(p.mesh);material.dispose();dust.splice(i,1);}}
   for(const target of targets){if(!target.alive)continue;if(target.hitFlash>0){target.hitFlash-=dt;const body=target.group.getObjectByName("target-body") as THREE.Mesh<THREE.BufferGeometry,THREE.MeshStandardMaterial>;body.material.emissive.setHex(0xff6b2c);}else{const body=target.group.getObjectByName("target-body") as THREE.Mesh<THREE.BufferGeometry,THREE.MeshStandardMaterial>;body.material.emissive.setHex(0x000000);}}
 }
 
 const cameraLook=new THREE.Vector3();
+const cameraForward=new THREE.Vector3();
+const cameraDesired=new THREE.Vector3();
+const cameraTarget=new THREE.Vector3();
 function updateCamera(dt:number): void {
-  const forward=new THREE.Vector3(Math.sin(vehicle.heading),0,Math.cos(vehicle.heading));
-  const desired=cameraMode===0?vehicle.position.clone().addScaledVector(forward,-11.5).add(new THREE.Vector3(0,6.3,0)):vehicle.position.clone().add(new THREE.Vector3(0,23,-.01));
-  camera.position.lerp(desired,1-Math.exp(-5*dt));const look=vehicle.position.clone().addScaledVector(forward,cameraMode===0?4:0).add(new THREE.Vector3(0,1.2,0));cameraLook.lerp(look,1-Math.exp(-8*dt));camera.lookAt(cameraLook);
+  cameraForward.set(Math.sin(car.rotation.y),0,Math.cos(car.rotation.y));
+  cameraDesired.copy(car.position);
+  if(cameraMode===0)cameraDesired.addScaledVector(cameraForward,-11.5).y+=6.3;
+  else{cameraDesired.y+=23;cameraDesired.z-=.01;}
+  camera.position.lerp(cameraDesired,1-Math.exp(-6.5*dt));
+  cameraTarget.copy(car.position).addScaledVector(cameraForward,cameraMode===0?4:0);cameraTarget.y+=1.2;
+  cameraLook.lerp(cameraTarget,1-Math.exp(-9*dt));camera.lookAt(cameraLook);
 }
 
 function updatePickups(dt:number):void{for(const pickup of pickups){if(pickup.collected)continue;pickup.group.rotation.y+=dt*.8;const item=pickup.group.children[2];item.position.y=1.1+Math.sin(elapsed*2.4+pickup.group.position.x)*.18;}}
@@ -702,16 +792,40 @@ function updateHud():void{ui.speed.textContent=String(Math.round(Math.abs(vehicl
 
 function drawRadar():void{const context=ui.radar.getContext("2d");if(!context)return;const size=160,center=80,scale=.58;context.clearRect(0,0,size,size);context.strokeStyle="rgba(213,183,119,.13)";context.lineWidth=1;for(const radius of [24,48,72]){context.beginPath();context.arc(center,center,radius,0,Math.PI*2);context.stroke();}context.beginPath();context.moveTo(center,8);context.lineTo(center,152);context.moveTo(8,center);context.lineTo(152,center);context.stroke();const plot=(x:number,z:number,color:string,radius:number)=>{const dx=(x-vehicle.position.x)*scale,dz=(z-vehicle.position.z)*scale;const angle=-vehicle.heading;const px=dx*Math.cos(angle)-dz*Math.sin(angle),py=dx*Math.sin(angle)+dz*Math.cos(angle);if(Math.hypot(px,py)>73)return;context.fillStyle=color;context.beginPath();context.arc(center+px,center-py,radius,0,Math.PI*2);context.fill();};pickups.forEach(p=>{if(!p.collected)plot(p.group.position.x,p.group.position.z,"#57dbe3",2.7)});targets.forEach(t=>{if(t.alive)plot(t.group.position.x,t.group.position.z,"#ef6846",3)});context.save();context.translate(center,center);context.fillStyle="#f3ce79";context.beginPath();context.moveTo(0,-7);context.lineTo(5,6);context.lineTo(0,3);context.lineTo(-5,6);context.closePath();context.fill();context.restore();}
 
-function resetVehicle():void{vehicle.position.set(0,getGroundHeight(0,-28)+.06,-28);vehicle.heading=0;vehicle.speed=0;vehicle.driftAngle=0;vehicle.verticalVelocity=0;vehicle.grounded=true;vehicle.activeRamp=null;vehicle.health=Math.max(vehicle.health,Math.min(stats.maxHealth,65));vehicle.boost=100;car.position.copy(vehicle.position);car.rotation.set(0,0,0);showMessage("RIG RECOVERED // SYSTEMS ONLINE");}
+const previousVehiclePosition = new THREE.Vector3(0,0,-28);
+let previousVehicleHeading=0;let previousVehiclePitch=0;let previousVehicleRoll=0;
 
-function togglePause(force?:boolean):void{paused=force??!paused;ui.pause.hidden=!paused;}
+function capturePhysicsPose():void{
+  previousVehiclePosition.copy(vehicle.position);previousVehicleHeading=vehicle.heading;previousVehiclePitch=vehicle.pitch;previousVehicleRoll=vehicle.roll;
+}
+
+function interpolateAngle(from:number,to:number,alpha:number):number{
+  const delta=Math.atan2(Math.sin(to-from),Math.cos(to-from));return from+delta*alpha;
+}
+
+function updateVehicleVisual(alpha:number):void{
+  car.position.lerpVectors(previousVehiclePosition,vehicle.position,alpha);
+  car.rotation.set(
+    THREE.MathUtils.lerp(previousVehiclePitch,vehicle.pitch,alpha),
+    interpolateAngle(previousVehicleHeading,vehicle.heading,alpha),
+    THREE.MathUtils.lerp(previousVehicleRoll,vehicle.roll,alpha),
+    "YXZ",
+  );
+}
+
+function resetVehicle():void{
+  setFireHeld(false);vehicle.position.set(0,getGroundHeight(0,-28)+.06,-28);vehicle.heading=0;vehicle.speed=0;vehicle.driftAngle=0;vehicle.verticalVelocity=0;vehicle.pitch=0;vehicle.roll=0;vehicle.grounded=true;vehicle.activeRamp=null;vehicle.health=Math.max(vehicle.health,Math.min(stats.maxHealth,65));vehicle.boost=100;capturePhysicsPose();car.position.copy(vehicle.position);car.rotation.set(0,0,0);camera.position.set(0,vehicle.position.y+6.3,-39.5);cameraLook.copy(vehicle.position);cameraLook.y+=1.2;showMessage("RIG RECOVERED // SYSTEMS ONLINE");
+}
+
+function togglePause(force?:boolean):void{paused=force??!paused;if(paused)setFireHeld(false);ui.pause.hidden=!paused;}
 function toggleControls(show?:boolean):void{ui.controls.classList.toggle("closed",show===undefined?!ui.controls.classList.contains("closed"):!show);}
+function toggleDebug():void{debugPhysics=!debugPhysics;debugVisuals.forEach(item=>item.visible=debugPhysics);vehicleColliderDebug.visible=debugPhysics;ui.debug.hidden=!debugPhysics;showMessage(debugPhysics?`PHYSICS DEBUG // ${vehicle.grounded?"GROUNDED":"AIRBORNE"}`:"PHYSICS DEBUG // OFF");}
 
 canvas.dataset.assetsLoaded="0";canvas.dataset.assetErrors="0";canvas.dataset.assetManifest="scraproadAssetManifest";
 addArena();addWorldProps();registerPhysicsDebug();buildCar();
 createPickup(-44,-34,"tires");createPickup(43,17,"engine");createPickup(73,-49,"armor");createPickup(-9,57,"weapon");createPickup(-76,53,"repair");createPickup(31,-78,"repair");
 createTarget(-29,16,.4);createTarget(21,36,-.5);createTarget(59,57,1.2);createTarget(81,5,-1.2);createTarget(43,-48,2.5);createTarget(-25,-72,.2);createTarget(-70,-44,-.8);createTarget(-84,22,1.6);
-canvas.dataset.prototype="scraproad-1v1-foundation";canvas.dataset.arenaRadius=String(ARENA_RADIUS);canvas.dataset.rampColliders=String(ramps.length);canvas.dataset.majorColliders=String(obstacles.length+boxColliders.length);canvas.dataset.shotsFired="0";
+canvas.dataset.prototype="scraproad-1v1-foundation";canvas.dataset.arenaRadius=String(ARENA_RADIUS);canvas.dataset.rampColliders=String(ramps.length);canvas.dataset.majorColliders=String(obstacles.length+boxColliders.length);canvas.dataset.vehicleCollider="low-capsule-2.24x4.14x0.72";canvas.dataset.shotsFired="0";canvas.dataset.fireHeld="false";
 if(rampSmokeTest){
   const ramp=ramps[0];
   const offset=new THREE.Vector3(0,0,-ramp.length*.5-3).applyAxisAngle(new THREE.Vector3(0,1,0),ramp.rotation);
@@ -723,21 +837,46 @@ if(rampSmokeTest){
   }
   input.delete("KeyW");canvas.dataset.physicsSmoke="complete";
 }
-showMessage(rampSmokeTest?"RAMP SMOKE TEST // AUTO DRIVE":"1V1 PROVING GROUND // PHYSICS ONLINE");setTimeout(()=>toggleControls(false),4200);
+if(holdFireSmokeTest){
+  aimPoint.copy(vehicle.position).add(new THREE.Vector3(0,1,40));aimReady=true;car.updateMatrixWorld(true);setFireHeld(true);
+  for(let step=0;step<120;step++)updateWeapon(FIXED_TIMESTEP);
+  setFireHeld(false);const smokeShots=Number(canvas.dataset.shotsFired??0);const shotLimit=Math.ceil(2*weaponStats.fireRate)+1;
+  canvas.dataset.holdFireSmoke=smokeShots>=2&&smokeShots<=shotLimit?"passed":"failed";canvas.dataset.fireRateLimited=smokeShots<=shotLimit?"passed":"failed";canvas.dataset.holdFireShots=String(smokeShots);
+}
+showMessage(rampSmokeTest?"RAMP SMOKE TEST // AUTO DRIVE":holdFireSmokeTest?"HOLD-FIRE SMOKE TEST // COMPLETE":"1V1 PROVING GROUND // PHYSICS ONLINE");setTimeout(()=>toggleControls(false),4200);
 
-window.addEventListener("keydown",event=>{if(["KeyW","KeyA","KeyS","KeyD","Space","ShiftLeft","KeyF"].includes(event.code))event.preventDefault();if(event.repeat)return;if(event.code==="Escape"){togglePause();return;}if(event.code==="KeyR")resetVehicle();if(event.code==="KeyC"){cameraMode=(cameraMode+1)%2;showMessage(cameraMode?"CAMERA // OVERWATCH":"CAMERA // CHASE");}if(event.code==="KeyB"){debugPhysics=!debugPhysics;debugVisuals.forEach(item=>item.visible=debugPhysics);showMessage(debugPhysics?`PHYSICS DEBUG // ${vehicle.grounded?"GROUNDED":"AIRBORNE"}`:"PHYSICS DEBUG // OFF");}if(event.code==="KeyF")shoot();input.add(event.code);});
-window.addEventListener("keyup",event=>input.delete(event.code));
+window.addEventListener("keydown",event=>{if(["KeyW","KeyA","KeyS","KeyD","Space","ShiftLeft","KeyF","F3"].includes(event.code))event.preventDefault();if(event.repeat)return;if(event.code==="Escape"){togglePause();return;}if(event.code==="KeyR")resetVehicle();if(event.code==="KeyC"){cameraMode=(cameraMode+1)%2;showMessage(cameraMode?"CAMERA // OVERWATCH":"CAMERA // CHASE");}if(event.code==="KeyB"||event.code==="KeyH"||event.code==="F3")toggleDebug();if(event.code==="KeyF")setFireHeld(true);input.add(event.code);});
+window.addEventListener("keyup",event=>{input.delete(event.code);if(event.code==="KeyF")setFireHeld(false);});
 canvas.addEventListener("pointermove",event=>{const bounds=canvas.getBoundingClientRect();mouse.x=(event.clientX-bounds.left)/bounds.width*2-1;mouse.y=-(event.clientY-bounds.top)/bounds.height*2+1;const crosshair=getElement("crosshair");crosshair.style.left=`${event.clientX}px`;crosshair.style.top=`${event.clientY}px`;});
-canvas.addEventListener("pointerdown",event=>{if(event.button===0)shoot();});
+canvas.addEventListener("pointerdown",event=>{if(event.button===0)setFireHeld(true);});
+window.addEventListener("pointerup",event=>{if(event.button===0)setFireHeld(false);});
+canvas.addEventListener("pointerleave",event=>{if(event.buttons&1)setFireHeld(false);});
+window.addEventListener("blur",()=>{input.clear();setFireHeld(false);});
+document.addEventListener("visibilitychange",()=>{if(document.hidden){input.clear();setFireHeld(false);}});
 window.addEventListener("keydown", startSoundtrack, { capture: true });
 window.addEventListener("pointerdown", startSoundtrack, { capture: true });
 canvas.addEventListener("contextmenu",event=>event.preventDefault());
 getElement("help-button").addEventListener("click",()=>toggleControls());getElement("controls-close").addEventListener("click",()=>toggleControls(false));getElement("resume-button").addEventListener("click",()=>togglePause(false));
-document.querySelectorAll<HTMLButtonElement>("[data-key]").forEach(button=>{const code=button.dataset.key??"";const press=(event:PointerEvent)=>{event.preventDefault();if(code==="Fire")shoot();else input.add(code);};const release=(event:PointerEvent)=>{event.preventDefault();input.delete(code);};button.addEventListener("pointerdown",press);button.addEventListener("pointerup",release);button.addEventListener("pointercancel",release);button.addEventListener("pointerleave",release);});
-window.addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight,false);renderer.setPixelRatio(Math.min(devicePixelRatio,1.8));});
+document.querySelectorAll<HTMLButtonElement>("[data-key]").forEach(button=>{const code=button.dataset.key??"";const press=(event:PointerEvent)=>{event.preventDefault();if(code==="Fire")setFireHeld(true);else input.add(code);};const release=(event:PointerEvent)=>{event.preventDefault();if(code==="Fire")setFireHeld(false);else input.delete(code);};button.addEventListener("pointerdown",press);button.addEventListener("pointerup",release);button.addEventListener("pointercancel",release);button.addEventListener("pointerleave",release);});
+window.addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight,false);renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));});
 
-const clock=new THREE.Clock();let radarAccumulator=0;
-function animate():void{requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.04);if(!paused){elapsed+=dt;updateVehicle(dt);updateCamera(dt);updateAim(dt);updateProjectiles(dt);updatePickups(dt);updateHud();radarAccumulator+=dt;if(radarAccumulator>.08){radarAccumulator=0;drawRadar();}}renderer.render(scene,camera);}
+const clock=new THREE.Clock();let physicsAccumulator=0;let radarAccumulator=0;let hudAccumulator=0;let debugAccumulator=0;let frameAverage=1/60;let physicsStepMs=0;
+function updateDebug(frameDelta:number):void{
+  frameAverage=THREE.MathUtils.lerp(frameAverage,frameDelta,.08);debugAccumulator+=frameDelta;if(debugAccumulator<.2)return;debugAccumulator=0;
+  const fps=frameAverage>0?1/frameAverage:0;const contact=vehicle.grounded?(vehicle.activeRamp?"RAMP":"TERRAIN"):"AIRBORNE";
+  ui.debug.textContent=`COLLISION DEBUG\n${contact}  ${Math.abs(vehicle.speed*4.2).toFixed(0)} KM/H\n${fps.toFixed(0)} FPS  ${(frameAverage*1000).toFixed(1)} MS FRAME\n${physicsStepMs.toFixed(2)} MS PHYSICS  60 HZ\n${renderer.info.render.calls} DRAWS  ${renderer.info.render.triangles.toLocaleString()} TRIS\n${scene.children.length+bullets.length+dust.length} ACTIVE OBJECTS`;
+  canvas.dataset.physicsFps="60";canvas.dataset.frameDeltaMs=(frameAverage*1000).toFixed(2);canvas.dataset.physicsStepMs=physicsStepMs.toFixed(2);
+}
+function animate():void{
+  requestAnimationFrame(animate);const frameDelta=Math.min(clock.getDelta(),MAX_FRAME_DELTA);
+  if(!paused){
+    physicsAccumulator=Math.min(physicsAccumulator+frameDelta,FIXED_TIMESTEP*MAX_PHYSICS_STEPS);
+    const physicsStart=performance.now();let steps=0;
+    while(physicsAccumulator>=FIXED_TIMESTEP&&steps<MAX_PHYSICS_STEPS){capturePhysicsPose();elapsed+=FIXED_TIMESTEP;updateVehicle(FIXED_TIMESTEP);updateWeapon(FIXED_TIMESTEP);updateProjectiles(FIXED_TIMESTEP);physicsAccumulator-=FIXED_TIMESTEP;steps++;}
+    physicsStepMs=performance.now()-physicsStart;updateVehicleVisual(physicsAccumulator/FIXED_TIMESTEP);updateCamera(frameDelta);updateAim(frameDelta);updatePickups(frameDelta);hudAccumulator+=frameDelta;radarAccumulator+=frameDelta;if(hudAccumulator>.1){hudAccumulator=0;updateHud();}if(radarAccumulator>.1){radarAccumulator=0;drawRadar();}
+  }else{physicsAccumulator=0;}
+  renderer.render(scene,camera);updateDebug(frameDelta);
+}
 animate();
 
 function getElement<T extends HTMLElement=HTMLElement>(id:string):T{const element=document.getElementById(id);if(!element)throw new Error(`Missing #${id}`);return element as T;}

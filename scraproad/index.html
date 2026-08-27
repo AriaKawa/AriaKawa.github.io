@@ -8,8 +8,8 @@
     <meta property="og:title" content="Scraproad Arena" />
     <meta property="og:description" content="A browser-playable 3D vehicle combat prototype." />
     <title>Scraproad Arena</title>
-    <script type="module" crossorigin src="./assets/index-DmEUrexd.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-BylEqaDU.css">
+    <script type="module" crossorigin src="./assets/index-BF5ewkG7.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-AVBSuX1i.css">
   </head>
   <body>
     <main id="app">
@@ -55,15 +55,16 @@
           <div><kbd>SPACE</kbd><span>Handbrake drift</span></div>
           <div><kbd>SHIFT</kbd><span>Nitro boost</span></div>
           <div><kbd>MOUSE</kbd><span>Aim roof weapon</span></div>
-          <div><kbd>LMB / F</kbd><span>Fire</span></div>
+          <div><kbd>HOLD LMB / F</kbd><span>Fire at weapon interval</span></div>
           <div><kbd>R</kbd><span>Reset vehicle</span></div>
           <div><kbd>C</kbd><span>Switch camera</span></div>
-          <div><kbd>B</kbd><span>Physics collider debug</span></div>
+          <div><kbd>F3 / H</kbd><span>Colliders + performance</span></div>
           <div><kbd>ESC</kbd><span>Pause / help</span></div>
         </div>
       </section>
 
       <div id="message" class="message" role="status" aria-live="polite"></div>
+      <pre id="physics-debug" class="physics-debug panel" hidden aria-live="off"></pre>
       <div id="crosshair" class="crosshair" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
 
       <section id="pause" class="pause" hidden>

@@ -52,6 +52,7 @@ button { font: inherit; color: inherit; }
 kbd { display:inline-block; width:max-content; min-width:26px; padding:4px 6px; border:1px solid #5d503d; border-bottom-width:2px; border-radius:2px; color:#f2d49b; background:#1e1a14; font:700 10px Inter; text-align:center; }
 .message { position:fixed; z-index:10; left:50%; top:105px; transform:translate(-50%,-8px); min-width:280px; padding:11px 20px; color:#1b150d; background:#e4a23c; font:800 14px 'Barlow Condensed'; letter-spacing:.06em; text-align:center; clip-path:polygon(4% 0,100% 0,96% 100%,0 100%); opacity:0; transition:.25s; pointer-events:none; }
 .message.show { opacity:1; transform:translate(-50%,0); }
+.physics-debug { position:fixed; z-index:12; left:18px; top:84px; min-width:245px; margin:0; padding:12px 14px; color:#7fffe8; border-color:rgba(89,255,224,.38); font:700 11px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace; letter-spacing:.025em; pointer-events:none; }
 .crosshair { position:fixed; z-index:3; left:50%; top:50%; width:28px; height:28px; transform:translate(-50%,-50%); opacity:.75; pointer-events:none; }
 .crosshair i { position:absolute; background:#f4c15b; box-shadow:0 0 4px #d4592c; }
 .crosshair i:nth-child(1),.crosshair i:nth-child(2){width:7px;height:1px;top:14px}.crosshair i:nth-child(1){left:0}.crosshair i:nth-child(2){right:0}.crosshair i:nth-child(3),.crosshair i:nth-child(4){width:1px;height:7px;left:14px}.crosshair i:nth-child(3){top:0}.crosshair i:nth-child(4){bottom:0}
