@@ -1,6 +1,17 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { MTLLoader } from "three/addons/loaders/MTLLoader.js";
+import { OBJLoader } from "three/addons/loaders/OBJLoader.js";
 import { scraproadAssetManifest } from "./assets/scraproadAssetManifest";
+import { scraproadRacekartManifest, type RacekartAssetKey } from "./assets/scraproadRacekartManifest";
+import {
+  defaultScraproadLevel,
+  scraproadArenaLayouts,
+  type AssetPlacement,
+  type DriveSurfaceSpec,
+  type ScraproadArenaLayout,
+  type ScraproadLevelId,
+} from "./game/scraproad/ScraproadArenaLayout";
 import "./style.css";
 
 type VehiclePartSlot = "roof_weapon" | "front_weapon" | "tires" | "engine" | "armor";
@@ -44,6 +55,8 @@ type RampSurface = {
   length: number;
   baseHeight: number;
   rise: number;
+  kind: "ramp" | "bridge";
+  label: string;
 };
 
 const canvas = getElement<HTMLCanvasElement>("game");
@@ -54,7 +67,7 @@ const ui = {
   tires: getElement("tires-part"), engine: getElement("engine-part"), armor: getElement("armor-part"),
   weaponState: getElement("weapon-state"), message: getElement("message"), controls: getElement("controls"),
   pause: getElement("pause"), objective: getElement("objective"), radar: getElement<HTMLCanvasElement>("radar-canvas"),
-  debug: getElement("physics-debug"),
+  debug: getElement("physics-debug"), levelSelect: getElement("level-select"),
 };
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
@@ -79,6 +92,7 @@ scene.environmentIntensity = .42;
 
 const gltfLoader = new GLTFLoader();
 const assetTemplates = new Map<string, Promise<THREE.Group>>();
+const racekartTemplates = new Map<RacekartAssetKey, Promise<THREE.Group>>();
 
 function loadAssetTemplate(path: string): Promise<THREE.Group> {
   const cached = assetTemplates.get(path);
@@ -123,6 +137,50 @@ function noteAssetFailure(path: string, error: unknown): void {
   console.error(`[Scraproad] Failed to load licensed asset: ${path}`, error);
 }
 
+function loadRacekartTemplate(key: RacekartAssetKey): Promise<THREE.Group> {
+  const cached = racekartTemplates.get(key);
+  if (cached) return cached;
+  const definition = scraproadRacekartManifest[key];
+  const pending = new Promise<THREE.Group>((resolve, reject) => {
+    new MTLLoader().load(definition.mtl, materials => {
+      materials.preload();
+      const loader = new OBJLoader();
+      loader.setMaterials(materials);
+      loader.load(definition.obj, imported => {
+        imported.updateMatrixWorld(true);
+        const bounds = new THREE.Box3().setFromObject(imported);
+        const center = bounds.getCenter(new THREE.Vector3());
+        imported.position.set(-center.x, -bounds.min.y, -center.z);
+        imported.traverse(object => {
+          if (!(object instanceof THREE.Mesh)) return;
+          object.castShadow = false;
+          object.receiveShadow = true;
+          const materialsForMesh = Array.isArray(object.material) ? object.material : [object.material];
+          for (const material of materialsForMesh) {
+            if (material instanceof THREE.MeshPhongMaterial) {
+              material.shininess = Math.min(material.shininess, 8);
+              material.specular.setHex(0x15120d);
+            }
+          }
+        });
+        const normalized = new THREE.Group();
+        normalized.name = `racekart-hilly-${key}`;
+        normalized.userData.sourceSize = bounds.getSize(new THREE.Vector3());
+        normalized.add(imported);
+        resolve(normalized);
+      }, undefined, reject);
+    }, undefined, reject);
+  });
+  racekartTemplates.set(key, pending);
+  return pending;
+}
+
+async function instantiateRacekartAsset(key: RacekartAssetKey): Promise<THREE.Group> {
+  const template = await loadRacekartTemplate(key);
+  canvas.dataset.assetsLoaded = String(Number(canvas.dataset.assetsLoaded ?? 0) + 1);
+  return template.clone(true);
+}
+
 const camera = new THREE.PerspectiveCamera(58, innerWidth / innerHeight, 0.1, 520);
 camera.position.set(0, 7, -11);
 
@@ -140,7 +198,9 @@ const metal = new THREE.MeshStandardMaterial({ color: 0x272a29, roughness: .55, 
 const darkMetal = new THREE.MeshStandardMaterial({ color: 0x151717, roughness: .67, metalness: .72 });
 const sand = new THREE.MeshStandardMaterial({ color: 0x9a6b49, roughness: 1, metalness: 0, vertexColors: true });
 const rubber = new THREE.MeshStandardMaterial({ color: 0x101111, roughness: .9, metalness: .08 });
-const ARENA_RADIUS = 116;
+let activeLayout: ScraproadArenaLayout = scraproadArenaLayouts[defaultScraproadLevel];
+let ARENA_RADIUS = activeLayout.radius;
+let levelStarted = false;
 const VEHICLE_COLLIDER_RADIUS = 1.12;
 const VEHICLE_COLLIDER_HALF_LENGTH = .95;
 const VEHICLE_COLLIDER_HEIGHT = .72;
@@ -156,15 +216,41 @@ const debugVisuals: THREE.Object3D[] = [];
 let debugPhysics = false;
 
 function getGroundHeight(x: number, z: number): number {
-  const northHill = 3.4 * Math.exp(-((x - 42) ** 2 + (z - 50) ** 2) / 520);
-  const westRise = 2.5 * Math.exp(-((x + 64) ** 2 + (z - 8) ** 2) / 430);
-  const southBump = 2.1 * Math.exp(-((x - 24) ** 2 + (z + 65) ** 2) / 340);
-  const texture = Math.sin(x * .105) * Math.cos(z * .09) * .18 + Math.sin((x + z) * .055) * .14;
-  return northHill + westRise + southBump + texture;
+  const hilly = activeLayout.id === "stuntworks";
+  const northHill = (hilly ? 4.8 : 2.5) * Math.exp(-((x - 42) ** 2 + (z - 67) ** 2) / (hilly ? 820 : 610));
+  const westRise = (hilly ? 4.1 : 2.2) * Math.exp(-((x + 82) ** 2 + (z - 12) ** 2) / (hilly ? 760 : 520));
+  const southBump = (hilly ? 3.5 : 1.7) * Math.exp(-((x - 36) ** 2 + (z + 82) ** 2) / (hilly ? 640 : 440));
+  const openBowl = -1.15 * Math.exp(-(x ** 2 + z ** 2) / 1450);
+  const texture = Math.sin(x * .07) * Math.cos(z * .065) * .1 + Math.sin((x + z) * .04) * .08;
+  return northHill + westRise + southBump + openBowl + texture;
+}
+
+function placeRacekartAsset(placement: AssetPlacement): void {
+  instantiateRacekartAsset(placement.asset).then(asset => {
+    const scale = placement.scale ?? 10;
+    const sourceSize = asset.userData.sourceSize as THREE.Vector3 | undefined;
+    const definition = scraproadRacekartManifest[placement.asset];
+    const buriedTrackOffset = definition.category === "track" && sourceSize ? -sourceSize.y * scale + .08 : 0;
+    asset.name = `racekart-hilly-${placement.asset}${placement.label ? `-${placement.label}` : ""}`;
+    asset.scale.setScalar(scale);
+    asset.position.set(placement.x, getGroundHeight(placement.x, placement.z) + (placement.y ?? buriedTrackOffset), placement.z);
+    asset.rotation.y = placement.rotation ?? 0;
+    scene.add(asset);
+  }).catch(error => noteAssetFailure(scraproadRacekartManifest[placement.asset].obj, error));
+}
+
+function addSpawnMarker(x: number, z: number, heading: number, opponent = false): void {
+  const pad = new THREE.Mesh(
+    new THREE.RingGeometry(4.2, 5.2, 24),
+    new THREE.MeshBasicMaterial({ color: opponent ? 0xd9593b : 0x5bd1c5, side: THREE.DoubleSide, transparent: true, opacity: .72 }),
+  );
+  pad.rotateX(-Math.PI / 2); pad.rotation.z = heading; pad.position.set(x, getGroundHeight(x, z) + .11, z);
+  pad.name = opponent ? "opponent-spawn-placeholder" : "player-spawn"; scene.add(pad);
 }
 
 function addArena(): void {
-  const geometry = new THREE.PlaneGeometry(250, 250, 100, 100);
+  const diameter = ARENA_RADIUS * 2 + 18;
+  const geometry = new THREE.PlaneGeometry(diameter, diameter, 112, 112);
   geometry.rotateX(-Math.PI / 2);
   const positions = geometry.attributes.position;
   for (let index = 0; index < positions.count; index++) {
@@ -186,87 +272,52 @@ function addArena(): void {
   ground.name = "arena-ground-aim-surface";
   scene.add(ground); aimSurfaces.push(ground);
 
-  const trackMaterial = new THREE.MeshStandardMaterial({ color: 0x50392b, roughness: 1, transparent: true, opacity: .84 });
-  for (let segment = 0; segment < 40; segment++) {
-    const angle = segment / 40 * Math.PI * 2;
-    const next = (segment + 1) / 40 * Math.PI * 2;
-    const x = Math.sin(angle) * 82;
-    const z = Math.cos(angle) * 69;
-    const nx = Math.sin(next) * 82;
-    const nz = Math.cos(next) * 69;
-    const strip = new THREE.Mesh(new THREE.BoxGeometry(11, .055, Math.hypot(nx - x, nz - z) + .8), trackMaterial);
-    strip.position.set((x + nx) / 2, getGroundHeight((x + nx) / 2, (z + nz) / 2) + .05, (z + nz) / 2);
-    strip.rotation.y = Math.atan2(nx - x, nz - z);
-    strip.receiveShadow = true;
-    scene.add(strip);
-  }
-
   const arenaRing = new THREE.Mesh(new THREE.RingGeometry(ARENA_RADIUS - 1, ARENA_RADIUS, 96), new THREE.MeshBasicMaterial({ color: 0x5a2c20, side: THREE.DoubleSide }));
   arenaRing.rotateX(-Math.PI / 2);
   arenaRing.position.y = .12;
   scene.add(arenaRing);
 
-  addRamp(-20, -5, Math.PI * .43);
-  addRamp(58, -28, -Math.PI * .7);
-  addRamp(-66, 43, Math.PI * .12);
-  addRamp(26, 62, Math.PI * .92);
-  addRamp(-53, -61, -Math.PI * .34);
-  addScrapGate(0, 84, 0);
-  addScrapGate(0, -84, Math.PI);
-
-  addBarrier(-35, 30, .2, 16);
-  addBarrier(45, 24, -.75, 19);
-  addBarrier(-43, -28, .72, 18);
-  addBarrier(35, -57, -.2, 15);
-  for (let segment = 0; segment < 24; segment++) {
-    const angle = segment / 24 * Math.PI * 2;
-    addBarrier(Math.sin(angle) * (ARENA_RADIUS - 2), Math.cos(angle) * (ARENA_RADIUS - 2), angle, 12, true);
+  activeLayout.terrain.forEach(placeRacekartAsset);
+  activeLayout.track.forEach(placeRacekartAsset);
+  for (const surface of activeLayout.surfaces) addRamp(surface);
+  for (const barrier of activeLayout.barriers) addBarrier(barrier.x, barrier.z, barrier.rotation, barrier.length, barrier.boundary);
+  for (let segment = 0; segment < 32; segment++) {
+    const angle = segment / 32 * Math.PI * 2;
+    addBarrier(Math.sin(angle) * (ARENA_RADIUS - 2), Math.cos(angle) * (ARENA_RADIUS - 2), angle, Math.PI * (ARENA_RADIUS - 2) / 16 + .8, true);
   }
+  addSpawnMarker(activeLayout.spawn.x, activeLayout.spawn.z, activeLayout.spawn.heading);
+  addSpawnMarker(activeLayout.opponentSpawn.x, activeLayout.opponentSpawn.z, activeLayout.opponentSpawn.heading, true);
 }
 
-function addRamp(x: number, z: number, rotation: number): void {
-  const width = 8.5, length = 14, rise = 3.8;
-  const slope = Math.asin(rise / length);
-  const baseHeight = getGroundHeight(x - Math.sin(rotation) * length * .5, z - Math.cos(rotation) * length * .5);
+function addRamp(spec: DriveSurfaceSpec): void {
+  const { x, z, rotation = 0, width, length } = spec;
+  const entryX = x - Math.sin(rotation) * length * .5, entryZ = z - Math.cos(rotation) * length * .5;
+  const exitX = x + Math.sin(rotation) * length * .5, exitZ = z + Math.cos(rotation) * length * .5;
+  const baseHeight = getGroundHeight(entryX, entryZ) + spec.startHeight;
+  const endHeight = getGroundHeight(exitX, exitZ) + spec.endHeight;
+  const rise = endHeight - baseHeight;
+  const slope = Math.atan2(rise, length);
   const ramp = new THREE.Group();
-  const collisionMaterial = new THREE.MeshStandardMaterial({ color: 0x3c3029, roughness: .9, metalness: .18, transparent: true, opacity: .18, depthWrite: false });
-  const deck = new THREE.Mesh(new THREE.BoxGeometry(width, .5, length), collisionMaterial);
+  const collisionMaterial = new THREE.MeshBasicMaterial({ color: spec.kind === "bridge" ? 0x55d7c5 : 0xffa54b, wireframe: true, transparent: true, opacity: 0 });
+  const deck = new THREE.Mesh(new THREE.BoxGeometry(width, .32, length), collisionMaterial);
   deck.rotation.x = -slope;
-  deck.position.y = rise * .5 + .01;
-  deck.name = "ramp-collider-surface";
+  deck.position.y = (baseHeight + endHeight) * .5;
+  deck.name = `${spec.kind}-collider-surface`;
   deck.castShadow = false; deck.receiveShadow = true;
   ramp.add(deck);
-  for (const side of [-width * .46, width * .46]) {
-    const rail = new THREE.Mesh(new THREE.BoxGeometry(.2, .72, length + .2), warm);
-    rail.position.set(side, rise * .5 + .42, 0); rail.rotation.x = -slope; rail.castShadow = false; rail.receiveShadow = true; ramp.add(rail);
-  }
-  ramp.position.set(x, baseHeight, z); ramp.rotation.y = rotation; scene.add(ramp);
-  instantiateAsset(scraproadAssetManifest.arena.ramp).then(asset => {
-    asset.name = "kenney-racing-kit-ramp";
-    asset.scale.set(width / .55, rise / .33, length / .73);
-    asset.rotation.y = Math.PI;
+  ramp.position.set(x, 0, z); ramp.rotation.y = rotation; scene.add(ramp);
+  instantiateRacekartAsset(spec.asset).then(asset => {
+    const sourceSize = (asset.userData.sourceSize as THREE.Vector3 | undefined) ?? new THREE.Vector3(2, 1, 1);
+    const visualHeight = Math.max(.7, spec.kind === "bridge" ? Math.max(spec.startHeight, spec.endHeight) : Math.abs(spec.endHeight - spec.startHeight));
+    asset.name = `racekart-hilly-driveable-${spec.label ?? spec.asset}`;
+    asset.scale.set(length / sourceSize.x, visualHeight / sourceSize.y, width / sourceSize.z);
+    asset.position.y = Math.min(getGroundHeight(entryX, entryZ), getGroundHeight(exitX, exitZ));
+    asset.rotation.y = spec.assetYaw ?? 0;
     ramp.add(asset);
-  }).catch(error => noteAssetFailure(scraproadAssetManifest.arena.ramp, error));
-  const surface: RampSurface = { group: ramp, deck, position: new THREE.Vector3(x, baseHeight, z), rotation, width, length, baseHeight, rise };
+  }).catch(error => noteAssetFailure(scraproadRacekartManifest[spec.asset].obj, error));
+  const surface: RampSurface = { group: ramp, deck, position: new THREE.Vector3(x, baseHeight, z), rotation, width, length, baseHeight, rise, kind: spec.kind, label: spec.label ?? spec.asset };
   ramps.push(surface); aimSurfaces.push(deck);
   const helper = new THREE.BoxHelper(deck, 0x5dff8a); helper.visible = false; scene.add(helper); debugVisuals.push(helper);
-}
-
-function addScrapGate(x: number, z: number, rotation: number): void {
-  const gate = new THREE.Group();
-  for (const side of [-6, 6]) {
-    const post = new THREE.Mesh(new THREE.BoxGeometry(.7, 5.5, .7), darkMetal);
-    post.position.set(side, 2.75, 0); post.rotation.z = side > 0 ? -.07 : .07; post.receiveShadow = true; gate.add(post);
-  }
-  const top = new THREE.Mesh(new THREE.BoxGeometry(13, .75, .75), metal);
-  top.position.y = 5.2; top.rotation.z = .02; top.receiveShadow = true; gate.add(top);
-  const sign = new THREE.Mesh(new THREE.BoxGeometry(5.5, 1.45, .2), warm);
-  sign.position.set(0, 4.6, -.5); gate.add(sign);
-  gate.position.set(x, getGroundHeight(x, z), z); gate.rotation.y = rotation; scene.add(gate);
-  for (const side of [-6, 6]) {
-    const offset = new THREE.Vector3(side, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), rotation);
-    obstacles.push({ position: new THREE.Vector3(x + offset.x, 0, z + offset.z), radius: .85, top: getGroundHeight(x + offset.x, z + offset.z) + 5.5, label: "gate post" });
-  }
 }
 
 function addBarrier(x: number, z: number, rotation: number, length: number, boundary = false): void {
@@ -274,67 +325,44 @@ function addBarrier(x: number, z: number, rotation: number, length: number, boun
   const barrier = new THREE.Mesh(new THREE.BoxGeometry(length, 1.35, .8), material);
   barrier.position.set(x, getGroundHeight(x, z) + .68, z); barrier.rotation.y = rotation; barrier.castShadow = false; barrier.receiveShadow = true;
   barrier.material.transparent = true; barrier.material.opacity = .12; barrier.material.depthWrite = false; scene.add(barrier);
-  instantiateAsset(scraproadAssetManifest.arena.barrier).then(asset => {
-    asset.name = "kenney-racing-kit-barrier";
-    asset.scale.set(length, 1.35 / .1312, .8 / .123);
+  instantiateRacekartAsset("fence").then(asset => {
+    const sourceSize = (asset.userData.sourceSize as THREE.Vector3 | undefined) ?? new THREE.Vector3(1, .4, .05);
+    asset.name = boundary ? "racekart-hilly-arena-fence" : "racekart-hilly-scrap-fence";
+    asset.scale.set(length / sourceSize.x, (boundary ? 2.6 : 1.8) / sourceSize.y, .8 / sourceSize.z);
     asset.position.set(x, getGroundHeight(x, z), z);
     asset.rotation.y = rotation;
     scene.add(asset);
-  }).catch(error => noteAssetFailure(scraproadAssetManifest.arena.barrier, error));
+  }).catch(error => noteAssetFailure(scraproadRacekartManifest.fence.obj, error));
   boxColliders.push({ position: new THREE.Vector3(x, 0, z), halfWidth: length * .5, halfLength: .4, rotation, label: boundary ? "arena wall" : "scrap barrier" });
   const helper = new THREE.BoxHelper(barrier, 0xffb347); helper.visible = false; scene.add(helper); debugVisuals.push(helper);
 }
 
 function addWorldProps(): void {
-  const rockMaterial = new THREE.MeshStandardMaterial({ color: 0x5d5044, roughness: 1 });
-  const placements = [[-88,-36,3.4],[-91,28,3.8],[86,-57,3.2],[92,19,4.2],[62,75,3],[-49,82,3.6],[15,34,2.2],[-18,-67,2.7],[51,-5,2.8],[-70,-78,3.2],[77,52,2.5]];
-  placements.forEach(([x,z,size], index) => {
-    const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(size, 0), rockMaterial);
-    rock.scale.y = .65 + (index % 3) * .12; rock.rotation.set(index*.7, index*.4, index*.2);
-    rock.position.set(x, getGroundHeight(x,z) + size*.5, z); rock.castShadow = false; rock.receiveShadow = true;
-    const ground = getGroundHeight(x, z);
-    const top = ground + size * .5 + size * rock.scale.y;
-    scene.add(rock); obstacles.push({ position: new THREE.Vector3(x,0,z), radius: size*.78, top, label: "rock" });
-  });
-  const barrelMaterial = new THREE.MeshStandardMaterial({ color: 0x8e3b22, roughness: .72, metalness: .45 });
-  [[-37,22],[68,31],[-74,-17],[28,78],[76,-11]].forEach(([x,z]) => {
-    for (let i=0;i<3;i++) {
-      const barrel = new THREE.Mesh(new THREE.CylinderGeometry(.48,.48,1.35,12), barrelMaterial);
-      barrel.position.set(x+i*.9, getGroundHeight(x+i*.9,z)+.68, z+(i%2)*.65); barrel.receiveShadow=true; scene.add(barrel);
-      for (const rimY of [-.52, .52]) {
-        const rim = new THREE.Mesh(new THREE.TorusGeometry(.49, .055, 6, 12), darkMetal);
-        rim.rotation.x = Math.PI / 2; rim.position.copy(barrel.position); rim.position.y += rimY; rim.receiveShadow = true; scene.add(rim);
-      }
+  activeLayout.props.forEach(placement => {
+    placeRacekartAsset(placement);
+    const scale = placement.scale ?? 10;
+    if (placement.asset === "rockWide" || placement.asset === "rockTall") {
+      obstacles.push({
+        position: new THREE.Vector3(placement.x, 0, placement.z),
+        radius: scale * .48,
+        top: getGroundHeight(placement.x, placement.z) + scale,
+        label: "racekart rock",
+      });
+    }
+    if (placement.asset === "hayBale") {
+      obstacles.push({
+        position: new THREE.Vector3(placement.x, 0, placement.z),
+        radius: scale * .3,
+        top: getGroundHeight(placement.x, placement.z) + scale * .55,
+        label: "hay obstacle",
+      });
     }
   });
-  for (let i=0;i<32;i++) {
-    const angle = i/32*Math.PI*2;
-    const x = Math.sin(angle)*(104+(i%2)*2), z = Math.cos(angle)*(102+(i%3));
-    instantiateAsset(scraproadAssetManifest.props.tire).then(tire => {
-      tire.name = "kenney-car-kit-debris-tire";
-      tire.scale.setScalar(1.8); tire.position.set(x, getGroundHeight(x, z) + .5, z);
-      tire.rotation.set(Math.PI / 2, angle, i * .5); scene.add(tire);
-    }).catch(error => noteAssetFailure(scraproadAssetManifest.props.tire, error));
-  }
-  const crates = [[-39,20,0],[66,29,.3],[-71,-20,.7],[26,76,1.1],[74,-14,.4]];
-  for (const [x,z,rotation] of crates) {
-    instantiateAsset(scraproadAssetManifest.props.crate).then(crate => {
-      crate.name = "kenney-car-kit-crate"; crate.scale.setScalar(1.35);
-      crate.position.set(x, getGroundHeight(x,z), z); crate.rotation.y = rotation; scene.add(crate);
-    }).catch(error => noteAssetFailure(scraproadAssetManifest.props.crate, error));
-  }
-  const pylons = [[-25,-8],[ -15,-1],[54,-34],[62,-23],[-70,38],[-62,48],[22,57],[31,67],[-58,-66],[-49,-57]];
-  for (const [x,z] of pylons) {
-    instantiateAsset(scraproadAssetManifest.arena.pylon).then(pylon => {
-      pylon.name = "kenney-racing-kit-pylon"; pylon.scale.setScalar(6.2);
-      pylon.position.set(x, getGroundHeight(x,z), z); pylon.rotation.y = (x + z) * .1; scene.add(pylon);
-    }).catch(error => noteAssetFailure(scraproadAssetManifest.arena.pylon, error));
-  }
-  for (const [x,z,rotation] of [[-12,38,.4],[55,8,-.7],[-61,-42,1.1]] as const) {
-    instantiateAsset(scraproadAssetManifest.props.bumper).then(debris => {
-      debris.name = "kenney-car-kit-scrap-bumper"; debris.scale.setScalar(1.5);
-      debris.position.set(x, getGroundHeight(x,z), z); debris.rotation.set(.1,rotation,.15); scene.add(debris);
-    }).catch(error => noteAssetFailure(scraproadAssetManifest.props.bumper, error));
+  const grassPatches = activeLayout.id === "stuntworks"
+    ? [[-124,-38],[-93,114],[-47,116],[48,116],[102,96],[124,42],[122,-104],[-105,-106]]
+    : [[-101,-48],[-96,83],[-45,104],[48,104],[100,68],[103,-73],[-69,-101]];
+  for (const [x, z] of grassPatches) {
+    placeRacekartAsset({ asset: "terrainFlat", x, z, scale: 25, label: "terrain patch" });
   }
 }
 
@@ -583,6 +611,7 @@ muzzleFlash.visible = false; scene.add(muzzleFlash);
 let fireCooldown=0; let isFireHeld=false; let muzzleFlashLife=0; let weaponStateLife=0;
 let messageTimer=0; let paused=false; let cameraMode=0; let elapsed=0;
 const rampSmokeTest = new URLSearchParams(location.search).get("physics-smoke") === "ramp";
+const bridgeSmokeTest = new URLSearchParams(location.search).get("physics-smoke") === "bridge";
 const holdFireSmokeTest = new URLSearchParams(location.search).get("input-smoke") === "hold-fire";
 const soundtrack = new Audio("./assets/nitro-games.wav");
 soundtrack.loop = true;
@@ -788,7 +817,7 @@ function updateCamera(dt:number): void {
 
 function updatePickups(dt:number):void{for(const pickup of pickups){if(pickup.collected)continue;pickup.group.rotation.y+=dt*.8;const item=pickup.group.children[2];item.position.y=1.1+Math.sin(elapsed*2.4+pickup.group.position.x)*.18;}}
 
-function updateHud():void{ui.speed.textContent=String(Math.round(Math.abs(vehicle.speed)*4.2));ui.boost.textContent=String(Math.round(vehicle.boost));ui.health.textContent=String(Math.round(vehicle.health));ui.healthBar.style.width=`${vehicle.health/stats.maxHealth*100}%`;canvas.dataset.groundContact=vehicle.grounded?(vehicle.activeRamp?"ramp":"terrain"):"airborne";canvas.dataset.aimRay=aimReady?"locked":"searching";canvas.dataset.aimPoint=`${aimPoint.x.toFixed(1)},${aimPoint.y.toFixed(1)},${aimPoint.z.toFixed(1)}`;canvas.dataset.vehiclePosition=`${vehicle.position.x.toFixed(1)},${vehicle.position.y.toFixed(1)},${vehicle.position.z.toFixed(1)}`;if(rampSmokeTest&&vehicle.activeRamp)canvas.dataset.rampDriveUp="passed";if(rampSmokeTest&&!vehicle.grounded&&canvas.dataset.rampDriveUp==="passed")canvas.dataset.rampLaunch="passed";}
+function updateHud():void{ui.speed.textContent=String(Math.round(Math.abs(vehicle.speed)*4.2));ui.boost.textContent=String(Math.round(vehicle.boost));ui.health.textContent=String(Math.round(vehicle.health));ui.healthBar.style.width=`${vehicle.health/stats.maxHealth*100}%`;canvas.dataset.groundContact=vehicle.grounded?(vehicle.activeRamp?vehicle.activeRamp.kind:"terrain"):"airborne";canvas.dataset.aimRay=aimReady?"locked":"searching";canvas.dataset.aimPoint=`${aimPoint.x.toFixed(1)},${aimPoint.y.toFixed(1)},${aimPoint.z.toFixed(1)}`;canvas.dataset.vehiclePosition=`${vehicle.position.x.toFixed(1)},${vehicle.position.y.toFixed(1)},${vehicle.position.z.toFixed(1)}`;if(rampSmokeTest&&vehicle.activeRamp?.kind==="ramp")canvas.dataset.rampDriveUp="passed";if(rampSmokeTest&&!vehicle.grounded&&canvas.dataset.rampDriveUp==="passed")canvas.dataset.rampLaunch="passed";if(bridgeSmokeTest&&vehicle.activeRamp?.kind==="bridge"){canvas.dataset.bridgeDriveUp="passed";if(vehicle.position.y>getGroundHeight(vehicle.position.x,vehicle.position.z)+3)canvas.dataset.bridgeCrossing="passed";}}
 
 function drawRadar():void{const context=ui.radar.getContext("2d");if(!context)return;const size=160,center=80,scale=.58;context.clearRect(0,0,size,size);context.strokeStyle="rgba(213,183,119,.13)";context.lineWidth=1;for(const radius of [24,48,72]){context.beginPath();context.arc(center,center,radius,0,Math.PI*2);context.stroke();}context.beginPath();context.moveTo(center,8);context.lineTo(center,152);context.moveTo(8,center);context.lineTo(152,center);context.stroke();const plot=(x:number,z:number,color:string,radius:number)=>{const dx=(x-vehicle.position.x)*scale,dz=(z-vehicle.position.z)*scale;const angle=-vehicle.heading;const px=dx*Math.cos(angle)-dz*Math.sin(angle),py=dx*Math.sin(angle)+dz*Math.cos(angle);if(Math.hypot(px,py)>73)return;context.fillStyle=color;context.beginPath();context.arc(center+px,center-py,radius,0,Math.PI*2);context.fill();};pickups.forEach(p=>{if(!p.collected)plot(p.group.position.x,p.group.position.z,"#57dbe3",2.7)});targets.forEach(t=>{if(t.alive)plot(t.group.position.x,t.group.position.z,"#ef6846",3)});context.save();context.translate(center,center);context.fillStyle="#f3ce79";context.beginPath();context.moveTo(0,-7);context.lineTo(5,6);context.lineTo(0,3);context.lineTo(-5,6);context.closePath();context.fill();context.restore();}
 
@@ -814,38 +843,66 @@ function updateVehicleVisual(alpha:number):void{
 }
 
 function resetVehicle():void{
-  setFireHeld(false);vehicle.position.set(0,getGroundHeight(0,-28)+.06,-28);vehicle.heading=0;vehicle.speed=0;vehicle.driftAngle=0;vehicle.verticalVelocity=0;vehicle.pitch=0;vehicle.roll=0;vehicle.grounded=true;vehicle.activeRamp=null;vehicle.health=Math.max(vehicle.health,Math.min(stats.maxHealth,65));vehicle.boost=100;capturePhysicsPose();car.position.copy(vehicle.position);car.rotation.set(0,0,0);camera.position.set(0,vehicle.position.y+6.3,-39.5);cameraLook.copy(vehicle.position);cameraLook.y+=1.2;showMessage("RIG RECOVERED // SYSTEMS ONLINE");
+  const spawn = activeLayout.spawn;
+  setFireHeld(false);vehicle.position.set(spawn.x,getGroundHeight(spawn.x,spawn.z)+.06,spawn.z);vehicle.heading=spawn.heading;vehicle.speed=0;vehicle.driftAngle=0;vehicle.verticalVelocity=0;vehicle.pitch=0;vehicle.roll=0;vehicle.grounded=true;vehicle.activeRamp=null;vehicle.health=Math.max(vehicle.health,Math.min(stats.maxHealth,65));vehicle.boost=100;capturePhysicsPose();car.position.copy(vehicle.position);car.rotation.set(0,spawn.heading,0);camera.position.set(spawn.x,vehicle.position.y+6.3,spawn.z-11.5);cameraLook.copy(vehicle.position);cameraLook.y+=1.2;showMessage("RIG RECOVERED // SYSTEMS ONLINE");
 }
 
-function togglePause(force?:boolean):void{paused=force??!paused;if(paused)setFireHeld(false);ui.pause.hidden=!paused;}
+function togglePause(force?:boolean):void{if(!levelStarted)return;paused=force??!paused;if(paused)setFireHeld(false);ui.pause.hidden=!paused;}
 function toggleControls(show?:boolean):void{ui.controls.classList.toggle("closed",show===undefined?!ui.controls.classList.contains("closed"):!show);}
-function toggleDebug():void{debugPhysics=!debugPhysics;debugVisuals.forEach(item=>item.visible=debugPhysics);vehicleColliderDebug.visible=debugPhysics;ui.debug.hidden=!debugPhysics;showMessage(debugPhysics?`PHYSICS DEBUG // ${vehicle.grounded?"GROUNDED":"AIRBORNE"}`:"PHYSICS DEBUG // OFF");}
+function toggleDebug():void{if(!levelStarted)return;debugPhysics=!debugPhysics;debugVisuals.forEach(item=>item.visible=debugPhysics);vehicleColliderDebug.visible=debugPhysics;ui.debug.hidden=!debugPhysics;showMessage(debugPhysics?`PHYSICS DEBUG // ${vehicle.grounded?"GROUNDED":"AIRBORNE"}`:"PHYSICS DEBUG // OFF");}
 
 canvas.dataset.assetsLoaded="0";canvas.dataset.assetErrors="0";canvas.dataset.assetManifest="scraproadAssetManifest";
-addArena();addWorldProps();registerPhysicsDebug();buildCar();
-createPickup(-44,-34,"tires");createPickup(43,17,"engine");createPickup(73,-49,"armor");createPickup(-9,57,"weapon");createPickup(-76,53,"repair");createPickup(31,-78,"repair");
-createTarget(-29,16,.4);createTarget(21,36,-.5);createTarget(59,57,1.2);createTarget(81,5,-1.2);createTarget(43,-48,2.5);createTarget(-25,-72,.2);createTarget(-70,-44,-.8);createTarget(-84,22,1.6);
-canvas.dataset.prototype="scraproad-1v1-foundation";canvas.dataset.arenaRadius=String(ARENA_RADIUS);canvas.dataset.rampColliders=String(ramps.length);canvas.dataset.majorColliders=String(obstacles.length+boxColliders.length);canvas.dataset.vehicleCollider="low-capsule-2.24x4.14x0.72";canvas.dataset.shotsFired="0";canvas.dataset.fireHeld="false";
-if(rampSmokeTest){
-  const ramp=ramps[0];
-  const offset=new THREE.Vector3(0,0,-ramp.length*.5-3).applyAxisAngle(new THREE.Vector3(0,1,0),ramp.rotation);
-  vehicle.position.set(ramp.position.x+offset.x,getGroundHeight(ramp.position.x+offset.x,ramp.position.z+offset.z)+.06,ramp.position.z+offset.z);
-  vehicle.heading=ramp.rotation;car.position.copy(vehicle.position);
-  canvas.dataset.rampDriveUp="pending";canvas.dataset.rampLaunch="pending";input.add("KeyW");
-  for(let step=0;step<300&&canvas.dataset.rampLaunch!=="passed";step++){
-    elapsed+=1/60;updateVehicle(1/60);updateHud();
-  }
-  input.delete("KeyW");canvas.dataset.physicsSmoke="complete";
-}
-if(holdFireSmokeTest){
-  aimPoint.copy(vehicle.position).add(new THREE.Vector3(0,1,40));aimReady=true;car.updateMatrixWorld(true);setFireHeld(true);
-  for(let step=0;step<120;step++)updateWeapon(FIXED_TIMESTEP);
-  setFireHeld(false);const smokeShots=Number(canvas.dataset.shotsFired??0);const shotLimit=Math.ceil(2*weaponStats.fireRate)+1;
-  canvas.dataset.holdFireSmoke=smokeShots>=2&&smokeShots<=shotLimit?"passed":"failed";canvas.dataset.fireRateLimited=smokeShots<=shotLimit?"passed":"failed";canvas.dataset.holdFireShots=String(smokeShots);
-}
-showMessage(rampSmokeTest?"RAMP SMOKE TEST // AUTO DRIVE":holdFireSmokeTest?"HOLD-FIRE SMOKE TEST // COMPLETE":"1V1 PROVING GROUND // PHYSICS ONLINE");setTimeout(()=>toggleControls(false),4200);
 
-window.addEventListener("keydown",event=>{if(["KeyW","KeyA","KeyS","KeyD","Space","ShiftLeft","KeyF","F3"].includes(event.code))event.preventDefault();if(event.repeat)return;if(event.code==="Escape"){togglePause();return;}if(event.code==="KeyR")resetVehicle();if(event.code==="KeyC"){cameraMode=(cameraMode+1)%2;showMessage(cameraMode?"CAMERA // OVERWATCH":"CAMERA // CHASE");}if(event.code==="KeyB"||event.code==="KeyH"||event.code==="F3")toggleDebug();if(event.code==="KeyF")setFireHeld(true);input.add(event.code);});
+function runSmokeRoutes(): void {
+  if(rampSmokeTest){
+    const ramp=ramps[0];
+    const offset=new THREE.Vector3(0,0,-ramp.length*.5-3).applyAxisAngle(new THREE.Vector3(0,1,0),ramp.rotation);
+    vehicle.position.set(ramp.position.x+offset.x,getGroundHeight(ramp.position.x+offset.x,ramp.position.z+offset.z)+.06,ramp.position.z+offset.z);
+    vehicle.heading=ramp.rotation;car.position.copy(vehicle.position);
+    canvas.dataset.rampDriveUp="pending";canvas.dataset.rampLaunch="pending";input.add("KeyW");
+    for(let step=0;step<360&&canvas.dataset.rampLaunch!=="passed";step++){
+      elapsed+=1/60;updateVehicle(1/60);updateHud();
+    }
+    input.delete("KeyW");canvas.dataset.physicsSmoke="complete";
+  }
+  if(bridgeSmokeTest){
+    const bridge=ramps.find(surface=>surface.kind==="bridge");
+    if(bridge){
+      const offset=new THREE.Vector3(0,0,-bridge.length*.5-3).applyAxisAngle(new THREE.Vector3(0,1,0),bridge.rotation);
+      vehicle.position.set(bridge.position.x+offset.x,getGroundHeight(bridge.position.x+offset.x,bridge.position.z+offset.z)+.06,bridge.position.z+offset.z);
+      vehicle.heading=bridge.rotation;car.position.copy(vehicle.position);canvas.dataset.bridgeDriveUp="pending";canvas.dataset.bridgeCrossing="pending";input.add("KeyW");
+      for(let step=0;step<520&&canvas.dataset.bridgeCrossing!=="passed";step++){elapsed+=1/60;updateVehicle(1/60);updateHud();}
+      input.delete("KeyW");canvas.dataset.bridgeSmoke="complete";
+    }
+  }
+  if(holdFireSmokeTest){
+    aimPoint.copy(vehicle.position).add(new THREE.Vector3(0,1,40));aimReady=true;car.updateMatrixWorld(true);setFireHeld(true);
+    for(let step=0;step<120;step++)updateWeapon(FIXED_TIMESTEP);
+    setFireHeld(false);const smokeShots=Number(canvas.dataset.shotsFired??0);const shotLimit=Math.ceil(2*weaponStats.fireRate)+1;
+    canvas.dataset.holdFireSmoke=smokeShots>=2&&smokeShots<=shotLimit?"passed":"failed";canvas.dataset.fireRateLimited=smokeShots<=shotLimit?"passed":"failed";canvas.dataset.holdFireShots=String(smokeShots);
+  }
+}
+
+function startLevel(levelId: ScraproadLevelId): void {
+  if (levelStarted) return;
+  activeLayout = scraproadArenaLayouts[levelId]; ARENA_RADIUS = activeLayout.radius;
+  addArena(); addWorldProps(); registerPhysicsDebug(); buildCar();
+  activeLayout.pickups.forEach(pickup => createPickup(pickup.x, pickup.z, pickup.kind));
+  activeLayout.targets.forEach(target => createTarget(target.x, target.z, target.rotation));
+  ui.targets.textContent = String(activeLayout.targets.length);
+  ui.objective.innerHTML = `<small>${activeLayout.callsign}</small><b>${activeLayout.objective}</b>`;
+  canvas.dataset.prototype="scraproad-1v1-foundation";canvas.dataset.arenaLayout=activeLayout.id;canvas.dataset.arenaRadius=String(ARENA_RADIUS);canvas.dataset.rampColliders=String(ramps.filter(ramp=>ramp.kind==="ramp").length);canvas.dataset.bridgeColliders=String(ramps.filter(ramp=>ramp.kind==="bridge").length);canvas.dataset.majorColliders=String(obstacles.length+boxColliders.length);canvas.dataset.vehicleCollider="low-capsule-2.24x4.14x0.72";canvas.dataset.shotsFired="0";canvas.dataset.fireHeld="false";canvas.dataset.racekartAssets="modular-racekart-track-hilly";
+  levelStarted = true; paused = false; ui.levelSelect.hidden = true; resetVehicle(); runSmokeRoutes();
+  showMessage(rampSmokeTest?"RAMP SMOKE TEST // AUTO DRIVE":bridgeSmokeTest?"BRIDGE SMOKE TEST // AUTO DRIVE":holdFireSmokeTest?"HOLD-FIRE SMOKE TEST // COMPLETE":`${activeLayout.name.toUpperCase()} // DEPLOYED`);
+}
+
+document.querySelectorAll<HTMLButtonElement>("[data-level]").forEach(button => {
+  button.addEventListener("click", () => startLevel(button.dataset.level as ScraproadLevelId));
+});
+const requestedLevel = new URLSearchParams(location.search).get("level") as ScraproadLevelId | null;
+if (rampSmokeTest || bridgeSmokeTest || holdFireSmokeTest || (requestedLevel && requestedLevel in scraproadArenaLayouts)) startLevel(requestedLevel && requestedLevel in scraproadArenaLayouts ? requestedLevel : defaultScraproadLevel);
+
+window.addEventListener("keydown",event=>{if(["KeyW","KeyA","KeyS","KeyD","Space","ShiftLeft","KeyF","F3"].includes(event.code))event.preventDefault();if(event.repeat||!levelStarted)return;if(event.code==="Escape"){togglePause();return;}if(event.code==="KeyR")resetVehicle();if(event.code==="KeyC"){cameraMode=(cameraMode+1)%2;showMessage(cameraMode?"CAMERA // OVERWATCH":"CAMERA // CHASE");}if(event.code==="KeyB"||event.code==="KeyH"||event.code==="F3")toggleDebug();if(event.code==="KeyF")setFireHeld(true);input.add(event.code);});
 window.addEventListener("keyup",event=>{input.delete(event.code);if(event.code==="KeyF")setFireHeld(false);});
 canvas.addEventListener("pointermove",event=>{const bounds=canvas.getBoundingClientRect();mouse.x=(event.clientX-bounds.left)/bounds.width*2-1;mouse.y=-(event.clientY-bounds.top)/bounds.height*2+1;const crosshair=getElement("crosshair");crosshair.style.left=`${event.clientX}px`;crosshair.style.top=`${event.clientY}px`;});
 canvas.addEventListener("pointerdown",event=>{if(event.button===0)setFireHeld(true);});
@@ -869,7 +926,7 @@ function updateDebug(frameDelta:number):void{
 }
 function animate():void{
   requestAnimationFrame(animate);const frameDelta=Math.min(clock.getDelta(),MAX_FRAME_DELTA);
-  if(!paused){
+  if(!paused&&levelStarted){
     physicsAccumulator=Math.min(physicsAccumulator+frameDelta,FIXED_TIMESTEP*MAX_PHYSICS_STEPS);
     const physicsStart=performance.now();let steps=0;
     while(physicsAccumulator>=FIXED_TIMESTEP&&steps<MAX_PHYSICS_STEPS){capturePhysicsPose();elapsed+=FIXED_TIMESTEP;updateVehicle(FIXED_TIMESTEP);updateWeapon(FIXED_TIMESTEP);updateProjectiles(FIXED_TIMESTEP);physicsAccumulator-=FIXED_TIMESTEP;steps++;}

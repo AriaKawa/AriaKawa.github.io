@@ -2,6 +2,18 @@
 
 ## CC0 3D assets
 
+### Modular Racekart Track — Hilly Terrain Theme
+
+- **Creator:** Keith at Fertile Soil Productions
+- **Source:** https://fertile-soil-productions.itch.io/modular-racekart-track-hilly-terrain-theme
+- **License:** Creative Commons Zero (CC0) 1.0 Universal / public domain dedication.
+- **Pack listing:** Name your own price; more than 200 low-poly modular terrain, track, bridge, incline, and prop pieces.
+- **Use in Scraproad:** Terrain accents, outer-loop track sections, banked pieces, stunt ramps, elevated bridge routes, arena fences, rocks, hay obstacles, and spawn arches in both selectable arenas.
+- **Files included:** A curated set of 20 OBJ/MTL pairs under `assets/scraproad/racekart-hilly/`; the complete source archive is not redistributed.
+- **Local license/source note:** `assets/scraproad/racekart-hilly/LICENSE-CC0.txt`
+
+Credit is not required by CC0, but Scraproad documents the pack and creator by choice.
+
 ### Kenney Car Kit 3.1
 
 - **Creator:** Kenney
@@ -20,11 +32,11 @@
 - **Files used:** `kenney-ramp.glb`, `kenney-barrier-wall.glb`, and `kenney-pylon.glb` (renamed from the pack's `ramp.glb`, `barrierWall.glb`, and `pylon.glb`).
 - **Local license copy:** `assets/scraproad/licenses/kenney-racing-kit.txt`
 
-Only the listed GLB files were imported; the complete source archives are not included in the website.
+Only the listed GLB files were imported; the complete Kenney source archives are not included in the website.
 
 ## Original game visuals
 
-The roof cannon, terrain mesh and vertex colors, rocks, barrels, pickups, targets, particles, collision helpers, and effects are original procedural geometry and materials created for this prototype. The simple hidden/translucent ramp and barrier meshes remain as stable gameplay/aiming surfaces beneath the licensed visuals.
+The roof cannon, smooth base terrain, spawn pads, pickups, targets, particles, collision helpers, and effects are original procedural geometry and materials created for this prototype. Simple invisible compound surfaces remain beneath the Racekart Hilly ramps, bridges, fences, and terrain so vehicle collision is forgiving and aligned without making decorative OBJ geometry dynamic.
 
 ## Original media
 

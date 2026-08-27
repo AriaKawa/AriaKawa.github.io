@@ -1,0 +1,11 @@
+Modular Racekart Track - Hilly Terrain Theme
+Creator: Keith at Fertile Soil Productions
+Source: https://fertile-soil-productions.itch.io/modular-racekart-track-hilly-terrain-theme
+License: Creative Commons Zero v1.0 Universal (CC0 1.0)
+License text: https://creativecommons.org/publicdomain/zero/1.0/
+
+The original pack is listed as a name-your-own-price download and includes more than
+200 low-poly modular terrain, track, bridge, incline, and prop pieces. Scraproad uses
+a curated subset of OBJ/MTL pairs for its selectable stunt-combat arenas.
+
+CC0 does not require attribution. This note is included for provenance and thanks.
