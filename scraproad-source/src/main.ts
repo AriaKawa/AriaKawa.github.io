@@ -236,13 +236,9 @@ contactDebug.name = "vehicle-surface-contact"; contactDebug.renderOrder = 30; co
 scene.add(contactDebug); debugVisuals.push(contactDebug);
 
 function getGroundHeight(x: number, z: number): number {
-  const hilly = activeLayout.id === "stuntworks";
-  const northHill = (hilly ? 4.8 : 2.5) * Math.exp(-((x - 42) ** 2 + (z - 67) ** 2) / (hilly ? 820 : 610));
-  const westRise = (hilly ? 4.1 : 2.2) * Math.exp(-((x + 82) ** 2 + (z - 12) ** 2) / (hilly ? 760 : 520));
-  const southBump = (hilly ? 3.5 : 1.7) * Math.exp(-((x - 36) ** 2 + (z + 82) ** 2) / (hilly ? 640 : 440));
-  const openBowl = -1.15 * Math.exp(-(x ** 2 + z ** 2) / 1450);
-  const texture = Math.sin(x * .07) * Math.cos(z * .065) * .1 + Math.sin((x + z) * .04) * .08;
-  return northHill + westRise + southBump + openBowl + texture;
+  // The combat bowl is intentionally flat. A tiny visual undulation keeps the
+  // dirt from feeling synthetic without upsetting steering or ramp seams.
+  return Math.sin(x * .055) * Math.cos(z * .05) * .035;
 }
 
 function registerDriveHeightfield(
@@ -302,7 +298,7 @@ async function placeRacekartAsset(placement: AssetPlacement): Promise<void> {
 function addSpawnMarker(x: number, z: number, heading: number, opponent = false): void {
   const pad = new THREE.Mesh(
     new THREE.RingGeometry(4.2, 5.2, 24),
-    new THREE.MeshBasicMaterial({ color: opponent ? 0xd9593b : 0x5bd1c5, side: THREE.DoubleSide, transparent: true, opacity: .72 }),
+    new THREE.MeshBasicMaterial({ color: opponent ? 0xa94b32 : 0xd89a46, side: THREE.DoubleSide, transparent: true, opacity: .68 }),
   );
   pad.rotateX(-Math.PI / 2); pad.rotation.z = heading; pad.position.set(x, getGroundHeight(x, z) + .11, z);
   pad.name = opponent ? "opponent-spawn-placeholder" : "player-spawn"; scene.add(pad);
@@ -317,10 +313,10 @@ async function addArena(): Promise<void> {
     positions.setY(index, getGroundHeight(positions.getX(index), positions.getZ(index)));
   }
   const groundColors = new Float32Array(positions.count * 3);
-  const low = new THREE.Color(0x74513b), high = new THREE.Color(0xb07a50), color = new THREE.Color();
+  const low = new THREE.Color(0x75513a), high = new THREE.Color(0xa8734e), color = new THREE.Color();
   for (let index = 0; index < positions.count; index++) {
     const x = positions.getX(index), z = positions.getZ(index);
-    const variation = THREE.MathUtils.clamp(.42 + getGroundHeight(x, z) * .08 + Math.sin(x * .31 + z * .17) * .11, 0, 1);
+    const variation = THREE.MathUtils.clamp(.46 + Math.sin(x * .19 + z * .13) * .1 + Math.cos(x * .07 - z * .11) * .06, 0, 1);
     color.copy(low).lerp(high, variation);
     color.toArray(groundColors, index * 3);
   }
@@ -332,10 +328,29 @@ async function addArena(): Promise<void> {
   ground.name = "arena-ground-aim-surface";
   scene.add(ground); aimSurfaces.push(ground);
 
-  const arenaRing = new THREE.Mesh(new THREE.RingGeometry(ARENA_RADIUS - 1, ARENA_RADIUS, 96), new THREE.MeshBasicMaterial({ color: 0x5a2c20, side: THREE.DoubleSide }));
-  arenaRing.rotateX(-Math.PI / 2);
-  arenaRing.position.y = .12;
-  scene.add(arenaRing);
+  const trackMaterial = new THREE.MeshStandardMaterial({ color: 0x3f3d38, roughness: .94, metalness: .02, side: THREE.DoubleSide });
+  const ringTrack = new THREE.Mesh(new THREE.RingGeometry(activeLayout.ringInnerRadius, activeLayout.ringOuterRadius, 128), trackMaterial);
+  ringTrack.rotateX(-Math.PI / 2); ringTrack.position.y = .055; ringTrack.receiveShadow = true; ringTrack.name = "continuous-circular-ring-track"; scene.add(ringTrack);
+
+  const centerPad = new THREE.Mesh(
+    new THREE.CircleGeometry(activeLayout.ringInnerRadius - 2.5, 96),
+    new THREE.MeshStandardMaterial({ color: 0x8b5c3e, roughness: 1, metalness: 0, side: THREE.DoubleSide }),
+  );
+  centerPad.rotateX(-Math.PI / 2); centerPad.position.y = .04; centerPad.receiveShadow = true; centerPad.name = "central-combat-bowl"; scene.add(centerPad);
+
+  for (const [radius, color, width] of [
+    [activeLayout.ringInnerRadius, 0xb96a32, .65],
+    [activeLayout.ringOuterRadius, 0x8e938e, .85],
+  ] as const) {
+    const curb = new THREE.Mesh(new THREE.RingGeometry(radius - width, radius + width, 128), new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide }));
+    curb.rotateX(-Math.PI / 2); curb.position.y = .075; curb.name = radius === activeLayout.ringInnerRadius ? "rust-inner-track-edge" : "concrete-outer-track-edge"; scene.add(curb);
+  }
+  const laneRadius = (activeLayout.ringInnerRadius + activeLayout.ringOuterRadius) * .5;
+  for (let marker = 0; marker < 32; marker++) {
+    const angle = marker / 32 * Math.PI * 2;
+    const dash = new THREE.Mesh(new THREE.BoxGeometry(.32, .035, 4.8), new THREE.MeshBasicMaterial({ color: 0xc8aa74 }));
+    dash.position.set(Math.sin(angle) * laneRadius, .095, Math.cos(angle) * laneRadius); dash.rotation.y = angle; dash.name = "ring-lane-marker"; scene.add(dash);
+  }
 
   await Promise.all([
     ...activeLayout.terrain.map(placeRacekartAsset),
@@ -343,9 +358,9 @@ async function addArena(): Promise<void> {
     ...activeLayout.surfaces.map(addRamp),
   ]);
   for (const barrier of activeLayout.barriers) addBarrier(barrier.x, barrier.z, barrier.rotation, barrier.length, barrier.boundary);
-  for (let segment = 0; segment < 32; segment++) {
-    const angle = segment / 32 * Math.PI * 2;
-    addBarrier(Math.sin(angle) * (ARENA_RADIUS - 2), Math.cos(angle) * (ARENA_RADIUS - 2), angle, Math.PI * (ARENA_RADIUS - 2) / 16 + .8, true);
+  for (let segment = 0; segment < 36; segment++) {
+    const angle = segment / 36 * Math.PI * 2;
+    addBarrier(Math.sin(angle) * (ARENA_RADIUS - 2), Math.cos(angle) * (ARENA_RADIUS - 2), angle, Math.PI * (ARENA_RADIUS - 2) / 18 + .6, true);
   }
   addSpawnMarker(activeLayout.spawn.x, activeLayout.spawn.z, activeLayout.spawn.heading);
   addSpawnMarker(activeLayout.opponentSpawn.x, activeLayout.opponentSpawn.z, activeLayout.opponentSpawn.heading, true);
@@ -439,11 +454,7 @@ async function addWorldProps(): Promise<void> {
     }
     return placeRacekartAsset(placement);
   });
-  const grassPatches = activeLayout.id === "stuntworks"
-    ? [[-124,-38],[-93,114],[-47,116],[48,116],[102,96],[124,42],[122,-104],[-105,-106]]
-    : [[-101,-48],[-96,83],[-45,104],[48,104],[100,68],[103,-73],[-69,-101]];
-  const terrainLoads = grassPatches.map(([x, z]) => placeRacekartAsset({ asset: "terrainFlat", x, z, scale: 25, label: "terrain patch" }));
-  await Promise.all([...propLoads, ...terrainLoads]);
+  await Promise.all(propLoads);
 }
 
 function analyticRampSample(x: number, z: number): DriveSurfaceSample | null {
@@ -552,6 +563,31 @@ function registerPhysicsDebug(): void {
     marker.position.set(obstacle.position.x, ground + height * .5, obstacle.position.z);
     marker.visible = false; scene.add(marker); debugVisuals.push(marker);
   }
+}
+
+function auditArenaFlow(): void {
+  const laneRadius = (activeLayout.ringInnerRadius + activeLayout.ringOuterRadius) * .5;
+  const sampleCount = 72;
+  let clearSamples = 0;
+  for (let sample = 0; sample < sampleCount; sample++) {
+    const angle = sample / sampleCount * Math.PI * 2;
+    const x = Math.sin(angle) * laneRadius, z = Math.cos(angle) * laneRadius;
+    const obstacleBlocked = obstacles.some(obstacle => Math.hypot(x - obstacle.position.x, z - obstacle.position.z) < obstacle.radius + 2.2);
+    const barrierBlocked = boxColliders.some(collider => {
+      if (collider.label === "arena wall") return false;
+      const dx = x - collider.position.x, dz = z - collider.position.z;
+      const cosine = Math.cos(collider.rotation), sine = Math.sin(collider.rotation);
+      const localX = dx * cosine - dz * sine, localZ = dx * sine + dz * cosine;
+      return Math.abs(localX) < collider.halfWidth + 2.2 && Math.abs(localZ) < collider.halfLength + 2.2;
+    });
+    if (!obstacleBlocked && !barrierBlocked && Math.abs(getGroundHeight(x, z)) < .1) clearSamples++;
+  }
+  canvas.dataset.ringSampleCount = String(sampleCount);
+  canvas.dataset.ringClearSamples = String(clearSamples);
+  canvas.dataset.ringTrackDrivable = clearSamples === sampleCount ? "passed" : "failed";
+  canvas.dataset.centralCombatArea = activeLayout.ringInnerRadius >= 50 ? "passed" : "failed";
+  canvas.dataset.targetArea = activeLayout.targets.length >= 3 ? "passed" : "failed";
+  canvas.dataset.futureSpawnSides = activeLayout.spawn.z * activeLayout.opponentSpawn.z < 0 ? "passed" : "failed";
 }
 
 const car = new THREE.Group();
@@ -727,7 +763,6 @@ muzzleFlash.visible = false; scene.add(muzzleFlash);
 let fireCooldown=0; let isFireHeld=false; let muzzleFlashLife=0; let weaponStateLife=0;
 let messageTimer=0; let paused=false; let cameraMode=0; let elapsed=0;
 const rampSmokeTest = new URLSearchParams(location.search).get("physics-smoke") === "ramp";
-const bridgeSmokeTest = new URLSearchParams(location.search).get("physics-smoke") === "bridge";
 const allSurfaceSmokeTest = new URLSearchParams(location.search).get("physics-smoke") === "all-surfaces";
 const holdFireSmokeTest = new URLSearchParams(location.search).get("input-smoke") === "hold-fire";
 const soundtrack = new Audio("./assets/nitro-games.wav");
@@ -943,7 +978,6 @@ function updateHud():void{
   canvas.dataset.surfaceLabel=contact?.ramp.label??"base terrain";canvas.dataset.surfaceHeight=(contact?.height??baseHeight).toFixed(2);canvas.dataset.baseGroundHeight=baseHeight.toFixed(2);canvas.dataset.contactDelta=((contact?.height??baseHeight)-baseHeight).toFixed(2);canvas.dataset.heightMismatch=contact?Math.abs(vehicle.position.y-.06-contact.height).toFixed(3):"0.000";
   contactDebug.position.set(vehicle.position.x,(contact?.height??baseHeight)+.16,vehicle.position.z);
   if(rampSmokeTest&&vehicle.activeRamp?.kind==="ramp")canvas.dataset.rampDriveUp="passed";if(rampSmokeTest&&!vehicle.grounded&&canvas.dataset.rampDriveUp==="passed")canvas.dataset.rampLaunch="passed";
-  if(bridgeSmokeTest&&vehicle.activeRamp?.kind==="bridge"){canvas.dataset.bridgeDriveUp="passed";if(vehicle.position.y>baseHeight+3)canvas.dataset.bridgeCrossing="passed";}
 }
 
 function drawRadar():void{const context=ui.radar.getContext("2d");if(!context)return;const size=160,center=80,scale=.58;context.clearRect(0,0,size,size);context.strokeStyle="rgba(213,183,119,.13)";context.lineWidth=1;for(const radius of [24,48,72]){context.beginPath();context.arc(center,center,radius,0,Math.PI*2);context.stroke();}context.beginPath();context.moveTo(center,8);context.lineTo(center,152);context.moveTo(8,center);context.lineTo(152,center);context.stroke();const plot=(x:number,z:number,color:string,radius:number)=>{const dx=(x-vehicle.position.x)*scale,dz=(z-vehicle.position.z)*scale;const angle=-vehicle.heading;const px=dx*Math.cos(angle)-dz*Math.sin(angle),py=dx*Math.sin(angle)+dz*Math.cos(angle);if(Math.hypot(px,py)>73)return;context.fillStyle=color;context.beginPath();context.arc(center+px,center-py,radius,0,Math.PI*2);context.fill();};pickups.forEach(p=>{if(!p.collected)plot(p.group.position.x,p.group.position.z,"#57dbe3",2.7)});targets.forEach(t=>{if(t.alive)plot(t.group.position.x,t.group.position.z,"#ef6846",3)});context.save();context.translate(center,center);context.fillStyle="#f3ce79";context.beginPath();context.moveTo(0,-7);context.lineTo(5,6);context.lineTo(0,3);context.lineTo(-5,6);context.closePath();context.fill();context.restore();}
@@ -1005,25 +1039,10 @@ function runRampTraversalSuite(): boolean {
   return failures.length===0;
 }
 
-function runBridgeTraversalSuite(): boolean {
-  const bridgeSurfaces=ramps.filter(surface=>surface.kind==="bridge");const first=bridgeSurfaces[0];if(!first)return false;
-  prepareSurfaceTest(first);const touched=new Set<string>();let elevated=false,exited=false;input.add("KeyW");
-  for(let step=0;step<760;step++){
-    elapsed+=FIXED_TIMESTEP;updateVehicle(FIXED_TIMESTEP);updateHud();
-    if(vehicle.activeRamp?.kind==="bridge")touched.add(vehicle.activeRamp.label);
-    const ground=getGroundHeight(vehicle.position.x,vehicle.position.z);
-    if(vehicle.position.y>ground+2.5)elevated=true;
-    if(elevated&&touched.size===bridgeSurfaces.length&&vehicle.activeRamp?.kind!=="bridge"&&vehicle.grounded){exited=true;break;}
-  }
-  input.delete("KeyW");canvas.dataset.bridgeDriveUp=touched.size?"passed":"failed";canvas.dataset.bridgeCrossing=elevated?"passed":"failed";canvas.dataset.bridgePiecesTouched=String(touched.size);canvas.dataset.bridgePiecesExpected=String(bridgeSurfaces.length);canvas.dataset.bridgeExit=exited?"passed":"failed";canvas.dataset.bridgeSmoke=touched.size===bridgeSurfaces.length&&elevated&&exited?"passed":"failed";
-  return canvas.dataset.bridgeSmoke==="passed";
-}
-
 function runSmokeRoutes(): void {
   let surfacePass=true;
   if(rampSmokeTest||allSurfaceSmokeTest)surfacePass=runRampTraversalSuite()&&surfacePass;
-  if(bridgeSmokeTest||allSurfaceSmokeTest)surfacePass=runBridgeTraversalSuite()&&surfacePass;
-  if(rampSmokeTest||bridgeSmokeTest||allSurfaceSmokeTest)canvas.dataset.physicsSmoke=surfacePass?"passed":"failed";
+  if(rampSmokeTest||allSurfaceSmokeTest)canvas.dataset.physicsSmoke=surfacePass?"passed":"failed";
   if(holdFireSmokeTest){
     aimPoint.copy(vehicle.position).add(new THREE.Vector3(0,1,40));aimReady=true;car.updateMatrixWorld(true);setFireHeld(true);
     for(let step=0;step<120;step++)updateWeapon(FIXED_TIMESTEP);
@@ -1038,21 +1057,21 @@ async function startLevel(levelId: ScraproadLevelId): Promise<void> {
   activeLayout = scraproadArenaLayouts[levelId]; ARENA_RADIUS = activeLayout.radius;
   ui.objective.innerHTML = `<small>ASSEMBLING ${activeLayout.name.toUpperCase()}</small><b>Sampling visual track surfaces and fitting colliders…</b>`;
   document.querySelectorAll<HTMLButtonElement>("[data-level]").forEach(button => button.disabled = true);
-  await addArena(); await addWorldProps(); registerPhysicsDebug(); buildCar();
+  await addArena(); await addWorldProps(); registerPhysicsDebug(); auditArenaFlow(); buildCar();
   activeLayout.pickups.forEach(pickup => createPickup(pickup.x, pickup.z, pickup.kind));
   activeLayout.targets.forEach(target => createTarget(target.x, target.z, target.rotation));
   ui.targets.textContent = String(activeLayout.targets.length);
   ui.objective.innerHTML = `<small>${activeLayout.callsign}</small><b>${activeLayout.objective}</b>`;
-  canvas.dataset.prototype="scraproad-1v1-foundation";canvas.dataset.arenaLayout=activeLayout.id;canvas.dataset.arenaRadius=String(ARENA_RADIUS);canvas.dataset.rampColliders=String(ramps.filter(ramp=>ramp.kind==="ramp").length);canvas.dataset.bridgeColliders=String(ramps.filter(ramp=>ramp.kind==="bridge").length);canvas.dataset.heightfieldColliders=String(driveHeightfields.length);canvas.dataset.majorColliders=String(obstacles.length+boxColliders.length);canvas.dataset.vehicleCollider="low-capsule-2.24x4.14x0.72";canvas.dataset.shotsFired="0";canvas.dataset.fireHeld="false";canvas.dataset.racekartAssets="modular-racekart-track-hilly";canvas.dataset.colliderSource="visual-asset-heightfields";auditHeightfieldCoverage();
+  canvas.dataset.prototype="scraproad-1v1-foundation";canvas.dataset.arenaLayout=activeLayout.id;canvas.dataset.arenaRadius=String(ARENA_RADIUS);canvas.dataset.ringInnerRadius=String(activeLayout.ringInnerRadius);canvas.dataset.ringOuterRadius=String(activeLayout.ringOuterRadius);canvas.dataset.rampColliders=String(ramps.filter(ramp=>ramp.kind==="ramp").length);canvas.dataset.bridgeColliders=String(ramps.filter(ramp=>ramp.kind==="bridge").length);canvas.dataset.heightfieldColliders=String(driveHeightfields.length);canvas.dataset.majorColliders=String(obstacles.length+boxColliders.length);canvas.dataset.vehicleCollider="low-capsule-2.24x4.14x0.72";canvas.dataset.shotsFired="0";canvas.dataset.fireHeld="false";canvas.dataset.racekartAssets="modular-racekart-track-hilly";canvas.dataset.colliderSource="visual-asset-heightfields";auditHeightfieldCoverage();
   levelStarted = true; levelStarting = false; paused = false; ui.levelSelect.hidden = true; resetVehicle(); runSmokeRoutes();
-  showMessage(rampSmokeTest?"RAMP SUITE // AUTO DRIVE":bridgeSmokeTest?"BRIDGE SUITE // AUTO DRIVE":allSurfaceSmokeTest?"ALL SURFACES // AUTO DRIVE":holdFireSmokeTest?"HOLD-FIRE SMOKE TEST // COMPLETE":`${activeLayout.name.toUpperCase()} // DEPLOYED`);
+  showMessage(rampSmokeTest?"RAMP SUITE // AUTO DRIVE":allSurfaceSmokeTest?"ALL RAMPS // AUTO DRIVE":holdFireSmokeTest?"HOLD-FIRE SMOKE TEST // COMPLETE":`${activeLayout.name.toUpperCase()} // DEPLOYED`);
 }
 
 document.querySelectorAll<HTMLButtonElement>("[data-level]").forEach(button => {
   button.addEventListener("click", () => void startLevel(button.dataset.level as ScraproadLevelId));
 });
 const requestedLevel = new URLSearchParams(location.search).get("level") as ScraproadLevelId | null;
-if (rampSmokeTest || bridgeSmokeTest || allSurfaceSmokeTest || holdFireSmokeTest || (requestedLevel && requestedLevel in scraproadArenaLayouts)) void startLevel(requestedLevel && requestedLevel in scraproadArenaLayouts ? requestedLevel : defaultScraproadLevel);
+if (rampSmokeTest || allSurfaceSmokeTest || holdFireSmokeTest || (requestedLevel && requestedLevel in scraproadArenaLayouts)) void startLevel(requestedLevel && requestedLevel in scraproadArenaLayouts ? requestedLevel : defaultScraproadLevel);
 
 window.addEventListener("keydown",event=>{if(["KeyW","KeyA","KeyS","KeyD","Space","ShiftLeft","KeyF","F3"].includes(event.code))event.preventDefault();if(event.repeat||!levelStarted)return;if(event.code==="Escape"){togglePause();return;}if(event.code==="KeyR")resetVehicle();if(event.code==="KeyC"){cameraMode=(cameraMode+1)%2;showMessage(cameraMode?"CAMERA // OVERWATCH":"CAMERA // CHASE");}if(event.code==="KeyB"||event.code==="KeyH"||event.code==="F3")toggleDebug();if(event.code==="KeyF")setFireHeld(true);input.add(event.code);});
 window.addEventListener("keyup",event=>{input.delete(event.code);if(event.code==="KeyF")setFireHeld(false);});

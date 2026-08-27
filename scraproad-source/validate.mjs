@@ -3,12 +3,8 @@ import { resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "../scraproad");
 const racekartModels = [
-  "Terrain_Grass_Flat_1x1", "Terrain_Hill_Side_1x3", "Terrain_Hill_Corner_Outer_4x4",
-  "Track_Standard_Straight_Double", "Track_Striped_Straight_Double", "Track_Standard_Curve_Double_4x4",
-  "Track_Striped_Curve_Double_4x4", "Track_Standard_Incline_Double", "Track_Striped_Incline_Double",
-  "Track_Bridge_Start", "Track_Bridge_Incline_Gentle_Supported", "Track_Bridge_Flat_Supported",
-  "Track_Bridge_Curve_3x3", "Prop_Track_Ramp", "Prop_Track_Ramp_Railing", "Prop_Track_Arch_1x4",
-  "Prop_Decorative_Fence_Railing", "Prop_Decorative_Rock_2", "Prop_Decorative_Rock_5",
+  "Prop_Track_Ramp", "Prop_Decorative_Fence_Railing",
+  "Prop_Decorative_Rock_2", "Prop_Decorative_Rock_5",
   "Prop_Decorative_Hay_Bale_Box",
 ];
 const required = [
@@ -40,8 +36,7 @@ const checks = [
   ["HUD", /id="health-value"/],
   ["controls", /id="controls"/],
   ["level selector", /id="level-select"/],
-  ["safe level button", /data-level="dustbowl"/],
-  ["prompt level button", /data-level="stuntworks"/],
+  ["Dust Ring deploy button", /data-level="dustring"/],
   ["compiled module", /assets\/.*\.js/],
   ["compiled stylesheet", /assets\/.*\.css/],
 ];
@@ -62,6 +57,9 @@ const sceneChecks = [
   ["animated imported wheel nodes", /vehicle\.wheelNodes/],
   ["driveable Racekart visual", /racekart-hilly-driveable/],
   ["Racekart arena fence", /racekart-hilly-arena-fence/],
+  ["continuous circular track", /continuous-circular-ring-track/],
+  ["central combat bowl", /central-combat-bowl/],
+  ["ring lane markers", /ring-lane-marker/],
   ["roof weapon mount", /const turret = new THREE\.Group/],
   ["barrel pitch mount", /const barrelPivot = new THREE\.Group/],
   ["mouse world ray", /intersectObjects\(aimSurfaces/],
@@ -81,10 +79,8 @@ const sceneChecks = [
   ["contact point debug", /contactDebug\.position\.set/],
   ["visual collider error telemetry", /dataset\.heightMismatch/],
   ["ramp runtime smoke route", /physics-smoke.*ramp/],
-  ["bridge runtime smoke route", /physics-smoke.*bridge[\s\S]*bridgeCrossing/],
-  ["all surface traversal smoke route", /all-surfaces[\s\S]*runRampTraversalSuite[\s\S]*runBridgeTraversalSuite/],
+  ["all ramp traversal smoke route", /all-surfaces[\s\S]*runRampTraversalSuite/],
   ["ramp landing verification", /allRampLandings[\s\S]*rampLanding/],
-  ["bridge segment exit verification", /bridgePiecesTouched[\s\S]*bridgeExit/],
   ["solid prop colliders", /boxColliders/],
   ["height-aware prop colliders", /vehicle\.position\.y > obstacle\.top\+\.2/],
   ["low capsule vehicle collider", /VEHICLE_COLLIDER_RADIUS = 1\.12[\s\S]*VEHICLE_COLLIDER_HALF_LENGTH = \.95[\s\S]*VEHICLE_COLLIDER_HEIGHT = \.72/],
@@ -98,7 +94,10 @@ const sceneChecks = [
   ["looping quiet soundtrack", /soundtrack\.loop = true[\s\S]*soundtrack\.volume = \.12/],
   ["cloudy environment map", /cloudy-sky\.png[\s\S]*scene\.environment = skyTexture/],
   ["layout-sized arena boundary", /ARENA_RADIUS = activeLayout\.radius/],
-  ["bridge collider telemetry", /dataset\.bridgeColliders/],
+  ["ring geometry telemetry", /dataset\.ringInnerRadius/],
+  ["ring clearance audit", /function auditArenaFlow[\s\S]*ringTrackDrivable/],
+  ["central combat area audit", /dataset\.centralCombatArea/],
+  ["target lane audit", /dataset\.targetArea/],
   ["future opponent spawn", /opponent-spawn-placeholder/],
   ["recovery control", /event\.code==="KeyR"\)resetVehicle/],
   ["chase camera", /function updateCamera/],
@@ -115,18 +114,17 @@ const colliderChecks = [
 for (const [label, pattern] of colliderChecks) {
   if (!pattern.test(colliderSource)) throw new Error(`Missing ${label} implementation`);
 }
-for (const key of ["terrainFlat", "trackStraight", "trackCurve", "trackBank", "bridgeIncline", "bridgeFlat", "stuntRamp", "fence", "rockWide"]) {
+for (const key of ["stuntRamp", "fence", "rockWide", "rockTall", "hayBale"]) {
   if (!racekartManifest.includes(`${key}: asset(`)) throw new Error(`Missing ${key} from Racekart asset manifest`);
 }
-for (const level of ["dustbowl", "stuntworks"]) {
-  if (!layouts.includes(`${level}: {`)) throw new Error(`Missing ${level} arena layout`);
-}
-if ((layouts.match(/kind: "ramp"/g) ?? []).length < 5) throw new Error("Expected at least 5 placed ramp surfaces across both levels");
-if ((layouts.match(/kind: "bridge"/g) ?? []).length < 8) throw new Error("Expected at least 8 placed bridge surfaces across both levels");
-if ((layouts.match(/kind: "repair"/g) ?? []).length < 4) throw new Error("Expected repair pickups in both levels");
+if (!layouts.includes("dustring: {")) throw new Error("Missing Dust Ring arena layout");
+if ((layouts.match(/\{ asset: "stuntRamp", kind: "ramp"/g) ?? []).length !== 4) throw new Error("Expected exactly 4 placed ramp surfaces");
+if (/\{ asset: "[^"]+", kind: "bridge"/.test(layouts)) throw new Error("Dust Ring must not include bridge or loop stunt chains");
+if ((layouts.match(/kind: "repair"/g) ?? []).length < 1) throw new Error("Expected a repair pickup");
 if ((layouts.match(/rotation:/g) ?? []).length < 20) throw new Error("Expected curated track, target, and prop placements");
+if (/dustbowl|stuntworks|bridge deck|mega jump/i.test(layouts)) throw new Error("Legacy stunt arena content remains in the layout");
 
 const assetPaths = [...html.matchAll(/(?:src|href)="\.\/(assets\/[^\"]+)"/g)].map((match) => match[1]);
 for (const asset of assetPaths) await access(resolve(root, asset));
 
-console.log(`Scraproad production validation passed (${sceneChecks.length} gameplay/asset systems, 2 selectable arenas, ${racekartModels.length} Racekart Hilly models, and ${required.length + assetPaths.length} files checked).`);
+console.log(`Scraproad production validation passed (${sceneChecks.length} gameplay/asset systems, 1 circular combat arena, ${racekartModels.length} selected Racekart Hilly models, and ${required.length + assetPaths.length} files checked).`);
