@@ -31,6 +31,7 @@ for (const file of required) await access(resolve(root, file));
 
 const html = await readFile(resolve(root, "index.html"), "utf8");
 const source = await readFile(resolve(import.meta.dirname, "src/main.ts"), "utf8");
+const colliderSource = await readFile(resolve(import.meta.dirname, "src/game/scraproad/DriveSurfaceCollider.ts"), "utf8");
 const racekartManifest = await readFile(resolve(import.meta.dirname, "src/assets/scraproadRacekartManifest.ts"), "utf8");
 const layouts = await readFile(resolve(import.meta.dirname, "src/game/scraproad/ScraproadArenaLayout.ts"), "utf8");
 const checks = [
@@ -73,8 +74,17 @@ const sceneChecks = [
   ["muzzle projectile direction", /shotDirection\.copy\(aimPoint\)\.sub\(shotOrigin\)\.normalize/],
   ["ramming damage", /damageTarget\(target,Math\.abs\(vehicle\.speed\)/],
   ["ramp surface collision", /function rampSample/],
+  ["visual asset heightfields", /buildHeightfieldCollider\(object/],
+  ["visual collider takes drive priority", /sampleHeightfield\(collider, x, z\)[\s\S]*best \?\? analyticRampSample/],
+  ["async collider deployment", /await addArena\(\); await addWorldProps\(\)/],
+  ["collider source telemetry", /colliderSource="visual-asset-heightfields"/],
+  ["contact point debug", /contactDebug\.position\.set/],
+  ["visual collider error telemetry", /dataset\.heightMismatch/],
   ["ramp runtime smoke route", /physics-smoke.*ramp/],
   ["bridge runtime smoke route", /physics-smoke.*bridge[\s\S]*bridgeCrossing/],
+  ["all surface traversal smoke route", /all-surfaces[\s\S]*runRampTraversalSuite[\s\S]*runBridgeTraversalSuite/],
+  ["ramp landing verification", /allRampLandings[\s\S]*rampLanding/],
+  ["bridge segment exit verification", /bridgePiecesTouched[\s\S]*bridgeExit/],
   ["solid prop colliders", /boxColliders/],
   ["height-aware prop colliders", /vehicle\.position\.y > obstacle\.top\+\.2/],
   ["low capsule vehicle collider", /VEHICLE_COLLIDER_RADIUS = 1\.12[\s\S]*VEHICLE_COLLIDER_HALF_LENGTH = \.95[\s\S]*VEHICLE_COLLIDER_HEIGHT = \.72/],
@@ -95,6 +105,15 @@ const sceneChecks = [
 ];
 for (const [label, pattern] of sceneChecks) {
   if (!pattern.test(source)) throw new Error(`Missing ${label} implementation`);
+}
+const colliderChecks = [
+  ["downward visual ray sampling", /new THREE\.Raycaster\(\)[\s\S]*intersectObject\(object, true\)/],
+  ["bounded heightfield grid", /columns = THREE\.MathUtils\.clamp[\s\S]*rows = THREE\.MathUtils\.clamp/],
+  ["interpolated collision heights", /const samples = \[[\s\S]*height \/ weight/],
+  ["matching collider wireframe", /createHeightfieldDebug[\s\S]*new THREE\.LineSegments/],
+];
+for (const [label, pattern] of colliderChecks) {
+  if (!pattern.test(colliderSource)) throw new Error(`Missing ${label} implementation`);
 }
 for (const key of ["terrainFlat", "trackStraight", "trackCurve", "trackBank", "bridgeIncline", "bridgeFlat", "stuntRamp", "fence", "rockWide"]) {
   if (!racekartManifest.includes(`${key}: asset(`)) throw new Error(`Missing ${key} from Racekart asset manifest`);
