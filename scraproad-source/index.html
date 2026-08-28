@@ -13,45 +13,36 @@
     <main id="app">
       <canvas id="game" aria-label="Scraproad Arena 3D combat driving game"></canvas>
 
-      <header class="topbar">
-        <div class="brand"><span class="brand__mark">SR</span><div><b>SCRAPROAD</b><small>1V1 ARENA // TWO PROVING GROUNDS</small></div></div>
-        <div id="objective" class="objective"><small>LEVEL 01 // SCRAP RING</small><b>Run the circuit. Hit the ramps. Clear the targets.</b></div>
-        <button id="help-button" class="icon-button" type="button" aria-label="Toggle controls">?</button>
+      <header class="round-hud" aria-label="Round score">
+        <div class="score-wing score-wing--player">
+          <span>YOU</span>
+          <div id="player-rounds" class="round-bar round-bar--player" aria-label="Player round wins"><i></i><i></i><i></i></div>
+        </div>
+        <div class="round-core"><small>ROUND</small><strong id="round-value">01</strong></div>
+        <div class="score-wing score-wing--enemy">
+          <div id="enemy-rounds" class="round-bar round-bar--enemy" aria-label="Enemy round wins"><i></i><i></i><i></i></div>
+          <span>RIVAL</span>
+        </div>
       </header>
 
-      <aside id="weapon-select" class="weapon-select panel" aria-label="Test turret selection">
-        <span>TEST TURREET</span>
-        <div>
+      <section class="status-hud" aria-label="Vehicle health and boost">
+        <div class="status-meter status-meter--health">
+          <div><span>HULL</span><b><em id="health-value">100</em> HP</b></div>
+          <div class="meter-track"><i id="health-bar"></i></div>
+        </div>
+        <div class="status-meter status-meter--boost">
+          <div><span>BOOST</span><b><em id="boost-value">100</em>%</b></div>
+          <div class="meter-track"><i id="boost-bar"></i></div>
+        </div>
+      </section>
+
+      <aside id="weapon-select" class="weapon-dock panel" aria-label="Test turret selection">
+        <div class="weapon-dock__current"><small>TEST TURRET</small><b id="weapon-part">SCRAP RATTLER</b><em id="weapon-state">READY</em></div>
+        <div class="weapon-dock__buttons">
           <button class="selected" type="button" data-weapon="mg" aria-pressed="true"><b>MG</b><small>RATTLER</small></button>
           <button type="button" data-weapon="rocket" aria-pressed="false"><b>RKT</b><small>HELLBOX</small></button>
           <button type="button" data-weapon="sniper" aria-pressed="false"><b>SNP</b><small>LONGLANCE</small></button>
         </div>
-      </aside>
-
-      <aside class="vitals panel" aria-label="Vehicle status">
-        <div class="vital-heading"><span>HULL INTEGRITY</span><strong id="health-value">100</strong></div>
-        <div class="bar"><i id="health-bar"></i></div>
-        <div class="readouts">
-          <div><small>SPEED</small><strong><span id="speed-value">0</span> <em>KM/H</em></strong></div>
-          <div><small>BOOST</small><strong><span id="boost-value">100</span><em>%</em></strong></div>
-          <div><small>TARGETS</small><strong><span id="target-value">0</span><em>LEFT</em></strong></div>
-        </div>
-      </aside>
-
-      <aside class="loadout panel" aria-label="Equipped vehicle parts">
-        <div class="eyebrow">RIG LOADOUT</div>
-        <dl>
-          <div><dt>ROOF</dt><dd id="weapon-part">SCRAP MG</dd></div>
-          <div><dt>TIRES</dt><dd id="tires-part">STANDARD</dd></div>
-          <div><dt>ENGINE</dt><dd id="engine-part">STANDARD</dd></div>
-          <div><dt>ARMOR</dt><dd id="armor-part">NONE</dd></div>
-        </dl>
-        <div class="ammo"><span>AMMO</span><b>∞</b><small id="weapon-state">READY</small></div>
-      </aside>
-
-      <aside id="radar" class="radar panel" aria-label="Arena radar">
-        <canvas id="radar-canvas" width="160" height="160"></canvas>
-        <span>N</span><small>PICKUPS <i></i> TARGETS <b></b></small>
       </aside>
 
       <section id="level-select" class="level-select" aria-labelledby="level-select-title">
@@ -95,7 +86,6 @@
       </section>
 
       <div id="message" class="message" role="status" aria-live="polite"></div>
-      <div id="impact-frame" class="impact-frame" aria-hidden="true"></div>
       <pre id="physics-debug" class="physics-debug panel" hidden aria-live="off"></pre>
       <div id="crosshair" class="crosshair" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
 

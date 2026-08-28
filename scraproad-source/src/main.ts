@@ -73,7 +73,7 @@ type Bullet = {
   trailTimer: number;
 };
 type DustParticle = { mesh: THREE.Mesh; life: number; velocity: THREE.Vector3 };
-type VisualEffect = { group: THREE.Group; life: number; maxLife: number; kind: "impact" | "trail"; growth: number };
+type VisualEffect = { group: THREE.Group; life: number; maxLife: number; kind: "impact" | "trail" | "laser"; growth: number };
 type Obstacle = { position: THREE.Vector3; radius: number; top: number; label: string };
 type BoxCollider = { position: THREE.Vector3; halfWidth: number; halfLength: number; rotation: number; label: string };
 type DriveSurfaceKind = "ramp" | "bridge" | "track" | "terrain" | "wall";
@@ -97,13 +97,24 @@ type DriveSurfaceSample = { ramp: DriveSurfaceContact; height: number; localZ: n
 const canvas = getElement<HTMLCanvasElement>("game");
 
 const ui = {
-  health: getElement("health-value"), healthBar: getElement("health-bar"), speed: getElement("speed-value"),
-  boost: getElement("boost-value"), targets: getElement("target-value"), weapon: getElement("weapon-part"),
-  tires: getElement("tires-part"), engine: getElement("engine-part"), armor: getElement("armor-part"),
+  health: getElement("health-value"), healthBar: getElement("health-bar"), boost: getElement("boost-value"), boostBar: getElement("boost-bar"),
+  boostMeter: document.querySelector<HTMLElement>(".status-meter--boost")!, weapon: getElement("weapon-part"),
   weaponState: getElement("weapon-state"), message: getElement("message"), controls: getElement("controls"),
-  pause: getElement("pause"), objective: getElement("objective"), radar: getElement<HTMLCanvasElement>("radar-canvas"),
-  debug: getElement("physics-debug"), levelSelect: getElement("level-select"), impactFrame: getElement("impact-frame"),
+  pause: getElement("pause"), debug: getElement("physics-debug"), levelSelect: getElement("level-select"),
+  round: getElement("round-value"), playerRounds: getElement("player-rounds"), enemyRounds: getElement("enemy-rounds"),
 };
+let playerRoundWins=0,enemyRoundWins=0,currentRound=1,roundAwarded=false;
+
+function updateRoundHud():void{
+  ui.round.textContent=String(currentRound).padStart(2,"0");
+  ui.playerRounds.querySelectorAll("i").forEach((pip,index)=>pip.classList.toggle("won",index<playerRoundWins));
+  ui.enemyRounds.querySelectorAll("i").forEach((pip,index)=>pip.classList.toggle("won",index<enemyRoundWins));
+  canvas.dataset.currentRound=String(currentRound);canvas.dataset.playerRoundWins=String(playerRoundWins);canvas.dataset.enemyRoundWins=String(enemyRoundWins);
+}
+
+function awardPlayerRound():void{
+  if(roundAwarded)return;roundAwarded=true;playerRoundWins=Math.min(3,playerRoundWins+1);updateRoundHud();canvas.dataset.roundWinner="player";
+}
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
@@ -755,7 +766,7 @@ const turret = new THREE.Group();
 const weaponDefinitions: Record<WeaponKind, WeaponDefinition> = {
   mg: { kind:"mg", label:"SCRAP RATTLER", stateLabel:"READY", fireRate:6.7, damage:15, projectileSpeed:58, range:136, automatic:true, impactColor:0xffb548 },
   rocket: { kind:"rocket", label:"HELLBOX ROCKETS", stateLabel:"ARMED", fireRate:.78, damage:82, projectileSpeed:34, range:112, automatic:false, impactColor:0xff5b20, splashRadius:5.4 },
-  sniper: { kind:"sniper", label:"LONGLANCE RAIL", stateLabel:"CHARGED", fireRate:.52, damage:110, projectileSpeed:190, range:188, automatic:false, impactColor:0x67e7ff },
+  sniper: { kind:"sniper", label:"LONGLANCE RAIL", stateLabel:"CHARGED", fireRate:.58, damage:110, projectileSpeed:320, range:188, automatic:false, impactColor:0x67e7ff },
 };
 type TurretRig = { root: THREE.Group; barrelPivot: THREE.Group; muzzle: THREE.Object3D };
 const turretRigs = new Map<WeaponKind, TurretRig>();
@@ -852,7 +863,7 @@ function selectWeapon(kind: WeaponKind, announce = true): void {
   document.querySelectorAll<HTMLButtonElement>("[data-weapon]").forEach(button=>{
     const active=button.dataset.weapon===kind; button.classList.toggle("selected",active); button.setAttribute("aria-pressed",String(active));
   });
-  canvas.dataset.selectedTurret=kind; canvas.dataset.weaponVfx=kind==="rocket"?"anime-explosion-shockwave":kind==="sniper"?"anime-rail-impact-frame":"scrap-sparks";
+  canvas.dataset.selectedTurret=kind; canvas.dataset.weaponVfx=kind==="rocket"?"large-world-detonation":kind==="sniper"?"tight-cyan-laser-tracer":"scrap-sparks";
   if(announce&&levelStarted)showMessage(`${definition.label} // TEST MOUNTED`);
 }
 
@@ -1006,12 +1017,14 @@ const trailGeometry = new THREE.SphereGeometry(.18,7,5);
 const muzzleFlash = new THREE.PointLight(0xff8a24, 8, 5, 2);
 muzzleFlash.visible = false; scene.add(muzzleFlash);
 let fireCooldown=0; let isFireHeld=false; let muzzleFlashLife=0; let weaponStateLife=0;
-let impactFrameTimer=0; let cameraShakeLife=0; let cameraShakeStrength=0;
+let cameraShakeLife=0; let cameraShakeStrength=0;
 let messageTimer=0; let paused=false; let cameraMode=0; let elapsed=0;
 const rampSmokeTest = new URLSearchParams(location.search).get("physics-smoke") === "ramp";
 const allSurfaceSmokeTest = new URLSearchParams(location.search).get("physics-smoke") === "all-surfaces";
 const wallRideSmokeTest = new URLSearchParams(location.search).get("physics-smoke") === "wall";
 const holdFireSmokeTest = new URLSearchParams(location.search).get("input-smoke") === "hold-fire";
+const boostSmokeTest = new URLSearchParams(location.search).get("input-smoke") === "boost";
+const roundWinSmokeTest = new URLSearchParams(location.search).get("combat-smoke") === "round-win";
 const soundtrack = new Audio("./assets/nitro-games.wav");
 soundtrack.loop = true;
 soundtrack.volume = .12;
@@ -1062,33 +1075,50 @@ function effectMaterial(color:number,opacity=1): THREE.MeshBasicMaterial {
   material.userData.baseOpacity=opacity;return material;
 }
 
-function triggerImpactFrame(kind: Exclude<WeaponKind,"mg">): void {
-  clearTimeout(impactFrameTimer);ui.impactFrame.className=`impact-frame impact-frame--${kind}`;
-  void ui.impactFrame.offsetWidth;ui.impactFrame.classList.add("active");
-  impactFrameTimer=window.setTimeout(()=>ui.impactFrame.classList.remove("active"),180);
-  canvas.dataset.lastImpactFrame=kind;
-}
-
 function spawnImpactVfx(kind:WeaponKind,position:THREE.Vector3,major=true):void{
   const definition=weaponDefinitions[kind],group=new THREE.Group();group.position.copy(position);group.userData.billboard=true;
-  const core=new THREE.Mesh(effectCoreGeometry,effectMaterial(kind==="sniper"?0xe7fbff:kind==="rocket"?0xffb52f:0xffd66f,.95));
-  core.scale.set(major?1:.28,major?1:.28,major?1:.28);group.add(core);
+  const isRocket=kind==="rocket",coreScale=major&&isRocket?1.8:major?1:.28;
+  const core=new THREE.Mesh(effectCoreGeometry,effectMaterial(isRocket?0xffb52f:0xffd66f,.95));
+  core.scale.setScalar(coreScale);group.add(core);
   const star=new THREE.Mesh(impactStarGeometry,effectMaterial(definition.impactColor,kind==="mg" ? .72 : .96));star.scale.setScalar(major ? 1.24 : .26);group.add(star);
-  const ringCount=kind==="rocket"?3:kind==="sniper"?2:1;
+  if(major&&isRocket)star.scale.setScalar(2.15);
+  const ringCount=major&&isRocket?5:1;
   for(let index=0;index<ringCount;index++){
     const ring=new THREE.Mesh(effectRingGeometry,effectMaterial(index===0?0xffffff:definition.impactColor,.9-index*.18));
-    ring.scale.setScalar((major ? .72 : .2)+index*.34);ring.position.z=-.03-index*.015;group.add(ring);
+    ring.scale.setScalar((major ? 1.1 : .2)+index*.46);ring.position.z=-.03-index*.015;group.add(ring);
   }
-  if(major&&(kind==="rocket"||kind==="sniper")){
-    const shardCount=kind==="sniper"?14:10;
+  if(major&&isRocket){
+    const shardCount=20;
     for(let index=0;index<shardCount;index++){
-      const shard=new THREE.Mesh(new THREE.BoxGeometry(kind==="sniper" ? .055 : .11,kind==="sniper"?2.8:1.75,.04),effectMaterial(index%2?definition.impactColor:0xffffff,.88));
-      const angle=index/shardCount*Math.PI*2;shard.rotation.z=angle;shard.position.set(Math.cos(angle)*1.55,Math.sin(angle)*1.55,-.06);group.add(shard);
+      const shard=new THREE.Mesh(new THREE.BoxGeometry(.13,3.25,.04),effectMaterial(index%3?definition.impactColor:0xffffff,.88));
+      const angle=index/shardCount*Math.PI*2;shard.rotation.z=angle;shard.position.set(Math.cos(angle)*2.1,Math.sin(angle)*2.1,-.06);group.add(shard);
     }
-    const light=new THREE.PointLight(definition.impactColor,kind==="rocket"?36:27,kind==="rocket"?15:11,2);group.add(light);
-    triggerImpactFrame(kind);cameraShakeLife=kind==="rocket" ? .32 : .18;cameraShakeStrength=kind==="rocket" ? .5 : .28;
+    const light=new THREE.PointLight(definition.impactColor,52,21,2);group.add(light);
+    cameraShakeLife=.38;cameraShakeStrength=.62;canvas.dataset.lastImpactEffect="rocket-world-detonation";
   }
-  scene.add(group);visualEffects.push({group,life:major?(kind==="rocket" ? .58 : .38):.13,maxLife:major?(kind==="rocket" ? .58 : .38):.13,kind:"impact",growth:major?(kind==="rocket"?4.8:3.8):1.3});
+  const life=major&&isRocket ? .82 : major ? .3 : .13;scene.add(group);visualEffects.push({group,life,maxLife:life,kind:"impact",growth:major&&isRocket?7.2:major?2.2:1.3});
+}
+
+function spawnSniperHit(position:THREE.Vector3):void{
+  const group=new THREE.Group();group.position.copy(position);group.userData.billboard=true;
+  const core=new THREE.Mesh(effectCoreGeometry,effectMaterial(0xffffff,.96));core.scale.setScalar(.22);group.add(core);
+  for(let index=0;index<8;index++){
+    const angle=index/8*Math.PI*2,shard=new THREE.Mesh(new THREE.BoxGeometry(.025,.86,.025),effectMaterial(index%2?0x5de5ff:0xffffff,.9));
+    shard.rotation.z=angle;shard.position.set(Math.cos(angle)*.38,Math.sin(angle)*.38,0);group.add(shard);
+  }
+  const light=new THREE.PointLight(0x6be9ff,10,5,2);group.add(light);scene.add(group);
+  visualEffects.push({group,life:.16,maxLife:.16,kind:"impact",growth:.5});cameraShakeLife=.055;cameraShakeStrength=.08;
+  canvas.dataset.lastImpactEffect="sniper-pinpoint-spark";
+}
+
+function spawnSniperTracer(start:THREE.Vector3,direction:THREE.Vector3,range:number):void{
+  const distance=Math.min(range,Math.max(18,start.distanceTo(aimPoint)+8)),midpoint=start.clone().addScaledVector(direction,distance*.5),group=new THREE.Group();
+  group.position.copy(midpoint);group.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),direction);
+  const glow=new THREE.Mesh(new THREE.CylinderGeometry(.2,.2,distance,8,1,true),effectMaterial(0x37cfff,.34));group.add(glow);
+  const core=new THREE.Mesh(new THREE.CylinderGeometry(.055,.055,distance,8),effectMaterial(0xe9fdff,1));group.add(core);
+  const hotCore=new THREE.Mesh(new THREE.CylinderGeometry(.018,.018,distance,6),effectMaterial(0xffffff,1));group.add(hotCore);
+  scene.add(group);visualEffects.push({group,life:.48,maxLife:.48,kind:"laser",growth:0});
+  canvas.dataset.sniperTracerLength=distance.toFixed(1);
 }
 
 function spawnRocketTrail(position:THREE.Vector3):void{
@@ -1101,8 +1131,8 @@ function createProjectile(kind:WeaponKind):THREE.Object3D{
   if(kind==="mg")return new THREE.Mesh(bulletGeometry,bulletMaterial);
   if(kind==="sniper"){
     const group=new THREE.Group();
-    const core=new THREE.Mesh(new THREE.BoxGeometry(.075,.075,4.8),new THREE.MeshBasicMaterial({color:0xffffff}));group.add(core);
-    const aura=new THREE.Mesh(new THREE.BoxGeometry(.2,.2,3.9),effectMaterial(0x55dcff,.54));group.add(aura);return group;
+    const core=new THREE.Mesh(new THREE.BoxGeometry(.06,.06,9),new THREE.MeshBasicMaterial({color:0xffffff}));group.add(core);
+    const aura=new THREE.Mesh(new THREE.BoxGeometry(.24,.24,8.2),effectMaterial(0x55dcff,.58));group.add(aura);return group;
   }
   const group=new THREE.Group();
   const body=new THREE.Mesh(new THREE.CylinderGeometry(.12,.15,.78,9),new THREE.MeshStandardMaterial({color:0x343633,roughness:.55,metalness:.7}));body.rotation.x=Math.PI/2;group.add(body);
@@ -1123,7 +1153,8 @@ function shoot(): boolean {
   canvas.dataset.shotsFired=String(Number(canvas.dataset.shotsFired??0)+1);
   ui.weaponState.textContent="FIRING"; weaponStateLife=.08;
   muzzleFlash.color.setHex(definition.impactColor);muzzleFlash.intensity=selectedWeapon==="rocket"?22:selectedWeapon==="sniper"?28:8;muzzleFlash.distance=selectedWeapon==="rocket"?10:7;
-  muzzleFlash.position.copy(shotOrigin); muzzleFlash.visible=true; muzzleFlashLife=selectedWeapon==="mg" ? .045 : .09;spawnImpactVfx(selectedWeapon,shotOrigin,false);
+  muzzleFlash.position.copy(shotOrigin); muzzleFlash.visible=true; muzzleFlashLife=selectedWeapon==="mg" ? .045 : .09;
+  if(selectedWeapon==="sniper")spawnSniperTracer(shotOrigin,shotDirection,weaponStats.range);else spawnImpactVfx(selectedWeapon,shotOrigin,false);
   return true;
 }
 
@@ -1150,26 +1181,24 @@ function spawnDust(dt:number): void {
   dust.push({mesh,life:.7+Math.random()*.5,velocity:new THREE.Vector3((Math.random()-.5)*.5,.45+Math.random()*.3,(Math.random()-.5)*.5)});
 }
 
-function explode(position:THREE.Vector3): void {
-  for(let i=0;i<Math.min(12,80-dust.length);i++){
+function explode(position:THREE.Vector3,lift=1.4,count=12): void {
+  for(let i=0;i<Math.min(count,80-dust.length);i++){
     const mesh=new THREE.Mesh(debrisGeometry,new THREE.MeshBasicMaterial({color:i%3===0?0xffc34e:0xb84a29}));mesh.scale.setScalar(.6+Math.random());
-    mesh.position.copy(position).add(new THREE.Vector3(0,1.4,0));scene.add(mesh);
+    mesh.position.copy(position).add(new THREE.Vector3(0,lift,0));scene.add(mesh);
     dust.push({mesh,life:.7+Math.random()*.8,velocity:new THREE.Vector3((Math.random()-.5)*7,2+Math.random()*5,(Math.random()-.5)*7)});
   }
 }
 
 function damageTarget(target:Target,amount:number): void {
   if(!target.alive)return;target.health-=amount;target.hitFlash=.09;
-  if(target.health<=0){target.alive=false;explode(target.group.position);scene.remove(target.group);const left=targets.filter(item=>item.alive).length;ui.targets.textContent=String(left);showMessage(left?`TARGET SCRAPPED // ${left} REMAIN`:`ARENA CLEARED // ALL TARGETS SCRAPPED`);if(!left)ui.objective.innerHTML="<small>FIELD TEST COMPLETE</small><b>All targets destroyed. Keep looting or run another lap.</b>";}
+  if(target.health<=0){target.alive=false;explode(target.group.position);scene.remove(target.group);const left=targets.filter(item=>item.alive).length;canvas.dataset.targetsRemaining=String(left);showMessage(left?`TARGET SCRAPPED // ${left} REMAIN`:`ROUND WON // ALL TARGETS SCRAPPED`);if(!left)awardPlayerRound();}
 }
 
 function equipPickup(pickup:Pickup): void {
   pickup.collected=true;scene.remove(pickup.group);
   if(pickup.repair){vehicle.health=Math.min(stats.maxHealth,vehicle.health+pickup.repair);showMessage(`REPAIR KIT // HULL RESTORED +${pickup.repair}`);return;}
   if(!pickup.part)return;equipped[pickup.part.slot]=pickup.part;Object.assign(stats,pickup.part.stats);
-  if(pickup.part.slot==="armor"){vehicle.health=Math.min(stats.maxHealth,vehicle.health+45);ui.armor.textContent="RIVETED";}
-  if(pickup.part.slot==="engine")ui.engine.textContent="TURBO V8";
-  if(pickup.part.slot==="tires")ui.tires.textContent="ALL-TERRAIN";
+  if(pickup.part.slot==="armor")vehicle.health=Math.min(stats.maxHealth,vehicle.health+45);
   if(pickup.part.slot==="roof_weapon"){selectWeapon("mg",false);weaponStats.fireRate=stats.fireRate;weaponStats.damage=stats.weaponDamage;weaponStats.projectileSpeed=stats.projectileSpeed;ui.weapon.textContent="TWIN SCRAP RATTLER";turret.scale.set(1.18,1.12,1.18);}
   showMessage(`EQUIPPED // ${pickup.part.name.toUpperCase()}`);
 }
@@ -1242,7 +1271,7 @@ function updateVehicle(dt:number): void {
   const boosting=input.has("ShiftLeft")&&forward>0&&vehicle.boost>0;
   if(forward)vehicle.speed+=stats.acceleration*(boosting?(stats.boostPower??1.3):1)*dt;
   if(reverse)vehicle.speed-=vehicle.speed>1?stats.acceleration*2.35*dt:stats.acceleration*.68*dt;
-  if(boosting){vehicle.boost=Math.max(0,vehicle.boost-24*dt);}else vehicle.boost=Math.min(100,vehicle.boost+9*dt);
+  if(boosting){vehicle.boost=Math.max(0,vehicle.boost-24*dt);}else vehicle.boost=Math.min(100,vehicle.boost+6*dt);
   const maxForward=stats.maxSpeed*(boosting?(stats.boostPower??1.3):1);vehicle.speed=THREE.MathUtils.clamp(vehicle.speed,-11,maxForward);
   if(!forward&&!reverse){const drag=(drifting?4.4:2.15)*dt;vehicle.speed=Math.abs(vehicle.speed)<=drag?0:vehicle.speed-Math.sign(vehicle.speed)*drag;}
   const speedRatio=Math.min(Math.abs(vehicle.speed)/stats.maxSpeed,1);const reverseSign=vehicle.speed>=0?1:-1;
@@ -1373,7 +1402,9 @@ function resolveProjectileImpact(bullet:Bullet,position:THREE.Vector3,directTarg
       damageTarget(target,damage);
     }
   }else if(directTarget)damageTarget(directTarget,bullet.damage);
-  spawnImpactVfx(bullet.kind,position,bullet.kind!=="mg");
+  if(bullet.kind==="rocket"){spawnImpactVfx("rocket",position,true);explode(position,.2,22);}
+  else if(bullet.kind==="sniper")spawnSniperHit(position);
+  else spawnImpactVfx("mg",position,false);
 }
 
 function updateProjectiles(dt:number): void {
@@ -1398,7 +1429,7 @@ function updateProjectiles(dt:number): void {
   for(let index=visualEffects.length-1;index>=0;index--){
     const effect=visualEffects[index];effect.life-=dt;const progress=THREE.MathUtils.clamp(1-effect.life/effect.maxLife,0,1),fade=Math.pow(1-progress,1.45);
     if(effect.group.userData.billboard)effect.group.quaternion.copy(camera.quaternion);
-    effect.group.scale.setScalar((effect.kind==="impact" ? .48 : .68)+progress*effect.growth);
+    if(effect.kind!=="laser")effect.group.scale.setScalar((effect.kind==="impact" ? .48 : .68)+progress*effect.growth);
     effect.group.traverse(object=>{
       if(object instanceof THREE.PointLight)object.intensity*=Math.max(0,1-dt*8);
       if(!(object instanceof THREE.Mesh))return;const materials=Array.isArray(object.material)?object.material:[object.material];
@@ -1429,7 +1460,8 @@ function updateCamera(dt:number): void {
 function updatePickups(dt:number):void{for(const pickup of pickups){if(pickup.collected)continue;pickup.group.rotation.y+=dt*.8;const item=pickup.group.children[2];item.position.y=1.1+Math.sin(elapsed*2.4+pickup.group.position.x)*.18;}}
 
 function updateHud():void{
-  ui.speed.textContent=String(Math.round(Math.abs(vehicle.speed)*4.2));ui.boost.textContent=String(Math.round(vehicle.boost));ui.health.textContent=String(Math.round(vehicle.health));ui.healthBar.style.width=`${vehicle.health/stats.maxHealth*100}%`;
+  ui.boost.textContent=String(Math.round(vehicle.boost));ui.health.textContent=String(Math.round(vehicle.health));ui.healthBar.style.width=`${vehicle.health/stats.maxHealth*100}%`;ui.boostBar.style.width=`${vehicle.boost}%`;
+  ui.boostMeter.classList.toggle("recharging",vehicle.boost<99.5&&!input.has("ShiftLeft"));canvas.dataset.boost=vehicle.boost.toFixed(1);canvas.dataset.boostRechargeRate="6-per-second";
   const contact=rampSample(vehicle.position.x,vehicle.position.z);const baseHeight=getGroundHeight(vehicle.position.x,vehicle.position.z);
   const flatContactLabel=activeLayout.arenaKind==="capsule"?"flat-floor":"terrain";
   canvas.dataset.groundContact=vehicle.grounded?(vehicle.activeRamp?vehicle.activeRamp.kind:flatContactLabel):"airborne";canvas.dataset.aimRay=aimReady?"locked":"searching";canvas.dataset.aimPoint=`${aimPoint.x.toFixed(1)},${aimPoint.y.toFixed(1)},${aimPoint.z.toFixed(1)}`;canvas.dataset.vehiclePosition=`${vehicle.position.x.toFixed(1)},${vehicle.position.y.toFixed(1)},${vehicle.position.z.toFixed(1)}`;
@@ -1446,8 +1478,6 @@ function updateHud():void{
   canvas.dataset.surfaceType=surfaceType;canvas.dataset.carUp=`${actualVehicleUp.x.toFixed(2)},${actualVehicleUp.y.toFixed(2)},${actualVehicleUp.z.toFixed(2)}`;canvas.dataset.surfaceNormal=`${vehicle.surfaceNormal.x.toFixed(2)},${vehicle.surfaceNormal.y.toFixed(2)},${vehicle.surfaceNormal.z.toFixed(2)}`;canvas.dataset.projectedForward=`${vehicle.projectedForward.x.toFixed(2)},${vehicle.projectedForward.y.toFixed(2)},${vehicle.projectedForward.z.toFixed(2)}`;canvas.dataset.velocityVector=`${vehicle.velocity.x.toFixed(2)},${vehicle.velocity.y.toFixed(2)},${vehicle.velocity.z.toFixed(2)}`;canvas.dataset.wallContactNormal=`${vehicle.wallContactNormal.x.toFixed(2)},${vehicle.wallContactNormal.y.toFixed(2)},${vehicle.wallContactNormal.z.toFixed(2)}`;canvas.dataset.wallAssist=vehicle.wallAssistActive?"active":"off";canvas.dataset.wallDownforce=vehicle.downforce.toFixed(2);canvas.dataset.carRoll=vehicle.roll.toFixed(3);canvas.dataset.carPitch=vehicle.pitch.toFixed(3);
   if(rampSmokeTest&&vehicle.activeRamp?.kind==="ramp")canvas.dataset.rampDriveUp="passed";if(rampSmokeTest&&!vehicle.grounded&&canvas.dataset.rampDriveUp==="passed")canvas.dataset.rampLaunch="passed";
 }
-
-function drawRadar():void{const context=ui.radar.getContext("2d");if(!context)return;const size=160,center=80,scale=.58;context.clearRect(0,0,size,size);context.strokeStyle="rgba(213,183,119,.13)";context.lineWidth=1;for(const radius of [24,48,72]){context.beginPath();context.arc(center,center,radius,0,Math.PI*2);context.stroke();}context.beginPath();context.moveTo(center,8);context.lineTo(center,152);context.moveTo(8,center);context.lineTo(152,center);context.stroke();const plot=(x:number,z:number,color:string,radius:number)=>{const dx=(x-vehicle.position.x)*scale,dz=(z-vehicle.position.z)*scale;const angle=-vehicle.heading;const px=dx*Math.cos(angle)-dz*Math.sin(angle),py=dx*Math.sin(angle)+dz*Math.cos(angle);if(Math.hypot(px,py)>73)return;context.fillStyle=color;context.beginPath();context.arc(center+px,center-py,radius,0,Math.PI*2);context.fill();};pickups.forEach(p=>{if(!p.collected)plot(p.group.position.x,p.group.position.z,"#57dbe3",2.7)});targets.forEach(t=>{if(t.alive)plot(t.group.position.x,t.group.position.z,"#ef6846",3)});context.save();context.translate(center,center);context.fillStyle="#f3ce79";context.beginPath();context.moveTo(0,-7);context.lineTo(5,6);context.lineTo(0,3);context.lineTo(-5,6);context.closePath();context.fill();context.restore();}
 
 const previousVehiclePosition = new THREE.Vector3(0,0,-28);
 const previousVehicleOrientation=new THREE.Quaternion();
@@ -1609,22 +1639,27 @@ function runSmokeRoutes(): void {
     setFireHeld(false);const smokeShots=Number(canvas.dataset.shotsFired??0);const shotLimit=Math.ceil(2*weaponStats.fireRate)+1;
     canvas.dataset.holdFireSmoke=smokeShots>=2&&smokeShots<=shotLimit?"passed":"failed";canvas.dataset.fireRateLimited=smokeShots<=shotLimit?"passed":"failed";canvas.dataset.holdFireShots=String(smokeShots);
   }
+  if(boostSmokeTest){
+    vehicle.boost=100;input.add("KeyW");input.add("ShiftLeft");for(let step=0;step<60;step++)updateVehicle(FIXED_TIMESTEP);
+    const depleted=vehicle.boost;input.delete("ShiftLeft");for(let step=0;step<60;step++)updateVehicle(FIXED_TIMESTEP);const recharged=vehicle.boost;input.clear();
+    canvas.dataset.boostAfterUse=depleted.toFixed(1);canvas.dataset.boostAfterRecharge=recharged.toFixed(1);canvas.dataset.boostSmoke=depleted<80&&recharged>depleted&&recharged<95?"passed":"failed";resetVehicle();
+  }
+  if(roundWinSmokeTest){for(const target of [...targets])damageTarget(target,999);canvas.dataset.roundHudSmoke=playerRoundWins===1&&canvas.dataset.roundWinner==="player"?"passed":"failed";}
 }
 
 async function startLevel(levelId: ScraproadLevelId): Promise<void> {
   if (levelStarted || levelStarting) return;
   levelStarting = true;
   activeLayout = scraproadArenaLayouts[levelId]; ARENA_RADIUS = activeLayout.radius;
-  ui.objective.innerHTML = `<small>ASSEMBLING ${activeLayout.name.toUpperCase()}</small><b>Sampling visual track surfaces and fitting colliders…</b>`;
+  showMessage(`ASSEMBLING // ${activeLayout.name.toUpperCase()}`);
   document.querySelectorAll<HTMLButtonElement>("[data-level]").forEach(button => button.disabled = true);
   await addArena(); await addWorldProps(); registerPhysicsDebug(); auditArenaFlow(); buildCar();
   activeLayout.pickups.forEach(pickup => createPickup(pickup.x, pickup.z, pickup.kind));
   activeLayout.targets.forEach(target => createTarget(target.x, target.z, target.rotation));
-  ui.targets.textContent = String(activeLayout.targets.length);
-  ui.objective.innerHTML = `<small>${activeLayout.callsign}</small><b>${activeLayout.objective}</b>`;
+  currentRound=1;roundAwarded=false;updateRoundHud();canvas.dataset.targetsRemaining=String(activeLayout.targets.length);
   canvas.dataset.prototype="scraproad-1v1-foundation";canvas.dataset.arenaLayout=activeLayout.id;canvas.dataset.arenaKind=activeLayout.arenaKind;canvas.dataset.arenaRadius=String(ARENA_RADIUS);canvas.dataset.ringInnerRadius=String(activeLayout.ringInnerRadius);canvas.dataset.ringOuterRadius=String(activeLayout.ringOuterRadius);canvas.dataset.rampColliders=String(ramps.filter(ramp=>ramp.kind==="ramp").length);canvas.dataset.bridgeColliders=String(ramps.filter(ramp=>ramp.kind==="bridge").length);canvas.dataset.heightfieldColliders=String(driveHeightfields.length);canvas.dataset.majorColliders=String(obstacles.length+boxColliders.length+(activeLayout.arenaKind==="capsule"?3:0));canvas.dataset.vehicleCollider="three-disc-capsule-2.24x4.14x0.72";canvas.dataset.shotsFired="0";canvas.dataset.fireHeld="false";canvas.dataset.racekartAssets="modular-racekart-track-hilly";canvas.dataset.racingAssetsUsage=activeLayout.arenaKind==="capsule"?"rim-railings":"ramps-fences-props";canvas.dataset.colliderSource=activeLayout.arenaKind==="capsule"?"analytic-capsule-bands":"visual-asset-heightfields";canvas.dataset.wallRideContact="pending";auditHeightfieldCoverage();
   levelStarted = true; levelStarting = false; paused = false; ui.levelSelect.hidden = true; resetVehicle(); runSmokeRoutes();
-  showMessage(rampSmokeTest?"RAMP SUITE // AUTO DRIVE":allSurfaceSmokeTest?"ALL RAMPS // AUTO DRIVE":wallRideSmokeTest?"WALL-RIDE SUITE // AUTO DRIVE":holdFireSmokeTest?"HOLD-FIRE SMOKE TEST // COMPLETE":`${activeLayout.name.toUpperCase()} // DEPLOYED`);
+  showMessage(rampSmokeTest?"RAMP SUITE // AUTO DRIVE":allSurfaceSmokeTest?"ALL RAMPS // AUTO DRIVE":wallRideSmokeTest?"WALL-RIDE SUITE // AUTO DRIVE":holdFireSmokeTest?"HOLD-FIRE SMOKE TEST // COMPLETE":boostSmokeTest?"BOOST STAMINA TEST // COMPLETE":roundWinSmokeTest?"ROUND WIN HUD TEST // COMPLETE":`${activeLayout.name.toUpperCase()} // DEPLOYED`);
 }
 
 document.querySelectorAll<HTMLButtonElement>("[data-level]").forEach(button => {
@@ -1634,8 +1669,9 @@ document.querySelectorAll<HTMLButtonElement>("[data-weapon]").forEach(button=>{
   button.addEventListener("click",()=>selectWeapon(button.dataset.weapon as WeaponKind));
 });
 selectWeapon("mg",false);
+updateRoundHud();
 const requestedLevel = new URLSearchParams(location.search).get("level") as ScraproadLevelId | null;
-if (rampSmokeTest || allSurfaceSmokeTest || wallRideSmokeTest || holdFireSmokeTest || (requestedLevel && requestedLevel in scraproadArenaLayouts)) void startLevel(requestedLevel && requestedLevel in scraproadArenaLayouts ? requestedLevel : defaultScraproadLevel);
+if (rampSmokeTest || allSurfaceSmokeTest || wallRideSmokeTest || holdFireSmokeTest || boostSmokeTest || roundWinSmokeTest || (requestedLevel && requestedLevel in scraproadArenaLayouts)) void startLevel(requestedLevel && requestedLevel in scraproadArenaLayouts ? requestedLevel : defaultScraproadLevel);
 
 window.addEventListener("keydown",event=>{if(["KeyW","KeyA","KeyS","KeyD","Space","ShiftLeft","KeyF","F3"].includes(event.code))event.preventDefault();if(event.repeat||!levelStarted)return;if(event.code==="Escape"){togglePause();return;}if(event.code==="KeyR")resetVehicle();if(event.code==="KeyC"){cameraMode=(cameraMode+1)%2;showMessage(cameraMode?"CAMERA // OVERWATCH":"CAMERA // CHASE");}if(event.code==="KeyB"||event.code==="KeyH"||event.code==="F3")toggleDebug();if(event.code==="KeyF")setFireHeld(true);input.add(event.code);});
 window.addEventListener("keyup",event=>{input.delete(event.code);if(event.code==="KeyF")setFireHeld(false);});
@@ -1648,11 +1684,11 @@ document.addEventListener("visibilitychange",()=>{if(document.hidden){input.clea
 window.addEventListener("keydown", startSoundtrack, { capture: true });
 window.addEventListener("pointerdown", startSoundtrack, { capture: true });
 canvas.addEventListener("contextmenu",event=>event.preventDefault());
-getElement("help-button").addEventListener("click",()=>toggleControls());getElement("controls-close").addEventListener("click",()=>toggleControls(false));getElement("resume-button").addEventListener("click",()=>togglePause(false));
+getElement("controls-close").addEventListener("click",()=>toggleControls(false));getElement("resume-button").addEventListener("click",()=>togglePause(false));
 document.querySelectorAll<HTMLButtonElement>("[data-key]").forEach(button=>{const code=button.dataset.key??"";const press=(event:PointerEvent)=>{event.preventDefault();if(code==="Fire")setFireHeld(true);else input.add(code);};const release=(event:PointerEvent)=>{event.preventDefault();if(code==="Fire")setFireHeld(false);else input.delete(code);};button.addEventListener("pointerdown",press);button.addEventListener("pointerup",release);button.addEventListener("pointercancel",release);button.addEventListener("pointerleave",release);});
 window.addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight,false);renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));});
 
-const clock=new THREE.Clock();let physicsAccumulator=0;let radarAccumulator=0;let hudAccumulator=0;let debugAccumulator=0;let frameAverage=1/60;let physicsStepMs=0;
+const clock=new THREE.Clock();let physicsAccumulator=0;let hudAccumulator=0;let debugAccumulator=0;let frameAverage=1/60;let physicsStepMs=0;
 function updateDebug(frameDelta:number):void{
   frameAverage=THREE.MathUtils.lerp(frameAverage,frameDelta,.08);debugAccumulator+=frameDelta;if(debugAccumulator<.2)return;debugAccumulator=0;
   const fps=frameAverage>0?1/frameAverage:0;const contact=vehicle.grounded?(vehicle.activeRamp?vehicle.activeRamp.kind.toUpperCase():(activeLayout.arenaKind==="capsule"?"FLAT FLOOR":"TERRAIN")):"AIRBORNE";
@@ -1666,7 +1702,7 @@ function animate():void{
     physicsAccumulator=Math.min(physicsAccumulator+frameDelta,FIXED_TIMESTEP*MAX_PHYSICS_STEPS);
     const physicsStart=performance.now();let steps=0;
     while(physicsAccumulator>=FIXED_TIMESTEP&&steps<MAX_PHYSICS_STEPS){capturePhysicsPose();elapsed+=FIXED_TIMESTEP;updateVehicle(FIXED_TIMESTEP);updateWeapon(FIXED_TIMESTEP);updateProjectiles(FIXED_TIMESTEP);physicsAccumulator-=FIXED_TIMESTEP;steps++;}
-    physicsStepMs=performance.now()-physicsStart;updateVehicleVisual(physicsAccumulator/FIXED_TIMESTEP);updateCamera(frameDelta);updateAim(frameDelta);updatePickups(frameDelta);hudAccumulator+=frameDelta;radarAccumulator+=frameDelta;if(hudAccumulator>.1){hudAccumulator=0;updateHud();}if(radarAccumulator>.1){radarAccumulator=0;drawRadar();}
+    physicsStepMs=performance.now()-physicsStart;updateVehicleVisual(physicsAccumulator/FIXED_TIMESTEP);updateCamera(frameDelta);updateAim(frameDelta);updatePickups(frameDelta);hudAccumulator+=frameDelta;if(hudAccumulator>.1){hudAccumulator=0;updateHud();}
   }else{physicsAccumulator=0;}
   renderer.render(scene,camera);updateDebug(frameDelta);
 }

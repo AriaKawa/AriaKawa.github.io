@@ -34,7 +34,9 @@ const layouts = await readFile(resolve(import.meta.dirname, "src/game/scraproad/
 const checks = [
   ["title", /Scraproad Arena/i],
   ["game canvas", /id="game"/],
-  ["HUD", /id="health-value"/],
+  ["health meter", /id="health-value"[\s\S]*id="health-bar"/],
+  ["bottom boost meter", /id="boost-value"[\s\S]*id="boost-bar"/],
+  ["round score HUD", /id="player-rounds"[\s\S]*id="round-value"[\s\S]*id="enemy-rounds"/],
   ["controls", /id="controls"/],
   ["level selector", /id="level-select"/],
   ["Dust Ring deploy button", /data-level="dustring"/],
@@ -69,13 +71,19 @@ const sceneChecks = [
   ["ring lane markers", /ring-lane-marker/],
   ["roof weapon mount", /const turret = new THREE\.Group/],
   ["three test turret definitions", /mg: \{ kind:"mg"[\s\S]*rocket: \{ kind:"rocket"[\s\S]*sniper: \{ kind:"sniper"/],
-  ["top-right turret selector", /querySelectorAll<HTMLButtonElement>\("\[data-weapon\]"\)/],
+  ["turret test selector", /querySelectorAll<HTMLButtonElement>\("\[data-weapon\]"\)/],
   ["procedural rocket turret", /kind === "rocket"[\s\S]*new THREE\.BoxGeometry\(1\.28,\.9,1\.72\)/],
   ["procedural sniper turret", /new THREE\.BoxGeometry\(\.12,\.12,3\.18\)[\s\S]*new THREE\.BoxGeometry\(\.68,\.34,\.48\)/],
   ["rocket splash damage", /bullet\.splashRadius[\s\S]*damageTarget\(target,damage\)/],
-  ["anime impact frames", /triggerImpactFrame[\s\S]*lastImpactFrame/],
+  ["large world-space rocket impact", /lastImpactEffect="rocket-world-detonation"[\s\S]*growth:major&&isRocket\?7\.2/],
+  ["tight sniper laser tracer", /function spawnSniperTracer[\s\S]*CylinderGeometry\(\.2,\.2,distance[\s\S]*sniperTracerLength/],
+  ["pinpoint sniper hit", /function spawnSniperHit[\s\S]*sniper-pinpoint-spark/],
   ["rocket flame trail", /spawnRocketTrail/],
   ["sniper segment collision", /segmentDistanceSq/],
+  ["slow stamina boost recharge", /vehicle\.boost\+6\*dt/],
+  ["boost depletion and recharge smoke route", /boostSmokeTest[\s\S]*boostAfterUse[\s\S]*boostAfterRecharge[\s\S]*boostSmoke/],
+  ["round win glow state", /function awardPlayerRound[\s\S]*roundWinner="player"/],
+  ["round HUD win smoke route", /roundWinSmokeTest[\s\S]*roundHudSmoke/],
   ["barrel pitch mount", /let barrelPivot = new THREE\.Group/],
   ["mouse world ray", /intersectObjects\(aimSurfaces/],
   ["ground crosshair", /const groundCrosshair = new THREE\.Group/],
@@ -134,6 +142,7 @@ const sceneChecks = [
 for (const [label, pattern] of sceneChecks) {
   if (!pattern.test(source)) throw new Error(`Missing ${label} implementation`);
 }
+if (/impact-frame/.test(html) || /triggerImpactFrame/.test(source)) throw new Error("Full-screen weapon impact frames must remain removed");
 const colliderChecks = [
   ["downward visual ray sampling", /new THREE\.Raycaster\(\)[\s\S]*intersectObject\(object, true\)/],
   ["bounded heightfield grid", /columns = THREE\.MathUtils\.clamp[\s\S]*rows = THREE\.MathUtils\.clamp/],
