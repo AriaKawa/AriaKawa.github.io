@@ -34,7 +34,7 @@ export type ScraproadArenaLayout = {
   callsign: string;
   description: string;
   difficulty: string;
-  arenaKind: "ring" | "oval-bowl";
+  arenaKind: "ring" | "capsule";
   bowl?: OvalBowlConfig;
   radius: number;
   ringInnerRadius: number;
@@ -106,15 +106,15 @@ export const scraproadArenaLayouts: Record<ScraproadLevelId, ScraproadArenaLayou
   },
   ovalbowl: {
     id: "ovalbowl",
-    name: "Oval Bowl",
-    callsign: "ARENA 02 // WALL-RIDE BOWL",
-    description: "A clean capsule stadium with a wide fighting floor and one continuous, drivable banked wall.",
+    name: "Capsule Circuit",
+    callsign: "ARENA 02 // CAPSULE WALL-RIDE",
+    description: "A flat capsule stadium with long straights, rounded ends, a layered bank, and a hard upper guard.",
     difficulty: "WALL RIDE READY",
-    arenaKind: "oval-bowl",
+    arenaKind: "capsule",
     radius: 112,
-    ringInnerRadius: 42,
+    ringInnerRadius: 44,
     ringOuterRadius: 62,
-    bowl: { straightHalfLength: 46, flatRadius: 42, outerRadius: 62, wallRise: 16.5 },
+    bowl: { straightHalfLength: 46, flatRadius: 44, outerRadius: 62, wallRise: 11.5, guardHeight: 4.5 },
     spawn: { x: 0, z: -22, heading: 0 },
     opponentSpawn: { x: 0, z: 22, heading: half },
     objective: "Own the open floor. Carry speed into the bank. Clear four test targets.",

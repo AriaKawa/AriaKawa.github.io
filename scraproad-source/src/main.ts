@@ -19,10 +19,10 @@ import {
   type HeightfieldCollider,
 } from "./game/scraproad/DriveSurfaceCollider";
 import {
-  clampToOvalBowl,
   createOvalBankGeometry,
   createOvalFloorGeometry,
   createOvalRimCurtainGeometry,
+  resolveOvalBoundary,
   sampleOvalBowl,
 } from "./game/scraproad/OvalBowlSurface";
 import "./style.css";
@@ -243,7 +243,7 @@ contactDebug.name = "vehicle-surface-contact"; contactDebug.renderOrder = 30; co
 scene.add(contactDebug); debugVisuals.push(contactDebug);
 
 function getGroundHeight(x: number, z: number): number {
-  if (activeLayout.arenaKind === "oval-bowl" && activeLayout.bowl) {
+  if (activeLayout.arenaKind === "capsule" && activeLayout.bowl) {
     return sampleOvalBowl(activeLayout.bowl, x, z).height;
   }
   // The combat bowl is intentionally flat. A tiny visual undulation keeps the
@@ -252,13 +252,13 @@ function getGroundHeight(x: number, z: number): number {
 }
 
 function bowlSurfaceSample(x: number, z: number): DriveSurfaceSample | null {
-  if (activeLayout.arenaKind !== "oval-bowl" || !activeLayout.bowl) return null;
+  if (activeLayout.arenaKind !== "capsule" || !activeLayout.bowl) return null;
   const sample = sampleOvalBowl(activeLayout.bowl, x, z);
   if (sample.progress <= .001) return null;
   return {
     ramp: {
       kind: "wall",
-      label: "continuous oval wall-ride bank",
+      label: `${sample.band} capsule collider band`,
       rotation: Math.atan2(sample.outwardX, sample.outwardZ),
       length: activeLayout.bowl.outerRadius - activeLayout.bowl.flatRadius,
       rise: activeLayout.bowl.wallRise,
@@ -332,7 +332,7 @@ function addSpawnMarker(x: number, z: number, heading: number, opponent = false)
 }
 
 async function addArena(): Promise<void> {
-  if (activeLayout.arenaKind === "oval-bowl") {
+  if (activeLayout.arenaKind === "capsule") {
     await addOvalBowlArena();
     return;
   }
@@ -398,17 +398,17 @@ async function addArena(): Promise<void> {
 }
 
 async function addOvalBowlArena(): Promise<void> {
-  if (!activeLayout.bowl) throw new Error("Oval Bowl layout is missing its surface configuration");
+  if (!activeLayout.bowl) throw new Error("Capsule Circuit layout is missing its surface configuration");
   const bowl = activeLayout.bowl;
   const floorMaterial = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .98, metalness: .02, side: THREE.DoubleSide });
   const floor = new THREE.Mesh(createOvalFloorGeometry(bowl), floorMaterial);
-  floor.name = "oval-bowl-central-floor-collider";
+  floor.name = "capsule-flat-floor-collider";
   floor.receiveShadow = true;
   scene.add(floor); aimSurfaces.push(floor);
 
   const bankMaterial = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .88, metalness: .08, side: THREE.DoubleSide });
   const bank = new THREE.Mesh(createOvalBankGeometry(bowl), bankMaterial);
-  bank.name = "oval-bowl-continuous-wall-ride-surface";
+  bank.name = "capsule-continuous-layered-wall-ride-surface";
   bank.receiveShadow = true;
   scene.add(bank); aimSurfaces.push(bank);
 
@@ -416,27 +416,43 @@ async function addOvalBowlArena(): Promise<void> {
     createOvalRimCurtainGeometry(bowl),
     new THREE.MeshStandardMaterial({ color: 0x242422, roughness: .75, metalness: .48, side: THREE.DoubleSide }),
   );
-  rim.name = "oval-bowl-solid-outer-boundary";
+  rim.name = "capsule-solid-upper-guard-collider";
   rim.receiveShadow = true;
   scene.add(rim);
+
+  const floorDebug = new THREE.Mesh(
+    floor.geometry,
+    new THREE.MeshBasicMaterial({ color: 0x72ff68, wireframe: true, transparent: true, opacity: .34, depthTest: false }),
+  );
+  floorDebug.name = "capsule-flat-floor-collider-debug";
+  floorDebug.visible = false; floorDebug.renderOrder = 21;
+  scene.add(floorDebug); debugVisuals.push(floorDebug);
 
   const bankDebug = new THREE.Mesh(
     bank.geometry,
     new THREE.MeshBasicMaterial({ color: 0x55ffe2, wireframe: true, transparent: true, opacity: .56, depthTest: false }),
   );
-  bankDebug.name = "oval-bowl-matching-collider-debug";
+  bankDebug.name = "capsule-transition-and-bank-collider-debug";
   bankDebug.visible = false; bankDebug.renderOrder = 22;
   scene.add(bankDebug); debugVisuals.push(bankDebug);
+
+  const guardDebug = new THREE.Mesh(
+    rim.geometry,
+    new THREE.MeshBasicMaterial({ color: 0xff6a42, wireframe: true, transparent: true, opacity: .72, depthTest: false }),
+  );
+  guardDebug.name = "capsule-upper-guard-collider-debug";
+  guardDebug.visible = false; guardDebug.renderOrder = 23;
+  scene.add(guardDebug); debugVisuals.push(guardDebug);
 
   const centerMark = new THREE.Mesh(
     new THREE.RingGeometry(7.2, 7.7, 48),
     new THREE.MeshBasicMaterial({ color: 0xa45a35, side: THREE.DoubleSide, transparent: true, opacity: .8 }),
   );
-  centerMark.rotateX(-Math.PI / 2); centerMark.position.y = .08; centerMark.name = "oval-bowl-center-mark"; scene.add(centerMark);
+  centerMark.rotateX(-Math.PI / 2); centerMark.position.y = .08; centerMark.name = "capsule-center-mark"; scene.add(centerMark);
   for (let marker = -5; marker <= 5; marker++) {
     if (marker === 0) continue;
     const dash = new THREE.Mesh(new THREE.BoxGeometry(.28, .035, 4.6), new THREE.MeshBasicMaterial({ color: 0xb99a69 }));
-    dash.position.set(0, .09, marker * 7.3); dash.name = "oval-bowl-centerline-marker"; scene.add(dash);
+    dash.position.set(0, .09, marker * 7.3); dash.name = "capsule-centerline-marker"; scene.add(dash);
   }
 
   await Promise.all([
@@ -448,9 +464,11 @@ async function addOvalBowlArena(): Promise<void> {
   addSpawnMarker(activeLayout.spawn.x, activeLayout.spawn.z, activeLayout.spawn.heading);
   addSpawnMarker(activeLayout.opponentSpawn.x, activeLayout.opponentSpawn.z, activeLayout.opponentSpawn.heading, true);
 
-  canvas.dataset.bowlCollision = "shared-mathematical-surface";
+  canvas.dataset.capsuleCollision = "three-disc-analytic-bands";
   canvas.dataset.bowlShape = "capsule";
-  canvas.dataset.bankedWallColliders = "1";
+  canvas.dataset.bankedWallColliders = "3";
+  canvas.dataset.transitionCollider = "continuous";
+  canvas.dataset.upperGuardCollider = "continuous";
   canvas.dataset.wallRideSurface = "continuous";
 }
 
@@ -654,7 +672,7 @@ function registerPhysicsDebug(): void {
 }
 
 function auditArenaFlow(): void {
-  if (activeLayout.arenaKind === "oval-bowl" && activeLayout.bowl) {
+  if (activeLayout.arenaKind === "capsule" && activeLayout.bowl) {
     const bowl = activeLayout.bowl;
     const floorSamples = [
       [0, 0], [-20, -24], [20, -24], [-20, 24], [20, 24], [0, -38], [0, 38],
@@ -976,6 +994,17 @@ function equipPickup(pickup:Pickup): void {
 
 function showMessage(text:string): void {ui.message.textContent=text;ui.message.classList.add("show");clearTimeout(messageTimer);messageTimer=window.setTimeout(()=>ui.message.classList.remove("show"),1900);}
 
+function applyCapsuleGuardResponse(normalX:number,normalZ:number,moveAngle:number):void{
+  let velocityX=Math.sin(moveAngle)*vehicle.speed,velocityZ=Math.cos(moveAngle)*vehicle.speed;
+  const outwardSpeed=velocityX*normalX+velocityZ*normalZ;
+  if(outwardSpeed<=0)return;
+  velocityX-=normalX*outwardSpeed*1.08;velocityZ-=normalZ*outwardSpeed*1.08;
+  const redirectedSpeed=Math.hypot(velocityX,velocityZ);
+  vehicle.speed=Math.min(Math.abs(vehicle.speed),redirectedSpeed);
+  if(redirectedSpeed>.05){const redirectedAngle=Math.atan2(velocityX,velocityZ);vehicle.heading=redirectedAngle-vehicle.driftAngle;}
+  vehicle.driftAngle*=.35;
+}
+
 function updateVehicle(dt:number): void {
   vehicle.collisionCooldown=Math.max(0,vehicle.collisionCooldown-dt);
   const forward=input.has("KeyW")?1:0;const reverse=input.has("KeyS")?1:0;const steer=(input.has("KeyA")?1:0)-(input.has("KeyD")?1:0);const drifting=input.has("Space");
@@ -993,10 +1022,15 @@ function updateVehicle(dt:number): void {
   const moveAngle=vehicle.heading+vehicle.driftAngle;
   vehicle.position.x+=Math.sin(moveAngle)*vehicle.speed*dt;vehicle.position.z+=Math.cos(moveAngle)*vehicle.speed*dt;
 
-  let collided=false;
-  if(activeLayout.arenaKind==="oval-bowl"&&activeLayout.bowl){
-    const clamped=clampToOvalBowl(activeLayout.bowl,vehicle.position.x,vehicle.position.z,VEHICLE_COLLIDER_HALF_LENGTH+VEHICLE_COLLIDER_RADIUS);
-    if(clamped.collided){vehicle.position.x=clamped.x;vehicle.position.z=clamped.z;collided=true;showMessage("RIM CONTACT // DROP BACK INTO THE BOWL");}
+  let collided=false,capsuleGuardCollision=false;
+  if(activeLayout.arenaKind==="capsule"&&activeLayout.bowl){
+    const boundary=resolveOvalBoundary(activeLayout.bowl,vehicle.position.x,vehicle.position.z,vehicle.heading,VEHICLE_COLLIDER_HALF_LENGTH,VEHICLE_COLLIDER_RADIUS);
+    if(boundary.collided){
+      vehicle.position.x=boundary.x;vehicle.position.z=boundary.z;collided=true;capsuleGuardCollision=true;
+      applyCapsuleGuardResponse(boundary.normalX,boundary.normalZ,moveAngle);
+      canvas.dataset.guardContact="active";canvas.dataset.guardPenetration=boundary.penetration.toFixed(3);
+      if(vehicle.collisionCooldown<=0)showMessage("UPPER GUARD // SLIDE BACK INTO THE ARENA");
+    }else canvas.dataset.guardContact="clear";
   }else{
     const arenaDistance=Math.hypot(vehicle.position.x,vehicle.position.z);
     const boundaryLimit=ARENA_RADIUS-(VEHICLE_COLLIDER_HALF_LENGTH+VEHICLE_COLLIDER_RADIUS);
@@ -1016,14 +1050,21 @@ function updateVehicle(dt:number): void {
 
   const rampBefore=vehicle.activeRamp;
   let rampNow=rampSample(vehicle.position.x,vehicle.position.z);
-  if(collided){if(Math.abs(vehicle.speed)>6){hitVehicle(Math.round(Math.abs(vehicle.speed)*.32));showMessage("SCRAP COLLISION // HULL DAMAGED");}vehicle.speed*=-.18;vehicle.driftAngle*=.25;}
+  if(collided){if(Math.abs(vehicle.speed)>6){hitVehicle(Math.round(Math.abs(vehicle.speed)*.32));showMessage("SCRAP COLLISION // HULL DAMAGED");}if(!capsuleGuardCollision)vehicle.speed*=-.18;vehicle.driftAngle*=.25;}
 
   rampNow=rampSample(vehicle.position.x,vehicle.position.z);
   if(rampNow){
     vehicle.activeRamp=rampNow.ramp;vehicle.grounded=true;vehicle.verticalVelocity=0;vehicle.position.y=rampNow.height+.06;
     if(rampNow.ramp.kind==="wall"){
       const wallProgress=rampNow.localZ;const grip=THREE.MathUtils.smoothstep(wallProgress,.08,.42);
-      vehicle.speed*=Math.exp(-.035*grip*dt);canvas.dataset.wallRideGrip=(grip*.85+.15).toFixed(2);
+      const wallSample=sampleOvalBowl(activeLayout.bowl!,vehicle.position.x,vehicle.position.z);
+      const outwardTravel=Math.sin(moveAngle)*wallSample.outwardX+Math.cos(moveAngle)*wallSample.outwardZ;
+      const upperResistance=THREE.MathUtils.smoothstep(wallProgress,.62,.9);
+      vehicle.speed-=outwardTravel*(5.8*grip+12*upperResistance)*dt;
+      vehicle.speed=THREE.MathUtils.clamp(vehicle.speed,-11,maxForward);
+      vehicle.driftAngle=THREE.MathUtils.damp(vehicle.driftAngle,0,5+grip*7,dt);
+      vehicle.speed*=Math.exp(-.18*upperResistance*dt);canvas.dataset.wallRideGrip=(grip*.85+.15).toFixed(2);
+      canvas.dataset.wallSurfaceBand=wallSample.band;canvas.dataset.wallSurfaceNormal=`${wallSample.normal.x.toFixed(2)},${wallSample.normal.y.toFixed(2)},${wallSample.normal.z.toFixed(2)}`;
       if(wallProgress>.18&&Math.abs(vehicle.speed)>5)canvas.dataset.wallRideContact="passed";
     }
   }else{
@@ -1098,8 +1139,9 @@ function updatePickups(dt:number):void{for(const pickup of pickups){if(pickup.co
 function updateHud():void{
   ui.speed.textContent=String(Math.round(Math.abs(vehicle.speed)*4.2));ui.boost.textContent=String(Math.round(vehicle.boost));ui.health.textContent=String(Math.round(vehicle.health));ui.healthBar.style.width=`${vehicle.health/stats.maxHealth*100}%`;
   const contact=rampSample(vehicle.position.x,vehicle.position.z);const baseHeight=getGroundHeight(vehicle.position.x,vehicle.position.z);
-  canvas.dataset.groundContact=vehicle.grounded?(vehicle.activeRamp?vehicle.activeRamp.kind:"terrain"):"airborne";canvas.dataset.aimRay=aimReady?"locked":"searching";canvas.dataset.aimPoint=`${aimPoint.x.toFixed(1)},${aimPoint.y.toFixed(1)},${aimPoint.z.toFixed(1)}`;canvas.dataset.vehiclePosition=`${vehicle.position.x.toFixed(1)},${vehicle.position.y.toFixed(1)},${vehicle.position.z.toFixed(1)}`;
-  canvas.dataset.surfaceLabel=contact?.ramp.label??"base terrain";canvas.dataset.surfaceHeight=(contact?.height??baseHeight).toFixed(2);canvas.dataset.baseGroundHeight=baseHeight.toFixed(2);canvas.dataset.contactDelta=((contact?.height??baseHeight)-baseHeight).toFixed(2);canvas.dataset.heightMismatch=contact?Math.abs(vehicle.position.y-.06-contact.height).toFixed(3):"0.000";canvas.dataset.wallRideActive=String(contact?.ramp.kind==="wall");
+  const flatContactLabel=activeLayout.arenaKind==="capsule"?"flat-floor":"terrain";
+  canvas.dataset.groundContact=vehicle.grounded?(vehicle.activeRamp?vehicle.activeRamp.kind:flatContactLabel):"airborne";canvas.dataset.aimRay=aimReady?"locked":"searching";canvas.dataset.aimPoint=`${aimPoint.x.toFixed(1)},${aimPoint.y.toFixed(1)},${aimPoint.z.toFixed(1)}`;canvas.dataset.vehiclePosition=`${vehicle.position.x.toFixed(1)},${vehicle.position.y.toFixed(1)},${vehicle.position.z.toFixed(1)}`;
+  canvas.dataset.surfaceLabel=contact?.ramp.label??(activeLayout.arenaKind==="capsule"?"flat center floor":"base terrain");canvas.dataset.surfaceHeight=(contact?.height??baseHeight).toFixed(2);canvas.dataset.baseGroundHeight=baseHeight.toFixed(2);canvas.dataset.contactDelta=((contact?.height??baseHeight)-baseHeight).toFixed(2);canvas.dataset.heightMismatch=contact?Math.abs(vehicle.position.y-.06-contact.height).toFixed(3):"0.000";canvas.dataset.wallRideActive=String(contact?.ramp.kind==="wall");
   contactDebug.position.set(vehicle.position.x,(contact?.height??baseHeight)+.16,vehicle.position.z);
   if(rampSmokeTest&&vehicle.activeRamp?.kind==="ramp")canvas.dataset.rampDriveUp="passed";if(rampSmokeTest&&!vehicle.grounded&&canvas.dataset.rampDriveUp==="passed")canvas.dataset.rampLaunch="passed";
 }
@@ -1164,33 +1206,56 @@ function runRampTraversalSuite(): boolean {
 }
 
 function runWallRideSuite(): boolean {
-  if (activeLayout.arenaKind !== "oval-bowl" || !activeLayout.bowl) {
+  if (activeLayout.arenaKind !== "capsule" || !activeLayout.bowl) {
     canvas.dataset.wallRideSmoke = "skipped-non-bowl";
     return true;
   }
   const bowl = activeLayout.bowl;
-  vehicle.position.set(bowl.flatRadius - 4, getGroundHeight(bowl.flatRadius - 4, 0) + .06, 0);
-  vehicle.heading = Math.PI / 2; vehicle.speed = 8; vehicle.driftAngle = 0; vehicle.verticalVelocity = 0;
-  vehicle.pitch = 0; vehicle.roll = 0; vehicle.grounded = true; vehicle.activeRamp = null;
-  let maximumProgress = 0, maximumHeight = 0, stayedInside = true, contactedWall = false;
-  input.add("KeyW");
-  for (let step = 0; step < 240; step++) {
-    elapsed += FIXED_TIMESTEP; updateVehicle(FIXED_TIMESTEP);
-    const sample = sampleOvalBowl(bowl, vehicle.position.x, vehicle.position.z);
-    maximumProgress = Math.max(maximumProgress, sample.progress);
-    maximumHeight = Math.max(maximumHeight, vehicle.position.y);
-    stayedInside = stayedInside && sample.distance <= bowl.outerRadius - VEHICLE_COLLIDER_HALF_LENGTH - VEHICLE_COLLIDER_RADIUS + .05;
-    contactedWall = contactedWall || sample.progress > .001;
-    if (maximumProgress > .72 && vehicle.speed < 0) break;
+  const approaches = [
+    { label: "east-straight", x: bowl.flatRadius - 5, z: 0, heading: Math.PI / 2 },
+    { label: "east-diagonal", x: bowl.flatRadius - 5, z: -14, heading: Math.PI / 2 - .34 },
+    { label: "north-cap", x: 0, z: bowl.straightHalfLength + bowl.flatRadius - 5, heading: 0 },
+    { label: "north-cap-diagonal", x: -14, z: bowl.straightHalfLength + bowl.flatRadius - 5, heading: .34 },
+  ];
+  const failures:string[]=[];
+  let maximumProgress = 0, maximumHeight = 0, stayedInside = true, returnedToFloor = true;
+  for(const approach of approaches){
+    vehicle.position.set(approach.x,getGroundHeight(approach.x,approach.z)+.06,approach.z);
+    vehicle.heading=approach.heading;vehicle.speed=8;vehicle.driftAngle=0;vehicle.verticalVelocity=0;
+    vehicle.pitch=0;vehicle.roll=0;vehicle.grounded=true;vehicle.activeRamp=null;
+    let routeProgress=0,routeHeight=0,contactedWall=false;
+    input.add("KeyW");
+    for(let step=0;step<210;step++){
+      elapsed+=FIXED_TIMESTEP;updateVehicle(FIXED_TIMESTEP);
+      const sample=sampleOvalBowl(bowl,vehicle.position.x,vehicle.position.z);
+      routeProgress=Math.max(routeProgress,sample.progress);routeHeight=Math.max(routeHeight,vehicle.position.y);
+      maximumProgress=Math.max(maximumProgress,routeProgress);maximumHeight=Math.max(maximumHeight,routeHeight);
+      contactedWall=contactedWall||sample.progress>.001;
+      for(const offset of [-VEHICLE_COLLIDER_HALF_LENGTH,0,VEHICLE_COLLIDER_HALF_LENGTH]){
+        const footprint=sampleOvalBowl(bowl,vehicle.position.x+Math.sin(vehicle.heading)*offset,vehicle.position.z+Math.cos(vehicle.heading)*offset);
+        stayedInside=stayedInside&&footprint.distance<=bowl.outerRadius-VEHICLE_COLLIDER_RADIUS+.05;
+      }
+    }
+    const wallSample=sampleOvalBowl(bowl,vehicle.position.x,vehicle.position.z);
+    vehicle.heading=Math.atan2(-wallSample.outwardX,-wallSample.outwardZ);vehicle.driftAngle=0;vehicle.speed=Math.max(7,Math.abs(vehicle.speed));
+    for(let step=0;step<180;step++){elapsed+=FIXED_TIMESTEP;updateVehicle(FIXED_TIMESTEP);}
+    input.delete("KeyW");
+    const finalProgress=sampleOvalBowl(bowl,vehicle.position.x,vehicle.position.z).progress;
+    const routeReturned=finalProgress<.08&&vehicle.grounded;
+    returnedToFloor=returnedToFloor&&routeReturned;
+    if(!contactedWall||routeProgress<=.28||routeHeight<=2||!routeReturned)failures.push(`${approach.label}:${!contactedWall?"no-contact":routeProgress<=.28?"too-low":routeHeight<=2?"no-rise":"no-return"}`);
   }
-  input.delete("KeyW");
-  const passed = contactedWall && maximumProgress > .28 && maximumHeight > 2 && stayedInside;
-  canvas.dataset.wallRideSmoke = passed ? "passed" : "failed";
+  let passed = failures.length===0 && stayedInside && returnedToFloor;
+  canvas.dataset.wallRideApproaches = String(approaches.length);
+  canvas.dataset.wallRideFailures = failures.join("|") || "none";
   canvas.dataset.wallRideMaxProgress = maximumProgress.toFixed(2);
   canvas.dataset.wallRideMaxHeight = maximumHeight.toFixed(2);
   canvas.dataset.wallRideBoundary = stayedInside ? "passed" : "failed";
-  canvas.dataset.wallRideReturn = vehicle.grounded ? "passed" : "failed";
+  canvas.dataset.wallRideReturn = returnedToFloor ? "passed" : "failed";
   resetVehicle();
+  const resetPassed=vehicle.position.x===activeLayout.spawn.x&&vehicle.position.z===activeLayout.spawn.z&&vehicle.speed===0&&vehicle.verticalVelocity===0&&vehicle.pitch===0&&vehicle.roll===0&&vehicle.grounded&&sampleOvalBowl(bowl,vehicle.position.x,vehicle.position.z).progress===0;
+  canvas.dataset.wallReset=resetPassed?"passed":"failed";
+  passed=passed&&resetPassed;canvas.dataset.wallRideSmoke=passed?"passed":"failed";
   return passed;
 }
 
@@ -1218,7 +1283,7 @@ async function startLevel(levelId: ScraproadLevelId): Promise<void> {
   activeLayout.targets.forEach(target => createTarget(target.x, target.z, target.rotation));
   ui.targets.textContent = String(activeLayout.targets.length);
   ui.objective.innerHTML = `<small>${activeLayout.callsign}</small><b>${activeLayout.objective}</b>`;
-  canvas.dataset.prototype="scraproad-1v1-foundation";canvas.dataset.arenaLayout=activeLayout.id;canvas.dataset.arenaKind=activeLayout.arenaKind;canvas.dataset.arenaRadius=String(ARENA_RADIUS);canvas.dataset.ringInnerRadius=String(activeLayout.ringInnerRadius);canvas.dataset.ringOuterRadius=String(activeLayout.ringOuterRadius);canvas.dataset.rampColliders=String(ramps.filter(ramp=>ramp.kind==="ramp").length);canvas.dataset.bridgeColliders=String(ramps.filter(ramp=>ramp.kind==="bridge").length);canvas.dataset.heightfieldColliders=String(driveHeightfields.length);canvas.dataset.majorColliders=String(obstacles.length+boxColliders.length+(activeLayout.arenaKind==="oval-bowl"?1:0));canvas.dataset.vehicleCollider="low-capsule-2.24x4.14x0.72";canvas.dataset.shotsFired="0";canvas.dataset.fireHeld="false";canvas.dataset.racekartAssets="modular-racekart-track-hilly";canvas.dataset.racingAssetsUsage=activeLayout.arenaKind==="oval-bowl"?"rim-railings":"ramps-fences-props";canvas.dataset.colliderSource=activeLayout.arenaKind==="oval-bowl"?"shared-oval-surface":"visual-asset-heightfields";canvas.dataset.wallRideContact="pending";auditHeightfieldCoverage();
+  canvas.dataset.prototype="scraproad-1v1-foundation";canvas.dataset.arenaLayout=activeLayout.id;canvas.dataset.arenaKind=activeLayout.arenaKind;canvas.dataset.arenaRadius=String(ARENA_RADIUS);canvas.dataset.ringInnerRadius=String(activeLayout.ringInnerRadius);canvas.dataset.ringOuterRadius=String(activeLayout.ringOuterRadius);canvas.dataset.rampColliders=String(ramps.filter(ramp=>ramp.kind==="ramp").length);canvas.dataset.bridgeColliders=String(ramps.filter(ramp=>ramp.kind==="bridge").length);canvas.dataset.heightfieldColliders=String(driveHeightfields.length);canvas.dataset.majorColliders=String(obstacles.length+boxColliders.length+(activeLayout.arenaKind==="capsule"?3:0));canvas.dataset.vehicleCollider="three-disc-capsule-2.24x4.14x0.72";canvas.dataset.shotsFired="0";canvas.dataset.fireHeld="false";canvas.dataset.racekartAssets="modular-racekart-track-hilly";canvas.dataset.racingAssetsUsage=activeLayout.arenaKind==="capsule"?"rim-railings":"ramps-fences-props";canvas.dataset.colliderSource=activeLayout.arenaKind==="capsule"?"analytic-capsule-bands":"visual-asset-heightfields";canvas.dataset.wallRideContact="pending";auditHeightfieldCoverage();
   levelStarted = true; levelStarting = false; paused = false; ui.levelSelect.hidden = true; resetVehicle(); runSmokeRoutes();
   showMessage(rampSmokeTest?"RAMP SUITE // AUTO DRIVE":allSurfaceSmokeTest?"ALL RAMPS // AUTO DRIVE":wallRideSmokeTest?"WALL-RIDE SUITE // AUTO DRIVE":holdFireSmokeTest?"HOLD-FIRE SMOKE TEST // COMPLETE":`${activeLayout.name.toUpperCase()} // DEPLOYED`);
 }
@@ -1247,8 +1312,9 @@ window.addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camer
 const clock=new THREE.Clock();let physicsAccumulator=0;let radarAccumulator=0;let hudAccumulator=0;let debugAccumulator=0;let frameAverage=1/60;let physicsStepMs=0;
 function updateDebug(frameDelta:number):void{
   frameAverage=THREE.MathUtils.lerp(frameAverage,frameDelta,.08);debugAccumulator+=frameDelta;if(debugAccumulator<.2)return;debugAccumulator=0;
-  const fps=frameAverage>0?1/frameAverage:0;const contact=vehicle.grounded?(vehicle.activeRamp?vehicle.activeRamp.kind.toUpperCase():"TERRAIN"):"AIRBORNE";
-  ui.debug.textContent=`COLLISION DEBUG\n${contact} // ${canvas.dataset.surfaceLabel??"base terrain"}\nSURFACE ${canvas.dataset.surfaceHeight??"0.00"}M  BASE ${canvas.dataset.baseGroundHeight??"0.00"}M  Δ ${canvas.dataset.contactDelta??"0.00"}M\nVISUAL/COLLIDER ERROR ${canvas.dataset.heightMismatch??"0.000"}M\n${Math.abs(vehicle.speed*4.2).toFixed(0)} KM/H  ${fps.toFixed(0)} FPS  ${(frameAverage*1000).toFixed(1)} MS FRAME\n${physicsStepMs.toFixed(2)} MS PHYSICS  60 HZ\n${driveHeightfields.length} HEIGHTFIELDS  ${renderer.info.render.calls} DRAWS  ${renderer.info.render.triangles.toLocaleString()} TRIS\n${scene.children.length+bullets.length+dust.length} ACTIVE OBJECTS`;
+  const fps=frameAverage>0?1/frameAverage:0;const contact=vehicle.grounded?(vehicle.activeRamp?vehicle.activeRamp.kind.toUpperCase():(activeLayout.arenaKind==="capsule"?"FLAT FLOOR":"TERRAIN")):"AIRBORNE";
+  const surfaceColliderCount=activeLayout.arenaKind==="capsule"?3:driveHeightfields.length;
+  ui.debug.textContent=`COLLISION DEBUG\n${contact} // ${canvas.dataset.surfaceLabel??"base terrain"}\nSURFACE ${canvas.dataset.surfaceHeight??"0.00"}M  BASE ${canvas.dataset.baseGroundHeight??"0.00"}M  Δ ${canvas.dataset.contactDelta??"0.00"}M\nVISUAL/COLLIDER ERROR ${canvas.dataset.heightMismatch??"0.000"}M\n${Math.abs(vehicle.speed*4.2).toFixed(0)} KM/H  ${fps.toFixed(0)} FPS  ${(frameAverage*1000).toFixed(1)} MS FRAME\n${physicsStepMs.toFixed(2)} MS PHYSICS  60 HZ\n${surfaceColliderCount} SURFACE COLLIDERS  ${renderer.info.render.calls} DRAWS  ${renderer.info.render.triangles.toLocaleString()} TRIS\n${scene.children.length+bullets.length+dust.length} ACTIVE OBJECTS`;
   canvas.dataset.physicsFps="60";canvas.dataset.frameDeltaMs=(frameAverage*1000).toFixed(2);canvas.dataset.physicsStepMs=physicsStepMs.toFixed(2);
 }
 function animate():void{

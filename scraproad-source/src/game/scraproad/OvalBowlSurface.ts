@@ -5,6 +5,7 @@ export type OvalBowlConfig = {
   flatRadius: number;
   outerRadius: number;
   wallRise: number;
+  guardHeight: number;
 };
 
 export type OvalBowlSample = {
@@ -15,10 +16,40 @@ export type OvalBowlSample = {
   outwardX: number;
   outwardZ: number;
   normal: THREE.Vector3;
+  band: "floor" | "transition" | "bank" | "upper-bank";
 };
 
 const subtleFloorHeight = (x: number, z: number): number =>
   Math.sin(x * .075) * Math.cos(z * .058) * .035;
+
+const smoothProfile = (value: number): number => value * value * (3 - 2 * value);
+const smoothProfileSlope = (value: number): number => 6 * value * (1 - value);
+
+function sampleBankProfile(progress: number, wallWidth: number, wallRise: number): { height: number; slope: number; band: OvalBowlSample["band"] } {
+  if (progress <= 0) return { height: 0, slope: 0, band: "floor" };
+  if (progress < .28) {
+    const local = progress / .28;
+    return {
+      height: wallRise * .14 * smoothProfile(local),
+      slope: wallRise * .14 * smoothProfileSlope(local) / (.28 * wallWidth),
+      band: "transition",
+    };
+  }
+  if (progress < .78) {
+    const local = (progress - .28) / .5;
+    return {
+      height: wallRise * (.14 + .66 * smoothProfile(local)),
+      slope: wallRise * .66 * smoothProfileSlope(local) / (.5 * wallWidth),
+      band: "bank",
+    };
+  }
+  const local = (progress - .78) / .22;
+  return {
+    height: wallRise * (.8 + .2 * smoothProfile(local)),
+    slope: wallRise * .2 * smoothProfileSlope(local) / (.22 * wallWidth),
+    band: "upper-bank",
+  };
+}
 
 export function sampleOvalBowl(config: OvalBowlConfig, x: number, z: number): OvalBowlSample {
   const anchorZ = THREE.MathUtils.clamp(z, -config.straightHalfLength, config.straightHalfLength);
@@ -29,30 +60,55 @@ export function sampleOvalBowl(config: OvalBowlConfig, x: number, z: number): Ov
   const outwardZ = distance > .0001 ? dz / distance : 0;
   const wallWidth = config.outerRadius - config.flatRadius;
   const progress = THREE.MathUtils.clamp((distance - config.flatRadius) / wallWidth, 0, 1);
-  const eased = progress * progress * (3 - 2 * progress);
+  const profile = sampleBankProfile(progress, wallWidth, config.wallRise);
   const floorFade = 1 - THREE.MathUtils.smoothstep(distance, config.flatRadius - 8, config.flatRadius);
-  const height = subtleFloorHeight(x, z) * floorFade + config.wallRise * eased;
-  const slope = progress > 0 && progress < 1
-    ? config.wallRise * 6 * progress * (1 - progress) / wallWidth
-    : 0;
+  const height = subtleFloorHeight(x, z) * floorFade + profile.height;
+  const slope = profile.slope;
   const normal = new THREE.Vector3(-outwardX * slope, 1, -outwardZ * slope).normalize();
-  return { height, distance, progress, anchorZ, outwardX, outwardZ, normal };
+  return { height, distance, progress, anchorZ, outwardX, outwardZ, normal, band: profile.band };
 }
 
-export function clampToOvalBowl(
+export type OvalBoundaryResolution = {
+  x: number;
+  z: number;
+  collided: boolean;
+  normalX: number;
+  normalZ: number;
+  penetration: number;
+};
+
+/** Resolves a three-disc vehicle capsule against the continuous stadium guard. */
+export function resolveOvalBoundary(
   config: OvalBowlConfig,
   x: number,
   z: number,
-  inset: number,
-): { x: number; z: number; collided: boolean } {
-  const sample = sampleOvalBowl(config, x, z);
-  const limit = config.outerRadius - inset;
-  if (sample.distance <= limit) return { x, z, collided: false };
-  return {
-    x: sample.outwardX * limit,
-    z: sample.anchorZ + sample.outwardZ * limit,
-    collided: true,
-  };
+  heading: number,
+  halfLength: number,
+  radius: number,
+): OvalBoundaryResolution {
+  let resolvedX = x, resolvedZ = z, collided = false, normalX = 0, normalZ = 0, penetration = 0;
+  const limit = config.outerRadius - radius - .12;
+  for (let iteration = 0; iteration < 3; iteration++) {
+    let deepest = 0, deepestNormalX = 0, deepestNormalZ = 0;
+    for (const offset of [-halfLength, 0, halfLength]) {
+      const sampleX = resolvedX + Math.sin(heading) * offset;
+      const sampleZ = resolvedZ + Math.cos(heading) * offset;
+      const sample = sampleOvalBowl(config, sampleX, sampleZ);
+      const overlap = sample.distance - limit;
+      if (overlap <= deepest) continue;
+      deepest = overlap;
+      deepestNormalX = sample.outwardX;
+      deepestNormalZ = sample.outwardZ;
+    }
+    if (deepest <= 0) break;
+    resolvedX -= deepestNormalX * (deepest + .015);
+    resolvedZ -= deepestNormalZ * (deepest + .015);
+    collided = true;
+    normalX = deepestNormalX;
+    normalZ = deepestNormalZ;
+    penetration = Math.max(penetration, deepest);
+  }
+  return { x: resolvedX, z: resolvedZ, collided, normalX, normalZ, penetration };
 }
 
 function createCapsuleLoop(radius: number, halfLength: number, arcSegments = 48, straightSegments = 40): THREE.Vector2[] {
@@ -145,8 +201,9 @@ export function createOvalRimCurtainGeometry(config: OvalBowlConfig): THREE.Buff
   const vertices: number[] = [];
   const indices: number[] = [];
   for (const point of loop) {
-    vertices.push(point.x, sampleOvalBowl(config, point.x, point.y).height, point.y);
-    vertices.push(point.x, -2.4, point.y);
+    const bankTop = sampleOvalBowl(config, point.x, point.y).height;
+    vertices.push(point.x, bankTop - .08, point.y);
+    vertices.push(point.x, bankTop + config.guardHeight, point.y);
   }
   for (let point = 0; point < loop.length; point++) {
     const next = (point + 1) % loop.length;
@@ -160,4 +217,3 @@ export function createOvalRimCurtainGeometry(config: OvalBowlConfig): THREE.Buff
   geometry.computeBoundingSphere();
   return geometry;
 }
-
