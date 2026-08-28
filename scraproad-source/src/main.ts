@@ -242,6 +242,17 @@ const contactDebug = new THREE.Mesh(
 contactDebug.name = "vehicle-surface-contact"; contactDebug.renderOrder = 30; contactDebug.visible = false;
 scene.add(contactDebug); debugVisuals.push(contactDebug);
 
+const debugOrigin = new THREE.Vector3();
+const debugUp = new THREE.ArrowHelper(new THREE.Vector3(0,1,0),debugOrigin,3.2,0x72ff68,.55,.28);
+const debugSurfaceNormal = new THREE.ArrowHelper(new THREE.Vector3(0,1,0),debugOrigin,3.8,0x53fff1,.6,.3);
+const debugSurfaceForward = new THREE.ArrowHelper(new THREE.Vector3(0,0,1),debugOrigin,4.5,0xffdc63,.65,.32);
+const debugVelocity = new THREE.ArrowHelper(new THREE.Vector3(0,0,1),debugOrigin,3,0xff933f,.6,.3);
+const debugWallContact = new THREE.ArrowHelper(new THREE.Vector3(1,0,0),debugOrigin,3.5,0xff4e4e,.6,.3);
+const actualVehicleUp=new THREE.Vector3(0,1,0);
+for(const arrow of [debugUp,debugSurfaceNormal,debugSurfaceForward,debugVelocity,debugWallContact]){
+  arrow.visible=false;arrow.renderOrder=31;scene.add(arrow);debugVisuals.push(arrow);
+}
+
 function getGroundHeight(x: number, z: number): number {
   if (activeLayout.arenaKind === "capsule" && activeLayout.bowl) {
     return sampleOvalBowl(activeLayout.bowl, x, z).height;
@@ -842,6 +853,8 @@ const equipped: Partial<Record<VehiclePartSlot, VehiclePart>> = {};
 const vehicle = {
   position: new THREE.Vector3(0,0,-28), heading: 0, speed: 0, driftAngle: 0, verticalVelocity: 0,
   pitch: 0, roll: 0, grounded: true, activeRamp: null as DriveSurfaceContact | null, health: 100, boost: 100, collisionCooldown: 0,
+  orientation: new THREE.Quaternion(),surfaceNormal:new THREE.Vector3(0,1,0),projectedForward:new THREE.Vector3(0,0,1),
+  velocity:new THREE.Vector3(),wallContactNormal:new THREE.Vector3(),wallAssistActive:false,downforce:0,
 };
 
 type PartPickupKind = "tires" | "engine" | "armor" | "weapon";
@@ -994,6 +1007,54 @@ function equipPickup(pickup:Pickup): void {
 
 function showMessage(text:string): void {ui.message.textContent=text;ui.message.classList.add("show");clearTimeout(messageTimer);messageTimer=window.setTimeout(()=>ui.message.classList.remove("show"),1900);}
 
+const worldUp=new THREE.Vector3(0,1,0);
+const movementDirection=new THREE.Vector3();
+const desiredSurfaceUp=new THREE.Vector3();
+const surfaceRight=new THREE.Vector3();
+const surfaceForward=new THREE.Vector3();
+const surfaceMatrix=new THREE.Matrix4();
+const targetSurfaceOrientation=new THREE.Quaternion();
+const surfaceEuler=new THREE.Euler(0,0,0,"YXZ");
+const MAX_ARCADE_WALL_ROLL=.93;
+
+function projectDirectionToDriveSurface(angle:number,x:number,z:number,out:THREE.Vector3):THREE.Vector3{
+  out.set(Math.sin(angle),0,Math.cos(angle));
+  if(activeLayout.arenaKind!=="capsule"||!activeLayout.bowl)return out;
+  const sample=sampleOvalBowl(activeLayout.bowl,x,z);
+  if(sample.progress<=.001)return out;
+  out.addScaledVector(sample.normal,-out.dot(sample.normal));
+  if(out.lengthSq()<.0001)out.set(Math.sin(angle),0,Math.cos(angle));
+  return out.normalize();
+}
+
+function updateArcadeSurfaceFrame(dt:number,drifting:boolean,steer:number,speedRatio:number):void{
+  const isCapsule=activeLayout.arenaKind==="capsule"&&Boolean(activeLayout.bowl);
+  const sample=isCapsule?sampleOvalBowl(activeLayout.bowl!,vehicle.position.x,vehicle.position.z):null;
+  const onWall=Boolean(sample&&sample.progress>.001&&vehicle.grounded);
+  const assistBlend=sample?THREE.MathUtils.smoothstep(sample.progress,.025,.34):0;
+  desiredSurfaceUp.copy(worldUp);
+  if(sample)desiredSurfaceUp.lerp(sample.normal,assistBlend*.88).normalize();
+  vehicle.surfaceNormal.copy(sample?.normal??worldUp);
+  vehicle.wallAssistActive=onWall;
+  vehicle.downforce=onWall?3.5+assistBlend*5.5:0;
+
+  surfaceForward.set(Math.sin(vehicle.heading),0,Math.cos(vehicle.heading));
+  surfaceForward.addScaledVector(desiredSurfaceUp,-surfaceForward.dot(desiredSurfaceUp));
+  if(surfaceForward.lengthSq()<.0001)surfaceForward.set(Math.sin(vehicle.heading),0,Math.cos(vehicle.heading));
+  surfaceForward.normalize();
+  surfaceRight.crossVectors(desiredSurfaceUp,surfaceForward).normalize();
+  surfaceForward.crossVectors(surfaceRight,desiredSurfaceUp).normalize();
+  vehicle.projectedForward.copy(surfaceForward);
+  surfaceMatrix.makeBasis(surfaceRight,desiredSurfaceUp,surfaceForward);
+  targetSurfaceOrientation.setFromRotationMatrix(surfaceMatrix);
+  vehicle.orientation.slerp(targetSurfaceOrientation,1-Math.exp(-(onWall?11:15)*dt));
+  surfaceEuler.setFromQuaternion(vehicle.orientation,"YXZ");
+  vehicle.pitch=THREE.MathUtils.clamp(surfaceEuler.x,-MAX_ARCADE_WALL_ROLL,MAX_ARCADE_WALL_ROLL);
+  vehicle.roll=THREE.MathUtils.clamp(surfaceEuler.z,-MAX_ARCADE_WALL_ROLL,MAX_ARCADE_WALL_ROLL)+(drifting?steer*.035*speedRatio:0);
+  surfaceEuler.set(vehicle.pitch,surfaceEuler.y,vehicle.roll,"YXZ");
+  vehicle.orientation.setFromEuler(surfaceEuler);
+}
+
 function applyCapsuleGuardResponse(normalX:number,normalZ:number,moveAngle:number):void{
   let velocityX=Math.sin(moveAngle)*vehicle.speed,velocityZ=Math.cos(moveAngle)*vehicle.speed;
   const outwardSpeed=velocityX*normalX+velocityZ*normalZ;
@@ -1007,6 +1068,7 @@ function applyCapsuleGuardResponse(normalX:number,normalZ:number,moveAngle:numbe
 
 function updateVehicle(dt:number): void {
   vehicle.collisionCooldown=Math.max(0,vehicle.collisionCooldown-dt);
+  vehicle.wallContactNormal.set(0,0,0);
   const forward=input.has("KeyW")?1:0;const reverse=input.has("KeyS")?1:0;const steer=(input.has("KeyA")?1:0)-(input.has("KeyD")?1:0);const drifting=input.has("Space");
   const boosting=input.has("ShiftLeft")&&forward>0&&vehicle.boost>0;
   if(forward)vehicle.speed+=stats.acceleration*(boosting?(stats.boostPower??1.3):1)*dt;
@@ -1020,7 +1082,9 @@ function updateVehicle(dt:number): void {
   const targetDrift=drifting&&speedRatio>.16?-steer*.28*speedRatio*reverseSign:0;
   vehicle.driftAngle=THREE.MathUtils.damp(vehicle.driftAngle,targetDrift,drifting?4.2:stats.traction,dt);
   const moveAngle=vehicle.heading+vehicle.driftAngle;
-  vehicle.position.x+=Math.sin(moveAngle)*vehicle.speed*dt;vehicle.position.z+=Math.cos(moveAngle)*vehicle.speed*dt;
+  projectDirectionToDriveSurface(moveAngle,vehicle.position.x,vehicle.position.z,movementDirection);
+  vehicle.velocity.copy(movementDirection).multiplyScalar(vehicle.speed);
+  vehicle.position.x+=vehicle.velocity.x*dt;vehicle.position.z+=vehicle.velocity.z*dt;
 
   let collided=false,capsuleGuardCollision=false;
   if(activeLayout.arenaKind==="capsule"&&activeLayout.bowl){
@@ -1028,6 +1092,7 @@ function updateVehicle(dt:number): void {
     if(boundary.collided){
       vehicle.position.x=boundary.x;vehicle.position.z=boundary.z;collided=true;capsuleGuardCollision=true;
       applyCapsuleGuardResponse(boundary.normalX,boundary.normalZ,moveAngle);
+      vehicle.wallContactNormal.set(-boundary.normalX,0,-boundary.normalZ);
       canvas.dataset.guardContact="active";canvas.dataset.guardPenetration=boundary.penetration.toFixed(3);
       if(vehicle.collisionCooldown<=0)showMessage("UPPER GUARD // SLIDE BACK INTO THE ARENA");
     }else canvas.dataset.guardContact="clear";
@@ -1083,11 +1148,18 @@ function updateVehicle(dt:number): void {
 
   const frontY=getDriveHeight(vehicle.position.x+Math.sin(vehicle.heading)*2,vehicle.position.z+Math.cos(vehicle.heading)*2);const backY=getDriveHeight(vehicle.position.x-Math.sin(vehicle.heading)*2,vehicle.position.z-Math.cos(vehicle.heading)*2);
   const rightY=getDriveHeight(vehicle.position.x+Math.cos(vehicle.heading)*1.2,vehicle.position.z-Math.sin(vehicle.heading)*1.2);const leftY=getDriveHeight(vehicle.position.x-Math.cos(vehicle.heading)*1.2,vehicle.position.z+Math.sin(vehicle.heading)*1.2);
-  vehicle.pitch=vehicle.grounded?Math.atan2(backY-frontY,4):0;vehicle.roll=(vehicle.grounded?Math.atan2(leftY-rightY,2.4):0)+(drifting?steer*.055*speedRatio:0);
+  if(activeLayout.arenaKind==="capsule")updateArcadeSurfaceFrame(dt,drifting,steer,speedRatio);
+  else{
+    vehicle.pitch=vehicle.grounded?Math.atan2(backY-frontY,4):0;
+    vehicle.roll=(vehicle.grounded?Math.atan2(rightY-leftY,2.4):0)+(drifting?steer*.055*speedRatio:0);
+    vehicle.orientation.setFromEuler(surfaceEuler.set(vehicle.pitch,vehicle.heading,vehicle.roll,"YXZ"));
+    vehicle.surfaceNormal.set(0,1,0);vehicle.projectedForward.set(Math.sin(vehicle.heading),0,Math.cos(vehicle.heading));vehicle.wallAssistActive=false;vehicle.downforce=0;
+  }
+  vehicle.velocity.copy(movementDirection).multiplyScalar(vehicle.speed);
   wheels.forEach(wheel=>wheel.rotation.x+=vehicle.speed*dt/.57);frontWheelPivots.forEach(pivot=>pivot.rotation.y=THREE.MathUtils.damp(pivot.rotation.y,-steer*.38,12,dt));
   for(const pickup of pickups){if(!pickup.collected&&pickup.group.position.distanceTo(vehicle.position)<2.25)equipPickup(pickup);}
   for(const target of targets){if(target.alive&&target.group.position.distanceTo(vehicle.position)<1.85&&Math.abs(vehicle.speed)>5){damageTarget(target,Math.abs(vehicle.speed)*1.8);vehicle.speed*=-.35;hitVehicle(4);}}
-  if(vehicle.position.y < -8 || Math.abs(vehicle.position.x) > ARENA_RADIUS * 1.8 || Math.abs(vehicle.position.z) > ARENA_RADIUS * 1.8){showMessage("OUT OF BOUNDS // AUTO RECOVERY");resetVehicle();return;}
+  if(!Number.isFinite(vehicle.position.x)||!Number.isFinite(vehicle.position.y)||!Number.isFinite(vehicle.position.z)||vehicle.position.y < -8 || Math.abs(vehicle.position.x) > ARENA_RADIUS * 1.8 || Math.abs(vehicle.position.z) > ARENA_RADIUS * 1.8){showMessage("OUT OF BOUNDS // AUTO RECOVERY");resetVehicle();return;}
   spawnDust(dt);
 }
 
@@ -1125,7 +1197,8 @@ const cameraForward=new THREE.Vector3();
 const cameraDesired=new THREE.Vector3();
 const cameraTarget=new THREE.Vector3();
 function updateCamera(dt:number): void {
-  cameraForward.set(Math.sin(car.rotation.y),0,Math.cos(car.rotation.y));
+  // Keep the chase camera horizon-stabilized even while the chassis banks.
+  cameraForward.set(Math.sin(vehicle.heading),0,Math.cos(vehicle.heading));
   cameraDesired.copy(car.position);
   if(cameraMode===0)cameraDesired.addScaledVector(cameraForward,-11.5).y+=6.3;
   else{cameraDesired.y+=23;cameraDesired.z-=.01;}
@@ -1143,35 +1216,37 @@ function updateHud():void{
   canvas.dataset.groundContact=vehicle.grounded?(vehicle.activeRamp?vehicle.activeRamp.kind:flatContactLabel):"airborne";canvas.dataset.aimRay=aimReady?"locked":"searching";canvas.dataset.aimPoint=`${aimPoint.x.toFixed(1)},${aimPoint.y.toFixed(1)},${aimPoint.z.toFixed(1)}`;canvas.dataset.vehiclePosition=`${vehicle.position.x.toFixed(1)},${vehicle.position.y.toFixed(1)},${vehicle.position.z.toFixed(1)}`;
   canvas.dataset.surfaceLabel=contact?.ramp.label??(activeLayout.arenaKind==="capsule"?"flat center floor":"base terrain");canvas.dataset.surfaceHeight=(contact?.height??baseHeight).toFixed(2);canvas.dataset.baseGroundHeight=baseHeight.toFixed(2);canvas.dataset.contactDelta=((contact?.height??baseHeight)-baseHeight).toFixed(2);canvas.dataset.heightMismatch=contact?Math.abs(vehicle.position.y-.06-contact.height).toFixed(3):"0.000";canvas.dataset.wallRideActive=String(contact?.ramp.kind==="wall");
   contactDebug.position.set(vehicle.position.x,(contact?.height??baseHeight)+.16,vehicle.position.z);
+  actualVehicleUp.set(0,1,0).applyQuaternion(vehicle.orientation).normalize();
+  debugOrigin.copy(vehicle.position).addScaledVector(actualVehicleUp,.7);
+  for(const arrow of [debugUp,debugSurfaceNormal,debugSurfaceForward,debugVelocity,debugWallContact])arrow.position.copy(debugOrigin);
+  debugUp.setDirection(actualVehicleUp);debugSurfaceNormal.setDirection(vehicle.surfaceNormal);debugSurfaceForward.setDirection(vehicle.projectedForward);
+  const velocityLength=vehicle.velocity.length();debugVelocity.setDirection(velocityLength>.01?vehicle.velocity.clone().normalize():vehicle.projectedForward);debugVelocity.setLength(THREE.MathUtils.clamp(velocityLength*.24,1.2,7),.6,.3);
+  const hasWallContact=vehicle.wallContactNormal.lengthSq()>.001;debugWallContact.visible=debugPhysics&&hasWallContact;if(hasWallContact)debugWallContact.setDirection(vehicle.wallContactNormal);
+  const wallSample=activeLayout.arenaKind==="capsule"&&activeLayout.bowl?sampleOvalBowl(activeLayout.bowl,vehicle.position.x,vehicle.position.z):null;
+  const surfaceType=!vehicle.grounded?"airborne":canvas.dataset.guardContact==="active"?"upper-lip":wallSample&&wallSample.progress>.001?wallSample.band:"flat-floor";
+  canvas.dataset.surfaceType=surfaceType;canvas.dataset.carUp=`${actualVehicleUp.x.toFixed(2)},${actualVehicleUp.y.toFixed(2)},${actualVehicleUp.z.toFixed(2)}`;canvas.dataset.surfaceNormal=`${vehicle.surfaceNormal.x.toFixed(2)},${vehicle.surfaceNormal.y.toFixed(2)},${vehicle.surfaceNormal.z.toFixed(2)}`;canvas.dataset.projectedForward=`${vehicle.projectedForward.x.toFixed(2)},${vehicle.projectedForward.y.toFixed(2)},${vehicle.projectedForward.z.toFixed(2)}`;canvas.dataset.velocityVector=`${vehicle.velocity.x.toFixed(2)},${vehicle.velocity.y.toFixed(2)},${vehicle.velocity.z.toFixed(2)}`;canvas.dataset.wallContactNormal=`${vehicle.wallContactNormal.x.toFixed(2)},${vehicle.wallContactNormal.y.toFixed(2)},${vehicle.wallContactNormal.z.toFixed(2)}`;canvas.dataset.wallAssist=vehicle.wallAssistActive?"active":"off";canvas.dataset.wallDownforce=vehicle.downforce.toFixed(2);canvas.dataset.carRoll=vehicle.roll.toFixed(3);canvas.dataset.carPitch=vehicle.pitch.toFixed(3);
   if(rampSmokeTest&&vehicle.activeRamp?.kind==="ramp")canvas.dataset.rampDriveUp="passed";if(rampSmokeTest&&!vehicle.grounded&&canvas.dataset.rampDriveUp==="passed")canvas.dataset.rampLaunch="passed";
 }
 
 function drawRadar():void{const context=ui.radar.getContext("2d");if(!context)return;const size=160,center=80,scale=.58;context.clearRect(0,0,size,size);context.strokeStyle="rgba(213,183,119,.13)";context.lineWidth=1;for(const radius of [24,48,72]){context.beginPath();context.arc(center,center,radius,0,Math.PI*2);context.stroke();}context.beginPath();context.moveTo(center,8);context.lineTo(center,152);context.moveTo(8,center);context.lineTo(152,center);context.stroke();const plot=(x:number,z:number,color:string,radius:number)=>{const dx=(x-vehicle.position.x)*scale,dz=(z-vehicle.position.z)*scale;const angle=-vehicle.heading;const px=dx*Math.cos(angle)-dz*Math.sin(angle),py=dx*Math.sin(angle)+dz*Math.cos(angle);if(Math.hypot(px,py)>73)return;context.fillStyle=color;context.beginPath();context.arc(center+px,center-py,radius,0,Math.PI*2);context.fill();};pickups.forEach(p=>{if(!p.collected)plot(p.group.position.x,p.group.position.z,"#57dbe3",2.7)});targets.forEach(t=>{if(t.alive)plot(t.group.position.x,t.group.position.z,"#ef6846",3)});context.save();context.translate(center,center);context.fillStyle="#f3ce79";context.beginPath();context.moveTo(0,-7);context.lineTo(5,6);context.lineTo(0,3);context.lineTo(-5,6);context.closePath();context.fill();context.restore();}
 
 const previousVehiclePosition = new THREE.Vector3(0,0,-28);
-let previousVehicleHeading=0;let previousVehiclePitch=0;let previousVehicleRoll=0;
+const previousVehicleOrientation=new THREE.Quaternion();
+const renderedVehicleOrientation=new THREE.Quaternion();
 
 function capturePhysicsPose():void{
-  previousVehiclePosition.copy(vehicle.position);previousVehicleHeading=vehicle.heading;previousVehiclePitch=vehicle.pitch;previousVehicleRoll=vehicle.roll;
-}
-
-function interpolateAngle(from:number,to:number,alpha:number):number{
-  const delta=Math.atan2(Math.sin(to-from),Math.cos(to-from));return from+delta*alpha;
+  previousVehiclePosition.copy(vehicle.position);previousVehicleOrientation.copy(vehicle.orientation);
 }
 
 function updateVehicleVisual(alpha:number):void{
   car.position.lerpVectors(previousVehiclePosition,vehicle.position,alpha);
-  car.rotation.set(
-    THREE.MathUtils.lerp(previousVehiclePitch,vehicle.pitch,alpha),
-    interpolateAngle(previousVehicleHeading,vehicle.heading,alpha),
-    THREE.MathUtils.lerp(previousVehicleRoll,vehicle.roll,alpha),
-    "YXZ",
-  );
+  renderedVehicleOrientation.slerpQuaternions(previousVehicleOrientation,vehicle.orientation,alpha);
+  car.quaternion.copy(renderedVehicleOrientation);
 }
 
 function resetVehicle():void{
   const spawn = activeLayout.spawn;
-  setFireHeld(false);vehicle.position.set(spawn.x,getGroundHeight(spawn.x,spawn.z)+.06,spawn.z);vehicle.heading=spawn.heading;vehicle.speed=0;vehicle.driftAngle=0;vehicle.verticalVelocity=0;vehicle.pitch=0;vehicle.roll=0;vehicle.grounded=true;vehicle.activeRamp=null;vehicle.health=Math.max(vehicle.health,Math.min(stats.maxHealth,65));vehicle.boost=100;capturePhysicsPose();car.position.copy(vehicle.position);car.rotation.set(0,spawn.heading,0);camera.position.set(spawn.x,vehicle.position.y+6.3,spawn.z-11.5);cameraLook.copy(vehicle.position);cameraLook.y+=1.2;showMessage("RIG RECOVERED // SYSTEMS ONLINE");
+  setFireHeld(false);vehicle.position.set(spawn.x,getGroundHeight(spawn.x,spawn.z)+.06,spawn.z);vehicle.heading=spawn.heading;vehicle.speed=0;vehicle.driftAngle=0;vehicle.verticalVelocity=0;vehicle.pitch=0;vehicle.roll=0;vehicle.grounded=true;vehicle.activeRamp=null;vehicle.health=Math.max(vehicle.health,Math.min(stats.maxHealth,65));vehicle.boost=100;vehicle.orientation.setFromAxisAngle(worldUp,spawn.heading);vehicle.surfaceNormal.copy(worldUp);vehicle.projectedForward.set(Math.sin(spawn.heading),0,Math.cos(spawn.heading));vehicle.velocity.set(0,0,0);vehicle.wallContactNormal.set(0,0,0);vehicle.wallAssistActive=false;vehicle.downforce=0;capturePhysicsPose();car.position.copy(vehicle.position);car.quaternion.copy(vehicle.orientation);camera.position.set(spawn.x,vehicle.position.y+6.3,spawn.z-11.5);cameraLook.copy(vehicle.position);cameraLook.y+=1.2;showMessage("RIG RECOVERED // SYSTEMS ONLINE");
 }
 
 function togglePause(force?:boolean):void{if(!levelStarted)return;paused=force??!paused;if(paused)setFireHeld(false);ui.pause.hidden=!paused;}
@@ -1183,7 +1258,7 @@ canvas.dataset.assetsLoaded="0";canvas.dataset.assetErrors="0";canvas.dataset.as
 function prepareSurfaceTest(surface: RampSurface): void {
   const offset=new THREE.Vector3(0,0,-surface.length*.5-3).applyAxisAngle(new THREE.Vector3(0,1,0),surface.rotation);
   const x=surface.position.x+offset.x,z=surface.position.z+offset.z;
-  vehicle.position.set(x,getGroundHeight(x,z)+.06,z);vehicle.heading=surface.rotation;vehicle.speed=0;vehicle.driftAngle=0;vehicle.verticalVelocity=0;vehicle.pitch=0;vehicle.roll=0;vehicle.grounded=true;vehicle.activeRamp=null;car.position.copy(vehicle.position);car.rotation.set(0,surface.rotation,0);
+  vehicle.position.set(x,getGroundHeight(x,z)+.06,z);vehicle.heading=surface.rotation;vehicle.speed=0;vehicle.driftAngle=0;vehicle.verticalVelocity=0;vehicle.pitch=0;vehicle.roll=0;vehicle.grounded=true;vehicle.activeRamp=null;vehicle.orientation.setFromAxisAngle(worldUp,surface.rotation);car.position.copy(vehicle.position);car.quaternion.copy(vehicle.orientation);
 }
 
 function runRampTraversalSuite(): boolean {
@@ -1205,6 +1280,49 @@ function runRampTraversalSuite(): boolean {
   return failures.length===0;
 }
 
+function runWallTurningSuite(bowl:NonNullable<ScraproadArenaLayout["bowl"]>):boolean{
+  const wallWidth=bowl.outerRadius-bowl.flatRadius;
+  const tangentRadius=bowl.flatRadius+wallWidth*.48;
+  const capAngle=Math.PI*.25;
+  const cases=[
+    {label:"straight-along-bank",x:tangentRadius,z:-30,heading:0,steps:180,drive:false,steer:"none" as const},
+    {label:"turn-left-while-climbing",x:bowl.flatRadius+2,z:-18,heading:Math.PI/2,steps:170,drive:true,steer:"left" as const},
+    {label:"turn-right-while-climbing",x:bowl.flatRadius+2,z:18,heading:Math.PI/2,steps:170,drive:true,steer:"right" as const},
+    {label:"steer-around-rounded-cap",x:Math.cos(capAngle)*tangentRadius,z:bowl.straightHalfLength+Math.sin(capAngle)*tangentRadius,heading:-capAngle,steps:210,drive:false,steer:"cap" as const},
+  ];
+  const failures:string[]=[];let globalMaxRoll=0,globalMaxPitch=0,globalMinUpDot=1;
+  for(const test of cases){
+    vehicle.position.set(test.x,getGroundHeight(test.x,test.z)+.06,test.z);vehicle.heading=test.heading;vehicle.speed=test.drive?8:14;vehicle.driftAngle=0;vehicle.verticalVelocity=0;vehicle.pitch=0;vehicle.roll=0;vehicle.grounded=true;vehicle.activeRamp=null;vehicle.orientation.setFromAxisAngle(worldUp,test.heading);
+    let wallFrames=0,maxRoll=0,maxPitch=0,minUpDot=1,stayedInside=true,finite=true;
+    if(test.drive)input.add("KeyW");
+    for(let step=0;step<test.steps;step++){
+      if(test.steer==="left"&&step>=34&&step<72)input.add("KeyA");else input.delete("KeyA");
+      if(test.steer==="right"&&step>=34&&step<72)input.add("KeyD");
+      else if(test.steer==="cap"&&step%6===0)input.add("KeyD");
+      else input.delete("KeyD");
+      elapsed+=FIXED_TIMESTEP;updateVehicle(FIXED_TIMESTEP);
+      if(test.steer==="cap")input.delete("KeyD");
+      const sample=sampleOvalBowl(bowl,vehicle.position.x,vehicle.position.z);
+      if(sample.progress>.001)wallFrames++;
+      actualVehicleUp.set(0,1,0).applyQuaternion(vehicle.orientation).normalize();
+      const upDot=actualVehicleUp.dot(sample.normal);if(step>18)minUpDot=Math.min(minUpDot,upDot);
+      maxRoll=Math.max(maxRoll,Math.abs(vehicle.roll));maxPitch=Math.max(maxPitch,Math.abs(vehicle.pitch));
+      finite=finite&&Number.isFinite(vehicle.position.x)&&Number.isFinite(vehicle.position.y)&&Number.isFinite(vehicle.position.z)&&Number.isFinite(vehicle.roll)&&Number.isFinite(vehicle.pitch);
+      for(const offset of [-VEHICLE_COLLIDER_HALF_LENGTH,0,VEHICLE_COLLIDER_HALF_LENGTH]){
+        const footprint=sampleOvalBowl(bowl,vehicle.position.x+Math.sin(vehicle.heading)*offset,vehicle.position.z+Math.cos(vehicle.heading)*offset);
+        stayedInside=stayedInside&&footprint.distance<=bowl.outerRadius-VEHICLE_COLLIDER_RADIUS+.05;
+      }
+    }
+    input.delete("KeyW");input.delete("KeyA");input.delete("KeyD");
+    globalMaxRoll=Math.max(globalMaxRoll,maxRoll);globalMaxPitch=Math.max(globalMaxPitch,maxPitch);globalMinUpDot=Math.min(globalMinUpDot,minUpDot);
+    const stable=finite&&stayedInside&&wallFrames>=Math.min(90,test.steps*.6)&&maxRoll<=MAX_ARCADE_WALL_ROLL+.025&&maxPitch<=MAX_ARCADE_WALL_ROLL+.025&&minUpDot>.72;
+    if(!stable)failures.push(`${test.label}:${!finite?"non-finite":!stayedInside?"escaped":wallFrames<90?"lost-wall":maxRoll>MAX_ARCADE_WALL_ROLL+.025?"roll":maxPitch>MAX_ARCADE_WALL_ROLL+.025?"pitch":"up-vector"}`);
+  }
+  const passed=failures.length===0;
+  canvas.dataset.wallTurningSmoke=passed?"passed":"failed";canvas.dataset.wallTurningCases=String(cases.length);canvas.dataset.wallTurningFailures=failures.join("|")||"none";canvas.dataset.wallTurningMaxRoll=THREE.MathUtils.radToDeg(globalMaxRoll).toFixed(1);canvas.dataset.wallTurningMaxPitch=THREE.MathUtils.radToDeg(globalMaxPitch).toFixed(1);canvas.dataset.wallTurningMinUpDot=globalMinUpDot.toFixed(3);
+  return passed;
+}
+
 function runWallRideSuite(): boolean {
   if (activeLayout.arenaKind !== "capsule" || !activeLayout.bowl) {
     canvas.dataset.wallRideSmoke = "skipped-non-bowl";
@@ -1222,7 +1340,7 @@ function runWallRideSuite(): boolean {
   for(const approach of approaches){
     vehicle.position.set(approach.x,getGroundHeight(approach.x,approach.z)+.06,approach.z);
     vehicle.heading=approach.heading;vehicle.speed=8;vehicle.driftAngle=0;vehicle.verticalVelocity=0;
-    vehicle.pitch=0;vehicle.roll=0;vehicle.grounded=true;vehicle.activeRamp=null;
+    vehicle.pitch=0;vehicle.roll=0;vehicle.grounded=true;vehicle.activeRamp=null;vehicle.orientation.setFromAxisAngle(worldUp,approach.heading);
     let routeProgress=0,routeHeight=0,contactedWall=false;
     input.add("KeyW");
     for(let step=0;step<210;step++){
@@ -1245,7 +1363,8 @@ function runWallRideSuite(): boolean {
     returnedToFloor=returnedToFloor&&routeReturned;
     if(!contactedWall||routeProgress<=.28||routeHeight<=2||!routeReturned)failures.push(`${approach.label}:${!contactedWall?"no-contact":routeProgress<=.28?"too-low":routeHeight<=2?"no-rise":"no-return"}`);
   }
-  let passed = failures.length===0 && stayedInside && returnedToFloor;
+  const turningPassed=runWallTurningSuite(bowl);
+  let passed = failures.length===0 && stayedInside && returnedToFloor && turningPassed;
   canvas.dataset.wallRideApproaches = String(approaches.length);
   canvas.dataset.wallRideFailures = failures.join("|") || "none";
   canvas.dataset.wallRideMaxProgress = maximumProgress.toFixed(2);
@@ -1253,7 +1372,8 @@ function runWallRideSuite(): boolean {
   canvas.dataset.wallRideBoundary = stayedInside ? "passed" : "failed";
   canvas.dataset.wallRideReturn = returnedToFloor ? "passed" : "failed";
   resetVehicle();
-  const resetPassed=vehicle.position.x===activeLayout.spawn.x&&vehicle.position.z===activeLayout.spawn.z&&vehicle.speed===0&&vehicle.verticalVelocity===0&&vehicle.pitch===0&&vehicle.roll===0&&vehicle.grounded&&sampleOvalBowl(bowl,vehicle.position.x,vehicle.position.z).progress===0;
+  actualVehicleUp.set(0,1,0).applyQuaternion(vehicle.orientation);
+  const resetPassed=vehicle.position.x===activeLayout.spawn.x&&vehicle.position.z===activeLayout.spawn.z&&vehicle.speed===0&&vehicle.velocity.lengthSq()===0&&vehicle.verticalVelocity===0&&vehicle.pitch===0&&vehicle.roll===0&&actualVehicleUp.dot(worldUp)>.999&&vehicle.grounded&&!vehicle.wallAssistActive&&sampleOvalBowl(bowl,vehicle.position.x,vehicle.position.z).progress===0;
   canvas.dataset.wallReset=resetPassed?"passed":"failed";
   passed=passed&&resetPassed;canvas.dataset.wallRideSmoke=passed?"passed":"failed";
   return passed;
@@ -1314,7 +1434,7 @@ function updateDebug(frameDelta:number):void{
   frameAverage=THREE.MathUtils.lerp(frameAverage,frameDelta,.08);debugAccumulator+=frameDelta;if(debugAccumulator<.2)return;debugAccumulator=0;
   const fps=frameAverage>0?1/frameAverage:0;const contact=vehicle.grounded?(vehicle.activeRamp?vehicle.activeRamp.kind.toUpperCase():(activeLayout.arenaKind==="capsule"?"FLAT FLOOR":"TERRAIN")):"AIRBORNE";
   const surfaceColliderCount=activeLayout.arenaKind==="capsule"?3:driveHeightfields.length;
-  ui.debug.textContent=`COLLISION DEBUG\n${contact} // ${canvas.dataset.surfaceLabel??"base terrain"}\nSURFACE ${canvas.dataset.surfaceHeight??"0.00"}M  BASE ${canvas.dataset.baseGroundHeight??"0.00"}M  Δ ${canvas.dataset.contactDelta??"0.00"}M\nVISUAL/COLLIDER ERROR ${canvas.dataset.heightMismatch??"0.000"}M\n${Math.abs(vehicle.speed*4.2).toFixed(0)} KM/H  ${fps.toFixed(0)} FPS  ${(frameAverage*1000).toFixed(1)} MS FRAME\n${physicsStepMs.toFixed(2)} MS PHYSICS  60 HZ\n${surfaceColliderCount} SURFACE COLLIDERS  ${renderer.info.render.calls} DRAWS  ${renderer.info.render.triangles.toLocaleString()} TRIS\n${scene.children.length+bullets.length+dust.length} ACTIVE OBJECTS`;
+  ui.debug.textContent=`COLLISION DEBUG\n${contact} // ${(canvas.dataset.surfaceType??"flat-floor").toUpperCase()} // ${canvas.dataset.surfaceLabel??"base terrain"}\nUP [${canvas.dataset.carUp??"0.00,1.00,0.00"}]  NORMAL [${canvas.dataset.surfaceNormal??"0.00,1.00,0.00"}]\nSURFACE FWD [${canvas.dataset.projectedForward??"0.00,0.00,1.00"}]\nVELOCITY [${canvas.dataset.velocityVector??"0.00,0.00,0.00"}]  CONTACT N [${canvas.dataset.wallContactNormal??"0.00,0.00,0.00"}]\nASSIST ${(canvas.dataset.wallAssist??"off").toUpperCase()}  DOWNFORCE ${canvas.dataset.wallDownforce??"0.00"}  ROLL ${THREE.MathUtils.radToDeg(vehicle.roll).toFixed(1)}°  PITCH ${THREE.MathUtils.radToDeg(vehicle.pitch).toFixed(1)}°\nSURFACE ${canvas.dataset.surfaceHeight??"0.00"}M  BASE ${canvas.dataset.baseGroundHeight??"0.00"}M  ERROR ${canvas.dataset.heightMismatch??"0.000"}M\n${Math.abs(vehicle.speed*4.2).toFixed(0)} KM/H  ${fps.toFixed(0)} FPS  ${(frameAverage*1000).toFixed(1)} MS FRAME\n${physicsStepMs.toFixed(2)} MS PHYSICS  60 HZ  ${surfaceColliderCount} COLLIDERS\n${renderer.info.render.calls} DRAWS  ${renderer.info.render.triangles.toLocaleString()} TRIS  ${scene.children.length+bullets.length+dust.length} OBJECTS`;
   canvas.dataset.physicsFps="60";canvas.dataset.frameDeltaMs=(frameAverage*1000).toFixed(2);canvas.dataset.physicsStepMs=physicsStepMs.toFixed(2);
 }
 function animate():void{
