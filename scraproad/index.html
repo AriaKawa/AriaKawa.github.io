@@ -8,8 +8,8 @@
     <meta property="og:title" content="Scraproad Arena" />
     <meta property="og:description" content="A browser-playable 3D vehicle combat prototype." />
     <title>Scraproad Arena</title>
-    <script type="module" crossorigin src="./assets/index-DVVFT093.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-BicD0fBN.css">
+    <script type="module" crossorigin src="./assets/index-BM63sPZl.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-BU7unB5h.css">
   </head>
   <body>
     <main id="app">
@@ -20,6 +20,15 @@
         <div id="objective" class="objective"><small>LEVEL 01 // SCRAP RING</small><b>Run the circuit. Hit the ramps. Clear the targets.</b></div>
         <button id="help-button" class="icon-button" type="button" aria-label="Toggle controls">?</button>
       </header>
+
+      <aside id="weapon-select" class="weapon-select panel" aria-label="Test turret selection">
+        <span>TEST TURREET</span>
+        <div>
+          <button class="selected" type="button" data-weapon="mg" aria-pressed="true"><b>MG</b><small>RATTLER</small></button>
+          <button type="button" data-weapon="rocket" aria-pressed="false"><b>RKT</b><small>HELLBOX</small></button>
+          <button type="button" data-weapon="sniper" aria-pressed="false"><b>SNP</b><small>LONGLANCE</small></button>
+        </div>
+      </aside>
 
       <aside class="vitals panel" aria-label="Vehicle status">
         <div class="vital-heading"><span>HULL INTEGRITY</span><strong id="health-value">100</strong></div>
@@ -88,6 +97,7 @@
       </section>
 
       <div id="message" class="message" role="status" aria-live="polite"></div>
+      <div id="impact-frame" class="impact-frame" aria-hidden="true"></div>
       <pre id="physics-debug" class="physics-debug panel" hidden aria-live="off"></pre>
       <div id="crosshair" class="crosshair" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
 

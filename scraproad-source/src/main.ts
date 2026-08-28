@@ -35,6 +35,14 @@ type WeaponStats = {
   range: number;
   automatic?: boolean;
 };
+type WeaponKind = "mg" | "rocket" | "sniper";
+type WeaponDefinition = WeaponStats & {
+  kind: WeaponKind;
+  label: string;
+  stateLabel: string;
+  impactColor: number;
+  splashRadius?: number;
+};
 type VehicleStats = {
   maxHealth: number;
   acceleration: number;
@@ -55,8 +63,17 @@ type VehiclePart = {
 };
 type Pickup = { group: THREE.Group; part: VehiclePart | null; repair?: number; collected: boolean; label: string };
 type Target = { group: THREE.Group; health: number; alive: boolean; hitFlash: number };
-type Bullet = { mesh: THREE.Mesh; velocity: THREE.Vector3; life: number };
+type Bullet = {
+  mesh: THREE.Object3D;
+  velocity: THREE.Vector3;
+  life: number;
+  kind: WeaponKind;
+  damage: number;
+  splashRadius: number;
+  trailTimer: number;
+};
 type DustParticle = { mesh: THREE.Mesh; life: number; velocity: THREE.Vector3 };
+type VisualEffect = { group: THREE.Group; life: number; maxLife: number; kind: "impact" | "trail"; growth: number };
 type Obstacle = { position: THREE.Vector3; radius: number; top: number; label: string };
 type BoxCollider = { position: THREE.Vector3; halfWidth: number; halfLength: number; rotation: number; label: string };
 type DriveSurfaceKind = "ramp" | "bridge" | "track" | "terrain" | "wall";
@@ -85,7 +102,7 @@ const ui = {
   tires: getElement("tires-part"), engine: getElement("engine-part"), armor: getElement("armor-part"),
   weaponState: getElement("weapon-state"), message: getElement("message"), controls: getElement("controls"),
   pause: getElement("pause"), objective: getElement("objective"), radar: getElement<HTMLCanvasElement>("radar-canvas"),
-  debug: getElement("physics-debug"), levelSelect: getElement("level-select"),
+  debug: getElement("physics-debug"), levelSelect: getElement("level-select"), impactFrame: getElement("impact-frame"),
 };
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
@@ -735,9 +752,109 @@ const car = new THREE.Group();
 const wheels: THREE.Object3D[] = [];
 const frontWheelPivots: THREE.Object3D[] = [];
 const turret = new THREE.Group();
-const barrelPivot = new THREE.Group();
-let muzzle: THREE.Object3D;
+const weaponDefinitions: Record<WeaponKind, WeaponDefinition> = {
+  mg: { kind:"mg", label:"SCRAP RATTLER", stateLabel:"READY", fireRate:6.7, damage:15, projectileSpeed:58, range:136, automatic:true, impactColor:0xffb548 },
+  rocket: { kind:"rocket", label:"HELLBOX ROCKETS", stateLabel:"ARMED", fireRate:.78, damage:82, projectileSpeed:34, range:112, automatic:false, impactColor:0xff5b20, splashRadius:5.4 },
+  sniper: { kind:"sniper", label:"LONGLANCE RAIL", stateLabel:"CHARGED", fireRate:.52, damage:110, projectileSpeed:190, range:188, automatic:false, impactColor:0x67e7ff },
+};
+type TurretRig = { root: THREE.Group; barrelPivot: THREE.Group; muzzle: THREE.Object3D };
+const turretRigs = new Map<WeaponKind, TurretRig>();
+let selectedWeapon: WeaponKind = "mg";
+let barrelPivot = new THREE.Group();
+let muzzle = new THREE.Object3D();
 let vehicleColliderDebug: THREE.Mesh;
+
+function addScrapSupport(root: THREE.Group, spread = .4): void {
+  for(const side of [-1,1]) {
+    const support = new THREE.Mesh(new THREE.CylinderGeometry(.09,.13,.68,8),metal);
+    support.position.set(side*spread,.12,.02); support.rotation.z=side*.42; support.castShadow=true; root.add(support);
+  }
+}
+
+function createTurretRig(kind: WeaponKind): TurretRig {
+  const root = new THREE.Group(); root.name = `turret-${kind}`;
+  const pivot = new THREE.Group();
+  let tip = new THREE.Object3D();
+  if(kind === "mg") {
+    const receiver = new THREE.Mesh(new THREE.DodecahedronGeometry(.48,0),darkMetal);
+    receiver.scale.set(1,.7,1.28); receiver.position.set(0,.28,.1); receiver.castShadow=true; root.add(receiver);
+    const ammoBox = new THREE.Mesh(new THREE.BoxGeometry(.82,.42,.5),metal);
+    ammoBox.position.set(0,.18,-.52); ammoBox.rotation.x=.08; ammoBox.castShadow=true; root.add(ammoBox);
+    addScrapSupport(root);
+    const shield = new THREE.Mesh(new THREE.BoxGeometry(1.24,.72,.12),warm);
+    shield.position.set(0,.24,.43); shield.rotation.x=-.12; shield.castShadow=true; root.add(shield);
+    pivot.position.set(0,.34,.35); root.add(pivot);
+    const jacket = new THREE.Mesh(new THREE.CylinderGeometry(.17,.2,.72,10),darkMetal);
+    jacket.rotation.x=Math.PI/2; jacket.position.z=.34; jacket.castShadow=true; pivot.add(jacket);
+    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(.075,.095,1.82,10),metal);
+    barrel.rotation.x=Math.PI/2; barrel.position.z=1.53; barrel.castShadow=true; pivot.add(barrel);
+    const brake = new THREE.Mesh(new THREE.CylinderGeometry(.15,.15,.34,10),darkMetal);
+    brake.rotation.x=Math.PI/2; brake.position.z=2.45; brake.castShadow=true; pivot.add(brake);
+    const glow = new THREE.Mesh(new THREE.RingGeometry(.055,.13,10),new THREE.MeshBasicMaterial({color:0xff8b35}));
+    glow.position.z=2.63; pivot.add(glow); tip.position.z=2.66; pivot.add(tip);
+  } else if(kind === "rocket") {
+    const receiver = new THREE.Mesh(new THREE.BoxGeometry(1.34,.58,1.18),darkMetal);
+    receiver.position.set(0,.28,-.05); receiver.rotation.x=-.05; receiver.castShadow=true; root.add(receiver);
+    const armor = new THREE.Mesh(new THREE.BoxGeometry(1.58,.72,.12),warm);
+    armor.position.set(0,.28,.54); armor.rotation.x=-.13; armor.castShadow=true; root.add(armor);
+    addScrapSupport(root,.5);
+    pivot.position.set(0,.48,.18); root.add(pivot);
+    const pod = new THREE.Mesh(new THREE.BoxGeometry(1.28,.9,1.72),new THREE.MeshStandardMaterial({color:0x343634,roughness:.6,metalness:.72}));
+    pod.position.z=.62; pod.castShadow=true; pivot.add(pod);
+    for(const x of [-.34,.34]) for(const y of [-.23,.23]) {
+      const tube = new THREE.Mesh(new THREE.CylinderGeometry(.19,.23,1.92,10),darkMetal);
+      tube.rotation.x=Math.PI/2; tube.position.set(x,y,.72); tube.castShadow=true; pivot.add(tube);
+      const collar = new THREE.Mesh(new THREE.TorusGeometry(.205,.045,7,12),warm);
+      collar.position.set(x,y,1.69); pivot.add(collar);
+      const throat = new THREE.Mesh(new THREE.CircleGeometry(.14,10),new THREE.MeshBasicMaterial({color:0xff6a24}));
+      throat.position.set(x,y,1.7); pivot.add(throat);
+    }
+    const warning = new THREE.Mesh(new THREE.BoxGeometry(.86,.08,.04),new THREE.MeshBasicMaterial({color:0xffb53d}));
+    warning.position.set(0,.48,1.5); pivot.add(warning);
+    tip.position.z=1.86; pivot.add(tip);
+  } else {
+    const receiver = new THREE.Mesh(new THREE.BoxGeometry(1.12,.52,1.48),darkMetal);
+    receiver.position.set(0,.29,.15); receiver.castShadow=true; root.add(receiver);
+    const rearBlock = new THREE.Mesh(new THREE.BoxGeometry(.82,.46,.72),metal);
+    rearBlock.position.set(0,.25,-.75); rearBlock.castShadow=true; root.add(rearBlock);
+    addScrapSupport(root,.43);
+    pivot.position.set(0,.43,.36); root.add(pivot);
+    for(const x of [-.25,.25]) {
+      const rail = new THREE.Mesh(new THREE.BoxGeometry(.12,.12,3.18),metal);
+      rail.position.set(x,0,1.52); rail.castShadow=true; pivot.add(rail);
+    }
+    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(.085,.12,3.5,10),darkMetal);
+    barrel.rotation.x=Math.PI/2; barrel.position.z=1.72; barrel.castShadow=true; pivot.add(barrel);
+    const brake = new THREE.Mesh(new THREE.BoxGeometry(.68,.34,.48),darkMetal);
+    brake.position.z=3.45; brake.castShadow=true; pivot.add(brake);
+    for(const x of [-.27,.27]) {
+      const port = new THREE.Mesh(new THREE.BoxGeometry(.13,.13,.62),new THREE.MeshBasicMaterial({color:0x58dff8}));
+      port.position.set(x,0,3.47); pivot.add(port);
+    }
+    const optic = new THREE.Mesh(new THREE.BoxGeometry(.32,.26,.7),metal);
+    optic.position.set(0,.39,.45); pivot.add(optic);
+    const lens = new THREE.Mesh(new THREE.CircleGeometry(.12,12),new THREE.MeshBasicMaterial({color:0x8bf3ff}));
+    lens.position.set(0,.39,.81); pivot.add(lens);
+    tip.position.z=3.76; pivot.add(tip);
+  }
+  root.visible = kind === selectedWeapon;
+  return { root, barrelPivot:pivot, muzzle:tip };
+}
+
+function selectWeapon(kind: WeaponKind, announce = true): void {
+  selectedWeapon = kind;
+  const definition = weaponDefinitions[kind];
+  weaponStats.fireRate=definition.fireRate; weaponStats.damage=definition.damage; weaponStats.projectileSpeed=definition.projectileSpeed;
+  weaponStats.range=definition.range; weaponStats.automatic=definition.automatic;
+  fireCooldown=0; setFireHeld(false);
+  for(const [rigKind,rig] of turretRigs){rig.root.visible=rigKind===kind;if(rigKind===kind){barrelPivot=rig.barrelPivot;muzzle=rig.muzzle;}}
+  ui.weapon.textContent=definition.label; ui.weaponState.textContent=definition.stateLabel;
+  document.querySelectorAll<HTMLButtonElement>("[data-weapon]").forEach(button=>{
+    const active=button.dataset.weapon===kind; button.classList.toggle("selected",active); button.setAttribute("aria-pressed",String(active));
+  });
+  canvas.dataset.selectedTurret=kind; canvas.dataset.weaponVfx=kind==="rocket"?"anime-explosion-shockwave":kind==="sniper"?"anime-rail-impact-frame":"scrap-sparks";
+  if(announce&&levelStarted)showMessage(`${definition.label} // TEST MOUNTED`);
+}
 
 function buildCar(): void {
   const fallback = new THREE.Group();
@@ -797,26 +914,8 @@ function buildCar(): void {
   const bearing = new THREE.Mesh(new THREE.TorusGeometry(.62,.08,8,16),darkMetal);
   bearing.rotation.x=Math.PI/2; bearing.position.y=2.5; bearing.castShadow=true; car.add(bearing);
   turret.position.y=2.54; car.add(turret);
-  const receiver = new THREE.Mesh(new THREE.DodecahedronGeometry(.48,0),darkMetal);
-  receiver.scale.set(1,.7,1.28); receiver.position.set(0,.28,.1); receiver.castShadow=true; turret.add(receiver);
-  const ammoBox = new THREE.Mesh(new THREE.BoxGeometry(.82,.42,.5),metal);
-  ammoBox.position.set(0,.18,-.52); ammoBox.rotation.x=.08; ammoBox.castShadow=true; turret.add(ammoBox);
-  for(const side of [-1,1]) {
-    const support = new THREE.Mesh(new THREE.CylinderGeometry(.09,.13,.68,8),metal);
-    support.position.set(side*.4,.12,.02); support.rotation.z=side*.42; support.castShadow=true; turret.add(support);
-  }
-  const shield = new THREE.Mesh(new THREE.BoxGeometry(1.24,.72,.12),warm);
-  shield.position.set(0,.24,.43); shield.rotation.x=-.12; shield.castShadow=true; turret.add(shield);
-  barrelPivot.position.set(0,.34,.35); turret.add(barrelPivot);
-  const jacket = new THREE.Mesh(new THREE.CylinderGeometry(.17,.2,.72,10),darkMetal);
-  jacket.rotation.x=Math.PI/2; jacket.position.z=.34; jacket.castShadow=true; barrelPivot.add(jacket);
-  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(.075,.095,1.82,10),metal);
-  barrel.rotation.x=Math.PI/2; barrel.position.z=1.53; barrel.castShadow=true; barrelPivot.add(barrel);
-  const muzzleBrake = new THREE.Mesh(new THREE.CylinderGeometry(.15,.15,.34,10),darkMetal);
-  muzzleBrake.rotation.x=Math.PI/2; muzzleBrake.position.z=2.45; muzzleBrake.castShadow=true; barrelPivot.add(muzzleBrake);
-  const muzzleGlow = new THREE.Mesh(new THREE.RingGeometry(.055,.13,10),new THREE.MeshBasicMaterial({color:0xff8b35}));
-  muzzleGlow.position.z=2.63; barrelPivot.add(muzzleGlow);
-  muzzle = new THREE.Object3D(); muzzle.position.z=2.66; barrelPivot.add(muzzle);
+  for(const kind of ["mg","rocket","sniper"] as const){const rig=createTurretRig(kind);turretRigs.set(kind,rig);turret.add(rig.root);}
+  selectWeapon(selectedWeapon,false);
   vehicleColliderDebug = new THREE.Mesh(
     new THREE.BoxGeometry(VEHICLE_COLLIDER_RADIUS * 2, VEHICLE_COLLIDER_HEIGHT, (VEHICLE_COLLIDER_HALF_LENGTH + VEHICLE_COLLIDER_RADIUS) * 2),
     new THREE.MeshBasicMaterial({ color: 0x4cfff0, wireframe: true, transparent: true, opacity: .8 }),
@@ -895,15 +994,19 @@ function createTarget(x:number,z:number,rotation:number): void {
   group.position.set(x,getGroundHeight(x,z),z);group.rotation.y=rotation;scene.add(group);targets.push({group,health:55,alive:true,hitFlash:0});
 }
 
-const bullets: Bullet[]=[]; const dust: DustParticle[]=[];
+const bullets: Bullet[]=[]; const dust: DustParticle[]=[]; const visualEffects: VisualEffect[]=[];
 const bulletMaterial=new THREE.MeshBasicMaterial({color:0xffcf5a});
 const dustMaterial=new THREE.MeshBasicMaterial({color:0xc18a59,transparent:true,opacity:.35,depthWrite:false});
 const bulletGeometry = new THREE.BoxGeometry(.09,.09,.72);
 const dustGeometry = new THREE.SphereGeometry(.3,6,4);
 const debrisGeometry = new THREE.DodecahedronGeometry(.14,0);
+const effectRingGeometry = new THREE.RingGeometry(.48,.68,28);
+const effectCoreGeometry = new THREE.IcosahedronGeometry(.55,1);
+const trailGeometry = new THREE.SphereGeometry(.18,7,5);
 const muzzleFlash = new THREE.PointLight(0xff8a24, 8, 5, 2);
 muzzleFlash.visible = false; scene.add(muzzleFlash);
 let fireCooldown=0; let isFireHeld=false; let muzzleFlashLife=0; let weaponStateLife=0;
+let impactFrameTimer=0; let cameraShakeLife=0; let cameraShakeStrength=0;
 let messageTimer=0; let paused=false; let cameraMode=0; let elapsed=0;
 const rampSmokeTest = new URLSearchParams(location.search).get("physics-smoke") === "ramp";
 const allSurfaceSmokeTest = new URLSearchParams(location.search).get("physics-smoke") === "all-surfaces";
@@ -943,17 +1046,84 @@ const shotOrigin = new THREE.Vector3();
 const shotDirection = new THREE.Vector3();
 const projectileForward = new THREE.Vector3(0,0,1);
 
+function createStarGeometry(points=10,outer=1.35,inner=.34): THREE.ShapeGeometry {
+  const shape=new THREE.Shape();
+  for(let index=0;index<points*2;index++){
+    const angle=index/(points*2)*Math.PI*2-Math.PI/2, radius=index%2===0?outer:inner;
+    const x=Math.cos(angle)*radius,y=Math.sin(angle)*radius;
+    if(index===0)shape.moveTo(x,y);else shape.lineTo(x,y);
+  }
+  shape.closePath();return new THREE.ShapeGeometry(shape);
+}
+const impactStarGeometry=createStarGeometry();
+
+function effectMaterial(color:number,opacity=1): THREE.MeshBasicMaterial {
+  const material=new THREE.MeshBasicMaterial({color,transparent:true,opacity,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending});
+  material.userData.baseOpacity=opacity;return material;
+}
+
+function triggerImpactFrame(kind: Exclude<WeaponKind,"mg">): void {
+  clearTimeout(impactFrameTimer);ui.impactFrame.className=`impact-frame impact-frame--${kind}`;
+  void ui.impactFrame.offsetWidth;ui.impactFrame.classList.add("active");
+  impactFrameTimer=window.setTimeout(()=>ui.impactFrame.classList.remove("active"),180);
+  canvas.dataset.lastImpactFrame=kind;
+}
+
+function spawnImpactVfx(kind:WeaponKind,position:THREE.Vector3,major=true):void{
+  const definition=weaponDefinitions[kind],group=new THREE.Group();group.position.copy(position);group.userData.billboard=true;
+  const core=new THREE.Mesh(effectCoreGeometry,effectMaterial(kind==="sniper"?0xe7fbff:kind==="rocket"?0xffb52f:0xffd66f,.95));
+  core.scale.set(major?1:.28,major?1:.28,major?1:.28);group.add(core);
+  const star=new THREE.Mesh(impactStarGeometry,effectMaterial(definition.impactColor,kind==="mg" ? .72 : .96));star.scale.setScalar(major ? 1.24 : .26);group.add(star);
+  const ringCount=kind==="rocket"?3:kind==="sniper"?2:1;
+  for(let index=0;index<ringCount;index++){
+    const ring=new THREE.Mesh(effectRingGeometry,effectMaterial(index===0?0xffffff:definition.impactColor,.9-index*.18));
+    ring.scale.setScalar((major ? .72 : .2)+index*.34);ring.position.z=-.03-index*.015;group.add(ring);
+  }
+  if(major&&(kind==="rocket"||kind==="sniper")){
+    const shardCount=kind==="sniper"?14:10;
+    for(let index=0;index<shardCount;index++){
+      const shard=new THREE.Mesh(new THREE.BoxGeometry(kind==="sniper" ? .055 : .11,kind==="sniper"?2.8:1.75,.04),effectMaterial(index%2?definition.impactColor:0xffffff,.88));
+      const angle=index/shardCount*Math.PI*2;shard.rotation.z=angle;shard.position.set(Math.cos(angle)*1.55,Math.sin(angle)*1.55,-.06);group.add(shard);
+    }
+    const light=new THREE.PointLight(definition.impactColor,kind==="rocket"?36:27,kind==="rocket"?15:11,2);group.add(light);
+    triggerImpactFrame(kind);cameraShakeLife=kind==="rocket" ? .32 : .18;cameraShakeStrength=kind==="rocket" ? .5 : .28;
+  }
+  scene.add(group);visualEffects.push({group,life:major?(kind==="rocket" ? .58 : .38):.13,maxLife:major?(kind==="rocket" ? .58 : .38):.13,kind:"impact",growth:major?(kind==="rocket"?4.8:3.8):1.3});
+}
+
+function spawnRocketTrail(position:THREE.Vector3):void{
+  const group=new THREE.Group();group.position.copy(position).add(new THREE.Vector3((Math.random()-.5)*.12,(Math.random()-.5)*.12,(Math.random()-.5)*.12));
+  const puff=new THREE.Mesh(trailGeometry,effectMaterial(Math.random()>.45?0xff7a23:0xffd85a,.72));group.add(puff);scene.add(group);
+  visualEffects.push({group,life:.28,maxLife:.28,kind:"trail",growth:2.2});
+}
+
+function createProjectile(kind:WeaponKind):THREE.Object3D{
+  if(kind==="mg")return new THREE.Mesh(bulletGeometry,bulletMaterial);
+  if(kind==="sniper"){
+    const group=new THREE.Group();
+    const core=new THREE.Mesh(new THREE.BoxGeometry(.075,.075,4.8),new THREE.MeshBasicMaterial({color:0xffffff}));group.add(core);
+    const aura=new THREE.Mesh(new THREE.BoxGeometry(.2,.2,3.9),effectMaterial(0x55dcff,.54));group.add(aura);return group;
+  }
+  const group=new THREE.Group();
+  const body=new THREE.Mesh(new THREE.CylinderGeometry(.12,.15,.78,9),new THREE.MeshStandardMaterial({color:0x343633,roughness:.55,metalness:.7}));body.rotation.x=Math.PI/2;group.add(body);
+  const nose=new THREE.Mesh(new THREE.ConeGeometry(.15,.34,9),warm);nose.rotation.x=Math.PI/2;nose.position.z=.55;group.add(nose);
+  for(const side of [-1,1]){const fin=new THREE.Mesh(new THREE.BoxGeometry(.38,.04,.32),warm);fin.position.set(side*.14,0,-.28);fin.rotation.z=side*.42;group.add(fin);}
+  const flame=new THREE.Mesh(new THREE.ConeGeometry(.18,.85,9),effectMaterial(0xff8b28,.92));flame.rotation.x=-Math.PI/2;flame.position.z=-.78;group.add(flame);
+  const glow=new THREE.PointLight(0xff6a24,8,4,2);glow.position.z=-.3;group.add(glow);return group;
+}
+
 function shoot(): boolean {
   if(paused || vehicle.health<=0 || !aimReady || fireCooldown > 0 || bullets.length >= 120) return false;
-  fireCooldown = 1 / weaponStats.fireRate;
+  const definition=weaponDefinitions[selectedWeapon];fireCooldown = 1 / weaponStats.fireRate;
   muzzle.getWorldPosition(shotOrigin);
   shotDirection.copy(aimPoint).sub(shotOrigin).normalize(); currentAimDirection.copy(shotDirection);
-  const mesh=new THREE.Mesh(bulletGeometry,bulletMaterial);mesh.position.copy(shotOrigin);
+  const mesh=createProjectile(selectedWeapon);mesh.position.copy(shotOrigin);
   mesh.quaternion.setFromUnitVectors(projectileForward,shotDirection);scene.add(mesh);
-  bullets.push({mesh,velocity:shotDirection.clone().multiplyScalar(weaponStats.projectileSpeed),life:weaponStats.range/weaponStats.projectileSpeed});
+  bullets.push({mesh,velocity:shotDirection.clone().multiplyScalar(weaponStats.projectileSpeed),life:weaponStats.range/weaponStats.projectileSpeed,kind:selectedWeapon,damage:weaponStats.damage,splashRadius:definition.splashRadius??0,trailTimer:0});
   canvas.dataset.shotsFired=String(Number(canvas.dataset.shotsFired??0)+1);
   ui.weaponState.textContent="FIRING"; weaponStateLife=.08;
-  muzzleFlash.position.copy(shotOrigin); muzzleFlash.visible=true; muzzleFlashLife=.045;
+  muzzleFlash.color.setHex(definition.impactColor);muzzleFlash.intensity=selectedWeapon==="rocket"?22:selectedWeapon==="sniper"?28:8;muzzleFlash.distance=selectedWeapon==="rocket"?10:7;
+  muzzleFlash.position.copy(shotOrigin); muzzleFlash.visible=true; muzzleFlashLife=selectedWeapon==="mg" ? .045 : .09;spawnImpactVfx(selectedWeapon,shotOrigin,false);
   return true;
 }
 
@@ -967,7 +1137,7 @@ function updateWeapon(dt: number): void {
   fireCooldown = Math.max(0, fireCooldown - dt);
   weaponStateLife = Math.max(0, weaponStateLife - dt);
   muzzleFlashLife = Math.max(0, muzzleFlashLife - dt);
-  if (weaponStateLife === 0 && ui.weaponState.textContent === "FIRING") ui.weaponState.textContent = "READY";
+  if (weaponStateLife === 0 && ui.weaponState.textContent === "FIRING") ui.weaponState.textContent = weaponDefinitions[selectedWeapon].stateLabel;
   if (muzzleFlashLife === 0) muzzleFlash.visible = false;
   if (isFireHeld) shoot();
 }
@@ -997,11 +1167,10 @@ function equipPickup(pickup:Pickup): void {
   pickup.collected=true;scene.remove(pickup.group);
   if(pickup.repair){vehicle.health=Math.min(stats.maxHealth,vehicle.health+pickup.repair);showMessage(`REPAIR KIT // HULL RESTORED +${pickup.repair}`);return;}
   if(!pickup.part)return;equipped[pickup.part.slot]=pickup.part;Object.assign(stats,pickup.part.stats);
-  weaponStats.fireRate=stats.fireRate;weaponStats.damage=stats.weaponDamage;weaponStats.projectileSpeed=stats.projectileSpeed;
   if(pickup.part.slot==="armor"){vehicle.health=Math.min(stats.maxHealth,vehicle.health+45);ui.armor.textContent="RIVETED";}
   if(pickup.part.slot==="engine")ui.engine.textContent="TURBO V8";
   if(pickup.part.slot==="tires")ui.tires.textContent="ALL-TERRAIN";
-  if(pickup.part.slot==="roof_weapon"){ui.weapon.textContent="TWIN ROOF MG";turret.scale.set(1.18,1.12,1.18);}
+  if(pickup.part.slot==="roof_weapon"){selectWeapon("mg",false);weaponStats.fireRate=stats.fireRate;weaponStats.damage=stats.weaponDamage;weaponStats.projectileSpeed=stats.projectileSpeed;ui.weapon.textContent="TWIN SCRAP RATTLER";turret.scale.set(1.18,1.12,1.18);}
   showMessage(`EQUIPPED // ${pickup.part.name.toUpperCase()}`);
 }
 
@@ -1186,9 +1355,58 @@ function updateAim(dt:number): void {
   groundCrosshair.scale.setScalar(1 + Math.sin(elapsed * 5) * .06);
 }
 
+const projectilePrevious=new THREE.Vector3(),targetCenter=new THREE.Vector3(),projectileClosest=new THREE.Vector3(),impactPoint=new THREE.Vector3();
+function segmentDistanceSq(start:THREE.Vector3,end:THREE.Vector3,point:THREE.Vector3):number{
+  const segment=end.clone().sub(start),lengthSq=segment.lengthSq();
+  if(lengthSq<=.000001)return point.distanceToSquared(start);
+  const t=THREE.MathUtils.clamp(point.clone().sub(start).dot(segment)/lengthSq,0,1);
+  projectileClosest.copy(start).addScaledVector(segment,t);return projectileClosest.distanceToSquared(point);
+}
+
+function resolveProjectileImpact(bullet:Bullet,position:THREE.Vector3,directTarget:Target|null):void{
+  canvas.dataset.lastWeaponImpact=bullet.kind;
+  if(bullet.kind==="rocket"){
+    for(const target of targets){
+      if(!target.alive)continue;targetCenter.copy(target.group.position).add(new THREE.Vector3(0,1.4,0));
+      const distance=targetCenter.distanceTo(position);if(distance>bullet.splashRadius)continue;
+      const damage=target===directTarget?bullet.damage:bullet.damage*Math.max(.28,1-distance/bullet.splashRadius);
+      damageTarget(target,damage);
+    }
+  }else if(directTarget)damageTarget(directTarget,bullet.damage);
+  spawnImpactVfx(bullet.kind,position,bullet.kind!=="mg");
+}
+
 function updateProjectiles(dt:number): void {
-  for(let i=bullets.length-1;i>=0;i--){const bullet=bullets[i];bullet.mesh.position.addScaledVector(bullet.velocity,dt);bullet.life-=dt;let hit=false;for(const target of targets){if(!target.alive)continue;const dx=bullet.mesh.position.x-target.group.position.x,dy=bullet.mesh.position.y-target.group.position.y-1.4,dz=bullet.mesh.position.z-target.group.position.z;if(dx*dx+dy*dy+dz*dz<1){damageTarget(target,weaponStats.damage);hit=true;break;}}const hitTerrain=bullet.mesh.position.y<=getDriveHeight(bullet.mesh.position.x,bullet.mesh.position.z)+.08;if(hit||hitTerrain||bullet.life<=0){scene.remove(bullet.mesh);bullets.splice(i,1);}}
+  for(let index=bullets.length-1;index>=0;index--){
+    const bullet=bullets[index];projectilePrevious.copy(bullet.mesh.position);bullet.mesh.position.addScaledVector(bullet.velocity,dt);bullet.life-=dt;
+    if(bullet.kind==="rocket"){bullet.trailTimer-=dt;if(bullet.trailTimer<=0){bullet.trailTimer=.035;spawnRocketTrail(bullet.mesh.position);}}
+    let directTarget:Target|null=null;
+    for(const target of targets){
+      if(!target.alive)continue;targetCenter.copy(target.group.position).add(new THREE.Vector3(0,1.4,0));
+      const radius=bullet.kind==="rocket"?1.15:.95;if(segmentDistanceSq(projectilePrevious,bullet.mesh.position,targetCenter)<radius*radius){directTarget=target;break;}
+    }
+    const groundHeight=getDriveHeight(bullet.mesh.position.x,bullet.mesh.position.z)+.1;
+    const hitTerrain=bullet.mesh.position.y<=groundHeight;
+    if(directTarget||hitTerrain||bullet.life<=0){
+      if(directTarget)impactPoint.copy(directTarget.group.position).add(new THREE.Vector3(0,1.4,0));
+      else {impactPoint.copy(bullet.mesh.position);if(hitTerrain)impactPoint.y=groundHeight+.08;}
+      if(directTarget||hitTerrain||bullet.kind==="rocket")resolveProjectileImpact(bullet,impactPoint,directTarget);
+      scene.remove(bullet.mesh);bullets.splice(index,1);
+    }
+  }
   for(let i=dust.length-1;i>=0;i--){const p=dust[i];p.life-=dt;p.mesh.position.addScaledVector(p.velocity,dt);p.velocity.y-=3.5*dt;p.mesh.scale.multiplyScalar(1+dt*.55);const material=p.mesh.material as THREE.MeshBasicMaterial;material.opacity=Math.max(0,Math.min(material.opacity,p.life*.45));if(p.life<=0){scene.remove(p.mesh);material.dispose();dust.splice(i,1);}}
+  for(let index=visualEffects.length-1;index>=0;index--){
+    const effect=visualEffects[index];effect.life-=dt;const progress=THREE.MathUtils.clamp(1-effect.life/effect.maxLife,0,1),fade=Math.pow(1-progress,1.45);
+    if(effect.group.userData.billboard)effect.group.quaternion.copy(camera.quaternion);
+    effect.group.scale.setScalar((effect.kind==="impact" ? .48 : .68)+progress*effect.growth);
+    effect.group.traverse(object=>{
+      if(object instanceof THREE.PointLight)object.intensity*=Math.max(0,1-dt*8);
+      if(!(object instanceof THREE.Mesh))return;const materials=Array.isArray(object.material)?object.material:[object.material];
+      for(const material of materials){material.transparent=true;material.opacity=(Number(material.userData.baseOpacity??1))*fade;}
+    });
+    if(effect.life<=0){scene.remove(effect.group);visualEffects.splice(index,1);}
+  }
+  cameraShakeLife=Math.max(0,cameraShakeLife-dt);if(cameraShakeLife===0)cameraShakeStrength=0;
   for(const target of targets){if(!target.alive)continue;if(target.hitFlash>0){target.hitFlash-=dt;const body=target.group.getObjectByName("target-body") as THREE.Mesh<THREE.BufferGeometry,THREE.MeshStandardMaterial>;body.material.emissive.setHex(0xff6b2c);}else{const body=target.group.getObjectByName("target-body") as THREE.Mesh<THREE.BufferGeometry,THREE.MeshStandardMaterial>;body.material.emissive.setHex(0x000000);}}
 }
 
@@ -1202,6 +1420,7 @@ function updateCamera(dt:number): void {
   cameraDesired.copy(car.position);
   if(cameraMode===0)cameraDesired.addScaledVector(cameraForward,-11.5).y+=6.3;
   else{cameraDesired.y+=23;cameraDesired.z-=.01;}
+  if(cameraShakeLife>0)cameraDesired.add(new THREE.Vector3((Math.random()-.5)*cameraShakeStrength,(Math.random()-.5)*cameraShakeStrength,(Math.random()-.5)*cameraShakeStrength));
   camera.position.lerp(cameraDesired,1-Math.exp(-6.5*dt));
   cameraTarget.copy(car.position).addScaledVector(cameraForward,cameraMode===0?4:0);cameraTarget.y+=1.2;
   cameraLook.lerp(cameraTarget,1-Math.exp(-9*dt));camera.lookAt(cameraLook);
@@ -1411,6 +1630,10 @@ async function startLevel(levelId: ScraproadLevelId): Promise<void> {
 document.querySelectorAll<HTMLButtonElement>("[data-level]").forEach(button => {
   button.addEventListener("click", () => void startLevel(button.dataset.level as ScraproadLevelId));
 });
+document.querySelectorAll<HTMLButtonElement>("[data-weapon]").forEach(button=>{
+  button.addEventListener("click",()=>selectWeapon(button.dataset.weapon as WeaponKind));
+});
+selectWeapon("mg",false);
 const requestedLevel = new URLSearchParams(location.search).get("level") as ScraproadLevelId | null;
 if (rampSmokeTest || allSurfaceSmokeTest || wallRideSmokeTest || holdFireSmokeTest || (requestedLevel && requestedLevel in scraproadArenaLayouts)) void startLevel(requestedLevel && requestedLevel in scraproadArenaLayouts ? requestedLevel : defaultScraproadLevel);
 

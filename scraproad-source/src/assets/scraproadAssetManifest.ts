@@ -6,7 +6,7 @@ export const scraproadAssetManifest = {
   },
   weapon: {
     model: null,
-    fallback: "Original low-poly roof cannon assembled in Three.js",
+    fallback: "Three original low-poly roof turrets and anime-style weapon VFX assembled in Three.js",
   },
   arena: {
     ramp: "./assets/scraproad/arena/kenney-ramp.glb",
