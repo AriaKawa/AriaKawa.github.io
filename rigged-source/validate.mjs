@@ -33,6 +33,7 @@ const html = await readFile(resolve(root, "index.html"), "utf8");
 const source = await readFile(resolve(import.meta.dirname, "src/main.ts"), "utf8");
 const colliderSource = await readFile(resolve(import.meta.dirname, "src/game/rigged/DriveSurfaceCollider.ts"), "utf8");
 const ovalSource = await readFile(resolve(import.meta.dirname, "src/game/rigged/OvalBowlSurface.ts"), "utf8");
+const cameraSource = await readFile(resolve(import.meta.dirname, "src/game/rigged/RiggedCameraController.ts"), "utf8");
 const racekartManifest = await readFile(resolve(import.meta.dirname, "src/assets/riggedRacekartManifest.ts"), "utf8");
 const layouts = await readFile(resolve(import.meta.dirname, "src/game/rigged/RiggedArenaLayout.ts"), "utf8");
 const checks = [
@@ -44,6 +45,7 @@ const checks = [
   ["round countdown", /id="round-countdown"[\s\S]*id="round-countdown-value"/],
   ["rival health meter", /id="rival-health-bar"[\s\S]*id="rival-health-value"/],
   ["controls", /id="controls"/],
+  ["camera mode HUD", /id="camera-mode-value"[^>]*>CHASE CAM/],
   ["level selector", /id="level-select"/],
   ["Dust Ring deploy button", /data-level="dustring"/],
   ["Capsule Circuit deploy button", /data-level="ovalbowl"[\s\S]*CAPSULE CIRCUIT/],
@@ -159,12 +161,12 @@ const sceneChecks = [
   ["correct roll slope direction", /Math\.atan2\(rightY-leftY,2\.4\)/],
   ["wall turning runtime suite", /function runWallTurningSuite[\s\S]*wallTurningSmoke/],
   ["surface frame debug arrows", /debugSurfaceNormal[\s\S]*debugSurfaceForward[\s\S]*debugVelocity[\s\S]*debugWallContact/],
-  ["horizon stabilized wall camera", /cameraForward\.set\(Math\.sin\(vehicle\.heading\),0,Math\.cos\(vehicle\.heading\)\)/],
+  ["horizon stabilized wall camera", /cameraController\.update\([\s\S]*playerHeading:vehicle\.heading/],
   ["wall ride runtime smoke route", /function runWallRideSuite[\s\S]*wallRideSmoke/],
   ["wall reset runtime verification", /dataset\.wallReset=resetPassed\?"passed":"failed"/],
   ["analytic capsule collision telemetry", /capsuleCollision = "three-disc-analytic-bands"/],
   ["chase camera", /function updateCamera/],
-  ["enemy camera lock", /enemyCamEnabled[\s\S]*cameraTarget\.copy\(opponentCar\.position\)[\s\S]*event\.code==="KeyE"[\s\S]*toggleEnemyCam/],
+  ["enemy camera toggle", /function toggleCameraMode[\s\S]*event\.code==="KeyC"/],
   ["enemy camera telemetry", /dataset\.cameraAimMode[\s\S]*dataset\.cameraLookAt/],
 ];
 for (const [label, pattern] of sceneChecks) {
@@ -192,6 +194,20 @@ const ovalChecks = [
 ];
 for (const [label, pattern] of ovalChecks) {
   if (!pattern.test(ovalSource)) throw new Error(`Missing ${label} implementation`);
+}
+const cameraChecks = [
+  ["two camera modes", /type RiggedCameraMode = "chase" \| "enemy"/],
+  ["player anchored enemy framing", /desiredPosition\.copy\(frame\.playerPosition\)\.addScaledVector\(this\.forward, -this\.followDistance\)/],
+  ["player enemy blended focus", /desiredLook\.lerpVectors\(frame\.playerPosition, frame\.enemyPosition, focusBlend\)/],
+  ["smoothed orbit yaw", /yawDelta[\s\S]*this\.response\(5\.4, dt\)/],
+  ["smoothed target distance", /distanceGoal[\s\S]*this\.followDistance = THREE\.MathUtils\.lerp/],
+  ["world-up horizon", /camera\.up\.set\(0, 1, 0\)/],
+  ["missing target fallback", /fellBackToChase = true/],
+  ["arena boundary clamp", /constrainToArena[\s\S]*ARENA_WALL_CLEARANCE/],
+  ["floor clearance", /groundHeight\(this\.desiredPosition\.x, this\.desiredPosition\.z\) \+ MIN_FLOOR_CLEARANCE/],
+];
+for (const [label, pattern] of cameraChecks) {
+  if (!pattern.test(cameraSource)) throw new Error(`Missing ${label} implementation`);
 }
 for (const key of ["stuntRamp", "fence", "rockWide", "rockTall", "hayBale"]) {
   if (!racekartManifest.includes(`${key}: asset(`)) throw new Error(`Missing ${key} from Racekart asset manifest`);

@@ -25,6 +25,7 @@ import {
   resolveOvalBoundary,
   sampleOvalBowl,
 } from "./game/rigged/OvalBowlSurface";
+import { RiggedCameraController, type RiggedCameraBounds } from "./game/rigged/RiggedCameraController";
 import "./style.css";
 
 type VehiclePartSlot = "roof_weapon" | "front_weapon" | "tires" | "engine" | "armor";
@@ -106,6 +107,7 @@ const ui = {
   round: getElement("round-value"), playerRounds: getElement("player-rounds"), enemyRounds: getElement("enemy-rounds"),
   countdown: getElement("round-countdown"), countdownValue: getElement("round-countdown-value"), countdownArena: getElement("round-countdown-arena"),
   rivalHealth: getElement("rival-health-value"), rivalHealthBar: getElement("rival-health-bar"),
+  cameraMode: getElement("camera-mode-value"),
 };
 const initialParams = new URLSearchParams(location.search);
 const readScoreParam = (key: string, maximum: number): number => THREE.MathUtils.clamp(Number.parseInt(initialParams.get(key) ?? "0", 10) || 0, 0, maximum);
@@ -268,6 +270,7 @@ async function instantiateRacekartAsset(key: RacekartAssetKey): Promise<THREE.Gr
 
 const camera = new THREE.PerspectiveCamera(58, innerWidth / innerHeight, 0.1, 520);
 camera.position.set(0, 7, -11);
+const cameraController = new RiggedCameraController(camera);
 
 const hemi = new THREE.HemisphereLight(0xbccbd7, 0x3c3027, 1.35);
 scene.add(hemi);
@@ -1126,7 +1129,7 @@ const muzzleFlash = new THREE.PointLight(0xff8a24, 8, 5, 2);
 muzzleFlash.visible = false; scene.add(muzzleFlash);
 let fireCooldown=0; let isFireHeld=false; let muzzleFlashLife=0; let weaponStateLife=0;
 let cameraShakeLife=0; let cameraShakeStrength=0;
-let messageTimer=0; let paused=false; let cameraMode=0; let enemyCamEnabled=false; let elapsed=0;
+let messageTimer=0; let paused=false; let elapsed=0;
 const rampSmokeTest = new URLSearchParams(location.search).get("physics-smoke") === "ramp";
 const allSurfaceSmokeTest = new URLSearchParams(location.search).get("physics-smoke") === "all-surfaces";
 const wallRideSmokeTest = new URLSearchParams(location.search).get("physics-smoke") === "wall";
@@ -1704,22 +1707,24 @@ function updateProjectiles(dt:number): void {
   for(const target of targets){if(!target.alive)continue;if(target.hitFlash>0){target.hitFlash-=dt;const body=target.group.getObjectByName("target-body") as THREE.Mesh<THREE.BufferGeometry,THREE.MeshStandardMaterial>;body.material.emissive.setHex(0xff6b2c);}else{const body=target.group.getObjectByName("target-body") as THREE.Mesh<THREE.BufferGeometry,THREE.MeshStandardMaterial>;body.material.emissive.setHex(0x000000);}}
 }
 
-const cameraLook=new THREE.Vector3();
-const cameraForward=new THREE.Vector3();
-const cameraDesired=new THREE.Vector3();
-const cameraTarget=new THREE.Vector3();
+const cameraShakeOffset=new THREE.Vector3();
+function getCameraBounds():RiggedCameraBounds{
+  if(activeLayout.arenaKind==="capsule"&&activeLayout.bowl)return{kind:"capsule",straightHalfLength:activeLayout.bowl.straightHalfLength,outerRadius:activeLayout.bowl.outerRadius};
+  return{kind:"ring",radius:ARENA_RADIUS};
+}
+function updateCameraModeHud():void{
+  const enemyMode=cameraController.mode==="enemy";
+  ui.cameraMode.textContent=enemyMode?"ENEMY CAM":"CHASE CAM";
+  ui.cameraMode.parentElement?.classList.toggle("enemy",enemyMode);
+  canvas.dataset.cameraMode=cameraController.mode;
+  canvas.dataset.enemyCam=enemyMode?"locked":"off";
+}
 function updateCamera(dt:number): void {
-  // Keep the chase camera horizon-stabilized even while the chassis banks.
-  cameraForward.set(Math.sin(vehicle.heading),0,Math.cos(vehicle.heading));
-  cameraDesired.copy(car.position);
-  if(cameraMode===0)cameraDesired.addScaledVector(cameraForward,-11.5).y+=6.3;
-  else{cameraDesired.y+=23;cameraDesired.z-=.01;}
-  if(cameraShakeLife>0)cameraDesired.add(new THREE.Vector3((Math.random()-.5)*cameraShakeStrength,(Math.random()-.5)*cameraShakeStrength,(Math.random()-.5)*cameraShakeStrength));
-  camera.position.lerp(cameraDesired,1-Math.exp(-6.5*dt));
-  if(enemyCamEnabled){cameraTarget.copy(opponentCar.position);cameraTarget.y+=1.3;}
-  else{cameraTarget.copy(car.position).addScaledVector(cameraForward,cameraMode===0?4:0);cameraTarget.y+=1.2;}
-  cameraLook.lerp(cameraTarget,1-Math.exp(-9*dt));camera.lookAt(cameraLook);
-  canvas.dataset.cameraAimMode=enemyCamEnabled?"enemy-lock":"drive-forward";canvas.dataset.cameraPositionMode=cameraMode===0?"chase":"overwatch";canvas.dataset.cameraPosition=`${camera.position.x.toFixed(2)},${camera.position.y.toFixed(2)},${camera.position.z.toFixed(2)}`;canvas.dataset.cameraLookAt=`${cameraLook.x.toFixed(2)},${cameraLook.y.toFixed(2)},${cameraLook.z.toFixed(2)}`;
+  if(cameraShakeLife>0)cameraShakeOffset.set((Math.random()-.5)*cameraShakeStrength,(Math.random()-.5)*cameraShakeStrength,(Math.random()-.5)*cameraShakeStrength);
+  else cameraShakeOffset.set(0,0,0);
+  const result=cameraController.update({dt,playerPosition:car.position,playerHeading:vehicle.heading,enemyPosition:opponentCar.position,enemyAvailable:opponent.health>0&&opponentCar.visible,groundHeight:getDriveHeight,bounds:getCameraBounds(),shake:cameraShakeOffset});
+  if(result.fellBackToChase){updateCameraModeHud();showMessage("NO TARGET // CHASE CAM");}
+  canvas.dataset.cameraAimMode=result.mode==="enemy"?"enemy-target":"drive-forward";canvas.dataset.cameraPositionMode=result.mode;canvas.dataset.cameraTargetDistance=result.targetDistance?.toFixed(2)??"none";canvas.dataset.cameraPosition=`${camera.position.x.toFixed(2)},${camera.position.y.toFixed(2)},${camera.position.z.toFixed(2)}`;canvas.dataset.cameraLookAt=`${cameraController.lookAt.x.toFixed(2)},${cameraController.lookAt.y.toFixed(2)},${cameraController.lookAt.z.toFixed(2)}`;
 }
 
 function updatePickups(dt:number):void{for(const pickup of pickups){if(pickup.collected)continue;pickup.group.rotation.y+=dt*.8;const item=pickup.group.children[2];item.position.y=1.1+Math.sin(elapsed*2.4+pickup.group.position.x)*.18;}}
@@ -1761,7 +1766,7 @@ function updateVehicleVisual(alpha:number):void{
 
 function resetVehicle(announce=true):void{
   const spawn = activeLayout.spawn;
-  setFireHeld(false);vehicle.position.set(spawn.x,getGroundHeight(spawn.x,spawn.z)+.06,spawn.z);vehicle.heading=spawn.heading;vehicle.speed=0;vehicle.driftAngle=0;vehicle.verticalVelocity=0;vehicle.pitch=0;vehicle.roll=0;vehicle.grounded=true;vehicle.activeRamp=null;vehicle.health=stats.maxHealth;vehicle.boost=100;vehicle.orientation.setFromAxisAngle(worldUp,spawn.heading);vehicle.surfaceNormal.copy(worldUp);vehicle.projectedForward.set(Math.sin(spawn.heading),0,Math.cos(spawn.heading));vehicle.velocity.set(0,0,0);vehicle.wallContactNormal.set(0,0,0);vehicle.wallAssistActive=false;vehicle.downforce=0;capturePhysicsPose();car.position.copy(vehicle.position);car.quaternion.copy(vehicle.orientation);camera.position.set(spawn.x,vehicle.position.y+6.3,spawn.z-11.5);cameraLook.copy(vehicle.position);cameraLook.y+=1.2;if(announce)showMessage("RIG RECOVERED // SYSTEMS ONLINE");
+  setFireHeld(false);vehicle.position.set(spawn.x,getGroundHeight(spawn.x,spawn.z)+.06,spawn.z);vehicle.heading=spawn.heading;vehicle.speed=0;vehicle.driftAngle=0;vehicle.verticalVelocity=0;vehicle.pitch=0;vehicle.roll=0;vehicle.grounded=true;vehicle.activeRamp=null;vehicle.health=stats.maxHealth;vehicle.boost=100;vehicle.orientation.setFromAxisAngle(worldUp,spawn.heading);vehicle.surfaceNormal.copy(worldUp);vehicle.projectedForward.set(Math.sin(spawn.heading),0,Math.cos(spawn.heading));vehicle.velocity.set(0,0,0);vehicle.wallContactNormal.set(0,0,0);vehicle.wallAssistActive=false;vehicle.downforce=0;capturePhysicsPose();car.position.copy(vehicle.position);car.quaternion.copy(vehicle.orientation);cameraController.snapToChase(vehicle.position,vehicle.heading,getDriveHeight);if(announce)showMessage("RIG RECOVERED // SYSTEMS ONLINE");
 }
 
 function resetOpponent():void{
@@ -1794,7 +1799,7 @@ function advanceRound():void{
 function togglePause(force?:boolean):void{if(!levelStarted)return;paused=force??!paused;if(paused)setFireHeld(false);ui.pause.hidden=!paused;}
 function toggleControls(show?:boolean):void{ui.controls.classList.toggle("closed",show===undefined?!ui.controls.classList.contains("closed"):!show);}
 function toggleDebug():void{if(!levelStarted)return;debugPhysics=!debugPhysics;debugVisuals.forEach(item=>item.visible=debugPhysics);vehicleColliderDebug.visible=debugPhysics;ui.debug.hidden=!debugPhysics;showMessage(debugPhysics?`PHYSICS DEBUG // ${vehicle.grounded?"GROUNDED":"AIRBORNE"}`:"PHYSICS DEBUG // OFF");}
-function toggleEnemyCam():void{if(!levelStarted)return;enemyCamEnabled=!enemyCamEnabled;canvas.dataset.enemyCam=enemyCamEnabled?"locked":"off";showMessage(enemyCamEnabled?"ENEMY CAM // LOCKED":"ENEMY CAM // OFF");}
+function toggleCameraMode():void{if(!levelStarted)return;const result=cameraController.toggle(opponent.health>0&&opponentCar.visible);updateCameraModeHud();showMessage(result.noTarget?"NO TARGET // CHASE CAM":result.mode==="enemy"?"ENEMY CAM // ON":"CHASE CAM // ON");}
 
 canvas.dataset.assetsLoaded="0";canvas.dataset.assetErrors="0";canvas.dataset.assetManifest="riggedAssetManifest";
 
@@ -1952,7 +1957,7 @@ async function startLevel(levelId: RiggedLevelId): Promise<void> {
   activeLayout.targets.forEach(target => createTarget(target.x, target.z, target.rotation));
   roundAwarded=false;updateRoundHud();canvas.dataset.targetsRemaining=String(activeLayout.targets.length);
   canvas.dataset.prototype="rigged-1v1-combat";canvas.dataset.audioSystem="hrtf-directional-combat-sfx-v2";canvas.dataset.arenaLayout=activeLayout.id;canvas.dataset.arenaKind=activeLayout.arenaKind;canvas.dataset.arenaRadius=String(ARENA_RADIUS);canvas.dataset.ringInnerRadius=String(activeLayout.ringInnerRadius);canvas.dataset.ringOuterRadius=String(activeLayout.ringOuterRadius);canvas.dataset.rampColliders=String(ramps.filter(ramp=>ramp.kind==="ramp").length);canvas.dataset.bridgeColliders=String(ramps.filter(ramp=>ramp.kind==="bridge").length);canvas.dataset.heightfieldColliders=String(driveHeightfields.length);canvas.dataset.majorColliders=String(obstacles.length+boxColliders.length+(activeLayout.arenaKind==="capsule"?3:0));canvas.dataset.vehicleCollider="three-disc-capsule-2.24x4.14x0.72";canvas.dataset.shotsFired="0";canvas.dataset.aiShotsFired="0";canvas.dataset.fireHeld="false";canvas.dataset.racekartAssets="modular-racekart-track-hilly";canvas.dataset.racingAssetsUsage=activeLayout.arenaKind==="capsule"?"rim-railings":"ramps-fences-props";canvas.dataset.colliderSource=activeLayout.arenaKind==="capsule"?"analytic-capsule-bands":"visual-asset-heightfields";canvas.dataset.wallRideContact="pending";canvas.dataset.mapRotation="alternate-every-round";auditHeightfieldCoverage();
-  levelStarted = true; levelStarting = false; paused = false; ui.levelSelect.hidden = true; resetVehicle(false);resetOpponent();beginRoundCountdown();if(initialParams.get("auto")==="1")startAudio();runSmokeRoutes();
+  levelStarted = true; levelStarting = false; paused = false; ui.levelSelect.hidden = true; resetVehicle(false);resetOpponent();updateCameraModeHud();beginRoundCountdown();if(initialParams.get("auto")==="1")startAudio();runSmokeRoutes();
   if(roundPhase!=="ended"&&(rampSmokeTest||allSurfaceSmokeTest||wallRideSmokeTest||holdFireSmokeTest||boostSmokeTest))showMessage(rampSmokeTest?"RAMP SUITE // AUTO DRIVE":allSurfaceSmokeTest?"ALL RAMPS // AUTO DRIVE":wallRideSmokeTest?"WALL-RIDE SUITE // AUTO DRIVE":holdFireSmokeTest?"HOLD-FIRE SMOKE TEST // COMPLETE":"BOOST STAMINA TEST // COMPLETE");
 }
 
@@ -1967,7 +1972,7 @@ updateRoundHud();
 const requestedLevel = new URLSearchParams(location.search).get("level") as RiggedLevelId | null;
 if (rampSmokeTest || allSurfaceSmokeTest || wallRideSmokeTest || holdFireSmokeTest || boostSmokeTest || roundWinSmokeTest || (requestedLevel && requestedLevel in riggedArenaLayouts)) void startLevel(requestedLevel && requestedLevel in riggedArenaLayouts ? requestedLevel : defaultRiggedLevel);
 
-window.addEventListener("keydown",event=>{if(["KeyW","KeyA","KeyS","KeyD","Space","ShiftLeft","KeyE","KeyF","F3"].includes(event.code))event.preventDefault();if(event.repeat||!levelStarted)return;if(event.code==="Escape"){togglePause();return;}if(event.code==="KeyE"){toggleEnemyCam();return;}if(event.code==="KeyR")resetVehicle();if(event.code==="KeyC"){cameraMode=(cameraMode+1)%2;showMessage(cameraMode?"CAMERA // OVERWATCH":"CAMERA // CHASE");}if(event.code==="KeyB"||event.code==="KeyH"||event.code==="F3")toggleDebug();if(event.code==="KeyF")setFireHeld(true);input.add(event.code);});
+window.addEventListener("keydown",event=>{if(["KeyW","KeyA","KeyS","KeyD","Space","ShiftLeft","KeyC","KeyF","F3"].includes(event.code))event.preventDefault();if(event.repeat||!levelStarted)return;if(event.code==="Escape"){togglePause();return;}if(event.code==="KeyC"){toggleCameraMode();return;}if(event.code==="KeyR")resetVehicle();if(event.code==="KeyB"||event.code==="KeyH"||event.code==="F3")toggleDebug();if(event.code==="KeyF")setFireHeld(true);input.add(event.code);});
 window.addEventListener("keyup",event=>{input.delete(event.code);if(event.code==="KeyF")setFireHeld(false);});
 canvas.addEventListener("pointermove",event=>{const bounds=canvas.getBoundingClientRect();mouse.x=(event.clientX-bounds.left)/bounds.width*2-1;mouse.y=-(event.clientY-bounds.top)/bounds.height*2+1;const crosshair=getElement("crosshair");crosshair.style.left=`${event.clientX}px`;crosshair.style.top=`${event.clientY}px`;});
 canvas.addEventListener("pointerdown",event=>{if(event.button===0)setFireHeld(true);});
