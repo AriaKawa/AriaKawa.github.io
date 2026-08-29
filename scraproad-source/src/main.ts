@@ -64,16 +64,18 @@ type VehiclePart = {
 type Pickup = { group: THREE.Group; part: VehiclePart | null; repair?: number; collected: boolean; label: string };
 type Target = { group: THREE.Group; health: number; alive: boolean; hitFlash: number };
 type Bullet = {
+  id: number;
   mesh: THREE.Object3D;
   velocity: THREE.Vector3;
   life: number;
   kind: WeaponKind;
+  owner: "player" | "opponent";
   damage: number;
   splashRadius: number;
   trailTimer: number;
 };
 type DustParticle = { mesh: THREE.Mesh; life: number; velocity: THREE.Vector3 };
-type VisualEffect = { group: THREE.Group; life: number; maxLife: number; kind: "impact" | "trail" | "laser"; growth: number };
+type VisualEffect = { group: THREE.Group; life: number; maxLife: number; kind: "impact" | "trail" | "laser"; growth: number; sourceId?: number };
 type Obstacle = { position: THREE.Vector3; radius: number; top: number; label: string };
 type BoxCollider = { position: THREE.Vector3; halfWidth: number; halfLength: number; rotation: number; label: string };
 type DriveSurfaceKind = "ramp" | "bridge" | "track" | "terrain" | "wall";
@@ -102,8 +104,17 @@ const ui = {
   weaponState: getElement("weapon-state"), message: getElement("message"), controls: getElement("controls"),
   pause: getElement("pause"), debug: getElement("physics-debug"), levelSelect: getElement("level-select"),
   round: getElement("round-value"), playerRounds: getElement("player-rounds"), enemyRounds: getElement("enemy-rounds"),
+  countdown: getElement("round-countdown"), countdownValue: getElement("round-countdown-value"), countdownArena: getElement("round-countdown-arena"),
+  rivalHealth: getElement("rival-health-value"), rivalHealthBar: getElement("rival-health-bar"),
 };
-let playerRoundWins=0,enemyRoundWins=0,currentRound=1,roundAwarded=false;
+const initialParams = new URLSearchParams(location.search);
+const readScoreParam = (key: string, maximum: number): number => THREE.MathUtils.clamp(Number.parseInt(initialParams.get(key) ?? "0", 10) || 0, 0, maximum);
+let playerRoundWins=readScoreParam("pw",3),enemyRoundWins=readScoreParam("ew",3),currentRound=Math.max(1,readScoreParam("round",99) || 1),roundAwarded=false;
+type RoundPhase = "loading" | "countdown" | "active" | "ended";
+let roundPhase: RoundPhase = "loading";
+let countdownRemaining = 3.6;
+let countdownShown = 4;
+let roundTransitionTimer = 0;
 
 function updateRoundHud():void{
   ui.round.textContent=String(currentRound).padStart(2,"0");
@@ -113,8 +124,10 @@ function updateRoundHud():void{
 }
 
 function awardPlayerRound():void{
-  if(roundAwarded)return;roundAwarded=true;playerRoundWins=Math.min(3,playerRoundWins+1);updateRoundHud();canvas.dataset.roundWinner="player";
+  finishRound("player");
 }
+
+function awardEnemyRound():void{finishRound("opponent");}
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
@@ -829,6 +842,7 @@ function auditArenaFlow(): void {
 }
 
 const car = new THREE.Group();
+const opponentCar = new THREE.Group();
 const wheels: THREE.Object3D[] = [];
 const frontWheelPivots: THREE.Object3D[] = [];
 const turret = new THREE.Group();
@@ -1006,6 +1020,25 @@ function buildCar(): void {
   car.position.set(0,getGroundHeight(0,-28),-28); scene.add(car);
 }
 
+function buildOpponentCar(): void {
+  opponentCar.name = "rival-ai-combat-car";
+  const chassisMaterial = new THREE.MeshStandardMaterial({ color:0x63339b, map:grittyTurretTexture, roughness:.68, metalness:.5 });
+  const chassis = new THREE.Mesh(new THREE.BoxGeometry(2.75,.72,4.45),chassisMaterial);
+  chassis.position.y=1.02;chassis.castShadow=true;opponentCar.add(chassis);
+  const cabin = new THREE.Mesh(new THREE.DodecahedronGeometry(1.15,0),darkMetal.clone());
+  cabin.scale.set(1,.66,1.05);cabin.position.set(0,1.68,-.28);cabin.castShadow=true;opponentCar.add(cabin);
+  for(const x of [-1.43,1.43])for(const z of [-1.42,1.42]){
+    const wheel=new THREE.Mesh(new THREE.CylinderGeometry(.56,.56,.42,14),rubber);wheel.rotation.z=Math.PI/2;wheel.position.set(x,.7,z);wheel.castShadow=true;opponentCar.add(wheel);
+  }
+  const mount=new THREE.Mesh(new THREE.CylinderGeometry(.58,.72,.24,12),chassisMaterial);mount.position.y=2.32;opponentCar.add(mount);
+  const rivalTurret=new THREE.Group();rivalTurret.name="rival-tracking-turret";rivalTurret.position.y=2.5;opponentCar.add(rivalTurret);
+  const receiver=new THREE.Mesh(new THREE.BoxGeometry(.82,.48,1.05),darkMetal);receiver.position.y=.18;rivalTurret.add(receiver);
+  for(const x of [-.18,.18]){const barrel=new THREE.Mesh(new THREE.CylinderGeometry(.065,.08,1.72,9),metal);barrel.rotation.x=Math.PI/2;barrel.position.set(x,.18,1.16);rivalTurret.add(barrel);}
+  const eye=new THREE.Mesh(new THREE.SphereGeometry(.1,10,7),new THREE.MeshBasicMaterial({color:0xd96cff}));eye.position.set(0,.38,.52);rivalTurret.add(eye);
+  opponentCar.userData.turret=rivalTurret;
+  scene.add(opponentCar);aimSurfaces.push(opponentCar);
+}
+
 // Upgrade cards can mutate this single structure between rounds. Future systems:
 // TODO: RoundManager, UpgradeCardDraft, OpponentVehicleAI, BetweenRoundScreen.
 const defaultStats: VehicleStats = {
@@ -1034,6 +1067,9 @@ const vehicle = {
   pitch: 0, roll: 0, grounded: true, activeRamp: null as DriveSurfaceContact | null, health: 100, boost: 100, collisionCooldown: 0,
   orientation: new THREE.Quaternion(),surfaceNormal:new THREE.Vector3(0,1,0),projectedForward:new THREE.Vector3(0,0,1),
   velocity:new THREE.Vector3(),wallContactNormal:new THREE.Vector3(),wallAssistActive:false,downforce:0,
+};
+const opponent = {
+  position:new THREE.Vector3(),heading:Math.PI,speed:0,health:140,maxHealth:140,fireCooldown:1.4,steerBias:1,collisionCooldown:0,
 };
 
 type PartPickupKind = "tires" | "engine" | "armor" | "weapon";
@@ -1075,6 +1111,7 @@ function createTarget(x:number,z:number,rotation:number): void {
 }
 
 const bullets: Bullet[]=[]; const dust: DustParticle[]=[]; const visualEffects: VisualEffect[]=[];
+let nextBulletId=1;
 const bulletMaterial=new THREE.MeshBasicMaterial({color:0xffcf5a});
 const dustMaterial=new THREE.MeshBasicMaterial({color:0xc18a59,transparent:true,opacity:.35,depthWrite:false});
 const bulletGeometry = new THREE.BoxGeometry(.09,.09,.72);
@@ -1122,13 +1159,23 @@ const sfxSources: Record<SfxKey, string> = {
 };
 const sfxTemplates = new Map<SfxKey, HTMLAudioElement>();
 const activeSfx = new Set<HTMLAudioElement>();
+const spatialBuffers = new Map<SfxKey, AudioBuffer>();
+let audioContext: AudioContext | null = null;
 for (const [key, source] of Object.entries(sfxSources) as [SfxKey, string][]) {
   const audio = new Audio(source);
   audio.preload = "auto";
   sfxTemplates.set(key, audio);
 }
 
-function playSfx(key: SfxKey, volume: number, pitchVariation = .035): void {
+function playSfx(key: SfxKey, volume: number, pitchVariation = .035, position?: THREE.Vector3): void {
+  const buffer=spatialBuffers.get(key);
+  if(audioContext&&buffer){
+    const source=audioContext.createBufferSource(),gain=audioContext.createGain(),panner=audioContext.createPanner();
+    source.buffer=buffer;source.playbackRate.value=1+(Math.random()*2-1)*pitchVariation;gain.gain.value=THREE.MathUtils.clamp(volume,0,1);
+    panner.panningModel="HRTF";panner.distanceModel="inverse";panner.refDistance=7;panner.maxDistance=150;panner.rolloffFactor=.72;
+    const worldPosition=position??vehicle.position;panner.positionX.value=worldPosition.x;panner.positionY.value=worldPosition.y+1;panner.positionZ.value=worldPosition.z;
+    source.connect(gain).connect(panner).connect(audioContext.destination);source.start();canvas.dataset.lastSfx=key;canvas.dataset.spatialAudio="hrtf-world-positioned";return;
+  }
   const template = sfxTemplates.get(key);
   if (!template) return;
   const sound = template.cloneNode(true) as HTMLAudioElement;
@@ -1142,6 +1189,13 @@ function playSfx(key: SfxKey, volume: number, pitchVariation = .035): void {
 }
 
 function startAudio(): void {
+  if(!audioContext){
+    audioContext=new AudioContext();
+    for(const [key,path] of Object.entries(sfxSources) as [SfxKey,string][]){
+      fetch(path).then(response=>response.arrayBuffer()).then(data=>audioContext!.decodeAudioData(data)).then(buffer=>spatialBuffers.set(key,buffer)).catch(()=>undefined);
+    }
+  }
+  if(audioContext.state==="suspended")void audioContext.resume();
   if (soundtrack.paused) {
     soundtrack.dataset.playback = "starting";
     soundtrack.play()
@@ -1154,6 +1208,15 @@ function startAudio(): void {
       .then(() => { engineLoop.dataset.playback = "playing"; })
       .catch(() => { engineLoop.dataset.playback = "blocked"; });
   }
+}
+
+const listenerForward=new THREE.Vector3(),listenerUp=new THREE.Vector3();
+function updateSpatialListener():void{
+  if(!audioContext)return;camera.getWorldDirection(listenerForward);listenerUp.set(0,1,0).applyQuaternion(camera.quaternion);
+  const listener=audioContext.listener,time=audioContext.currentTime;
+  listener.positionX.setTargetAtTime(camera.position.x,time,.02);listener.positionY.setTargetAtTime(camera.position.y,time,.02);listener.positionZ.setTargetAtTime(camera.position.z,time,.02);
+  listener.forwardX.setTargetAtTime(listenerForward.x,time,.02);listener.forwardY.setTargetAtTime(listenerForward.y,time,.02);listener.forwardZ.setTargetAtTime(listenerForward.z,time,.02);
+  listener.upX.setTargetAtTime(listenerUp.x,time,.02);listener.upY.setTargetAtTime(listenerUp.y,time,.02);listener.upZ.setTargetAtTime(listenerUp.z,time,.02);
 }
 
 let engineMix = 0;
@@ -1250,10 +1313,15 @@ function spawnSniperTracer(start:THREE.Vector3,direction:THREE.Vector3,range:num
   canvas.dataset.sniperTracerLength=distance.toFixed(1);
 }
 
-function spawnRocketTrail(position:THREE.Vector3):void{
+function spawnRocketTrail(position:THREE.Vector3,sourceId:number):void{
   const group=new THREE.Group();group.position.copy(position).add(new THREE.Vector3((Math.random()-.5)*.12,(Math.random()-.5)*.12,(Math.random()-.5)*.12));
   const puff=new THREE.Mesh(trailGeometry,effectMaterial(Math.random()>.45?0xff7a23:0xffd85a,.72));group.add(puff);scene.add(group);
-  visualEffects.push({group,life:.28,maxLife:.28,kind:"trail",growth:2.2});
+  visualEffects.push({group,life:.28,maxLife:.28,kind:"trail",growth:2.2,sourceId});
+}
+
+function clearRocketTrail(sourceId:number):void{
+  for(let index=visualEffects.length-1;index>=0;index--){const effect=visualEffects[index];if(effect.kind!=="trail"||effect.sourceId!==sourceId)continue;scene.remove(effect.group);visualEffects.splice(index,1);}
+  canvas.dataset.rocketTrailCleanup="detonation-synced";
 }
 
 function createProjectile(kind:WeaponKind):THREE.Object3D{
@@ -1272,22 +1340,31 @@ function createProjectile(kind:WeaponKind):THREE.Object3D{
 }
 
 function shoot(): boolean {
-  if(paused || vehicle.health<=0 || !aimReady || fireCooldown > 0 || bullets.length >= 120) return false;
+  if(paused || roundPhase!=="active" || vehicle.health<=0 || !aimReady || fireCooldown > 0 || bullets.length >= 120) return false;
   const definition=weaponDefinitions[selectedWeapon];fireCooldown = 1 / weaponStats.fireRate;
   muzzle.getWorldPosition(shotOrigin);
   shotDirection.copy(aimPoint).sub(shotOrigin).normalize(); currentAimDirection.copy(shotDirection);
   const mesh=createProjectile(selectedWeapon);mesh.position.copy(shotOrigin);
   mesh.quaternion.setFromUnitVectors(projectileForward,shotDirection);scene.add(mesh);
-  bullets.push({mesh,velocity:shotDirection.clone().multiplyScalar(weaponStats.projectileSpeed),life:weaponStats.range/weaponStats.projectileSpeed,kind:selectedWeapon,damage:weaponStats.damage,splashRadius:definition.splashRadius??0,trailTimer:0});
+  bullets.push({id:nextBulletId++,mesh,velocity:shotDirection.clone().multiplyScalar(weaponStats.projectileSpeed),life:weaponStats.range/weaponStats.projectileSpeed,kind:selectedWeapon,owner:"player",damage:weaponStats.damage,splashRadius:definition.splashRadius??0,trailTimer:0});
   canvas.dataset.shotsFired=String(Number(canvas.dataset.shotsFired??0)+1);
   ui.weaponState.textContent="FIRING"; weaponStateLife=.08;
   muzzleFlash.color.setHex(definition.impactColor);muzzleFlash.intensity=selectedWeapon==="rocket"?22:selectedWeapon==="sniper"?28:8;muzzleFlash.distance=selectedWeapon==="rocket"?10:7;
   muzzleFlash.position.copy(shotOrigin); muzzleFlash.visible=true; muzzleFlashLife=selectedWeapon==="mg" ? .045 : .09;
-  if(selectedWeapon==="mg")playSfx("turret-mg",.22,.025);
-  else if(selectedWeapon==="rocket")playSfx("turret-rocket",.48,.025);
-  else playSfx("turret-sniper",.42,.018);
+  if(selectedWeapon==="mg")playSfx("turret-mg",.10,.025,shotOrigin);
+  else if(selectedWeapon==="rocket")playSfx("turret-rocket",.44,.025,shotOrigin);
+  else playSfx("turret-sniper",.38,.018,shotOrigin);
   if(selectedWeapon==="sniper")spawnSniperTracer(shotOrigin,shotDirection,weaponStats.range);else spawnImpactVfx(selectedWeapon,shotOrigin,false);
   return true;
+}
+
+function shootOpponent():void{
+  if(roundPhase!=="active"||opponent.health<=0||vehicle.health<=0)return;
+  const origin=opponent.position.clone().add(new THREE.Vector3(0,2.72,0));
+  const target=vehicle.position.clone().add(new THREE.Vector3((Math.random()-.5)*1.2,1.05+(Math.random()-.5)*.45,(Math.random()-.5)*1.2));
+  const direction=target.sub(origin).normalize(),mesh=createProjectile("mg");mesh.position.copy(origin);mesh.quaternion.setFromUnitVectors(projectileForward,direction);scene.add(mesh);
+  bullets.push({id:nextBulletId++,mesh,velocity:direction.multiplyScalar(48),life:2.3,kind:"mg",owner:"opponent",damage:8,splashRadius:0,trailTimer:0});
+  playSfx("turret-mg",.075,.045,origin);spawnImpactVfx("mg",origin,false);canvas.dataset.aiShotsFired=String(Number(canvas.dataset.aiShotsFired??0)+1);
 }
 
 function setFireHeld(held: boolean): void {
@@ -1323,7 +1400,7 @@ function explode(position:THREE.Vector3,lift=1.4,count=12): void {
 
 function damageTarget(target:Target,amount:number): void {
   if(!target.alive)return;target.health-=amount;target.hitFlash=.09;playHitConfirmation();
-  if(target.health<=0){target.alive=false;explode(target.group.position);scene.remove(target.group);const left=targets.filter(item=>item.alive).length;canvas.dataset.targetsRemaining=String(left);showMessage(left?`TARGET SCRAPPED // ${left} REMAIN`:`ROUND WON // ALL TARGETS SCRAPPED`);if(!left)awardPlayerRound();}
+  if(target.health<=0){target.alive=false;explode(target.group.position);scene.remove(target.group);const left=targets.filter(item=>item.alive).length;canvas.dataset.targetsRemaining=String(left);showMessage(left?`TARGET SCRAPPED // ${left} REMAIN`:`TARGET LANE CLEARED // FIND THE RIVAL`);}
 }
 
 let lastHitConfirmationAt = -Infinity;
@@ -1501,7 +1578,31 @@ function updateVehicle(dt:number): void {
   spawnDust(dt);
 }
 
-function hitVehicle(amount:number):void{if(vehicle.collisionCooldown>0)return;vehicle.collisionCooldown=.45;vehicle.health=Math.max(0,vehicle.health-amount*(1-(stats.armor??0)));playSfx("vehicle-hit",.3,.045);if(vehicle.health<=0){showMessage("RIG DISABLED // RESETTING");setTimeout(resetVehicle,900);}}
+function damageOpponent(amount:number):void{
+  if(opponent.health<=0||roundPhase==="ended")return;opponent.health=Math.max(0,opponent.health-amount);playSfx("confirmed-hit",.18,.025,opponent.position);canvas.dataset.opponentHealth=opponent.health.toFixed(0);
+  if(opponent.health<=0){explode(opponent.position,1,28);opponentCar.visible=false;showMessage("RIVAL SCRAPPED // ROUND SECURED");awardPlayerRound();}
+}
+
+function updateOpponent(dt:number):void{
+  if(roundPhase!=="active"||opponent.health<=0)return;
+  opponent.collisionCooldown=Math.max(0,opponent.collisionCooldown-dt);opponent.fireCooldown-=dt;
+  const dx=vehicle.position.x-opponent.position.x,dz=vehicle.position.z-opponent.position.z,distance=Math.hypot(dx,dz);
+  const desiredHeading=Math.atan2(dx,dz)+opponent.steerBias*(distance<18?.72:.18),delta=Math.atan2(Math.sin(desiredHeading-opponent.heading),Math.cos(desiredHeading-opponent.heading));
+  opponent.heading+=THREE.MathUtils.clamp(delta,-1.35*dt,1.35*dt);const desiredSpeed=distance>13?17:distance<8?6:11;opponent.speed=THREE.MathUtils.damp(opponent.speed,desiredSpeed,2.2,dt);
+  opponent.position.x+=Math.sin(opponent.heading)*opponent.speed*dt;opponent.position.z+=Math.cos(opponent.heading)*opponent.speed*dt;
+  if(activeLayout.arenaKind==="capsule"&&activeLayout.bowl){
+    const boundary=resolveOvalBoundary(activeLayout.bowl,opponent.position.x,opponent.position.z,opponent.heading,VEHICLE_COLLIDER_HALF_LENGTH,VEHICLE_COLLIDER_RADIUS);
+    if(boundary.collided){opponent.position.x=boundary.x;opponent.position.z=boundary.z;opponent.heading+=opponent.steerBias*.7;opponent.steerBias*=-1;}
+  }else{
+    const limit=ARENA_RADIUS-4,radius=Math.hypot(opponent.position.x,opponent.position.z);if(radius>limit){opponent.position.multiplyScalar(limit/radius);opponent.heading=Math.atan2(-opponent.position.x,-opponent.position.z)+opponent.steerBias*.5;opponent.steerBias*=-1;}
+  }
+  opponent.position.y=getDriveHeight(opponent.position.x,opponent.position.z)+.06;opponentCar.position.copy(opponent.position);opponentCar.rotation.y=opponent.heading;
+  const rivalTurret=opponentCar.userData.turret as THREE.Group|undefined;if(rivalTurret){const worldAim=Math.atan2(dx,dz);rivalTurret.rotation.y=THREE.MathUtils.damp(rivalTurret.rotation.y,Math.atan2(Math.sin(worldAim-opponent.heading),Math.cos(worldAim-opponent.heading)),8,dt);}
+  if(distance<62&&opponent.fireCooldown<=0){shootOpponent();opponent.fireCooldown=.82+Math.random()*.45;}
+  if(distance<2.35&&opponent.collisionCooldown<=0){opponent.collisionCooldown=.8;hitVehicle(10);damageOpponent(5);opponent.heading+=Math.PI*.65;}
+}
+
+function hitVehicle(amount:number):void{if(vehicle.collisionCooldown>0||roundPhase==="ended")return;vehicle.collisionCooldown=.45;vehicle.health=Math.max(0,vehicle.health-amount*(1-(stats.armor??0)));playSfx("vehicle-hit",.26,.045,vehicle.position);if(vehicle.health<=0){showMessage("RIG DISABLED // RIVAL TAKES THE ROUND");awardEnemyRound();}}
 
 function updateAim(dt:number): void {
   raycaster.setFromCamera(mouse,camera);
@@ -1532,17 +1633,20 @@ function segmentDistanceSq(start:THREE.Vector3,end:THREE.Vector3,point:THREE.Vec
   projectileClosest.copy(start).addScaledVector(segment,t);return projectileClosest.distanceToSquared(point);
 }
 
-function resolveProjectileImpact(bullet:Bullet,position:THREE.Vector3,directTarget:Target|null):void{
+function resolveProjectileImpact(bullet:Bullet,position:THREE.Vector3,directTarget:Target|null,hitOpponent=false,hitPlayer=false):void{
   canvas.dataset.lastWeaponImpact=bullet.kind;
-  if(bullet.kind==="rocket"){
+  if(bullet.owner==="player"&&bullet.kind==="rocket"){
     for(const target of targets){
       if(!target.alive)continue;targetCenter.copy(target.group.position).add(new THREE.Vector3(0,1.4,0));
       const distance=targetCenter.distanceTo(position);if(distance>bullet.splashRadius)continue;
       const damage=target===directTarget?bullet.damage:bullet.damage*Math.max(.28,1-distance/bullet.splashRadius);
       damageTarget(target,damage);
     }
-  }else if(directTarget)damageTarget(directTarget,bullet.damage);
-  if(bullet.kind==="rocket"){spawnImpactVfx("rocket",position,true);explode(position,.2,22);}
+    const rivalDistance=opponent.position.clone().add(new THREE.Vector3(0,1.1,0)).distanceTo(position);if(opponent.health>0&&rivalDistance<=bullet.splashRadius)damageOpponent(bullet.damage*Math.max(.3,1-rivalDistance/bullet.splashRadius));
+  }else if(bullet.owner==="player"&&directTarget)damageTarget(directTarget,bullet.damage);
+  if(bullet.owner==="player"&&hitOpponent&&bullet.kind!=="rocket")damageOpponent(bullet.damage);
+  if(bullet.owner==="opponent"&&hitPlayer)hitVehicle(bullet.damage);
+  if(bullet.kind==="rocket"){clearRocketTrail(bullet.id);spawnImpactVfx("rocket",position,true);explode(position,.2,22);}
   else if(bullet.kind==="sniper")spawnSniperHit(position);
   else spawnImpactVfx("mg",position,false);
 }
@@ -1550,18 +1654,23 @@ function resolveProjectileImpact(bullet:Bullet,position:THREE.Vector3,directTarg
 function updateProjectiles(dt:number): void {
   for(let index=bullets.length-1;index>=0;index--){
     const bullet=bullets[index];projectilePrevious.copy(bullet.mesh.position);bullet.mesh.position.addScaledVector(bullet.velocity,dt);bullet.life-=dt;
-    if(bullet.kind==="rocket"){bullet.trailTimer-=dt;if(bullet.trailTimer<=0){bullet.trailTimer=.035;spawnRocketTrail(bullet.mesh.position);}}
+    if(bullet.kind==="rocket"){bullet.trailTimer-=dt;if(bullet.trailTimer<=0){bullet.trailTimer=.035;spawnRocketTrail(bullet.mesh.position,bullet.id);}}
     let directTarget:Target|null=null;
-    for(const target of targets){
+    if(bullet.owner==="player")for(const target of targets){
       if(!target.alive)continue;targetCenter.copy(target.group.position).add(new THREE.Vector3(0,1.4,0));
       const radius=bullet.kind==="rocket"?1.15:.95;if(segmentDistanceSq(projectilePrevious,bullet.mesh.position,targetCenter)<radius*radius){directTarget=target;break;}
     }
+    targetCenter.copy(opponent.position).add(new THREE.Vector3(0,1.1,0));const hitOpponent=bullet.owner==="player"&&opponent.health>0&&segmentDistanceSq(projectilePrevious,bullet.mesh.position,targetCenter)<(bullet.kind==="rocket"?1.6:1.35)**2;
+    targetCenter.copy(vehicle.position).add(new THREE.Vector3(0,1.05,0));const hitPlayer=bullet.owner==="opponent"&&vehicle.health>0&&segmentDistanceSq(projectilePrevious,bullet.mesh.position,targetCenter)<1.4**2;
     const groundHeight=getDriveHeight(bullet.mesh.position.x,bullet.mesh.position.z)+.1;
     const hitTerrain=bullet.mesh.position.y<=groundHeight;
-    if(directTarget||hitTerrain||bullet.life<=0){
+    if(directTarget||hitOpponent||hitPlayer||hitTerrain||bullet.life<=0){
       if(directTarget)impactPoint.copy(directTarget.group.position).add(new THREE.Vector3(0,1.4,0));
+      else if(hitOpponent)impactPoint.copy(opponent.position).add(new THREE.Vector3(0,1.1,0));
+      else if(hitPlayer)impactPoint.copy(vehicle.position).add(new THREE.Vector3(0,1.05,0));
       else {impactPoint.copy(bullet.mesh.position);if(hitTerrain)impactPoint.y=groundHeight+.08;}
-      if(directTarget||hitTerrain||bullet.kind==="rocket")resolveProjectileImpact(bullet,impactPoint,directTarget);
+      if(directTarget||hitOpponent||hitPlayer||hitTerrain||bullet.kind==="rocket")resolveProjectileImpact(bullet,impactPoint,directTarget,hitOpponent,hitPlayer);
+      if(bullet.kind==="rocket")clearRocketTrail(bullet.id);
       scene.remove(bullet.mesh);bullets.splice(index,1);
     }
   }
@@ -1601,6 +1710,7 @@ function updatePickups(dt:number):void{for(const pickup of pickups){if(pickup.co
 
 function updateHud():void{
   ui.boost.textContent=String(Math.round(vehicle.boost));ui.health.textContent=String(Math.round(vehicle.health));ui.healthBar.style.width=`${vehicle.health/stats.maxHealth*100}%`;ui.boostBar.style.width=`${vehicle.boost}%`;
+  ui.rivalHealth.textContent=String(Math.round(opponent.health));ui.rivalHealthBar.style.width=`${opponent.health/opponent.maxHealth*100}%`;
   ui.boostMeter.classList.toggle("recharging",vehicle.boost<99.5&&!input.has("ShiftLeft"));canvas.dataset.boost=vehicle.boost.toFixed(1);canvas.dataset.boostRechargeRate="6-per-second";
   const contact=rampSample(vehicle.position.x,vehicle.position.z);const baseHeight=getGroundHeight(vehicle.position.x,vehicle.position.z);
   const flatContactLabel=activeLayout.arenaKind==="capsule"?"flat-floor":"terrain";
@@ -1633,9 +1743,36 @@ function updateVehicleVisual(alpha:number):void{
   car.quaternion.copy(renderedVehicleOrientation);
 }
 
-function resetVehicle():void{
+function resetVehicle(announce=true):void{
   const spawn = activeLayout.spawn;
-  setFireHeld(false);vehicle.position.set(spawn.x,getGroundHeight(spawn.x,spawn.z)+.06,spawn.z);vehicle.heading=spawn.heading;vehicle.speed=0;vehicle.driftAngle=0;vehicle.verticalVelocity=0;vehicle.pitch=0;vehicle.roll=0;vehicle.grounded=true;vehicle.activeRamp=null;vehicle.health=Math.max(vehicle.health,Math.min(stats.maxHealth,65));vehicle.boost=100;vehicle.orientation.setFromAxisAngle(worldUp,spawn.heading);vehicle.surfaceNormal.copy(worldUp);vehicle.projectedForward.set(Math.sin(spawn.heading),0,Math.cos(spawn.heading));vehicle.velocity.set(0,0,0);vehicle.wallContactNormal.set(0,0,0);vehicle.wallAssistActive=false;vehicle.downforce=0;capturePhysicsPose();car.position.copy(vehicle.position);car.quaternion.copy(vehicle.orientation);camera.position.set(spawn.x,vehicle.position.y+6.3,spawn.z-11.5);cameraLook.copy(vehicle.position);cameraLook.y+=1.2;showMessage("RIG RECOVERED // SYSTEMS ONLINE");
+  setFireHeld(false);vehicle.position.set(spawn.x,getGroundHeight(spawn.x,spawn.z)+.06,spawn.z);vehicle.heading=spawn.heading;vehicle.speed=0;vehicle.driftAngle=0;vehicle.verticalVelocity=0;vehicle.pitch=0;vehicle.roll=0;vehicle.grounded=true;vehicle.activeRamp=null;vehicle.health=stats.maxHealth;vehicle.boost=100;vehicle.orientation.setFromAxisAngle(worldUp,spawn.heading);vehicle.surfaceNormal.copy(worldUp);vehicle.projectedForward.set(Math.sin(spawn.heading),0,Math.cos(spawn.heading));vehicle.velocity.set(0,0,0);vehicle.wallContactNormal.set(0,0,0);vehicle.wallAssistActive=false;vehicle.downforce=0;capturePhysicsPose();car.position.copy(vehicle.position);car.quaternion.copy(vehicle.orientation);camera.position.set(spawn.x,vehicle.position.y+6.3,spawn.z-11.5);cameraLook.copy(vehicle.position);cameraLook.y+=1.2;if(announce)showMessage("RIG RECOVERED // SYSTEMS ONLINE");
+}
+
+function resetOpponent():void{
+  const spawn=activeLayout.opponentSpawn;opponent.position.set(spawn.x,getGroundHeight(spawn.x,spawn.z)+.06,spawn.z);opponent.heading=spawn.heading;opponent.speed=0;opponent.health=opponent.maxHealth;opponent.fireCooldown=1.25;opponent.collisionCooldown=0;opponentCar.visible=true;opponentCar.position.copy(opponent.position);opponentCar.rotation.y=opponent.heading;canvas.dataset.opponentHealth=String(opponent.health);canvas.dataset.aiState="countdown-ready";
+}
+
+function beginRoundCountdown():void{
+  roundPhase="countdown";countdownRemaining=3.6;countdownShown=4;ui.countdown.hidden=false;ui.countdownArena.textContent=activeLayout.name;ui.countdownValue.textContent="3";canvas.dataset.roundPhase=roundPhase;
+}
+
+function updateRoundCountdown(dt:number):void{
+  if(roundPhase!=="countdown")return;countdownRemaining-=dt;const next=Math.max(0,Math.ceil(countdownRemaining-.55));
+  if(next!==countdownShown){countdownShown=next;ui.countdownValue.textContent=next>0?String(next):"DRIVE";ui.countdown.querySelector("span")!.textContent=next>0?"GET READY":"FIGHT BACK";}
+  if(countdownRemaining<=0){roundPhase="active";ui.countdown.hidden=true;canvas.dataset.roundPhase=roundPhase;canvas.dataset.aiState="hunting";showMessage(`ROUND ${currentRound} // ${activeLayout.name.toUpperCase()}`);}
+}
+
+function finishRound(winner:"player"|"opponent"):void{
+  if(roundAwarded)return;roundAwarded=true;roundPhase="ended";setFireHeld(false);
+  if(winner==="player")playerRoundWins=Math.min(3,playerRoundWins+1);else enemyRoundWins=Math.min(3,enemyRoundWins+1);
+  updateRoundHud();canvas.dataset.roundWinner=winner;canvas.dataset.roundPhase=roundPhase;ui.countdown.hidden=false;ui.countdownValue.textContent=winner==="player"?"WIN":"LOST";ui.countdownArena.textContent=playerRoundWins>=3||enemyRoundWins>=3?"MATCH COMPLETE":`ROUND ${currentRound} COMPLETE`;ui.countdown.querySelector("span")!.textContent="NEXT ARENA INCOMING";
+  const smokeMode=rampSmokeTest||allSurfaceSmokeTest||wallRideSmokeTest||holdFireSmokeTest||boostSmokeTest||roundWinSmokeTest;
+  if(!smokeMode){clearTimeout(roundTransitionTimer);roundTransitionTimer=window.setTimeout(advanceRound,playerRoundWins>=3||enemyRoundWins>=3?4200:2800);}
+}
+
+function advanceRound():void{
+  const matchComplete=playerRoundWins>=3||enemyRoundWins>=3,nextLayout=activeLayout.id==="dustring"?"ovalbowl":"dustring";
+  const nextUrl=new URL(location.href);nextUrl.searchParams.set("level",nextLayout);nextUrl.searchParams.set("round",String(matchComplete?1:currentRound+1));nextUrl.searchParams.set("pw",String(matchComplete?0:playerRoundWins));nextUrl.searchParams.set("ew",String(matchComplete?0:enemyRoundWins));nextUrl.searchParams.set("auto","1");location.assign(nextUrl);
 }
 
 function togglePause(force?:boolean):void{if(!levelStarted)return;paused=force??!paused;if(paused)setFireHeld(false);ui.pause.hidden=!paused;}
@@ -1784,7 +1921,7 @@ function runSmokeRoutes(): void {
     const depleted=vehicle.boost;input.delete("ShiftLeft");for(let step=0;step<60;step++)updateVehicle(FIXED_TIMESTEP);const recharged=vehicle.boost;input.clear();
     canvas.dataset.boostAfterUse=depleted.toFixed(1);canvas.dataset.boostAfterRecharge=recharged.toFixed(1);canvas.dataset.boostSmoke=depleted<80&&recharged>depleted&&recharged<95?"passed":"failed";resetVehicle();
   }
-  if(roundWinSmokeTest){for(const target of [...targets])damageTarget(target,999);canvas.dataset.roundHudSmoke=playerRoundWins===1&&canvas.dataset.roundWinner==="player"?"passed":"failed";}
+  if(roundWinSmokeTest){roundPhase="active";damageOpponent(999);canvas.dataset.roundHudSmoke=playerRoundWins===1&&canvas.dataset.roundWinner==="player"?"passed":"failed";}
 }
 
 async function startLevel(levelId: ScraproadLevelId): Promise<void> {
@@ -1793,13 +1930,13 @@ async function startLevel(levelId: ScraproadLevelId): Promise<void> {
   activeLayout = scraproadArenaLayouts[levelId]; ARENA_RADIUS = activeLayout.radius;
   showMessage(`ASSEMBLING // ${activeLayout.name.toUpperCase()}`);
   document.querySelectorAll<HTMLButtonElement>("[data-level]").forEach(button => button.disabled = true);
-  await addArena(); await addWorldProps(); registerPhysicsDebug(); auditArenaFlow(); buildCar();
+  await addArena(); await addWorldProps(); registerPhysicsDebug(); auditArenaFlow(); buildCar(); buildOpponentCar();
   activeLayout.pickups.forEach(pickup => createPickup(pickup.x, pickup.z, pickup.kind));
   activeLayout.targets.forEach(target => createTarget(target.x, target.z, target.rotation));
-  currentRound=1;roundAwarded=false;updateRoundHud();canvas.dataset.targetsRemaining=String(activeLayout.targets.length);
-  canvas.dataset.prototype="scraproad-1v1-foundation";canvas.dataset.audioSystem="dynamic-engine-and-combat-sfx-v1";canvas.dataset.arenaLayout=activeLayout.id;canvas.dataset.arenaKind=activeLayout.arenaKind;canvas.dataset.arenaRadius=String(ARENA_RADIUS);canvas.dataset.ringInnerRadius=String(activeLayout.ringInnerRadius);canvas.dataset.ringOuterRadius=String(activeLayout.ringOuterRadius);canvas.dataset.rampColliders=String(ramps.filter(ramp=>ramp.kind==="ramp").length);canvas.dataset.bridgeColliders=String(ramps.filter(ramp=>ramp.kind==="bridge").length);canvas.dataset.heightfieldColliders=String(driveHeightfields.length);canvas.dataset.majorColliders=String(obstacles.length+boxColliders.length+(activeLayout.arenaKind==="capsule"?3:0));canvas.dataset.vehicleCollider="three-disc-capsule-2.24x4.14x0.72";canvas.dataset.shotsFired="0";canvas.dataset.fireHeld="false";canvas.dataset.racekartAssets="modular-racekart-track-hilly";canvas.dataset.racingAssetsUsage=activeLayout.arenaKind==="capsule"?"rim-railings":"ramps-fences-props";canvas.dataset.colliderSource=activeLayout.arenaKind==="capsule"?"analytic-capsule-bands":"visual-asset-heightfields";canvas.dataset.wallRideContact="pending";auditHeightfieldCoverage();
-  levelStarted = true; levelStarting = false; paused = false; ui.levelSelect.hidden = true; resetVehicle(); runSmokeRoutes();
-  showMessage(rampSmokeTest?"RAMP SUITE // AUTO DRIVE":allSurfaceSmokeTest?"ALL RAMPS // AUTO DRIVE":wallRideSmokeTest?"WALL-RIDE SUITE // AUTO DRIVE":holdFireSmokeTest?"HOLD-FIRE SMOKE TEST // COMPLETE":boostSmokeTest?"BOOST STAMINA TEST // COMPLETE":roundWinSmokeTest?"ROUND WIN HUD TEST // COMPLETE":`${activeLayout.name.toUpperCase()} // DEPLOYED`);
+  roundAwarded=false;updateRoundHud();canvas.dataset.targetsRemaining=String(activeLayout.targets.length);
+  canvas.dataset.prototype="scraproad-1v1-combat";canvas.dataset.audioSystem="hrtf-directional-combat-sfx-v2";canvas.dataset.arenaLayout=activeLayout.id;canvas.dataset.arenaKind=activeLayout.arenaKind;canvas.dataset.arenaRadius=String(ARENA_RADIUS);canvas.dataset.ringInnerRadius=String(activeLayout.ringInnerRadius);canvas.dataset.ringOuterRadius=String(activeLayout.ringOuterRadius);canvas.dataset.rampColliders=String(ramps.filter(ramp=>ramp.kind==="ramp").length);canvas.dataset.bridgeColliders=String(ramps.filter(ramp=>ramp.kind==="bridge").length);canvas.dataset.heightfieldColliders=String(driveHeightfields.length);canvas.dataset.majorColliders=String(obstacles.length+boxColliders.length+(activeLayout.arenaKind==="capsule"?3:0));canvas.dataset.vehicleCollider="three-disc-capsule-2.24x4.14x0.72";canvas.dataset.shotsFired="0";canvas.dataset.aiShotsFired="0";canvas.dataset.fireHeld="false";canvas.dataset.racekartAssets="modular-racekart-track-hilly";canvas.dataset.racingAssetsUsage=activeLayout.arenaKind==="capsule"?"rim-railings":"ramps-fences-props";canvas.dataset.colliderSource=activeLayout.arenaKind==="capsule"?"analytic-capsule-bands":"visual-asset-heightfields";canvas.dataset.wallRideContact="pending";canvas.dataset.mapRotation="alternate-every-round";auditHeightfieldCoverage();
+  levelStarted = true; levelStarting = false; paused = false; ui.levelSelect.hidden = true; resetVehicle(false);resetOpponent();beginRoundCountdown();if(initialParams.get("auto")==="1")startAudio();runSmokeRoutes();
+  if(roundPhase!=="ended")showMessage(rampSmokeTest?"RAMP SUITE // AUTO DRIVE":allSurfaceSmokeTest?"ALL RAMPS // AUTO DRIVE":wallRideSmokeTest?"WALL-RIDE SUITE // AUTO DRIVE":holdFireSmokeTest?"HOLD-FIRE SMOKE TEST // COMPLETE":boostSmokeTest?"BOOST STAMINA TEST // COMPLETE":`${activeLayout.name.toUpperCase()} // ROUND ${currentRound}`);
 }
 
 document.querySelectorAll<HTMLButtonElement>("[data-level]").forEach(button => {
@@ -1839,12 +1976,16 @@ function updateDebug(frameDelta:number):void{
 function animate():void{
   requestAnimationFrame(animate);const frameDelta=Math.min(clock.getDelta(),MAX_FRAME_DELTA);
   lightShafts.rotation.y += frameDelta * .0025; atmosphericDust.rotation.y -= frameDelta * .0015;
-  updateEngineAudio(frameDelta);
+  updateEngineAudio(frameDelta);updateSpatialListener();
   if(!paused&&levelStarted){
-    physicsAccumulator=Math.min(physicsAccumulator+frameDelta,FIXED_TIMESTEP*MAX_PHYSICS_STEPS);
-    const physicsStart=performance.now();let steps=0;
-    while(physicsAccumulator>=FIXED_TIMESTEP&&steps<MAX_PHYSICS_STEPS){capturePhysicsPose();elapsed+=FIXED_TIMESTEP;updateVehicle(FIXED_TIMESTEP);updateWeapon(FIXED_TIMESTEP);updateProjectiles(FIXED_TIMESTEP);physicsAccumulator-=FIXED_TIMESTEP;steps++;}
-    physicsStepMs=performance.now()-physicsStart;updateVehicleVisual(physicsAccumulator/FIXED_TIMESTEP);updateCamera(frameDelta);updateAim(frameDelta);updatePickups(frameDelta);hudAccumulator+=frameDelta;if(hudAccumulator>.1){hudAccumulator=0;updateHud();}
+    updateRoundCountdown(frameDelta);
+    if(roundPhase==="active"){
+      physicsAccumulator=Math.min(physicsAccumulator+frameDelta,FIXED_TIMESTEP*MAX_PHYSICS_STEPS);
+      const physicsStart=performance.now();let steps=0;
+      while(physicsAccumulator>=FIXED_TIMESTEP&&steps<MAX_PHYSICS_STEPS){capturePhysicsPose();elapsed+=FIXED_TIMESTEP;updateVehicle(FIXED_TIMESTEP);updateOpponent(FIXED_TIMESTEP);updateWeapon(FIXED_TIMESTEP);updateProjectiles(FIXED_TIMESTEP);physicsAccumulator-=FIXED_TIMESTEP;steps++;}
+      physicsStepMs=performance.now()-physicsStart;updateVehicleVisual(physicsAccumulator/FIXED_TIMESTEP);
+    }else{physicsAccumulator=0;if(roundPhase==="ended")updateProjectiles(frameDelta);}
+    updateCamera(frameDelta);updateAim(frameDelta);updatePickups(frameDelta);hudAccumulator+=frameDelta;if(hudAccumulator>.1){hudAccumulator=0;updateHud();}
   }else{physicsAccumulator=0;}
   renderer.render(scene,camera);updateDebug(frameDelta);
 }
