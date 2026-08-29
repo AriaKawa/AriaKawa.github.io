@@ -1163,6 +1163,8 @@ const sfxTemplates = new Map<SfxKey, HTMLAudioElement>();
 const activeSfx = new Set<HTMLAudioElement>();
 const spatialBuffers = new Map<SfxKey, AudioBuffer>();
 let audioContext: AudioContext | null = null;
+let audioFrameDisabled = false;
+const audioFailureSmokeTest = initialParams.get("audio-smoke") === "fail";
 for (const [key, source] of Object.entries(sfxSources) as [SfxKey, string][]) {
   const audio = new Audio(source);
   audio.preload = "auto";
@@ -1175,7 +1177,9 @@ function playSfx(key: SfxKey, volume: number, pitchVariation = .035, position?: 
     const source=audioContext.createBufferSource(),gain=audioContext.createGain(),panner=audioContext.createPanner();
     source.buffer=buffer;source.playbackRate.value=1+(Math.random()*2-1)*pitchVariation;gain.gain.value=THREE.MathUtils.clamp(volume,0,1);
     panner.panningModel="HRTF";panner.distanceModel="inverse";panner.refDistance=7;panner.maxDistance=150;panner.rolloffFactor=.72;
-    const worldPosition=position??vehicle.position;panner.positionX.value=worldPosition.x;panner.positionY.value=worldPosition.y+1;panner.positionZ.value=worldPosition.z;
+    const worldPosition=position??vehicle.position;
+    if(panner.positionX&&panner.positionY&&panner.positionZ){panner.positionX.value=worldPosition.x;panner.positionY.value=worldPosition.y+1;panner.positionZ.value=worldPosition.z;}
+    else (panner as PannerNode & {setPosition?:(x:number,y:number,z:number)=>void}).setPosition?.(worldPosition.x,worldPosition.y+1,worldPosition.z);
     source.connect(gain).connect(panner).connect(audioContext.destination);source.start();canvas.dataset.lastSfx=key;canvas.dataset.spatialAudio="hrtf-world-positioned";return;
   }
   const template = sfxTemplates.get(key);
@@ -1216,9 +1220,11 @@ const listenerForward=new THREE.Vector3(),listenerUp=new THREE.Vector3();
 function updateSpatialListener():void{
   if(!audioContext)return;camera.getWorldDirection(listenerForward);listenerUp.set(0,1,0).applyQuaternion(camera.quaternion);
   const listener=audioContext.listener,time=audioContext.currentTime;
-  listener.positionX.setTargetAtTime(camera.position.x,time,.02);listener.positionY.setTargetAtTime(camera.position.y,time,.02);listener.positionZ.setTargetAtTime(camera.position.z,time,.02);
-  listener.forwardX.setTargetAtTime(listenerForward.x,time,.02);listener.forwardY.setTargetAtTime(listenerForward.y,time,.02);listener.forwardZ.setTargetAtTime(listenerForward.z,time,.02);
-  listener.upX.setTargetAtTime(listenerUp.x,time,.02);listener.upY.setTargetAtTime(listenerUp.y,time,.02);listener.upZ.setTargetAtTime(listenerUp.z,time,.02);
+  const legacyListener=listener as AudioListener & {setPosition?:(x:number,y:number,z:number)=>void;setOrientation?:(x:number,y:number,z:number,xUp:number,yUp:number,zUp:number)=>void};
+  if(listener.positionX&&listener.positionY&&listener.positionZ){listener.positionX.setTargetAtTime(camera.position.x,time,.02);listener.positionY.setTargetAtTime(camera.position.y,time,.02);listener.positionZ.setTargetAtTime(camera.position.z,time,.02);}
+  else legacyListener.setPosition?.(camera.position.x,camera.position.y,camera.position.z);
+  if(listener.forwardX&&listener.forwardY&&listener.forwardZ&&listener.upX&&listener.upY&&listener.upZ){listener.forwardX.setTargetAtTime(listenerForward.x,time,.02);listener.forwardY.setTargetAtTime(listenerForward.y,time,.02);listener.forwardZ.setTargetAtTime(listenerForward.z,time,.02);listener.upX.setTargetAtTime(listenerUp.x,time,.02);listener.upY.setTargetAtTime(listenerUp.y,time,.02);listener.upZ.setTargetAtTime(listenerUp.z,time,.02);}
+  else legacyListener.setOrientation?.(listenerForward.x,listenerForward.y,listenerForward.z,listenerUp.x,listenerUp.y,listenerUp.z);
 }
 
 let engineMix = 0;
@@ -1234,6 +1240,12 @@ function updateEngineAudio(dt: number): void {
   engineLoop.playbackRate = THREE.MathUtils.damp(engineLoop.playbackRate, targetRate, 7, dt);
   canvas.dataset.engineVolume = engineLoop.volume.toFixed(3);
   canvas.dataset.enginePlaybackRate = engineLoop.playbackRate.toFixed(2);
+}
+
+function updateAudioFrame(dt:number):void{
+  if(audioFrameDisabled)return;
+  try{updateEngineAudio(dt);if(audioFailureSmokeTest)throw new Error("Simulated audio-frame failure");updateSpatialListener();canvas.dataset.audioFrame="active";}
+  catch(error){audioFrameDisabled=true;canvas.dataset.audioFrame="disabled";console.warn("[Scraproad] Spatial audio disabled; gameplay will continue.",error);}
 }
 const input=new Set<string>(); const mouse=new THREE.Vector2(0,.15); const aimPoint=new THREE.Vector3();
 const raycaster=new THREE.Raycaster(); const aimPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
@@ -1977,10 +1989,10 @@ function updateDebug(frameDelta:number):void{
 }
 function animate():void{
   requestAnimationFrame(animate);const frameDelta=Math.min(clock.getDelta(),MAX_FRAME_DELTA);
+  if(!paused&&levelStarted)updateRoundCountdown();
   lightShafts.rotation.y += frameDelta * .0025; atmosphericDust.rotation.y -= frameDelta * .0015;
-  updateEngineAudio(frameDelta);updateSpatialListener();
+  updateAudioFrame(frameDelta);
   if(!paused&&levelStarted){
-    updateRoundCountdown();
     if(roundPhase==="active"){
       physicsAccumulator=Math.min(physicsAccumulator+frameDelta,FIXED_TIMESTEP*MAX_PHYSICS_STEPS);
       const physicsStart=performance.now();let steps=0;
