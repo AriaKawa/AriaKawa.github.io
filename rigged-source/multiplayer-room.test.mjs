@@ -5,6 +5,7 @@ import {
   makeRoomCode,
   resolveRoomPick,
   resolveRoundReady,
+  resolveVehiclePick,
   roomPlayers,
 } from "./src/game/rigged/RiggedMultiplayer.ts";
 import { applyCard, createStarterRun, createTurretCard, draftCards } from "./src/game/rigged/RoguelikeRun.ts";
@@ -29,7 +30,7 @@ const baseRoom = {
   code: "ABCDE", hostId: "host", phase: "starter_draft", round: 1,
   players: { host: { name: "Host", joinedAt: 10 }, guest: { name: "Guest", joinedAt: 20 } },
   playerOrder: ["host", "guest"], activePickerId: "host", draftOptions: ["mg", "rocket", "sniper"],
-  draftTurn: 0, pickSequence: 0, lastPick: null, roundReady: {}, runState: null, createdAt: 1, updatedAt: 1,
+  draftTurn: 0, pickSequence: 0, lastPick: null, vehicleSelections: {}, roundReady: {}, runState: null, createdAt: 1, updatedAt: 1,
 };
 const starter = createStarterRun("mg", 1);
 assert.equal(resolveRoomPick(baseRoom, "guest", { optionId: "mg", optionName: "Rattler", nextRunState: starter, nextOptions: [] }), undefined, "guest cannot steal the host turn");
@@ -39,14 +40,22 @@ assert.equal(afterHost.phase, "starter_draft");
 
 const sharedStarter = structuredClone(starter);
 applyCard(sharedStarter, createTurretCard("rocket"));
-const afterGuest = resolveRoomPick(afterHost, "guest", { optionId: "rocket", optionName: "Hellbox", nextRunState: sharedStarter, nextOptions: [] }, 3);
-assert.equal(afterGuest.phase, "playing");
+const vehicleOptions = ["race", "suv", "taxi"];
+const afterGuest = resolveRoomPick(afterHost, "guest", { optionId: "rocket", optionName: "Hellbox", nextRunState: sharedStarter, nextOptions: vehicleOptions }, 3);
+assert.equal(afterGuest.phase, "vehicle_select");
 assert.deepEqual(afterGuest.runState.ownedTurrets, ["mg", "rocket"]);
 
-const hostReady = resolveRoundReady(afterGuest, "host", draftCards(sharedStarter).map(card => card.id), sharedStarter, 4);
+const hostVehicle = resolveVehiclePick(afterGuest, "host", "race", "Track Racer", 4);
+assert.equal(hostVehicle.phase, "vehicle_select");
+assert.equal(hostVehicle.activePickerId, "guest");
+const guestVehicle = resolveVehiclePick(hostVehicle, "guest", "taxi", "Battle Taxi", 5);
+assert.equal(guestVehicle.phase, "playing");
+assert.deepEqual(guestVehicle.vehicleSelections, { host:"race", guest:"taxi" });
+
+const hostReady = resolveRoundReady(guestVehicle, "host", draftCards(sharedStarter).map(card => card.id), sharedStarter, 6);
 assert.equal(hostReady.phase, "playing");
-const bothReady = resolveRoundReady(hostReady, "guest", draftCards(sharedStarter).map(card => card.id), sharedStarter, 5);
+const bothReady = resolveRoundReady(hostReady, "guest", draftCards(sharedStarter).map(card => card.id), sharedStarter, 7);
 assert.equal(bothReady.phase, "upgrade_draft");
 assert.equal(bothReady.activePickerId, "host");
 
-console.log("Rigged multiplayer room tests passed (names, codes, ordered picks, shared state, and the both-player round gate). ");
+console.log("Rigged multiplayer room tests passed (names, codes, ordered turret/vehicle picks, shared state, and the both-player round gate). ");

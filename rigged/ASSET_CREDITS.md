@@ -20,7 +20,8 @@ Credit is not required by CC0, but Rigged documents the pack and creator by choi
 - **Source:** https://kenney.nl/assets/car-kit
 - **License:** Creative Commons Zero (CC0) 1.0 — commercial use, modification, and redistribution are permitted.
 - **Credit requirement:** Optional. Rigged credits Kenney by choice.
-- **Files used:** `kenney-suv.glb`, `kenney-crate.glb`, `kenney-debris-tire.glb`, `kenney-debris-bumper.glb`, and the shared `Textures/colormap.png` palette (the GLBs were renamed from the pack's `suv.glb`, `box.glb`, `debris-tire.glb`, and `debris-bumper.glb`).
+- **Vehicles used:** `hatchback-sports.glb`, `police.glb`, `race-future.glb`, `race.glb`, `sedan-sports.glb`, `sedan.glb`, `suv-luxury.glb`, `suv.glb`, and `taxi.glb`, redistributed with `kenney-` filename prefixes. Their matching Kenney preview renders are used in the pre-round vehicle bay.
+- **Other files used:** `kenney-crate.glb`, `kenney-debris-tire.glb`, `kenney-debris-bumper.glb`, and the shared `Textures/colormap.png` palette (renamed from the pack's `box.glb`, `debris-tire.glb`, and `debris-bumper.glb`).
 - **Local license copy:** `assets/rigged/licenses/kenney-car-kit.txt`
 
 ### Kenney Racing Kit 2.0

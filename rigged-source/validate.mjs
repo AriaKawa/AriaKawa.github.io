@@ -14,6 +14,8 @@ const required = [
   "assets/audio/sfx/turret-sniper-fire.ogg", "assets/audio/sfx/vehicle-hit-clank.ogg", "assets/audio/sfx/confirmed-hit-clank.ogg",
   "assets/audio/sfx/LICENSES.md",
   "assets/rigged/vehicles/kenney-suv.glb",
+  ...["hatchback-sports", "police", "race-future", "race", "sedan-sports", "sedan", "suv-luxury", "taxi"].map(name => `assets/rigged/vehicles/kenney-${name}.glb`),
+  ...["hatchback-sports", "police", "race-future", "race", "sedan-sports", "sedan", "suv-luxury", "suv", "taxi"].map(name => `assets/rigged/vehicles/previews/${name}.png`),
   "assets/rigged/vehicles/Textures/colormap.png",
   "assets/rigged/arena/kenney-ramp.glb",
   "assets/rigged/arena/kenney-barrier-wall.glb",
@@ -50,6 +52,7 @@ const checks = [
   ["camera mode HUD", /id="camera-mode-value"[^>]*>CHASE CAM/],
   ["Firebase host and join lobby", /id="multiplayer-lobby"[\s\S]*id="host-room"[\s\S]*id="join-room-form"[\s\S]*id="room-code-input"/],
   ["starter turret selector", /id="starter-select"[\s\S]*data-starter-turret="mg"[\s\S]*data-starter-turret="rocket"[\s\S]*data-starter-turret="sniper"/],
+  ["pre-round vehicle selector", /id="vehicle-select"[\s\S]*id="vehicle-grid"[\s\S]*Kenney Car Kit 3\.1/],
   ["between-round card draft", /id="card-draft"[\s\S]*id="card-grid"/],
   ["owned turret loadout", /id="weapon-select"[\s\S]*ROOF LOADOUT[\s\S]*WHEEL \/ 1–3 TO SWAP/],
   ["shared pick reveal", /id="starter-pick-reveal"[\s\S]*id="draft-pick-reveal"/],
@@ -70,7 +73,9 @@ const sceneChecks = [
   ["Racekart OBJ loader", /new OBJLoader\(\)/],
   ["Racekart material loader", /new MTLLoader\(\)/],
   ["Racekart Hilly manifest", /riggedRacekartManifest/],
-  ["Kenney SUV visual", /kenney-car-kit-suv/],
+  ["Kenney vehicle catalog", /riggedVehicleCatalog[\s\S]*function loadVehicleModel/],
+  ["player vehicle selection", /function showVehicleSelect[\s\S]*function chooseVehicle[\s\S]*submitVehiclePick/],
+  ["dynamic roof mount height", /function positionTurretForVehicle[\s\S]*turretHeight/],
   ["animated imported wheel nodes", /vehicle\.wheelNodes/],
   ["driveable Racekart visual", /racekart-hilly-driveable/],
   ["Racekart arena fence", /racekart-hilly-arena-fence/],
@@ -213,6 +218,7 @@ const multiplayerChecks = [
   ["two-player host launch", /startRun\(\)[\s\S]*order\.length !== 2[\s\S]*starter_draft/],
   ["ordered synchronized picks", /resolveRoomPick[\s\S]*activePickerId !== playerId[\s\S]*draftTurn[\s\S]*nextRunState/],
   ["both-player round gate", /resolveRoundReady[\s\S]*everyoneReady[\s\S]*upgrade_draft/],
+  ["ordered vehicle selection", /resolveVehiclePick[\s\S]*vehicle_select[\s\S]*vehicleSelections/],
 ];
 for (const [label, pattern] of multiplayerChecks) {
   if (!pattern.test(multiplayerSource)) throw new Error(`Missing ${label} implementation`);

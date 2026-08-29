@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { MTLLoader } from "three/addons/loaders/MTLLoader.js";
 import { OBJLoader } from "three/addons/loaders/OBJLoader.js";
-import { riggedAssetManifest } from "./assets/riggedAssetManifest";
+import { riggedAssetManifest, riggedVehicleCatalog, type RiggedVehicleId } from "./assets/riggedAssetManifest";
 import { riggedRacekartManifest, type RacekartAssetKey } from "./assets/riggedRacekartManifest";
 import {
   defaultRiggedLevel,
@@ -136,6 +136,7 @@ const ui = {
   rivalHealth: getElement("rival-health-value"), rivalHealthBar: getElement("rival-health-bar"),
   cameraMode: getElement("camera-mode-value"),
   starterSelect: getElement("starter-select"), cardDraft: getElement("card-draft"), cardGrid: getElement("card-grid"),
+  vehicleSelect: getElement("vehicle-select"), vehicleGrid: getElement("vehicle-grid"), vehicleTurn: getElement("vehicle-turn"), vehiclePickReveal: getElement("vehicle-pick-reveal"),
   draftEyebrow: getElement("draft-eyebrow"), draftTitle: getElement("card-draft-title"), draftSubtitle: getElement("draft-subtitle"),
   starterTurn: getElement("starter-turn"), starterPickReveal: getElement("starter-pick-reveal"), draftPickReveal: getElement("draft-pick-reveal"),
   roomEntry: getElement("room-entry"), roomWaiting: getElement("room-waiting"), playerName: getElement<HTMLInputElement>("player-name"),
@@ -166,6 +167,7 @@ let activeRoom: RiggedRoom | null = null;
 let renderedPickId = 0;
 let pickAnimationActive = false;
 let lastStartedRoomRound = 0;
+let selectedVehicleId:RiggedVehicleId=riggedAssetManifest.vehicle.defaultId;
 
 function updateRoundHud():void{
   ui.round.textContent=String(currentRound).padStart(2,"0");
@@ -913,6 +915,11 @@ let barrelPivot = new THREE.Group();
 let muzzle = new THREE.Object3D();
 let vehicleColliderDebug: THREE.Mesh;
 let lastTurretSwapAt = -Infinity;
+let vehicleFallback:THREE.Group|null=null;
+let vehicleVisual:THREE.Group|null=null;
+let vehicleLoadToken=0;
+let vehicleMount:THREE.Mesh|null=null;
+let vehicleBearing:THREE.Mesh|null=null;
 
 function addScrapSupport(root: THREE.Group, spread = .4): void {
   for(const side of [-1,1]) {
@@ -1008,6 +1015,34 @@ function selectWeapon(kind: WeaponKind, announce = true): void {
   if(announce&&levelStarted)showMessage(`${definition.label} // ACTIVE TURRET`);
 }
 
+function isVehicleId(value:string|undefined):value is RiggedVehicleId{return Boolean(value&&value in riggedVehicleCatalog);}
+
+function positionTurretForVehicle(id:RiggedVehicleId):void{
+  const height=riggedVehicleCatalog[id].turretHeight;
+  if(vehicleMount)vehicleMount.position.y=height-.16;
+  if(vehicleBearing)vehicleBearing.position.y=height-.04;
+  turret.position.y=height;
+}
+
+async function loadVehicleModel(id:RiggedVehicleId):Promise<void>{
+  const definition=riggedVehicleCatalog[id],token=++vehicleLoadToken;
+  canvas.dataset.vehicleAsset=`loading-kenney-${id}`;positionTurretForVehicle(id);
+  try{
+    const model=await instantiateAsset(definition.model);if(token!==vehicleLoadToken)return;
+    model.name=`kenney-car-kit-${id}`;model.scale.setScalar(1.84);model.position.y=.06;
+    const dustyTint=new THREE.Color(0xd8b08d);
+    model.traverse(object=>{
+      if(!(object instanceof THREE.Mesh))return;object.castShadow=true;
+      const sourceMaterials=Array.isArray(object.material)?object.material:[object.material];
+      const tintedMaterials=sourceMaterials.map(source=>{const material=source.clone();if(material instanceof THREE.MeshStandardMaterial){material.color.multiply(dustyTint);material.roughness=.78;material.metalness=.2;material.envMapIntensity=.55;}return material;});
+      object.material=Array.isArray(object.material)?tintedMaterials:tintedMaterials[0];
+    });
+    vehicleVisual?.removeFromParent();vehicleFallback?.removeFromParent();wheels.length=0;frontWheelPivots.length=0;
+    for(const nodeName of riggedAssetManifest.vehicle.wheelNodes){const wheel=model.getObjectByName(nodeName);if(!wheel)continue;wheels.push(wheel);if(nodeName.includes("front"))frontWheelPivots.push(wheel);}
+    car.add(model);vehicleVisual=model;selectedVehicleId=id;canvas.dataset.vehicleAsset=`kenney-car-kit-${id}`;canvas.dataset.vehicleWheels=String(wheels.length);canvas.dataset.selectedVehicle=id;applyWheelVisual();
+  }catch(error){if(token!==vehicleLoadToken)return;canvas.dataset.vehicleAsset="fallback-low-poly";noteAssetFailure(definition.model,error);}
+}
+
 function buildCar(): void {
   const fallback = new THREE.Group();
   fallback.name = "vehicle-fallback";
@@ -1021,52 +1056,13 @@ function buildCar(): void {
     if(z>0) frontWheelPivots.push(pivot);
     const hub = new THREE.Mesh(new THREE.CylinderGeometry(.22,.22,.45,10),metal); hub.rotation.z=Math.PI/2; wheel.add(hub);
   }
-  car.add(fallback);
-
-  canvas.dataset.vehicleAsset = "loading-kenney-suv";
-  instantiateAsset(riggedAssetManifest.vehicle.model).then(model => {
-    model.name = "kenney-car-kit-suv";
-    model.scale.setScalar(1.84);
-    model.position.y = .06;
-    const dustyTint = new THREE.Color(0xd8b08d);
-    model.traverse(object => {
-      if (!(object instanceof THREE.Mesh)) return;
-      object.castShadow = true;
-      const sourceMaterials = Array.isArray(object.material) ? object.material : [object.material];
-      const tintedMaterials = sourceMaterials.map(source => {
-        const material = source.clone();
-        if (material instanceof THREE.MeshStandardMaterial) {
-          material.color.multiply(dustyTint);
-          material.roughness = .78;
-          material.metalness = .2;
-          material.envMapIntensity = .55;
-        }
-        return material;
-      });
-      object.material = Array.isArray(object.material) ? tintedMaterials : tintedMaterials[0];
-    });
-    fallback.removeFromParent();
-    wheels.length = 0; frontWheelPivots.length = 0;
-    for (const nodeName of riggedAssetManifest.vehicle.wheelNodes) {
-      const wheel = model.getObjectByName(nodeName);
-      if (!wheel) continue;
-      wheels.push(wheel);
-      if (nodeName.includes("front")) frontWheelPivots.push(wheel);
-    }
-    car.add(model);
-    canvas.dataset.vehicleAsset = "kenney-car-kit-suv";
-    canvas.dataset.vehicleWheels = String(wheels.length);
-    applyWheelVisual();
-  }).catch(error => {
-    canvas.dataset.vehicleAsset = "fallback-low-poly";
-    noteAssetFailure(riggedAssetManifest.vehicle.model, error);
-  });
+  car.add(fallback);vehicleFallback=fallback;void loadVehicleModel(selectedVehicleId);
 
   const mount = new THREE.Mesh(new THREE.CylinderGeometry(.62,.76,.22,12),metal);
-  mount.position.y=2.38; mount.castShadow=true; car.add(mount);
+  vehicleMount=mount;mount.castShadow=true;car.add(mount);
   const bearing = new THREE.Mesh(new THREE.TorusGeometry(.62,.08,8,16),darkMetal);
-  bearing.rotation.x=Math.PI/2; bearing.position.y=2.5; bearing.castShadow=true; car.add(bearing);
-  turret.position.y=2.54; car.add(turret);
+  vehicleBearing=bearing;bearing.rotation.x=Math.PI/2;bearing.castShadow=true;car.add(bearing);
+  car.add(turret);positionTurretForVehicle(selectedVehicleId);
   for(const kind of ["mg","rocket","sniper"] as const){const rig=createTurretRig(kind);turretRigs.set(kind,rig);turret.add(rig.root);}
   selectWeapon(selectedWeapon,false);
   vehicleColliderDebug = new THREE.Mesh(
@@ -1195,6 +1191,7 @@ const wallRideSmokeTest = new URLSearchParams(location.search).get("physics-smok
 const holdFireSmokeTest = new URLSearchParams(location.search).get("input-smoke") === "hold-fire";
 const boostSmokeTest = new URLSearchParams(location.search).get("input-smoke") === "boost";
 const roundWinSmokeTest = new URLSearchParams(location.search).get("combat-smoke") === "round-win";
+const vehiclePreviewTest = initialParams.get("ui-preview") === "vehicles";
 const soundtrack = new Audio("./assets/nitro-games.wav");
 soundtrack.loop = true;
 soundtrack.volume = .12;
@@ -1591,7 +1588,7 @@ function updateLoadoutUi():void{
 
 function showStarterTurretSelect():void{
   if(!activeRoom||activeRoom.phase!=="starter_draft")return;
-  roundPhase="starter_turret_select";ui.starterSelect.hidden=false;ui.cardDraft.hidden=true;ui.countdown.hidden=true;ui.weaponSelect.classList.add("draft-open");canvas.dataset.roundPhase=roundPhase;canvas.dataset.starterSelection="visible";updateLoadoutUi();
+  roundPhase="starter_turret_select";ui.starterSelect.hidden=false;ui.vehicleSelect.hidden=true;ui.cardDraft.hidden=true;ui.countdown.hidden=true;ui.weaponSelect.classList.add("draft-open");canvas.dataset.roundPhase=roundPhase;canvas.dataset.starterSelection="visible";updateLoadoutUi();
   const picker=roomPlayers(activeRoom).find(player=>player.id===activeRoom?.activePickerId),myTurn=multiplayer?.isMyTurn()??false;
   ui.starterTurn.textContent=myTurn?"YOUR PICK // Choose the next roof turret.":`${picker?.name??"The other driver"} is choosing. Watch their pick resolve.`;
   ui.starterPickReveal.hidden=true;
@@ -1606,9 +1603,29 @@ async function chooseStarterTurret(kind:WeaponKind):Promise<void>{
   const nextState=activeRoom.runState?structuredClone(activeRoom.runState):createStarterRun(kind,currentRound);
   if(activeRoom.runState)applyCard(nextState,createTurretCard(kind));
   document.querySelectorAll<HTMLButtonElement>("[data-starter-turret]").forEach(button=>button.disabled=true);
-  const nextOptions=(activeRoom.draftTurn===0?(["mg","rocket","sniper"] as WeaponKind[]).filter(option=>option!==kind):[]);
+  const nextOptions=activeRoom.draftTurn===0?(["mg","rocket","sniper"] as WeaponKind[]).filter(option=>option!==kind):Object.keys(riggedVehicleCatalog);
   try{await multiplayer.submitPick({optionId:kind,optionName:turretShortNames[kind],nextRunState:nextState,nextOptions});}
   catch(error){showRoomError(error);showStarterTurretSelect();}
+}
+
+function showVehicleSelect():void{
+  if(!activeRoom||activeRoom.phase!=="vehicle_select")return;
+  roundPhase="starter_turret_select";ui.starterSelect.hidden=true;ui.cardDraft.hidden=true;ui.vehicleSelect.hidden=false;ui.countdown.hidden=true;ui.weaponSelect.classList.add("draft-open");
+  const players=roomPlayers(activeRoom),picker=players.find(player=>player.id===activeRoom?.activePickerId),myTurn=vehiclePreviewTest||(multiplayer?.isMyTurn()??false);
+  ui.vehicleTurn.textContent=myTurn?"YOUR PICK // Choose the car you will drive.":`${picker?.name??"The other driver"} is choosing their car.`;ui.vehiclePickReveal.hidden=true;
+  const cards=Object.entries(riggedVehicleCatalog).map(([rawId,definition])=>{
+    const id=rawId as RiggedVehicleId,button=document.createElement("button");button.type="button";button.className="vehicle-card";button.dataset.vehicle=id;button.dataset.optionId=id;button.disabled=!myTurn||!activeRoom?.draftOptions.includes(id);button.classList.toggle("is-watching",!myTurn);
+    const image=document.createElement("img");image.src=definition.preview;image.alt="";const copy=document.createElement("span"),label=document.createElement("b"),callout=document.createElement("small"),picked=document.createElement("em");
+    label.textContent=definition.label.toUpperCase();callout.textContent=definition.callout;const owners=players.filter(player=>activeRoom?.vehicleSelections?.[player.id]===id).map(player=>player.name);picked.textContent=owners.length?`${owners.join(" + ")} PICKED THIS`:myTurn?"SELECT VEHICLE":"RIVAL IS CHOOSING";copy.append(label,callout,picked);button.append(image,copy);button.addEventListener("click",()=>void chooseVehicle(id));return button;
+  });
+  ui.vehicleGrid.replaceChildren(...cards);canvas.dataset.roundPhase="vehicle_select";canvas.dataset.vehicleSelection="visible";
+}
+
+async function chooseVehicle(id:RiggedVehicleId):Promise<void>{
+  if(!multiplayer?.isMyTurn()||activeRoom?.phase!=="vehicle_select")return;
+  ui.vehicleGrid.querySelectorAll<HTMLButtonElement>("button").forEach(button=>button.disabled=true);
+  try{await multiplayer.submitVehiclePick(id,riggedVehicleCatalog[id].label);}
+  catch(error){showRoomError(error);showVehicleSelect();}
 }
 
 function buildCardElement(card:UpgradeCard):HTMLElement{
@@ -1625,7 +1642,7 @@ function buildCardElement(card:UpgradeCard):HTMLElement{
 function showCardDraft():void{
   if(!runState||!activeRoom||activeRoom.phase!=="upgrade_draft")return;
   const cards=resolveRoomCards(activeRoom.draftOptions,runState),turretReward=currentRound%3===0,picker=roomPlayers(activeRoom).find(player=>player.id===activeRoom?.activePickerId),myTurn=multiplayer?.isMyTurn()??false;
-  roundPhase="card_select";ui.countdown.hidden=true;ui.starterSelect.hidden=true;ui.cardDraft.hidden=false;ui.weaponSelect.classList.add("draft-open");ui.draftEyebrow.textContent=turretReward?`ROUND ${currentRound} // TURRET SALVAGE`:`ROUND ${currentRound} COMPLETE // SALVAGE DRAFT`;ui.draftTitle.textContent=myTurn?(turretReward?"EXPAND THE RIG OR UPGRADE":"CHOOSE ONE UPGRADE"):`${(picker?.name??"RIVAL").toUpperCase()} IS PICKING`;ui.draftSubtitle.textContent=myTurn?"YOUR PICK // Install one card into the shared rig.":`You can see every option. ${picker?.name??"The other driver"} has control.`;ui.draftPickReveal.hidden=true;ui.cardGrid.replaceChildren(...cards.map(buildCardElement));canvas.dataset.roundPhase=roundPhase;canvas.dataset.cardDraft="visible";canvas.dataset.turretReward=turretReward?"offered":"not-due";
+  roundPhase="card_select";ui.countdown.hidden=true;ui.starterSelect.hidden=true;ui.vehicleSelect.hidden=true;ui.cardDraft.hidden=false;ui.weaponSelect.classList.add("draft-open");ui.draftEyebrow.textContent=turretReward?`ROUND ${currentRound} // TURRET SALVAGE`:`ROUND ${currentRound} COMPLETE // SALVAGE DRAFT`;ui.draftTitle.textContent=myTurn?(turretReward?"EXPAND THE RIG OR UPGRADE":"CHOOSE ONE UPGRADE"):`${(picker?.name??"RIVAL").toUpperCase()} IS PICKING`;ui.draftSubtitle.textContent=myTurn?"YOUR PICK // Install one card into the shared rig.":`You can see every option. ${picker?.name??"The other driver"} has control.`;ui.draftPickReveal.hidden=true;ui.cardGrid.replaceChildren(...cards.map(buildCardElement));canvas.dataset.roundPhase=roundPhase;canvas.dataset.cardDraft="visible";canvas.dataset.turretReward=turretReward?"offered":"not-due";
 }
 
 async function chooseUpgradeCard(card:UpgradeCard):Promise<void>{
@@ -2205,36 +2222,43 @@ function syncRunFromRoom(room:RiggedRoom):void{
   canvas.dataset.runState="shared";canvas.dataset.roomCode=room.code;
 }
 
+function syncVehicleFromRoom(room:RiggedRoom):void{
+  if(!multiplayer)return;const chosen=room.vehicleSelections?.[multiplayer.playerId];if(!isVehicleId(chosen)||chosen===selectedVehicleId)return;
+  selectedVehicleId=chosen;if(levelStarted)void loadVehicleModel(chosen);
+}
+
 function animateRoomPick(pick:RiggedRoomPick):void{
-  const starter=!ui.starterSelect.hidden,grid=starter?ui.starterSelect:ui.cardGrid,reveal=starter?ui.starterPickReveal:ui.draftPickReveal;
+  const mode=!ui.starterSelect.hidden?"starter":!ui.vehicleSelect.hidden?"vehicle":"upgrade",grid=mode==="starter"?ui.starterSelect:mode==="vehicle"?ui.vehicleGrid:ui.cardGrid,reveal=mode==="starter"?ui.starterPickReveal:mode==="vehicle"?ui.vehiclePickReveal:ui.draftPickReveal;
   const picker=activeRoom?roomPlayers(activeRoom).find(player=>player.id===pick.playerId):null;
-  grid.querySelectorAll<HTMLElement>(".starter-card,.upgrade-card").forEach(card=>{
+  grid.querySelectorAll<HTMLElement>(".starter-card,.upgrade-card,.vehicle-card").forEach(card=>{
     const picked=card.dataset.optionId===pick.optionId;card.classList.toggle("is-picked",picked);card.classList.toggle("is-fizzling",!picked&&!card.hidden);
     card.querySelectorAll<HTMLButtonElement>("button").forEach(button=>button.disabled=true);
   });
   reveal.textContent=`${picker?.name??"Driver"} picked ${pick.optionName}`;reveal.hidden=false;pickAnimationActive=true;canvas.dataset.pickAnimation="fizzle";canvas.dataset.lastCardChosen=pick.optionId;
-  window.setTimeout(()=>finishPickAnimation(starter),720);
+  window.setTimeout(finishPickAnimation,720);
 }
 
-function finishPickAnimation(starter:boolean):void{
+function finishPickAnimation():void{
   pickAnimationActive=false;const room=activeRoom;if(!room)return;
   if(room.phase==="starter_draft"){showStarterTurretSelect();return;}
+  if(room.phase==="vehicle_select"){showVehicleSelect();return;}
   if(room.phase==="upgrade_draft"){showCardDraft();return;}
   if(room.phase!=="playing"||room.round<=lastStartedRoomRound)return;
-  ui.starterSelect.hidden=true;ui.cardDraft.hidden=true;ui.weaponSelect.classList.remove("draft-open");canvas.dataset.starterSelection="complete";canvas.dataset.cardApplied="true";startAudio();lastStartedRoomRound=room.round;
-  if(starter){currentRound=room.round;updateRoundHud();resetVehicle(false);resetOpponent();beginRoundCountdown();}
+  ui.starterSelect.hidden=true;ui.vehicleSelect.hidden=true;ui.cardDraft.hidden=true;ui.weaponSelect.classList.remove("draft-open");canvas.dataset.starterSelection="complete";canvas.dataset.vehicleSelection="complete";canvas.dataset.cardApplied="true";startAudio();const firstRound=lastStartedRoomRound===0;lastStartedRoomRound=room.round;
+  if(firstRound){currentRound=room.round;updateRoundHud();resetVehicle(false);resetOpponent();beginRoundCountdown();}
   else void advanceRound(room.round);
 }
 
 function handleRoomSnapshot(room:RiggedRoom|null):void{
   activeRoom=room;renderRoomLobby(room);if(!room)return;
-  syncRunFromRoom(room);
+  syncRunFromRoom(room);syncVehicleFromRoom(room);
   const newPick=room.lastPick&&room.lastPick.id>renderedPickId;
   if(newPick){renderedPickId=room.lastPick!.id;if(levelStarted)animateRoomPick(room.lastPick!);return;}
   if(!levelStarted||pickAnimationActive)return;
   if(room.phase==="starter_draft"){showStarterTurretSelect();return;}
+  if(room.phase==="vehicle_select"){showVehicleSelect();return;}
   if(room.phase==="upgrade_draft"){showCardDraft();return;}
-  if(room.phase==="playing"&&room.round>lastStartedRoomRound)finishPickAnimation(lastStartedRoomRound===0);
+  if(room.phase==="playing"&&room.round>lastStartedRoomRound)finishPickAnimation();
 }
 
 async function setupMultiplayer():Promise<void>{
@@ -2274,6 +2298,7 @@ async function startLevel(levelId: RiggedLevelId): Promise<void> {
   const smokeMode=rampSmokeTest||allSurfaceSmokeTest||wallRideSmokeTest||holdFireSmokeTest||boostSmokeTest||roundWinSmokeTest;
   if(smokeMode&&!runState){runState=createStarterRun("mg",currentRound);selectedWeapon="mg";saveRunState();recomputeRunStats();selectWeapon("mg",false);beginRoundCountdown();}
   else if(smokeMode&&runState){selectedWeapon=runState.activeTurret;recomputeRunStats();selectWeapon(selectedWeapon,false);beginRoundCountdown();}
+  else if(vehiclePreviewTest){activeRoom={code:"PREVIEW",hostId:"preview-player",phase:"vehicle_select",round:1,players:{"preview-player":{name:"Preview Driver",joinedAt:1},rival:{name:"Rival Driver",joinedAt:2}},playerOrder:["preview-player","rival"],activePickerId:"preview-player",draftOptions:Object.keys(riggedVehicleCatalog),draftTurn:0,pickSequence:0,lastPick:null,vehicleSelections:{},roundReady:{},runState:null,createdAt:1,updatedAt:1};ui.multiplayerLobby.hidden=true;showVehicleSelect();}
   else if(activeRoom)handleRoomSnapshot(activeRoom);
   if(initialParams.get("auto")==="1"&&runState)startAudio();runSmokeRoutes();
   if(roundPhase!=="ended"&&(rampSmokeTest||allSurfaceSmokeTest||wallRideSmokeTest||holdFireSmokeTest||boostSmokeTest))showMessage(rampSmokeTest?"RAMP SUITE // AUTO DRIVE":allSurfaceSmokeTest?"ALL RAMPS // AUTO DRIVE":wallRideSmokeTest?"WALL-RIDE SUITE // AUTO DRIVE":holdFireSmokeTest?"HOLD-FIRE SMOKE TEST // COMPLETE":"BOOST STAMINA TEST // COMPLETE");
@@ -2288,7 +2313,7 @@ document.querySelectorAll<HTMLButtonElement>("[data-starter-turret]").forEach(bu
 selectWeapon("mg",false);
 updateRoundHud();
 const requestedLevel = new URLSearchParams(location.search).get("level") as RiggedLevelId | null;
-void setupMultiplayer();
+if(!vehiclePreviewTest)void setupMultiplayer();
 void startLevel(requestedLevel && requestedLevel in riggedArenaLayouts ? requestedLevel : defaultRiggedLevel);
 
 window.addEventListener("keydown",event=>{if(["KeyW","KeyA","KeyS","KeyD","Space","ShiftLeft","KeyC","KeyF","F3","Digit1","Digit2","Digit3"].includes(event.code))event.preventDefault();if(event.repeat||!levelStarted)return;if(event.code==="Escape"){togglePause();return;}if(event.code==="KeyC"){toggleCameraMode();return;}if(event.code.startsWith("Digit")){const kind=(["mg","rocket","sniper"] as const)[Number(event.code.slice(5))-1];if(kind)selectWeapon(kind);return;}if(event.code==="KeyR")resetVehicle();if(event.code==="KeyB"||event.code==="KeyH"||event.code==="F3")toggleDebug();if(event.code==="KeyF")setFireHeld(true);input.add(event.code);});

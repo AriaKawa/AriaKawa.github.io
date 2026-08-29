@@ -1,6 +1,6 @@
 import type { ScraproadRunState } from "./RoguelikeRun";
 
-export type RiggedRoomPhase = "lobby" | "starter_draft" | "playing" | "upgrade_draft";
+export type RiggedRoomPhase = "lobby" | "starter_draft" | "vehicle_select" | "playing" | "upgrade_draft";
 
 export type RiggedRoomPlayer = {
   id: string;
@@ -28,6 +28,7 @@ export type RiggedRoom = {
   draftTurn: number;
   pickSequence: number;
   lastPick: RiggedRoomPick | null;
+  vehicleSelections: Record<string, string>;
   roundReady: Record<string, boolean>;
   runState: ScraproadRunState | null;
   createdAt: number;
@@ -97,14 +98,14 @@ export function resolveRoomPick(room: RiggedRoom, playerId: string, input: Rigge
   if (!isDraft || room.activePickerId !== playerId || !room.draftOptions.includes(input.optionId)) return undefined;
   const order = normalizedOrder(room);
   const nextTurn = room.draftTurn + 1;
-  const finished = nextTurn >= order.length;
+  const finished = nextTurn >= order.length,starterFinished=finished&&room.phase==="starter_draft";
   return {
     ...room,
-    phase: finished ? "playing" : room.phase,
+    phase: starterFinished ? "vehicle_select" : finished ? "playing" : room.phase,
     round: finished && room.phase === "upgrade_draft" ? room.round + 1 : room.round,
-    activePickerId: finished ? "" : order[nextTurn],
-    draftOptions: finished ? [] : input.nextOptions,
-    draftTurn: nextTurn,
+    activePickerId: starterFinished ? order[0] : finished ? "" : order[nextTurn],
+    draftOptions: starterFinished ? input.nextOptions : finished ? [] : input.nextOptions,
+    draftTurn: starterFinished ? 0 : nextTurn,
     pickSequence: (room.pickSequence ?? 0) + 1,
     lastPick: {
       id: (room.pickSequence ?? 0) + 1,
@@ -116,6 +117,22 @@ export function resolveRoomPick(room: RiggedRoom, playerId: string, input: Rigge
     roundReady: finished ? {} : room.roundReady,
     runState: input.nextRunState,
     updatedAt: now,
+  };
+}
+
+export function resolveVehiclePick(room: RiggedRoom, playerId: string, optionId: string, optionName: string, now = Date.now()): RiggedRoom | undefined {
+  if(room.phase!=="vehicle_select"||room.activePickerId!==playerId||!room.draftOptions.includes(optionId))return undefined;
+  const order=normalizedOrder(room),nextTurn=room.draftTurn+1,finished=nextTurn>=order.length;
+  return {
+    ...room,
+    phase:finished?"playing":"vehicle_select",
+    activePickerId:finished?"":order[nextTurn],
+    draftTurn:nextTurn,
+    draftOptions:finished?[]:room.draftOptions,
+    pickSequence:(room.pickSequence??0)+1,
+    lastPick:{id:(room.pickSequence??0)+1,playerId,optionId,optionName,pickedAt:now},
+    vehicleSelections:{...(room.vehicleSelections??{}),[playerId]:optionId},
+    updatedAt:now,
   };
 }
 
@@ -203,6 +220,7 @@ export class RiggedMultiplayerClient {
         draftTurn: 0,
         pickSequence: 0,
         lastPick: null,
+        vehicleSelections: {},
         roundReady: {},
         runState: null,
         createdAt: now,
@@ -252,6 +270,7 @@ export class RiggedMultiplayerClient {
         draftTurn: 0,
         pickSequence: 0,
         lastPick: null,
+        vehicleSelections: {},
         runState: null,
         updatedAt: Date.now(),
       };
@@ -262,6 +281,11 @@ export class RiggedMultiplayerClient {
   async submitPick(input: RiggedPickInput): Promise<void> {
     const result = await this.transact(current => resolveRoomPick(current, this.playerId, input));
     if (!result) throw new Error("That pick is no longer available.");
+  }
+
+  async submitVehiclePick(optionId:string,optionName:string):Promise<void>{
+    const result=await this.transact(current=>resolveVehiclePick(current,this.playerId,optionId,optionName));
+    if(!result)throw new Error("That vehicle pick is no longer available.");
   }
 
   async markRoundComplete(options: string[], state: ScraproadRunState): Promise<void> {
