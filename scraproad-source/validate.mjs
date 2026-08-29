@@ -164,6 +164,8 @@ const sceneChecks = [
   ["wall reset runtime verification", /dataset\.wallReset=resetPassed\?"passed":"failed"/],
   ["analytic capsule collision telemetry", /capsuleCollision = "three-disc-analytic-bands"/],
   ["chase camera", /function updateCamera/],
+  ["enemy camera lock", /enemyCamEnabled[\s\S]*cameraTarget\.copy\(opponentCar\.position\)[\s\S]*event\.code==="KeyE"[\s\S]*toggleEnemyCam/],
+  ["enemy camera telemetry", /dataset\.cameraAimMode[\s\S]*dataset\.cameraLookAt/],
 ];
 for (const [label, pattern] of sceneChecks) {
   if (!pattern.test(source)) throw new Error(`Missing ${label} implementation`);

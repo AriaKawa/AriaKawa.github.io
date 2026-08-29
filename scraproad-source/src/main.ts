@@ -1126,7 +1126,7 @@ const muzzleFlash = new THREE.PointLight(0xff8a24, 8, 5, 2);
 muzzleFlash.visible = false; scene.add(muzzleFlash);
 let fireCooldown=0; let isFireHeld=false; let muzzleFlashLife=0; let weaponStateLife=0;
 let cameraShakeLife=0; let cameraShakeStrength=0;
-let messageTimer=0; let paused=false; let cameraMode=0; let elapsed=0;
+let messageTimer=0; let paused=false; let cameraMode=0; let enemyCamEnabled=false; let elapsed=0;
 const rampSmokeTest = new URLSearchParams(location.search).get("physics-smoke") === "ramp";
 const allSurfaceSmokeTest = new URLSearchParams(location.search).get("physics-smoke") === "all-surfaces";
 const wallRideSmokeTest = new URLSearchParams(location.search).get("physics-smoke") === "wall";
@@ -1716,8 +1716,10 @@ function updateCamera(dt:number): void {
   else{cameraDesired.y+=23;cameraDesired.z-=.01;}
   if(cameraShakeLife>0)cameraDesired.add(new THREE.Vector3((Math.random()-.5)*cameraShakeStrength,(Math.random()-.5)*cameraShakeStrength,(Math.random()-.5)*cameraShakeStrength));
   camera.position.lerp(cameraDesired,1-Math.exp(-6.5*dt));
-  cameraTarget.copy(car.position).addScaledVector(cameraForward,cameraMode===0?4:0);cameraTarget.y+=1.2;
+  if(enemyCamEnabled){cameraTarget.copy(opponentCar.position);cameraTarget.y+=1.3;}
+  else{cameraTarget.copy(car.position).addScaledVector(cameraForward,cameraMode===0?4:0);cameraTarget.y+=1.2;}
   cameraLook.lerp(cameraTarget,1-Math.exp(-9*dt));camera.lookAt(cameraLook);
+  canvas.dataset.cameraAimMode=enemyCamEnabled?"enemy-lock":"drive-forward";canvas.dataset.cameraPositionMode=cameraMode===0?"chase":"overwatch";canvas.dataset.cameraPosition=`${camera.position.x.toFixed(2)},${camera.position.y.toFixed(2)},${camera.position.z.toFixed(2)}`;canvas.dataset.cameraLookAt=`${cameraLook.x.toFixed(2)},${cameraLook.y.toFixed(2)},${cameraLook.z.toFixed(2)}`;
 }
 
 function updatePickups(dt:number):void{for(const pickup of pickups){if(pickup.collected)continue;pickup.group.rotation.y+=dt*.8;const item=pickup.group.children[2];item.position.y=1.1+Math.sin(elapsed*2.4+pickup.group.position.x)*.18;}}
@@ -1792,6 +1794,7 @@ function advanceRound():void{
 function togglePause(force?:boolean):void{if(!levelStarted)return;paused=force??!paused;if(paused)setFireHeld(false);ui.pause.hidden=!paused;}
 function toggleControls(show?:boolean):void{ui.controls.classList.toggle("closed",show===undefined?!ui.controls.classList.contains("closed"):!show);}
 function toggleDebug():void{if(!levelStarted)return;debugPhysics=!debugPhysics;debugVisuals.forEach(item=>item.visible=debugPhysics);vehicleColliderDebug.visible=debugPhysics;ui.debug.hidden=!debugPhysics;showMessage(debugPhysics?`PHYSICS DEBUG // ${vehicle.grounded?"GROUNDED":"AIRBORNE"}`:"PHYSICS DEBUG // OFF");}
+function toggleEnemyCam():void{if(!levelStarted)return;enemyCamEnabled=!enemyCamEnabled;canvas.dataset.enemyCam=enemyCamEnabled?"locked":"off";showMessage(enemyCamEnabled?"ENEMY CAM // LOCKED":"ENEMY CAM // OFF");}
 
 canvas.dataset.assetsLoaded="0";canvas.dataset.assetErrors="0";canvas.dataset.assetManifest="scraproadAssetManifest";
 
@@ -1964,7 +1967,7 @@ updateRoundHud();
 const requestedLevel = new URLSearchParams(location.search).get("level") as ScraproadLevelId | null;
 if (rampSmokeTest || allSurfaceSmokeTest || wallRideSmokeTest || holdFireSmokeTest || boostSmokeTest || roundWinSmokeTest || (requestedLevel && requestedLevel in scraproadArenaLayouts)) void startLevel(requestedLevel && requestedLevel in scraproadArenaLayouts ? requestedLevel : defaultScraproadLevel);
 
-window.addEventListener("keydown",event=>{if(["KeyW","KeyA","KeyS","KeyD","Space","ShiftLeft","KeyF","F3"].includes(event.code))event.preventDefault();if(event.repeat||!levelStarted)return;if(event.code==="Escape"){togglePause();return;}if(event.code==="KeyR")resetVehicle();if(event.code==="KeyC"){cameraMode=(cameraMode+1)%2;showMessage(cameraMode?"CAMERA // OVERWATCH":"CAMERA // CHASE");}if(event.code==="KeyB"||event.code==="KeyH"||event.code==="F3")toggleDebug();if(event.code==="KeyF")setFireHeld(true);input.add(event.code);});
+window.addEventListener("keydown",event=>{if(["KeyW","KeyA","KeyS","KeyD","Space","ShiftLeft","KeyE","KeyF","F3"].includes(event.code))event.preventDefault();if(event.repeat||!levelStarted)return;if(event.code==="Escape"){togglePause();return;}if(event.code==="KeyE"){toggleEnemyCam();return;}if(event.code==="KeyR")resetVehicle();if(event.code==="KeyC"){cameraMode=(cameraMode+1)%2;showMessage(cameraMode?"CAMERA // OVERWATCH":"CAMERA // CHASE");}if(event.code==="KeyB"||event.code==="KeyH"||event.code==="F3")toggleDebug();if(event.code==="KeyF")setFireHeld(true);input.add(event.code);});
 window.addEventListener("keyup",event=>{input.delete(event.code);if(event.code==="KeyF")setFireHeld(false);});
 canvas.addEventListener("pointermove",event=>{const bounds=canvas.getBoundingClientRect();mouse.x=(event.clientX-bounds.left)/bounds.width*2-1;mouse.y=-(event.clientY-bounds.top)/bounds.height*2+1;const crosshair=getElement("crosshair");crosshair.style.left=`${event.clientX}px`;crosshair.style.top=`${event.clientY}px`;});
 canvas.addEventListener("pointerdown",event=>{if(event.button===0)setFireHeld(true);});
