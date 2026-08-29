@@ -55,13 +55,15 @@
         </div>
       </section>
 
-      <aside id="weapon-select" class="weapon-dock panel" aria-label="Test turret selection">
-        <div class="weapon-dock__current"><small>TEST TURRET</small><b id="weapon-part">SCRAP RATTLER</b><em id="weapon-state">READY</em></div>
-        <div class="weapon-dock__buttons">
-          <button class="selected" type="button" data-weapon="mg" aria-pressed="true"><b>MG</b><small>RATTLER</small></button>
-          <button type="button" data-weapon="rocket" aria-pressed="false"><b>RKT</b><small>HELLBOX</small></button>
-          <button type="button" data-weapon="sniper" aria-pressed="false"><b>SNP</b><small>LONGLANCE</small></button>
+      <aside id="weapon-select" class="turret-loadout panel" aria-label="Owned turret loadout">
+        <div class="turret-loadout__heading"><small>ROOF LOADOUT</small><b id="weapon-part">SCRAP RATTLER</b><em id="weapon-state">READY</em></div>
+        <div class="turret-loadout__slots">
+          <button class="selected" type="button" data-weapon="mg" aria-pressed="true"><i>1</i><span><b>SCRAP RATTLER</b><small>LOCKED</small></span></button>
+          <button type="button" data-weapon="rocket" aria-pressed="false"><i>2</i><span><b>HELLBOX</b><small>LOCKED</small></span></button>
+          <button type="button" data-weapon="sniper" aria-pressed="false"><i>3</i><span><b>LONGLANCE</b><small>LOCKED</small></span></button>
         </div>
+        <p>WHEEL / 1–3 TO SWAP</p>
+        <div class="rig-summary"><small>RIG MODS</small><ul id="active-upgrades"><li>Choose a starter turret</li></ul></div>
       </aside>
 
       <section id="level-select" class="level-select" aria-labelledby="level-select-title">
@@ -88,6 +90,42 @@
         </div>
       </section>
 
+      <section id="starter-select" class="draft-overlay" hidden aria-labelledby="starter-select-title">
+        <div class="draft-overlay__backdrop"></div>
+        <div class="draft-shell">
+          <span class="eyebrow">RIGGED // STARTER MOUNT</span>
+          <h1 id="starter-select-title">CHOOSE YOUR FIRST TURRET</h1>
+          <p>You begin with one roof weapon. Earn more after every third round.</p>
+          <div class="starter-grid">
+            <article class="starter-card starter-card--mg">
+              <span>MACHINE GUN</span><h2>SCRAP RATTLER</h2><p>Rapid automatic fire. Forgiving, noisy, and built for pressure.</p>
+              <dl><div><dt>DAMAGE</dt><dd>15</dd></div><div><dt>FIRE RATE</dt><dd>6.7/s</dd></div><div><dt>PROJECTILES</dt><dd>1</dd></div><div><dt>SPECIAL</dt><dd>Hold to fire</dd></div></dl>
+              <button type="button" data-starter-turret="mg">MOUNT RATTLER</button>
+            </article>
+            <article class="starter-card starter-card--rocket">
+              <span>ROCKET POD</span><h2>HELLBOX ROCKETS</h2><p>Slow explosive salvos with a wide splash and savage impact.</p>
+              <dl><div><dt>DAMAGE</dt><dd>82</dd></div><div><dt>FIRE RATE</dt><dd>0.78/s</dd></div><div><dt>PROJECTILES</dt><dd>1</dd></div><div><dt>SPECIAL</dt><dd>5.4m blast</dd></div></dl>
+              <button type="button" data-starter-turret="rocket">MOUNT HELLBOX</button>
+            </article>
+            <article class="starter-card starter-card--sniper">
+              <span>RAIL CANNON</span><h2>LONGLANCE RAIL</h2><p>Pinpoint cyan shots with extreme speed, range, and stopping power.</p>
+              <dl><div><dt>DAMAGE</dt><dd>110</dd></div><div><dt>FIRE RATE</dt><dd>0.58/s</dd></div><div><dt>PROJECTILES</dt><dd>1</dd></div><div><dt>SPECIAL</dt><dd>Instant tracer</dd></div></dl>
+              <button type="button" data-starter-turret="sniper">MOUNT LONGLANCE</button>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="card-draft" class="draft-overlay" hidden aria-labelledby="card-draft-title">
+        <div class="draft-overlay__backdrop"></div>
+        <div class="draft-shell">
+          <span id="draft-eyebrow" class="eyebrow">ROUND COMPLETE // SALVAGE DRAFT</span>
+          <h1 id="card-draft-title">CHOOSE ONE UPGRADE</h1>
+          <p id="draft-subtitle">One card becomes part of this run. The next arena starts immediately.</p>
+          <div id="card-grid" class="card-grid"></div>
+        </div>
+      </section>
+
       <section id="controls" class="controls panel closed" aria-label="Controls">
         <div class="controls__heading"><div><span>DRIVER FIELD MANUAL</span><b>ARCADE VEHICLE SYSTEMS</b></div><button id="controls-close" type="button" aria-label="Close controls">×</button></div>
         <div class="control-grid">
@@ -97,6 +135,7 @@
           <div><kbd>SHIFT</kbd><span>Nitro boost</span></div>
           <div><kbd>MOUSE</kbd><span>Aim roof weapon</span></div>
           <div><kbd>HOLD LMB / F</kbd><span>Fire at weapon interval</span></div>
+          <div><kbd>WHEEL / 1–3</kbd><span>Swap owned turrets</span></div>
           <div><kbd>R</kbd><span>Reset vehicle</span></div>
           <div><kbd>C</kbd><span>Toggle Chase / Enemy Cam</span></div>
           <div><kbd>F3 / H</kbd><span>Colliders + performance</span></div>

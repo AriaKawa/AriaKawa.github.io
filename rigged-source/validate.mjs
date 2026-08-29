@@ -34,6 +34,7 @@ const source = await readFile(resolve(import.meta.dirname, "src/main.ts"), "utf8
 const colliderSource = await readFile(resolve(import.meta.dirname, "src/game/rigged/DriveSurfaceCollider.ts"), "utf8");
 const ovalSource = await readFile(resolve(import.meta.dirname, "src/game/rigged/OvalBowlSurface.ts"), "utf8");
 const cameraSource = await readFile(resolve(import.meta.dirname, "src/game/rigged/RiggedCameraController.ts"), "utf8");
+const roguelikeSource = await readFile(resolve(import.meta.dirname, "src/game/rigged/RoguelikeRun.ts"), "utf8");
 const racekartManifest = await readFile(resolve(import.meta.dirname, "src/assets/riggedRacekartManifest.ts"), "utf8");
 const layouts = await readFile(resolve(import.meta.dirname, "src/game/rigged/RiggedArenaLayout.ts"), "utf8");
 const checks = [
@@ -47,6 +48,9 @@ const checks = [
   ["controls", /id="controls"/],
   ["camera mode HUD", /id="camera-mode-value"[^>]*>CHASE CAM/],
   ["level selector", /id="level-select"/],
+  ["starter turret selector", /id="starter-select"[\s\S]*data-starter-turret="mg"[\s\S]*data-starter-turret="rocket"[\s\S]*data-starter-turret="sniper"/],
+  ["between-round card draft", /id="card-draft"[\s\S]*id="card-grid"/],
+  ["owned turret loadout", /id="weapon-select"[\s\S]*ROOF LOADOUT[\s\S]*WHEEL \/ 1–3 TO SWAP/],
   ["Dust Ring deploy button", /data-level="dustring"/],
   ["Capsule Circuit deploy button", /data-level="ovalbowl"[\s\S]*CAPSULE CIRCUIT/],
   ["compiled module", /assets\/.*\.js/],
@@ -92,7 +96,18 @@ const sceneChecks = [
   ["boost depletion and recharge smoke route", /boostSmokeTest[\s\S]*boostAfterUse[\s\S]*boostAfterRecharge[\s\S]*boostSmoke/],
   ["round result state", /function finishRound\(winner:"player"\|"opponent"\)[\s\S]*dataset\.roundWinner=winner/],
   ["round HUD win smoke route", /roundWinSmokeTest[\s\S]*roundHudSmoke/],
-  ["countdown-gated rounds", /type RoundPhase = "loading" \| "countdown" \| "active" \| "ended"[\s\S]*function beginRoundCountdown[\s\S]*function updateRoundCountdown/],
+  ["countdown-gated rounds", /type RoundPhase = "loading"[\s\S]*"starter_turret_select"[\s\S]*"card_select"[\s\S]*function beginRoundCountdown[\s\S]*function updateRoundCountdown/],
+  ["starter turret ownership", /function showStarterTurretSelect[\s\S]*function chooseStarterTurret[\s\S]*createStarterRun\(kind,currentRound\)/],
+  ["card draft between rounds", /function showCardDraft[\s\S]*draftCards\(runState\)[\s\S]*function chooseUpgradeCard/],
+  ["three-round turret reward", /currentRound%3===0[\s\S]*dataset\.turretReward/],
+  ["owned turret scroll swapping", /function cycleOwnedTurret[\s\S]*addEventListener\("wheel"/],
+  ["run persistence across arenas", /sessionStorage\.setItem\(RUN_STORAGE_KEY[\s\S]*runState\.round=nextRound/],
+  ["incendiary projectiles and burn", /function spawnBurnEmber[\s\S]*burnDps[\s\S]*dataset\.burnStatus="applied"/],
+  ["multishot projectile fan", /projectileCount[\s\S]*for\(let index=0;index<count;index\+\+\)/],
+  ["piercing projectile continuation", /piercesRemaining[\s\S]*piercingVfx="bright-tracer"/],
+  ["ricochet projectile bounce", /ricochetsRemaining[\s\S]*ricochetVfx="spark"/],
+  ["vehicle card runtime stats", /function recomputeRunStats[\s\S]*maxHealthMultiplier[\s\S]*handlingMultiplier[\s\S]*tractionMultiplier/],
+  ["wheel card visual variants", /function applyWheelVisual[\s\S]*"racing"[\s\S]*"offroad"[\s\S]*"heavy"/],
   ["alternating map rounds", /function advanceRound[\s\S]*activeLayout\.id==="dustring"\?"ovalbowl":"dustring"[\s\S]*searchParams\.set\("round"/],
   ["combat opponent car", /function buildOpponentCar[\s\S]*rival-ai-combat-car[\s\S]*function updateOpponent/],
   ["opponent return fire", /function shootOpponent[\s\S]*owner:"opponent"[\s\S]*aiShotsFired/],
@@ -171,6 +186,15 @@ const sceneChecks = [
 ];
 for (const [label, pattern] of sceneChecks) {
   if (!pattern.test(source)) throw new Error(`Missing ${label} implementation`);
+}
+const roguelikeChecks = [
+  ["extensible run state", /type ScraproadRunState[\s\S]*ownedTurrets[\s\S]*turretStats[\s\S]*vehicleStats[\s\S]*upgrades/],
+  ["impactful weapon cards", /id:"double-tap"[\s\S]*id:"heavy-rounds"[\s\S]*id:"multishot"[\s\S]*id:"incendiary-rounds"/],
+  ["vehicle and utility cards", /id:"racing-tires"[\s\S]*id:"turbocharger"[\s\S]*id:"reinforced-plating"[\s\S]*id:"field-repair"[\s\S]*id:"emergency-shield"/],
+  ["guaranteed three-round turret card", /state\.round%3!==0[\s\S]*createTurretCard/],
+];
+for (const [label, pattern] of roguelikeChecks) {
+  if (!pattern.test(roguelikeSource)) throw new Error(`Missing ${label} implementation`);
 }
 if (/impact-frame/.test(html) || /triggerImpactFrame/.test(source)) throw new Error("Full-screen weapon impact frames must remain removed");
 const colliderChecks = [
