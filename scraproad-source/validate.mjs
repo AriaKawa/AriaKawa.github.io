@@ -195,11 +195,11 @@ if (!layouts.includes("dustring: {")) throw new Error("Missing Dust Ring arena l
 if (!layouts.includes("ovalbowl: {")) throw new Error("Missing Capsule Circuit arena layout");
 if (!/ovalbowl:[\s\S]*arenaKind: "capsule"[\s\S]*bowl: \{ straightHalfLength: 46, flatRadius: 44, outerRadius: 62, wallRise: 11\.5, guardHeight: 4\.5 \}/.test(layouts)) throw new Error("Capsule Circuit dimensions are missing");
 if ((layouts.match(/asset: "stuntRailing"/g) ?? []).length !== 4) throw new Error("Capsule Circuit must use four restrained Racing Assets rim railings");
-if (!/ovalbowl:[\s\S]*targets: \[[\s\S]*\{ x: 38, z: 24/.test(layouts)) throw new Error("Capsule Circuit target set is missing");
+if ((layouts.match(/targets: \[\]/g) ?? []).length !== 2) throw new Error("Target dummies must be removed from both arenas");
 if ((layouts.match(/\{ asset: "stuntRamp", kind: "ramp"/g) ?? []).length !== 4) throw new Error("Expected exactly 4 placed ramp surfaces");
 if (/\{ asset: "[^"]+", kind: "bridge"/.test(layouts)) throw new Error("Dust Ring must not include bridge or loop stunt chains");
 if ((layouts.match(/kind: "repair"/g) ?? []).length < 1) throw new Error("Expected a repair pickup");
-if ((layouts.match(/rotation:/g) ?? []).length < 20) throw new Error("Expected curated track, target, and prop placements");
+if ((layouts.match(/rotation:/g) ?? []).length < 10) throw new Error("Expected curated track and prop placements");
 if (/dustbowl|stuntworks|bridge deck|mega jump/i.test(layouts)) throw new Error("Legacy stunt arena content remains in the layout");
 
 const assetPaths = [...html.matchAll(/(?:src|href)="\.\/(assets\/[^\"]+)"/g)].map((match) => match[1]);

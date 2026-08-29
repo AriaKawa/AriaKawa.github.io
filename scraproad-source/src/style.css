@@ -22,11 +22,11 @@ button { font: inherit; color: inherit; }
 .round-core { align-self:stretch; display:grid; place-content:center; text-align:center; background:linear-gradient(180deg,rgba(19,18,17,.96),rgba(8,8,8,.82)); border:1px solid rgba(255,255,255,.13); clip-path:polygon(12% 0,88% 0,100% 100%,0 100%); }
 .round-core small { color:#9b9184; font:800 8px Inter; letter-spacing:.2em; }
 .round-core strong { color:#fff3dd; font:800 28px/.9 'Barlow Condensed'; text-shadow:-3px 0 12px rgba(255,116,38,.5),3px 0 12px rgba(157,67,255,.48); }
-.round-countdown { position:fixed; z-index:18; inset:0; display:grid; place-content:center; justify-items:center; pointer-events:none; background:radial-gradient(circle,rgba(20,13,9,.18),rgba(8,7,7,.58)); text-align:center; }
+.round-countdown { position:fixed; z-index:18; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:clamp(12px,2vh,20px); pointer-events:none; background:radial-gradient(circle,rgba(20,13,9,.18),rgba(8,7,7,.58)); text-align:center; }
 .round-countdown[hidden] { display:none; }
-.round-countdown small,.round-countdown span { color:#e5b36d; font:800 11px Inter; letter-spacing:.25em; text-transform:uppercase; text-shadow:0 2px 8px #000; }
-.round-countdown strong { min-width:180px; color:#fff4df; font:900 clamp(92px,18vw,190px)/.82 'Barlow Condensed'; text-shadow:-8px 0 34px rgba(255,91,34,.85),8px 0 34px rgba(155,57,255,.72); animation:countdown-hit .9s ease-out infinite; }
-@keyframes countdown-hit { 0%{transform:scale(1.18);filter:brightness(1.5)} 35%,100%{transform:scale(1);filter:brightness(1)} }
+.round-countdown small,.round-countdown span { display:block; color:#e5b36d; font:800 11px/1 Inter; letter-spacing:.25em; text-transform:uppercase; text-shadow:0 2px 8px #000; }
+.round-countdown strong { display:grid; place-items:center; width:clamp(160px,20vw,220px); min-height:clamp(86px,15vw,170px); color:#fff4df; font:900 clamp(92px,18vw,190px)/1 'Barlow Condensed'; font-variant-numeric:tabular-nums; text-align:center; text-shadow:-8px 0 34px rgba(255,91,34,.85),8px 0 34px rgba(155,57,255,.72); transform-origin:center; animation:countdown-hit .9s ease-out infinite; }
+@keyframes countdown-hit { 0%{transform:scale(1.08);filter:brightness(1.5)} 35%,100%{transform:scale(1);filter:brightness(1)} }
 @keyframes score-pulse-orange { 0%{filter:brightness(3);box-shadow:0 0 35px #ff8b35} 100%{filter:brightness(1)} }
 @keyframes score-pulse-purple { 0%{filter:brightness(3);box-shadow:0 0 35px #ad4cff} 100%{filter:brightness(1)} }
 .status-hud { position:fixed; z-index:5; left:50%; bottom:18px; width:min(520px,calc(100% - 40px)); padding:11px 15px 13px; transform:translateX(-50%); background:linear-gradient(180deg,rgba(12,12,11,.2),rgba(10,10,9,.88)); border-inline:1px solid rgba(255,255,255,.08); clip-path:polygon(4% 0,96% 0,100% 100%,0 100%); pointer-events:none; }

@@ -112,8 +112,10 @@ const readScoreParam = (key: string, maximum: number): number => THREE.MathUtils
 let playerRoundWins=readScoreParam("pw",3),enemyRoundWins=readScoreParam("ew",3),currentRound=Math.max(1,readScoreParam("round",99) || 1),roundAwarded=false;
 type RoundPhase = "loading" | "countdown" | "active" | "ended";
 let roundPhase: RoundPhase = "loading";
-let countdownRemaining = 3.6;
-let countdownShown = 4;
+const COUNTDOWN_SECONDS = 3.55;
+const COUNTDOWN_DRIVE_WINDOW = .55;
+let countdownEndsAt = 0;
+let countdownShown = 3;
 let roundTransitionTimer = 0;
 
 function updateRoundHud():void{
@@ -1753,11 +1755,11 @@ function resetOpponent():void{
 }
 
 function beginRoundCountdown():void{
-  roundPhase="countdown";countdownRemaining=3.6;countdownShown=4;ui.countdown.hidden=false;ui.countdownArena.textContent=activeLayout.name;ui.countdownValue.textContent="3";canvas.dataset.roundPhase=roundPhase;
+  roundPhase="countdown";countdownEndsAt=performance.now()+COUNTDOWN_SECONDS*1000;countdownShown=3;clearTimeout(messageTimer);ui.message.classList.remove("show");ui.countdown.hidden=false;ui.countdownArena.textContent=activeLayout.name;ui.countdownValue.textContent="3";ui.countdown.querySelector("span")!.textContent="GET READY";canvas.dataset.roundPhase=roundPhase;
 }
 
-function updateRoundCountdown(dt:number):void{
-  if(roundPhase!=="countdown")return;countdownRemaining-=dt;const next=Math.max(0,Math.ceil(countdownRemaining-.55));
+function updateRoundCountdown():void{
+  if(roundPhase!=="countdown")return;const countdownRemaining=Math.max(0,(countdownEndsAt-performance.now())/1000);const next=Math.max(0,Math.ceil(countdownRemaining-COUNTDOWN_DRIVE_WINDOW));
   if(next!==countdownShown){countdownShown=next;ui.countdownValue.textContent=next>0?String(next):"DRIVE";ui.countdown.querySelector("span")!.textContent=next>0?"GET READY":"FIGHT BACK";}
   if(countdownRemaining<=0){roundPhase="active";ui.countdown.hidden=true;canvas.dataset.roundPhase=roundPhase;canvas.dataset.aiState="hunting";showMessage(`ROUND ${currentRound} // ${activeLayout.name.toUpperCase()}`);}
 }
@@ -1936,7 +1938,7 @@ async function startLevel(levelId: ScraproadLevelId): Promise<void> {
   roundAwarded=false;updateRoundHud();canvas.dataset.targetsRemaining=String(activeLayout.targets.length);
   canvas.dataset.prototype="scraproad-1v1-combat";canvas.dataset.audioSystem="hrtf-directional-combat-sfx-v2";canvas.dataset.arenaLayout=activeLayout.id;canvas.dataset.arenaKind=activeLayout.arenaKind;canvas.dataset.arenaRadius=String(ARENA_RADIUS);canvas.dataset.ringInnerRadius=String(activeLayout.ringInnerRadius);canvas.dataset.ringOuterRadius=String(activeLayout.ringOuterRadius);canvas.dataset.rampColliders=String(ramps.filter(ramp=>ramp.kind==="ramp").length);canvas.dataset.bridgeColliders=String(ramps.filter(ramp=>ramp.kind==="bridge").length);canvas.dataset.heightfieldColliders=String(driveHeightfields.length);canvas.dataset.majorColliders=String(obstacles.length+boxColliders.length+(activeLayout.arenaKind==="capsule"?3:0));canvas.dataset.vehicleCollider="three-disc-capsule-2.24x4.14x0.72";canvas.dataset.shotsFired="0";canvas.dataset.aiShotsFired="0";canvas.dataset.fireHeld="false";canvas.dataset.racekartAssets="modular-racekart-track-hilly";canvas.dataset.racingAssetsUsage=activeLayout.arenaKind==="capsule"?"rim-railings":"ramps-fences-props";canvas.dataset.colliderSource=activeLayout.arenaKind==="capsule"?"analytic-capsule-bands":"visual-asset-heightfields";canvas.dataset.wallRideContact="pending";canvas.dataset.mapRotation="alternate-every-round";auditHeightfieldCoverage();
   levelStarted = true; levelStarting = false; paused = false; ui.levelSelect.hidden = true; resetVehicle(false);resetOpponent();beginRoundCountdown();if(initialParams.get("auto")==="1")startAudio();runSmokeRoutes();
-  if(roundPhase!=="ended")showMessage(rampSmokeTest?"RAMP SUITE // AUTO DRIVE":allSurfaceSmokeTest?"ALL RAMPS // AUTO DRIVE":wallRideSmokeTest?"WALL-RIDE SUITE // AUTO DRIVE":holdFireSmokeTest?"HOLD-FIRE SMOKE TEST // COMPLETE":boostSmokeTest?"BOOST STAMINA TEST // COMPLETE":`${activeLayout.name.toUpperCase()} // ROUND ${currentRound}`);
+  if(roundPhase!=="ended"&&(rampSmokeTest||allSurfaceSmokeTest||wallRideSmokeTest||holdFireSmokeTest||boostSmokeTest))showMessage(rampSmokeTest?"RAMP SUITE // AUTO DRIVE":allSurfaceSmokeTest?"ALL RAMPS // AUTO DRIVE":wallRideSmokeTest?"WALL-RIDE SUITE // AUTO DRIVE":holdFireSmokeTest?"HOLD-FIRE SMOKE TEST // COMPLETE":"BOOST STAMINA TEST // COMPLETE");
 }
 
 document.querySelectorAll<HTMLButtonElement>("[data-level]").forEach(button => {
@@ -1978,7 +1980,7 @@ function animate():void{
   lightShafts.rotation.y += frameDelta * .0025; atmosphericDust.rotation.y -= frameDelta * .0015;
   updateEngineAudio(frameDelta);updateSpatialListener();
   if(!paused&&levelStarted){
-    updateRoundCountdown(frameDelta);
+    updateRoundCountdown();
     if(roundPhase==="active"){
       physicsAccumulator=Math.min(physicsAccumulator+frameDelta,FIXED_TIMESTEP*MAX_PHYSICS_STEPS);
       const physicsStart=performance.now();let steps=0;
