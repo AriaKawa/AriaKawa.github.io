@@ -42,6 +42,7 @@ The Scrap Rattler machine gun, Hellbox four-tube rocket turret, Longlance rail-s
 
 - **Nitro Games** — Original soundtrack supplied by the site owner. Used as quiet looping background music.
 - **Cloudy sky panorama** — Original AI-generated environment texture created for Scraproad Arena with OpenAI ImageGen.
+- **Arena material textures** — The dirty compacted ground, weathered wall steel, and gritty turret metal textures under `assets/materials/` are original AI-generated textures created for Scraproad Arena with OpenAI ImageGen. They were prompted as seamless, evenly lit real-time game materials without logos or borrowed artwork.
 
 ## Runtime library
 

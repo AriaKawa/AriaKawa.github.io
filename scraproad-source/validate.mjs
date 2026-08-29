@@ -9,6 +9,7 @@ const racekartModels = [
 ];
 const required = [
   "index.html", "ASSET_CREDITS.md", "THIRD_PARTY_LICENSES.txt", "assets/cloudy-sky.png", "assets/nitro-games.wav",
+  "assets/materials/dirty-arena-ground-v1.png", "assets/materials/weathered-arena-metal-v1.png", "assets/materials/gritty-turret-metal-v1.png",
   "assets/scraproad/vehicles/kenney-suv.glb",
   "assets/scraproad/vehicles/Textures/colormap.png",
   "assets/scraproad/arena/kenney-ramp.glb",
@@ -116,6 +117,11 @@ const sceneChecks = [
   ["performance debug", /function updateDebug[\s\S]*renderer\.info\.render\.calls/],
   ["looping quiet soundtrack", /soundtrack\.loop = true[\s\S]*soundtrack\.volume = \.12/],
   ["cloudy environment map", /cloudy-sky\.png[\s\S]*scene\.environment = skyTexture/],
+  ["dirty arena ground material", /dirty-arena-ground-v1\.png[\s\S]*const sand = new THREE\.MeshStandardMaterial/],
+  ["weathered metal arena walls", /weathered-arena-metal-v1\.png[\s\S]*const wallMetal = new THREE\.MeshStandardMaterial/],
+  ["gritty turret material", /gritty-turret-metal-v1\.png[\s\S]*const darkMetal = new THREE\.MeshStandardMaterial/],
+  ["volumetric cloudy light shafts", /cloud-break-volumetric-light[\s\S]*volumetric-dust-motes/],
+  ["high resolution soft shadows", /shadow\.mapSize\.set\(2048, 2048\)[\s\S]*shadow\.normalBias/],
   ["layout-sized arena boundary", /ARENA_RADIUS = activeLayout\.radius/],
   ["ring geometry telemetry", /dataset\.ringInnerRadius/],
   ["ring clearance audit", /function auditArenaFlow[\s\S]*ringTrackDrivable/],

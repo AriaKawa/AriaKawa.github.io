@@ -123,18 +123,42 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.18;
+renderer.toneMappingExposure = 1.08;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x7d8992);
-scene.fog = new THREE.FogExp2(0x89919a, 0.0057);
-const skyTexture = new THREE.TextureLoader().load("./assets/cloudy-sky.png");
+scene.fog = new THREE.FogExp2(0x737a7e, 0.0068);
+const textureLoader = new THREE.TextureLoader();
+const skyTexture = textureLoader.load("./assets/cloudy-sky.png");
 skyTexture.mapping = THREE.EquirectangularReflectionMapping;
 skyTexture.colorSpace = THREE.SRGBColorSpace;
 scene.background = skyTexture;
-scene.backgroundIntensity = .82;
+scene.backgroundIntensity = .72;
 scene.environment = skyTexture;
-scene.environmentIntensity = .42;
+scene.environmentIntensity = .58;
+
+function loadTilingTexture(path: string, repeatX = 1, repeatY = repeatX): THREE.Texture {
+  const texture = textureLoader.load(path);
+  texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(repeatX, repeatY);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+  return texture;
+}
+
+const dirtyGroundTexture = loadTilingTexture("./assets/materials/dirty-arena-ground-v1.png");
+const weatheredWallTexture = loadTilingTexture("./assets/materials/weathered-arena-metal-v1.png");
+const grittyTurretTexture = loadTilingTexture("./assets/materials/gritty-turret-metal-v1.png", 2.4, 2.4);
+
+function applyPlanarUv(geometry: THREE.BufferGeometry, worldTileSize = 7.5): void {
+  const positions = geometry.getAttribute("position");
+  const uvs = new Float32Array(positions.count * 2);
+  for (let index = 0; index < positions.count; index++) {
+    uvs[index * 2] = positions.getX(index) / worldTileSize;
+    uvs[index * 2 + 1] = positions.getZ(index) / worldTileSize;
+  }
+  geometry.setAttribute("uv", new THREE.BufferAttribute(uvs, 2));
+}
 
 const gltfLoader = new GLTFLoader();
 const assetTemplates = new Map<string, Promise<THREE.Group>>();
@@ -199,7 +223,7 @@ function loadRacekartTemplate(key: RacekartAssetKey): Promise<THREE.Group> {
         imported.position.set(-center.x, -bounds.min.y, -center.z);
         imported.traverse(object => {
           if (!(object instanceof THREE.Mesh)) return;
-          object.castShadow = false;
+          object.castShadow = true;
           object.receiveShadow = true;
           const materialsForMesh = Array.isArray(object.material) ? object.material : [object.material];
           for (const material of materialsForMesh) {
@@ -230,19 +254,54 @@ async function instantiateRacekartAsset(key: RacekartAssetKey): Promise<THREE.Gr
 const camera = new THREE.PerspectiveCamera(58, innerWidth / innerHeight, 0.1, 520);
 camera.position.set(0, 7, -11);
 
-const hemi = new THREE.HemisphereLight(0xdde8f2, 0x493c31, 2.75);
+const hemi = new THREE.HemisphereLight(0xbccbd7, 0x3c3027, 1.35);
 scene.add(hemi);
-const sun = new THREE.DirectionalLight(0xfff0cf, 3.75);
+const sun = new THREE.DirectionalLight(0xffead0, 3.25);
 sun.position.set(-28, 42, -18);
 sun.castShadow = true;
-sun.shadow.mapSize.set(1536, 1536);
+sun.shadow.mapSize.set(2048, 2048);
 sun.shadow.camera.left = -125; sun.shadow.camera.right = 125; sun.shadow.camera.top = 125; sun.shadow.camera.bottom = -125;
+sun.shadow.camera.near = 2; sun.shadow.camera.far = 180;
+sun.shadow.bias = -.00035; sun.shadow.normalBias = .035;
 scene.add(sun);
 
-const warm = new THREE.MeshStandardMaterial({ color: 0x9f3d22, roughness: .78, metalness: .26 });
-const metal = new THREE.MeshStandardMaterial({ color: 0x272a29, roughness: .55, metalness: .76 });
-const darkMetal = new THREE.MeshStandardMaterial({ color: 0x151717, roughness: .67, metalness: .72 });
-const sand = new THREE.MeshStandardMaterial({ color: 0x9a6b49, roughness: 1, metalness: 0, vertexColors: true });
+const lightShafts = new THREE.Group();
+lightShafts.name = "cloud-break-volumetric-light";
+const shaftMaterial = new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending,
+  vertexShader: `varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
+  fragmentShader: `varying vec2 vUv; void main(){float edge=pow(max(0.0,1.0-abs(vUv.x-.5)*2.0),1.8);float fade=smoothstep(0.0,.2,vUv.y)*(1.0-smoothstep(.7,1.0,vUv.y));gl_FragColor=vec4(1.0,.91,.76,edge*fade*.042);}`,
+});
+for (const [x, z, radius, tilt] of [[-48,-34,18,.08],[-12,8,13,-.05],[28,-10,17,.06],[54,34,12,-.08],[-62,48,10,.04]] as const) {
+  const volume = new THREE.Group(); volume.position.set(x, 37, z); volume.rotation.z = tilt;
+  for (const yaw of [0, Math.PI / 3, Math.PI * 2 / 3]) {
+    const sheet = new THREE.Mesh(new THREE.PlaneGeometry(radius * 1.7, 78), shaftMaterial);
+    sheet.rotation.y = yaw; sheet.renderOrder = -1; volume.add(sheet);
+  }
+  lightShafts.add(volume);
+}
+scene.add(lightShafts);
+
+let atmosphereSeed = 0x5a17;
+const atmosphericDustPositions = new Float32Array(760 * 3);
+for (let index = 0; index < 760; index++) {
+  atmosphereSeed = (atmosphereSeed * 1664525 + 1013904223) >>> 0; const x = atmosphereSeed / 0xffffffff;
+  atmosphereSeed = (atmosphereSeed * 1664525 + 1013904223) >>> 0; const y = atmosphereSeed / 0xffffffff;
+  atmosphereSeed = (atmosphereSeed * 1664525 + 1013904223) >>> 0; const z = atmosphereSeed / 0xffffffff;
+  atmosphericDustPositions[index * 3] = (x - .5) * 236;
+  atmosphericDustPositions[index * 3 + 1] = .6 + y * 22;
+  atmosphericDustPositions[index * 3 + 2] = (z - .5) * 236;
+}
+const atmosphericDustGeometry = new THREE.BufferGeometry();
+atmosphericDustGeometry.setAttribute("position", new THREE.BufferAttribute(atmosphericDustPositions, 3));
+const atmosphericDust = new THREE.Points(atmosphericDustGeometry, new THREE.PointsMaterial({ color: 0xe2c9a4, size: .13, transparent: true, opacity: .22, depthWrite: false, blending: THREE.AdditiveBlending }));
+atmosphericDust.name = "volumetric-dust-motes"; scene.add(atmosphericDust);
+
+const warm = new THREE.MeshStandardMaterial({ color: 0xb85a3d, map: grittyTurretTexture, bumpMap: grittyTurretTexture, bumpScale: .025, roughness: .74, metalness: .48 });
+const metal = new THREE.MeshStandardMaterial({ color: 0xc0beb5, map: grittyTurretTexture, bumpMap: grittyTurretTexture, bumpScale: .035, roughness: .48, metalness: .84 });
+const darkMetal = new THREE.MeshStandardMaterial({ color: 0x747872, map: grittyTurretTexture, bumpMap: grittyTurretTexture, bumpScale: .04, roughness: .59, metalness: .82 });
+const wallMetal = new THREE.MeshStandardMaterial({ color: 0xaeb2ae, map: weatheredWallTexture, bumpMap: weatheredWallTexture, bumpScale: .055, roughness: .48, metalness: .74, side: THREE.DoubleSide });
+const sand = new THREE.MeshStandardMaterial({ color: 0xffffff, map: dirtyGroundTexture, bumpMap: dirtyGroundTexture, bumpScale: .07, roughness: .96, metalness: 0, vertexColors: true });
 const rubber = new THREE.MeshStandardMaterial({ color: 0x101111, roughness: .9, metalness: .08 });
 let activeLayout: ScraproadArenaLayout = scraproadArenaLayouts[defaultScraproadLevel];
 let ARENA_RADIUS = activeLayout.radius;
@@ -382,8 +441,9 @@ async function addArena(): Promise<void> {
   for (let index = 0; index < positions.count; index++) {
     positions.setY(index, getGroundHeight(positions.getX(index), positions.getZ(index)));
   }
+  applyPlanarUv(geometry);
   const groundColors = new Float32Array(positions.count * 3);
-  const low = new THREE.Color(0x75513a), high = new THREE.Color(0xa8734e), color = new THREE.Color();
+  const low = new THREE.Color(0xc2ad91), high = new THREE.Color(0xf0d4ab), color = new THREE.Color();
   for (let index = 0; index < positions.count; index++) {
     const x = positions.getX(index), z = positions.getZ(index);
     const variation = THREE.MathUtils.clamp(.46 + Math.sin(x * .19 + z * .13) * .1 + Math.cos(x * .07 - z * .11) * .06, 0, 1);
@@ -398,15 +458,19 @@ async function addArena(): Promise<void> {
   ground.name = "arena-ground-aim-surface";
   scene.add(ground); aimSurfaces.push(ground);
 
-  const trackMaterial = new THREE.MeshStandardMaterial({ color: 0x3f3d38, roughness: .94, metalness: .02, side: THREE.DoubleSide });
-  const ringTrack = new THREE.Mesh(new THREE.RingGeometry(activeLayout.ringInnerRadius, activeLayout.ringOuterRadius, 128), trackMaterial);
-  ringTrack.rotateX(-Math.PI / 2); ringTrack.position.y = .055; ringTrack.receiveShadow = true; ringTrack.name = "continuous-circular-ring-track"; scene.add(ringTrack);
+  const trackMaterial = new THREE.MeshStandardMaterial({ color: 0x77716a, map: dirtyGroundTexture, bumpMap: dirtyGroundTexture, bumpScale: .035, roughness: .9, metalness: .04, side: THREE.DoubleSide });
+  const ringTrackGeometry = new THREE.RingGeometry(activeLayout.ringInnerRadius, activeLayout.ringOuterRadius, 128);
+  ringTrackGeometry.rotateX(-Math.PI / 2); applyPlanarUv(ringTrackGeometry);
+  const ringTrack = new THREE.Mesh(ringTrackGeometry, trackMaterial);
+  ringTrack.position.y = .055; ringTrack.receiveShadow = true; ringTrack.name = "continuous-circular-ring-track"; scene.add(ringTrack);
 
+  const centerPadGeometry = new THREE.CircleGeometry(activeLayout.ringInnerRadius - 2.5, 96);
+  centerPadGeometry.rotateX(-Math.PI / 2); applyPlanarUv(centerPadGeometry);
   const centerPad = new THREE.Mesh(
-    new THREE.CircleGeometry(activeLayout.ringInnerRadius - 2.5, 96),
-    new THREE.MeshStandardMaterial({ color: 0x8b5c3e, roughness: 1, metalness: 0, side: THREE.DoubleSide }),
+    centerPadGeometry,
+    new THREE.MeshStandardMaterial({ color: 0xd0b38d, map: dirtyGroundTexture, bumpMap: dirtyGroundTexture, bumpScale: .07, roughness: .97, metalness: 0, side: THREE.DoubleSide }),
   );
-  centerPad.rotateX(-Math.PI / 2); centerPad.position.y = .04; centerPad.receiveShadow = true; centerPad.name = "central-combat-bowl"; scene.add(centerPad);
+  centerPad.position.y = .04; centerPad.receiveShadow = true; centerPad.name = "central-combat-bowl"; scene.add(centerPad);
 
   for (const [radius, color, width] of [
     [activeLayout.ringInnerRadius, 0xb96a32, .65],
@@ -439,13 +503,13 @@ async function addArena(): Promise<void> {
 async function addOvalBowlArena(): Promise<void> {
   if (!activeLayout.bowl) throw new Error("Capsule Circuit layout is missing its surface configuration");
   const bowl = activeLayout.bowl;
-  const floorMaterial = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .98, metalness: .02, side: THREE.DoubleSide });
+  const floorMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, map: dirtyGroundTexture, bumpMap: dirtyGroundTexture, bumpScale: .07, vertexColors: true, roughness: .96, metalness: 0, side: THREE.DoubleSide });
   const floor = new THREE.Mesh(createOvalFloorGeometry(bowl), floorMaterial);
   floor.name = "capsule-flat-floor-collider";
   floor.receiveShadow = true;
   scene.add(floor); aimSurfaces.push(floor);
 
-  const bankMaterial = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .88, metalness: .08, side: THREE.DoubleSide });
+  const bankMaterial = new THREE.MeshStandardMaterial({ color: 0xd1d3cf, map: weatheredWallTexture, bumpMap: weatheredWallTexture, bumpScale: .05, vertexColors: true, roughness: .52, metalness: .64, side: THREE.DoubleSide });
   const bank = new THREE.Mesh(createOvalBankGeometry(bowl), bankMaterial);
   bank.name = "capsule-continuous-layered-wall-ride-surface";
   bank.receiveShadow = true;
@@ -453,9 +517,10 @@ async function addOvalBowlArena(): Promise<void> {
 
   const rim = new THREE.Mesh(
     createOvalRimCurtainGeometry(bowl),
-    new THREE.MeshStandardMaterial({ color: 0x242422, roughness: .75, metalness: .48, side: THREE.DoubleSide }),
+    wallMetal,
   );
   rim.name = "capsule-solid-upper-guard-collider";
+  rim.castShadow = true;
   rim.receiveShadow = true;
   scene.add(rim);
 
@@ -562,7 +627,7 @@ async function addRamp(spec: DriveSurfaceSpec): Promise<void> {
 }
 
 function addBarrier(x: number, z: number, rotation: number, length: number, boundary = false): void {
-  const material = new THREE.MeshStandardMaterial({ color: boundary ? 0x633829 : 0x6e4a35, roughness: .88, metalness: .22 });
+  const material = wallMetal.clone(); material.color.setHex(boundary ? 0x8a8f8b : 0x8f7667);
   const barrier = new THREE.Mesh(new THREE.BoxGeometry(length, 1.35, .8), material);
   barrier.position.set(x, getGroundHeight(x, z) + .68, z); barrier.rotation.y = rotation; barrier.castShadow = false; barrier.receiveShadow = true;
   barrier.material.transparent = true; barrier.material.opacity = .12; barrier.material.depthWrite = false; scene.add(barrier);
@@ -572,6 +637,10 @@ function addBarrier(x: number, z: number, rotation: number, length: number, boun
     asset.scale.set(length / sourceSize.x, (boundary ? 2.6 : 1.8) / sourceSize.y, .8 / sourceSize.z);
     asset.position.set(x, getGroundHeight(x, z), z);
     asset.rotation.y = rotation;
+    asset.traverse(object => {
+      if (!(object instanceof THREE.Mesh)) return;
+      object.castShadow = true; object.receiveShadow = true; object.material = wallMetal;
+    });
     scene.add(asset);
   }).catch(error => noteAssetFailure(scraproadRacekartManifest.fence.obj, error));
   boxColliders.push({ position: new THREE.Vector3(x, 0, z), halfWidth: length * .5, halfLength: .4, rotation, label: boundary ? "arena wall" : "scrap barrier" });
@@ -810,7 +879,7 @@ function createTurretRig(kind: WeaponKind): TurretRig {
     armor.position.set(0,.28,.54); armor.rotation.x=-.13; armor.castShadow=true; root.add(armor);
     addScrapSupport(root,.5);
     pivot.position.set(0,.48,.18); root.add(pivot);
-    const pod = new THREE.Mesh(new THREE.BoxGeometry(1.28,.9,1.72),new THREE.MeshStandardMaterial({color:0x343634,roughness:.6,metalness:.72}));
+    const pod = new THREE.Mesh(new THREE.BoxGeometry(1.28,.9,1.72),darkMetal);
     pod.position.z=.62; pod.castShadow=true; pivot.add(pod);
     for(const x of [-.34,.34]) for(const y of [-.23,.23]) {
       const tube = new THREE.Mesh(new THREE.CylinderGeometry(.19,.23,1.92,10),darkMetal);
@@ -1698,6 +1767,7 @@ function updateDebug(frameDelta:number):void{
 }
 function animate():void{
   requestAnimationFrame(animate);const frameDelta=Math.min(clock.getDelta(),MAX_FRAME_DELTA);
+  lightShafts.rotation.y += frameDelta * .0025; atmosphericDust.rotation.y -= frameDelta * .0015;
   if(!paused&&levelStarted){
     physicsAccumulator=Math.min(physicsAccumulator+frameDelta,FIXED_TIMESTEP*MAX_PHYSICS_STEPS);
     const physicsStart=performance.now();let steps=0;

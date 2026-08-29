@@ -134,6 +134,13 @@ function createCapsuleLoop(radius: number, halfLength: number, arcSegments = 48,
 
 function addSurfaceAttributes(geometry: THREE.BufferGeometry, colors: number[]): void {
   geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+  const positions = geometry.getAttribute("position");
+  const uvs = new Float32Array(positions.count * 2);
+  for (let index = 0; index < positions.count; index++) {
+    uvs[index * 2] = positions.getX(index) / 7.5;
+    uvs[index * 2 + 1] = positions.getZ(index) / 7.5;
+  }
+  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
   geometry.computeVertexNormals();
   geometry.computeBoundingSphere();
 }
@@ -142,7 +149,7 @@ export function createOvalFloorGeometry(config: OvalBowlConfig): THREE.BufferGeo
   const contour = createCapsuleLoop(config.flatRadius, config.straightHalfLength);
   const vertices: number[] = [];
   const colors: number[] = [];
-  const low = new THREE.Color(0x66564a), high = new THREE.Color(0x8d7660), color = new THREE.Color();
+  const low = new THREE.Color(0xbda98f), high = new THREE.Color(0xe1c5a1), color = new THREE.Color();
   for (const point of contour) {
     const height = sampleOvalBowl(config, point.x, point.y).height;
     vertices.push(point.x, height, point.y);
@@ -168,7 +175,7 @@ export function createOvalBankGeometry(config: OvalBowlConfig, radialSegments = 
   const loopSize = loops[0].length;
   const vertices: number[] = [];
   const colors: number[] = [];
-  const inner = new THREE.Color(0x4e4c47), outer = new THREE.Color(0x252827), rust = new THREE.Color(0xa9562f), color = new THREE.Color();
+  const inner = new THREE.Color(0xc2c5c0), outer = new THREE.Color(0x767b78), rust = new THREE.Color(0xb76a42), color = new THREE.Color();
   for (let ring = 0; ring < loops.length; ring++) {
     const progress = ring / radialSegments;
     for (const point of loops[ring]) {
@@ -199,11 +206,17 @@ export function createOvalBankGeometry(config: OvalBowlConfig, radialSegments = 
 export function createOvalRimCurtainGeometry(config: OvalBowlConfig): THREE.BufferGeometry {
   const loop = createCapsuleLoop(config.outerRadius, config.straightHalfLength);
   const vertices: number[] = [];
+  const uvs: number[] = [];
   const indices: number[] = [];
-  for (const point of loop) {
+  const distances = [0];
+  for (let point = 1; point <= loop.length; point++) distances.push(distances[point - 1] + loop[(point - 1) % loop.length].distanceTo(loop[point % loop.length]));
+  for (let index = 0; index < loop.length; index++) {
+    const point = loop[index];
     const bankTop = sampleOvalBowl(config, point.x, point.y).height;
     vertices.push(point.x, bankTop - .08, point.y);
     vertices.push(point.x, bankTop + config.guardHeight, point.y);
+    const u = distances[index] / 7.5;
+    uvs.push(u, 0, u, config.guardHeight / 7.5);
   }
   for (let point = 0; point < loop.length; point++) {
     const next = (point + 1) % loop.length;
@@ -212,6 +225,7 @@ export function createOvalRimCurtainGeometry(config: OvalBowlConfig): THREE.Buff
   }
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
   geometry.setIndex(indices);
   geometry.computeVertexNormals();
   geometry.computeBoundingSphere();
