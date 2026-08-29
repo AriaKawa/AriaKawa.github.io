@@ -36,7 +36,7 @@ Only the listed GLB files were imported; the complete Kenney source archives are
 
 ## Original game visuals
 
-The Scrap Rattler machine gun, Hellbox four-tube rocket turret, Longlance rail-sniper turret, the Hellbox world-space detonation and Longlance laser tracer VFX, smooth base terrain, spawn pads, pickups, particles, collision helpers, and effects are original procedural geometry and materials created for this prototype. Simple invisible compound surfaces remain beneath the Racekart Hilly ramps, bridges, fences, and terrain so vehicle collision is forgiving and aligned without making decorative OBJ geometry dynamic.
+The Scrap Rattler machine gun, Hellbox four-tube rocket turret, Longlance rail-sniper turret, the Hellbox world-space detonation and Longlance laser tracer VFX, smooth base terrain, spawn pads, particles, collision helpers, and effects are original procedural geometry and materials created for this prototype. Simple invisible compound surfaces remain beneath the Racekart Hilly ramps, bridges, fences, and terrain so vehicle collision is forgiving and aligned without making decorative OBJ geometry dynamic.
 
 ## Original media
 

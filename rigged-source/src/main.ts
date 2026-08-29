@@ -38,7 +38,6 @@ import {
 } from "./game/rigged/RoguelikeRun";
 import "./style.css";
 
-type VehiclePartSlot = "roof_weapon" | "front_weapon" | "tires" | "engine" | "armor";
 type WeaponStats = {
   fireRate: number;
   damage: number;
@@ -67,13 +66,6 @@ type VehicleStats = {
   fireRate: number;
   projectileSpeed: number;
 };
-type VehiclePart = {
-  id: string;
-  name: string;
-  slot: VehiclePartSlot;
-  stats: Partial<VehicleStats>;
-};
-type Pickup = { group: THREE.Group; part: VehiclePart | null; repair?: number; collected: boolean; label: string };
 type Target = { group: THREE.Group; health: number; alive: boolean; hitFlash: number };
 type Bullet = {
   id: number;
@@ -93,7 +85,16 @@ type Bullet = {
   hitTargets: Set<Target>;
 };
 type DustParticle = { mesh: THREE.Mesh; life: number; velocity: THREE.Vector3 };
-type VisualEffect = { group: THREE.Group; life: number; maxLife: number; kind: "impact" | "trail" | "laser"; growth: number; sourceId?: number };
+type VisualEffect = {
+  group: THREE.Group;
+  life: number;
+  maxLife: number;
+  kind: "impact" | "trail" | "laser";
+  growth: number;
+  sourceId?: number;
+  meshes: THREE.Mesh[];
+  lights: THREE.PointLight[];
+};
 type Obstacle = { position: THREE.Vector3; radius: number; top: number; label: string };
 type BoxCollider = { position: THREE.Vector3; halfWidth: number; halfLength: number; rotation: number; label: string };
 type DriveSurfaceKind = "ramp" | "bridge" | "track" | "terrain" | "wall";
@@ -160,11 +161,12 @@ function awardPlayerRound():void{
 
 function awardEnemyRound():void{finishRound("opponent");}
 
+const MAX_PIXEL_RATIO = 1.25;
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+renderer.setPixelRatio(Math.min(devicePixelRatio, MAX_PIXEL_RATIO));
 renderer.setSize(innerWidth, innerHeight, false);
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.type = THREE.PCFShadowMap;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.08;
@@ -267,7 +269,7 @@ function loadRacekartTemplate(key: RacekartAssetKey): Promise<THREE.Group> {
         imported.position.set(-center.x, -bounds.min.y, -center.z);
         imported.traverse(object => {
           if (!(object instanceof THREE.Mesh)) return;
-          object.castShadow = true;
+          object.castShadow = false;
           object.receiveShadow = true;
           const materialsForMesh = Array.isArray(object.material) ? object.material : [object.material];
           for (const material of materialsForMesh) {
@@ -304,7 +306,7 @@ scene.add(hemi);
 const sun = new THREE.DirectionalLight(0xffead0, 3.25);
 sun.position.set(-28, 42, -18);
 sun.castShadow = true;
-sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.mapSize.set(1024, 1024);
 sun.shadow.camera.left = -125; sun.shadow.camera.right = 125; sun.shadow.camera.top = 125; sun.shadow.camera.bottom = -125;
 sun.shadow.camera.near = 2; sun.shadow.camera.far = 180;
 sun.shadow.bias = -.00035; sun.shadow.normalBias = .035;
@@ -565,7 +567,7 @@ async function addOvalBowlArena(): Promise<void> {
     wallMetal,
   );
   rim.name = "capsule-solid-upper-guard-collider";
-  rim.castShadow = true;
+  rim.castShadow = false;
   rim.receiveShadow = true;
   scene.add(rim);
 
@@ -684,7 +686,7 @@ function addBarrier(x: number, z: number, rotation: number, length: number, boun
     asset.rotation.y = rotation;
     asset.traverse(object => {
       if (!(object instanceof THREE.Mesh)) return;
-      object.castShadow = true; object.receiveShadow = true; object.material = wallMetal;
+      object.castShadow = false; object.receiveShadow = true; object.material = wallMetal;
     });
     scene.add(asset);
   }).catch(error => noteAssetFailure(riggedRacekartManifest.fence.obj, error));
@@ -1117,13 +1119,11 @@ function applyWheelVisual():void{
 }
 function recomputeRunStats():void{
   Object.assign(stats,defaultStats);
-  for(const part of Object.values(equipped))if(part)Object.assign(stats,part.stats);
   const mod=runState?.vehicleStats;
   if(mod){stats.maxHealth*=mod.maxHealthMultiplier;stats.acceleration*=mod.accelerationMultiplier;stats.maxSpeed*=mod.maxSpeedMultiplier;stats.handling*=mod.handlingMultiplier;stats.traction*=mod.tractionMultiplier;stats.boostPower=(stats.boostPower??1.3)*mod.boostMultiplier;stats.armor=Math.min(.72,(stats.armor??0)+mod.armorBonus);stats.ramPower=mod.ramMultiplier;stats.stability=mod.stabilityMultiplier;}
   applyActiveTurretStats();applyWheelVisual();
   canvas.dataset.vehicleUpgradeStats=`hp:${stats.maxHealth.toFixed(0)},accel:${stats.acceleration.toFixed(1)},speed:${stats.maxSpeed.toFixed(1)},handling:${stats.handling.toFixed(2)},traction:${stats.traction.toFixed(2)}`;
 }
-const equipped: Partial<Record<VehiclePartSlot, VehiclePart>> = {};
 const vehicle = {
   position: new THREE.Vector3(0,0,-28), heading: 0, speed: 0, driftAngle: 0, verticalVelocity: 0,
   pitch: 0, roll: 0, grounded: true, activeRamp: null as DriveSurfaceContact | null, health: 100, shield: 0, boost: 100, collisionCooldown: 0,
@@ -1133,33 +1133,6 @@ const vehicle = {
 const opponent = {
   position:new THREE.Vector3(),heading:Math.PI,speed:0,health:140,maxHealth:140,fireCooldown:1.4,steerBias:1,collisionCooldown:0,burnTime:0,burnDps:0,burnFxCooldown:0,
 };
-
-type PartPickupKind = "tires" | "engine" | "armor" | "weapon";
-type PickupKind = PartPickupKind | "repair";
-const partCatalog: Record<PartPickupKind, VehiclePart> = {
-  tires: { id:"better-tires", name:"All-Terrain Tires", slot:"tires", stats:{ traction:9.2, handling:1.85 } },
-  engine: { id:"turbo-engine", name:"Turbo V8", slot:"engine", stats:{ maxSpeed:32, acceleration:24 } },
-  armor: { id:"armor-plates", name:"Riveted Armor", slot:"armor", stats:{ maxHealth:145, armor:.22 } },
-  weapon: { id:"roof-machine-gun", name:"Twin Roof MG", slot:"roof_weapon", stats:{ weaponDamage:24, fireRate:10.5, projectileSpeed:68 } },
-};
-
-const pickups: Pickup[] = [];
-function createPickup(x:number,z:number,kind:PickupKind): void {
-  const group = new THREE.Group();
-  const colors: Record<PickupKind, number> = { tires:0x4fc7de, engine:0xf0ad45, armor:0xc4d07a, weapon:0xe75c38, repair:0x67cf82 };
-  const beam = new THREE.Mesh(new THREE.CylinderGeometry(.08,.22,4,8,1,true),new THREE.MeshBasicMaterial({color:colors[kind],transparent:true,opacity:.15,side:THREE.DoubleSide}));
-  beam.position.y=2; group.add(beam);
-  const ring = new THREE.Mesh(new THREE.TorusGeometry(.75,.07,8,24),new THREE.MeshBasicMaterial({color:colors[kind]})); ring.rotation.x=Math.PI/2; ring.position.y=.12; group.add(ring);
-  const item = new THREE.Group(); item.position.y=1.15; group.add(item);
-  if(kind==="tires") { const tire=new THREE.Mesh(new THREE.TorusGeometry(.48,.2,10,18),rubber); tire.rotation.y=Math.PI/2; item.add(tire); }
-  if(kind==="engine") { const block=new THREE.Mesh(new THREE.BoxGeometry(.9,.65,.65),metal); item.add(block); for(const side of [-.3,.3]){const pipe=new THREE.Mesh(new THREE.CylinderGeometry(.08,.08,.8,8),warm);pipe.position.set(side,.45,0);item.add(pipe);} }
-  if(kind==="armor") { for(const offset of [-.18,.18]){const plate=new THREE.Mesh(new THREE.BoxGeometry(1.05,.68,.1),new THREE.MeshStandardMaterial({color:colors[kind],roughness:.65,metalness:.55}));plate.position.z=offset;plate.rotation.y=offset*1.5;item.add(plate);} }
-  if(kind==="weapon") { const gun=new THREE.Mesh(new THREE.BoxGeometry(.36,.32,1.2),metal);gun.position.z=.22;item.add(gun);const barrel=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,1.2,8),metal);barrel.rotation.x=Math.PI/2;barrel.position.z=1;item.add(barrel); }
-  if(kind==="repair") { const box=new THREE.Mesh(new THREE.BoxGeometry(.85,.7,.55),new THREE.MeshStandardMaterial({color:colors[kind],roughness:.6}));item.add(box);const v=new THREE.Mesh(new THREE.BoxGeometry(.16,.5,.08),new THREE.MeshBasicMaterial({color:0xf1f0d3}));v.position.z=.3;item.add(v);const h=v.clone();h.rotation.z=Math.PI/2;item.add(h); }
-  group.position.set(x,getGroundHeight(x,z)+.12,z); scene.add(group);
-  const part = kind==="repair" ? null : partCatalog[kind];
-  pickups.push({group,part,repair:kind==="repair"?45:undefined,collected:false,label:part?.name ?? "Repair Kit"});
-}
 
 const targets: Target[] = [];
 function createTarget(x:number,z:number,rotation:number): void {
@@ -1181,6 +1154,12 @@ const debrisGeometry = new THREE.DodecahedronGeometry(.14,0);
 const effectRingGeometry = new THREE.RingGeometry(.48,.68,28);
 const effectCoreGeometry = new THREE.IcosahedronGeometry(.55,1);
 const trailGeometry = new THREE.SphereGeometry(.18,7,5);
+const rocketShardGeometry = new THREE.BoxGeometry(.13,3.25,.04);
+const sniperShardGeometry = new THREE.BoxGeometry(.025,.86,.025);
+const sniperTracerGlowGeometry = new THREE.CylinderGeometry(.2,.2,1,8,1,true);
+const sniperTracerCoreGeometry = new THREE.CylinderGeometry(.055,.055,1,8);
+const sniperTracerHotCoreGeometry = new THREE.CylinderGeometry(.018,.018,1,6);
+const burnEmberGeometry = new THREE.CircleGeometry(.15,7);
 const muzzleFlash = new THREE.PointLight(0xff8a24, 8, 5, 2);
 muzzleFlash.visible = false; scene.add(muzzleFlash);
 let fireCooldown=0; let isFireHeld=false; let muzzleFlashLife=0; let weaponStateLife=0;
@@ -1334,10 +1313,30 @@ function createStarGeometry(points=10,outer=1.35,inner=.34): THREE.ShapeGeometry
   shape.closePath();return new THREE.ShapeGeometry(shape);
 }
 const impactStarGeometry=createStarGeometry();
+const effectMidpoint=new THREE.Vector3();
+const effectUp=new THREE.Vector3(0,1,0);
 
 function effectMaterial(color:number,opacity=1): THREE.MeshBasicMaterial {
   const material=new THREE.MeshBasicMaterial({color,transparent:true,opacity,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending});
   material.userData.baseOpacity=opacity;return material;
+}
+
+function registerVisualEffect(effect:Omit<VisualEffect,"meshes"|"lights">):void{
+  const meshes:THREE.Mesh[]=[],lights:THREE.PointLight[]=[];
+  effect.group.traverse(object=>{
+    if(object instanceof THREE.Mesh)meshes.push(object);
+    else if(object instanceof THREE.PointLight)lights.push(object);
+  });
+  visualEffects.push({...effect,meshes,lights});
+}
+
+function removeVisualEffect(index:number):void{
+  const effect=visualEffects[index];scene.remove(effect.group);
+  for(const mesh of effect.meshes){
+    const materials=Array.isArray(mesh.material)?mesh.material:[mesh.material];
+    for(const material of materials)material.dispose();
+  }
+  visualEffects.splice(index,1);
 }
 
 function spawnImpactVfx(kind:WeaponKind,position:THREE.Vector3,major=true):void{
@@ -1355,70 +1354,86 @@ function spawnImpactVfx(kind:WeaponKind,position:THREE.Vector3,major=true):void{
   if(major&&isRocket){
     const shardCount=20;
     for(let index=0;index<shardCount;index++){
-      const shard=new THREE.Mesh(new THREE.BoxGeometry(.13,3.25,.04),effectMaterial(index%3?definition.impactColor:0xffffff,.88));
+      const shard=new THREE.Mesh(rocketShardGeometry,effectMaterial(index%3?definition.impactColor:0xffffff,.88));
       const angle=index/shardCount*Math.PI*2;shard.rotation.z=angle;shard.position.set(Math.cos(angle)*2.1,Math.sin(angle)*2.1,-.06);group.add(shard);
     }
     const light=new THREE.PointLight(definition.impactColor,52,21,2);group.add(light);
     cameraShakeLife=.38;cameraShakeStrength=.62;canvas.dataset.lastImpactEffect="rocket-world-detonation";
   }
-  const life=major&&isRocket ? .82 : major ? .3 : .13;scene.add(group);visualEffects.push({group,life,maxLife:life,kind:"impact",growth:major&&isRocket?7.2:major?2.2:1.3});
+  const life=major&&isRocket ? .82 : major ? .3 : .13;scene.add(group);registerVisualEffect({group,life,maxLife:life,kind:"impact",growth:major&&isRocket?7.2:major?2.2:1.3});
 }
 
 function spawnSniperHit(position:THREE.Vector3):void{
   const group=new THREE.Group();group.position.copy(position);group.userData.billboard=true;
   const core=new THREE.Mesh(effectCoreGeometry,effectMaterial(0xffffff,.96));core.scale.setScalar(.22);group.add(core);
   for(let index=0;index<8;index++){
-    const angle=index/8*Math.PI*2,shard=new THREE.Mesh(new THREE.BoxGeometry(.025,.86,.025),effectMaterial(index%2?0x5de5ff:0xffffff,.9));
+    const angle=index/8*Math.PI*2,shard=new THREE.Mesh(sniperShardGeometry,effectMaterial(index%2?0x5de5ff:0xffffff,.9));
     shard.rotation.z=angle;shard.position.set(Math.cos(angle)*.38,Math.sin(angle)*.38,0);group.add(shard);
   }
   const light=new THREE.PointLight(0x6be9ff,10,5,2);group.add(light);scene.add(group);
-  visualEffects.push({group,life:.16,maxLife:.16,kind:"impact",growth:.5});cameraShakeLife=.055;cameraShakeStrength=.08;
+  registerVisualEffect({group,life:.16,maxLife:.16,kind:"impact",growth:.5});cameraShakeLife=.055;cameraShakeStrength=.08;
   canvas.dataset.lastImpactEffect="sniper-pinpoint-spark";
 }
 
 function spawnSniperTracer(start:THREE.Vector3,direction:THREE.Vector3,range:number):void{
-  const distance=Math.min(range,Math.max(18,start.distanceTo(aimPoint)+8)),midpoint=start.clone().addScaledVector(direction,distance*.5),group=new THREE.Group();
-  group.position.copy(midpoint);group.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),direction);
-  const glow=new THREE.Mesh(new THREE.CylinderGeometry(.2,.2,distance,8,1,true),effectMaterial(0x37cfff,.34));group.add(glow);
-  const core=new THREE.Mesh(new THREE.CylinderGeometry(.055,.055,distance,8),effectMaterial(0xe9fdff,1));group.add(core);
-  const hotCore=new THREE.Mesh(new THREE.CylinderGeometry(.018,.018,distance,6),effectMaterial(0xffffff,1));group.add(hotCore);
-  scene.add(group);visualEffects.push({group,life:.48,maxLife:.48,kind:"laser",growth:0});
+  const distance=Math.min(range,Math.max(18,start.distanceTo(aimPoint)+8)),group=new THREE.Group();
+  effectMidpoint.copy(start).addScaledVector(direction,distance*.5);group.position.copy(effectMidpoint);group.quaternion.setFromUnitVectors(effectUp,direction);
+  const glow=new THREE.Mesh(sniperTracerGlowGeometry,effectMaterial(0x37cfff,.34));glow.scale.y=distance;group.add(glow);
+  const core=new THREE.Mesh(sniperTracerCoreGeometry,effectMaterial(0xe9fdff,1));core.scale.y=distance;group.add(core);
+  const hotCore=new THREE.Mesh(sniperTracerHotCoreGeometry,effectMaterial(0xffffff,1));hotCore.scale.y=distance;group.add(hotCore);
+  scene.add(group);registerVisualEffect({group,life:.48,maxLife:.48,kind:"laser",growth:0});
   canvas.dataset.sniperTracerLength=distance.toFixed(1);
 }
 
 function spawnRocketTrail(position:THREE.Vector3,sourceId:number):void{
   const group=new THREE.Group();group.position.copy(position).add(new THREE.Vector3((Math.random()-.5)*.12,(Math.random()-.5)*.12,(Math.random()-.5)*.12));
   const puff=new THREE.Mesh(trailGeometry,effectMaterial(Math.random()>.45?0xff7a23:0xffd85a,.72));group.add(puff);scene.add(group);
-  visualEffects.push({group,life:.28,maxLife:.28,kind:"trail",growth:2.2,sourceId});
+  registerVisualEffect({group,life:.28,maxLife:.28,kind:"trail",growth:2.2,sourceId});
 }
 
 function clearRocketTrail(sourceId:number):void{
-  for(let index=visualEffects.length-1;index>=0;index--){const effect=visualEffects[index];if(effect.kind!=="trail"||effect.sourceId!==sourceId)continue;scene.remove(effect.group);visualEffects.splice(index,1);}
+  for(let index=visualEffects.length-1;index>=0;index--){const effect=visualEffects[index];if(effect.kind!=="trail"||effect.sourceId!==sourceId)continue;removeVisualEffect(index);}
   canvas.dataset.rocketTrailCleanup="detonation-synced";
 }
 
+const projectileMgMaterials={
+  standard:new THREE.MeshBasicMaterial({color:0xffcf5a}),
+  incendiary:new THREE.MeshBasicMaterial({color:0xff4b18}),
+  piercing:new THREE.MeshBasicMaterial({color:0xe9fbff}),
+};
+const sniperProjectileCoreGeometry=new THREE.BoxGeometry(.06,.06,9);
+const sniperProjectileAuraGeometry=new THREE.BoxGeometry(.24,.24,8.2);
+const sniperProjectileCoreMaterials={standard:new THREE.MeshBasicMaterial({color:0xffffff}),incendiary:new THREE.MeshBasicMaterial({color:0xff8a35})};
+const sniperProjectileAuraMaterials={standard:effectMaterial(0x55dcff,.58),incendiary:effectMaterial(0xff3b14,.58),piercing:effectMaterial(0xc9f8ff,.58)};
+const rocketBodyGeometry=new THREE.CylinderGeometry(.12,.15,.78,9);
+const rocketBodyMaterial=new THREE.MeshStandardMaterial({color:0x343633,roughness:.55,metalness:.7});
+const rocketNoseGeometry=new THREE.ConeGeometry(.15,.34,9);
+const rocketFinGeometry=new THREE.BoxGeometry(.38,.04,.32);
+const rocketFlameGeometry=new THREE.ConeGeometry(.18,.85,9);
+const rocketFlameMaterials={standard:effectMaterial(0xff8b28,.92),incendiary:effectMaterial(0xff3010,.92)};
 function createProjectile(kind:WeaponKind,incendiary=false,piercing=false,heavy=false):THREE.Object3D{
-  const hotColor=incendiary?0xff4b18:piercing?0xe9fbff:0xffcf5a;
   if(kind==="mg"){
-    const shot=new THREE.Mesh(bulletGeometry,new THREE.MeshBasicMaterial({color:hotColor}));shot.scale.setScalar(heavy?1.75:piercing?1.25:1);return shot;
+    const material=incendiary?projectileMgMaterials.incendiary:piercing?projectileMgMaterials.piercing:projectileMgMaterials.standard;
+    const shot=new THREE.Mesh(bulletGeometry,material);shot.scale.setScalar(heavy?1.75:piercing?1.25:1);return shot;
   }
   if(kind==="sniper"){
     const group=new THREE.Group();
-    const core=new THREE.Mesh(new THREE.BoxGeometry(.06,.06,9),new THREE.MeshBasicMaterial({color:incendiary?0xff8a35:0xffffff}));group.add(core);
-    const aura=new THREE.Mesh(new THREE.BoxGeometry(.24,.24,8.2),effectMaterial(incendiary?0xff3b14:piercing?0xc9f8ff:0x55dcff,.58));group.add(aura);group.scale.setScalar(heavy?1.55:1);return group;
+    const core=new THREE.Mesh(sniperProjectileCoreGeometry,incendiary?sniperProjectileCoreMaterials.incendiary:sniperProjectileCoreMaterials.standard);group.add(core);
+    const auraMaterial=incendiary?sniperProjectileAuraMaterials.incendiary:piercing?sniperProjectileAuraMaterials.piercing:sniperProjectileAuraMaterials.standard;
+    const aura=new THREE.Mesh(sniperProjectileAuraGeometry,auraMaterial);group.add(aura);group.scale.setScalar(heavy?1.55:1);return group;
   }
   const group=new THREE.Group();
-  const body=new THREE.Mesh(new THREE.CylinderGeometry(.12,.15,.78,9),new THREE.MeshStandardMaterial({color:0x343633,roughness:.55,metalness:.7}));body.rotation.x=Math.PI/2;group.add(body);
-  const nose=new THREE.Mesh(new THREE.ConeGeometry(.15,.34,9),warm);nose.rotation.x=Math.PI/2;nose.position.z=.55;group.add(nose);
-  for(const side of [-1,1]){const fin=new THREE.Mesh(new THREE.BoxGeometry(.38,.04,.32),warm);fin.position.set(side*.14,0,-.28);fin.rotation.z=side*.42;group.add(fin);}
-  const flame=new THREE.Mesh(new THREE.ConeGeometry(.18,.85,9),effectMaterial(incendiary?0xff3010:0xff8b28,.92));flame.rotation.x=-Math.PI/2;flame.position.z=-.78;group.add(flame);
+  const body=new THREE.Mesh(rocketBodyGeometry,rocketBodyMaterial);body.rotation.x=Math.PI/2;group.add(body);
+  const nose=new THREE.Mesh(rocketNoseGeometry,warm);nose.rotation.x=Math.PI/2;nose.position.z=.55;group.add(nose);
+  for(const side of [-1,1]){const fin=new THREE.Mesh(rocketFinGeometry,warm);fin.position.set(side*.14,0,-.28);fin.rotation.z=side*.42;group.add(fin);}
+  const flame=new THREE.Mesh(rocketFlameGeometry,incendiary?rocketFlameMaterials.incendiary:rocketFlameMaterials.standard);flame.rotation.x=-Math.PI/2;flame.position.z=-.78;group.add(flame);
   const glow=new THREE.PointLight(0xff6a24,8,4,2);glow.position.z=-.3;group.add(glow);return group;
 }
 
 function spawnBurnEmber(position:THREE.Vector3):void{
   const group=new THREE.Group();group.position.copy(position).add(new THREE.Vector3((Math.random()-.5)*1.4,.7+Math.random()*1.2,(Math.random()-.5)*1.4));group.userData.billboard=true;
-  const ember=new THREE.Mesh(new THREE.CircleGeometry(.11+Math.random()*.09,7),effectMaterial(Math.random()>.35?0xff491c:0xffbd45,.9));group.add(ember);
-  const light=new THREE.PointLight(0xff4b18,2.5,3,2);group.add(light);scene.add(group);visualEffects.push({group,life:.45,maxLife:.45,kind:"trail",growth:1.7});
+  const ember=new THREE.Mesh(burnEmberGeometry,effectMaterial(Math.random()>.35?0xff491c:0xffbd45,.9));ember.scale.setScalar(.73+Math.random()*.6);group.add(ember);
+  const light=new THREE.PointLight(0xff4b18,2.5,3,2);group.add(light);scene.add(group);registerVisualEffect({group,life:.45,maxLife:.45,kind:"trail",growth:1.7});
   canvas.dataset.burnVfx="ember-active";
 }
 
@@ -1430,7 +1445,7 @@ function shoot(): boolean {
   const count=mod?.projectileCount??1,totalSpread=mod?.spread??0;
   for(let index=0;index<count;index++){
     const normalized=count===1?0:index/(count-1)-.5,angle=normalized*totalSpread+(Math.random()-.5)*totalSpread*.12;
-    const direction=shotDirection.clone().applyAxisAngle(new THREE.Vector3(0,1,0),angle).normalize();
+    const direction=shotDirection.clone().applyAxisAngle(effectUp,angle).normalize();
     const mesh=createProjectile(selectedWeapon,(mod?.burnDps??0)>0,(mod?.pierces??0)>0,mod?.heavyRounds??false);mesh.position.copy(shotOrigin);
     mesh.quaternion.setFromUnitVectors(projectileForward,direction);scene.add(mesh);
     bullets.push({id:nextBulletId++,mesh,velocity:direction.multiplyScalar(weaponStats.projectileSpeed),life:weaponStats.range/weaponStats.projectileSpeed,kind:selectedWeapon,owner:"player",damage:weaponStats.damage,splashRadius:definition.splashRadius??0,trailTimer:0,ricochetsRemaining:mod?.ricochets??0,piercesRemaining:mod?.pierces??0,burnDps:mod?.burnDps??0,burnDuration:mod?.burnDuration??0,hitOpponent:false,hitTargets:new Set()});
@@ -1446,13 +1461,15 @@ function shoot(): boolean {
   return true;
 }
 
+const opponentShotOrigin=new THREE.Vector3();
+const opponentShotDirection=new THREE.Vector3();
 function shootOpponent():void{
   if(roundPhase!=="active"||opponent.health<=0||vehicle.health<=0)return;
-  const origin=opponent.position.clone().add(new THREE.Vector3(0,2.72,0));
-  const target=vehicle.position.clone().add(new THREE.Vector3((Math.random()-.5)*1.2,1.05+(Math.random()-.5)*.45,(Math.random()-.5)*1.2));
-  const direction=target.sub(origin).normalize(),mesh=createProjectile("mg");mesh.position.copy(origin);mesh.quaternion.setFromUnitVectors(projectileForward,direction);scene.add(mesh);
-  bullets.push({id:nextBulletId++,mesh,velocity:direction.multiplyScalar(48),life:2.3,kind:"mg",owner:"opponent",damage:8,splashRadius:0,trailTimer:0,ricochetsRemaining:0,piercesRemaining:0,burnDps:0,burnDuration:0,hitOpponent:false,hitTargets:new Set()});
-  playSfx("turret-mg",.075,.045,origin);spawnImpactVfx("mg",origin,false);canvas.dataset.aiShotsFired=String(Number(canvas.dataset.aiShotsFired??0)+1);
+  opponentShotOrigin.copy(opponent.position);opponentShotOrigin.y+=2.72;
+  opponentShotDirection.copy(vehicle.position).add(effectMidpoint.set((Math.random()-.5)*1.2,1.05+(Math.random()-.5)*.45,(Math.random()-.5)*1.2)).sub(opponentShotOrigin).normalize();
+  const mesh=createProjectile("mg");mesh.position.copy(opponentShotOrigin);mesh.quaternion.setFromUnitVectors(projectileForward,opponentShotDirection);scene.add(mesh);
+  bullets.push({id:nextBulletId++,mesh,velocity:opponentShotDirection.clone().multiplyScalar(48),life:2.3,kind:"mg",owner:"opponent",damage:8,splashRadius:0,trailTimer:0,ricochetsRemaining:0,piercesRemaining:0,burnDps:0,burnDuration:0,hitOpponent:false,hitTargets:new Set()});
+  playSfx("turret-mg",.075,.045,opponentShotOrigin);spawnImpactVfx("mg",opponentShotOrigin,false);canvas.dataset.aiShotsFired=String(Number(canvas.dataset.aiShotsFired??0)+1);
 }
 
 function setFireHeld(held: boolean): void {
@@ -1470,8 +1487,9 @@ function updateWeapon(dt: number): void {
   if (isFireHeld) shoot();
 }
 
+const MAX_DUST_PARTICLES=48;
 function spawnDust(dt:number): void {
-  if(dust.length>=80 || Math.abs(vehicle.speed)<3 || Math.random()>dt*Math.min(Math.abs(vehicle.speed),20)*1.5) return;
+  if(dust.length>=MAX_DUST_PARTICLES || Math.abs(vehicle.speed)<3 || Math.random()>dt*Math.min(Math.abs(vehicle.speed),20)*1.15) return;
   const behind=new THREE.Vector3(-Math.sin(vehicle.heading)*2,0,-Math.cos(vehicle.heading)*2);
   const mesh=new THREE.Mesh(dustGeometry,dustMaterial.clone());mesh.scale.setScalar(.6+Math.random()*.7);
   mesh.position.copy(vehicle.position).add(behind).add(new THREE.Vector3((Math.random()-.5)*1.8,.25,(Math.random()-.5)*.8));scene.add(mesh);
@@ -1479,7 +1497,7 @@ function spawnDust(dt:number): void {
 }
 
 function explode(position:THREE.Vector3,lift=1.4,count=12): void {
-  for(let i=0;i<Math.min(count,80-dust.length);i++){
+  for(let i=0;i<Math.min(count,MAX_DUST_PARTICLES-dust.length);i++){
     const mesh=new THREE.Mesh(debrisGeometry,new THREE.MeshBasicMaterial({color:i%3===0?0xffc34e:0xb84a29}));mesh.scale.setScalar(.6+Math.random());
     mesh.position.copy(position).add(new THREE.Vector3(0,lift,0));scene.add(mesh);
     dust.push({mesh,life:.7+Math.random()*.8,velocity:new THREE.Vector3((Math.random()-.5)*7,2+Math.random()*5,(Math.random()-.5)*7)});
@@ -1497,15 +1515,6 @@ function playHitConfirmation(): void {
   if (now - lastHitConfirmationAt < 70) return;
   lastHitConfirmationAt = now;
   playSfx("confirmed-hit", .23, .02);
-}
-
-function equipPickup(pickup:Pickup): void {
-  pickup.collected=true;scene.remove(pickup.group);
-  if(pickup.repair){vehicle.health=Math.min(stats.maxHealth,vehicle.health+pickup.repair);showMessage(`REPAIR KIT // HULL RESTORED +${pickup.repair}`);return;}
-  if(!pickup.part)return;equipped[pickup.part.slot]=pickup.part;recomputeRunStats();
-  if(pickup.part.slot==="armor")vehicle.health=Math.min(stats.maxHealth,vehicle.health+45);
-  if(pickup.part.slot==="roof_weapon"){selectWeapon("mg",false);weaponStats.fireRate=stats.fireRate;weaponStats.damage=stats.weaponDamage;weaponStats.projectileSpeed=stats.projectileSpeed;ui.weapon.textContent="TWIN SCRAP RATTLER";turret.scale.set(1.18,1.12,1.18);}
-  showMessage(`EQUIPPED // ${pickup.part.name.toUpperCase()}`);
 }
 
 function showMessage(text:string): void {ui.message.textContent=text;ui.message.classList.add("show");clearTimeout(messageTimer);messageTimer=window.setTimeout(()=>ui.message.classList.remove("show"),1900);}
@@ -1705,7 +1714,6 @@ function updateVehicle(dt:number): void {
   }
   vehicle.velocity.copy(movementDirection).multiplyScalar(vehicle.speed);
   wheels.forEach(wheel=>wheel.rotation.x+=vehicle.speed*dt/.57);frontWheelPivots.forEach(pivot=>pivot.rotation.y=THREE.MathUtils.damp(pivot.rotation.y,-steer*.38,12,dt));
-  for(const pickup of pickups){if(!pickup.collected&&pickup.group.position.distanceTo(vehicle.position)<2.25)equipPickup(pickup);}
   for(const target of targets){if(target.alive&&target.group.position.distanceTo(vehicle.position)<1.85&&Math.abs(vehicle.speed)>5){damageTarget(target,Math.abs(vehicle.speed)*1.8);vehicle.speed*=-.35;hitVehicle(4);}}
   if(!Number.isFinite(vehicle.position.x)||!Number.isFinite(vehicle.position.y)||!Number.isFinite(vehicle.position.z)||vehicle.position.y < -8 || Math.abs(vehicle.position.x) > ARENA_RADIUS * 1.8 || Math.abs(vehicle.position.z) > ARENA_RADIUS * 1.8){showMessage("OUT OF BOUNDS // AUTO RECOVERY");resetVehicle();return;}
   spawnDust(dt);
@@ -1738,16 +1746,19 @@ function updateOpponent(dt:number):void{
 
 function hitVehicle(amount:number):void{if(vehicle.collisionCooldown>0||roundPhase==="ended"||roundPhase==="card_select")return;vehicle.collisionCooldown=.45;let incoming=amount*(1-(stats.armor??0));if(vehicle.shield>0){const absorbed=Math.min(vehicle.shield,incoming);vehicle.shield-=absorbed;incoming-=absorbed;canvas.dataset.shieldAbsorbed=absorbed.toFixed(1);showMessage("EMERGENCY SHIELD // IMPACT ABSORBED");}vehicle.health=Math.max(0,vehicle.health-incoming);playSfx("vehicle-hit",.26,.045,vehicle.position);if(vehicle.health<=0){showMessage("RIG DISABLED // RIVAL TAKES THE ROUND");awardEnemyRound();}}
 
+const aimIntersections:THREE.Intersection[]=[];
+const turretWorld=new THREE.Vector3();
 function updateAim(dt:number): void {
   raycaster.setFromCamera(mouse,camera);
-  const hit = raycaster.intersectObjects(aimSurfaces, true)[0];
+  aimIntersections.length=0;raycaster.intersectObjects(aimSurfaces,true,aimIntersections);
+  const hit = aimIntersections[0];
   if (hit) aimPoint.copy(hit.point);
   else {
     aimPlane.constant = 0;
     if (!raycaster.ray.intersectPlane(aimPlane, aimPoint)) return;
     aimPoint.y = getDriveHeight(aimPoint.x, aimPoint.z);
   }
-  const turretWorld = new THREE.Vector3(); turret.getWorldPosition(turretWorld);
+  turret.getWorldPosition(turretWorld);
   const dx=aimPoint.x-turretWorld.x,dz=aimPoint.z-turretWorld.z;
   if (Math.hypot(dx,dz) < 1.8) return;
   const worldYaw=Math.atan2(dx,dz);let local=worldYaw-vehicle.heading;local=Math.atan2(Math.sin(local),Math.cos(local));
@@ -1760,23 +1771,24 @@ function updateAim(dt:number): void {
 }
 
 const projectilePrevious=new THREE.Vector3(),targetCenter=new THREE.Vector3(),projectileClosest=new THREE.Vector3(),impactPoint=new THREE.Vector3();
+const projectileSegment=new THREE.Vector3(),projectilePointDelta=new THREE.Vector3();
 function segmentDistanceSq(start:THREE.Vector3,end:THREE.Vector3,point:THREE.Vector3):number{
-  const segment=end.clone().sub(start),lengthSq=segment.lengthSq();
+  projectileSegment.copy(end).sub(start);const lengthSq=projectileSegment.lengthSq();
   if(lengthSq<=.000001)return point.distanceToSquared(start);
-  const t=THREE.MathUtils.clamp(point.clone().sub(start).dot(segment)/lengthSq,0,1);
-  projectileClosest.copy(start).addScaledVector(segment,t);return projectileClosest.distanceToSquared(point);
+  const t=THREE.MathUtils.clamp(projectilePointDelta.copy(point).sub(start).dot(projectileSegment)/lengthSq,0,1);
+  projectileClosest.copy(start).addScaledVector(projectileSegment,t);return projectileClosest.distanceToSquared(point);
 }
 
 function resolveProjectileImpact(bullet:Bullet,position:THREE.Vector3,directTarget:Target|null,hitOpponent=false,hitPlayer=false):void{
   canvas.dataset.lastWeaponImpact=bullet.kind;
   if(bullet.owner==="player"&&bullet.kind==="rocket"){
     for(const target of targets){
-      if(!target.alive)continue;targetCenter.copy(target.group.position).add(new THREE.Vector3(0,1.4,0));
+      if(!target.alive)continue;targetCenter.copy(target.group.position);targetCenter.y+=1.4;
       const distance=targetCenter.distanceTo(position);if(distance>bullet.splashRadius)continue;
       const damage=target===directTarget?bullet.damage:bullet.damage*Math.max(.28,1-distance/bullet.splashRadius);
       damageTarget(target,damage);
     }
-    const rivalDistance=opponent.position.clone().add(new THREE.Vector3(0,1.1,0)).distanceTo(position);if(opponent.health>0&&rivalDistance<=bullet.splashRadius)damageOpponent(bullet.damage*Math.max(.3,1-rivalDistance/bullet.splashRadius));
+    targetCenter.copy(opponent.position);targetCenter.y+=1.1;const rivalDistance=targetCenter.distanceTo(position);if(opponent.health>0&&rivalDistance<=bullet.splashRadius)damageOpponent(bullet.damage*Math.max(.3,1-rivalDistance/bullet.splashRadius));
   }else if(bullet.owner==="player"&&directTarget)damageTarget(directTarget,bullet.damage);
   if(bullet.owner==="player"&&hitOpponent&&bullet.kind!=="rocket")damageOpponent(bullet.damage);
   if(bullet.owner==="player"&&hitOpponent&&bullet.burnDps>0){opponent.burnDps=Math.max(opponent.burnDps,bullet.burnDps);opponent.burnTime=Math.max(opponent.burnTime,bullet.burnDuration);spawnBurnEmber(position);canvas.dataset.burnStatus="applied";}
@@ -1789,21 +1801,21 @@ function resolveProjectileImpact(bullet:Bullet,position:THREE.Vector3,directTarg
 function updateProjectiles(dt:number): void {
   for(let index=bullets.length-1;index>=0;index--){
     const bullet=bullets[index];projectilePrevious.copy(bullet.mesh.position);bullet.mesh.position.addScaledVector(bullet.velocity,dt);bullet.life-=dt;
-    if(bullet.kind==="rocket"){bullet.trailTimer-=dt;if(bullet.trailTimer<=0){bullet.trailTimer=.035;spawnRocketTrail(bullet.mesh.position,bullet.id);}}
+    if(bullet.kind==="rocket"){bullet.trailTimer-=dt;if(bullet.trailTimer<=0){bullet.trailTimer=.06;spawnRocketTrail(bullet.mesh.position,bullet.id);}}
     let directTarget:Target|null=null;
     if(bullet.owner==="player")for(const target of targets){
-      if(!target.alive||bullet.hitTargets.has(target))continue;targetCenter.copy(target.group.position).add(new THREE.Vector3(0,1.4,0));
+      if(!target.alive||bullet.hitTargets.has(target))continue;targetCenter.copy(target.group.position);targetCenter.y+=1.4;
       const radius=bullet.kind==="rocket"?1.15:.95;if(segmentDistanceSq(projectilePrevious,bullet.mesh.position,targetCenter)<radius*radius){directTarget=target;break;}
     }
-    targetCenter.copy(opponent.position).add(new THREE.Vector3(0,1.1,0));const hitOpponent=bullet.owner==="player"&&!bullet.hitOpponent&&opponent.health>0&&segmentDistanceSq(projectilePrevious,bullet.mesh.position,targetCenter)<(bullet.kind==="rocket"?1.6:1.35)**2;
-    targetCenter.copy(vehicle.position).add(new THREE.Vector3(0,1.05,0));const hitPlayer=bullet.owner==="opponent"&&vehicle.health>0&&segmentDistanceSq(projectilePrevious,bullet.mesh.position,targetCenter)<1.4**2;
+    targetCenter.copy(opponent.position);targetCenter.y+=1.1;const hitOpponent=bullet.owner==="player"&&!bullet.hitOpponent&&opponent.health>0&&segmentDistanceSq(projectilePrevious,bullet.mesh.position,targetCenter)<(bullet.kind==="rocket"?1.6:1.35)**2;
+    targetCenter.copy(vehicle.position);targetCenter.y+=1.05;const hitPlayer=bullet.owner==="opponent"&&vehicle.health>0&&segmentDistanceSq(projectilePrevious,bullet.mesh.position,targetCenter)<1.4**2;
     const groundHeight=getDriveHeight(bullet.mesh.position.x,bullet.mesh.position.z)+.1;
     const hitTerrain=bullet.mesh.position.y<=groundHeight;
     if(hitTerrain&&bullet.ricochetsRemaining>0){bullet.ricochetsRemaining--;bullet.mesh.position.copy(projectilePrevious);bullet.velocity.y=Math.abs(bullet.velocity.y)+4;bullet.velocity.multiplyScalar(.82);spawnImpactVfx("mg",bullet.mesh.position,false);canvas.dataset.ricochetVfx="spark";continue;}
     if(directTarget||hitOpponent||hitPlayer||hitTerrain||bullet.life<=0){
-      if(directTarget)impactPoint.copy(directTarget.group.position).add(new THREE.Vector3(0,1.4,0));
-      else if(hitOpponent)impactPoint.copy(opponent.position).add(new THREE.Vector3(0,1.1,0));
-      else if(hitPlayer)impactPoint.copy(vehicle.position).add(new THREE.Vector3(0,1.05,0));
+      if(directTarget){impactPoint.copy(directTarget.group.position);impactPoint.y+=1.4;}
+      else if(hitOpponent){impactPoint.copy(opponent.position);impactPoint.y+=1.1;}
+      else if(hitPlayer){impactPoint.copy(vehicle.position);impactPoint.y+=1.05;}
       else {impactPoint.copy(bullet.mesh.position);if(hitTerrain)impactPoint.y=groundHeight+.08;}
       if(directTarget||hitOpponent||hitPlayer||hitTerrain||bullet.kind==="rocket")resolveProjectileImpact(bullet,impactPoint,directTarget,hitOpponent,hitPlayer);
       const pierceHit=bullet.owner==="player"&&(!!directTarget||hitOpponent)&&bullet.piercesRemaining>0&&bullet.kind!=="rocket";
@@ -1817,18 +1829,16 @@ function updateProjectiles(dt:number): void {
     const effect=visualEffects[index];effect.life-=dt;const progress=THREE.MathUtils.clamp(1-effect.life/effect.maxLife,0,1),fade=Math.pow(1-progress,1.45);
     if(effect.group.userData.billboard)effect.group.quaternion.copy(camera.quaternion);
     if(effect.kind!=="laser")effect.group.scale.setScalar((effect.kind==="impact" ? .48 : .68)+progress*effect.growth);
-    effect.group.traverse(object=>{
-      if(object instanceof THREE.PointLight)object.intensity*=Math.max(0,1-dt*8);
-      if(!(object instanceof THREE.Mesh))return;const materials=Array.isArray(object.material)?object.material:[object.material];
-      for(const material of materials){material.transparent=true;material.opacity=(Number(material.userData.baseOpacity??1))*fade;}
-    });
-    if(effect.life<=0){scene.remove(effect.group);visualEffects.splice(index,1);}
+    for(const light of effect.lights)light.intensity*=Math.max(0,1-dt*8);
+    for(const mesh of effect.meshes){const materials=Array.isArray(mesh.material)?mesh.material:[mesh.material];for(const material of materials)material.opacity=Number(material.userData.baseOpacity??1)*fade;}
+    if(effect.life<=0)removeVisualEffect(index);
   }
   cameraShakeLife=Math.max(0,cameraShakeLife-dt);if(cameraShakeLife===0)cameraShakeStrength=0;
   for(const target of targets){if(!target.alive)continue;if(target.hitFlash>0){target.hitFlash-=dt;const body=target.group.getObjectByName("target-body") as THREE.Mesh<THREE.BufferGeometry,THREE.MeshStandardMaterial>;body.material.emissive.setHex(0xff6b2c);}else{const body=target.group.getObjectByName("target-body") as THREE.Mesh<THREE.BufferGeometry,THREE.MeshStandardMaterial>;body.material.emissive.setHex(0x000000);}}
 }
 
 const cameraShakeOffset=new THREE.Vector3();
+let cameraTelemetryAccumulator=.1;
 function getCameraBounds():RiggedCameraBounds{
   if(activeLayout.arenaKind==="capsule"&&activeLayout.bowl)return{kind:"capsule",straightHalfLength:activeLayout.bowl.straightHalfLength,outerRadius:activeLayout.bowl.outerRadius};
   return{kind:"ring",radius:ARENA_RADIUS};
@@ -1845,10 +1855,8 @@ function updateCamera(dt:number): void {
   else cameraShakeOffset.set(0,0,0);
   const result=cameraController.update({dt,playerPosition:car.position,playerHeading:vehicle.heading,enemyPosition:opponentCar.position,enemyAvailable:opponent.health>0&&opponentCar.visible,groundHeight:getDriveHeight,bounds:getCameraBounds(),shake:cameraShakeOffset});
   if(result.fellBackToChase){updateCameraModeHud();showMessage("NO TARGET // CHASE CAM");}
-  canvas.dataset.cameraAimMode=result.mode==="enemy"?"enemy-target":"drive-forward";canvas.dataset.cameraPositionMode=result.mode;canvas.dataset.cameraTargetDistance=result.targetDistance?.toFixed(2)??"none";canvas.dataset.cameraPosition=`${camera.position.x.toFixed(2)},${camera.position.y.toFixed(2)},${camera.position.z.toFixed(2)}`;canvas.dataset.cameraLookAt=`${cameraController.lookAt.x.toFixed(2)},${cameraController.lookAt.y.toFixed(2)},${cameraController.lookAt.z.toFixed(2)}`;
+  cameraTelemetryAccumulator+=dt;if(cameraTelemetryAccumulator>=.1){cameraTelemetryAccumulator=0;canvas.dataset.cameraAimMode=result.mode==="enemy"?"enemy-target":"drive-forward";canvas.dataset.cameraPositionMode=result.mode;canvas.dataset.cameraTargetDistance=result.targetDistance?.toFixed(2)??"none";canvas.dataset.cameraPosition=`${camera.position.x.toFixed(2)},${camera.position.y.toFixed(2)},${camera.position.z.toFixed(2)}`;canvas.dataset.cameraLookAt=`${cameraController.lookAt.x.toFixed(2)},${cameraController.lookAt.y.toFixed(2)},${cameraController.lookAt.z.toFixed(2)}`;}
 }
-
-function updatePickups(dt:number):void{for(const pickup of pickups){if(pickup.collected)continue;pickup.group.rotation.y+=dt*.8;const item=pickup.group.children[2];item.position.y=1.1+Math.sin(elapsed*2.4+pickup.group.position.x)*.18;}}
 
 function updateHud():void{
   ui.boost.textContent=String(Math.round(vehicle.boost));ui.health.textContent=String(Math.round(vehicle.health));ui.healthBar.style.width=`${vehicle.health/stats.maxHealth*100}%`;ui.boostBar.style.width=`${vehicle.boost}%`;
@@ -2076,10 +2084,9 @@ async function startLevel(levelId: RiggedLevelId): Promise<void> {
   showMessage(`ASSEMBLING // ${activeLayout.name.toUpperCase()}`);
   document.querySelectorAll<HTMLButtonElement>("[data-level]").forEach(button => button.disabled = true);
   await addArena(); await addWorldProps(); registerPhysicsDebug(); auditArenaFlow(); buildCar(); buildOpponentCar();recomputeRunStats();
-  activeLayout.pickups.forEach(pickup => createPickup(pickup.x, pickup.z, pickup.kind));
   activeLayout.targets.forEach(target => createTarget(target.x, target.z, target.rotation));
   roundAwarded=false;updateRoundHud();canvas.dataset.targetsRemaining=String(activeLayout.targets.length);
-  canvas.dataset.prototype="rigged-1v1-combat";canvas.dataset.audioSystem="hrtf-directional-combat-sfx-v2";canvas.dataset.arenaLayout=activeLayout.id;canvas.dataset.arenaKind=activeLayout.arenaKind;canvas.dataset.arenaRadius=String(ARENA_RADIUS);canvas.dataset.ringInnerRadius=String(activeLayout.ringInnerRadius);canvas.dataset.ringOuterRadius=String(activeLayout.ringOuterRadius);canvas.dataset.rampColliders=String(ramps.filter(ramp=>ramp.kind==="ramp").length);canvas.dataset.bridgeColliders=String(ramps.filter(ramp=>ramp.kind==="bridge").length);canvas.dataset.heightfieldColliders=String(driveHeightfields.length);canvas.dataset.majorColliders=String(obstacles.length+boxColliders.length+(activeLayout.arenaKind==="capsule"?3:0));canvas.dataset.vehicleCollider="three-disc-capsule-2.24x4.14x0.72";canvas.dataset.shotsFired="0";canvas.dataset.aiShotsFired="0";canvas.dataset.fireHeld="false";canvas.dataset.racekartAssets="modular-racekart-track-hilly";canvas.dataset.racingAssetsUsage=activeLayout.arenaKind==="capsule"?"rim-railings":"ramps-fences-props";canvas.dataset.colliderSource=activeLayout.arenaKind==="capsule"?"analytic-capsule-bands":"visual-asset-heightfields";canvas.dataset.wallRideContact="pending";canvas.dataset.mapRotation="alternate-every-round";auditHeightfieldCoverage();
+  canvas.dataset.prototype="rigged-1v1-combat";canvas.dataset.audioSystem="hrtf-directional-combat-sfx-v2";canvas.dataset.arenaLayout=activeLayout.id;canvas.dataset.arenaKind=activeLayout.arenaKind;canvas.dataset.arenaRadius=String(ARENA_RADIUS);canvas.dataset.ringInnerRadius=String(activeLayout.ringInnerRadius);canvas.dataset.ringOuterRadius=String(activeLayout.ringOuterRadius);canvas.dataset.rampColliders=String(ramps.filter(ramp=>ramp.kind==="ramp").length);canvas.dataset.bridgeColliders=String(ramps.filter(ramp=>ramp.kind==="bridge").length);canvas.dataset.heightfieldColliders=String(driveHeightfields.length);canvas.dataset.majorColliders=String(obstacles.length+boxColliders.length+(activeLayout.arenaKind==="capsule"?3:0));canvas.dataset.vehicleCollider="three-disc-capsule-2.24x4.14x0.72";canvas.dataset.shotsFired="0";canvas.dataset.aiShotsFired="0";canvas.dataset.fireHeld="false";canvas.dataset.arenaDrops="disabled";canvas.dataset.racekartAssets="modular-racekart-track-hilly";canvas.dataset.racingAssetsUsage=activeLayout.arenaKind==="capsule"?"rim-railings":"ramps-fences-props";canvas.dataset.colliderSource=activeLayout.arenaKind==="capsule"?"analytic-capsule-bands":"visual-asset-heightfields";canvas.dataset.wallRideContact="pending";canvas.dataset.mapRotation="alternate-every-round";auditHeightfieldCoverage();
   levelStarted = true; levelStarting = false; paused = false; ui.levelSelect.hidden = true; resetVehicle(false);resetOpponent();updateCameraModeHud();
   const smokeMode=rampSmokeTest||allSurfaceSmokeTest||wallRideSmokeTest||holdFireSmokeTest||boostSmokeTest||roundWinSmokeTest;
   if(smokeMode&&!runState){runState=createStarterRun("mg",currentRound);selectedWeapon="mg";saveRunState();recomputeRunStats();selectWeapon("mg",false);beginRoundCountdown();}
@@ -2117,11 +2124,11 @@ window.addEventListener("pointerdown", startAudio, { capture: true });
 canvas.addEventListener("contextmenu",event=>event.preventDefault());
 getElement("controls-close").addEventListener("click",()=>toggleControls(false));getElement("resume-button").addEventListener("click",()=>togglePause(false));
 document.querySelectorAll<HTMLButtonElement>("[data-key]").forEach(button=>{const code=button.dataset.key??"";const press=(event:PointerEvent)=>{event.preventDefault();if(code==="Fire")setFireHeld(true);else input.add(code);};const release=(event:PointerEvent)=>{event.preventDefault();if(code==="Fire")setFireHeld(false);else input.delete(code);};button.addEventListener("pointerdown",press);button.addEventListener("pointerup",release);button.addEventListener("pointercancel",release);button.addEventListener("pointerleave",release);});
-window.addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight,false);renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));});
+window.addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight,false);renderer.setPixelRatio(Math.min(devicePixelRatio,MAX_PIXEL_RATIO));});
 
 const clock=new THREE.Clock();let physicsAccumulator=0;let hudAccumulator=0;let debugAccumulator=0;let frameAverage=1/60;let physicsStepMs=0;
 function updateDebug(frameDelta:number):void{
-  frameAverage=THREE.MathUtils.lerp(frameAverage,frameDelta,.08);debugAccumulator+=frameDelta;if(debugAccumulator<.2)return;debugAccumulator=0;
+  if(!debugPhysics)return;frameAverage=THREE.MathUtils.lerp(frameAverage,frameDelta,.08);debugAccumulator+=frameDelta;if(debugAccumulator<.2)return;debugAccumulator=0;
   const fps=frameAverage>0?1/frameAverage:0;const contact=vehicle.grounded?(vehicle.activeRamp?vehicle.activeRamp.kind.toUpperCase():(activeLayout.arenaKind==="capsule"?"FLAT FLOOR":"TERRAIN")):"AIRBORNE";
   const surfaceColliderCount=activeLayout.arenaKind==="capsule"?3:driveHeightfields.length;
   ui.debug.textContent=`COLLISION DEBUG\n${contact} // ${(canvas.dataset.surfaceType??"flat-floor").toUpperCase()} // ${canvas.dataset.surfaceLabel??"base terrain"}\nUP [${canvas.dataset.carUp??"0.00,1.00,0.00"}]  NORMAL [${canvas.dataset.surfaceNormal??"0.00,1.00,0.00"}]\nSURFACE FWD [${canvas.dataset.projectedForward??"0.00,0.00,1.00"}]\nVELOCITY [${canvas.dataset.velocityVector??"0.00,0.00,0.00"}]  CONTACT N [${canvas.dataset.wallContactNormal??"0.00,0.00,0.00"}]\nASSIST ${(canvas.dataset.wallAssist??"off").toUpperCase()}  DOWNFORCE ${canvas.dataset.wallDownforce??"0.00"}  ROLL ${THREE.MathUtils.radToDeg(vehicle.roll).toFixed(1)}°  PITCH ${THREE.MathUtils.radToDeg(vehicle.pitch).toFixed(1)}°\nSURFACE ${canvas.dataset.surfaceHeight??"0.00"}M  BASE ${canvas.dataset.baseGroundHeight??"0.00"}M  ERROR ${canvas.dataset.heightMismatch??"0.000"}M\n${Math.abs(vehicle.speed*4.2).toFixed(0)} KM/H  ${fps.toFixed(0)} FPS  ${(frameAverage*1000).toFixed(1)} MS FRAME\n${physicsStepMs.toFixed(2)} MS PHYSICS  60 HZ  ${surfaceColliderCount} COLLIDERS\n${renderer.info.render.calls} DRAWS  ${renderer.info.render.triangles.toLocaleString()} TRIS  ${scene.children.length+bullets.length+dust.length} OBJECTS`;
@@ -2139,7 +2146,7 @@ function animate():void{
       while(physicsAccumulator>=FIXED_TIMESTEP&&steps<MAX_PHYSICS_STEPS){capturePhysicsPose();elapsed+=FIXED_TIMESTEP;updateVehicle(FIXED_TIMESTEP);updateOpponent(FIXED_TIMESTEP);updateWeapon(FIXED_TIMESTEP);updateProjectiles(FIXED_TIMESTEP);physicsAccumulator-=FIXED_TIMESTEP;steps++;}
       physicsStepMs=performance.now()-physicsStart;updateVehicleVisual(physicsAccumulator/FIXED_TIMESTEP);
     }else{physicsAccumulator=0;if(roundPhase==="ended")updateProjectiles(frameDelta);}
-    updateCamera(frameDelta);updateAim(frameDelta);updatePickups(frameDelta);hudAccumulator+=frameDelta;if(hudAccumulator>.1){hudAccumulator=0;updateHud();}
+    updateCamera(frameDelta);updateAim(frameDelta);hudAccumulator+=frameDelta;if(hudAccumulator>.1){hudAccumulator=0;updateHud();}
   }else{physicsAccumulator=0;}
   renderer.render(scene,camera);updateDebug(frameDelta);
 }

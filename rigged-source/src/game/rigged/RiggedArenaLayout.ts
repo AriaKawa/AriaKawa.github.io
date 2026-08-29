@@ -3,7 +3,6 @@ import type { RacekartAssetKey } from "../../assets/riggedRacekartManifest";
 import type { OvalBowlConfig } from "./OvalBowlSurface";
 
 export type RiggedLevelId = "dustring" | "ovalbowl";
-export type PickupKind = "tires" | "engine" | "armor" | "weapon" | "repair";
 
 export type AssetPlacement = {
   asset: RacekartAssetKey;
@@ -26,7 +25,6 @@ export type DriveSurfaceSpec = AssetPlacement & {
 
 export type BarrierSpec = { x: number; z: number; rotation: number; length: number; boundary?: boolean };
 export type TargetSpec = { x: number; z: number; rotation: number };
-export type PickupSpec = { x: number; z: number; kind: PickupKind };
 
 export type RiggedArenaLayout = {
   id: RiggedLevelId;
@@ -48,7 +46,6 @@ export type RiggedArenaLayout = {
   props: AssetPlacement[];
   barriers: BarrierSpec[];
   targets: TargetSpec[];
-  pickups: PickupSpec[];
 };
 
 const quarter = Math.PI / 2;
@@ -89,13 +86,6 @@ export const riggedArenaLayouts: Record<RiggedLevelId, RiggedArenaLayout> = {
       { x: -31, z: -4, rotation: quarter, length: 13 },
     ],
     targets: [],
-    pickups: [
-      { x: -73, z: -22, kind: "tires" },
-      { x: 73, z: 24, kind: "engine" },
-      { x: -24, z: 73, kind: "weapon" },
-      { x: 24, z: -73, kind: "armor" },
-      { x: -7, z: -38, kind: "repair" },
-    ],
   },
   ovalbowl: {
     id: "ovalbowl",
@@ -122,12 +112,6 @@ export const riggedArenaLayouts: Record<RiggedLevelId, RiggedArenaLayout> = {
     ],
     barriers: [],
     targets: [],
-    pickups: [
-      { x: -20, z: -18, kind: "tires" },
-      { x: 20, z: 18, kind: "engine" },
-      { x: 0, z: 30, kind: "weapon" },
-      { x: 0, z: -35, kind: "repair" },
-    ],
   },
 };
 

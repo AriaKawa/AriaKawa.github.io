@@ -88,7 +88,7 @@ const sceneChecks = [
   ["procedural sniper turret", /new THREE\.BoxGeometry\(\.12,\.12,3\.18\)[\s\S]*new THREE\.BoxGeometry\(\.68,\.34,\.48\)/],
   ["rocket splash damage", /bullet\.splashRadius[\s\S]*damageTarget\(target,damage\)/],
   ["large world-space rocket impact", /lastImpactEffect="rocket-world-detonation"[\s\S]*growth:major&&isRocket\?7\.2/],
-  ["tight sniper laser tracer", /function spawnSniperTracer[\s\S]*CylinderGeometry\(\.2,\.2,distance[\s\S]*sniperTracerLength/],
+  ["tight sniper laser tracer", /sniperTracerGlowGeometry = new THREE\.CylinderGeometry\(\.2,\.2,1[\s\S]*function spawnSniperTracer[\s\S]*glow\.scale\.y=distance[\s\S]*sniperTracerLength/],
   ["pinpoint sniper hit", /function spawnSniperHit[\s\S]*sniper-pinpoint-spark/],
   ["rocket flame trail", /spawnRocketTrail/],
   ["sniper segment collision", /segmentDistanceSq/],
@@ -115,10 +115,9 @@ const sceneChecks = [
   ["barrel pitch mount", /let barrelPivot = new THREE\.Group/],
   ["mouse world ray", /intersectObjects\(aimSurfaces/],
   ["ground crosshair", /const groundCrosshair = new THREE\.Group/],
-  ["modular part slots", /type VehiclePartSlot/],
   ["central vehicle stats", /type VehicleStats[\s\S]*projectileSpeed: number/],
   ["weapon stats contract", /type WeaponStats[\s\S]*fireRate: number[\s\S]*damage: number[\s\S]*projectileSpeed: number[\s\S]*range: number[\s\S]*automatic\?: boolean/],
-  ["pickup collection", /equipPickup\(pickup/],
+  ["arena drops disabled", /dataset\.arenaDrops="disabled"/],
   ["projectile combat", /function shoot\(\)/],
   ["muzzle projectile direction", /shotDirection\.copy\(aimPoint\)\.sub\(shotOrigin\)\.normalize/],
   ["ramming damage", /damageTarget\(target,Math\.abs\(vehicle\.speed\)/],
@@ -158,7 +157,11 @@ const sceneChecks = [
   ["weathered metal arena walls", /weathered-arena-metal-v1\.png[\s\S]*const wallMetal = new THREE\.MeshStandardMaterial/],
   ["gritty turret material", /gritty-turret-metal-v1\.png[\s\S]*const darkMetal = new THREE\.MeshStandardMaterial/],
   ["volumetric cloudy light shafts", /cloud-break-volumetric-light[\s\S]*volumetric-dust-motes/],
-  ["high resolution soft shadows", /shadow\.mapSize\.set\(2048, 2048\)[\s\S]*shadow\.normalBias/],
+  ["optimized shadow map", /shadowMap\.type = THREE\.PCFShadowMap[\s\S]*shadow\.mapSize\.set\(1024, 1024\)[\s\S]*shadow\.normalBias/],
+  ["bounded render resolution", /MAX_PIXEL_RATIO = 1\.25[\s\S]*Math\.min\(devicePixelRatio, MAX_PIXEL_RATIO\)/],
+  ["cached effect traversal", /function registerVisualEffect[\s\S]*meshes:THREE\.Mesh\[\][\s\S]*function removeVisualEffect/],
+  ["disposed effect materials", /function removeVisualEffect[\s\S]*material\.dispose\(\)/],
+  ["reused aim intersections", /aimIntersections\.length=0;raycaster\.intersectObjects\(aimSurfaces,true,aimIntersections\)/],
   ["layout-sized arena boundary", /ARENA_RADIUS = activeLayout\.radius/],
   ["ring geometry telemetry", /dataset\.ringInnerRadius/],
   ["ring clearance audit", /function auditArenaFlow[\s\S]*ringTrackDrivable/],
@@ -243,7 +246,8 @@ if ((layouts.match(/asset: "stuntRailing"/g) ?? []).length !== 4) throw new Erro
 if ((layouts.match(/targets: \[\]/g) ?? []).length !== 2) throw new Error("Target dummies must be removed from both arenas");
 if ((layouts.match(/\{ asset: "stuntRamp", kind: "ramp"/g) ?? []).length !== 4) throw new Error("Expected exactly 4 placed ramp surfaces");
 if (/\{ asset: "[^"]+", kind: "bridge"/.test(layouts)) throw new Error("Dust Ring must not include bridge or loop stunt chains");
-if ((layouts.match(/kind: "repair"/g) ?? []).length < 1) throw new Error("Expected a repair pickup");
+if (/pickup/i.test(layouts)) throw new Error("Arena drops must remain fully removed from layouts");
+if (/\b(?:createPickup|equipPickup|updatePickups|partCatalog|pickups)\b/.test(source)) throw new Error("Arena pickup runtime must remain removed");
 if ((layouts.match(/rotation:/g) ?? []).length < 10) throw new Error("Expected curated track and prop placements");
 if (/dustbowl|stuntworks|bridge deck|mega jump/i.test(layouts)) throw new Error("Legacy stunt arena content remains in the layout");
 
