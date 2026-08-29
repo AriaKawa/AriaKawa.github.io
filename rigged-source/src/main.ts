@@ -1162,8 +1162,11 @@ const sniperTracerGlowGeometry = new THREE.CylinderGeometry(.2,.2,1,8,1,true);
 const sniperTracerCoreGeometry = new THREE.CylinderGeometry(.055,.055,1,8);
 const sniperTracerHotCoreGeometry = new THREE.CylinderGeometry(.018,.018,1,6);
 const burnEmberGeometry = new THREE.CircleGeometry(.15,7);
-const muzzleFlash = new THREE.PointLight(0xff8a24, 8, 5, 2);
-muzzleFlash.visible = false; scene.add(muzzleFlash);
+// Keep the light in the renderer's light set for the lifetime of the game. Toggling
+// PointLight.visible changes Three.js shader defines and can compile a new program in
+// the middle of a shot. Intensity zero gives the same visual result without a hitch.
+const muzzleFlash = new THREE.PointLight(0xff8a24, 0, 5, 2);
+scene.add(muzzleFlash);
 let fireCooldown=0; let isFireHeld=false; let muzzleFlashLife=0; let weaponStateLife=0;
 let cameraShakeLife=0; let cameraShakeStrength=0;
 let messageTimer=0; let paused=false; let elapsed=0;
@@ -1216,16 +1219,21 @@ for (const [key, source] of Object.entries(sfxSources) as [SfxKey, string][]) {
 }
 soundtrack.load();engineLoop.load();
 
+const spatialSoundOffset=new THREE.Vector3(),spatialCameraRight=new THREE.Vector3();
 function playSfx(key: SfxKey, volume: number, pitchVariation = .035, position?: THREE.Vector3): void {
   const buffer=spatialBuffers.get(key);
   if(audioContext&&buffer){
-    const source=audioContext.createBufferSource(),gain=audioContext.createGain(),panner=audioContext.createPanner();
-    source.buffer=buffer;source.playbackRate.value=1+(Math.random()*2-1)*pitchVariation;gain.gain.value=THREE.MathUtils.clamp(volume,0,1);
-    panner.panningModel="HRTF";panner.distanceModel="inverse";panner.refDistance=7;panner.maxDistance=150;panner.rolloffFactor=.72;
+    const source=audioContext.createBufferSource(),gain=audioContext.createGain(),panner=audioContext.createStereoPanner();
+    source.buffer=buffer;source.playbackRate.value=1+(Math.random()*2-1)*pitchVariation;
     const worldPosition=position??vehicle.position;
-    if(panner.positionX&&panner.positionY&&panner.positionZ){panner.positionX.value=worldPosition.x;panner.positionY.value=worldPosition.y+1;panner.positionZ.value=worldPosition.z;}
-    else (panner as PannerNode & {setPosition?:(x:number,y:number,z:number)=>void}).setPosition?.(worldPosition.x,worldPosition.y+1,worldPosition.z);
-    source.connect(gain).connect(panner).connect(audioContext.destination);source.start();canvas.dataset.lastSfx=key;canvas.dataset.spatialAudio="hrtf-world-positioned";return;
+    spatialSoundOffset.copy(worldPosition).sub(camera.position);const distance=spatialSoundOffset.length();
+    spatialCameraRight.set(1,0,0).applyQuaternion(camera.quaternion);
+    const pan=distance>.001?spatialSoundOffset.dot(spatialCameraRight)/distance:0;
+    const attenuation=1/(1+Math.max(0,distance-7)/28);
+    gain.gain.value=THREE.MathUtils.clamp(volume*attenuation,0,1);panner.pan.value=THREE.MathUtils.clamp(pan,-1,1);
+    source.connect(gain).connect(panner).connect(audioContext.destination);
+    source.onended=()=>{source.disconnect();gain.disconnect();panner.disconnect();};
+    source.start();canvas.dataset.lastSfx=key;canvas.dataset.spatialAudio="stereo-world-positioned";return;
   }
   const template = sfxTemplates.get(key);
   if (!template) return;
@@ -1260,17 +1268,6 @@ function startAudio(): void {
   canvas.dataset.musicContinuity="single-document-loop";
 }
 
-const listenerForward=new THREE.Vector3(),listenerUp=new THREE.Vector3();
-function updateSpatialListener():void{
-  if(!audioContext)return;camera.getWorldDirection(listenerForward);listenerUp.set(0,1,0).applyQuaternion(camera.quaternion);
-  const listener=audioContext.listener,time=audioContext.currentTime;
-  const legacyListener=listener as AudioListener & {setPosition?:(x:number,y:number,z:number)=>void;setOrientation?:(x:number,y:number,z:number,xUp:number,yUp:number,zUp:number)=>void};
-  if(listener.positionX&&listener.positionY&&listener.positionZ){listener.positionX.setTargetAtTime(camera.position.x,time,.02);listener.positionY.setTargetAtTime(camera.position.y,time,.02);listener.positionZ.setTargetAtTime(camera.position.z,time,.02);}
-  else legacyListener.setPosition?.(camera.position.x,camera.position.y,camera.position.z);
-  if(listener.forwardX&&listener.forwardY&&listener.forwardZ&&listener.upX&&listener.upY&&listener.upZ){listener.forwardX.setTargetAtTime(listenerForward.x,time,.02);listener.forwardY.setTargetAtTime(listenerForward.y,time,.02);listener.forwardZ.setTargetAtTime(listenerForward.z,time,.02);listener.upX.setTargetAtTime(listenerUp.x,time,.02);listener.upY.setTargetAtTime(listenerUp.y,time,.02);listener.upZ.setTargetAtTime(listenerUp.z,time,.02);}
-  else legacyListener.setOrientation?.(listenerForward.x,listenerForward.y,listenerForward.z,listenerUp.x,listenerUp.y,listenerUp.z);
-}
-
 let engineMix = 0;
 function updateEngineAudio(dt: number): void {
   const speedRatio = THREE.MathUtils.clamp(Math.abs(vehicle.speed) / Math.max(1, stats.maxSpeed), 0, 1.25);
@@ -1288,8 +1285,8 @@ function updateEngineAudio(dt: number): void {
 
 function updateAudioFrame(dt:number):void{
   if(audioFrameDisabled)return;
-  try{updateEngineAudio(dt);if(audioFailureSmokeTest)throw new Error("Simulated audio-frame failure");updateSpatialListener();canvas.dataset.audioFrame="active";}
-  catch(error){audioFrameDisabled=true;canvas.dataset.audioFrame="disabled";console.warn("[Rigged] Spatial audio disabled; gameplay will continue.",error);}
+  try{updateEngineAudio(dt);if(audioFailureSmokeTest)throw new Error("Simulated audio-frame failure");canvas.dataset.audioFrame="active";}
+  catch(error){audioFrameDisabled=true;canvas.dataset.audioFrame="disabled";console.warn("[Rigged] Audio frame updates disabled; gameplay will continue.",error);}
 }
 const input=new Set<string>(); const mouse=new THREE.Vector2(0,.15); const aimPoint=new THREE.Vector3();
 const raycaster=new THREE.Raycaster(); const aimPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
@@ -1321,10 +1318,18 @@ function createStarGeometry(points=10,outer=1.35,inner=.34): THREE.ShapeGeometry
 const impactStarGeometry=createStarGeometry();
 const effectMidpoint=new THREE.Vector3();
 const effectUp=new THREE.Vector3(0,1,0);
+const effectMaterialPool:THREE.MeshBasicMaterial[]=[];
+const createEffectMaterial=()=>new THREE.MeshBasicMaterial({transparent:true,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending});
 
 function effectMaterial(color:number,opacity=1): THREE.MeshBasicMaterial {
-  const material=new THREE.MeshBasicMaterial({color,transparent:true,opacity,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending});
+  const material=effectMaterialPool.pop()??createEffectMaterial();
+  material.color.setHex(color);material.opacity=opacity;material.visible=true;
   material.userData.baseOpacity=opacity;return material;
+}
+
+function recycleEffectMaterial(material:THREE.Material):void{
+  if(material instanceof THREE.MeshBasicMaterial&&material.transparent&&material.blending===THREE.AdditiveBlending){material.opacity=0;effectMaterialPool.push(material);}
+  else material.dispose();
 }
 
 function registerVisualEffect(effect:Omit<VisualEffect,"meshes"|"lights">):void{
@@ -1340,7 +1345,7 @@ function removeVisualEffect(index:number):void{
   const effect=visualEffects[index];scene.remove(effect.group);
   for(const mesh of effect.meshes){
     const materials=Array.isArray(mesh.material)?mesh.material:[mesh.material];
-    for(const material of materials)material.dispose();
+    for(const material of materials)recycleEffectMaterial(material);
   }
   visualEffects.splice(index,1);
 }
@@ -1363,7 +1368,6 @@ function spawnImpactVfx(kind:WeaponKind,position:THREE.Vector3,major=true):void{
       const shard=new THREE.Mesh(rocketShardGeometry,effectMaterial(index%3?definition.impactColor:0xffffff,.88));
       const angle=index/shardCount*Math.PI*2;shard.rotation.z=angle;shard.position.set(Math.cos(angle)*2.1,Math.sin(angle)*2.1,-.06);group.add(shard);
     }
-    const light=new THREE.PointLight(definition.impactColor,52,21,2);group.add(light);
     cameraShakeLife=.38;cameraShakeStrength=.62;canvas.dataset.lastImpactEffect="rocket-world-detonation";
   }
   const life=major&&isRocket ? .82 : major ? .3 : .13;scene.add(group);registerVisualEffect({group,life,maxLife:life,kind:"impact",growth:major&&isRocket?7.2:major?2.2:1.3});
@@ -1376,7 +1380,7 @@ function spawnSniperHit(position:THREE.Vector3):void{
     const angle=index/8*Math.PI*2,shard=new THREE.Mesh(sniperShardGeometry,effectMaterial(index%2?0x5de5ff:0xffffff,.9));
     shard.rotation.z=angle;shard.position.set(Math.cos(angle)*.38,Math.sin(angle)*.38,0);group.add(shard);
   }
-  const light=new THREE.PointLight(0x6be9ff,10,5,2);group.add(light);scene.add(group);
+  scene.add(group);
   registerVisualEffect({group,life:.16,maxLife:.16,kind:"impact",growth:.5});cameraShakeLife=.055;cameraShakeStrength=.08;
   canvas.dataset.lastImpactEffect="sniper-pinpoint-spark";
 }
@@ -1417,10 +1421,19 @@ const rocketNoseGeometry=new THREE.ConeGeometry(.15,.34,9);
 const rocketFinGeometry=new THREE.BoxGeometry(.38,.04,.32);
 const rocketFlameGeometry=new THREE.ConeGeometry(.18,.85,9);
 const rocketFlameMaterials={standard:effectMaterial(0xff8b28,.92),incendiary:effectMaterial(0xff3010,.92)};
+const mgProjectilePool:THREE.Mesh[]=[];
+function acquireMgProjectile(material:THREE.Material,scale:number):THREE.Mesh{
+  const shot=mgProjectilePool.pop()??new THREE.Mesh(bulletGeometry,material);
+  shot.material=material;shot.scale.setScalar(scale);shot.visible=true;return shot;
+}
+function releaseProjectile(projectile:THREE.Object3D,kind:WeaponKind):void{
+  projectile.removeFromParent();
+  if(kind==="mg"&&projectile instanceof THREE.Mesh){projectile.visible=false;projectile.position.set(0,0,0);projectile.quaternion.identity();mgProjectilePool.push(projectile);}
+}
 function createProjectile(kind:WeaponKind,incendiary=false,piercing=false,heavy=false):THREE.Object3D{
   if(kind==="mg"){
     const material=incendiary?projectileMgMaterials.incendiary:piercing?projectileMgMaterials.piercing:projectileMgMaterials.standard;
-    const shot=new THREE.Mesh(bulletGeometry,material);shot.scale.setScalar(heavy?1.75:piercing?1.25:1);return shot;
+    return acquireMgProjectile(material,heavy?1.75:piercing?1.25:1);
   }
   if(kind==="sniper"){
     const group=new THREE.Group();
@@ -1433,7 +1446,7 @@ function createProjectile(kind:WeaponKind,incendiary=false,piercing=false,heavy=
   const nose=new THREE.Mesh(rocketNoseGeometry,warm);nose.rotation.x=Math.PI/2;nose.position.z=.55;group.add(nose);
   for(const side of [-1,1]){const fin=new THREE.Mesh(rocketFinGeometry,warm);fin.position.set(side*.14,0,-.28);fin.rotation.z=side*.42;group.add(fin);}
   const flame=new THREE.Mesh(rocketFlameGeometry,incendiary?rocketFlameMaterials.incendiary:rocketFlameMaterials.standard);flame.rotation.x=-Math.PI/2;flame.position.z=-.78;group.add(flame);
-  const glow=new THREE.PointLight(0xff6a24,8,4,2);glow.position.z=-.3;group.add(glow);return group;
+  return group;
 }
 
 let combatWarmPromise:Promise<void>|null=null;
@@ -1441,13 +1454,16 @@ function warmCombatResources():Promise<void>{
   if(combatWarmPromise)return combatWarmPromise;
   combatWarmPromise=(async()=>{
     const warmup=new THREE.Group();warmup.name="offscreen-combat-resource-warmup";warmup.position.set(0,-500,0);
+    while(mgProjectilePool.length<32)mgProjectilePool.push(new THREE.Mesh(bulletGeometry,projectileMgMaterials.standard));
+    while(effectMaterialPool.length<48)effectMaterialPool.push(createEffectMaterial());
     const variants:[WeaponKind,boolean,boolean,boolean][]=[["mg",false,false,false],["mg",true,false,false],["mg",false,true,true],["rocket",false,false,false],["rocket",true,false,true],["sniper",false,false,false],["sniper",true,true,true]];
-    variants.forEach(([kind,fire,pierce,heavy],index)=>{const projectile=createProjectile(kind,fire,pierce,heavy);projectile.position.x=index*2;warmup.add(projectile);});
-    warmup.add(new THREE.Mesh(effectCoreGeometry,effectMaterial(0xffb52f,.95)),new THREE.Mesh(impactStarGeometry,effectMaterial(0xff5b20,.92)),new THREE.Mesh(effectRingGeometry,effectMaterial(0x67e7ff,.9)),new THREE.Mesh(trailGeometry,effectMaterial(0xff4b18,.8)));
+    const warmProjectiles:THREE.Object3D[]=[];variants.forEach(([kind,fire,pierce,heavy],index)=>{const projectile=createProjectile(kind,fire,pierce,heavy);projectile.position.x=index*2;warmup.add(projectile);warmProjectiles.push(projectile);});
+    const warmMaterials=[effectMaterial(0xffb52f,.95),effectMaterial(0xff5b20,.92),effectMaterial(0x67e7ff,.9),effectMaterial(0xff4b18,.8)];
+    warmup.add(new THREE.Mesh(effectCoreGeometry,warmMaterials[0]),new THREE.Mesh(impactStarGeometry,warmMaterials[1]),new THREE.Mesh(effectRingGeometry,warmMaterials[2]),new THREE.Mesh(trailGeometry,warmMaterials[3]));
     scene.add(warmup);
     try{await renderer.compileAsync(scene,camera);if(spatialAudioLoad)await spatialAudioLoad;canvas.dataset.combatPrewarm="complete";}
     catch(error){canvas.dataset.combatPrewarm="partial";console.warn("[Rigged] Combat pre-warm completed with a fallback.",error);}
-    finally{scene.remove(warmup);}
+    finally{scene.remove(warmup);warmProjectiles.forEach((projectile,index)=>releaseProjectile(projectile,variants[index][0]));warmMaterials.forEach(recycleEffectMaterial);canvas.dataset.projectilePool=String(mgProjectilePool.length);}
   })();
   return combatWarmPromise;
 }
@@ -1455,7 +1471,7 @@ function warmCombatResources():Promise<void>{
 function spawnBurnEmber(position:THREE.Vector3):void{
   const group=new THREE.Group();group.position.copy(position).add(new THREE.Vector3((Math.random()-.5)*1.4,.7+Math.random()*1.2,(Math.random()-.5)*1.4));group.userData.billboard=true;
   const ember=new THREE.Mesh(burnEmberGeometry,effectMaterial(Math.random()>.35?0xff491c:0xffbd45,.9));ember.scale.setScalar(.73+Math.random()*.6);group.add(ember);
-  const light=new THREE.PointLight(0xff4b18,2.5,3,2);group.add(light);scene.add(group);registerVisualEffect({group,life:.45,maxLife:.45,kind:"trail",growth:1.7});
+  scene.add(group);registerVisualEffect({group,life:.45,maxLife:.45,kind:"trail",growth:1.7});
   canvas.dataset.burnVfx="ember-active";
 }
 
@@ -1475,7 +1491,7 @@ function shoot(): boolean {
   canvas.dataset.shotsFired=String(Number(canvas.dataset.shotsFired??0)+count);
   ui.weaponState.textContent="FIRING"; weaponStateLife=.08;
   muzzleFlash.color.setHex(definition.impactColor);muzzleFlash.intensity=selectedWeapon==="rocket"?22:selectedWeapon==="sniper"?28:8;muzzleFlash.distance=selectedWeapon==="rocket"?10:7;
-  muzzleFlash.position.copy(shotOrigin); muzzleFlash.visible=true; muzzleFlashLife=selectedWeapon==="mg" ? .045 : .09;
+  muzzleFlash.position.copy(shotOrigin); muzzleFlashLife=selectedWeapon==="mg" ? .045 : .09;
   if(selectedWeapon==="mg")playSfx("turret-mg",.10,.025,shotOrigin);
   else if(selectedWeapon==="rocket")playSfx("turret-rocket",.44,.025,shotOrigin);
   else playSfx("turret-sniper",.38,.018,shotOrigin);
@@ -1505,7 +1521,7 @@ function updateWeapon(dt: number): void {
   weaponStateLife = Math.max(0, weaponStateLife - dt);
   muzzleFlashLife = Math.max(0, muzzleFlashLife - dt);
   if (weaponStateLife === 0 && ui.weaponState.textContent === "FIRING") ui.weaponState.textContent = weaponDefinitions[selectedWeapon].stateLabel;
-  if (muzzleFlashLife === 0) muzzleFlash.visible = false;
+  if (muzzleFlashLife === 0) muzzleFlash.intensity = 0;
   if (isFireHeld) shoot();
 }
 
@@ -1843,7 +1859,7 @@ function updateProjectiles(dt:number): void {
       const pierceHit=bullet.owner==="player"&&(!!directTarget||hitOpponent)&&bullet.piercesRemaining>0&&bullet.kind!=="rocket";
       if(pierceHit){bullet.piercesRemaining--;if(directTarget)bullet.hitTargets.add(directTarget);if(hitOpponent)bullet.hitOpponent=true;bullet.mesh.position.addScaledVector(bullet.velocity.clone().normalize(),1.8);canvas.dataset.piercingVfx="bright-tracer";continue;}
       if(bullet.kind==="rocket")clearRocketTrail(bullet.id);
-      scene.remove(bullet.mesh);bullets.splice(index,1);
+      releaseProjectile(bullet.mesh,bullet.kind);bullets.splice(index,1);
     }
   }
   for(let i=dust.length-1;i>=0;i--){const p=dust[i];p.life-=dt;p.mesh.position.addScaledVector(p.velocity,dt);p.velocity.y-=3.5*dt;p.mesh.scale.multiplyScalar(1+dt*.55);const material=p.mesh.material as THREE.MeshBasicMaterial;material.opacity=Math.max(0,Math.min(material.opacity,p.life*.45));if(p.life<=0){scene.remove(p.mesh);material.dispose();dust.splice(i,1);}}
@@ -1944,10 +1960,10 @@ function finishRound(winner:"player"|"opponent"):void{
 }
 
 function clearRoundScene():void{
-  setFireHeld(false);input.clear();muzzleFlash.visible=false;
-  for(const bullet of bullets)scene.remove(bullet.mesh);bullets.length=0;
+  setFireHeld(false);input.clear();muzzleFlash.intensity=0;
+  for(const bullet of bullets)releaseProjectile(bullet.mesh,bullet.kind);bullets.length=0;
   for(const particle of dust)scene.remove(particle.mesh);dust.length=0;
-  for(const effect of visualEffects)scene.remove(effect.group);visualEffects.length=0;
+  while(visualEffects.length)removeVisualEffect(visualEffects.length-1);
   for(const child of [...scene.children])if(!persistentSceneObjects.has(child))scene.remove(child);
   ramps.length=0;obstacles.length=0;boxColliders.length=0;aimSurfaces.length=0;driveHeightfields.length=0;targets.length=0;
   debugVisuals.length=0;debugVisuals.push(...persistentDebugVisuals);canvas.dataset.roundWorldCleanup="complete";
@@ -2123,7 +2139,7 @@ async function startLevel(levelId: RiggedLevelId): Promise<void> {
   await addArena(); await addWorldProps(); registerPhysicsDebug(); auditArenaFlow(); buildCar(); buildOpponentCar();persistentSceneObjects.add(car);persistentSceneObjects.add(opponentCar);recomputeRunStats();
   activeLayout.targets.forEach(target => createTarget(target.x, target.z, target.rotation));
   roundAwarded=false;updateRoundHud();canvas.dataset.targetsRemaining=String(activeLayout.targets.length);
-  canvas.dataset.prototype="rigged-1v1-combat";canvas.dataset.audioSystem="hrtf-directional-combat-sfx-v2";canvas.dataset.arenaLayout=activeLayout.id;canvas.dataset.arenaKind=activeLayout.arenaKind;canvas.dataset.arenaRadius=String(ARENA_RADIUS);canvas.dataset.ringInnerRadius=String(activeLayout.ringInnerRadius);canvas.dataset.ringOuterRadius=String(activeLayout.ringOuterRadius);canvas.dataset.rampColliders=String(ramps.filter(ramp=>ramp.kind==="ramp").length);canvas.dataset.bridgeColliders=String(ramps.filter(ramp=>ramp.kind==="bridge").length);canvas.dataset.heightfieldColliders=String(driveHeightfields.length);canvas.dataset.majorColliders=String(obstacles.length+boxColliders.length+(activeLayout.arenaKind==="capsule"?3:0));canvas.dataset.vehicleCollider="three-disc-capsule-2.24x4.14x0.72";canvas.dataset.shotsFired="0";canvas.dataset.aiShotsFired="0";canvas.dataset.fireHeld="false";canvas.dataset.arenaDrops="disabled";canvas.dataset.racekartAssets="modular-racekart-track-hilly";canvas.dataset.racingAssetsUsage=activeLayout.arenaKind==="capsule"?"rim-railings":"ramps-fences-props";canvas.dataset.colliderSource=activeLayout.arenaKind==="capsule"?"analytic-capsule-bands":"visual-asset-heightfields";canvas.dataset.wallRideContact="pending";canvas.dataset.mapRotation="alternate-in-document";auditHeightfieldCoverage();await warmCombatResources();
+  canvas.dataset.prototype="rigged-1v1-combat";canvas.dataset.audioSystem="pooled-stereo-combat-sfx-v3";canvas.dataset.arenaLayout=activeLayout.id;canvas.dataset.arenaKind=activeLayout.arenaKind;canvas.dataset.arenaRadius=String(ARENA_RADIUS);canvas.dataset.ringInnerRadius=String(activeLayout.ringInnerRadius);canvas.dataset.ringOuterRadius=String(activeLayout.ringOuterRadius);canvas.dataset.rampColliders=String(ramps.filter(ramp=>ramp.kind==="ramp").length);canvas.dataset.bridgeColliders=String(ramps.filter(ramp=>ramp.kind==="bridge").length);canvas.dataset.heightfieldColliders=String(driveHeightfields.length);canvas.dataset.majorColliders=String(obstacles.length+boxColliders.length+(activeLayout.arenaKind==="capsule"?3:0));canvas.dataset.vehicleCollider="three-disc-capsule-2.24x4.14x0.72";canvas.dataset.shotsFired="0";canvas.dataset.aiShotsFired="0";canvas.dataset.fireHeld="false";canvas.dataset.arenaDrops="disabled";canvas.dataset.racekartAssets="modular-racekart-track-hilly";canvas.dataset.racingAssetsUsage=activeLayout.arenaKind==="capsule"?"rim-railings":"ramps-fences-props";canvas.dataset.colliderSource=activeLayout.arenaKind==="capsule"?"analytic-capsule-bands":"visual-asset-heightfields";canvas.dataset.wallRideContact="pending";canvas.dataset.mapRotation="alternate-in-document";auditHeightfieldCoverage();await warmCombatResources();
   levelStarted = true; levelStarting = false; paused = false; ui.levelSelect.hidden = true; resetVehicle(false);resetOpponent();updateCameraModeHud();
   const smokeMode=rampSmokeTest||allSurfaceSmokeTest||wallRideSmokeTest||holdFireSmokeTest||boostSmokeTest||roundWinSmokeTest;
   if(smokeMode&&!runState){runState=createStarterRun("mg",currentRound);selectedWeapon="mg";saveRunState();recomputeRunStats();selectWeapon("mg",false);beginRoundCountdown();}
