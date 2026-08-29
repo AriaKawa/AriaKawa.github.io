@@ -44,6 +44,13 @@ The Scrap Rattler machine gun, Hellbox four-tube rocket turret, Longlance rail-s
 - **Cloudy sky panorama** — Original AI-generated environment texture created for Scraproad Arena with OpenAI ImageGen.
 - **Arena material textures** — The dirty compacted ground, weathered wall steel, and gritty turret metal textures under `assets/materials/` are original AI-generated textures created for Scraproad Arena with OpenAI ImageGen. They were prompted as seamless, evenly lit real-time game materials without logos or borrowed artwork.
 
+## Sound effects
+
+- **Racing Car Engine Sound Loops** — `loop_0.wav` by domasx2, sourced from https://opengameart.org/content/racing-car-engine-sound-loops and released under Creative Commons Zero (CC0) 1.0. Used as the speed-reactive vehicle engine loop.
+- **Sci-Fi Sounds 1.0** — Rocket firing, sniper firing, incoming metal impact, and confirmed-hit metal impact sounds by Kenney, sourced from https://kenney.nl/assets/sci-fi-sounds and released under Creative Commons Zero (CC0) 1.0.
+- **Machine-gun report** — `cz.wav`, copyright (c) 2009 Vincent Sevedge, released under Creative Commons Attribution 3.0 Unported. Trimmed to a single firing report and used with runtime volume and pitch variation.
+- **Per-file license details:** `assets/audio/sfx/LICENSES.md`
+
 ## Runtime library
 
 - **three.js 0.179.1** — Copyright © 2010–2025 three.js authors — MIT License — https://threejs.org/ — https://github.com/mrdoob/three.js/blob/dev/LICENSE

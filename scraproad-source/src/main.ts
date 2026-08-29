@@ -1101,14 +1101,74 @@ soundtrack.preload = "metadata";
 soundtrack.id = "soundtrack";
 soundtrack.hidden = true;
 soundtrack.dataset.playback = "waiting-for-interaction";
-document.body.append(soundtrack);
+const engineLoop = new Audio("./assets/audio/sfx/vehicle-engine-loop.wav");
+engineLoop.loop = true;
+engineLoop.volume = .001;
+engineLoop.playbackRate = .68;
+engineLoop.preservesPitch = false;
+engineLoop.preload = "auto";
+engineLoop.id = "vehicle-engine-loop";
+engineLoop.hidden = true;
+engineLoop.dataset.playback = "waiting-for-interaction";
+document.body.append(soundtrack, engineLoop);
 
-function startSoundtrack(): void {
-  if (!soundtrack.paused) return;
-  soundtrack.dataset.playback = "starting";
-  soundtrack.play()
-    .then(() => { soundtrack.dataset.playback = "playing"; })
-    .catch(() => { soundtrack.dataset.playback = "blocked"; });
+type SfxKey = "turret-mg" | "turret-rocket" | "turret-sniper" | "vehicle-hit" | "confirmed-hit";
+const sfxSources: Record<SfxKey, string> = {
+  "turret-mg": "./assets/audio/sfx/turret-mg-fire.wav",
+  "turret-rocket": "./assets/audio/sfx/turret-rocket-fire.ogg",
+  "turret-sniper": "./assets/audio/sfx/turret-sniper-fire.ogg",
+  "vehicle-hit": "./assets/audio/sfx/vehicle-hit-clank.ogg",
+  "confirmed-hit": "./assets/audio/sfx/confirmed-hit-clank.ogg",
+};
+const sfxTemplates = new Map<SfxKey, HTMLAudioElement>();
+const activeSfx = new Set<HTMLAudioElement>();
+for (const [key, source] of Object.entries(sfxSources) as [SfxKey, string][]) {
+  const audio = new Audio(source);
+  audio.preload = "auto";
+  sfxTemplates.set(key, audio);
+}
+
+function playSfx(key: SfxKey, volume: number, pitchVariation = .035): void {
+  const template = sfxTemplates.get(key);
+  if (!template) return;
+  const sound = template.cloneNode(true) as HTMLAudioElement;
+  sound.volume = THREE.MathUtils.clamp(volume, 0, 1);
+  sound.preservesPitch = false;
+  sound.playbackRate = 1 + (Math.random() * 2 - 1) * pitchVariation;
+  activeSfx.add(sound);
+  sound.addEventListener("ended", () => activeSfx.delete(sound), { once: true });
+  sound.play().catch(() => activeSfx.delete(sound));
+  canvas.dataset.lastSfx = key;
+}
+
+function startAudio(): void {
+  if (soundtrack.paused) {
+    soundtrack.dataset.playback = "starting";
+    soundtrack.play()
+      .then(() => { soundtrack.dataset.playback = "playing"; })
+      .catch(() => { soundtrack.dataset.playback = "blocked"; });
+  }
+  if (engineLoop.paused) {
+    engineLoop.dataset.playback = "starting";
+    engineLoop.play()
+      .then(() => { engineLoop.dataset.playback = "playing"; })
+      .catch(() => { engineLoop.dataset.playback = "blocked"; });
+  }
+}
+
+let engineMix = 0;
+function updateEngineAudio(dt: number): void {
+  const speedRatio = THREE.MathUtils.clamp(Math.abs(vehicle.speed) / Math.max(1, stats.maxSpeed), 0, 1.25);
+  const accelerating = input.has("KeyW") || input.has("KeyS");
+  const boosting = input.has("ShiftLeft") && vehicle.boost > 0;
+  const audible = levelStarted && !paused && vehicle.health > 0;
+  const targetVolume = audible ? .055 + speedRatio * .16 + (accelerating ? .025 : 0) : 0;
+  const targetRate = .68 + speedRatio * .82 + (boosting ? .12 : 0);
+  engineMix = THREE.MathUtils.damp(engineMix, targetVolume, 6, dt);
+  engineLoop.volume = THREE.MathUtils.clamp(engineMix, 0, .26);
+  engineLoop.playbackRate = THREE.MathUtils.damp(engineLoop.playbackRate, targetRate, 7, dt);
+  canvas.dataset.engineVolume = engineLoop.volume.toFixed(3);
+  canvas.dataset.enginePlaybackRate = engineLoop.playbackRate.toFixed(2);
 }
 const input=new Set<string>(); const mouse=new THREE.Vector2(0,.15); const aimPoint=new THREE.Vector3();
 const raycaster=new THREE.Raycaster(); const aimPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
@@ -1223,6 +1283,9 @@ function shoot(): boolean {
   ui.weaponState.textContent="FIRING"; weaponStateLife=.08;
   muzzleFlash.color.setHex(definition.impactColor);muzzleFlash.intensity=selectedWeapon==="rocket"?22:selectedWeapon==="sniper"?28:8;muzzleFlash.distance=selectedWeapon==="rocket"?10:7;
   muzzleFlash.position.copy(shotOrigin); muzzleFlash.visible=true; muzzleFlashLife=selectedWeapon==="mg" ? .045 : .09;
+  if(selectedWeapon==="mg")playSfx("turret-mg",.22,.025);
+  else if(selectedWeapon==="rocket")playSfx("turret-rocket",.48,.025);
+  else playSfx("turret-sniper",.42,.018);
   if(selectedWeapon==="sniper")spawnSniperTracer(shotOrigin,shotDirection,weaponStats.range);else spawnImpactVfx(selectedWeapon,shotOrigin,false);
   return true;
 }
@@ -1259,8 +1322,16 @@ function explode(position:THREE.Vector3,lift=1.4,count=12): void {
 }
 
 function damageTarget(target:Target,amount:number): void {
-  if(!target.alive)return;target.health-=amount;target.hitFlash=.09;
+  if(!target.alive)return;target.health-=amount;target.hitFlash=.09;playHitConfirmation();
   if(target.health<=0){target.alive=false;explode(target.group.position);scene.remove(target.group);const left=targets.filter(item=>item.alive).length;canvas.dataset.targetsRemaining=String(left);showMessage(left?`TARGET SCRAPPED // ${left} REMAIN`:`ROUND WON // ALL TARGETS SCRAPPED`);if(!left)awardPlayerRound();}
+}
+
+let lastHitConfirmationAt = -Infinity;
+function playHitConfirmation(): void {
+  const now = performance.now();
+  if (now - lastHitConfirmationAt < 70) return;
+  lastHitConfirmationAt = now;
+  playSfx("confirmed-hit", .23, .02);
 }
 
 function equipPickup(pickup:Pickup): void {
@@ -1430,7 +1501,7 @@ function updateVehicle(dt:number): void {
   spawnDust(dt);
 }
 
-function hitVehicle(amount:number):void{if(vehicle.collisionCooldown>0)return;vehicle.collisionCooldown=.45;vehicle.health=Math.max(0,vehicle.health-amount*(1-(stats.armor??0)));if(vehicle.health<=0){showMessage("RIG DISABLED // RESETTING");setTimeout(resetVehicle,900);}}
+function hitVehicle(amount:number):void{if(vehicle.collisionCooldown>0)return;vehicle.collisionCooldown=.45;vehicle.health=Math.max(0,vehicle.health-amount*(1-(stats.armor??0)));playSfx("vehicle-hit",.3,.045);if(vehicle.health<=0){showMessage("RIG DISABLED // RESETTING");setTimeout(resetVehicle,900);}}
 
 function updateAim(dt:number): void {
   raycaster.setFromCamera(mouse,camera);
@@ -1726,7 +1797,7 @@ async function startLevel(levelId: ScraproadLevelId): Promise<void> {
   activeLayout.pickups.forEach(pickup => createPickup(pickup.x, pickup.z, pickup.kind));
   activeLayout.targets.forEach(target => createTarget(target.x, target.z, target.rotation));
   currentRound=1;roundAwarded=false;updateRoundHud();canvas.dataset.targetsRemaining=String(activeLayout.targets.length);
-  canvas.dataset.prototype="scraproad-1v1-foundation";canvas.dataset.arenaLayout=activeLayout.id;canvas.dataset.arenaKind=activeLayout.arenaKind;canvas.dataset.arenaRadius=String(ARENA_RADIUS);canvas.dataset.ringInnerRadius=String(activeLayout.ringInnerRadius);canvas.dataset.ringOuterRadius=String(activeLayout.ringOuterRadius);canvas.dataset.rampColliders=String(ramps.filter(ramp=>ramp.kind==="ramp").length);canvas.dataset.bridgeColliders=String(ramps.filter(ramp=>ramp.kind==="bridge").length);canvas.dataset.heightfieldColliders=String(driveHeightfields.length);canvas.dataset.majorColliders=String(obstacles.length+boxColliders.length+(activeLayout.arenaKind==="capsule"?3:0));canvas.dataset.vehicleCollider="three-disc-capsule-2.24x4.14x0.72";canvas.dataset.shotsFired="0";canvas.dataset.fireHeld="false";canvas.dataset.racekartAssets="modular-racekart-track-hilly";canvas.dataset.racingAssetsUsage=activeLayout.arenaKind==="capsule"?"rim-railings":"ramps-fences-props";canvas.dataset.colliderSource=activeLayout.arenaKind==="capsule"?"analytic-capsule-bands":"visual-asset-heightfields";canvas.dataset.wallRideContact="pending";auditHeightfieldCoverage();
+  canvas.dataset.prototype="scraproad-1v1-foundation";canvas.dataset.audioSystem="dynamic-engine-and-combat-sfx-v1";canvas.dataset.arenaLayout=activeLayout.id;canvas.dataset.arenaKind=activeLayout.arenaKind;canvas.dataset.arenaRadius=String(ARENA_RADIUS);canvas.dataset.ringInnerRadius=String(activeLayout.ringInnerRadius);canvas.dataset.ringOuterRadius=String(activeLayout.ringOuterRadius);canvas.dataset.rampColliders=String(ramps.filter(ramp=>ramp.kind==="ramp").length);canvas.dataset.bridgeColliders=String(ramps.filter(ramp=>ramp.kind==="bridge").length);canvas.dataset.heightfieldColliders=String(driveHeightfields.length);canvas.dataset.majorColliders=String(obstacles.length+boxColliders.length+(activeLayout.arenaKind==="capsule"?3:0));canvas.dataset.vehicleCollider="three-disc-capsule-2.24x4.14x0.72";canvas.dataset.shotsFired="0";canvas.dataset.fireHeld="false";canvas.dataset.racekartAssets="modular-racekart-track-hilly";canvas.dataset.racingAssetsUsage=activeLayout.arenaKind==="capsule"?"rim-railings":"ramps-fences-props";canvas.dataset.colliderSource=activeLayout.arenaKind==="capsule"?"analytic-capsule-bands":"visual-asset-heightfields";canvas.dataset.wallRideContact="pending";auditHeightfieldCoverage();
   levelStarted = true; levelStarting = false; paused = false; ui.levelSelect.hidden = true; resetVehicle(); runSmokeRoutes();
   showMessage(rampSmokeTest?"RAMP SUITE // AUTO DRIVE":allSurfaceSmokeTest?"ALL RAMPS // AUTO DRIVE":wallRideSmokeTest?"WALL-RIDE SUITE // AUTO DRIVE":holdFireSmokeTest?"HOLD-FIRE SMOKE TEST // COMPLETE":boostSmokeTest?"BOOST STAMINA TEST // COMPLETE":roundWinSmokeTest?"ROUND WIN HUD TEST // COMPLETE":`${activeLayout.name.toUpperCase()} // DEPLOYED`);
 }
@@ -1750,8 +1821,8 @@ window.addEventListener("pointerup",event=>{if(event.button===0)setFireHeld(fals
 canvas.addEventListener("pointerleave",event=>{if(event.buttons&1)setFireHeld(false);});
 window.addEventListener("blur",()=>{input.clear();setFireHeld(false);});
 document.addEventListener("visibilitychange",()=>{if(document.hidden){input.clear();setFireHeld(false);}});
-window.addEventListener("keydown", startSoundtrack, { capture: true });
-window.addEventListener("pointerdown", startSoundtrack, { capture: true });
+window.addEventListener("keydown", startAudio, { capture: true });
+window.addEventListener("pointerdown", startAudio, { capture: true });
 canvas.addEventListener("contextmenu",event=>event.preventDefault());
 getElement("controls-close").addEventListener("click",()=>toggleControls(false));getElement("resume-button").addEventListener("click",()=>togglePause(false));
 document.querySelectorAll<HTMLButtonElement>("[data-key]").forEach(button=>{const code=button.dataset.key??"";const press=(event:PointerEvent)=>{event.preventDefault();if(code==="Fire")setFireHeld(true);else input.add(code);};const release=(event:PointerEvent)=>{event.preventDefault();if(code==="Fire")setFireHeld(false);else input.delete(code);};button.addEventListener("pointerdown",press);button.addEventListener("pointerup",release);button.addEventListener("pointercancel",release);button.addEventListener("pointerleave",release);});
@@ -1768,6 +1839,7 @@ function updateDebug(frameDelta:number):void{
 function animate():void{
   requestAnimationFrame(animate);const frameDelta=Math.min(clock.getDelta(),MAX_FRAME_DELTA);
   lightShafts.rotation.y += frameDelta * .0025; atmosphericDust.rotation.y -= frameDelta * .0015;
+  updateEngineAudio(frameDelta);
   if(!paused&&levelStarted){
     physicsAccumulator=Math.min(physicsAccumulator+frameDelta,FIXED_TIMESTEP*MAX_PHYSICS_STEPS);
     const physicsStart=performance.now();let steps=0;
