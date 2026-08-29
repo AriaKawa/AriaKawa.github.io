@@ -386,6 +386,8 @@ const actualVehicleUp=new THREE.Vector3(0,1,0);
 for(const arrow of [debugUp,debugSurfaceNormal,debugSurfaceForward,debugVelocity,debugWallContact]){
   arrow.visible=false;arrow.renderOrder=31;scene.add(arrow);debugVisuals.push(arrow);
 }
+const persistentSceneObjects = new Set<THREE.Object3D>();
+const persistentDebugVisuals = new Set<THREE.Object3D>();
 
 function getGroundHeight(x: number, z: number): number {
   if (activeLayout.arenaKind === "capsule" && activeLayout.bowl) {
@@ -1174,7 +1176,7 @@ const roundWinSmokeTest = new URLSearchParams(location.search).get("combat-smoke
 const soundtrack = new Audio("./assets/nitro-games.wav");
 soundtrack.loop = true;
 soundtrack.volume = .12;
-soundtrack.preload = "metadata";
+soundtrack.preload = "auto";
 soundtrack.id = "soundtrack";
 soundtrack.hidden = true;
 soundtrack.dataset.playback = "waiting-for-interaction";
@@ -1200,14 +1202,19 @@ const sfxSources: Record<SfxKey, string> = {
 const sfxTemplates = new Map<SfxKey, HTMLAudioElement>();
 const activeSfx = new Set<HTMLAudioElement>();
 const spatialBuffers = new Map<SfxKey, AudioBuffer>();
+const sfxDataPromises = new Map<SfxKey, Promise<ArrayBuffer>>();
 let audioContext: AudioContext | null = null;
+let spatialAudioLoad: Promise<void> | null = null;
 let audioFrameDisabled = false;
 const audioFailureSmokeTest = initialParams.get("audio-smoke") === "fail";
 for (const [key, source] of Object.entries(sfxSources) as [SfxKey, string][]) {
   const audio = new Audio(source);
   audio.preload = "auto";
+  audio.load();
   sfxTemplates.set(key, audio);
+  sfxDataPromises.set(key,fetch(source).then(response=>response.arrayBuffer()));
 }
+soundtrack.load();engineLoop.load();
 
 function playSfx(key: SfxKey, volume: number, pitchVariation = .035, position?: THREE.Vector3): void {
   const buffer=spatialBuffers.get(key);
@@ -1235,9 +1242,7 @@ function playSfx(key: SfxKey, volume: number, pitchVariation = .035, position?: 
 function startAudio(): void {
   if(!audioContext){
     audioContext=new AudioContext();
-    for(const [key,path] of Object.entries(sfxSources) as [SfxKey,string][]){
-      fetch(path).then(response=>response.arrayBuffer()).then(data=>audioContext!.decodeAudioData(data)).then(buffer=>spatialBuffers.set(key,buffer)).catch(()=>undefined);
-    }
+    spatialAudioLoad=Promise.all([...sfxDataPromises].map(([key,pending])=>pending.then(data=>audioContext!.decodeAudioData(data.slice(0))).then(buffer=>spatialBuffers.set(key,buffer)).catch(()=>undefined))).then(()=>{canvas.dataset.combatAudio="decoded";});
   }
   if(audioContext.state==="suspended")void audioContext.resume();
   if (soundtrack.paused) {
@@ -1252,6 +1257,7 @@ function startAudio(): void {
       .then(() => { engineLoop.dataset.playback = "playing"; })
       .catch(() => { engineLoop.dataset.playback = "blocked"; });
   }
+  canvas.dataset.musicContinuity="single-document-loop";
 }
 
 const listenerForward=new THREE.Vector3(),listenerUp=new THREE.Vector3();
@@ -1430,6 +1436,22 @@ function createProjectile(kind:WeaponKind,incendiary=false,piercing=false,heavy=
   const glow=new THREE.PointLight(0xff6a24,8,4,2);glow.position.z=-.3;group.add(glow);return group;
 }
 
+let combatWarmPromise:Promise<void>|null=null;
+function warmCombatResources():Promise<void>{
+  if(combatWarmPromise)return combatWarmPromise;
+  combatWarmPromise=(async()=>{
+    const warmup=new THREE.Group();warmup.name="offscreen-combat-resource-warmup";warmup.position.set(0,-500,0);
+    const variants:[WeaponKind,boolean,boolean,boolean][]=[["mg",false,false,false],["mg",true,false,false],["mg",false,true,true],["rocket",false,false,false],["rocket",true,false,true],["sniper",false,false,false],["sniper",true,true,true]];
+    variants.forEach(([kind,fire,pierce,heavy],index)=>{const projectile=createProjectile(kind,fire,pierce,heavy);projectile.position.x=index*2;warmup.add(projectile);});
+    warmup.add(new THREE.Mesh(effectCoreGeometry,effectMaterial(0xffb52f,.95)),new THREE.Mesh(impactStarGeometry,effectMaterial(0xff5b20,.92)),new THREE.Mesh(effectRingGeometry,effectMaterial(0x67e7ff,.9)),new THREE.Mesh(trailGeometry,effectMaterial(0xff4b18,.8)));
+    scene.add(warmup);
+    try{await renderer.compileAsync(scene,camera);if(spatialAudioLoad)await spatialAudioLoad;canvas.dataset.combatPrewarm="complete";}
+    catch(error){canvas.dataset.combatPrewarm="partial";console.warn("[Rigged] Combat pre-warm completed with a fallback.",error);}
+    finally{scene.remove(warmup);}
+  })();
+  return combatWarmPromise;
+}
+
 function spawnBurnEmber(position:THREE.Vector3):void{
   const group=new THREE.Group();group.position.copy(position).add(new THREE.Vector3((Math.random()-.5)*1.4,.7+Math.random()*1.2,(Math.random()-.5)*1.4));group.userData.billboard=true;
   const ember=new THREE.Mesh(burnEmberGeometry,effectMaterial(Math.random()>.35?0xff491c:0xffbd45,.9));ember.scale.setScalar(.73+Math.random()*.6);group.add(ember);
@@ -1557,7 +1579,7 @@ function showCardDraft():void{
 }
 
 function chooseUpgradeCard(card:UpgradeCard):void{
-  if(!runState||roundPhase!=="card_select")return;applyCard(runState,card);saveRunState();selectedWeapon=runState.activeTurret;recomputeRunStats();selectWeapon(selectedWeapon,false);updateLoadoutUi();canvas.dataset.lastCardChosen=card.id;canvas.dataset.cardApplied="true";if(card.id==="field-repair")vehicle.health=Math.min(stats.maxHealth,vehicle.health+runState.repairAfterRound);ui.cardDraft.hidden=true;ui.weaponSelect.classList.remove("draft-open");showMessage(`${card.name.toUpperCase()} // INSTALLED`);window.setTimeout(advanceRound,420);
+  if(!runState||roundPhase!=="card_select")return;applyCard(runState,card);saveRunState();selectedWeapon=runState.activeTurret;recomputeRunStats();selectWeapon(selectedWeapon,false);updateLoadoutUi();canvas.dataset.lastCardChosen=card.id;canvas.dataset.cardApplied="true";if(card.id==="field-repair")vehicle.health=Math.min(stats.maxHealth,vehicle.health+runState.repairAfterRound);ui.cardDraft.hidden=true;ui.weaponSelect.classList.remove("draft-open");showMessage(`${card.name.toUpperCase()} // INSTALLED`);window.setTimeout(()=>void advanceRound(),420);
 }
 
 function cycleOwnedTurret(direction:number):void{
@@ -1921,10 +1943,24 @@ function finishRound(winner:"player"|"opponent"):void{
   if(!smokeMode){clearTimeout(roundTransitionTimer);roundTransitionTimer=window.setTimeout(showCardDraft,1500);}
 }
 
-function advanceRound():void{
+function clearRoundScene():void{
+  setFireHeld(false);input.clear();muzzleFlash.visible=false;
+  for(const bullet of bullets)scene.remove(bullet.mesh);bullets.length=0;
+  for(const particle of dust)scene.remove(particle.mesh);dust.length=0;
+  for(const effect of visualEffects)scene.remove(effect.group);visualEffects.length=0;
+  for(const child of [...scene.children])if(!persistentSceneObjects.has(child))scene.remove(child);
+  ramps.length=0;obstacles.length=0;boxColliders.length=0;aimSurfaces.length=0;driveHeightfields.length=0;targets.length=0;
+  debugVisuals.length=0;debugVisuals.push(...persistentDebugVisuals);canvas.dataset.roundWorldCleanup="complete";
+}
+
+async function advanceRound():Promise<void>{
+  if(roundPhase==="loading")return;
   const matchComplete=playerRoundWins>=3||enemyRoundWins>=3,nextLayout=activeLayout.id==="dustring"?"ovalbowl":"dustring";
-  const nextRound=currentRound+1;if(runState){runState.round=nextRound;saveRunState();}
-  const nextUrl=new URL(location.href);nextUrl.searchParams.set("level",nextLayout);nextUrl.searchParams.set("round",String(nextRound));nextUrl.searchParams.set("pw",String(matchComplete?0:playerRoundWins));nextUrl.searchParams.set("ew",String(matchComplete?0:enemyRoundWins));nextUrl.searchParams.set("auto","1");location.assign(nextUrl);
+  const nextRound=currentRound+1;roundPhase="loading";canvas.dataset.roundPhase=roundPhase;canvas.dataset.seamlessTransition="loading";ui.cardDraft.hidden=true;ui.countdown.hidden=false;ui.countdownValue.textContent="…";ui.countdownArena.textContent="NEXT ARENA";ui.countdown.querySelector("span")!.textContent="REBUILDING THE RING";startAudio();
+  if(matchComplete){playerRoundWins=0;enemyRoundWins=0;}currentRound=nextRound;if(runState){runState.round=nextRound;saveRunState();}updateRoundHud();
+  clearRoundScene();activeLayout=riggedArenaLayouts[nextLayout];ARENA_RADIUS=activeLayout.radius;
+  await addArena();await addWorldProps();registerPhysicsDebug();auditArenaFlow();activeLayout.targets.forEach(target=>createTarget(target.x,target.z,target.rotation));aimSurfaces.push(opponentCar);auditHeightfieldCoverage();
+  roundAwarded=false;resetVehicle(false);resetOpponent();updateCameraModeHud();canvas.dataset.targetsRemaining=String(activeLayout.targets.length);canvas.dataset.arenaLayout=activeLayout.id;canvas.dataset.arenaKind=activeLayout.arenaKind;canvas.dataset.arenaRadius=String(ARENA_RADIUS);canvas.dataset.ringInnerRadius=String(activeLayout.ringInnerRadius);canvas.dataset.ringOuterRadius=String(activeLayout.ringOuterRadius);canvas.dataset.mapRotation="alternate-in-document";canvas.dataset.seamlessTransition="complete";beginRoundCountdown();
 }
 
 function togglePause(force?:boolean):void{if(!levelStarted)return;paused=force??!paused;if(paused)setFireHeld(false);ui.pause.hidden=!paused;}
@@ -2080,13 +2116,14 @@ function runSmokeRoutes(): void {
 async function startLevel(levelId: RiggedLevelId): Promise<void> {
   if (levelStarted || levelStarting) return;
   levelStarting = true;
+  if(persistentSceneObjects.size===0){scene.children.forEach(object=>persistentSceneObjects.add(object));debugVisuals.forEach(object=>persistentDebugVisuals.add(object));}
   activeLayout = riggedArenaLayouts[levelId]; ARENA_RADIUS = activeLayout.radius;
   showMessage(`ASSEMBLING // ${activeLayout.name.toUpperCase()}`);
   document.querySelectorAll<HTMLButtonElement>("[data-level]").forEach(button => button.disabled = true);
-  await addArena(); await addWorldProps(); registerPhysicsDebug(); auditArenaFlow(); buildCar(); buildOpponentCar();recomputeRunStats();
+  await addArena(); await addWorldProps(); registerPhysicsDebug(); auditArenaFlow(); buildCar(); buildOpponentCar();persistentSceneObjects.add(car);persistentSceneObjects.add(opponentCar);recomputeRunStats();
   activeLayout.targets.forEach(target => createTarget(target.x, target.z, target.rotation));
   roundAwarded=false;updateRoundHud();canvas.dataset.targetsRemaining=String(activeLayout.targets.length);
-  canvas.dataset.prototype="rigged-1v1-combat";canvas.dataset.audioSystem="hrtf-directional-combat-sfx-v2";canvas.dataset.arenaLayout=activeLayout.id;canvas.dataset.arenaKind=activeLayout.arenaKind;canvas.dataset.arenaRadius=String(ARENA_RADIUS);canvas.dataset.ringInnerRadius=String(activeLayout.ringInnerRadius);canvas.dataset.ringOuterRadius=String(activeLayout.ringOuterRadius);canvas.dataset.rampColliders=String(ramps.filter(ramp=>ramp.kind==="ramp").length);canvas.dataset.bridgeColliders=String(ramps.filter(ramp=>ramp.kind==="bridge").length);canvas.dataset.heightfieldColliders=String(driveHeightfields.length);canvas.dataset.majorColliders=String(obstacles.length+boxColliders.length+(activeLayout.arenaKind==="capsule"?3:0));canvas.dataset.vehicleCollider="three-disc-capsule-2.24x4.14x0.72";canvas.dataset.shotsFired="0";canvas.dataset.aiShotsFired="0";canvas.dataset.fireHeld="false";canvas.dataset.arenaDrops="disabled";canvas.dataset.racekartAssets="modular-racekart-track-hilly";canvas.dataset.racingAssetsUsage=activeLayout.arenaKind==="capsule"?"rim-railings":"ramps-fences-props";canvas.dataset.colliderSource=activeLayout.arenaKind==="capsule"?"analytic-capsule-bands":"visual-asset-heightfields";canvas.dataset.wallRideContact="pending";canvas.dataset.mapRotation="alternate-every-round";auditHeightfieldCoverage();
+  canvas.dataset.prototype="rigged-1v1-combat";canvas.dataset.audioSystem="hrtf-directional-combat-sfx-v2";canvas.dataset.arenaLayout=activeLayout.id;canvas.dataset.arenaKind=activeLayout.arenaKind;canvas.dataset.arenaRadius=String(ARENA_RADIUS);canvas.dataset.ringInnerRadius=String(activeLayout.ringInnerRadius);canvas.dataset.ringOuterRadius=String(activeLayout.ringOuterRadius);canvas.dataset.rampColliders=String(ramps.filter(ramp=>ramp.kind==="ramp").length);canvas.dataset.bridgeColliders=String(ramps.filter(ramp=>ramp.kind==="bridge").length);canvas.dataset.heightfieldColliders=String(driveHeightfields.length);canvas.dataset.majorColliders=String(obstacles.length+boxColliders.length+(activeLayout.arenaKind==="capsule"?3:0));canvas.dataset.vehicleCollider="three-disc-capsule-2.24x4.14x0.72";canvas.dataset.shotsFired="0";canvas.dataset.aiShotsFired="0";canvas.dataset.fireHeld="false";canvas.dataset.arenaDrops="disabled";canvas.dataset.racekartAssets="modular-racekart-track-hilly";canvas.dataset.racingAssetsUsage=activeLayout.arenaKind==="capsule"?"rim-railings":"ramps-fences-props";canvas.dataset.colliderSource=activeLayout.arenaKind==="capsule"?"analytic-capsule-bands":"visual-asset-heightfields";canvas.dataset.wallRideContact="pending";canvas.dataset.mapRotation="alternate-in-document";auditHeightfieldCoverage();await warmCombatResources();
   levelStarted = true; levelStarting = false; paused = false; ui.levelSelect.hidden = true; resetVehicle(false);resetOpponent();updateCameraModeHud();
   const smokeMode=rampSmokeTest||allSurfaceSmokeTest||wallRideSmokeTest||holdFireSmokeTest||boostSmokeTest||roundWinSmokeTest;
   if(smokeMode&&!runState){runState=createStarterRun("mg",currentRound);selectedWeapon="mg";saveRunState();recomputeRunStats();selectWeapon("mg",false);beginRoundCountdown();}
