@@ -35,6 +35,7 @@ const colliderSource = await readFile(resolve(import.meta.dirname, "src/game/rig
 const ovalSource = await readFile(resolve(import.meta.dirname, "src/game/rigged/OvalBowlSurface.ts"), "utf8");
 const cameraSource = await readFile(resolve(import.meta.dirname, "src/game/rigged/RiggedCameraController.ts"), "utf8");
 const roguelikeSource = await readFile(resolve(import.meta.dirname, "src/game/rigged/RoguelikeRun.ts"), "utf8");
+const multiplayerSource = await readFile(resolve(import.meta.dirname, "src/game/rigged/RiggedMultiplayer.ts"), "utf8");
 const racekartManifest = await readFile(resolve(import.meta.dirname, "src/assets/riggedRacekartManifest.ts"), "utf8");
 const layouts = await readFile(resolve(import.meta.dirname, "src/game/rigged/RiggedArenaLayout.ts"), "utf8");
 const checks = [
@@ -47,12 +48,11 @@ const checks = [
   ["rival health meter", /id="rival-health-bar"[\s\S]*id="rival-health-value"/],
   ["controls", /id="controls"/],
   ["camera mode HUD", /id="camera-mode-value"[^>]*>CHASE CAM/],
-  ["level selector", /id="level-select"/],
+  ["Firebase host and join lobby", /id="multiplayer-lobby"[\s\S]*id="host-room"[\s\S]*id="join-room-form"[\s\S]*id="room-code-input"/],
   ["starter turret selector", /id="starter-select"[\s\S]*data-starter-turret="mg"[\s\S]*data-starter-turret="rocket"[\s\S]*data-starter-turret="sniper"/],
   ["between-round card draft", /id="card-draft"[\s\S]*id="card-grid"/],
   ["owned turret loadout", /id="weapon-select"[\s\S]*ROOF LOADOUT[\s\S]*WHEEL \/ 1–3 TO SWAP/],
-  ["Dust Ring deploy button", /data-level="dustring"/],
-  ["Capsule Circuit deploy button", /data-level="ovalbowl"[\s\S]*CAPSULE CIRCUIT/],
+  ["shared pick reveal", /id="starter-pick-reveal"[\s\S]*id="draft-pick-reveal"/],
   ["compiled module", /assets\/.*\.js/],
   ["compiled stylesheet", /assets\/.*\.css/],
 ];
@@ -60,6 +60,7 @@ const checks = [
 for (const [label, pattern] of checks) {
   if (!pattern.test(html)) throw new Error(`Missing ${label} in production output`);
 }
+if (/id="level-select"|data-level=|CHOOSE YOUR ARENA/.test(html)) throw new Error("The obsolete map chooser is still present");
 
 const sceneChecks = [
   ["terrain", /addArena\(\)/],
@@ -98,7 +99,7 @@ const sceneChecks = [
   ["round HUD win smoke route", /roundWinSmokeTest[\s\S]*roundHudSmoke/],
   ["countdown-gated rounds", /type RoundPhase = "loading"[\s\S]*"starter_turret_select"[\s\S]*"card_select"[\s\S]*function beginRoundCountdown[\s\S]*function updateRoundCountdown/],
   ["starter turret ownership", /function showStarterTurretSelect[\s\S]*function chooseStarterTurret[\s\S]*createStarterRun\(kind,currentRound\)/],
-  ["card draft between rounds", /function showCardDraft[\s\S]*draftCards\(runState\)[\s\S]*function chooseUpgradeCard/],
+  ["card draft between rounds", /function showCardDraft[\s\S]*function chooseUpgradeCard[\s\S]*draftCards\(nextState\)/],
   ["three-round turret reward", /currentRound%3===0[\s\S]*dataset\.turretReward/],
   ["owned turret scroll swapping", /function cycleOwnedTurret[\s\S]*addEventListener\("wheel"/],
   ["run persistence across arenas", /sessionStorage\.setItem\(RUN_STORAGE_KEY[\s\S]*runState\.round=nextRound/],
@@ -207,6 +208,15 @@ const roguelikeChecks = [
 for (const [label, pattern] of roguelikeChecks) {
   if (!pattern.test(roguelikeSource)) throw new Error(`Missing ${label} implementation`);
 }
+const multiplayerChecks = [
+  ["anonymous Firebase room client", /signInAnonymously[\s\S]*riggedRooms/],
+  ["two-player host launch", /startRun\(\)[\s\S]*order\.length !== 2[\s\S]*starter_draft/],
+  ["ordered synchronized picks", /resolveRoomPick[\s\S]*activePickerId !== playerId[\s\S]*draftTurn[\s\S]*nextRunState/],
+  ["both-player round gate", /resolveRoundReady[\s\S]*everyoneReady[\s\S]*upgrade_draft/],
+];
+for (const [label, pattern] of multiplayerChecks) {
+  if (!pattern.test(multiplayerSource)) throw new Error(`Missing ${label} implementation`);
+}
 if (/impact-frame/.test(html) || /triggerImpactFrame/.test(source)) throw new Error("Full-screen weapon impact frames must remain removed");
 const colliderChecks = [
   ["downward visual ray sampling", /new THREE\.Raycaster\(\)[\s\S]*intersectObject\(object, true\)/],
@@ -262,4 +272,4 @@ if (/dustbowl|stuntworks|bridge deck|mega jump/i.test(layouts)) throw new Error(
 const assetPaths = [...html.matchAll(/(?:src|href)="\.\/(assets\/[^\"]+)"/g)].map((match) => match[1]);
 for (const asset of assetPaths) await access(resolve(root, asset));
 
-console.log(`Rigged production validation passed (${sceneChecks.length} gameplay/asset systems, 2 selectable arenas including Capsule Circuit's analytic collider bands, ${racekartModels.length} selected Racekart Hilly models, and ${required.length + assetPaths.length} files checked).`);
+console.log(`Rigged production validation passed (${sceneChecks.length} gameplay/asset systems, Firebase two-player drafting, 2 rotating arenas including Capsule Circuit's analytic collider bands, ${racekartModels.length} selected Racekart Hilly models, and ${required.length + assetPaths.length} files checked).`);

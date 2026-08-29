@@ -28,6 +28,7 @@ import {
 import { RiggedCameraController, type RiggedCameraBounds } from "./game/rigged/RiggedCameraController";
 import {
   applyCard,
+  createTurretCard,
   createStarterRun,
   draftCards,
   isRunState,
@@ -36,6 +37,14 @@ import {
   type UpgradeCard,
   type WeaponKind,
 } from "./game/rigged/RoguelikeRun";
+import {
+  cleanPlayerName,
+  cleanRoomCode,
+  RiggedMultiplayerClient,
+  roomPlayers,
+  type RiggedRoom,
+  type RiggedRoomPick,
+} from "./game/rigged/RiggedMultiplayer";
 import "./style.css";
 
 type WeaponStats = {
@@ -121,13 +130,18 @@ const ui = {
   health: getElement("health-value"), healthBar: getElement("health-bar"), boost: getElement("boost-value"), boostBar: getElement("boost-bar"),
   boostMeter: document.querySelector<HTMLElement>(".status-meter--boost")!, weapon: getElement("weapon-part"),
   weaponState: getElement("weapon-state"), message: getElement("message"), controls: getElement("controls"),
-  pause: getElement("pause"), debug: getElement("physics-debug"), levelSelect: getElement("level-select"),
+  pause: getElement("pause"), debug: getElement("physics-debug"), multiplayerLobby: getElement("multiplayer-lobby"),
   round: getElement("round-value"), playerRounds: getElement("player-rounds"), enemyRounds: getElement("enemy-rounds"),
   countdown: getElement("round-countdown"), countdownValue: getElement("round-countdown-value"), countdownArena: getElement("round-countdown-arena"),
   rivalHealth: getElement("rival-health-value"), rivalHealthBar: getElement("rival-health-bar"),
   cameraMode: getElement("camera-mode-value"),
   starterSelect: getElement("starter-select"), cardDraft: getElement("card-draft"), cardGrid: getElement("card-grid"),
   draftEyebrow: getElement("draft-eyebrow"), draftTitle: getElement("card-draft-title"), draftSubtitle: getElement("draft-subtitle"),
+  starterTurn: getElement("starter-turn"), starterPickReveal: getElement("starter-pick-reveal"), draftPickReveal: getElement("draft-pick-reveal"),
+  roomEntry: getElement("room-entry"), roomWaiting: getElement("room-waiting"), playerName: getElement<HTMLInputElement>("player-name"),
+  roomCodeInput: getElement<HTMLInputElement>("room-code-input"), roomCodeDisplay: getElement<HTMLButtonElement>("room-code-display"),
+  roomPlayers: getElement("room-players"), roomStatus: getElement("room-status"), hostRoom: getElement<HTMLButtonElement>("host-room"),
+  joinRoomForm: getElement<HTMLFormElement>("join-room-form"), startRun: getElement<HTMLButtonElement>("start-run"),
   activeUpgrades: getElement("active-upgrades"), weaponSelect: getElement("weapon-select"),
 };
 const initialParams = new URLSearchParams(location.search);
@@ -147,6 +161,11 @@ const COUNTDOWN_DRIVE_WINDOW = .55;
 let countdownEndsAt = 0;
 let countdownShown = 3;
 let roundTransitionTimer = 0;
+let multiplayer: RiggedMultiplayerClient | null = null;
+let activeRoom: RiggedRoom | null = null;
+let renderedPickId = 0;
+let pickAnimationActive = false;
+let lastStartedRoomRound = 0;
 
 function updateRoundHud():void{
   ui.round.textContent=String(currentRound).padStart(2,"0");
@@ -1571,31 +1590,57 @@ function updateLoadoutUi():void{
 }
 
 function showStarterTurretSelect():void{
-  roundPhase="starter_turret_select";ui.starterSelect.hidden=false;ui.countdown.hidden=true;ui.weaponSelect.classList.add("draft-open");canvas.dataset.roundPhase=roundPhase;canvas.dataset.starterSelection="visible";updateLoadoutUi();
+  if(!activeRoom||activeRoom.phase!=="starter_draft")return;
+  roundPhase="starter_turret_select";ui.starterSelect.hidden=false;ui.cardDraft.hidden=true;ui.countdown.hidden=true;ui.weaponSelect.classList.add("draft-open");canvas.dataset.roundPhase=roundPhase;canvas.dataset.starterSelection="visible";updateLoadoutUi();
+  const picker=roomPlayers(activeRoom).find(player=>player.id===activeRoom?.activePickerId),myTurn=multiplayer?.isMyTurn()??false;
+  ui.starterTurn.textContent=myTurn?"YOUR PICK // Choose the next roof turret.":`${picker?.name??"The other driver"} is choosing. Watch their pick resolve.`;
+  ui.starterPickReveal.hidden=true;
+  document.querySelectorAll<HTMLElement>(".starter-card").forEach(card=>{
+    const button=card.querySelector<HTMLButtonElement>("[data-starter-turret]")!,kind=button.dataset.starterTurret as WeaponKind,available=activeRoom?.draftOptions.includes(kind)??false;
+    card.hidden=!available;card.dataset.optionId=kind;card.classList.remove("is-picked","is-fizzling");card.classList.toggle("is-watching",!myTurn);button.disabled=!myTurn;button.textContent=myTurn?`MOUNT ${kind==="mg"?"RATTLER":kind==="rocket"?"HELLBOX":"LONGLANCE"}`:"RIVAL IS CHOOSING";
+  });
 }
 
-function chooseStarterTurret(kind:WeaponKind):void{
-  runState=createStarterRun(kind,currentRound);selectedWeapon=kind;saveRunState();recomputeRunStats();selectWeapon(kind,false);ui.starterSelect.hidden=true;ui.weaponSelect.classList.remove("draft-open");canvas.dataset.starterSelection="complete";canvas.dataset.runState="active";resetVehicle(false);beginRoundCountdown();startAudio();
+async function chooseStarterTurret(kind:WeaponKind):Promise<void>{
+  if(!multiplayer?.isMyTurn()||!activeRoom?.draftOptions.includes(kind))return;
+  const nextState=activeRoom.runState?structuredClone(activeRoom.runState):createStarterRun(kind,currentRound);
+  if(activeRoom.runState)applyCard(nextState,createTurretCard(kind));
+  document.querySelectorAll<HTMLButtonElement>("[data-starter-turret]").forEach(button=>button.disabled=true);
+  const nextOptions=(activeRoom.draftTurn===0?(["mg","rocket","sniper"] as WeaponKind[]).filter(option=>option!==kind):[]);
+  try{await multiplayer.submitPick({optionId:kind,optionName:turretShortNames[kind],nextRunState:nextState,nextOptions});}
+  catch(error){showRoomError(error);showStarterTurretSelect();}
 }
 
 function buildCardElement(card:UpgradeCard):HTMLElement{
-  const article=document.createElement("article");article.className="upgrade-card";article.dataset.category=card.category;
+  const article=document.createElement("article");article.className="upgrade-card";article.dataset.category=card.category;article.dataset.optionId=card.id;
   const meta=document.createElement("div");meta.className="upgrade-card__meta";const category=document.createElement("span");category.textContent=card.category.toUpperCase();const scope=document.createElement("span");scope.textContent=card.scope.toUpperCase();meta.append(category,scope);
   const title=document.createElement("h2");title.textContent=card.name.toUpperCase();const description=document.createElement("p");description.textContent=card.description;
   const statsList=document.createElement("ul");statsList.className="upgrade-card__stats";for(const line of card.stats){const item=document.createElement("li");item.textContent=line;statsList.append(item);}
   const quote=document.createElement("p");quote.className="upgrade-card__quote";quote.textContent=`“${card.quote}”`;
-  const button=document.createElement("button");button.type="button";button.textContent=card.category==="turret"?"ADD TO LOADOUT":"CHOOSE CARD";button.addEventListener("click",()=>chooseUpgradeCard(card));
+  const button=document.createElement("button");button.type="button";button.textContent=card.category==="turret"?"ADD TO LOADOUT":"CHOOSE CARD";button.disabled=!(multiplayer?.isMyTurn()??false);button.addEventListener("click",()=>void chooseUpgradeCard(card));
+  article.classList.toggle("is-watching",button.disabled);
   article.append(meta,title,description,statsList,quote,button);return article;
 }
 
 function showCardDraft():void{
-  if(!runState){showStarterTurretSelect();return;}
-  runState.round=currentRound;saveRunState();const cards=draftCards(runState),turretReward=currentRound%3===0;
-  roundPhase="card_select";ui.countdown.hidden=true;ui.cardDraft.hidden=false;ui.weaponSelect.classList.add("draft-open");ui.draftEyebrow.textContent=turretReward?`ROUND ${currentRound} // TURRET SALVAGE`:`ROUND ${currentRound} COMPLETE // SALVAGE DRAFT`;ui.draftTitle.textContent=turretReward?"EXPAND THE RIG OR UPGRADE":"CHOOSE ONE UPGRADE";ui.draftSubtitle.textContent=turretReward?"A new turret is guaranteed this round, but the build cards are still tempting.":"One card becomes part of this run. The next arena starts immediately.";ui.cardGrid.replaceChildren(...cards.map(buildCardElement));canvas.dataset.roundPhase=roundPhase;canvas.dataset.cardDraft="visible";canvas.dataset.turretReward=turretReward?"offered":"not-due";
+  if(!runState||!activeRoom||activeRoom.phase!=="upgrade_draft")return;
+  const cards=resolveRoomCards(activeRoom.draftOptions,runState),turretReward=currentRound%3===0,picker=roomPlayers(activeRoom).find(player=>player.id===activeRoom?.activePickerId),myTurn=multiplayer?.isMyTurn()??false;
+  roundPhase="card_select";ui.countdown.hidden=true;ui.starterSelect.hidden=true;ui.cardDraft.hidden=false;ui.weaponSelect.classList.add("draft-open");ui.draftEyebrow.textContent=turretReward?`ROUND ${currentRound} // TURRET SALVAGE`:`ROUND ${currentRound} COMPLETE // SALVAGE DRAFT`;ui.draftTitle.textContent=myTurn?(turretReward?"EXPAND THE RIG OR UPGRADE":"CHOOSE ONE UPGRADE"):`${(picker?.name??"RIVAL").toUpperCase()} IS PICKING`;ui.draftSubtitle.textContent=myTurn?"YOUR PICK // Install one card into the shared rig.":`You can see every option. ${picker?.name??"The other driver"} has control.`;ui.draftPickReveal.hidden=true;ui.cardGrid.replaceChildren(...cards.map(buildCardElement));canvas.dataset.roundPhase=roundPhase;canvas.dataset.cardDraft="visible";canvas.dataset.turretReward=turretReward?"offered":"not-due";
 }
 
-function chooseUpgradeCard(card:UpgradeCard):void{
-  if(!runState||roundPhase!=="card_select")return;applyCard(runState,card);saveRunState();selectedWeapon=runState.activeTurret;recomputeRunStats();selectWeapon(selectedWeapon,false);updateLoadoutUi();canvas.dataset.lastCardChosen=card.id;canvas.dataset.cardApplied="true";if(card.id==="field-repair")vehicle.health=Math.min(stats.maxHealth,vehicle.health+runState.repairAfterRound);ui.cardDraft.hidden=true;ui.weaponSelect.classList.remove("draft-open");showMessage(`${card.name.toUpperCase()} // INSTALLED`);window.setTimeout(()=>void advanceRound(),420);
+async function chooseUpgradeCard(card:UpgradeCard):Promise<void>{
+  if(!runState||roundPhase!=="card_select"||!multiplayer?.isMyTurn()||!activeRoom?.draftOptions.includes(card.id))return;
+  const nextState=structuredClone(runState);applyCard(nextState,card);nextState.round=currentRound;
+  ui.cardGrid.querySelectorAll<HTMLButtonElement>("button").forEach(button=>button.disabled=true);
+  const nextOptions=activeRoom.draftTurn===0?draftCards(nextState).map(option=>option.id):[];
+  try{await multiplayer.submitPick({optionId:card.id,optionName:card.name,nextRunState:nextState,nextOptions});}
+  catch(error){showRoomError(error);showCardDraft();}
+}
+
+function resolveRoomCards(ids:string[],state:ScraproadRunState):UpgradeCard[]{
+  const generated=draftCards(state),candidates=[...generated,...upgradeCards];
+  for(const kind of ["mg","rocket","sniper"] as const)candidates.push(createTurretCard(kind));
+  return ids.map(id=>candidates.find(card=>card.id===id)).filter((card):card is UpgradeCard=>Boolean(card));
 }
 
 function cycleOwnedTurret(direction:number):void{
@@ -1954,9 +1999,17 @@ function updateRoundCountdown():void{
 function finishRound(winner:"player"|"opponent"):void{
   if(roundAwarded)return;roundAwarded=true;roundPhase="ended";setFireHeld(false);
   if(winner==="player")playerRoundWins=Math.min(3,playerRoundWins+1);else enemyRoundWins=Math.min(3,enemyRoundWins+1);
-  updateRoundHud();canvas.dataset.roundWinner=winner;canvas.dataset.roundPhase=roundPhase;ui.countdown.hidden=false;ui.countdownValue.textContent=winner==="player"?"WIN":"LOST";ui.countdownArena.textContent=playerRoundWins>=3||enemyRoundWins>=3?"MATCH COMPLETE":`ROUND ${currentRound} COMPLETE`;ui.countdown.querySelector("span")!.textContent="SALVAGE DRAFT INCOMING";
+  updateRoundHud();canvas.dataset.roundWinner=winner;canvas.dataset.roundPhase=roundPhase;ui.countdown.hidden=false;ui.countdownValue.textContent=winner==="player"?"WIN":"LOST";ui.countdownArena.textContent=playerRoundWins>=3||enemyRoundWins>=3?"MATCH COMPLETE":`ROUND ${currentRound} COMPLETE`;ui.countdown.querySelector("span")!.textContent="WAITING FOR BOTH DRIVERS";
   const smokeMode=rampSmokeTest||allSurfaceSmokeTest||wallRideSmokeTest||holdFireSmokeTest||boostSmokeTest||roundWinSmokeTest;
-  if(!smokeMode){clearTimeout(roundTransitionTimer);roundTransitionTimer=window.setTimeout(showCardDraft,1500);}
+  if(!smokeMode){clearTimeout(roundTransitionTimer);roundTransitionTimer=window.setTimeout(()=>void checkInRound(),1500);}
+}
+
+async function checkInRound():Promise<void>{
+  if(!runState||!multiplayer){return;}
+  runState.round=currentRound;saveRunState();
+  ui.countdown.querySelector("span")!.textContent="YOU'RE READY // WAITING FOR RIVAL";
+  try{await multiplayer.markRoundComplete(draftCards(runState).map(card=>card.id),structuredClone(runState));canvas.dataset.roundReady="submitted";}
+  catch(error){showRoomError(error);}
 }
 
 function clearRoundScene():void{
@@ -1969,10 +2022,10 @@ function clearRoundScene():void{
   debugVisuals.length=0;debugVisuals.push(...persistentDebugVisuals);canvas.dataset.roundWorldCleanup="complete";
 }
 
-async function advanceRound():Promise<void>{
+async function advanceRound(targetRound=currentRound+1):Promise<void>{
   if(roundPhase==="loading")return;
   const matchComplete=playerRoundWins>=3||enemyRoundWins>=3,nextLayout=activeLayout.id==="dustring"?"ovalbowl":"dustring";
-  const nextRound=currentRound+1;roundPhase="loading";canvas.dataset.roundPhase=roundPhase;canvas.dataset.seamlessTransition="loading";ui.cardDraft.hidden=true;ui.countdown.hidden=false;ui.countdownValue.textContent="…";ui.countdownArena.textContent="NEXT ARENA";ui.countdown.querySelector("span")!.textContent="REBUILDING THE RING";startAudio();
+  const nextRound=Math.max(currentRound+1,targetRound);roundPhase="loading";canvas.dataset.roundPhase=roundPhase;canvas.dataset.seamlessTransition="loading";ui.cardDraft.hidden=true;ui.countdown.hidden=false;ui.countdownValue.textContent="…";ui.countdownArena.textContent="NEXT ARENA";ui.countdown.querySelector("span")!.textContent="REBUILDING THE RING";startAudio();
   if(matchComplete){playerRoundWins=0;enemyRoundWins=0;}currentRound=nextRound;if(runState){runState.round=nextRound;saveRunState();}updateRoundHud();
   clearRoundScene();activeLayout=riggedArenaLayouts[nextLayout];ARENA_RADIUS=activeLayout.radius;
   await addArena();await addWorldProps();registerPhysicsDebug();auditArenaFlow();activeLayout.targets.forEach(target=>createTarget(target.x,target.z,target.rotation));aimSurfaces.push(opponentCar);auditHeightfieldCoverage();
@@ -2129,6 +2182,83 @@ function runSmokeRoutes(): void {
   if(roundWinSmokeTest){roundPhase="active";damageOpponent(999);canvas.dataset.roundHudSmoke=playerRoundWins===1&&canvas.dataset.roundWinner==="player"?"passed":"failed";}
 }
 
+function showRoomError(error:unknown):void{
+  const message=error instanceof Error?error.message:"Multiplayer connection failed.";
+  ui.roomStatus.textContent=message;showMessage(message.toUpperCase());
+}
+
+function renderRoomLobby(room:RiggedRoom|null):void{
+  if(!room){ui.roomEntry.hidden=false;ui.roomWaiting.hidden=true;return;}
+  const players=roomPlayers(room),inLobby=room.phase==="lobby";
+  ui.multiplayerLobby.hidden=!inLobby;ui.roomEntry.hidden=true;ui.roomWaiting.hidden=false;ui.roomCodeDisplay.textContent=room.code;
+  const rows=players.map(player=>{const row=document.createElement("div");row.className="room-player";const name=document.createElement("b");name.textContent=player.name;const role=document.createElement("span");role.textContent=player.id===room.hostId?"HOST // PICKS FIRST":"RIVAL // PICKS SECOND";row.append(name,role);return row;});
+  if(players.length<2){const empty=document.createElement("div");empty.className="room-player room-player--empty";const name=document.createElement("b");name.textContent="OPEN SEAT";const role=document.createElement("span");role.textContent="SHARE THE ROOM CODE";empty.append(name,role);rows.push(empty);}
+  ui.roomPlayers.replaceChildren(...rows);const canStart=multiplayer?.isHost()===true&&players.length===2;
+  ui.startRun.disabled=!canStart;ui.startRun.textContent=canStart?"START SHARED RUN":multiplayer?.isHost()?"WAITING FOR RIVAL":"WAITING FOR HOST";
+  ui.roomStatus.textContent=players.length<2?"Room ready. Send the code to one other driver.":canStart?"Both drivers connected. Launch when ready.":"Both drivers connected. Waiting for the host.";
+}
+
+function syncRunFromRoom(room:RiggedRoom):void{
+  if(!room.runState)return;
+  runState=structuredClone(room.runState);saveRunState();selectedWeapon=runState.activeTurret;
+  if(levelStarted){recomputeRunStats();selectWeapon(selectedWeapon,false);updateLoadoutUi();}
+  canvas.dataset.runState="shared";canvas.dataset.roomCode=room.code;
+}
+
+function animateRoomPick(pick:RiggedRoomPick):void{
+  const starter=!ui.starterSelect.hidden,grid=starter?ui.starterSelect:ui.cardGrid,reveal=starter?ui.starterPickReveal:ui.draftPickReveal;
+  const picker=activeRoom?roomPlayers(activeRoom).find(player=>player.id===pick.playerId):null;
+  grid.querySelectorAll<HTMLElement>(".starter-card,.upgrade-card").forEach(card=>{
+    const picked=card.dataset.optionId===pick.optionId;card.classList.toggle("is-picked",picked);card.classList.toggle("is-fizzling",!picked&&!card.hidden);
+    card.querySelectorAll<HTMLButtonElement>("button").forEach(button=>button.disabled=true);
+  });
+  reveal.textContent=`${picker?.name??"Driver"} picked ${pick.optionName}`;reveal.hidden=false;pickAnimationActive=true;canvas.dataset.pickAnimation="fizzle";canvas.dataset.lastCardChosen=pick.optionId;
+  window.setTimeout(()=>finishPickAnimation(starter),720);
+}
+
+function finishPickAnimation(starter:boolean):void{
+  pickAnimationActive=false;const room=activeRoom;if(!room)return;
+  if(room.phase==="starter_draft"){showStarterTurretSelect();return;}
+  if(room.phase==="upgrade_draft"){showCardDraft();return;}
+  if(room.phase!=="playing"||room.round<=lastStartedRoomRound)return;
+  ui.starterSelect.hidden=true;ui.cardDraft.hidden=true;ui.weaponSelect.classList.remove("draft-open");canvas.dataset.starterSelection="complete";canvas.dataset.cardApplied="true";startAudio();lastStartedRoomRound=room.round;
+  if(starter){currentRound=room.round;updateRoundHud();resetVehicle(false);resetOpponent();beginRoundCountdown();}
+  else void advanceRound(room.round);
+}
+
+function handleRoomSnapshot(room:RiggedRoom|null):void{
+  activeRoom=room;renderRoomLobby(room);if(!room)return;
+  syncRunFromRoom(room);
+  const newPick=room.lastPick&&room.lastPick.id>renderedPickId;
+  if(newPick){renderedPickId=room.lastPick!.id;if(levelStarted)animateRoomPick(room.lastPick!);return;}
+  if(!levelStarted||pickAnimationActive)return;
+  if(room.phase==="starter_draft"){showStarterTurretSelect();return;}
+  if(room.phase==="upgrade_draft"){showCardDraft();return;}
+  if(room.phase==="playing"&&room.round>lastStartedRoomRound)finishPickAnimation(lastStartedRoomRound===0);
+}
+
+async function setupMultiplayer():Promise<void>{
+  const savedName=localStorage.getItem("rigged-player-name")??"";ui.playerName.value=savedName;
+  const linkedCode=cleanRoomCode(new URLSearchParams(location.search).get("room")??"");if(linkedCode)ui.roomCodeInput.value=linkedCode;
+  ui.hostRoom.disabled=true;ui.startRun.disabled=true;
+  try{
+    multiplayer=await RiggedMultiplayerClient.connect();multiplayer.onRoom(handleRoomSnapshot);ui.hostRoom.disabled=false;ui.roomStatus.textContent="Firebase online. Host a room or join a friend.";
+  }catch(error){showRoomError(error);ui.roomStatus.textContent="Could not connect to Firebase. Check the network and reload.";return;}
+  ui.hostRoom.addEventListener("click",async()=>{
+    if(!multiplayer)return;ui.hostRoom.disabled=true;const name=cleanPlayerName(ui.playerName.value);localStorage.setItem("rigged-player-name",name);
+    try{const code=await multiplayer.createRoom(name);const url=new URL(location.href);url.searchParams.set("room",code);history.replaceState(null,"",url);sessionStorage.removeItem(RUN_STORAGE_KEY);runState=null;}
+    catch(error){showRoomError(error);ui.hostRoom.disabled=false;}
+  });
+  ui.joinRoomForm.addEventListener("submit",async event=>{
+    event.preventDefault();if(!multiplayer)return;const submit=ui.joinRoomForm.querySelector<HTMLButtonElement>("button")!;submit.disabled=true;const name=cleanPlayerName(ui.playerName.value);localStorage.setItem("rigged-player-name",name);
+    try{const code=await multiplayer.joinRoom(ui.roomCodeInput.value,name);const url=new URL(location.href);url.searchParams.set("room",code);history.replaceState(null,"",url);sessionStorage.removeItem(RUN_STORAGE_KEY);runState=null;}
+    catch(error){showRoomError(error);submit.disabled=false;}
+  });
+  ui.startRun.addEventListener("click",()=>multiplayer?.startRun().catch(showRoomError));
+  ui.roomCodeDisplay.addEventListener("click",()=>{if(!activeRoom)return;navigator.clipboard?.writeText(activeRoom.code).catch(()=>undefined);ui.roomStatus.textContent="Room code copied.";});
+  ui.roomCodeInput.addEventListener("input",()=>{ui.roomCodeInput.value=cleanRoomCode(ui.roomCodeInput.value);});
+}
+
 async function startLevel(levelId: RiggedLevelId): Promise<void> {
   if (levelStarted || levelStarting) return;
   levelStarting = true;
@@ -2140,28 +2270,26 @@ async function startLevel(levelId: RiggedLevelId): Promise<void> {
   activeLayout.targets.forEach(target => createTarget(target.x, target.z, target.rotation));
   roundAwarded=false;updateRoundHud();canvas.dataset.targetsRemaining=String(activeLayout.targets.length);
   canvas.dataset.prototype="rigged-1v1-combat";canvas.dataset.audioSystem="pooled-stereo-combat-sfx-v3";canvas.dataset.arenaLayout=activeLayout.id;canvas.dataset.arenaKind=activeLayout.arenaKind;canvas.dataset.arenaRadius=String(ARENA_RADIUS);canvas.dataset.ringInnerRadius=String(activeLayout.ringInnerRadius);canvas.dataset.ringOuterRadius=String(activeLayout.ringOuterRadius);canvas.dataset.rampColliders=String(ramps.filter(ramp=>ramp.kind==="ramp").length);canvas.dataset.bridgeColliders=String(ramps.filter(ramp=>ramp.kind==="bridge").length);canvas.dataset.heightfieldColliders=String(driveHeightfields.length);canvas.dataset.majorColliders=String(obstacles.length+boxColliders.length+(activeLayout.arenaKind==="capsule"?3:0));canvas.dataset.vehicleCollider="three-disc-capsule-2.24x4.14x0.72";canvas.dataset.shotsFired="0";canvas.dataset.aiShotsFired="0";canvas.dataset.fireHeld="false";canvas.dataset.arenaDrops="disabled";canvas.dataset.racekartAssets="modular-racekart-track-hilly";canvas.dataset.racingAssetsUsage=activeLayout.arenaKind==="capsule"?"rim-railings":"ramps-fences-props";canvas.dataset.colliderSource=activeLayout.arenaKind==="capsule"?"analytic-capsule-bands":"visual-asset-heightfields";canvas.dataset.wallRideContact="pending";canvas.dataset.mapRotation="alternate-in-document";auditHeightfieldCoverage();await warmCombatResources();
-  levelStarted = true; levelStarting = false; paused = false; ui.levelSelect.hidden = true; resetVehicle(false);resetOpponent();updateCameraModeHud();
+  levelStarted = true; levelStarting = false; paused = false; resetVehicle(false);resetOpponent();updateCameraModeHud();
   const smokeMode=rampSmokeTest||allSurfaceSmokeTest||wallRideSmokeTest||holdFireSmokeTest||boostSmokeTest||roundWinSmokeTest;
   if(smokeMode&&!runState){runState=createStarterRun("mg",currentRound);selectedWeapon="mg";saveRunState();recomputeRunStats();selectWeapon("mg",false);beginRoundCountdown();}
-  else if(runState){selectedWeapon=runState.activeTurret;recomputeRunStats();selectWeapon(selectedWeapon,false);beginRoundCountdown();}
-  else showStarterTurretSelect();
+  else if(smokeMode&&runState){selectedWeapon=runState.activeTurret;recomputeRunStats();selectWeapon(selectedWeapon,false);beginRoundCountdown();}
+  else if(activeRoom)handleRoomSnapshot(activeRoom);
   if(initialParams.get("auto")==="1"&&runState)startAudio();runSmokeRoutes();
   if(roundPhase!=="ended"&&(rampSmokeTest||allSurfaceSmokeTest||wallRideSmokeTest||holdFireSmokeTest||boostSmokeTest))showMessage(rampSmokeTest?"RAMP SUITE // AUTO DRIVE":allSurfaceSmokeTest?"ALL RAMPS // AUTO DRIVE":wallRideSmokeTest?"WALL-RIDE SUITE // AUTO DRIVE":holdFireSmokeTest?"HOLD-FIRE SMOKE TEST // COMPLETE":"BOOST STAMINA TEST // COMPLETE");
 }
 
-document.querySelectorAll<HTMLButtonElement>("[data-level]").forEach(button => {
-  button.addEventListener("click", () => void startLevel(button.dataset.level as RiggedLevelId));
-});
 document.querySelectorAll<HTMLButtonElement>("[data-weapon]").forEach(button=>{
   button.addEventListener("click",()=>selectWeapon(button.dataset.weapon as WeaponKind));
 });
 document.querySelectorAll<HTMLButtonElement>("[data-starter-turret]").forEach(button=>{
-  button.addEventListener("click",()=>chooseStarterTurret(button.dataset.starterTurret as WeaponKind));
+  button.addEventListener("click",()=>void chooseStarterTurret(button.dataset.starterTurret as WeaponKind));
 });
 selectWeapon("mg",false);
 updateRoundHud();
 const requestedLevel = new URLSearchParams(location.search).get("level") as RiggedLevelId | null;
-if (rampSmokeTest || allSurfaceSmokeTest || wallRideSmokeTest || holdFireSmokeTest || boostSmokeTest || roundWinSmokeTest || (requestedLevel && requestedLevel in riggedArenaLayouts)) void startLevel(requestedLevel && requestedLevel in riggedArenaLayouts ? requestedLevel : defaultRiggedLevel);
+void setupMultiplayer();
+void startLevel(requestedLevel && requestedLevel in riggedArenaLayouts ? requestedLevel : defaultRiggedLevel);
 
 window.addEventListener("keydown",event=>{if(["KeyW","KeyA","KeyS","KeyD","Space","ShiftLeft","KeyC","KeyF","F3","Digit1","Digit2","Digit3"].includes(event.code))event.preventDefault();if(event.repeat||!levelStarted)return;if(event.code==="Escape"){togglePause();return;}if(event.code==="KeyC"){toggleCameraMode();return;}if(event.code.startsWith("Digit")){const kind=(["mg","rocket","sniper"] as const)[Number(event.code.slice(5))-1];if(kind)selectWeapon(kind);return;}if(event.code==="KeyR")resetVehicle();if(event.code==="KeyB"||event.code==="KeyH"||event.code==="F3")toggleDebug();if(event.code==="KeyF")setFireHeld(true);input.add(event.code);});
 window.addEventListener("keyup",event=>{input.delete(event.code);if(event.code==="KeyF")setFireHeld(false);});

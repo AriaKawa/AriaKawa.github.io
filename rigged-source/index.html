@@ -66,27 +66,29 @@
         <div class="rig-summary"><small>RIG MODS</small><ul id="active-upgrades"><li>Choose a starter turret</li></ul></div>
       </aside>
 
-      <section id="level-select" class="level-select" aria-labelledby="level-select-title">
-        <div class="level-select__backdrop"></div>
-        <div class="level-select__card panel">
-          <span class="eyebrow">RIGGED // ROUND ZERO</span>
-          <h1 id="level-select-title">CHOOSE YOUR ARENA</h1>
-          <p>Keep it grounded in the original proving ground, or carry speed around Arena 2's capsule wall ride.</p>
-          <div class="level-grid">
-            <button class="level-card level-card--safe" type="button" data-level="dustring">
-              <span>ARENA 01 <i>COMBAT READY</i></span>
-              <strong>PROVING GROUND</strong>
-              <small>Wide circular track · open combat bowl · four ramps · rival hunt</small>
-              <b>DEPLOY RIG</b>
-            </button>
-            <button class="level-card level-card--bowl" type="button" data-level="ovalbowl">
-              <span>ARENA 02 <i>WALL RIDE READY</i></span>
-              <strong>CAPSULE CIRCUIT</strong>
-              <small>Flat 1v1 field · long straights · rounded ends · layered bank · hard upper guard</small>
-              <b>RIDE THE WALL</b>
-            </button>
+      <section id="multiplayer-lobby" class="multiplayer-lobby" aria-labelledby="multiplayer-title">
+        <div class="multiplayer-lobby__backdrop"></div>
+        <div class="multiplayer-card panel">
+          <span class="eyebrow">RIGGED // FIREBASE MULTIPLAYER</span>
+          <h1 id="multiplayer-title">BUILD A RIG TOGETHER</h1>
+          <p>Host a two-player run or join a friend's room. You will take turns choosing every part of the build.</p>
+
+          <div id="room-entry" class="room-entry">
+            <label class="room-field"><span>DRIVER NAME</span><input id="player-name" type="text" maxlength="18" autocomplete="nickname" placeholder="Road warrior" /></label>
+            <button id="host-room" class="room-primary" type="button">HOST ROOM</button>
+            <div class="room-divider"><span>OR JOIN</span></div>
+            <form id="join-room-form" class="room-join">
+              <input id="room-code-input" type="text" maxlength="5" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="CODE" aria-label="Room code" />
+              <button type="submit">JOIN ROOM</button>
+            </form>
           </div>
-          <small class="level-select__credit">Stadium accents use the local CC0 Modular Racekart Track — Hilly Terrain Theme asset pack.</small>
+
+          <div id="room-waiting" class="room-waiting" hidden>
+            <div><small>ROOM CODE</small><button id="room-code-display" type="button" title="Copy room code">-----</button></div>
+            <div id="room-players" class="room-players" aria-live="polite"></div>
+            <button id="start-run" class="room-primary" type="button" disabled>WAITING FOR RIVAL</button>
+          </div>
+          <p id="room-status" class="room-status" role="status" aria-live="polite">Connecting to Firebase…</p>
         </div>
       </section>
 
@@ -94,8 +96,9 @@
         <div class="draft-overlay__backdrop"></div>
         <div class="draft-shell">
           <span class="eyebrow">RIGGED // STARTER MOUNT</span>
-          <h1 id="starter-select-title">CHOOSE YOUR FIRST TURRET</h1>
-          <p>You begin with one roof weapon. Earn more after every third round.</p>
+          <h1 id="starter-select-title">CHOOSE A STARTER TURRET</h1>
+          <p id="starter-turn" class="draft-turn">Waiting for the first driver…</p>
+          <div id="starter-pick-reveal" class="pick-reveal" hidden></div>
           <div class="starter-grid">
             <article class="starter-card starter-card--mg">
               <span>MACHINE GUN</span><h2>SCRAP RATTLER</h2><p>Rapid automatic fire. Forgiving, noisy, and built for pressure.</p>
@@ -121,7 +124,8 @@
         <div class="draft-shell">
           <span id="draft-eyebrow" class="eyebrow">ROUND COMPLETE // SALVAGE DRAFT</span>
           <h1 id="card-draft-title">CHOOSE ONE UPGRADE</h1>
-          <p id="draft-subtitle">One card becomes part of this run. The next arena starts immediately.</p>
+          <p id="draft-subtitle" class="draft-turn">Waiting for the first driver…</p>
+          <div id="draft-pick-reveal" class="pick-reveal" hidden></div>
           <div id="card-grid" class="card-grid"></div>
         </div>
       </section>
