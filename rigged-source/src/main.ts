@@ -1604,11 +1604,11 @@ function updateLoadoutUi():void{
 }
 
 const draftCardSelector=".starter-card,.upgrade-card,.vehicle-card";
-const DRAFT_DEAL_DURATION_MS=650;
-const DRAFT_DEAL_STAGGER_MS=50;
-const DRAFT_SHUFFLE_DURATION_MS=720;
-const DRAFT_SHUFFLE_STAGGER_MS=45;
-const DRAFT_PICK_HOLD_MS=1050;
+const DRAFT_DEAL_DURATION_MS=975;
+const DRAFT_DEAL_STAGGER_MS=75;
+const DRAFT_SHUFFLE_DURATION_MS=1080;
+const DRAFT_SHUFFLE_STAGGER_MS=67.5;
+const DRAFT_PICK_HOLD_MS=1575;
 const AI_PICK_DELAY_MS=1000;
 
 function setDraftTeamTheme(overlay:HTMLElement,myTurn:boolean):void{
@@ -1684,7 +1684,7 @@ function showVehicleSelect():void{
   const cards=Object.entries(riggedVehicleCatalog).map(([rawId,definition])=>{
     const id=rawId as RiggedVehicleId,button=document.createElement("button");button.type="button";button.className="vehicle-card";button.dataset.vehicle=id;button.dataset.optionId=id;button.disabled=!myTurn||!activeRoom?.draftOptions.includes(id);button.classList.toggle("is-watching",!myTurn);
     const image=document.createElement("img");image.src=definition.preview;image.alt="";const copy=document.createElement("span"),label=document.createElement("b"),callout=document.createElement("small"),picked=document.createElement("em");
-    label.textContent=definition.label.toUpperCase();callout.textContent=definition.callout;const owners=players.filter(player=>activeRoom?.vehicleSelections?.[player.id]===id).map(player=>player.name);picked.textContent=owners.length?`${owners.join(" + ")} PICKED THIS`:myTurn?"SELECT VEHICLE":"RIVAL IS CHOOSING";copy.append(label,callout,picked);button.append(image,copy);button.addEventListener("click",()=>void chooseVehicle(id));return button;
+    label.textContent=definition.label.toUpperCase();callout.textContent=definition.callout;const owners=players.filter(player=>activeRoom?.vehicleSelections?.[player.id]===id).map(player=>player.name);picked.textContent=owners.length?`${owners.join(" + ")} PICKED THIS`:myTurn?"":"RIVAL IS CHOOSING";copy.append(label,callout);if(picked.textContent)copy.append(picked);button.append(image,copy);button.addEventListener("click",()=>void chooseVehicle(id));return button;
   });
   ui.vehicleGrid.replaceChildren(...cards);canvas.dataset.roundPhase="vehicle_select";canvas.dataset.vehicleSelection="visible";dealCards(ui.vehicleGrid);
 }

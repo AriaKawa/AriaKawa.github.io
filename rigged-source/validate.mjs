@@ -57,7 +57,7 @@ const checks = [
   ["host add AI control", /id="add-ai"[^>]*>ADD AI/],
   ["music mute control", /id="music-muted"[^>]*[\s\S]*MUTE MUSIC/],
   ["starter turret selector", /id="starter-select"[\s\S]*data-starter-turret="mg"[\s\S]*data-starter-turret="rocket"[\s\S]*data-starter-turret="sniper"/],
-  ["pre-round vehicle selector", /id="vehicle-select"[\s\S]*id="vehicle-grid"[\s\S]*Kenney Car Kit 3\.1/],
+  ["pre-round vehicle selector", /id="vehicle-select"[\s\S]*id="vehicle-select-title"[^>]*>CHOOSE YOUR CAR<[\s\S]*id="vehicle-grid"/],
   ["between-round card draft", /id="card-draft"[\s\S]*id="card-grid"/],
   ["owned turret loadout", /id="weapon-select"[\s\S]*ROOF LOADOUT[\s\S]*WHEEL \/ 1–3 TO SWAP/],
   ["shared pick reveal", /id="starter-pick-reveal"[\s\S]*id="draft-pick-reveal"/],
@@ -131,7 +131,8 @@ const sceneChecks = [
   ["stronger player and rival hulls", /maxHealth: 150[\s\S]*health:210,maxHealth:210[\s\S]*opponent\.maxHealth=210/],
   ["physical deck card sequence", /function dealCards[\s\S]*function shuffleCardsToDeck[\s\S]*dataset\.deckAnimation="collecting"/],
   ["team-colored draft cards", /function setDraftTeamTheme[\s\S]*dataset\.cardTeam=myTurn\?"player":"rival"[\s\S]*dataset\.cardTeam=myTurn\?"player-orange":"rival-purple"/],
-  ["lightweight deck timing", /DRAFT_DEAL_DURATION_MS=650[\s\S]*DRAFT_PICK_HOLD_MS=1050[\s\S]*AI_PICK_DELAY_MS=1000[\s\S]*setTimeout\(finishPickAnimation,DRAFT_PICK_HOLD_MS\)/],
+  ["extended lightweight deck timing", /DRAFT_DEAL_DURATION_MS=975[\s\S]*DRAFT_DEAL_STAGGER_MS=75[\s\S]*DRAFT_SHUFFLE_DURATION_MS=1080[\s\S]*DRAFT_SHUFFLE_STAGGER_MS=67\.5[\s\S]*DRAFT_PICK_HOLD_MS=1575[\s\S]*AI_PICK_DELAY_MS=1000[\s\S]*setTimeout\(finishPickAnimation,DRAFT_PICK_HOLD_MS\)/],
+  ["vehicle cards omit redundant selection text", /picked\.textContent=owners\.length\?[\s\S]*myTurn\?"":"RIVAL IS CHOOSING"[\s\S]*if\(picked\.textContent\)copy\.append\(picked\)/],
   ["AI waits for the rival-colored turn", /function maybeRunAITurn[\s\S]*pickAnimationActive\)return[\s\S]*function handleRoomSnapshot[\s\S]*syncVehicleFromRoom\(room\);\s*const newPick=/],
   ["rival damage wins round", /function damageOpponent[\s\S]*awardPlayerRound\(\)/],
   ["barrel pitch mount", /let barrelPivot = new THREE\.Group/],
@@ -227,6 +228,8 @@ const styleChecks = [
   ["compositor-only card deal", /@keyframes card-deal-out[^\n]*translate3d/],
   ["compositor-only card shuffle", /@keyframes card-shuffle-in[^\n]*translate3d/],
   ["reduced motion card fallback", /prefers-reduced-motion:reduce/],
+  ["deal animation stays interactive", /\.starter-card\.is-dealing[^\n]*pointer-events:auto/],
+  ["centered vehicle heading", /\.vehicle-shell > h1[^\n]*justify-content:center/],
 ];
 for (const [label, pattern] of styleChecks) {
   if (!pattern.test(styles)) throw new Error(`Missing ${label} implementation`);
