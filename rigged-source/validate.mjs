@@ -50,7 +50,7 @@ const checks = [
   ["round countdown", /id="round-countdown"[\s\S]*id="round-countdown-value"/],
   ["rival health meter", /id="rival-health-value"[\s\S]*id="rival-health-bar"/],
   ["car-anchored health tags", /id="player-health-tag"[\s\S]*id="rival-health-tag"/],
-  ["physical draft decks", /id="starter-select"[\s\S]*class="deck-stack"[\s\S]*id="starter-grid"[\s\S]*id="vehicle-select"[\s\S]*class="deck-stack"[\s\S]*id="vehicle-grid"[\s\S]*id="card-draft"[\s\S]*class="deck-stack"[\s\S]*id="card-grid"/],
+  ["physical draft decks", /id="starter-select"[\s\S]*class="deck-stack"[\s\S]*id="starter-grid"[\s\S]*id="vehicle-select"[\s\S]*class="deck-stack"[\s\S]*id="vehicle-grid"[\s\S]*id="card-draft"[\s\S]*class="deck-rack"[\s\S]*id="card-grid"/],
   ["controls", /id="controls"/],
   ["camera mode HUD", /id="camera-mode-value"[^>]*>CHASE CAM/],
   ["Firebase host and join lobby", /id="multiplayer-lobby"[\s\S]*id="host-room"[\s\S]*id="join-room-form"[\s\S]*id="room-code-input"/],
@@ -116,7 +116,7 @@ const sceneChecks = [
   ["owned turret scroll swapping", /function cycleOwnedTurret[\s\S]*addEventListener\("wheel"/],
   ["run persistence across arenas", /sessionStorage\.setItem\(RUN_STORAGE_KEY[\s\S]*runState\.round=nextRound/],
   ["incendiary projectiles and burn", /function spawnBurnEmber[\s\S]*burnDps[\s\S]*dataset\.burnStatus="applied"/],
-  ["multishot projectile fan", /projectileCount[\s\S]*for\(let index=0;index<count;index\+\+\)/],
+  ["multishot projectile fan", /projectileCount[\s\S]*const angles=Array\.from[\s\S]*for\(const angle of angles\)/],
   ["piercing projectile continuation", /piercesRemaining[\s\S]*piercingVfx="bright-tracer"/],
   ["ricochet projectile bounce", /ricochetsRemaining[\s\S]*ricochetVfx="spark"/],
   ["vehicle card runtime stats", /function recomputeRunStats[\s\S]*maxHealthMultiplier[\s\S]*handlingMultiplier[\s\S]*tractionMultiplier/],
@@ -221,10 +221,11 @@ const sceneChecks = [
 for (const [label, pattern] of sceneChecks) {
   if (!pattern.test(source)) throw new Error(`Missing ${label} implementation`);
 }
-if (/id="(?:draft-eyebrow|card-draft-title|draft-subtitle)"/.test(html)) throw new Error("Upgrade draft heading copy must remain removed");
-if (/description\.textContent=card\.description|upgrade-card__quote/.test(source)) throw new Error("Upgrade card descriptions and flavor quotes must remain removed");
+const forbiddenWeaponScopes = new RegExp([["current","turret"],["active","turret","only"],["this","turret","only"]].map(words=>words.join(" ")).join("|"),"i");
+if (forbiddenWeaponScopes.test(`${source}\n${html}\n${roguelikeSource}`)) throw new Error("Weapon copy must describe global turret effects");
+if (!/description\.textContent=card\.description/.test(source)) throw new Error("Upgrade cards must show concise descriptions");
 const styleChecks = [
-  ["visible card deck", /\.deck-stack[^\n]*perspective:500px/],
+  ["visible category decks", /\.deck-rack[^\n]*grid-template-columns:repeat\(3/],
   ["compositor-only card deal", /@keyframes card-deal-out[^\n]*translate3d/],
   ["compositor-only card shuffle", /@keyframes card-shuffle-in[^\n]*translate3d/],
   ["reduced motion card fallback", /prefers-reduced-motion:reduce/],
@@ -236,9 +237,12 @@ for (const [label, pattern] of styleChecks) {
 }
 const roguelikeChecks = [
   ["extensible run state", /type ScraproadRunState[\s\S]*ownedTurrets[\s\S]*turretStats[\s\S]*vehicleStats[\s\S]*upgrades/],
-  ["impactful weapon cards", /id:"double-tap"[\s\S]*id:"heavy-rounds"[\s\S]*id:"multishot"[\s\S]*id:"incendiary-rounds"/],
-  ["vehicle and utility cards", /id:"racing-tires"[\s\S]*id:"turbocharger"[\s\S]*id:"reinforced-plating"[\s\S]*id:"field-repair"[\s\S]*id:"emergency-shield"/],
-  ["guaranteed three-round turret card", /state\.round%3!==0[\s\S]*createTurretCard/],
+  ["four explicit decks", /type CardDeckId = "weapon" \| "body" \| "wheel" \| "ability"[\s\S]*remainingDecks/],
+  ["global weapon cards", /const allTurrets[\s\S]*id:"quick-trigger"[\s\S]*id:"heavy-rounds"[\s\S]*id:"multishot"[\s\S]*id:"incendiary-rounds"/],
+  ["body and wheel cards", /id:"reinforced-frame"[\s\S]*id:"overbuilt-hull"[\s\S]*id:"racing-tires"[\s\S]*id:"wall-grip-tires"/],
+  ["four Q abilities", /id:"ability-bunny-hop"[\s\S]*id:"ability-mega-boost"[\s\S]*id:"ability-reflect"[\s\S]*id:"ability-mega-shroom"/],
+  ["guaranteed three-round turret card", /state\.round%3===0[\s\S]*createTurretCard/],
+  ["two-copy deck inventory", /entries\(weaponCards,2\)[\s\S]*deck\.splice\(copyIndex,1\)/],
 ];
 for (const [label, pattern] of roguelikeChecks) {
   if (!pattern.test(roguelikeSource)) throw new Error(`Missing ${label} implementation`);
@@ -286,7 +290,7 @@ const cameraChecks = [
   ["smoothed orbit yaw", /yawDelta[\s\S]*this\.response\(5\.4, dt\)/],
   ["smoothed target distance", /distanceGoal[\s\S]*this\.followDistance = THREE\.MathUtils\.lerp/],
   ["world-up horizon", /camera\.up\.set\(0, 1, 0\)/],
-  ["missing target fallback", /fellBackToChase = true/],
+  ["missing target mode persistence", /Missing\/respawning targets[\s\S]*const hasEnemyTarget[\s\S]*fellBackToChase = false/],
   ["arena boundary clamp", /constrainToArena[\s\S]*ARENA_WALL_CLEARANCE/],
   ["floor clearance", /groundHeight\(this\.desiredPosition\.x, this\.desiredPosition\.z\) \+ MIN_FLOOR_CLEARANCE/],
 ];

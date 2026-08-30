@@ -52,14 +52,17 @@ export class RiggedCameraController {
     this.camera = camera;
   }
 
+  setMode(mode: RiggedCameraMode): void {
+    this.mode = mode;
+  }
+
   toggle(enemyAvailable: boolean): RiggedCameraToggle {
     if (this.mode === "enemy") {
       this.mode = "chase";
       return { mode: this.mode, noTarget: false };
     }
-    if (!enemyAvailable) return { mode: this.mode, noTarget: true };
     this.mode = "enemy";
-    return { mode: this.mode, noTarget: false };
+    return { mode: this.mode, noTarget: !enemyAvailable };
   }
 
   snapToChase(playerPosition: THREE.Vector3, playerHeading: number, groundHeight: (x: number, z: number) => number): void {
@@ -77,16 +80,15 @@ export class RiggedCameraController {
 
   update(frame: RiggedCameraFrame): RiggedCameraUpdate {
     const dt = THREE.MathUtils.clamp(frame.dt, 0, 1 / 30);
-    let fellBackToChase = false;
-    if (this.mode === "enemy" && (!frame.enemyAvailable || !frame.enemyPosition)) {
-      this.mode = "chase";
-      fellBackToChase = true;
-    }
+    // Missing/respawning targets temporarily use chase framing without mutating
+    // the player's selected mode. Enemy cam resumes as soon as a target exists.
+    const hasEnemyTarget = this.mode === "enemy" && frame.enemyAvailable && Boolean(frame.enemyPosition);
+    const fellBackToChase = false;
 
     this.forward.set(Math.sin(frame.playerHeading), 0, Math.cos(frame.playerHeading));
     let targetDistance: number | null = null;
 
-    if (this.mode === "enemy" && frame.enemyPosition) {
+    if (hasEnemyTarget && frame.enemyPosition) {
       this.toEnemy.copy(frame.enemyPosition).sub(frame.playerPosition);
       this.toEnemy.y = 0;
       targetDistance = this.toEnemy.length();

@@ -60,9 +60,10 @@ try {
   assert.ok(camera.position.y >= 12.59, "camera must stay above the drive surface");
 
   const fallback = controller.update({ dt: 1 / 60, playerPosition: player, playerHeading: 0, enemyAvailable: false, bounds: capsule, groundHeight: () => 10 });
-  assert.equal(fallback.mode, "chase");
-  assert.equal(fallback.fellBackToChase, true);
-  assert.deepEqual(controller.toggle(false), { mode: "chase", noTarget: true });
+  assert.equal(fallback.mode, "enemy", "enemy mode must persist while its target is unavailable");
+  assert.equal(fallback.fellBackToChase, false);
+  assert.deepEqual(controller.toggle(false), { mode: "chase", noTarget: false });
+  assert.deepEqual(controller.toggle(false), { mode: "enemy", noTarget: true }, "manual enemy selection persists while waiting for a target");
 
   console.log(`Rigged camera runtime tests passed (two-car framing, ${largestCameraStep.toFixed(3)} max orbit step, arena/floor clamps, missing-target fallback).`);
 } finally {

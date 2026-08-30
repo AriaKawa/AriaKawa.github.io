@@ -141,11 +141,26 @@
         </div>
       </section>
 
+      <section class="ability-hud panel" aria-label="Q ability">
+        <kbd>Q</kbd>
+        <div><small>ACTIVE ABILITY</small><strong id="ability-name">NONE</strong><span id="ability-state">NO ABILITY</span></div>
+        <i id="ability-cooldown"></i>
+      </section>
+
       <section id="card-draft" class="draft-overlay" hidden aria-label="Card draft">
         <div class="draft-overlay__backdrop"></div>
         <div class="draft-shell upgrade-draft-shell">
+          <div class="draft-heading">
+            <div><span class="eyebrow">RIGGED // BUILD DRAFT</span><h1>CHOOSE YOUR NEXT MOD</h1></div>
+            <p id="draft-ability-slot">Q SLOT // NONE EQUIPPED</p>
+          </div>
           <div id="draft-pick-reveal" class="pick-reveal" hidden></div>
-          <div class="deck-stack" aria-hidden="true"><i></i><i></i><i></i></div>
+          <div class="deck-rack" aria-label="Remaining card decks">
+            <div data-deck-pile="weapon"><span>⚙</span><b>WEAPON DECK</b><small id="weapon-deck-count">20 CARDS</small><i></i><i></i><i></i></div>
+            <div data-deck-pile="body"><span>◆</span><b>BODY DECK</b><small id="body-deck-count">16 CARDS</small><i></i><i></i><i></i></div>
+            <div data-deck-pile="wheel"><span>◉</span><b>WHEEL DECK</b><small id="wheel-deck-count">16 CARDS</small><i></i><i></i><i></i></div>
+            <div data-deck-pile="ability"><span>Q</span><b>HIDDEN ABILITY DECK</b><small id="ability-deck-count">4 RARE CARDS</small></div>
+          </div>
           <div id="card-grid" class="card-grid"></div>
         </div>
       </section>
@@ -162,6 +177,7 @@
           <div><kbd>WHEEL / 1–3</kbd><span>Swap owned turrets</span></div>
           <div><kbd>R</kbd><span>Reset vehicle</span></div>
           <div><kbd>C</kbd><span>Toggle Chase / Enemy Cam</span></div>
+          <div><kbd>Q</kbd><span>Activate rare Q ability</span></div>
           <div><kbd>F3 / H</kbd><span>Colliders + performance</span></div>
           <div><kbd>ESC</kbd><span>Pause / help</span></div>
         </div>
