@@ -121,9 +121,9 @@ button { font: inherit; color: inherit; }
 .starter-card,.upgrade-card { position:relative; min-height:390px; padding:23px; overflow:hidden; border:1px solid rgba(235,169,73,.25); color:#eee1cb; background:linear-gradient(155deg,rgba(57,45,31,.97),rgba(14,14,12,.99) 68%); box-shadow:0 24px 60px rgba(0,0,0,.42); transition:.18s; }
 .starter-card::before,.upgrade-card::before { content:""; position:absolute; width:190px; height:190px; right:-84px; top:-78px; border:25px solid rgba(255,255,255,.025); border-radius:50%; }
 .starter-card:hover,.upgrade-card:hover { transform:translateY(-5px); border-color:#e3a342; box-shadow:0 30px 70px rgba(0,0,0,.52),0 0 28px rgba(217,132,48,.09); }
-.starter-card.is-picked,.upgrade-card.is-picked,.vehicle-card.is-picked { z-index:2; border-color:#ffd073; box-shadow:0 0 0 2px rgba(255,187,78,.22),0 0 55px rgba(232,126,43,.5); animation:card-picked .68s cubic-bezier(.16,.8,.24,1) both; pointer-events:none; }
-.starter-card.is-fizzling,.upgrade-card.is-fizzling,.vehicle-card.is-fizzling { pointer-events:none; animation:card-fizzle .68s cubic-bezier(.4,0,.75,.3) both; }
-.starter-card.is-fizzling::after,.upgrade-card.is-fizzling::after,.vehicle-card.is-fizzling::after { content:""; position:absolute; inset:-20%; background:radial-gradient(circle,rgba(255,188,82,.7) 0 1px,transparent 2px) 0 0/13px 13px; mix-blend-mode:screen; animation:fizzle-sparks .68s ease-in both; }
+.starter-card.is-picked,.upgrade-card.is-picked,.vehicle-card.is-picked { z-index:2; border-color:#ffd073; box-shadow:0 0 0 2px rgba(255,187,78,.22),0 0 55px rgba(232,126,43,.5); animation:card-picked 1.25s cubic-bezier(.16,.8,.24,1) both; pointer-events:none; will-change:transform,opacity; backface-visibility:hidden; }
+.starter-card.is-fizzling,.upgrade-card.is-fizzling,.vehicle-card.is-fizzling { pointer-events:none; animation:card-fizzle 1.25s cubic-bezier(.2,.7,.3,1) both; will-change:transform,opacity; backface-visibility:hidden; }
+.starter-card.is-fizzling::after,.upgrade-card.is-fizzling::after,.vehicle-card.is-fizzling::after { content:""; position:absolute; inset:-20%; background:radial-gradient(circle,rgba(255,188,82,.72) 0 1px,transparent 2px) 0 0/13px 13px; opacity:0; transform:translate3d(0,-10%,0) scale(1.08); animation:fizzle-sparks 1.25s cubic-bezier(.2,.65,.3,1) both; will-change:transform,opacity; }
 .starter-card.is-watching button,.upgrade-card.is-watching button { color:#817669; border-color:#55483a; background:#252019; cursor:not-allowed; }
 .starter-card > span,.upgrade-card__meta { color:#d99b44; font:800 9px Inter; letter-spacing:.17em; text-transform:uppercase; }
 .starter-card h2,.upgrade-card h2 { margin:31px 0 8px; color:#fff0d8; font:900 32px/.95 'Barlow Condensed'; letter-spacing:.035em; }
@@ -148,9 +148,10 @@ button { font: inherit; color: inherit; }
 .upgrade-card[data-category="vehicle"] .upgrade-card__stats li { border-color:#71c390; }
 .upgrade-card__quote { margin:15px 0 64px!important; min-height:0!important; color:#776f64!important; font-style:italic!important; }
 @keyframes pick-reveal-in { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:none} }
-@keyframes card-picked { 0%{transform:scale(1)} 35%{transform:scale(1.055);filter:brightness(1.35)} 100%{transform:scale(1.015);filter:brightness(1.08)} }
-@keyframes card-fizzle { 0%{opacity:1;filter:none;transform:scale(1)} 45%{opacity:.48;filter:saturate(.3) brightness(1.6) blur(1px);transform:scale(.96)} 100%{opacity:0;filter:saturate(0) brightness(2.4) blur(10px);transform:scale(.82) translateY(22px)} }
-@keyframes fizzle-sparks { 0%{opacity:0;transform:translateY(-8%)} 35%{opacity:1} 100%{opacity:0;transform:translateY(28%)} }
+@keyframes card-picked { 0%{transform:translate3d(0,0,0) scale(1);opacity:1} 32%{transform:translate3d(0,-5px,0) scale(1.055)} 100%{transform:translate3d(0,0,0) scale(1.015);opacity:1} }
+@keyframes card-fizzle { 0%{opacity:1;transform:translate3d(0,0,0) scale(1)} 30%{opacity:.92;transform:translate3d(0,3px,0) scale(.985)} 68%{opacity:.42;transform:translate3d(0,18px,0) scale(.91)} 100%{opacity:0;transform:translate3d(0,38px,0) scale(.76)} }
+@keyframes fizzle-sparks { 0%{opacity:0;transform:translate3d(0,-10%,0) scale(1.08)} 22%{opacity:.8} 62%{opacity:.58} 100%{opacity:0;transform:translate3d(0,34%,0) scale(.86)} }
+@media (prefers-reduced-motion:reduce) { .starter-card.is-picked,.upgrade-card.is-picked,.vehicle-card.is-picked,.starter-card.is-fizzling,.upgrade-card.is-fizzling,.vehicle-card.is-fizzling,.starter-card.is-fizzling::after,.upgrade-card.is-fizzling::after,.vehicle-card.is-fizzling::after { animation-duration:.2s; } }
 .controls { position:fixed; z-index:9; left:50%; top:50%; width:min(580px,calc(100% - 30px)); transform:translate(-50%,-50%); padding:20px; transition:opacity .2s, transform .2s; }
 .controls.closed { opacity:0; pointer-events:none; transform:translate(-50%,-47%); }
 .controls__heading { display:flex; justify-content:space-between; align-items:start; margin-bottom:15px; }

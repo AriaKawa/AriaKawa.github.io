@@ -33,6 +33,7 @@ for (const file of required) await access(resolve(root, file));
 
 const html = await readFile(resolve(root, "index.html"), "utf8");
 const source = await readFile(resolve(import.meta.dirname, "src/main.ts"), "utf8");
+const styles = await readFile(resolve(import.meta.dirname, "src/style.css"), "utf8");
 const colliderSource = await readFile(resolve(import.meta.dirname, "src/game/rigged/DriveSurfaceCollider.ts"), "utf8");
 const ovalSource = await readFile(resolve(import.meta.dirname, "src/game/rigged/OvalBowlSurface.ts"), "utf8");
 const cameraSource = await readFile(resolve(import.meta.dirname, "src/game/rigged/RiggedCameraController.ts"), "utf8");
@@ -121,6 +122,10 @@ const sceneChecks = [
   ["no between-round page navigation", /async function advanceRound[\s\S]*await addArena\(\);await addWorldProps\(\)/],
   ["combat opponent car", /function buildOpponentCar[\s\S]*rival-ai-combat-car[\s\S]*function updateOpponent/],
   ["opponent return fire", /function shootOpponent[\s\S]*owner:"opponent"[\s\S]*aiShotsFired/],
+  ["AI uses Longlance rail", /dataset\.aiTurret="sniper"[\s\S]*function shootOpponent[\s\S]*createProjectile\("sniper"\)[\s\S]*weaponDefinitions\.sniper\.fireRate/],
+  ["unpredictable AI maneuvers", /maneuverTimer:[\s\S]*preferredDistance:[\s\S]*weavePhase:[\s\S]*Math\.random\(\)\*1\.65[\s\S]*orbitOffset/],
+  ["stronger player and rival hulls", /maxHealth: 150[\s\S]*health:210,maxHealth:210[\s\S]*opponent\.maxHealth=210/],
+  ["extended card pick timing", /setTimeout\(finishPickAnimation,1300\)/],
   ["rival damage wins round", /function damageOpponent[\s\S]*awardPlayerRound\(\)/],
   ["barrel pitch mount", /let barrelPivot = new THREE\.Group/],
   ["mouse world ray", /intersectObjects\(aimSurfaces/],
@@ -206,6 +211,14 @@ const sceneChecks = [
 ];
 for (const [label, pattern] of sceneChecks) {
   if (!pattern.test(source)) throw new Error(`Missing ${label} implementation`);
+}
+const styleChecks = [
+  ["long card fizzle", /is-fizzling[^\n]*card-fizzle 1\.25s/],
+  ["compositor-only card fizzle", /@keyframes card-fizzle[^\n]*translate3d/],
+  ["reduced motion card fallback", /prefers-reduced-motion:reduce/],
+];
+for (const [label, pattern] of styleChecks) {
+  if (!pattern.test(styles)) throw new Error(`Missing ${label} implementation`);
 }
 const roguelikeChecks = [
   ["extensible run state", /type ScraproadRunState[\s\S]*ownedTurrets[\s\S]*turretStats[\s\S]*vehicleStats[\s\S]*upgrades/],
