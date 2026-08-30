@@ -115,8 +115,8 @@ button { font: inherit; color: inherit; }
 .deck-stack i:nth-child(1) { transform:translate3d(-6px,4px,0) rotate(-5deg); }
 .deck-stack i:nth-child(2) { transform:translate3d(6px,3px,0) rotate(4deg); }
 .deck-stack i:nth-child(3) { transform:translate3d(0,0,0); }
-.deck-stack.is-dealing { animation:deck-deal .82s cubic-bezier(.16,.78,.24,1) both; }
-.deck-stack.is-collecting { animation:deck-collect 1.05s cubic-bezier(.22,.72,.25,1) both; }
+.deck-stack.is-dealing { animation:deck-deal 1.05s cubic-bezier(.16,.78,.24,1) both; }
+.deck-stack.is-collecting { animation:deck-collect 1.25s cubic-bezier(.22,.72,.25,1) both; }
 .starter-grid,.card-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:15px; }
 .vehicle-shell { width:min(980px,100%); }
 .vehicle-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
@@ -136,8 +136,8 @@ button { font: inherit; color: inherit; }
 .starter-card::before,.upgrade-card::before { content:""; position:absolute; width:190px; height:190px; right:-84px; top:-78px; border:25px solid rgba(255,255,255,.025); border-radius:50%; }
 .starter-card:hover,.upgrade-card:hover { transform:translateY(-5px); border-color:#e3a342; box-shadow:0 30px 70px rgba(0,0,0,.52),0 0 28px rgba(217,132,48,.09); }
 .starter-card.is-picked,.upgrade-card.is-picked,.vehicle-card.is-picked { z-index:4; border-color:#ffd073; box-shadow:0 0 0 2px rgba(255,187,78,.26),0 0 55px rgba(232,126,43,.58); pointer-events:none; }
-.starter-card.is-dealing,.upgrade-card.is-dealing,.vehicle-card.is-dealing { pointer-events:none; animation:card-deal-out .9s cubic-bezier(.16,.82,.23,1) both; animation-delay:var(--deal-delay,0ms); will-change:transform,opacity; backface-visibility:hidden; }
-.starter-card.is-shuffling-in,.upgrade-card.is-shuffling-in,.vehicle-card.is-shuffling-in { pointer-events:none; animation:card-shuffle-in .98s cubic-bezier(.3,.02,.2,1) both; animation-delay:var(--shuffle-delay,0ms); will-change:transform,opacity; backface-visibility:hidden; }
+.starter-card.is-dealing,.upgrade-card.is-dealing,.vehicle-card.is-dealing { pointer-events:none; animation:card-deal-out 1.25s cubic-bezier(.16,.82,.23,1) both; animation-delay:var(--deal-delay,0ms); will-change:transform,opacity; backface-visibility:hidden; transform:translateZ(0); }
+.starter-card.is-shuffling-in,.upgrade-card.is-shuffling-in,.vehicle-card.is-shuffling-in { pointer-events:none; animation:card-shuffle-in 1.32s cubic-bezier(.3,.02,.2,1) both; animation-delay:var(--shuffle-delay,0ms); will-change:transform,opacity; backface-visibility:hidden; transform:translateZ(0); }
 .starter-card.is-watching button,.upgrade-card.is-watching button { color:#817669; border-color:#55483a; background:#252019; cursor:not-allowed; }
 .starter-card > span,.upgrade-card__meta { color:#d99b44; font:800 9px Inter; letter-spacing:.17em; text-transform:uppercase; }
 .starter-card h2,.upgrade-card h2 { margin:31px 0 8px; color:#fff0d8; font:900 32px/.95 'Barlow Condensed'; letter-spacing:.035em; }
@@ -161,11 +161,35 @@ button { font: inherit; color: inherit; }
 .upgrade-card__stats li { padding:8px 10px; color:#d9cbb6; border-left:2px solid #cf7b35; background:rgba(255,255,255,.035); font:700 11px Inter; }
 .upgrade-card[data-category="vehicle"] .upgrade-card__stats li { border-color:#71c390; }
 .upgrade-card__quote { margin:15px 0 64px!important; min-height:0!important; color:#776f64!important; font-style:italic!important; }
+[data-card-team="player"] .deck-stack i { border-color:rgba(190,112,255,.82); background:repeating-linear-gradient(135deg,#08070a 0 7px,#29143d 7px 10px),linear-gradient(145deg,#5a2382,#070708); box-shadow:0 7px 22px rgba(0,0,0,.62),inset 0 0 0 3px #050506,inset 0 0 0 4px rgba(184,91,255,.38); }
+[data-card-team="player"] :is(.starter-card,.upgrade-card,.vehicle-card) { color:#eee7f6; border-color:rgba(185,96,255,.48); background:linear-gradient(155deg,rgba(28,13,42,.99),rgba(5,5,7,.995) 72%); box-shadow:0 24px 62px rgba(0,0,0,.58),0 0 28px rgba(152,57,223,.12); }
+[data-card-team="player"] :is(.starter-card,.upgrade-card,.vehicle-card):hover { border-color:#c26cff; box-shadow:0 30px 72px rgba(0,0,0,.64),0 0 34px rgba(172,68,244,.25); }
+[data-card-team="player"] :is(.starter-card,.upgrade-card) > span,[data-card-team="player"] .upgrade-card__meta,[data-card-team="player"] .vehicle-card small { color:#c886ff; }
+[data-card-team="player"] :is(.starter-card,.upgrade-card) h2,[data-card-team="player"] .vehicle-card b { color:#f8efff; }
+[data-card-team="player"] :is(.starter-card,.upgrade-card) > p { color:#b5a6c2; }
+[data-card-team="player"] .starter-card dl div,[data-card-team="player"] .upgrade-card__stats li { border-color:rgba(185,96,255,.32); background:rgba(163,75,226,.08); }
+[data-card-team="player"] .starter-card dt { color:#95849f; }
+[data-card-team="player"] .starter-card dd,[data-card-team="player"] .upgrade-card__stats li { color:#e4d7ed; }
+[data-card-team="player"] :is(.starter-card,.upgrade-card) button { color:#fff; border-color:#bd6aff; background:linear-gradient(90deg,#6225a2,#ad49e4); }
+[data-card-team="player"] :is(.starter-card,.upgrade-card).is-picked,[data-card-team="player"] .vehicle-card.is-picked { border-color:#d79aff; box-shadow:0 0 0 2px rgba(193,113,255,.34),0 0 58px rgba(158,54,228,.68); }
+[data-card-team="rival"] .deck-stack i { border-color:rgba(239,126,36,.86); background:repeating-linear-gradient(135deg,#fffaf2 0 7px,#f3a15d 7px 10px),linear-gradient(145deg,#fff,#ef802b); box-shadow:0 7px 22px rgba(0,0,0,.42),inset 0 0 0 3px #fff9ef,inset 0 0 0 4px rgba(227,99,19,.35); }
+[data-card-team="rival"] :is(.starter-card,.upgrade-card,.vehicle-card) { color:#3f2818; border-color:rgba(235,112,25,.58); background:linear-gradient(155deg,#fffdf8,#eee2d4 74%); box-shadow:0 24px 62px rgba(0,0,0,.48),0 0 28px rgba(238,112,26,.12); }
+[data-card-team="rival"] :is(.starter-card,.upgrade-card,.vehicle-card):hover { border-color:#f1802d; box-shadow:0 30px 72px rgba(0,0,0,.52),0 0 34px rgba(239,113,27,.22); }
+[data-card-team="rival"] :is(.starter-card,.upgrade-card) > span,[data-card-team="rival"] .upgrade-card__meta,[data-card-team="rival"] .vehicle-card small,[data-card-team="rival"] .vehicle-card em { color:#c85d13; }
+[data-card-team="rival"] :is(.starter-card,.upgrade-card) h2,[data-card-team="rival"] .vehicle-card b { color:#2f1a0d; }
+[data-card-team="rival"] :is(.starter-card,.upgrade-card) > p { color:#6d5848; }
+[data-card-team="rival"] .starter-card dl div,[data-card-team="rival"] .upgrade-card__stats li { border-color:rgba(220,103,24,.28); background:rgba(255,255,255,.58); }
+[data-card-team="rival"] .starter-card dt { color:#8e7562; }
+[data-card-team="rival"] .starter-card dd,[data-card-team="rival"] .upgrade-card__stats li { color:#473224; }
+[data-card-team="rival"] :is(.starter-card,.upgrade-card) button,[data-card-team="rival"] :is(.starter-card,.upgrade-card).is-watching button { color:#fffaf2; border-color:#d76416; background:linear-gradient(90deg,#d85f14,#f4973d); }
+[data-card-team="rival"] .vehicle-card.is-watching { filter:none; }
+[data-card-team="rival"] .vehicle-card.is-watching:not(.is-picked) { color:#3f2818; }
+[data-card-team="rival"] :is(.starter-card,.upgrade-card).is-picked,[data-card-team="rival"] .vehicle-card.is-picked { border-color:#ff9b4d; box-shadow:0 0 0 2px rgba(238,117,31,.3),0 0 58px rgba(239,107,22,.58); }
 @keyframes pick-reveal-in { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:none} }
 @keyframes deck-deal { 0%{opacity:1;transform:translate3d(0,0,0) scale(1)} 45%{transform:translate3d(0,-4px,0) scale(.94)} 100%{opacity:.78;transform:translate3d(0,0,0) scale(1)} }
 @keyframes deck-collect { 0%{transform:translate3d(0,0,0) scale(1)} 62%{transform:translate3d(0,3px,0) scale(1.08)} 100%{transform:translate3d(0,0,0) scale(1)} }
-@keyframes card-deal-out { 0%{opacity:0;transform:translate3d(var(--deck-x),var(--deck-y),0) scale(.22) rotate(var(--deck-rotation))} 58%{opacity:1;transform:translate3d(0,-5px,0) scale(1.025) rotate(0deg)} 100%{opacity:1;transform:translate3d(0,0,0) scale(1) rotate(0deg)} }
-@keyframes card-shuffle-in { 0%{opacity:1;transform:translate3d(0,0,0) scale(1) rotate(0deg)} 24%{opacity:1;transform:translate3d(0,-6px,0) scale(1.025) rotate(0deg)} 100%{opacity:.08;transform:translate3d(var(--deck-x),var(--deck-y),0) scale(.2) rotate(var(--deck-rotation))} }
+@keyframes card-deal-out { 0%{opacity:0;transform:translate3d(var(--deck-x),var(--deck-y),0) scale(.22) rotate(var(--deck-rotation))} 18%{opacity:.52} 70%{opacity:1;transform:translate3d(0,-9px,0) scale(1.035) rotate(0deg)} 88%{transform:translate3d(0,2px,0) scale(.995) rotate(0deg)} 100%{opacity:1;transform:translate3d(0,0,0) scale(1) rotate(0deg)} }
+@keyframes card-shuffle-in { 0%{opacity:1;transform:translate3d(0,0,0) scale(1) rotate(0deg)} 19%{opacity:1;transform:translate3d(0,-9px,0) scale(1.03) rotate(0deg)} 39%{transform:translate3d(0,3px,0) scale(.995) rotate(0deg)} 100%{opacity:.06;transform:translate3d(var(--deck-x),var(--deck-y),0) scale(.2) rotate(var(--deck-rotation))} }
 @media (prefers-reduced-motion:reduce) { .deck-stack.is-dealing,.deck-stack.is-collecting,.starter-card.is-dealing,.upgrade-card.is-dealing,.vehicle-card.is-dealing,.starter-card.is-shuffling-in,.upgrade-card.is-shuffling-in,.vehicle-card.is-shuffling-in { animation-duration:.2s;animation-delay:0ms; } }
 .controls { position:fixed; z-index:9; left:50%; top:50%; width:min(580px,calc(100% - 30px)); transform:translate(-50%,-50%); padding:20px; transition:opacity .2s, transform .2s; }
 .controls.closed { opacity:0; pointer-events:none; transform:translate(-50%,-47%); }

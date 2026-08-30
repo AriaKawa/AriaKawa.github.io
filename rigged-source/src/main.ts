@@ -1201,6 +1201,7 @@ const boostSmokeTest = new URLSearchParams(location.search).get("input-smoke") =
 const roundWinSmokeTest = new URLSearchParams(location.search).get("combat-smoke") === "round-win";
 const vehiclePreviewTest = initialParams.get("ui-preview") === "vehicles";
 const deckPreviewTest = initialParams.get("ui-preview") === "deck";
+const rivalDeckPreviewTest = deckPreviewTest && initialParams.get("team") === "rival";
 const soundtrack = new Audio("./assets/nitro-games.wav");
 soundtrack.loop = true;
 soundtrack.volume = .09;
@@ -1604,6 +1605,17 @@ function updateLoadoutUi():void{
 }
 
 const draftCardSelector=".starter-card,.upgrade-card,.vehicle-card";
+const DRAFT_DEAL_DURATION_MS=1250;
+const DRAFT_DEAL_STAGGER_MS=110;
+const DRAFT_SHUFFLE_DURATION_MS=1320;
+const DRAFT_SHUFFLE_STAGGER_MS=85;
+const DRAFT_PICK_HOLD_MS=2250;
+const AI_PICK_DELAY_MS=1900;
+
+function setDraftTeamTheme(overlay:HTMLElement,myTurn:boolean):void{
+  overlay.dataset.cardTeam=myTurn?"player":"rival";
+  canvas.dataset.cardTeam=myTurn?"player-purple":"rival-orange";
+}
 
 function visibleDraftCards(grid:HTMLElement):HTMLElement[]{
   return Array.from(grid.querySelectorAll<HTMLElement>(draftCardSelector)).filter(card=>!card.hidden);
@@ -1621,14 +1633,14 @@ function dealCards(grid:HTMLElement):void{
   if(!deck)return;
   const cards=visibleDraftCards(grid);deck.classList.remove("is-collecting","is-dealing");
   cards.forEach((card,index)=>{
-    card.classList.remove("is-picked","is-shuffling-in","is-dealing");setDeckMotion(card,deck,index,cards.length);card.style.setProperty("--deal-delay",`${index*62}ms`);
+    card.classList.remove("is-picked","is-shuffling-in","is-dealing");setDeckMotion(card,deck,index,cards.length);card.style.setProperty("--deal-delay",`${index*DRAFT_DEAL_STAGGER_MS}ms`);
   });
   void grid.offsetWidth;
   deck.classList.add("is-dealing");cards.forEach(card=>card.classList.add("is-dealing"));canvas.dataset.deckAnimation="dealing";
   window.setTimeout(()=>{
     if(version!==deckMotionVersion)return;
     cards.forEach(card=>card.classList.remove("is-dealing"));deck.classList.remove("is-dealing");canvas.dataset.deckAnimation="ready";
-  },980+cards.length*62);
+  },DRAFT_DEAL_DURATION_MS+cards.length*DRAFT_DEAL_STAGGER_MS+80);
 }
 
 function shuffleCardsToDeck(grid:HTMLElement,pickedId:string):void{
@@ -1638,19 +1650,20 @@ function shuffleCardsToDeck(grid:HTMLElement,pickedId:string):void{
   cards.forEach((card,index)=>{
     const picked=card.dataset.optionId===pickedId;
     card.classList.remove("is-dealing","is-shuffling-in");card.classList.toggle("is-picked",picked);
-    setDeckMotion(card,deck,index,cards.length);card.style.setProperty("--shuffle-delay",`${picked?175:(cards.length-1-index)*48}ms`);
+    setDeckMotion(card,deck,index,cards.length);card.style.setProperty("--shuffle-delay",`${picked?260:(cards.length-1-index)*DRAFT_SHUFFLE_STAGGER_MS}ms`);
     card.querySelectorAll<HTMLButtonElement>("button").forEach(button=>button.disabled=true);
   });
   void grid.offsetWidth;
   deck.classList.add("is-collecting");cards.forEach(card=>card.classList.add("is-shuffling-in"));
   canvas.dataset.deckAnimation="collecting";
-  window.setTimeout(()=>{if(version===deckMotionVersion)canvas.dataset.deckAnimation="stacked";},1180+cards.length*48);
+  window.setTimeout(()=>{if(version===deckMotionVersion)canvas.dataset.deckAnimation="stacked";},DRAFT_SHUFFLE_DURATION_MS+cards.length*DRAFT_SHUFFLE_STAGGER_MS+80);
 }
 
 function showStarterTurretSelect():void{
   if(!activeRoom||activeRoom.phase!=="starter_draft")return;
   roundPhase="starter_turret_select";ui.starterSelect.hidden=false;ui.vehicleSelect.hidden=true;ui.cardDraft.hidden=true;ui.countdown.hidden=true;ui.weaponSelect.classList.add("draft-open");canvas.dataset.roundPhase=roundPhase;canvas.dataset.starterSelection="visible";updateLoadoutUi();
-  const picker=roomPlayers(activeRoom).find(player=>player.id===activeRoom?.activePickerId),myTurn=deckPreviewTest||(multiplayer?.isMyTurn()??false);
+  const picker=roomPlayers(activeRoom).find(player=>player.id===activeRoom?.activePickerId),myTurn=(deckPreviewTest&&!rivalDeckPreviewTest)||(multiplayer?.isMyTurn()??false);
+  setDraftTeamTheme(ui.starterSelect,myTurn);
   ui.starterTurn.textContent=myTurn?"YOUR PICK // Choose the next roof turret.":`${picker?.name??"The other driver"} is choosing. Watch their pick resolve.`;
   ui.starterPickReveal.hidden=true;
   document.querySelectorAll<HTMLElement>(".starter-card").forEach(card=>{
@@ -1674,6 +1687,7 @@ function showVehicleSelect():void{
   if(!activeRoom||activeRoom.phase!=="vehicle_select")return;
   roundPhase="starter_turret_select";ui.starterSelect.hidden=true;ui.cardDraft.hidden=true;ui.vehicleSelect.hidden=false;ui.countdown.hidden=true;ui.weaponSelect.classList.add("draft-open");
   const players=roomPlayers(activeRoom),picker=players.find(player=>player.id===activeRoom?.activePickerId),myTurn=vehiclePreviewTest||(multiplayer?.isMyTurn()??false);
+  setDraftTeamTheme(ui.vehicleSelect,myTurn);
   ui.vehicleTurn.textContent=myTurn?"YOUR PICK // Choose the car you will drive.":`${picker?.name??"The other driver"} is choosing their car.`;ui.vehiclePickReveal.hidden=true;
   const cards=Object.entries(riggedVehicleCatalog).map(([rawId,definition])=>{
     const id=rawId as RiggedVehicleId,button=document.createElement("button");button.type="button";button.className="vehicle-card";button.dataset.vehicle=id;button.dataset.optionId=id;button.disabled=!myTurn||!activeRoom?.draftOptions.includes(id);button.classList.toggle("is-watching",!myTurn);
@@ -1704,6 +1718,7 @@ function buildCardElement(card:UpgradeCard):HTMLElement{
 function showCardDraft():void{
   if(!runState||!activeRoom||activeRoom.phase!=="upgrade_draft")return;
   const cards=resolveRoomCards(activeRoom.draftOptions,runState),turretReward=currentRound%3===0,picker=roomPlayers(activeRoom).find(player=>player.id===activeRoom?.activePickerId),myTurn=multiplayer?.isMyTurn()??false;
+  setDraftTeamTheme(ui.cardDraft,myTurn);
   roundPhase="card_select";ui.countdown.hidden=true;ui.starterSelect.hidden=true;ui.vehicleSelect.hidden=true;ui.cardDraft.hidden=false;ui.weaponSelect.classList.add("draft-open");ui.draftEyebrow.textContent=turretReward?`ROUND ${currentRound} // TURRET SALVAGE`:`ROUND ${currentRound} COMPLETE // SALVAGE DRAFT`;ui.draftTitle.textContent=myTurn?(turretReward?"EXPAND THE RIG OR UPGRADE":"CHOOSE ONE UPGRADE"):`${(picker?.name??"RIVAL").toUpperCase()} IS PICKING`;ui.draftSubtitle.textContent=myTurn?"YOUR PICK // Install one card into the shared rig.":`You can see every option. ${picker?.name??"The other driver"} has control.`;ui.draftPickReveal.hidden=true;ui.cardGrid.replaceChildren(...cards.map(buildCardElement));canvas.dataset.roundPhase=roundPhase;canvas.dataset.cardDraft="visible";canvas.dataset.turretReward=turretReward?"offered":"not-due";dealCards(ui.cardGrid);
 }
 
@@ -2326,7 +2341,7 @@ function maybeRunAITurn(room:RiggedRoom):void{
       const nextOptions=activeRoom.draftTurn===0?draftCards(nextState).map(option=>option.id):[];
       await multiplayer.submitAiPick({optionId:card.id,optionName:card.name,nextRunState:nextState,nextOptions});
     }catch(error){showRoomError(error);}finally{aiPickPending=false;}
-  },1550);
+  },AI_PICK_DELAY_MS);
 }
 
 function syncRunFromRoom(room:RiggedRoom):void{
@@ -2346,7 +2361,7 @@ function animateRoomPick(pick:RiggedRoomPick):void{
   const picker=activeRoom?roomPlayers(activeRoom).find(player=>player.id===pick.playerId):null;
   shuffleCardsToDeck(grid,pick.optionId);
   reveal.textContent=`${picker?.name??"Driver"} picked ${pick.optionName}`;reveal.hidden=false;pickAnimationActive=true;canvas.dataset.pickAnimation="deck-shuffle";canvas.dataset.lastCardChosen=pick.optionId;
-  window.setTimeout(finishPickAnimation,1450);
+  window.setTimeout(finishPickAnimation,DRAFT_PICK_HOLD_MS);
 }
 
 function finishPickAnimation():void{
@@ -2412,7 +2427,7 @@ async function startLevel(levelId: RiggedLevelId): Promise<void> {
   if(smokeMode)ui.multiplayerLobby.hidden=true;
   if(smokeMode&&!runState){runState=createStarterRun("mg",currentRound);selectedWeapon="mg";saveRunState();recomputeRunStats();selectWeapon("mg",false);beginRoundCountdown();}
   else if(smokeMode&&runState){selectedWeapon=runState.activeTurret;recomputeRunStats();selectWeapon(selectedWeapon,false);beginRoundCountdown();}
-  else if(deckPreviewTest){activeRoom={code:"DECK",hostId:"preview-player",phase:"starter_draft",round:1,players:{"preview-player":{name:"Preview Driver",joinedAt:1},rival:{name:"Rival Driver",joinedAt:2}},playerOrder:["preview-player","rival"],activePickerId:"preview-player",draftOptions:["mg","rocket","sniper"],draftTurn:0,pickSequence:0,lastPick:null,vehicleSelections:{},roundReady:{},runState:null,createdAt:1,updatedAt:1};ui.multiplayerLobby.hidden=true;showStarterTurretSelect();window.setTimeout(()=>animateRoomPick({id:1,playerId:"preview-player",optionId:"rocket",optionName:"HELLBOX",pickedAt:Date.now()}),1700);}
+  else if(deckPreviewTest){const previewPicker=rivalDeckPreviewTest?"rival":"preview-player";activeRoom={code:"DECK",hostId:"preview-player",phase:"starter_draft",round:1,players:{"preview-player":{name:"Preview Driver",joinedAt:1},rival:{name:"Rival Driver",joinedAt:2}},playerOrder:["preview-player","rival"],activePickerId:previewPicker,draftOptions:["mg","rocket","sniper"],draftTurn:rivalDeckPreviewTest?1:0,pickSequence:0,lastPick:null,vehicleSelections:{},roundReady:{},runState:null,createdAt:1,updatedAt:1};ui.multiplayerLobby.hidden=true;showStarterTurretSelect();window.setTimeout(()=>animateRoomPick({id:1,playerId:previewPicker,optionId:"rocket",optionName:"HELLBOX",pickedAt:Date.now()}),1700);}
   else if(vehiclePreviewTest){activeRoom={code:"PREVIEW",hostId:"preview-player",phase:"vehicle_select",round:1,players:{"preview-player":{name:"Preview Driver",joinedAt:1},rival:{name:"Rival Driver",joinedAt:2}},playerOrder:["preview-player","rival"],activePickerId:"preview-player",draftOptions:Object.keys(riggedVehicleCatalog),draftTurn:0,pickSequence:0,lastPick:null,vehicleSelections:{},roundReady:{},runState:null,createdAt:1,updatedAt:1};ui.multiplayerLobby.hidden=true;showVehicleSelect();}
   else if(activeRoom)handleRoomSnapshot(activeRoom);
   if(initialParams.get("auto")==="1"&&runState)startAudio();runSmokeRoutes();
