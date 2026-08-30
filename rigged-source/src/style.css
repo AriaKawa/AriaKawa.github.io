@@ -104,7 +104,7 @@ button { font: inherit; color: inherit; }
 .room-player--empty { border-style:dashed; opacity:.55; }
 .room-status { min-height:20px; margin:20px 0 0!important; color:#d59a47!important; font:700 10px Inter!important; letter-spacing:.09em; text-transform:uppercase; text-align:center; }
 .draft-overlay { position:fixed; z-index:34; inset:0; display:grid; place-items:center; padding:24px; overflow:auto; }
-.draft-overlay__backdrop { position:absolute; inset:0; background:radial-gradient(circle at 50% 34%,rgba(119,64,31,.3),rgba(5,6,5,.96) 68%); backdrop-filter:blur(10px); }
+.draft-overlay__backdrop { position:absolute; inset:0; background:radial-gradient(circle at 50% 34%,rgba(119,64,31,.36),rgba(5,6,5,.985) 68%); }
 .draft-shell { position:relative; width:min(1120px,100%); }
 .draft-shell > h1 { margin:10px 0 5px; color:#fff0d8; font:900 clamp(34px,5vw,62px)/.92 'Barlow Condensed'; letter-spacing:.025em; }
 .draft-shell > p { margin:0 0 22px; color:#a89a87; font-size:13px; }
@@ -115,8 +115,8 @@ button { font: inherit; color: inherit; }
 .deck-stack i:nth-child(1) { transform:translate3d(-6px,4px,0) rotate(-5deg); }
 .deck-stack i:nth-child(2) { transform:translate3d(6px,3px,0) rotate(4deg); }
 .deck-stack i:nth-child(3) { transform:translate3d(0,0,0); }
-.deck-stack.is-dealing { animation:deck-deal 1.05s cubic-bezier(.16,.78,.24,1) both; }
-.deck-stack.is-collecting { animation:deck-collect 1.25s cubic-bezier(.22,.72,.25,1) both; }
+.deck-stack.is-dealing { animation:deck-deal .58s cubic-bezier(.16,.78,.24,1) both; }
+.deck-stack.is-collecting { animation:deck-collect .68s cubic-bezier(.22,.72,.25,1) both; }
 .starter-grid,.card-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:15px; }
 .vehicle-shell { width:min(980px,100%); }
 .vehicle-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
@@ -136,8 +136,8 @@ button { font: inherit; color: inherit; }
 .starter-card::before,.upgrade-card::before { content:""; position:absolute; width:190px; height:190px; right:-84px; top:-78px; border:25px solid rgba(255,255,255,.025); border-radius:50%; }
 .starter-card:hover,.upgrade-card:hover { transform:translateY(-5px); border-color:#e3a342; box-shadow:0 30px 70px rgba(0,0,0,.52),0 0 28px rgba(217,132,48,.09); }
 .starter-card.is-picked,.upgrade-card.is-picked,.vehicle-card.is-picked { z-index:4; border-color:#ffd073; box-shadow:0 0 0 2px rgba(255,187,78,.26),0 0 55px rgba(232,126,43,.58); pointer-events:none; }
-.starter-card.is-dealing,.upgrade-card.is-dealing,.vehicle-card.is-dealing { pointer-events:none; animation:card-deal-out 1.25s cubic-bezier(.16,.82,.23,1) both; animation-delay:var(--deal-delay,0ms); will-change:transform,opacity; backface-visibility:hidden; transform:translateZ(0); }
-.starter-card.is-shuffling-in,.upgrade-card.is-shuffling-in,.vehicle-card.is-shuffling-in { pointer-events:none; animation:card-shuffle-in 1.32s cubic-bezier(.3,.02,.2,1) both; animation-delay:var(--shuffle-delay,0ms); will-change:transform,opacity; backface-visibility:hidden; transform:translateZ(0); }
+.starter-card.is-dealing,.upgrade-card.is-dealing,.vehicle-card.is-dealing { pointer-events:none; animation:card-deal-out .65s cubic-bezier(.16,.82,.23,1) both; animation-delay:var(--deal-delay,0ms); will-change:transform,opacity; backface-visibility:hidden; box-shadow:none; }
+.starter-card.is-shuffling-in,.upgrade-card.is-shuffling-in,.vehicle-card.is-shuffling-in { pointer-events:none; animation:card-shuffle-in .72s cubic-bezier(.3,.02,.2,1) both; animation-delay:var(--shuffle-delay,0ms); will-change:transform,opacity; backface-visibility:hidden; box-shadow:none; }
 .starter-card.is-watching button,.upgrade-card.is-watching button { color:#817669; border-color:#55483a; background:#252019; cursor:not-allowed; }
 .starter-card > span,.upgrade-card__meta { color:#d99b44; font:800 9px Inter; letter-spacing:.17em; text-transform:uppercase; }
 .starter-card h2,.upgrade-card h2 { margin:31px 0 8px; color:#fff0d8; font:900 32px/.95 'Barlow Condensed'; letter-spacing:.035em; }
@@ -188,8 +188,8 @@ button { font: inherit; color: inherit; }
 @keyframes pick-reveal-in { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:none} }
 @keyframes deck-deal { 0%{opacity:1;transform:translate3d(0,0,0) scale(1)} 45%{transform:translate3d(0,-4px,0) scale(.94)} 100%{opacity:.78;transform:translate3d(0,0,0) scale(1)} }
 @keyframes deck-collect { 0%{transform:translate3d(0,0,0) scale(1)} 62%{transform:translate3d(0,3px,0) scale(1.08)} 100%{transform:translate3d(0,0,0) scale(1)} }
-@keyframes card-deal-out { 0%{opacity:0;transform:translate3d(var(--deck-x),var(--deck-y),0) scale(.22) rotate(var(--deck-rotation))} 18%{opacity:.52} 70%{opacity:1;transform:translate3d(0,-9px,0) scale(1.035) rotate(0deg)} 88%{transform:translate3d(0,2px,0) scale(.995) rotate(0deg)} 100%{opacity:1;transform:translate3d(0,0,0) scale(1) rotate(0deg)} }
-@keyframes card-shuffle-in { 0%{opacity:1;transform:translate3d(0,0,0) scale(1) rotate(0deg)} 19%{opacity:1;transform:translate3d(0,-9px,0) scale(1.03) rotate(0deg)} 39%{transform:translate3d(0,3px,0) scale(.995) rotate(0deg)} 100%{opacity:.06;transform:translate3d(var(--deck-x),var(--deck-y),0) scale(.2) rotate(var(--deck-rotation))} }
+@keyframes card-deal-out { 0%{opacity:0;transform:translate3d(0,22px,0) scale(.985)} 68%{opacity:1;transform:translate3d(0,-4px,0) scale(1.008)} 100%{opacity:1;transform:translate3d(0,0,0) scale(1)} }
+@keyframes card-shuffle-in { 0%{opacity:1;transform:translate3d(0,0,0) scale(1)} 28%{opacity:1;transform:translate3d(0,-5px,0) scale(1.008)} 100%{opacity:0;transform:translate3d(0,-24px,0) scale(.97)} }
 @media (prefers-reduced-motion:reduce) { .deck-stack.is-dealing,.deck-stack.is-collecting,.starter-card.is-dealing,.upgrade-card.is-dealing,.vehicle-card.is-dealing,.starter-card.is-shuffling-in,.upgrade-card.is-shuffling-in,.vehicle-card.is-shuffling-in { animation-duration:.2s;animation-delay:0ms; } }
 .controls { position:fixed; z-index:9; left:50%; top:50%; width:min(580px,calc(100% - 30px)); transform:translate(-50%,-50%); padding:20px; transition:opacity .2s, transform .2s; }
 .controls.closed { opacity:0; pointer-events:none; transform:translate(-50%,-47%); }

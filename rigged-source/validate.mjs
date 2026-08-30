@@ -131,7 +131,8 @@ const sceneChecks = [
   ["stronger player and rival hulls", /maxHealth: 150[\s\S]*health:210,maxHealth:210[\s\S]*opponent\.maxHealth=210/],
   ["physical deck card sequence", /function dealCards[\s\S]*function shuffleCardsToDeck[\s\S]*dataset\.deckAnimation="collecting"/],
   ["team-colored draft cards", /function setDraftTeamTheme[\s\S]*dataset\.cardTeam=myTurn\?"player":"rival"/],
-  ["smooth deck pick timing", /DRAFT_DEAL_DURATION_MS=1250[\s\S]*DRAFT_PICK_HOLD_MS=2250[\s\S]*setTimeout\(finishPickAnimation,DRAFT_PICK_HOLD_MS\)/],
+  ["lightweight deck timing", /DRAFT_DEAL_DURATION_MS=650[\s\S]*DRAFT_PICK_HOLD_MS=1050[\s\S]*AI_PICK_DELAY_MS=1000[\s\S]*setTimeout\(finishPickAnimation,DRAFT_PICK_HOLD_MS\)/],
+  ["AI waits for the rival-colored turn", /function maybeRunAITurn[\s\S]*pickAnimationActive\)return[\s\S]*function handleRoomSnapshot[\s\S]*syncVehicleFromRoom\(room\);\s*const newPick=/],
   ["rival damage wins round", /function damageOpponent[\s\S]*awardPlayerRound\(\)/],
   ["barrel pitch mount", /let barrelPivot = new THREE\.Group/],
   ["mouse world ray", /intersectObjects\(aimSurfaces/],
@@ -222,7 +223,7 @@ for (const [label, pattern] of sceneChecks) {
 const styleChecks = [
   ["visible card deck", /\.deck-stack[^\n]*perspective:500px/],
   ["compositor-only card deal", /@keyframes card-deal-out[^\n]*translate3d/],
-  ["compositor-only card shuffle", /@keyframes card-shuffle-in[^\n]*--deck-x/],
+  ["compositor-only card shuffle", /@keyframes card-shuffle-in[^\n]*translate3d/],
   ["reduced motion card fallback", /prefers-reduced-motion:reduce/],
 ];
 for (const [label, pattern] of styleChecks) {

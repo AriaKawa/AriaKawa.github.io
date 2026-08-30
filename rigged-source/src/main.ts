@@ -1605,12 +1605,12 @@ function updateLoadoutUi():void{
 }
 
 const draftCardSelector=".starter-card,.upgrade-card,.vehicle-card";
-const DRAFT_DEAL_DURATION_MS=1250;
-const DRAFT_DEAL_STAGGER_MS=110;
-const DRAFT_SHUFFLE_DURATION_MS=1320;
-const DRAFT_SHUFFLE_STAGGER_MS=85;
-const DRAFT_PICK_HOLD_MS=2250;
-const AI_PICK_DELAY_MS=1900;
+const DRAFT_DEAL_DURATION_MS=650;
+const DRAFT_DEAL_STAGGER_MS=50;
+const DRAFT_SHUFFLE_DURATION_MS=720;
+const DRAFT_SHUFFLE_STAGGER_MS=45;
+const DRAFT_PICK_HOLD_MS=1050;
+const AI_PICK_DELAY_MS=1000;
 
 function setDraftTeamTheme(overlay:HTMLElement,myTurn:boolean):void{
   overlay.dataset.cardTeam=myTurn?"player":"rival";
@@ -1621,19 +1621,12 @@ function visibleDraftCards(grid:HTMLElement):HTMLElement[]{
   return Array.from(grid.querySelectorAll<HTMLElement>(draftCardSelector)).filter(card=>!card.hidden);
 }
 
-function setDeckMotion(card:HTMLElement,deck:HTMLElement,index:number,count:number):void{
-  const cardRect=card.getBoundingClientRect(),deckRect=deck.getBoundingClientRect();
-  card.style.setProperty("--deck-x",`${(deckRect.left+deckRect.width/2-cardRect.left-cardRect.width/2).toFixed(1)}px`);
-  card.style.setProperty("--deck-y",`${(deckRect.top+deckRect.height/2-cardRect.top-cardRect.height/2).toFixed(1)}px`);
-  card.style.setProperty("--deck-rotation",`${((index-(count-1)/2)*4.5).toFixed(1)}deg`);
-}
-
 function dealCards(grid:HTMLElement):void{
   const version=++deckMotionVersion,deck=grid.closest(".draft-shell")?.querySelector<HTMLElement>(".deck-stack");
   if(!deck)return;
   const cards=visibleDraftCards(grid);deck.classList.remove("is-collecting","is-dealing");
   cards.forEach((card,index)=>{
-    card.classList.remove("is-picked","is-shuffling-in","is-dealing");setDeckMotion(card,deck,index,cards.length);card.style.setProperty("--deal-delay",`${index*DRAFT_DEAL_STAGGER_MS}ms`);
+    card.classList.remove("is-picked","is-shuffling-in","is-dealing");card.style.setProperty("--deal-delay",`${index*DRAFT_DEAL_STAGGER_MS}ms`);
   });
   void grid.offsetWidth;
   deck.classList.add("is-dealing");cards.forEach(card=>card.classList.add("is-dealing"));canvas.dataset.deckAnimation="dealing";
@@ -1650,7 +1643,7 @@ function shuffleCardsToDeck(grid:HTMLElement,pickedId:string):void{
   cards.forEach((card,index)=>{
     const picked=card.dataset.optionId===pickedId;
     card.classList.remove("is-dealing","is-shuffling-in");card.classList.toggle("is-picked",picked);
-    setDeckMotion(card,deck,index,cards.length);card.style.setProperty("--shuffle-delay",`${picked?260:(cards.length-1-index)*DRAFT_SHUFFLE_STAGGER_MS}ms`);
+    card.style.setProperty("--shuffle-delay",`${picked?135:(cards.length-1-index)*DRAFT_SHUFFLE_STAGGER_MS}ms`);
     card.querySelectorAll<HTMLButtonElement>("button").forEach(button=>button.disabled=true);
   });
   void grid.offsetWidth;
@@ -1662,7 +1655,7 @@ function shuffleCardsToDeck(grid:HTMLElement,pickedId:string):void{
 function showStarterTurretSelect():void{
   if(!activeRoom||activeRoom.phase!=="starter_draft")return;
   roundPhase="starter_turret_select";ui.starterSelect.hidden=false;ui.vehicleSelect.hidden=true;ui.cardDraft.hidden=true;ui.countdown.hidden=true;ui.weaponSelect.classList.add("draft-open");canvas.dataset.roundPhase=roundPhase;canvas.dataset.starterSelection="visible";updateLoadoutUi();
-  const picker=roomPlayers(activeRoom).find(player=>player.id===activeRoom?.activePickerId),myTurn=(deckPreviewTest&&!rivalDeckPreviewTest)||(multiplayer?.isMyTurn()??false);
+  const picker=roomPlayers(activeRoom).find(player=>player.id===activeRoom?.activePickerId),myTurn=deckPreviewTest?activeRoom.activePickerId==="preview-player":(multiplayer?.isMyTurn()??false);
   setDraftTeamTheme(ui.starterSelect,myTurn);
   ui.starterTurn.textContent=myTurn?"YOUR PICK // Choose the next roof turret.":`${picker?.name??"The other driver"} is choosing. Watch their pick resolve.`;
   ui.starterPickReveal.hidden=true;
@@ -2317,7 +2310,7 @@ function renderRoomLobby(room:RiggedRoom|null):void{
 
 function maybeRunAITurn(room:RiggedRoom):void{
   const ai=roomPlayers(room).find(player=>player.isAI);
-  if(!ai||room.activePickerId!==ai.id||multiplayer?.isHost()!==true||aiPickPending)return;
+  if(!ai||room.activePickerId!==ai.id||multiplayer?.isHost()!==true||aiPickPending||pickAnimationActive)return;
   if(!["starter_draft","vehicle_select","upgrade_draft"].includes(room.phase))return;
   aiPickPending=true;const sequence=room.pickSequence;
   window.setTimeout(async()=>{
@@ -2378,7 +2371,6 @@ function finishPickAnimation():void{
 function handleRoomSnapshot(room:RiggedRoom|null):void{
   activeRoom=room;renderRoomLobby(room);if(!room)return;
   syncRunFromRoom(room);syncVehicleFromRoom(room);
-  maybeRunAITurn(room);
   const newPick=room.lastPick&&room.lastPick.id>renderedPickId;
   if(newPick){renderedPickId=room.lastPick!.id;if(levelStarted)animateRoomPick(room.lastPick!);return;}
   if(!levelStarted||pickAnimationActive)return;
@@ -2427,7 +2419,7 @@ async function startLevel(levelId: RiggedLevelId): Promise<void> {
   if(smokeMode)ui.multiplayerLobby.hidden=true;
   if(smokeMode&&!runState){runState=createStarterRun("mg",currentRound);selectedWeapon="mg";saveRunState();recomputeRunStats();selectWeapon("mg",false);beginRoundCountdown();}
   else if(smokeMode&&runState){selectedWeapon=runState.activeTurret;recomputeRunStats();selectWeapon(selectedWeapon,false);beginRoundCountdown();}
-  else if(deckPreviewTest){const previewPicker=rivalDeckPreviewTest?"rival":"preview-player";activeRoom={code:"DECK",hostId:"preview-player",phase:"starter_draft",round:1,players:{"preview-player":{name:"Preview Driver",joinedAt:1},rival:{name:"Rival Driver",joinedAt:2}},playerOrder:["preview-player","rival"],activePickerId:previewPicker,draftOptions:["mg","rocket","sniper"],draftTurn:rivalDeckPreviewTest?1:0,pickSequence:0,lastPick:null,vehicleSelections:{},roundReady:{},runState:null,createdAt:1,updatedAt:1};ui.multiplayerLobby.hidden=true;showStarterTurretSelect();window.setTimeout(()=>animateRoomPick({id:1,playerId:previewPicker,optionId:"rocket",optionName:"HELLBOX",pickedAt:Date.now()}),1700);}
+  else if(deckPreviewTest){const previewPicker=rivalDeckPreviewTest?"rival":"preview-player";activeRoom={code:"DECK",hostId:"preview-player",phase:"starter_draft",round:1,players:{"preview-player":{name:"Preview Driver",joinedAt:1},rival:{name:"Rival Driver",joinedAt:2}},playerOrder:["preview-player","rival"],activePickerId:previewPicker,draftOptions:["mg","rocket","sniper"],draftTurn:rivalDeckPreviewTest?1:0,pickSequence:0,lastPick:null,vehicleSelections:{},roundReady:{},runState:null,createdAt:1,updatedAt:1};ui.multiplayerLobby.hidden=true;showStarterTurretSelect();window.setTimeout(()=>{const pick={id:1,playerId:previewPicker,optionId:"rocket",optionName:"HELLBOX",pickedAt:Date.now()};if(activeRoom&&!rivalDeckPreviewTest)activeRoom={...activeRoom,activePickerId:"rival",draftTurn:1,pickSequence:1,lastPick:pick};animateRoomPick(pick);},1200);}
   else if(vehiclePreviewTest){activeRoom={code:"PREVIEW",hostId:"preview-player",phase:"vehicle_select",round:1,players:{"preview-player":{name:"Preview Driver",joinedAt:1},rival:{name:"Rival Driver",joinedAt:2}},playerOrder:["preview-player","rival"],activePickerId:"preview-player",draftOptions:Object.keys(riggedVehicleCatalog),draftTurn:0,pickSequence:0,lastPick:null,vehicleSelections:{},roundReady:{},runState:null,createdAt:1,updatedAt:1};ui.multiplayerLobby.hidden=true;showVehicleSelect();}
   else if(activeRoom)handleRoomSnapshot(activeRoom);
   if(initialParams.get("auto")==="1"&&runState)startAudio();runSmokeRoutes();
