@@ -49,6 +49,7 @@ const checks = [
   ["round score HUD", /id="player-rounds"[\s\S]*id="round-value"[\s\S]*id="enemy-rounds"/],
   ["round countdown", /id="round-countdown"[\s\S]*id="round-countdown-value"/],
   ["rival health meter", /id="rival-health-bar"[\s\S]*id="rival-health-value"/],
+  ["car-anchored health tags", /id="player-health-tag"[\s\S]*id="rival-health-tag"/],
   ["controls", /id="controls"/],
   ["camera mode HUD", /id="camera-mode-value"[^>]*>CHASE CAM/],
   ["Firebase host and join lobby", /id="multiplayer-lobby"[\s\S]*id="host-room"[\s\S]*id="join-room-form"[\s\S]*id="room-code-input"/],
@@ -208,6 +209,7 @@ const sceneChecks = [
   ["chase camera", /function updateCamera/],
   ["enemy camera toggle", /function toggleCameraMode[\s\S]*event\.code==="KeyC"/],
   ["enemy camera telemetry", /dataset\.cameraAimMode[\s\S]*dataset\.cameraLookAt/],
+  ["projected world health HUD", /function placeWorldHealthTag[\s\S]*\.project\(camera\)[\s\S]*function updateWorldHealthTags[\s\S]*projected-car-anchors/],
 ];
 for (const [label, pattern] of sceneChecks) {
   if (!pattern.test(source)) throw new Error(`Missing ${label} implementation`);

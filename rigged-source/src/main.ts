@@ -128,6 +128,7 @@ const canvas = getElement<HTMLCanvasElement>("game");
 
 const ui = {
   health: getElement("health-value"), healthBar: getElement("health-bar"), boost: getElement("boost-value"), boostBar: getElement("boost-bar"),
+  playerHealthTag: getElement("player-health-tag"), rivalHealthTag: getElement("rival-health-tag"),
   boostMeter: document.querySelector<HTMLElement>(".status-meter--boost")!, weapon: getElement("weapon-part"),
   weaponState: getElement("weapon-state"), message: getElement("message"), controls: getElement("controls"),
   pause: getElement("pause"), debug: getElement("physics-debug"), multiplayerLobby: getElement("multiplayer-lobby"),
@@ -1977,6 +1978,23 @@ function updateCamera(dt:number): void {
   cameraTelemetryAccumulator+=dt;if(cameraTelemetryAccumulator>=.1){cameraTelemetryAccumulator=0;canvas.dataset.cameraAimMode=result.mode==="enemy"?"enemy-target":"drive-forward";canvas.dataset.cameraPositionMode=result.mode;canvas.dataset.cameraTargetDistance=result.targetDistance?.toFixed(2)??"none";canvas.dataset.cameraPosition=`${camera.position.x.toFixed(2)},${camera.position.y.toFixed(2)},${camera.position.z.toFixed(2)}`;canvas.dataset.cameraLookAt=`${cameraController.lookAt.x.toFixed(2)},${cameraController.lookAt.y.toFixed(2)},${cameraController.lookAt.z.toFixed(2)}`;}
 }
 
+const worldHealthProjection=new THREE.Vector3();
+function placeWorldHealthTag(tag:HTMLElement,position:THREE.Vector3,height:number,available:boolean):void{
+  worldHealthProjection.copy(position);worldHealthProjection.y+=height;worldHealthProjection.project(camera);
+  const visible=available&&worldHealthProjection.z>-1&&worldHealthProjection.z<1&&Math.abs(worldHealthProjection.x)<1.15&&Math.abs(worldHealthProjection.y)<1.15;
+  tag.classList.toggle("world-health--hidden",!visible);tag.setAttribute("aria-hidden",String(!visible));
+  if(!visible)return;
+  const screenX=(worldHealthProjection.x*.5+.5)*innerWidth,screenY=(-worldHealthProjection.y*.5+.5)*innerHeight;
+  const scale=THREE.MathUtils.clamp(1.08-camera.position.distanceTo(position)*.0055,.78,1.02);
+  tag.style.transform=`translate3d(${screenX.toFixed(1)}px,${screenY.toFixed(1)}px,0) translate(-50%,-100%) scale(${scale.toFixed(3)})`;
+}
+function updateWorldHealthTags():void{
+  const duringCombat=levelStarted&&(roundPhase==="countdown"||roundPhase==="active"||roundPhase==="ended");
+  placeWorldHealthTag(ui.playerHealthTag,car.position,3.7,duringCombat&&vehicle.health>0&&car.visible);
+  placeWorldHealthTag(ui.rivalHealthTag,opponentCar.position,3.85,duringCombat&&opponent.health>0&&opponentCar.visible);
+  canvas.dataset.worldHealthHud="projected-car-anchors";
+}
+
 function updateHud():void{
   ui.boost.textContent=String(Math.round(vehicle.boost));ui.health.textContent=String(Math.round(vehicle.health));ui.healthBar.style.width=`${vehicle.health/stats.maxHealth*100}%`;ui.boostBar.style.width=`${vehicle.boost}%`;
   ui.health.parentElement!.title=vehicle.shield>0?`${Math.round(vehicle.shield)} temporary shield active`:"Hull integrity";canvas.dataset.shield=vehicle.shield.toFixed(1);
@@ -2347,6 +2365,7 @@ async function startLevel(levelId: RiggedLevelId): Promise<void> {
   canvas.dataset.prototype="rigged-1v1-combat";canvas.dataset.audioSystem="pooled-stereo-combat-sfx-v3";canvas.dataset.arenaLayout=activeLayout.id;canvas.dataset.arenaKind=activeLayout.arenaKind;canvas.dataset.arenaRadius=String(ARENA_RADIUS);canvas.dataset.ringInnerRadius=String(activeLayout.ringInnerRadius);canvas.dataset.ringOuterRadius=String(activeLayout.ringOuterRadius);canvas.dataset.rampColliders=String(ramps.filter(ramp=>ramp.kind==="ramp").length);canvas.dataset.bridgeColliders=String(ramps.filter(ramp=>ramp.kind==="bridge").length);canvas.dataset.heightfieldColliders=String(driveHeightfields.length);canvas.dataset.majorColliders=String(obstacles.length+boxColliders.length+(activeLayout.arenaKind==="capsule"?3:0));canvas.dataset.vehicleCollider="three-disc-capsule-2.24x4.14x0.72";canvas.dataset.shotsFired="0";canvas.dataset.aiShotsFired="0";canvas.dataset.fireHeld="false";canvas.dataset.arenaDrops="disabled";canvas.dataset.racekartAssets="modular-racekart-track-hilly";canvas.dataset.racingAssetsUsage=activeLayout.arenaKind==="capsule"?"rim-railings":"ramps-fences-props";canvas.dataset.colliderSource=activeLayout.arenaKind==="capsule"?"analytic-capsule-bands":"visual-asset-heightfields";canvas.dataset.wallRideContact="pending";canvas.dataset.mapRotation="alternate-in-document";auditHeightfieldCoverage();await warmCombatResources();
   levelStarted = true; levelStarting = false; paused = false; resetVehicle(false);resetOpponent();updateCameraModeHud();
   const smokeMode=rampSmokeTest||allSurfaceSmokeTest||wallRideSmokeTest||holdFireSmokeTest||boostSmokeTest||roundWinSmokeTest;
+  if(smokeMode)ui.multiplayerLobby.hidden=true;
   if(smokeMode&&!runState){runState=createStarterRun("mg",currentRound);selectedWeapon="mg";saveRunState();recomputeRunStats();selectWeapon("mg",false);beginRoundCountdown();}
   else if(smokeMode&&runState){selectedWeapon=runState.activeTurret;recomputeRunStats();selectWeapon(selectedWeapon,false);beginRoundCountdown();}
   else if(vehiclePreviewTest){activeRoom={code:"PREVIEW",hostId:"preview-player",phase:"vehicle_select",round:1,players:{"preview-player":{name:"Preview Driver",joinedAt:1},rival:{name:"Rival Driver",joinedAt:2}},playerOrder:["preview-player","rival"],activePickerId:"preview-player",draftOptions:Object.keys(riggedVehicleCatalog),draftTurn:0,pickSequence:0,lastPick:null,vehicleSelections:{},roundReady:{},runState:null,createdAt:1,updatedAt:1};ui.multiplayerLobby.hidden=true;showVehicleSelect();}
@@ -2403,8 +2422,9 @@ function animate():void{
       while(physicsAccumulator>=FIXED_TIMESTEP&&steps<MAX_PHYSICS_STEPS){capturePhysicsPose();elapsed+=FIXED_TIMESTEP;updateVehicle(FIXED_TIMESTEP);updateOpponent(FIXED_TIMESTEP);updateWeapon(FIXED_TIMESTEP);updateProjectiles(FIXED_TIMESTEP);physicsAccumulator-=FIXED_TIMESTEP;steps++;}
       physicsStepMs=performance.now()-physicsStart;updateVehicleVisual(physicsAccumulator/FIXED_TIMESTEP);
     }else{physicsAccumulator=0;if(roundPhase==="ended")updateProjectiles(frameDelta);}
-    updateCamera(frameDelta);updateAim(frameDelta);hudAccumulator+=frameDelta;if(hudAccumulator>.1){hudAccumulator=0;updateHud();}
+    updateCamera(frameDelta);updateWorldHealthTags();updateAim(frameDelta);hudAccumulator+=frameDelta;if(hudAccumulator>.1){hudAccumulator=0;updateHud();}
   }else{physicsAccumulator=0;}
+  if(!levelStarted||paused)updateWorldHealthTags();
   renderer.render(scene,camera);updateDebug(frameDelta);
 }
 animate();

@@ -18,8 +18,8 @@
     <meta name="twitter:description" content="A browser-playable 3D vehicle combat prototype." />
     <meta name="twitter:image" content="https://ariakawa.github.io/rigged/og.png" />
     <title>Rigged</title>
-    <script type="module" crossorigin src="./assets/index-DaNsi6Ss.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-BMBdW-sy.css">
+    <script type="module" crossorigin src="./assets/index-CCKZgFjw.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-CKyZucjg.css">
   </head>
   <body>
     <main id="app">
@@ -43,14 +43,15 @@
         <span>GET READY</span>
       </section>
 
-      <section class="status-hud" aria-label="Vehicle health and boost">
-        <div class="rival-meter" aria-label="Rival vehicle health">
-          <span>RIVAL</span><div class="meter-track"><i id="rival-health-bar"></i></div><b><em id="rival-health-value">210</em> HP</b>
-        </div>
-        <div class="status-meter status-meter--health">
-          <div><span>HULL</span><b><em id="health-value">150</em> HP</b></div>
-          <div class="meter-track"><i id="health-bar"></i></div>
-        </div>
+      <div id="player-health-tag" class="world-health world-health--player world-health--hidden" aria-label="Your vehicle health">
+        <div><span>YOU</span><b><em id="health-value">150</em> HP</b></div>
+        <div class="meter-track"><i id="health-bar"></i></div>
+      </div>
+      <div id="rival-health-tag" class="world-health world-health--rival world-health--hidden" aria-label="Rival vehicle health">
+        <div><span>RIVAL</span><div class="meter-track"><i id="rival-health-bar"></i></div><b><em id="rival-health-value">210</em> HP</b></div>
+      </div>
+
+      <section class="status-hud" aria-label="Vehicle boost">
         <div class="status-meter status-meter--boost">
           <div><span>BOOST</span><b><em id="boost-value">100</em>%</b></div>
           <div class="meter-track"><i id="boost-bar"></i></div>
