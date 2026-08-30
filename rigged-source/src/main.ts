@@ -138,7 +138,6 @@ const ui = {
   cameraMode: getElement("camera-mode-value"),
   starterSelect: getElement("starter-select"), starterGrid: getElement("starter-grid"), cardDraft: getElement("card-draft"), cardGrid: getElement("card-grid"),
   vehicleSelect: getElement("vehicle-select"), vehicleGrid: getElement("vehicle-grid"), vehicleTurn: getElement("vehicle-turn"), vehiclePickReveal: getElement("vehicle-pick-reveal"),
-  draftEyebrow: getElement("draft-eyebrow"), draftTitle: getElement("card-draft-title"), draftSubtitle: getElement("draft-subtitle"),
   starterTurn: getElement("starter-turn"), starterPickReveal: getElement("starter-pick-reveal"), draftPickReveal: getElement("draft-pick-reveal"),
   roomEntry: getElement("room-entry"), roomWaiting: getElement("room-waiting"), playerName: getElement<HTMLInputElement>("player-name"),
   roomCodeInput: getElement<HTMLInputElement>("room-code-input"), roomCodeDisplay: getElement<HTMLButtonElement>("room-code-display"),
@@ -1614,7 +1613,7 @@ const AI_PICK_DELAY_MS=1000;
 
 function setDraftTeamTheme(overlay:HTMLElement,myTurn:boolean):void{
   overlay.dataset.cardTeam=myTurn?"player":"rival";
-  canvas.dataset.cardTeam=myTurn?"player-purple":"rival-orange";
+  canvas.dataset.cardTeam=myTurn?"player-orange":"rival-purple";
 }
 
 function visibleDraftCards(grid:HTMLElement):HTMLElement[]{
@@ -1700,19 +1699,18 @@ async function chooseVehicle(id:RiggedVehicleId):Promise<void>{
 function buildCardElement(card:UpgradeCard):HTMLElement{
   const article=document.createElement("article");article.className="upgrade-card";article.dataset.category=card.category;article.dataset.optionId=card.id;
   const meta=document.createElement("div");meta.className="upgrade-card__meta";const category=document.createElement("span");category.textContent=card.category.toUpperCase();const scope=document.createElement("span");scope.textContent=card.scope.toUpperCase();meta.append(category,scope);
-  const title=document.createElement("h2");title.textContent=card.name.toUpperCase();const description=document.createElement("p");description.textContent=card.description;
+  const title=document.createElement("h2");title.textContent=card.name.toUpperCase();
   const statsList=document.createElement("ul");statsList.className="upgrade-card__stats";for(const line of card.stats){const item=document.createElement("li");item.textContent=line;statsList.append(item);}
-  const quote=document.createElement("p");quote.className="upgrade-card__quote";quote.textContent=`“${card.quote}”`;
   const button=document.createElement("button");button.type="button";button.textContent=card.category==="turret"?"ADD TO LOADOUT":"CHOOSE CARD";button.disabled=!(multiplayer?.isMyTurn()??false);button.addEventListener("click",()=>void chooseUpgradeCard(card));
   article.classList.toggle("is-watching",button.disabled);
-  article.append(meta,title,description,statsList,quote,button);return article;
+  article.append(meta,title,statsList,button);return article;
 }
 
 function showCardDraft():void{
   if(!runState||!activeRoom||activeRoom.phase!=="upgrade_draft")return;
-  const cards=resolveRoomCards(activeRoom.draftOptions,runState),turretReward=currentRound%3===0,picker=roomPlayers(activeRoom).find(player=>player.id===activeRoom?.activePickerId),myTurn=multiplayer?.isMyTurn()??false;
+  const cards=resolveRoomCards(activeRoom.draftOptions,runState),turretReward=currentRound%3===0,myTurn=multiplayer?.isMyTurn()??false;
   setDraftTeamTheme(ui.cardDraft,myTurn);
-  roundPhase="card_select";ui.countdown.hidden=true;ui.starterSelect.hidden=true;ui.vehicleSelect.hidden=true;ui.cardDraft.hidden=false;ui.weaponSelect.classList.add("draft-open");ui.draftEyebrow.textContent=turretReward?`ROUND ${currentRound} // TURRET SALVAGE`:`ROUND ${currentRound} COMPLETE // SALVAGE DRAFT`;ui.draftTitle.textContent=myTurn?(turretReward?"EXPAND THE RIG OR UPGRADE":"CHOOSE ONE UPGRADE"):`${(picker?.name??"RIVAL").toUpperCase()} IS PICKING`;ui.draftSubtitle.textContent=myTurn?"YOUR PICK // Install one card into the shared rig.":`You can see every option. ${picker?.name??"The other driver"} has control.`;ui.draftPickReveal.hidden=true;ui.cardGrid.replaceChildren(...cards.map(buildCardElement));canvas.dataset.roundPhase=roundPhase;canvas.dataset.cardDraft="visible";canvas.dataset.turretReward=turretReward?"offered":"not-due";dealCards(ui.cardGrid);
+  roundPhase="card_select";ui.countdown.hidden=true;ui.starterSelect.hidden=true;ui.vehicleSelect.hidden=true;ui.cardDraft.hidden=false;ui.weaponSelect.classList.add("draft-open");ui.draftPickReveal.hidden=true;ui.cardGrid.replaceChildren(...cards.map(buildCardElement));canvas.dataset.roundPhase=roundPhase;canvas.dataset.cardDraft="visible";canvas.dataset.turretReward=turretReward?"offered":"not-due";dealCards(ui.cardGrid);
 }
 
 async function chooseUpgradeCard(card:UpgradeCard):Promise<void>{

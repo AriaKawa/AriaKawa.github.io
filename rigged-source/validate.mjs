@@ -130,7 +130,7 @@ const sceneChecks = [
   ["unpredictable AI maneuvers", /maneuverTimer:[\s\S]*preferredDistance:[\s\S]*weavePhase:[\s\S]*Math\.random\(\)\*1\.65[\s\S]*orbitOffset/],
   ["stronger player and rival hulls", /maxHealth: 150[\s\S]*health:210,maxHealth:210[\s\S]*opponent\.maxHealth=210/],
   ["physical deck card sequence", /function dealCards[\s\S]*function shuffleCardsToDeck[\s\S]*dataset\.deckAnimation="collecting"/],
-  ["team-colored draft cards", /function setDraftTeamTheme[\s\S]*dataset\.cardTeam=myTurn\?"player":"rival"/],
+  ["team-colored draft cards", /function setDraftTeamTheme[\s\S]*dataset\.cardTeam=myTurn\?"player":"rival"[\s\S]*dataset\.cardTeam=myTurn\?"player-orange":"rival-purple"/],
   ["lightweight deck timing", /DRAFT_DEAL_DURATION_MS=650[\s\S]*DRAFT_PICK_HOLD_MS=1050[\s\S]*AI_PICK_DELAY_MS=1000[\s\S]*setTimeout\(finishPickAnimation,DRAFT_PICK_HOLD_MS\)/],
   ["AI waits for the rival-colored turn", /function maybeRunAITurn[\s\S]*pickAnimationActive\)return[\s\S]*function handleRoomSnapshot[\s\S]*syncVehicleFromRoom\(room\);\s*const newPick=/],
   ["rival damage wins round", /function damageOpponent[\s\S]*awardPlayerRound\(\)/],
@@ -220,6 +220,8 @@ const sceneChecks = [
 for (const [label, pattern] of sceneChecks) {
   if (!pattern.test(source)) throw new Error(`Missing ${label} implementation`);
 }
+if (/id="(?:draft-eyebrow|card-draft-title|draft-subtitle)"/.test(html)) throw new Error("Upgrade draft heading copy must remain removed");
+if (/description\.textContent=card\.description|upgrade-card__quote/.test(source)) throw new Error("Upgrade card descriptions and flavor quotes must remain removed");
 const styleChecks = [
   ["visible card deck", /\.deck-stack[^\n]*perspective:500px/],
   ["compositor-only card deal", /@keyframes card-deal-out[^\n]*translate3d/],
