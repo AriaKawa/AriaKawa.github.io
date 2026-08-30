@@ -48,8 +48,9 @@ const checks = [
   ["bottom boost meter", /id="boost-value"[\s\S]*id="boost-bar"/],
   ["round score HUD", /id="player-rounds"[\s\S]*id="round-value"[\s\S]*id="enemy-rounds"/],
   ["round countdown", /id="round-countdown"[\s\S]*id="round-countdown-value"/],
-  ["rival health meter", /id="rival-health-bar"[\s\S]*id="rival-health-value"/],
+  ["rival health meter", /id="rival-health-value"[\s\S]*id="rival-health-bar"/],
   ["car-anchored health tags", /id="player-health-tag"[\s\S]*id="rival-health-tag"/],
+  ["physical draft decks", /id="starter-select"[\s\S]*class="deck-stack"[\s\S]*id="starter-grid"[\s\S]*id="vehicle-select"[\s\S]*class="deck-stack"[\s\S]*id="vehicle-grid"[\s\S]*id="card-draft"[\s\S]*class="deck-stack"[\s\S]*id="card-grid"/],
   ["controls", /id="controls"/],
   ["camera mode HUD", /id="camera-mode-value"[^>]*>CHASE CAM/],
   ["Firebase host and join lobby", /id="multiplayer-lobby"[\s\S]*id="host-room"[\s\S]*id="join-room-form"[\s\S]*id="room-code-input"/],
@@ -68,6 +69,8 @@ for (const [label, pattern] of checks) {
   if (!pattern.test(html)) throw new Error(`Missing ${label} in production output`);
 }
 if (/id="level-select"|data-level=|CHOOSE YOUR ARENA/.test(html)) throw new Error("The obsolete map chooser is still present");
+const healthTags=html.match(/id="player-health-tag"[\s\S]*?id="rival-health-bar"[^>]*><\/i>/)?.[0]??"";
+if (/>\s*RIVAL\s*</i.test(healthTags)||/\d+\s*HP\b/i.test(healthTags)) throw new Error("World health tags still contain visible Rival or HP labels");
 
 const sceneChecks = [
   ["terrain", /addArena\(\)/],
@@ -126,7 +129,8 @@ const sceneChecks = [
   ["AI uses Longlance rail", /dataset\.aiTurret="sniper"[\s\S]*function shootOpponent[\s\S]*createProjectile\("sniper"\)[\s\S]*weaponDefinitions\.sniper\.fireRate/],
   ["unpredictable AI maneuvers", /maneuverTimer:[\s\S]*preferredDistance:[\s\S]*weavePhase:[\s\S]*Math\.random\(\)\*1\.65[\s\S]*orbitOffset/],
   ["stronger player and rival hulls", /maxHealth: 150[\s\S]*health:210,maxHealth:210[\s\S]*opponent\.maxHealth=210/],
-  ["extended card pick timing", /setTimeout\(finishPickAnimation,1300\)/],
+  ["physical deck card sequence", /function dealCards[\s\S]*function shuffleCardsToDeck[\s\S]*dataset\.deckAnimation="collecting"/],
+  ["smooth deck pick timing", /setTimeout\(finishPickAnimation,1450\)/],
   ["rival damage wins round", /function damageOpponent[\s\S]*awardPlayerRound\(\)/],
   ["barrel pitch mount", /let barrelPivot = new THREE\.Group/],
   ["mouse world ray", /intersectObjects\(aimSurfaces/],
@@ -215,8 +219,9 @@ for (const [label, pattern] of sceneChecks) {
   if (!pattern.test(source)) throw new Error(`Missing ${label} implementation`);
 }
 const styleChecks = [
-  ["long card fizzle", /is-fizzling[^\n]*card-fizzle 1\.25s/],
-  ["compositor-only card fizzle", /@keyframes card-fizzle[^\n]*translate3d/],
+  ["visible card deck", /\.deck-stack[^\n]*perspective:500px/],
+  ["compositor-only card deal", /@keyframes card-deal-out[^\n]*translate3d/],
+  ["compositor-only card shuffle", /@keyframes card-shuffle-in[^\n]*--deck-x/],
   ["reduced motion card fallback", /prefers-reduced-motion:reduce/],
 ];
 for (const [label, pattern] of styleChecks) {

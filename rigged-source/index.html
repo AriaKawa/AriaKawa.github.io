@@ -42,11 +42,12 @@
       </section>
 
       <div id="player-health-tag" class="world-health world-health--player world-health--hidden" aria-label="Your vehicle health">
-        <div><span>YOU</span><b><em id="health-value">150</em> HP</b></div>
+        <div><span>YOU</span><b><em id="health-value">150</em></b></div>
         <div class="meter-track"><i id="health-bar"></i></div>
       </div>
       <div id="rival-health-tag" class="world-health world-health--rival world-health--hidden" aria-label="Rival vehicle health">
-        <div><span>RIVAL</span><div class="meter-track"><i id="rival-health-bar"></i></div><b><em id="rival-health-value">210</em> HP</b></div>
+        <div><b><em id="rival-health-value">210</em></b></div>
+        <div class="meter-track"><i id="rival-health-bar"></i></div>
       </div>
 
       <section class="status-hud" aria-label="Vehicle boost">
@@ -108,7 +109,8 @@
           <h1 id="starter-select-title">CHOOSE A STARTER TURRET</h1>
           <p id="starter-turn" class="draft-turn">Waiting for the first driver…</p>
           <div id="starter-pick-reveal" class="pick-reveal" hidden></div>
-          <div class="starter-grid">
+          <div class="deck-stack" aria-hidden="true"><i></i><i></i><i></i></div>
+          <div id="starter-grid" class="starter-grid">
             <article class="starter-card starter-card--mg">
               <span>MACHINE GUN</span><h2>SCRAP RATTLER</h2><p>Rapid automatic fire. Forgiving, noisy, and built for pressure.</p>
               <dl><div><dt>DAMAGE</dt><dd>15</dd></div><div><dt>FIRE RATE</dt><dd>6.7/s</dd></div><div><dt>PROJECTILES</dt><dd>1</dd></div><div><dt>SPECIAL</dt><dd>Hold to fire</dd></div></dl>
@@ -135,6 +137,7 @@
           <h1 id="vehicle-select-title">CHOOSE YOUR CAR</h1>
           <p id="vehicle-turn" class="draft-turn">Waiting for the first driver…</p>
           <div id="vehicle-pick-reveal" class="pick-reveal" hidden></div>
+          <div class="deck-stack" aria-hidden="true"><i></i><i></i><i></i></div>
           <div id="vehicle-grid" class="vehicle-grid"></div>
           <small class="vehicle-credit">Nine combat-ready vehicles from Kenney Car Kit 3.1 · CC0</small>
         </div>
@@ -147,6 +150,7 @@
           <h1 id="card-draft-title">CHOOSE ONE UPGRADE</h1>
           <p id="draft-subtitle" class="draft-turn">Waiting for the first driver…</p>
           <div id="draft-pick-reveal" class="pick-reveal" hidden></div>
+          <div class="deck-stack" aria-hidden="true"><i></i><i></i><i></i></div>
           <div id="card-grid" class="card-grid"></div>
         </div>
       </section>
