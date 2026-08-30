@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import {
+  addAiPlayer,
   cleanPlayerName,
   cleanRoomCode,
   makeRoomCode,
+  normalizeRoomSnapshot,
   resolveRoomPick,
   resolveRoundReady,
   resolveVehiclePick,
@@ -32,11 +34,21 @@ const baseRoom = {
   playerOrder: ["host", "guest"], activePickerId: "host", draftOptions: ["mg", "rocket", "sniper"],
   draftTurn: 0, pickSequence: 0, lastPick: null, vehicleSelections: {}, roundReady: {}, runState: null, createdAt: 1, updatedAt: 1,
 };
+const lobbyRoom={...baseRoom,phase:"lobby",players:{host:{name:"Host",joinedAt:10}},playerOrder:["host"],activePickerId:"",draftOptions:[]};
+const aiRoom=addAiPlayer(lobbyRoom,"host",2);
+assert.equal(aiRoom.players.rigged_ai.isAI,true);
+assert.deepEqual(aiRoom.playerOrder,["host","rigged_ai"]);
+assert.equal(addAiPlayer(lobbyRoom,"guest",2),undefined,"only the host can add AI");
 const starter = createStarterRun("mg", 1);
+const normalized=normalizeRoomSnapshot({...baseRoom,roundReady:undefined,vehicleSelections:undefined,runState:{...starter,upgrades:undefined}});
+assert.deepEqual(normalized.roundReady,{});
+assert.deepEqual(normalized.vehicleSelections,{});
+assert.deepEqual(normalized.runState.upgrades,[],"Firebase-omitted run arrays are restored");
 assert.equal(resolveRoomPick(baseRoom, "guest", { optionId: "mg", optionName: "Rattler", nextRunState: starter, nextOptions: [] }), undefined, "guest cannot steal the host turn");
 const afterHost = resolveRoomPick(baseRoom, "host", { optionId: "mg", optionName: "Rattler", nextRunState: starter, nextOptions: ["rocket", "sniper"] }, 2);
 assert.equal(afterHost.activePickerId, "guest");
 assert.equal(afterHost.phase, "starter_draft");
+assert.deepEqual(resolveRoomPick({...baseRoom,roundReady:undefined},"host",{optionId:"mg",optionName:"Rattler",nextRunState:starter,nextOptions:["rocket","sniper"]},2).roundReady,{},"Firebase-omitted empty maps are restored");
 
 const sharedStarter = structuredClone(starter);
 applyCard(sharedStarter, createTurretCard("rocket"));

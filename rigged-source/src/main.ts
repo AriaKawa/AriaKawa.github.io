@@ -142,7 +142,8 @@ const ui = {
   roomEntry: getElement("room-entry"), roomWaiting: getElement("room-waiting"), playerName: getElement<HTMLInputElement>("player-name"),
   roomCodeInput: getElement<HTMLInputElement>("room-code-input"), roomCodeDisplay: getElement<HTMLButtonElement>("room-code-display"),
   roomPlayers: getElement("room-players"), roomStatus: getElement("room-status"), hostRoom: getElement<HTMLButtonElement>("host-room"),
-  joinRoomForm: getElement<HTMLFormElement>("join-room-form"), startRun: getElement<HTMLButtonElement>("start-run"),
+  joinRoomForm: getElement<HTMLFormElement>("join-room-form"), addAI: getElement<HTMLButtonElement>("add-ai"), startRun: getElement<HTMLButtonElement>("start-run"),
+  musicMuted: getElement<HTMLInputElement>("music-muted"),
   activeUpgrades: getElement("active-upgrades"), weaponSelect: getElement("weapon-select"),
 };
 const initialParams = new URLSearchParams(location.search);
@@ -166,6 +167,7 @@ let multiplayer: RiggedMultiplayerClient | null = null;
 let activeRoom: RiggedRoom | null = null;
 let renderedPickId = 0;
 let pickAnimationActive = false;
+let aiPickPending = false;
 let lastStartedRoomRound = 0;
 let selectedVehicleId:RiggedVehicleId=riggedAssetManifest.vehicle.defaultId;
 
@@ -1194,7 +1196,7 @@ const roundWinSmokeTest = new URLSearchParams(location.search).get("combat-smoke
 const vehiclePreviewTest = initialParams.get("ui-preview") === "vehicles";
 const soundtrack = new Audio("./assets/nitro-games.wav");
 soundtrack.loop = true;
-soundtrack.volume = .12;
+soundtrack.volume = .09;
 soundtrack.preload = "auto";
 soundtrack.id = "soundtrack";
 soundtrack.hidden = true;
@@ -1209,6 +1211,12 @@ engineLoop.id = "vehicle-engine-loop";
 engineLoop.hidden = true;
 engineLoop.dataset.playback = "waiting-for-interaction";
 document.body.append(soundtrack, engineLoop);
+const MUSIC_MUTE_KEY="rigged-music-muted";
+function setMusicMuted(muted:boolean):void{
+  soundtrack.muted=muted;ui.musicMuted.checked=muted;localStorage.setItem(MUSIC_MUTE_KEY,muted?"1":"0");canvas.dataset.musicMuted=String(muted);
+}
+setMusicMuted(localStorage.getItem(MUSIC_MUTE_KEY)==="1");
+ui.musicMuted.addEventListener("change",()=>setMusicMuted(ui.musicMuted.checked));
 
 type SfxKey = "turret-mg" | "turret-rocket" | "turret-sniper" | "vehicle-hit" | "confirmed-hit";
 const sfxSources: Record<SfxKey, string> = {
@@ -2205,14 +2213,44 @@ function showRoomError(error:unknown):void{
 }
 
 function renderRoomLobby(room:RiggedRoom|null):void{
-  if(!room){ui.roomEntry.hidden=false;ui.roomWaiting.hidden=true;return;}
+  if(!room){ui.roomEntry.hidden=false;ui.roomWaiting.hidden=true;ui.addAI.hidden=true;return;}
   const players=roomPlayers(room),inLobby=room.phase==="lobby";
   ui.multiplayerLobby.hidden=!inLobby;ui.roomEntry.hidden=true;ui.roomWaiting.hidden=false;ui.roomCodeDisplay.textContent=room.code;
-  const rows=players.map(player=>{const row=document.createElement("div");row.className="room-player";const name=document.createElement("b");name.textContent=player.name;const role=document.createElement("span");role.textContent=player.id===room.hostId?"HOST // PICKS FIRST":"RIVAL // PICKS SECOND";row.append(name,role);return row;});
+  const rows=players.map(player=>{const row=document.createElement("div");row.className="room-player";const name=document.createElement("b");name.textContent=player.name;const role=document.createElement("span");role.textContent=player.id===room.hostId?"HOST // PICKS FIRST":player.isAI?"AI RIVAL // PICKS SECOND":"RIVAL // PICKS SECOND";row.append(name,role);return row;});
   if(players.length<2){const empty=document.createElement("div");empty.className="room-player room-player--empty";const name=document.createElement("b");name.textContent="OPEN SEAT";const role=document.createElement("span");role.textContent="SHARE THE ROOM CODE";empty.append(name,role);rows.push(empty);}
   ui.roomPlayers.replaceChildren(...rows);const canStart=multiplayer?.isHost()===true&&players.length===2;
+  ui.addAI.hidden=multiplayer?.isHost()!==true||players.length>=2;ui.addAI.disabled=!inLobby;
   ui.startRun.disabled=!canStart;ui.startRun.textContent=canStart?"START SHARED RUN":multiplayer?.isHost()?"WAITING FOR RIVAL":"WAITING FOR HOST";
-  ui.roomStatus.textContent=players.length<2?"Room ready. Send the code to one other driver.":canStart?"Both drivers connected. Launch when ready.":"Both drivers connected. Waiting for the host.";
+  ui.roomStatus.textContent=players.length<2?"Room ready. Invite a friend or add an AI rival.":canStart?"Both drivers connected. Launch when ready.":"Both drivers connected. Waiting for the host.";
+}
+
+function maybeRunAITurn(room:RiggedRoom):void{
+  const ai=roomPlayers(room).find(player=>player.isAI);
+  if(!ai||room.activePickerId!==ai.id||multiplayer?.isHost()!==true||aiPickPending)return;
+  if(!["starter_draft","vehicle_select","upgrade_draft"].includes(room.phase))return;
+  aiPickPending=true;const sequence=room.pickSequence;
+  window.setTimeout(async()=>{
+    try{
+      if(!multiplayer||!activeRoom||activeRoom.pickSequence!==sequence||activeRoom.activePickerId!==ai.id)return;
+      const options=activeRoom.draftOptions;
+      if(!options.length)return;
+      const optionId=options[Math.floor(Math.random()*options.length)];
+      if(activeRoom.phase==="vehicle_select"){
+        if(isVehicleId(optionId))await multiplayer.submitAiVehiclePick(optionId,riggedVehicleCatalog[optionId].label);
+        return;
+      }
+      if(activeRoom.phase==="starter_draft"){
+        const kind=optionId as WeaponKind,nextState=activeRoom.runState?structuredClone(activeRoom.runState):createStarterRun(kind,currentRound);
+        if(activeRoom.runState)applyCard(nextState,createTurretCard(kind));
+        const nextOptions=activeRoom.draftTurn===0?(["mg","rocket","sniper"] as WeaponKind[]).filter(option=>option!==kind):Object.keys(riggedVehicleCatalog);
+        await multiplayer.submitAiPick({optionId:kind,optionName:turretShortNames[kind],nextRunState:nextState,nextOptions});return;
+      }
+      if(!runState)return;const card=resolveRoomCards(options,runState).find(item=>item.id===optionId);if(!card)return;
+      const nextState=structuredClone(runState);applyCard(nextState,card);nextState.round=currentRound;
+      const nextOptions=activeRoom.draftTurn===0?draftCards(nextState).map(option=>option.id):[];
+      await multiplayer.submitAiPick({optionId:card.id,optionName:card.name,nextRunState:nextState,nextOptions});
+    }catch(error){showRoomError(error);}finally{aiPickPending=false;}
+  },900);
 }
 
 function syncRunFromRoom(room:RiggedRoom):void{
@@ -2240,9 +2278,9 @@ function animateRoomPick(pick:RiggedRoomPick):void{
 
 function finishPickAnimation():void{
   pickAnimationActive=false;const room=activeRoom;if(!room)return;
-  if(room.phase==="starter_draft"){showStarterTurretSelect();return;}
-  if(room.phase==="vehicle_select"){showVehicleSelect();return;}
-  if(room.phase==="upgrade_draft"){showCardDraft();return;}
+  if(room.phase==="starter_draft"){showStarterTurretSelect();maybeRunAITurn(room);return;}
+  if(room.phase==="vehicle_select"){showVehicleSelect();maybeRunAITurn(room);return;}
+  if(room.phase==="upgrade_draft"){showCardDraft();maybeRunAITurn(room);return;}
   if(room.phase!=="playing"||room.round<=lastStartedRoomRound)return;
   ui.starterSelect.hidden=true;ui.vehicleSelect.hidden=true;ui.cardDraft.hidden=true;ui.weaponSelect.classList.remove("draft-open");canvas.dataset.starterSelection="complete";canvas.dataset.vehicleSelection="complete";canvas.dataset.cardApplied="true";startAudio();const firstRound=lastStartedRoomRound===0;lastStartedRoomRound=room.round;
   if(firstRound){currentRound=room.round;updateRoundHud();resetVehicle(false);resetOpponent();beginRoundCountdown();}
@@ -2252,12 +2290,13 @@ function finishPickAnimation():void{
 function handleRoomSnapshot(room:RiggedRoom|null):void{
   activeRoom=room;renderRoomLobby(room);if(!room)return;
   syncRunFromRoom(room);syncVehicleFromRoom(room);
+  maybeRunAITurn(room);
   const newPick=room.lastPick&&room.lastPick.id>renderedPickId;
   if(newPick){renderedPickId=room.lastPick!.id;if(levelStarted)animateRoomPick(room.lastPick!);return;}
   if(!levelStarted||pickAnimationActive)return;
-  if(room.phase==="starter_draft"){showStarterTurretSelect();return;}
-  if(room.phase==="vehicle_select"){showVehicleSelect();return;}
-  if(room.phase==="upgrade_draft"){showCardDraft();return;}
+  if(room.phase==="starter_draft"){showStarterTurretSelect();maybeRunAITurn(room);return;}
+  if(room.phase==="vehicle_select"){showVehicleSelect();maybeRunAITurn(room);return;}
+  if(room.phase==="upgrade_draft"){showCardDraft();maybeRunAITurn(room);return;}
   if(room.phase==="playing"&&room.round>lastStartedRoomRound)finishPickAnimation();
 }
 
@@ -2279,6 +2318,7 @@ async function setupMultiplayer():Promise<void>{
     catch(error){showRoomError(error);submit.disabled=false;}
   });
   ui.startRun.addEventListener("click",()=>multiplayer?.startRun().catch(showRoomError));
+  ui.addAI.addEventListener("click",()=>{ui.addAI.disabled=true;multiplayer?.addAI().catch(error=>{showRoomError(error);ui.addAI.disabled=false;});});
   ui.roomCodeDisplay.addEventListener("click",()=>{if(!activeRoom)return;navigator.clipboard?.writeText(activeRoom.code).catch(()=>undefined);ui.roomStatus.textContent="Room code copied.";});
   ui.roomCodeInput.addEventListener("input",()=>{ui.roomCodeInput.value=cleanRoomCode(ui.roomCodeInput.value);});
 }

@@ -66,6 +66,11 @@
         <div class="rig-summary"><small>RIG MODS</small><ul id="active-upgrades"><li>Choose a starter turret</li></ul></div>
       </aside>
 
+      <label class="music-toggle panel" for="music-muted">
+        <input id="music-muted" type="checkbox" />
+        <span>MUTE MUSIC</span>
+      </label>
+
       <section id="multiplayer-lobby" class="multiplayer-lobby" aria-labelledby="multiplayer-title">
         <div class="multiplayer-lobby__backdrop"></div>
         <div class="multiplayer-card panel">
@@ -86,7 +91,10 @@
           <div id="room-waiting" class="room-waiting" hidden>
             <div><small>ROOM CODE</small><button id="room-code-display" type="button" title="Copy room code">-----</button></div>
             <div id="room-players" class="room-players" aria-live="polite"></div>
-            <button id="start-run" class="room-primary" type="button" disabled>WAITING FOR RIVAL</button>
+            <div class="room-actions">
+              <button id="add-ai" type="button">ADD AI</button>
+              <button id="start-run" class="room-primary" type="button" disabled>WAITING FOR RIVAL</button>
+            </div>
           </div>
           <p id="room-status" class="room-status" role="status" aria-live="polite">Connecting to Firebase…</p>
         </div>

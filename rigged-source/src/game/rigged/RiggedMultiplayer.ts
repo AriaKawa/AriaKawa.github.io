@@ -6,6 +6,7 @@ export type RiggedRoomPlayer = {
   id: string;
   name: string;
   joinedAt: number;
+  isAI?: boolean;
 };
 
 export type RiggedRoomPick = {
@@ -69,6 +70,7 @@ const FIREBASE_CONFIG = {
 };
 
 const ROOM_ROOT = "riggedRooms";
+export const AI_PLAYER_ID = "rigged_ai";
 const ROOM_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const FIREBASE_APP_URL = "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
 const FIREBASE_AUTH_URL = "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
@@ -93,6 +95,26 @@ export function roomPlayers(room: RiggedRoom | null): RiggedRoomPlayer[] {
     .sort((left, right) => left.joinedAt - right.joinedAt);
 }
 
+export function isAiPlayer(room: RiggedRoom | null, playerId: string): boolean {
+  return room?.players?.[playerId]?.isAI === true;
+}
+
+export function addAiPlayer(room: RiggedRoom, requesterId: string, now = Date.now()): RiggedRoom | undefined {
+  if (room.hostId !== requesterId || room.phase !== "lobby" || Object.keys(room.players ?? {}).length >= 2) return undefined;
+  const players = { ...room.players, [AI_PLAYER_ID]: { name: "Gearhead AI", joinedAt: now, isAI: true } };
+  return { ...room, players, playerOrder: [room.hostId, AI_PLAYER_ID], updatedAt: now };
+}
+
+export function normalizeRoomSnapshot(room: RiggedRoom | null): RiggedRoom | null {
+  if(!room)return null;
+  const runState=room.runState?{...room.runState,upgrades:room.runState.upgrades??[]}:null;
+  return {
+    ...room,
+    players:room.players??{},playerOrder:room.playerOrder??[],draftOptions:room.draftOptions??[],
+    lastPick:room.lastPick??null,vehicleSelections:room.vehicleSelections??{},roundReady:room.roundReady??{},runState,
+  };
+}
+
 export function resolveRoomPick(room: RiggedRoom, playerId: string, input: RiggedPickInput, now = Date.now()): RiggedRoom | undefined {
   const isDraft = room.phase === "starter_draft" || room.phase === "upgrade_draft";
   if (!isDraft || room.activePickerId !== playerId || !room.draftOptions.includes(input.optionId)) return undefined;
@@ -114,7 +136,7 @@ export function resolveRoomPick(room: RiggedRoom, playerId: string, input: Rigge
       optionName: input.optionName,
       pickedAt: now,
     },
-    roundReady: finished ? {} : room.roundReady,
+    roundReady: finished ? {} : room.roundReady ?? {},
     runState: input.nextRunState,
     updatedAt: now,
   };
@@ -278,9 +300,21 @@ export class RiggedMultiplayerClient {
     if (!result) throw new Error("The host can launch once two players are in the room.");
   }
 
+  async addAI(): Promise<void> {
+    const result = await this.transact(current => addAiPlayer(current, this.playerId));
+    if (!result) throw new Error("Only the host can add AI to an open seat.");
+  }
+
   async submitPick(input: RiggedPickInput): Promise<void> {
     const result = await this.transact(current => resolveRoomPick(current, this.playerId, input));
     if (!result) throw new Error("That pick is no longer available.");
+  }
+
+  async submitAiPick(input: RiggedPickInput): Promise<void> {
+    const result = await this.transact(current => current.hostId === this.playerId && isAiPlayer(current, current.activePickerId)
+      ? resolveRoomPick(current, current.activePickerId, input)
+      : undefined);
+    if (!result) throw new Error("The AI pick is no longer available.");
   }
 
   async submitVehiclePick(optionId:string,optionName:string):Promise<void>{
@@ -288,8 +322,20 @@ export class RiggedMultiplayerClient {
     if(!result)throw new Error("That vehicle pick is no longer available.");
   }
 
+  async submitAiVehiclePick(optionId:string,optionName:string):Promise<void>{
+    const result=await this.transact(current=>current.hostId===this.playerId&&isAiPlayer(current,current.activePickerId)
+      ?resolveVehiclePick(current,current.activePickerId,optionId,optionName)
+      :undefined);
+    if(!result)throw new Error("The AI vehicle pick is no longer available.");
+  }
+
   async markRoundComplete(options: string[], state: ScraproadRunState): Promise<void> {
-    const result = await this.transact(current => resolveRoundReady(current, this.playerId, options, state));
+    const result = await this.transact(current => {
+      const next=resolveRoundReady(current,this.playerId,options,state);
+      if(!next||current.hostId!==this.playerId)return next;
+      const aiId=normalizedOrder(next).find(id=>isAiPlayer(next,id));
+      return aiId?resolveRoundReady(next,aiId,options,state)??next:next;
+    });
     if (!result) throw new Error("The room is not accepting round results.");
   }
 
@@ -308,7 +354,7 @@ export class RiggedMultiplayerClient {
     const playerReference = this.sdk.ref(this.sdk.db, `${ROOM_ROOT}/${code}/players/${this.playerId}`);
     await this.sdk.onDisconnect(playerReference).remove();
     this.unsubscribe = this.sdk.onValue(this.roomRef(code), snapshot => {
-      this.room = (snapshot.val() as RiggedRoom | null) ?? null;
+      this.room = normalizeRoomSnapshot((snapshot.val() as RiggedRoom | null) ?? null);
       this.roomListener(this.room);
     });
   }

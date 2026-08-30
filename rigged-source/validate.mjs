@@ -51,6 +51,8 @@ const checks = [
   ["controls", /id="controls"/],
   ["camera mode HUD", /id="camera-mode-value"[^>]*>CHASE CAM/],
   ["Firebase host and join lobby", /id="multiplayer-lobby"[\s\S]*id="host-room"[\s\S]*id="join-room-form"[\s\S]*id="room-code-input"/],
+  ["host add AI control", /id="add-ai"[^>]*>ADD AI/],
+  ["music mute control", /id="music-muted"[^>]*[\s\S]*MUTE MUSIC/],
   ["starter turret selector", /id="starter-select"[\s\S]*data-starter-turret="mg"[\s\S]*data-starter-turret="rocket"[\s\S]*data-starter-turret="sniper"/],
   ["pre-round vehicle selector", /id="vehicle-select"[\s\S]*id="vehicle-grid"[\s\S]*Kenney Car Kit 3\.1/],
   ["between-round card draft", /id="card-draft"[\s\S]*id="card-grid"/],
@@ -149,7 +151,8 @@ const sceneChecks = [
   ["fixed physics timestep", /FIXED_TIMESTEP = 1 \/ 60[\s\S]*while\(physicsAccumulator>=FIXED_TIMESTEP/],
   ["interpolated vehicle render", /function updateVehicleVisual[\s\S]*lerpVectors/],
   ["performance debug", /function updateDebug[\s\S]*renderer\.info\.render\.calls/],
-  ["looping quiet soundtrack", /soundtrack\.loop = true[\s\S]*soundtrack\.volume = \.12/],
+  ["25 percent quieter looping soundtrack", /soundtrack\.loop = true[\s\S]*soundtrack\.volume = \.09/],
+  ["persistent music mute", /MUSIC_MUTE_KEY[\s\S]*soundtrack\.muted=muted[\s\S]*musicMuted/],
   ["continuous music through rounds", /soundtrack\.preload = "auto"[\s\S]*musicContinuity="single-document-loop"/],
   ["eager combat audio decode", /sfxDataPromises[\s\S]*decodeAudioData[\s\S]*dataset\.combatAudio="decoded"/],
   ["first-shot GPU prewarm", /function warmCombatResources[\s\S]*offscreen-combat-resource-warmup[\s\S]*renderer\.compileAsync[\s\S]*combatPrewarm="complete"/],
@@ -219,6 +222,9 @@ const multiplayerChecks = [
   ["ordered synchronized picks", /resolveRoomPick[\s\S]*activePickerId !== playerId[\s\S]*draftTurn[\s\S]*nextRunState/],
   ["both-player round gate", /resolveRoundReady[\s\S]*everyoneReady[\s\S]*upgrade_draft/],
   ["ordered vehicle selection", /resolveVehiclePick[\s\S]*vehicle_select[\s\S]*vehicleSelections/],
+  ["host-controlled AI seat", /addAiPlayer[\s\S]*Gearhead AI[\s\S]*async addAI/],
+  ["AI synchronized picks", /submitAiPick[\s\S]*submitAiVehiclePick/],
+  ["Firebase empty collection normalization", /normalizeRoomSnapshot[\s\S]*upgrades:room\.runState\.upgrades\?\?\[\]/],
 ];
 for (const [label, pattern] of multiplayerChecks) {
   if (!pattern.test(multiplayerSource)) throw new Error(`Missing ${label} implementation`);
