@@ -146,6 +146,9 @@ const ui = {
   pause: getElement("pause"), debug: getElement("physics-debug"), multiplayerLobby: getElement("multiplayer-lobby"),
   round: getElement("round-value"), playerRounds: getElement("player-rounds"), enemyRounds: getElement("enemy-rounds"),
   countdown: getElement("round-countdown"), countdownValue: getElement("round-countdown-value"), countdownArena: getElement("round-countdown-arena"),
+  matchResult: getElement("match-result"), matchResultTitle: getElement("match-result-title"), matchResultEyebrow: getElement("match-result-eyebrow"),
+  matchResultMessage: getElement("match-result-message"), matchPlayerScore: getElement("match-player-score"), matchRivalScore: getElement("match-rival-score"),
+  matchNewMatch: getElement<HTMLButtonElement>("match-new-match"),
   rivalHealth: getElement("rival-health-value"), rivalHealthBar: getElement("rival-health-bar"),
   cameraMode: getElement("camera-mode-value"),
   starterSelect: getElement("starter-select"), starterGrid: getElement("starter-grid"), cardDraft: getElement("card-draft"), cardGrid: getElement("card-grid"),
@@ -161,13 +164,14 @@ const ui = {
 };
 const initialParams = new URLSearchParams(location.search);
 const RUN_STORAGE_KEY = "rigged-roguelike-run-v1";
+const MATCH_POINT_TARGET = 3;
 function loadRunState(): ScraproadRunState | null {
   try { return normalizeRunState(JSON.parse(sessionStorage.getItem(RUN_STORAGE_KEY)??"null") as unknown); } catch { return null; }
 }
 function saveRunState():void { if(runState)sessionStorage.setItem(RUN_STORAGE_KEY,JSON.stringify(runState)); }
 let runState: ScraproadRunState | null = loadRunState();
 const readScoreParam = (key: string, maximum: number): number => THREE.MathUtils.clamp(Number.parseInt(initialParams.get(key) ?? "0", 10) || 0, 0, maximum);
-let playerRoundWins=readScoreParam("pw",3),enemyRoundWins=readScoreParam("ew",3),currentRound=Math.max(1,readScoreParam("round",99) || 1),roundAwarded=false;
+let playerRoundWins=readScoreParam("pw",MATCH_POINT_TARGET),enemyRoundWins=readScoreParam("ew",MATCH_POINT_TARGET),currentRound=Math.max(1,readScoreParam("round",99) || 1),roundAwarded=false;
 if(runState)runState.round=currentRound;
 type RoundPhase = "loading" | "starter_turret_select" | "countdown" | "active" | "ended" | "card_select";
 let roundPhase: RoundPhase = "loading";
@@ -176,10 +180,13 @@ const COUNTDOWN_DRIVE_WINDOW = .55;
 let countdownEndsAt = 0;
 let countdownShown = 3;
 let roundTransitionTimer = 0;
+let matchResultTimer = 0;
 let multiplayer: RiggedMultiplayerClient | null = null;
 let activeRoom: RiggedRoom | null = null;
 let renderedPickId = 0;
 let pickAnimationActive = false;
+let pickAnimationEndsAt = 0;
+let pickAnimationTimer = 0;
 let aiPickPending = false;
 let aiTurnTimer = 0;
 let queuedAiTurnKey = "";
@@ -1244,12 +1251,12 @@ let fireCooldown=0; let isFireHeld=false; let muzzleFlashLife=0; let weaponState
 let cameraShakeLife=0; let cameraShakeStrength=0;
 let messageTimer=0; let paused=false; let elapsed=0;
 let abilityCooldownRemaining=0;let abilityEffectRemaining=0;let activeAbilityEffect:ActiveAbilityId="none";let shroomBonusHealth=0;let abilityTrailTimer=0;
-const rampSmokeTest = new URLSearchParams(location.search).get("physics-smoke") === "ramp";
-const allSurfaceSmokeTest = new URLSearchParams(location.search).get("physics-smoke") === "all-surfaces";
-const wallRideSmokeTest = new URLSearchParams(location.search).get("physics-smoke") === "wall";
-const holdFireSmokeTest = new URLSearchParams(location.search).get("input-smoke") === "hold-fire";
-const boostSmokeTest = new URLSearchParams(location.search).get("input-smoke") === "boost";
-const roundWinSmokeTest = new URLSearchParams(location.search).get("combat-smoke") === "round-win";
+const rampSmokeTest = initialParams.get("physics-smoke") === "ramp";
+const allSurfaceSmokeTest = initialParams.get("physics-smoke") === "all-surfaces";
+const wallRideSmokeTest = initialParams.get("physics-smoke") === "wall";
+const holdFireSmokeTest = initialParams.get("input-smoke") === "hold-fire";
+const boostSmokeTest = initialParams.get("input-smoke") === "boost";
+const roundWinSmokeTest = initialParams.get("combat-smoke") === "round-win";
 const vehiclePreviewTest = initialParams.get("ui-preview") === "vehicles";
 const deckPreviewTest = initialParams.get("ui-preview") === "deck";
 const cardPreviewTest = initialParams.get("ui-preview") === "cards";
@@ -1713,7 +1720,6 @@ function updateLoadoutUi():void{
   canvas.dataset.ownedTurrets=runState?.ownedTurrets.join(",")??"none";canvas.dataset.activeUpgrades=runState?.upgrades.join(",")??"none";
 }
 
-const DRAFT_PICK_HOLD_MS=560;
 const AI_PICK_DELAY_MS=350;
 const AI_PICK_RETRY_MS=1100;
 
@@ -2198,16 +2204,50 @@ function updateRoundCountdown():void{
   if(countdownRemaining<=0){roundPhase="active";ui.countdown.hidden=true;canvas.dataset.roundPhase=roundPhase;canvas.dataset.aiState="hunting";showMessage(`ROUND ${currentRound} // ${activeLayout.name.toUpperCase()}`);}
 }
 
+function isMatchComplete(): boolean {
+  return playerRoundWins >= MATCH_POINT_TARGET || enemyRoundWins >= MATCH_POINT_TARGET;
+}
+
+function showMatchResult(winner: "player" | "opponent"): void {
+  const playerWon = winner === "player";
+  clearTimeout(matchResultTimer);
+  ui.countdown.hidden = true;
+  ui.matchResult.classList.toggle("match-result--defeat", !playerWon);
+  ui.matchResultEyebrow.textContent = playerWon ? "MATCH COMPLETE // TARGET REACHED" : "MATCH COMPLETE // RIVAL TARGET REACHED";
+  ui.matchResultTitle.textContent = playerWon ? "VICTORY" : "RUN OVER";
+  ui.matchResultMessage.textContent = playerWon
+    ? `${MATCH_POINT_TARGET} points secured. The arena belongs to you.`
+    : `The rival reached ${MATCH_POINT_TARGET} points first. Rebuild and run it back.`;
+  ui.matchPlayerScore.textContent = String(playerRoundWins);
+  ui.matchRivalScore.textContent = String(enemyRoundWins);
+  ui.matchResult.hidden = false;
+  canvas.dataset.matchResult = playerWon ? "victory" : "defeat";
+  ui.matchNewMatch.focus({ preventScroll: true });
+}
+
+function startNewMatch(): void {
+  sessionStorage.removeItem(RUN_STORAGE_KEY);
+  const lobbyUrl = new URL(location.href);
+  lobbyUrl.search = "";
+  location.assign(lobbyUrl.href);
+}
+
 function finishRound(winner:"player"|"opponent"):void{
   if(roundAwarded)return;roundAwarded=true;roundPhase="ended";setFireHeld(false);
-  if(winner==="player")playerRoundWins=Math.min(3,playerRoundWins+1);else enemyRoundWins=Math.min(3,enemyRoundWins+1);
-  updateRoundHud();canvas.dataset.roundWinner=winner;canvas.dataset.roundPhase=roundPhase;ui.countdown.hidden=false;ui.countdownValue.textContent=winner==="player"?"WIN":"LOST";ui.countdownArena.textContent=playerRoundWins>=3||enemyRoundWins>=3?"MATCH COMPLETE":`ROUND ${currentRound} COMPLETE`;ui.countdown.querySelector("span")!.textContent="WAITING FOR BOTH DRIVERS";
+  if(winner==="player")playerRoundWins=Math.min(MATCH_POINT_TARGET,playerRoundWins+1);else enemyRoundWins=Math.min(MATCH_POINT_TARGET,enemyRoundWins+1);
+  const matchComplete=isMatchComplete();
+  updateRoundHud();canvas.dataset.roundWinner=winner;canvas.dataset.roundPhase=roundPhase;canvas.dataset.matchComplete=String(matchComplete);ui.countdown.hidden=false;ui.countdownValue.textContent=winner==="player"?"WIN":"LOST";ui.countdownArena.textContent=matchComplete?"MATCH COMPLETE":`ROUND ${currentRound} COMPLETE`;ui.countdown.querySelector("span")!.textContent=matchComplete?`FIRST TO ${MATCH_POINT_TARGET}`:"WAITING FOR BOTH DRIVERS";
+  if(matchComplete){
+    clearTimeout(roundTransitionTimer);
+    matchResultTimer=window.setTimeout(()=>showMatchResult(winner),900);
+    return;
+  }
   const smokeMode=rampSmokeTest||allSurfaceSmokeTest||wallRideSmokeTest||holdFireSmokeTest||boostSmokeTest||roundWinSmokeTest;
   if(!smokeMode){clearTimeout(roundTransitionTimer);roundTransitionTimer=window.setTimeout(()=>void checkInRound(),1500);}
 }
 
 async function checkInRound():Promise<void>{
-  if(!runState||!multiplayer){return;}
+  if(isMatchComplete()||!runState||!multiplayer){return;}
   runState.round=currentRound;saveRunState();
   ui.countdown.querySelector("span")!.textContent="YOU'RE READY // WAITING FOR RIVAL";
   try{await multiplayer.markRoundComplete(draftCards(runState).map(card=>card.id),structuredClone(runState));canvas.dataset.roundReady="submitted";}
@@ -2226,9 +2266,10 @@ function clearRoundScene():void{
 
 async function advanceRound(targetRound=currentRound+1):Promise<void>{
   if(roundPhase==="loading")return;
-  const matchComplete=playerRoundWins>=3||enemyRoundWins>=3,nextLayout=nextRiggedLevel(activeLayout.id);
+  if(isMatchComplete()){showMatchResult(playerRoundWins>=MATCH_POINT_TARGET?"player":"opponent");return;}
+  const nextLayout=nextRiggedLevel(activeLayout.id);
   const nextRound=Math.max(currentRound+1,targetRound);roundPhase="loading";canvas.dataset.roundPhase=roundPhase;canvas.dataset.seamlessTransition="loading";ui.cardDraft.hidden=true;ui.countdown.hidden=false;ui.countdownValue.textContent="…";ui.countdownArena.textContent="NEXT ARENA";ui.countdown.querySelector("span")!.textContent="REBUILDING THE RING";startAudio();
-  if(matchComplete){playerRoundWins=0;enemyRoundWins=0;}currentRound=nextRound;if(runState){runState.round=nextRound;saveRunState();}updateRoundHud();
+  currentRound=nextRound;if(runState){runState.round=nextRound;saveRunState();}updateRoundHud();
   clearRoundScene();activeLayout=riggedArenaLayouts[nextLayout];ARENA_RADIUS=activeLayout.radius;
   await addArena();await addWorldProps();registerPhysicsDebug();auditArenaFlow();activeLayout.targets.forEach(target=>createTarget(target.x,target.z,target.rotation));aimSurfaces.push(opponentCar);auditHeightfieldCoverage();
   roundAwarded=false;resetVehicle(false);resetOpponent();updateCameraModeHud();canvas.dataset.targetsRemaining=String(activeLayout.targets.length);canvas.dataset.arenaLayout=activeLayout.id;canvas.dataset.arenaKind=activeLayout.arenaKind;canvas.dataset.terrainProfile=activeLayout.terrainProfile;canvas.dataset.arenaRadius=String(ARENA_RADIUS);canvas.dataset.ringInnerRadius=String(activeLayout.ringInnerRadius);canvas.dataset.ringOuterRadius=String(activeLayout.ringOuterRadius);canvas.dataset.mapRotation="four-arena-cycle";canvas.dataset.seamlessTransition="complete";beginRoundCountdown();
@@ -2381,7 +2422,7 @@ function runSmokeRoutes(): void {
     const depleted=vehicle.boost;input.delete("ShiftLeft");for(let step=0;step<60;step++)updateVehicle(FIXED_TIMESTEP);const recharged=vehicle.boost;input.clear();
     canvas.dataset.boostAfterUse=depleted.toFixed(1);canvas.dataset.boostAfterRecharge=recharged.toFixed(1);canvas.dataset.boostSmoke=depleted<80&&recharged>depleted&&recharged<95?"passed":"failed";resetVehicle();
   }
-  if(roundWinSmokeTest){roundPhase="active";damageOpponent(999);canvas.dataset.roundHudSmoke=playerRoundWins===1&&canvas.dataset.roundWinner==="player"?"passed":"failed";}
+  if(roundWinSmokeTest){const winsBeforeHit=playerRoundWins;roundPhase="active";damageOpponent(999);const expectedWins=Math.min(MATCH_POINT_TARGET,winsBeforeHit+1);canvas.dataset.roundHudSmoke=playerRoundWins===expectedWins&&canvas.dataset.roundWinner==="player"?"passed":"failed";}
 }
 
 function showRoomError(error:unknown):void{
@@ -2403,7 +2444,7 @@ function renderRoomLobby(room:RiggedRoom|null):void{
 
 function aiTurnKey(room:RiggedRoom,aiId:string):string{return `${room.code}:${room.phase}:${room.pickSequence}:${aiId}`;}
 
-function queueAITurn(room:RiggedRoom,delay=pickAnimationActive?DRAFT_PICK_HOLD_MS+AI_PICK_DELAY_MS:AI_PICK_DELAY_MS):void{
+function queueAITurn(room:RiggedRoom,delay=pickAnimationActive?Math.max(0,pickAnimationEndsAt-performance.now())+AI_PICK_DELAY_MS:AI_PICK_DELAY_MS):void{
   const ai=roomPlayers(room).find(player=>player.isAI),eligible=Boolean(ai&&room.activePickerId===ai.id&&multiplayer?.isHost()===true&&["starter_draft","vehicle_select","upgrade_draft"].includes(room.phase));
   if(!eligible||!ai){if(aiTurnTimer)window.clearTimeout(aiTurnTimer);aiTurnTimer=0;queuedAiTurnKey="";return;}
   const key=aiTurnKey(room,ai.id);if(aiPickPending||aiTurnTimer&&queuedAiTurnKey===key)return;
@@ -2456,16 +2497,18 @@ function syncVehicleFromRoom(room:RiggedRoom):void{
   selectedVehicleId=chosen;if(levelStarted)void loadVehicleModel(chosen);
 }
 
-function animateRoomPick(pick:RiggedRoomPick):void{
+function animateRoomPick(pick:RiggedRoomPick):number{
   const mode=!ui.starterSelect.hidden?"starter":!ui.vehicleSelect.hidden?"vehicle":"upgrade",grid=mode==="starter"?ui.starterGrid:mode==="vehicle"?ui.vehicleGrid:ui.cardGrid,reveal=mode==="starter"?ui.starterPickReveal:mode==="vehicle"?ui.vehiclePickReveal:ui.draftPickReveal;
   const picker=activeRoom?roomPlayers(activeRoom).find(player=>player.id===pick.playerId):null;
-  collectDraftCards(grid,pick.optionId,canvas);if(mode==="upgrade")updateDraftDeckUi();
+  const duration=collectDraftCards(grid,pick.optionId,canvas);if(mode==="upgrade")updateDraftDeckUi();
   reveal.textContent=`${picker?.name??"Driver"} picked ${pick.optionName}`;reveal.hidden=false;pickAnimationActive=true;canvas.dataset.pickAnimation="deck-shuffle";canvas.dataset.lastCardChosen=pick.optionId;
-  window.setTimeout(finishPickAnimation,DRAFT_PICK_HOLD_MS);
+  pickAnimationEndsAt=performance.now()+duration;
+  clearTimeout(pickAnimationTimer);pickAnimationTimer=window.setTimeout(finishPickAnimation,duration);
+  return duration;
 }
 
 function finishPickAnimation():void{
-  pickAnimationActive=false;const room=activeRoom;if(!room)return;
+  pickAnimationActive=false;pickAnimationEndsAt=0;pickAnimationTimer=0;const room=activeRoom;if(!room)return;
   if(room.phase==="starter_draft"){showStarterTurretSelect();queueAITurn(room);return;}
   if(room.phase==="vehicle_select"){showVehicleSelect();queueAITurn(room);return;}
   if(room.phase==="upgrade_draft"){showCardDraft();queueAITurn(room);return;}
@@ -2479,7 +2522,7 @@ function handleRoomSnapshot(room:RiggedRoom|null):void{
   activeRoom=room;renderRoomLobby(room);if(!room){if(aiTurnTimer)window.clearTimeout(aiTurnTimer);aiTurnTimer=0;queuedAiTurnKey="";return;}
   syncRunFromRoom(room);syncVehicleFromRoom(room);
   const newPick=room.lastPick&&room.lastPick.id>renderedPickId;
-  if(newPick){renderedPickId=room.lastPick!.id;if(levelStarted)animateRoomPick(room.lastPick!);queueAITurn(room,levelStarted?DRAFT_PICK_HOLD_MS+AI_PICK_DELAY_MS:AI_PICK_DELAY_MS);return;}
+  if(newPick){renderedPickId=room.lastPick!.id;const pickDuration=levelStarted?animateRoomPick(room.lastPick!):0;queueAITurn(room,pickDuration+AI_PICK_DELAY_MS);return;}
   queueAITurn(room);
   if(!levelStarted||pickAnimationActive)return;
   if(room.phase==="starter_draft"){showStarterTurretSelect();return;}
@@ -2541,9 +2584,10 @@ document.querySelectorAll<HTMLButtonElement>("[data-weapon]").forEach(button=>{
 document.querySelectorAll<HTMLButtonElement>("[data-starter-turret]").forEach(button=>{
   button.addEventListener("click",()=>void chooseStarterTurret(button.dataset.starterTurret as WeaponKind));
 });
+ui.matchNewMatch.addEventListener("click",startNewMatch);
 selectWeapon("mg",false);
 updateRoundHud();
-const requestedLevel = new URLSearchParams(location.search).get("level") as RiggedLevelId | null;
+const requestedLevel = initialParams.get("level") as RiggedLevelId | null;
 if(!vehiclePreviewTest&&!deckPreviewTest&&!cardPreviewTest)void setupMultiplayer();
 void startLevel(requestedLevel && requestedLevel in riggedArenaLayouts ? requestedLevel : defaultRiggedLevel);
 
@@ -2554,7 +2598,7 @@ function chooseVisibleDraftByIndex(index:number):boolean{
   const button=card.matches("button")?card as HTMLButtonElement:card.querySelector<HTMLButtonElement>("button");if(button&&!button.disabled){button.click();canvas.dataset.keyboardDraftPick=String(index+1);}return true;
 }
 
-window.addEventListener("keydown",event=>{if(["KeyW","KeyA","KeyS","KeyD","Space","ShiftLeft","KeyC","KeyQ","KeyF","F3","Digit1","Digit2","Digit3"].includes(event.code))event.preventDefault();if(event.repeat)return;if(event.code.startsWith("Digit")&&chooseVisibleDraftByIndex(Number(event.code.slice(5))-1))return;if(!levelStarted)return;if(event.code==="Escape"){if(!ui.starterSelect.hidden||!ui.vehicleSelect.hidden||!ui.cardDraft.hidden)return;togglePause();return;}if(event.code==="KeyC"){toggleCameraMode();return;}if(event.code==="KeyQ"){activateAbility();return;}if(event.code.startsWith("Digit")){const kind=(["mg","rocket","sniper"] as const)[Number(event.code.slice(5))-1];if(kind)selectWeapon(kind);return;}if(event.code==="KeyR")resetVehicle();if(event.code==="KeyB"||event.code==="KeyH"||event.code==="F3")toggleDebug();if(event.code==="KeyF")setFireHeld(true);input.add(event.code);});
+window.addEventListener("keydown",event=>{if(["KeyW","KeyA","KeyS","KeyD","Space","ShiftLeft","KeyC","KeyQ","KeyF","F3","Digit1","Digit2","Digit3"].includes(event.code))event.preventDefault();if(event.repeat||!ui.matchResult.hidden)return;if(event.code.startsWith("Digit")&&chooseVisibleDraftByIndex(Number(event.code.slice(5))-1))return;if(!levelStarted)return;if(event.code==="Escape"){if(!ui.starterSelect.hidden||!ui.vehicleSelect.hidden||!ui.cardDraft.hidden)return;togglePause();return;}if(event.code==="KeyC"){toggleCameraMode();return;}if(event.code==="KeyQ"){activateAbility();return;}if(event.code.startsWith("Digit")){const kind=(["mg","rocket","sniper"] as const)[Number(event.code.slice(5))-1];if(kind)selectWeapon(kind);return;}if(event.code==="KeyR")resetVehicle();if(event.code==="KeyB"||event.code==="KeyH"||event.code==="F3")toggleDebug();if(event.code==="KeyF")setFireHeld(true);input.add(event.code);});
 window.addEventListener("keyup",event=>{input.delete(event.code);if(event.code==="KeyF")setFireHeld(false);});
 const crosshair=getElement("crosshair");
 let canvasBounds=canvas.getBoundingClientRect();
@@ -2590,7 +2634,7 @@ function updateDebug(frameDelta:number):void{
 }
 function animate():void{
   requestAnimationFrame(animate);const frameDelta=Math.min(clock.getDelta(),MAX_FRAME_DELTA);flushPointerVisual();
-  const renderBlocked=!ui.multiplayerLobby.hidden||!ui.starterSelect.hidden||!ui.vehicleSelect.hidden||!ui.cardDraft.hidden||!ui.pause.hidden||document.hidden;
+  const renderBlocked=!ui.multiplayerLobby.hidden||!ui.starterSelect.hidden||!ui.vehicleSelect.hidden||!ui.cardDraft.hidden||!ui.matchResult.hidden||!ui.pause.hidden||document.hidden;
   if(renderBlocked){
     physicsAccumulator=0;
     if(!renderWasBlocked){renderWasBlocked=true;engineMix=0;engineLoop.volume=0;canvas.dataset.renderMode="overlay-suspended";}

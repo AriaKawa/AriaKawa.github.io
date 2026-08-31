@@ -41,6 +41,18 @@
         <span>GET READY</span>
       </section>
 
+      <section id="match-result" class="match-result" hidden aria-labelledby="match-result-title" aria-describedby="match-result-message">
+        <div class="match-result__card">
+          <span id="match-result-eyebrow" class="match-result__eyebrow">MATCH COMPLETE // TARGET REACHED</span>
+          <h1 id="match-result-title">VICTORY</h1>
+          <p id="match-result-message">Three points secured. The arena belongs to you.</p>
+          <div class="match-result__score" aria-label="Final score">
+            <strong id="match-player-score">3</strong><i aria-hidden="true"></i><strong id="match-rival-score">0</strong>
+          </div>
+          <button id="match-new-match" type="button">START A NEW MATCH</button>
+        </div>
+      </section>
+
       <div id="player-health-tag" class="world-health world-health--player world-health--hidden" aria-label="Your vehicle health">
         <div><span>YOU</span><b><em id="health-value">150</em></b></div>
         <div class="meter-track"><i id="health-bar"></i></div>

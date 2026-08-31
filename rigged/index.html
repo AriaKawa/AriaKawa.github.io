@@ -18,8 +18,8 @@
     <meta name="twitter:description" content="A browser-playable 3D vehicle combat prototype." />
     <meta name="twitter:image" content="https://ariakawa.github.io/rigged/og.png" />
     <title>Rigged</title>
-    <script type="module" crossorigin src="./assets/index-eWFU7uKK.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-B3qiC4pS.css">
+    <script type="module" crossorigin src="./assets/index-D23hD88K.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-D51AxdTN.css">
   </head>
   <body>
     <main id="app">
@@ -41,6 +41,18 @@
         <small id="round-countdown-arena">DUST RING</small>
         <strong id="round-countdown-value">3</strong>
         <span>GET READY</span>
+      </section>
+
+      <section id="match-result" class="match-result" hidden aria-labelledby="match-result-title" aria-describedby="match-result-message">
+        <div class="match-result__card">
+          <span id="match-result-eyebrow" class="match-result__eyebrow">MATCH COMPLETE // TARGET REACHED</span>
+          <h1 id="match-result-title">VICTORY</h1>
+          <p id="match-result-message">Three points secured. The arena belongs to you.</p>
+          <div class="match-result__score" aria-label="Final score">
+            <strong id="match-player-score">3</strong><i aria-hidden="true"></i><strong id="match-rival-score">0</strong>
+          </div>
+          <button id="match-new-match" type="button">START A NEW MATCH</button>
+        </div>
       </section>
 
       <div id="player-health-tag" class="world-health world-health--player world-health--hidden" aria-label="Your vehicle health">

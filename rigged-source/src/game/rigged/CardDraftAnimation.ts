@@ -1,14 +1,34 @@
 export type VisibleDraftDeckId = "weapon" | "body" | "wheel";
 
-export const DRAFT_DEAL_DURATION_MS = 420;
-export const DRAFT_DEAL_LEAD_MS = 40;
-export const DRAFT_DEAL_STAGGER_MS = 35;
-export const DRAFT_RETURN_DURATION_MS = 340;
-export const DRAFT_RETURN_STAGGER_MS = 24;
+// Card motion deliberately runs at half of the original speed. Keep the
+// JavaScript lifecycle and CSS custom properties sourced from these values so
+// a card cannot become interactive before its animation has finished.
+export const DRAFT_DEAL_DURATION_MS = 840;
+export const DRAFT_DEAL_LEAD_MS = 80;
+export const DRAFT_DEAL_STAGGER_MS = 70;
+export const DRAFT_RETURN_DURATION_MS = 680;
+export const DRAFT_RETURN_STAGGER_MS = 48;
+
+const DRAFT_DEAL_SETTLE_MS = 140;
+const DRAFT_RETURN_SETTLE_MS = 180;
+const DRAFT_PICKED_RETURN_DELAY_MS = 140;
 
 const CARD_SELECTOR = ".starter-card,.upgrade-card,.vehicle-card";
 const VISIBLE_DECKS: VisibleDraftDeckId[] = ["weapon", "body", "wheel"];
 let motionVersion = 0;
+
+function dealTotalDuration(cardCount: number): number {
+  return DRAFT_DEAL_LEAD_MS
+    + DRAFT_DEAL_DURATION_MS
+    + Math.max(0, cardCount - 1) * DRAFT_DEAL_STAGGER_MS
+    + DRAFT_DEAL_SETTLE_MS;
+}
+
+export function draftReturnTotalDuration(cardCount: number): number {
+  return DRAFT_RETURN_DURATION_MS
+    + Math.max(0, cardCount) * DRAFT_RETURN_STAGGER_MS
+    + DRAFT_RETURN_SETTLE_MS;
+}
 
 function visibleCards(grid: HTMLElement): HTMLElement[] {
   return Array.from(grid.querySelectorAll<HTMLElement>(CARD_SELECTOR)).filter(card => !card.hidden);
@@ -68,12 +88,19 @@ function markActiveDrawDeck(deckRoot:HTMLElement,cards:HTMLElement[]):void{
   deckRoot.querySelectorAll<HTMLElement>("[data-deck-pile]").forEach(pile=>pile.classList.toggle("is-active-draw",pile.dataset.deckPile===active));
 }
 
+function applyDraftTiming(deckRoot: HTMLElement): void {
+  const shell = deckRoot.closest<HTMLElement>(".draft-shell") ?? deckRoot;
+  shell.style.setProperty("--draft-deal-duration", `${DRAFT_DEAL_DURATION_MS}ms`);
+  shell.style.setProperty("--draft-return-duration", `${DRAFT_RETURN_DURATION_MS}ms`);
+}
+
 export function dealDraftCards(grid: HTMLElement, telemetry: HTMLElement): void {
   const version = ++motionVersion;
   const deckRoot = grid.closest(".draft-shell")?.querySelector<HTMLElement>(".deck-stack,.deck-rack");
   if (!deckRoot) return;
   const cards = visibleCards(grid);
   deckRoot.classList.remove("is-collecting", "is-dealing");
+  applyDraftTiming(deckRoot);
   markActiveDrawDeck(deckRoot,cards);
   cards.forEach((card, index) => {
     card.classList.remove("is-picked", "is-pending", "is-shuffling-in", "is-dealing", "is-revealed");
@@ -94,21 +121,22 @@ export function dealDraftCards(grid: HTMLElement, telemetry: HTMLElement): void 
     });
     deckRoot.classList.remove("is-dealing");
     telemetry.dataset.deckAnimation = "ready";
-  }, DRAFT_DEAL_LEAD_MS + DRAFT_DEAL_DURATION_MS + Math.max(0, cards.length - 1) * DRAFT_DEAL_STAGGER_MS + 70);
+  }, dealTotalDuration(cards.length));
 }
 
-export function collectDraftCards(grid: HTMLElement, pickedId: string, telemetry: HTMLElement): void {
+export function collectDraftCards(grid: HTMLElement, pickedId: string, telemetry: HTMLElement): number {
   const version = ++motionVersion;
   const deckRoot = grid.closest(".draft-shell")?.querySelector<HTMLElement>(".deck-stack,.deck-rack");
-  if (!deckRoot) return;
+  if (!deckRoot) return 0;
   const cards = visibleCards(grid);
   deckRoot.classList.remove("is-dealing", "is-collecting");
+  applyDraftTiming(deckRoot);
   markActiveDrawDeck(deckRoot,cards);
   cards.forEach((card, index) => {
     const picked = card.dataset.optionId === pickedId;
     card.classList.remove("is-dealing", "is-pending", "is-shuffling-in");
     card.classList.toggle("is-picked", picked);
-    card.style.setProperty("--shuffle-delay", `${picked ? 70 : (cards.length - 1 - index) * DRAFT_RETURN_STAGGER_MS}ms`);
+    card.style.setProperty("--shuffle-delay", `${picked ? DRAFT_PICKED_RETURN_DELAY_MS : (cards.length - 1 - index) * DRAFT_RETURN_STAGGER_MS}ms`);
     card.querySelectorAll<HTMLButtonElement>("button").forEach(button => { button.disabled = true; });
   });
   grid.classList.remove("is-pick-pending");
@@ -118,9 +146,11 @@ export function collectDraftCards(grid: HTMLElement, pickedId: string, telemetry
     cards.forEach(card => card.classList.add("is-shuffling-in"));
   });
   telemetry.dataset.deckAnimation = "applying-pick";
+  const totalDuration = draftReturnTotalDuration(cards.length);
   window.setTimeout(() => {
     if (version === motionVersion) telemetry.dataset.deckAnimation = "stacked";
-  }, DRAFT_RETURN_DURATION_MS + cards.length * DRAFT_RETURN_STAGGER_MS + 90);
+  }, totalDuration);
+  return totalDuration;
 }
 
 export function markDraftCardPending(grid: HTMLElement, pickedId: string, telemetry: HTMLElement): void {
@@ -138,6 +168,7 @@ export function updateVisibleDeckCounts(
   overlay: HTMLElement,
   counts: Partial<Record<VisibleDraftDeckId, number>>,
 ): void {
+  const changedPiles: HTMLElement[] = [];
   for (const deckId of VISIBLE_DECKS) {
     const pile = overlay.querySelector<HTMLElement>(`[data-deck-pile="${deckId}"]`);
     const count = counts[deckId];
@@ -157,9 +188,14 @@ export function updateVisibleDeckCounts(
     });
     if (previous !== undefined && previous !== String(count)) {
       pile.classList.remove("count-changed");
-      void pile.offsetWidth;
-      pile.classList.add("count-changed");
+      changedPiles.push(pile);
     }
+  }
+  // Restart every changed counter animation with one layout read instead of
+  // forcing a separate synchronous layout for every deck.
+  if (changedPiles.length) {
+    void overlay.offsetWidth;
+    changedPiles.forEach(pile => pile.classList.add("count-changed"));
   }
 }
 

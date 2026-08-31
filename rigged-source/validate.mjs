@@ -50,6 +50,7 @@ const checks = [
   ["bottom boost meter", /id="boost-value"[\s\S]*id="boost-bar"/],
   ["round score HUD", /id="player-rounds"[\s\S]*id="round-value"[\s\S]*id="enemy-rounds"/],
   ["round countdown", /id="round-countdown"[\s\S]*id="round-countdown-value"/],
+  ["match result screen", /id="match-result"[\s\S]*id="match-result-title"[^>]*>VICTORY<[\s\S]*id="match-player-score"[\s\S]*id="match-new-match"/],
   ["rival health meter", /id="rival-health-value"[\s\S]*id="rival-health-bar"/],
   ["car-anchored health tags", /id="player-health-tag"[\s\S]*id="rival-health-tag"/],
   ["physical draft decks", /id="starter-select"[\s\S]*class="deck-rack starter-deck-rack"[\s\S]*id="starter-grid"[\s\S]*id="vehicle-select"[\s\S]*class="deck-stack"[\s\S]*id="vehicle-grid"[\s\S]*id="card-draft"[\s\S]*class="deck-rack"[\s\S]*id="card-grid"/],
@@ -110,6 +111,7 @@ const sceneChecks = [
   ["slow stamina boost recharge", /vehicle\.boost\+6\*dt/],
   ["boost depletion and recharge smoke route", /boostSmokeTest[\s\S]*boostAfterUse[\s\S]*boostAfterRecharge[\s\S]*boostSmoke/],
   ["round result state", /function finishRound\(winner:"player"\|"opponent"\)[\s\S]*dataset\.roundWinner=winner/],
+  ["three-point victory flow", /MATCH_POINT_TARGET = 3[\s\S]*function showMatchResult[\s\S]*dataset\.matchResult = playerWon \? "victory" : "defeat"[\s\S]*if\(matchComplete\)/],
   ["round HUD win smoke route", /roundWinSmokeTest[\s\S]*roundHudSmoke/],
   ["countdown-gated rounds", /type RoundPhase = "loading"[\s\S]*"starter_turret_select"[\s\S]*"card_select"[\s\S]*function beginRoundCountdown[\s\S]*function updateRoundCountdown/],
   ["starter turret ownership", /function showStarterTurretSelect[\s\S]*function chooseStarterTurret[\s\S]*createStarterRun\(kind,currentRound\)/],
@@ -248,7 +250,7 @@ for (const [label, pattern] of styleChecks) {
 }
 const cardAnimationChecks = [
   ["physical deck card sequence", /function dealDraftCards[\s\S]*shuffling-and-dealing[\s\S]*function collectDraftCards[\s\S]*applying-pick/],
-  ["quick deck timing", /DRAFT_DEAL_DURATION_MS = 420[\s\S]*DRAFT_DEAL_LEAD_MS = 40[\s\S]*DRAFT_DEAL_STAGGER_MS = 35/],
+  ["half-speed deck timing", /DRAFT_DEAL_DURATION_MS = 840[\s\S]*DRAFT_DEAL_LEAD_MS = 80[\s\S]*DRAFT_DEAL_STAGGER_MS = 70[\s\S]*DRAFT_RETURN_DURATION_MS = 680[\s\S]*DRAFT_RETURN_STAGGER_MS = 48/],
   ["cards batch physical source deck layout", /function positionCardsAtSourceDeck[\s\S]*const measurements = cards\.map[\s\S]*getBoundingClientRect[\s\S]*measurements\.forEach[\s\S]*--deck-x/],
   ["draft motion starts without a forced layout", /function startMotionOnNextFrame[\s\S]*requestAnimationFrame[\s\S]*draft-motion-pending/],
   ["immediate multiplayer pick feedback", /function markDraftCardPending[\s\S]*is-pick-pending[\s\S]*pick-pending/],

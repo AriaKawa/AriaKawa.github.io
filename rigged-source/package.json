@@ -7,7 +7,7 @@
     "dev": "vite --configLoader runner --host 127.0.0.1",
     "typecheck": "tsc --noEmit",
     "build": "tsc --noEmit && vite build --configLoader runner",
-    "test": "node validate.mjs && node arena-layout.test.mjs && node roguelike-run.test.mjs && node multiplayer-room.test.mjs && node camera-controller.test.mjs"
+    "test": "node validate.mjs && node card-draft-animation.test.mjs && node arena-layout.test.mjs && node roguelike-run.test.mjs && node multiplayer-room.test.mjs && node camera-controller.test.mjs"
   },
   "dependencies": {
     "three": "0.179.1"
