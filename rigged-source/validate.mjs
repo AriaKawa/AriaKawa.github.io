@@ -34,6 +34,7 @@ for (const file of required) await access(resolve(root, file));
 const html = await readFile(resolve(root, "index.html"), "utf8");
 const source = await readFile(resolve(import.meta.dirname, "src/main.ts"), "utf8");
 const styles = await readFile(resolve(import.meta.dirname, "src/style.css"), "utf8");
+const cardAnimationSource = await readFile(resolve(import.meta.dirname, "src/game/rigged/CardDraftAnimation.ts"), "utf8");
 const colliderSource = await readFile(resolve(import.meta.dirname, "src/game/rigged/DriveSurfaceCollider.ts"), "utf8");
 const ovalSource = await readFile(resolve(import.meta.dirname, "src/game/rigged/OvalBowlSurface.ts"), "utf8");
 const cameraSource = await readFile(resolve(import.meta.dirname, "src/game/rigged/RiggedCameraController.ts"), "utf8");
@@ -129,12 +130,10 @@ const sceneChecks = [
   ["AI uses Longlance rail", /dataset\.aiTurret="sniper"[\s\S]*function shootOpponent[\s\S]*createProjectile\("sniper"\)[\s\S]*weaponDefinitions\.sniper\.fireRate/],
   ["unpredictable AI maneuvers", /maneuverTimer:[\s\S]*preferredDistance:[\s\S]*weavePhase:[\s\S]*Math\.random\(\)\*1\.65[\s\S]*orbitOffset/],
   ["stronger player and rival hulls", /maxHealth: 150[\s\S]*health:210,maxHealth:210[\s\S]*opponent\.maxHealth=210/],
-  ["physical deck card sequence", /function dealCards[\s\S]*function shuffleCardsToDeck[\s\S]*dataset\.deckAnimation="collecting"/],
   ["team-colored draft cards", /function setDraftTeamTheme[\s\S]*dataset\.cardTeam=myTurn\?"player":"rival"[\s\S]*dataset\.cardTeam=myTurn\?"player-orange":"rival-purple"/],
-  ["extended lightweight deck timing", /DRAFT_DEAL_DURATION_MS=975[\s\S]*DRAFT_DEAL_STAGGER_MS=75[\s\S]*DRAFT_SHUFFLE_DURATION_MS=1080[\s\S]*DRAFT_SHUFFLE_STAGGER_MS=67\.5[\s\S]*DRAFT_PICK_HOLD_MS=1575[\s\S]*AI_PICK_DELAY_MS=400[\s\S]*setTimeout\(finishPickAnimation,DRAFT_PICK_HOLD_MS\)/],
   ["vehicle cards omit redundant selection text", /picked\.textContent=owners\.length\?[\s\S]*myTurn\?"":"RIVAL IS CHOOSING"[\s\S]*if\(picked\.textContent\)copy\.append\(picked\)/],
   ["AI turn queue survives draft animations", /function queueAITurn[\s\S]*function runAITurn[\s\S]*AI_PICK_RETRY_MS[\s\S]*function handleRoomSnapshot[\s\S]*queueAITurn\(room/],
-  ["cards use their physical source deck", /function positionCardAtSourceDeck[\s\S]*getBoundingClientRect[\s\S]*--deck-x[\s\S]*positionCardAtSourceDeck\(card,index,deck\)/],
+  ["keyboard draft selection", /function chooseVisibleDraftByIndex[\s\S]*isDraftDealActive[\s\S]*keyboardDraftPick/],
   ["rival damage wins round", /function damageOpponent[\s\S]*awardPlayerRound\(\)/],
   ["barrel pitch mount", /let barrelPivot = new THREE\.Group/],
   ["mouse world ray", /intersectObjects\(aimSurfaces/],
@@ -228,7 +227,10 @@ if (!/description\.textContent=card\.description/.test(source)) throw new Error(
 const styleChecks = [
   ["visible physical deck stacks", /\.deck-rack>\.draft-deck[^\n]*grid-template[\s\S]*\.deck-cards[^\n]*width:61px/],
   ["compositor-only card deal", /@keyframes card-deal-out[^\n]*translate3d/],
-  ["compositor-only card shuffle", /@keyframes card-shuffle-in[^\n]*translate3d/],
+  ["compositor-only card return", /@keyframes card-return-unpicked[^\n]*translate3d/],
+  ["selected card apply motion", /@keyframes card-pick-apply[^\n]*translate3d/],
+  ["face-down card reveal", /\.card-back[^\n]*position:absolute[\s\S]*@keyframes card-back-reveal/],
+  ["category card backs", /\[data-category="body"\]>.card-back[\s\S]*\[data-category="wheel"\]>.card-back[\s\S]*\[data-category="ability"\]>.card-back/],
   ["reduced motion card fallback", /prefers-reduced-motion:reduce/],
   ["deal animation blocks premature picks", /\.starter-card\.is-dealing[^\n]*pointer-events:none/],
   ["playing-card proportions", /\.starter-card,\.upgrade-card[^\n]*aspect-ratio:5\/6\.7/],
@@ -236,6 +238,15 @@ const styleChecks = [
 ];
 for (const [label, pattern] of styleChecks) {
   if (!pattern.test(styles)) throw new Error(`Missing ${label} implementation`);
+}
+const cardAnimationChecks = [
+  ["physical deck card sequence", /function dealDraftCards[\s\S]*shuffling-and-dealing[\s\S]*function collectDraftCards[\s\S]*applying-pick/],
+  ["quick deck timing", /DRAFT_DEAL_DURATION_MS = 860[\s\S]*DRAFT_DEAL_LEAD_MS = 120[\s\S]*DRAFT_DEAL_STAGGER_MS = 65/],
+  ["cards use their physical source deck", /function positionCardAtSourceDeck[\s\S]*getBoundingClientRect[\s\S]*--deck-x[\s\S]*positionCardAtSourceDeck\(card, index, deckRoot\)/],
+  ["remaining counts control stack thickness", /function updateVisibleDeckCounts[\s\S]*--deck-fill[\s\S]*visibleLayers/],
+];
+for (const [label, pattern] of cardAnimationChecks) {
+  if (!pattern.test(cardAnimationSource)) throw new Error(`Missing ${label} implementation`);
 }
 const roguelikeChecks = [
   ["extensible run state", /type ScraproadRunState[\s\S]*ownedTurrets[\s\S]*turretStats[\s\S]*vehicleStats[\s\S]*upgrades/],
