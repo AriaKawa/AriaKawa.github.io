@@ -102,14 +102,16 @@
         </div>
       </section>
 
-      <section id="starter-select" class="draft-overlay" hidden aria-labelledby="starter-select-title">
+      <section id="starter-select" class="draft-overlay" hidden aria-label="Choose a starter turret">
         <div class="draft-overlay__backdrop"></div>
         <div class="draft-shell">
-          <span class="eyebrow">RIGGED // STARTER MOUNT</span>
-          <h1 id="starter-select-title">CHOOSE A STARTER TURRET</h1>
-          <p id="starter-turn" class="draft-turn">Waiting for the first driver…</p>
+          <div class="deck-rack starter-deck-rack" aria-label="Run upgrade decks">
+            <div data-deck-pile="weapon"><span>⚙</span><b>WEAPON DECK</b><small>ALL TURRETS</small><i></i><i></i><i></i></div>
+            <div data-deck-pile="body"><span>◆</span><b>BODY DECK</b><small>VEHICLE FRAME</small><i></i><i></i><i></i></div>
+            <div data-deck-pile="wheel"><span>◉</span><b>WHEEL DECK</b><small>HANDLING & GRIP</small><i></i><i></i><i></i></div>
+          </div>
+          <p id="starter-turn" class="visually-hidden" aria-live="polite">Waiting for the first driver…</p>
           <div id="starter-pick-reveal" class="pick-reveal" hidden></div>
-          <div class="deck-stack" aria-hidden="true"><i></i><i></i><i></i></div>
           <div id="starter-grid" class="starter-grid">
             <article class="starter-card starter-card--mg">
               <span>MACHINE GUN</span><h2>SCRAP RATTLER</h2><p>Rapid automatic fire. Forgiving, noisy, and built for pressure.</p>

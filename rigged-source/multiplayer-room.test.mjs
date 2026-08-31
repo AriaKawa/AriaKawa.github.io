@@ -45,10 +45,19 @@ assert.deepEqual(normalized.roundReady,{});
 assert.deepEqual(normalized.vehicleSelections,{});
 assert.deepEqual(normalized.runState.upgrades,[],"Firebase-omitted run arrays are restored");
 assert.equal(resolveRoomPick(baseRoom, "guest", { optionId: "mg", optionName: "Rattler", nextRunState: starter, nextOptions: [] }), undefined, "guest cannot steal the host turn");
-const afterHost = resolveRoomPick(baseRoom, "host", { optionId: "mg", optionName: "Rattler", nextRunState: starter, nextOptions: ["rocket", "sniper"] }, 2);
+const allStarterOptions=["mg","rocket","sniper"];
+const afterHost = resolveRoomPick(baseRoom, "host", { optionId: "mg", optionName: "Rattler", nextRunState: starter, nextOptions: allStarterOptions }, 2);
 assert.equal(afterHost.activePickerId, "guest");
 assert.equal(afterHost.phase, "starter_draft");
-assert.deepEqual(resolveRoomPick({...baseRoom,roundReady:undefined},"host",{optionId:"mg",optionName:"Rattler",nextRunState:starter,nextOptions:["rocket","sniper"]},2).roundReady,{},"Firebase-omitted empty maps are restored");
+assert.deepEqual(afterHost.draftOptions,allStarterOptions,"the second driver may choose the same starter turret");
+assert.deepEqual(resolveRoomPick({...baseRoom,roundReady:undefined},"host",{optionId:"mg",optionName:"Rattler",nextRunState:starter,nextOptions:allStarterOptions},2).roundReady,{},"Firebase-omitted empty maps are restored");
+
+const sameStarter=structuredClone(starter);
+applyCard(sameStarter,createTurretCard("mg"));
+const samePickVehicleOptions=["race","suv","taxi"];
+const afterSamePick=resolveRoomPick(afterHost,"guest",{optionId:"mg",optionName:"Rattler",nextRunState:sameStarter,nextOptions:samePickVehicleOptions},3);
+assert.equal(afterSamePick.phase,"vehicle_select","matching starter choices complete the draft normally");
+assert.deepEqual(afterSamePick.runState.ownedTurrets,["mg"],"matching starter choices do not create duplicate mounts");
 
 const sharedStarter = structuredClone(starter);
 applyCard(sharedStarter, createTurretCard("rocket"));
