@@ -42,6 +42,15 @@ assert.ok(["weapon","body","wheel"].includes(balancedDraft[0].deck),"the selecte
 const drawCounts=Array.from({length:24},(_,index)=>draftDrawCountForRound(index+1));
 assert.ok(drawCounts.includes(1)&&drawCounts.includes(2),"rounds randomly alternate between one draw and an occasional bonus draw");
 
+const sequentialState=createStarterRun("mg",2);
+for(let drawIndex=0;drawIndex<8;drawIndex++){
+  const offer=draftCards(sequentialState);
+  const effectiveDecks=new Set(offer.map(card=>card.category==="turret"?"weapon":card.deck));
+  assert.equal(effectiveDecks.size,1,`sequential draft ${drawIndex+1} stays inside one deck`);
+  assert.equal(offer.length,3,`sequential draft ${drawIndex+1} still offers three choices`);
+  applyCard(sequentialState,offer[0]);
+}
+
 const abilityDraft=draftCards(starter,{forceAbility:true});
 const firstAbility=abilityDraft.find(card=>card.category==="ability");
 assert.ok(firstAbility,"the rare ability deck can replace a normal offer");

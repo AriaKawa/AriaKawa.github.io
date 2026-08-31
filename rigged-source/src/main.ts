@@ -157,9 +157,6 @@ const ui = {
   musicMuted: getElement<HTMLInputElement>("music-muted"),
   activeUpgrades: getElement("active-upgrades"), weaponSelect: getElement("weapon-select"),
   abilityName: getElement("ability-name"), abilityState: getElement("ability-state"), abilityCooldown: getElement("ability-cooldown"),
-  draftSummaryRound: getElement("draft-summary-round"),
-  draftSummaryAbility: getElement("draft-summary-ability"), draftSummaryTurrets: getElement("draft-summary-turrets"),
-  draftSummaryUpgrades: getElement("draft-summary-upgrades"),
 };
 const initialParams = new URLSearchParams(location.search);
 const RUN_STORAGE_KEY = "rigged-roguelike-run-v1";
@@ -1708,10 +1705,6 @@ function updateDraftDeckUi():void{
   updateVisibleDeckCounts(ui.cardDraft,{
     weapon:remainingCardCount(runState,"weapon"),body:remainingCardCount(runState,"body"),wheel:remainingCardCount(runState,"wheel"),
   });
-  ui.draftSummaryRound.textContent=String(runState.round).padStart(2,"0");
-  ui.draftSummaryAbility.textContent=runState.activeAbility==="none"?"NONE":abilityNames[runState.activeAbility].toUpperCase();
-  ui.draftSummaryTurrets.textContent=String(runState.ownedTurrets.length);
-  ui.draftSummaryUpgrades.textContent=String(runState.pickedCards.length);
   canvas.dataset.abilityDeckRemaining=String(remainingCardCount(runState,"ability"));
 }
 
@@ -1768,12 +1761,11 @@ function buildCardElement(card:UpgradeCard):HTMLElement{
   const back=document.createElement("div"),backIcon=document.createElement("i"),backTitle=document.createElement("b"),backScope=document.createElement("small");back.className="card-back";back.setAttribute("aria-hidden","true");backTitle.textContent=card.category==="ability"?"WILDCARD":card.category==="turret"?"WEAPON":card.category.toUpperCase();backScope.textContent=card.category==="ability"?"RARE Q ABILITY":card.category==="weapon"||card.category==="turret"?"ALL TURRETS":card.category==="body"?"VEHICLE FRAME":"HANDLING & GRIP";back.append(backIcon,backTitle,backScope);
   const meta=document.createElement("div");meta.className="upgrade-card__meta";const category=document.createElement("span");category.textContent=`${icons[card.category]} ${card.category==="ability"?"RARE Q ABILITY":card.category.toUpperCase()+" DECK"}`;const scope=document.createElement("span");scope.textContent=card.scope.toUpperCase();meta.append(category,scope);
   const title=document.createElement("h2");title.textContent=card.name.toUpperCase();
-  const description=document.createElement("p");description.textContent=card.description;
   const statsList=document.createElement("ul");statsList.className="upgrade-card__stats";for(const line of card.stats){const item=document.createElement("li");item.textContent=line;statsList.append(item);}
   let replacement:HTMLElement|null=null;if(card.category==="ability"){replacement=document.createElement("p");replacement.className="upgrade-card__replacement";replacement.textContent=runState?.activeAbility&&runState.activeAbility!=="none"?`REPLACES: ${abilityNames[runState.activeAbility].toUpperCase()}`:"NO CURRENT ABILITY";}
   const button=document.createElement("button");button.type="button";button.textContent=card.category==="turret"?"ADD TO LOADOUT":card.category==="ability"?"EQUIP Q ABILITY":"CHOOSE CARD";button.disabled=!cardPreviewTest&&!(multiplayer?.isMyTurn()??false);button.addEventListener("click",()=>void chooseUpgradeCard(card));
   article.classList.toggle("is-watching",button.disabled);
-  article.append(back,meta,title,description,statsList);if(replacement)article.append(replacement);article.append(button);return article;
+  article.append(back,meta,title,statsList);if(replacement)article.append(replacement);article.append(button);return article;
 }
 
 function upgradeDraftHasNextPick(room:RiggedRoom):boolean{

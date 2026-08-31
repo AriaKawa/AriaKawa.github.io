@@ -226,7 +226,8 @@ for (const [label, pattern] of sceneChecks) {
 }
 const forbiddenWeaponScopes = new RegExp([["current","turret"],["active","turret","only"],["this","turret","only"]].map(words=>words.join(" ")).join("|"),"i");
 if (forbiddenWeaponScopes.test(`${source}\n${html}\n${roguelikeSource}`)) throw new Error("Weapon copy must describe global turret effects");
-if (!/description\.textContent=card\.description/.test(source)) throw new Error("Upgrade cards must show concise descriptions");
+if (/description\.textContent=card\.description/.test(source)) throw new Error("Upgrade card descriptions must stay hidden");
+if (/draft-run-summary/.test(html)) throw new Error("The card draft must not render the run-summary bar");
 const styleChecks = [
   ["visible physical deck stacks", /\.deck-rack>\.draft-deck[^\n]*grid-template[\s\S]*\.deck-cards[^\n]*width:61px/],
   ["compositor-only card deal", /@keyframes card-deal-out[^\n]*translate3d/],
