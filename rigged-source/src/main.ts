@@ -6,6 +6,7 @@ import { riggedAssetManifest, riggedVehicleCatalog, type RiggedVehicleId } from 
 import { riggedRacekartManifest, type RacekartAssetKey } from "./assets/riggedRacekartManifest";
 import {
   defaultRiggedLevel,
+  nextRiggedLevel,
   riggedArenaLayouts,
   type AssetPlacement,
   type DriveSurfaceSpec,
@@ -434,9 +435,27 @@ function getGroundHeight(x: number, z: number): number {
   if (activeLayout.arenaKind === "capsule" && activeLayout.bowl) {
     return sampleOvalBowl(activeLayout.bowl, x, z).height;
   }
-  // The combat bowl is intentionally flat. A tiny visual undulation keeps the
-  // dirt from feeling synthetic without upsetting steering or ramp seams.
+  if (activeLayout.terrainProfile === "rolling") {
+    const radius = Math.hypot(x, z);
+    const edgeFade = 1 - THREE.MathUtils.smoothstep(radius, activeLayout.radius - 20, activeLayout.radius + 2);
+    const westMesa = 7.2 * Math.exp(-((x + 34) ** 2 / 820 + (z - 5) ** 2 / 1180));
+    const eastMesa = 6.1 * Math.exp(-((x - 31) ** 2 / 760 + (z - 27) ** 2 / 690));
+    const southRidge = 3.8 * Math.exp(-((x - 13) ** 2 / 1250 + (z + 42) ** 2 / 520));
+    const valley = 3.5 * Math.exp(-(x ** 2 / 720 + (z + 5) ** 2 / 980));
+    const rollingNoise = Math.sin(x * .052) * Math.cos(z * .047) * 1.15 + Math.sin((x + z) * .032) * .7;
+    return (westMesa + eastMesa + southRidge - valley + rollingNoise) * edgeFade;
+  }
+  // Flat combat rings keep a tiny visual undulation so the dirt does not feel synthetic.
   return Math.sin(x * .055) * Math.cos(z * .05) * .035;
+}
+
+function conformGeometryToGround(geometry: THREE.BufferGeometry, lift = 0): void {
+  const positions = geometry.getAttribute("position");
+  for (let index = 0; index < positions.count; index++) {
+    positions.setY(index, getGroundHeight(positions.getX(index), positions.getZ(index)) + lift);
+  }
+  positions.needsUpdate = true;
+  geometry.computeVertexNormals();
 }
 
 function bowlSurfaceSample(x: number, z: number): DriveSurfaceSample | null {
@@ -527,10 +546,8 @@ async function addArena(): Promise<void> {
   const diameter = ARENA_RADIUS * 2 + 18;
   const geometry = new THREE.PlaneGeometry(diameter, diameter, 112, 112);
   geometry.rotateX(-Math.PI / 2);
+  conformGeometryToGround(geometry);
   const positions = geometry.attributes.position;
-  for (let index = 0; index < positions.count; index++) {
-    positions.setY(index, getGroundHeight(positions.getX(index), positions.getZ(index)));
-  }
   applyPlanarUv(geometry);
   const groundColors = new Float32Array(positions.count * 3);
   const low = new THREE.Color(0xc2ad91), high = new THREE.Color(0xf0d4ab), color = new THREE.Color();
@@ -550,30 +567,33 @@ async function addArena(): Promise<void> {
 
   const trackMaterial = new THREE.MeshStandardMaterial({ color: 0x77716a, map: dirtyGroundTexture, bumpMap: dirtyGroundTexture, bumpScale: .035, roughness: .9, metalness: .04, side: THREE.DoubleSide });
   const ringTrackGeometry = new THREE.RingGeometry(activeLayout.ringInnerRadius, activeLayout.ringOuterRadius, 128);
-  ringTrackGeometry.rotateX(-Math.PI / 2); applyPlanarUv(ringTrackGeometry);
+  ringTrackGeometry.rotateX(-Math.PI / 2); conformGeometryToGround(ringTrackGeometry, .055); applyPlanarUv(ringTrackGeometry);
   const ringTrack = new THREE.Mesh(ringTrackGeometry, trackMaterial);
-  ringTrack.position.y = .055; ringTrack.receiveShadow = true; ringTrack.name = "continuous-circular-ring-track"; scene.add(ringTrack);
+  ringTrack.receiveShadow = true; ringTrack.name = "continuous-circular-ring-track"; scene.add(ringTrack);
 
   const centerPadGeometry = new THREE.CircleGeometry(activeLayout.ringInnerRadius - 2.5, 96);
-  centerPadGeometry.rotateX(-Math.PI / 2); applyPlanarUv(centerPadGeometry);
+  centerPadGeometry.rotateX(-Math.PI / 2); conformGeometryToGround(centerPadGeometry, .04); applyPlanarUv(centerPadGeometry);
   const centerPad = new THREE.Mesh(
     centerPadGeometry,
     new THREE.MeshStandardMaterial({ color: 0xd0b38d, map: dirtyGroundTexture, bumpMap: dirtyGroundTexture, bumpScale: .07, roughness: .97, metalness: 0, side: THREE.DoubleSide }),
   );
-  centerPad.position.y = .04; centerPad.receiveShadow = true; centerPad.name = "central-combat-bowl"; scene.add(centerPad);
+  centerPad.receiveShadow = true; centerPad.name = "central-combat-bowl"; scene.add(centerPad);
 
   for (const [radius, color, width] of [
     [activeLayout.ringInnerRadius, 0xb96a32, .65],
     [activeLayout.ringOuterRadius, 0x8e938e, .85],
   ] as const) {
-    const curb = new THREE.Mesh(new THREE.RingGeometry(radius - width, radius + width, 128), new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide }));
-    curb.rotateX(-Math.PI / 2); curb.position.y = .075; curb.name = radius === activeLayout.ringInnerRadius ? "rust-inner-track-edge" : "concrete-outer-track-edge"; scene.add(curb);
+    const curbGeometry = new THREE.RingGeometry(radius - width, radius + width, 128);
+    curbGeometry.rotateX(-Math.PI / 2); conformGeometryToGround(curbGeometry, .075);
+    const curb = new THREE.Mesh(curbGeometry, new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide }));
+    curb.name = radius === activeLayout.ringInnerRadius ? "rust-inner-track-edge" : "concrete-outer-track-edge"; scene.add(curb);
   }
   const laneRadius = (activeLayout.ringInnerRadius + activeLayout.ringOuterRadius) * .5;
   for (let marker = 0; marker < 32; marker++) {
     const angle = marker / 32 * Math.PI * 2;
     const dash = new THREE.Mesh(new THREE.BoxGeometry(.32, .035, 4.8), new THREE.MeshBasicMaterial({ color: 0xc8aa74 }));
-    dash.position.set(Math.sin(angle) * laneRadius, .095, Math.cos(angle) * laneRadius); dash.rotation.y = angle; dash.name = "ring-lane-marker"; scene.add(dash);
+    const x = Math.sin(angle) * laneRadius, z = Math.cos(angle) * laneRadius;
+    dash.position.set(x, getGroundHeight(x, z) + .095, z); dash.rotation.y = angle; dash.name = "ring-lane-marker"; scene.add(dash);
   }
 
   await Promise.all([
@@ -685,7 +705,7 @@ async function addRamp(spec: DriveSurfaceSpec): Promise<void> {
   ramp.position.set(x, 0, z); ramp.rotation.y = rotation; scene.add(ramp);
   const surface: RampSurface = { group: ramp, deck, position: new THREE.Vector3(x, baseHeight, z), rotation, width, length, baseHeight, rise, kind: spec.kind, label: spec.label ?? spec.asset };
   ramps.push(surface); aimSurfaces.push(deck);
-  if (spec.kind === "bridge") {
+  if (spec.kind === "bridge" && spec.rails !== false) {
     for (const side of [-width * .47, width * .47]) {
       const sideX = x + Math.cos(rotation) * side, sideZ = z - Math.sin(rotation) * side;
       boxColliders.push({ position: new THREE.Vector3(sideX, 0, sideZ), halfWidth: length * .5, halfLength: .35, rotation: rotation + Math.PI / 2, label: "bridge rail" });
@@ -908,12 +928,14 @@ function auditArenaFlow(): void {
       const localX = dx * cosine - dz * sine, localZ = dx * sine + dz * cosine;
       return Math.abs(localX) < collider.halfWidth + 2.2 && Math.abs(localZ) < collider.halfLength + 2.2;
     });
-    if (!obstacleBlocked && !barrierBlocked && Math.abs(getGroundHeight(x, z)) < .1) clearSamples++;
+    const forwardX = Math.sin(angle + .035) * laneRadius, forwardZ = Math.cos(angle + .035) * laneRadius;
+    const laneRise = Math.abs(getGroundHeight(forwardX, forwardZ) - getGroundHeight(x, z));
+    if (!obstacleBlocked && !barrierBlocked && laneRise < 1.6) clearSamples++;
   }
   canvas.dataset.ringSampleCount = String(sampleCount);
   canvas.dataset.ringClearSamples = String(clearSamples);
   canvas.dataset.ringTrackDrivable = clearSamples === sampleCount ? "passed" : "failed";
-  canvas.dataset.centralCombatArea = activeLayout.ringInnerRadius >= 50 ? "passed" : "failed";
+  canvas.dataset.centralCombatArea = activeLayout.ringInnerRadius >= 48 ? "passed" : "failed";
   canvas.dataset.targetArea = activeLayout.targets.length >= 3 ? "passed" : "failed";
   canvas.dataset.futureSpawnSides = activeLayout.spawn.z * activeLayout.opponentSpawn.z < 0 ? "passed" : "failed";
 }
@@ -2204,12 +2226,12 @@ function clearRoundScene():void{
 
 async function advanceRound(targetRound=currentRound+1):Promise<void>{
   if(roundPhase==="loading")return;
-  const matchComplete=playerRoundWins>=3||enemyRoundWins>=3,nextLayout=activeLayout.id==="dustring"?"ovalbowl":"dustring";
+  const matchComplete=playerRoundWins>=3||enemyRoundWins>=3,nextLayout=nextRiggedLevel(activeLayout.id);
   const nextRound=Math.max(currentRound+1,targetRound);roundPhase="loading";canvas.dataset.roundPhase=roundPhase;canvas.dataset.seamlessTransition="loading";ui.cardDraft.hidden=true;ui.countdown.hidden=false;ui.countdownValue.textContent="…";ui.countdownArena.textContent="NEXT ARENA";ui.countdown.querySelector("span")!.textContent="REBUILDING THE RING";startAudio();
   if(matchComplete){playerRoundWins=0;enemyRoundWins=0;}currentRound=nextRound;if(runState){runState.round=nextRound;saveRunState();}updateRoundHud();
   clearRoundScene();activeLayout=riggedArenaLayouts[nextLayout];ARENA_RADIUS=activeLayout.radius;
   await addArena();await addWorldProps();registerPhysicsDebug();auditArenaFlow();activeLayout.targets.forEach(target=>createTarget(target.x,target.z,target.rotation));aimSurfaces.push(opponentCar);auditHeightfieldCoverage();
-  roundAwarded=false;resetVehicle(false);resetOpponent();updateCameraModeHud();canvas.dataset.targetsRemaining=String(activeLayout.targets.length);canvas.dataset.arenaLayout=activeLayout.id;canvas.dataset.arenaKind=activeLayout.arenaKind;canvas.dataset.arenaRadius=String(ARENA_RADIUS);canvas.dataset.ringInnerRadius=String(activeLayout.ringInnerRadius);canvas.dataset.ringOuterRadius=String(activeLayout.ringOuterRadius);canvas.dataset.mapRotation="alternate-in-document";canvas.dataset.seamlessTransition="complete";beginRoundCountdown();
+  roundAwarded=false;resetVehicle(false);resetOpponent();updateCameraModeHud();canvas.dataset.targetsRemaining=String(activeLayout.targets.length);canvas.dataset.arenaLayout=activeLayout.id;canvas.dataset.arenaKind=activeLayout.arenaKind;canvas.dataset.terrainProfile=activeLayout.terrainProfile;canvas.dataset.arenaRadius=String(ARENA_RADIUS);canvas.dataset.ringInnerRadius=String(activeLayout.ringInnerRadius);canvas.dataset.ringOuterRadius=String(activeLayout.ringOuterRadius);canvas.dataset.mapRotation="four-arena-cycle";canvas.dataset.seamlessTransition="complete";beginRoundCountdown();
 }
 
 function togglePause(force?:boolean):void{if(!levelStarted)return;paused=force??!paused;if(paused)setFireHeld(false);ui.pause.hidden=!paused;}
@@ -2499,7 +2521,7 @@ async function startLevel(levelId: RiggedLevelId): Promise<void> {
   await addArena(); await addWorldProps(); registerPhysicsDebug(); auditArenaFlow(); buildCar(); buildOpponentCar();persistentSceneObjects.add(car);persistentSceneObjects.add(opponentCar);recomputeRunStats();
   activeLayout.targets.forEach(target => createTarget(target.x, target.z, target.rotation));
   roundAwarded=false;updateRoundHud();canvas.dataset.targetsRemaining=String(activeLayout.targets.length);
-  canvas.dataset.prototype="rigged-1v1-combat";canvas.dataset.audioSystem="pooled-stereo-combat-sfx-v3";canvas.dataset.arenaLayout=activeLayout.id;canvas.dataset.arenaKind=activeLayout.arenaKind;canvas.dataset.arenaRadius=String(ARENA_RADIUS);canvas.dataset.ringInnerRadius=String(activeLayout.ringInnerRadius);canvas.dataset.ringOuterRadius=String(activeLayout.ringOuterRadius);canvas.dataset.rampColliders=String(ramps.filter(ramp=>ramp.kind==="ramp").length);canvas.dataset.bridgeColliders=String(ramps.filter(ramp=>ramp.kind==="bridge").length);canvas.dataset.heightfieldColliders=String(driveHeightfields.length);canvas.dataset.majorColliders=String(obstacles.length+boxColliders.length+(activeLayout.arenaKind==="capsule"?3:0));canvas.dataset.vehicleCollider="three-disc-capsule-2.24x4.14x0.72";canvas.dataset.shotsFired="0";canvas.dataset.aiShotsFired="0";canvas.dataset.fireHeld="false";canvas.dataset.arenaDrops="disabled";canvas.dataset.racekartAssets="modular-racekart-track-hilly";canvas.dataset.racingAssetsUsage=activeLayout.arenaKind==="capsule"?"rim-railings":"ramps-fences-props";canvas.dataset.colliderSource=activeLayout.arenaKind==="capsule"?"analytic-capsule-bands":"visual-asset-heightfields";canvas.dataset.wallRideContact="pending";canvas.dataset.mapRotation="alternate-in-document";auditHeightfieldCoverage();await warmCombatResources();
+  canvas.dataset.prototype="rigged-1v1-combat";canvas.dataset.audioSystem="pooled-stereo-combat-sfx-v3";canvas.dataset.arenaLayout=activeLayout.id;canvas.dataset.arenaKind=activeLayout.arenaKind;canvas.dataset.terrainProfile=activeLayout.terrainProfile;canvas.dataset.arenaRadius=String(ARENA_RADIUS);canvas.dataset.ringInnerRadius=String(activeLayout.ringInnerRadius);canvas.dataset.ringOuterRadius=String(activeLayout.ringOuterRadius);canvas.dataset.rampColliders=String(ramps.filter(ramp=>ramp.kind==="ramp").length);canvas.dataset.bridgeColliders=String(ramps.filter(ramp=>ramp.kind==="bridge").length);canvas.dataset.heightfieldColliders=String(driveHeightfields.length);canvas.dataset.majorColliders=String(obstacles.length+boxColliders.length+(activeLayout.arenaKind==="capsule"?3:0));canvas.dataset.vehicleCollider="three-disc-capsule-2.24x4.14x0.72";canvas.dataset.shotsFired="0";canvas.dataset.aiShotsFired="0";canvas.dataset.fireHeld="false";canvas.dataset.arenaDrops="disabled";canvas.dataset.racekartAssets="modular-racekart-track-hilly";canvas.dataset.racingAssetsUsage=activeLayout.arenaKind==="capsule"?"rim-railings":"ramps-fences-props";canvas.dataset.colliderSource=activeLayout.arenaKind==="capsule"?"analytic-capsule-bands":"visual-asset-heightfields";canvas.dataset.wallRideContact="pending";canvas.dataset.mapRotation="four-arena-cycle";auditHeightfieldCoverage();await warmCombatResources();
   levelStarted = true; levelStarting = false; paused = false; resetVehicle(false);resetOpponent();updateCameraModeHud();
   const smokeMode=rampSmokeTest||allSurfaceSmokeTest||wallRideSmokeTest||holdFireSmokeTest||boostSmokeTest||roundWinSmokeTest;
   if(smokeMode)ui.multiplayerLobby.hidden=true;

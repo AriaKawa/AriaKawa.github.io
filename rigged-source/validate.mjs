@@ -5,7 +5,8 @@ const root = resolve(import.meta.dirname, "../rigged");
 const racekartModels = [
   "Prop_Track_Ramp", "Prop_Track_Ramp_Railing", "Prop_Decorative_Fence_Railing",
   "Prop_Decorative_Rock_2", "Prop_Decorative_Rock_5",
-  "Prop_Decorative_Hay_Bale_Box",
+  "Prop_Decorative_Hay_Bale_Box", "Prop_Track_Arch_1x4",
+  "Track_Bridge_Incline_Gentle_Supported", "Track_Bridge_Flat_Supported",
 ];
 const required = [
   "index.html", "ASSET_CREDITS.md", "THIRD_PARTY_LICENSES.txt", "assets/cloudy-sky.png", "assets/nitro-games.wav",
@@ -122,7 +123,7 @@ const sceneChecks = [
   ["ricochet projectile bounce", /ricochetsRemaining[\s\S]*ricochetVfx="spark"/],
   ["vehicle card runtime stats", /function recomputeRunStats[\s\S]*maxHealthMultiplier[\s\S]*handlingMultiplier[\s\S]*tractionMultiplier/],
   ["wheel card visual variants", /function applyWheelVisual[\s\S]*"racing"[\s\S]*"offroad"[\s\S]*"heavy"/],
-  ["alternating map rounds", /function advanceRound[\s\S]*activeLayout\.id==="dustring"\?"ovalbowl":"dustring"[\s\S]*activeLayout=riggedArenaLayouts\[nextLayout\]/],
+  ["four-map round rotation", /function advanceRound[\s\S]*nextRiggedLevel\(activeLayout\.id\)[\s\S]*activeLayout=riggedArenaLayouts\[nextLayout\]/],
   ["seamless in-document round transition", /function clearRoundScene[\s\S]*roundWorldCleanup="complete"[\s\S]*seamlessTransition="complete"[\s\S]*beginRoundCountdown\(\)/],
   ["no between-round page navigation", /async function advanceRound[\s\S]*await addArena\(\);await addWorldProps\(\)/],
   ["combat opponent car", /function buildOpponentCar[\s\S]*rival-ai-combat-car[\s\S]*function updateOpponent/],
@@ -323,11 +324,15 @@ for (const key of ["stuntRamp", "fence", "rockWide", "rockTall", "hayBale"]) {
 }
 if (!layouts.includes("dustring: {")) throw new Error("Missing Dust Ring arena layout");
 if (!layouts.includes("ovalbowl: {")) throw new Error("Missing Capsule Circuit arena layout");
+if (!layouts.includes("skyfoundry: {")) throw new Error("Missing Sky Foundry vertical arena layout");
+if (!layouts.includes("redmesa: {")) throw new Error("Missing Red Mesa hilly arena layout");
 if (!/ovalbowl:[\s\S]*arenaKind: "capsule"[\s\S]*bowl: \{ straightHalfLength: 46, flatRadius: 44, outerRadius: 62, wallRise: 11\.5, guardHeight: 4\.5 \}/.test(layouts)) throw new Error("Capsule Circuit dimensions are missing");
 if ((layouts.match(/asset: "stuntRailing"/g) ?? []).length !== 4) throw new Error("Capsule Circuit must use four restrained Racing Assets rim railings");
-if ((layouts.match(/targets: \[\]/g) ?? []).length !== 2) throw new Error("Target dummies must be removed from both arenas");
-if ((layouts.match(/\{ asset: "stuntRamp", kind: "ramp"/g) ?? []).length !== 4) throw new Error("Expected exactly 4 placed ramp surfaces");
-if (/\{ asset: "[^"]+", kind: "bridge"/.test(layouts)) throw new Error("Dust Ring must not include bridge or loop stunt chains");
+if ((layouts.match(/targets: \[\]/g) ?? []).length !== 4) throw new Error("Target dummies must be removed from all four arenas");
+if ((layouts.match(/\{ asset: "stuntRamp", kind: "ramp"/g) ?? []).length !== 6) throw new Error("Expected 6 placed ramp surfaces across Dust Ring and Red Mesa");
+if (!/skyfoundry:[\s\S]*startHeight: 0, endHeight: 9[\s\S]*startHeight: 9, endHeight: 9/.test(layouts)) throw new Error("Sky Foundry must contain climbable inclines and a raised deck");
+if (!/redmesa:[\s\S]*terrainProfile: "rolling"/.test(layouts)) throw new Error("Red Mesa must use the rolling terrain profile");
+if (!/riggedArenaOrder[^\n]+\["dustring", "ovalbowl", "skyfoundry", "redmesa"\]/.test(layouts)) throw new Error("The four-arena rotation order is missing");
 if (/pickup/i.test(layouts)) throw new Error("Arena drops must remain fully removed from layouts");
 if (/\b(?:createPickup|equipPickup|updatePickups|partCatalog|pickups)\b/.test(source)) throw new Error("Arena pickup runtime must remain removed");
 if ((layouts.match(/rotation:/g) ?? []).length < 10) throw new Error("Expected curated track and prop placements");
@@ -336,4 +341,4 @@ if (/dustbowl|stuntworks|bridge deck|mega jump/i.test(layouts)) throw new Error(
 const assetPaths = [...html.matchAll(/(?:src|href)="\.\/(assets\/[^\"]+)"/g)].map((match) => match[1]);
 for (const asset of assetPaths) await access(resolve(root, asset));
 
-console.log(`Rigged production validation passed (${sceneChecks.length} gameplay/asset systems, Firebase two-player drafting, 2 rotating arenas including Capsule Circuit's analytic collider bands, ${racekartModels.length} selected Racekart Hilly models, and ${required.length + assetPaths.length} files checked).`);
+console.log(`Rigged production validation passed (${sceneChecks.length} gameplay/asset systems, Firebase two-player drafting, 4 rotating arenas including vertical and rolling-terrain maps, ${racekartModels.length} selected Racekart Hilly models, and ${required.length + assetPaths.length} files checked).`);

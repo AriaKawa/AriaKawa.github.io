@@ -2,7 +2,7 @@ import type { RacekartAssetKey } from "../../assets/riggedRacekartManifest";
 
 import type { OvalBowlConfig } from "./OvalBowlSurface";
 
-export type RiggedLevelId = "dustring" | "ovalbowl";
+export type RiggedLevelId = "dustring" | "ovalbowl" | "skyfoundry" | "redmesa";
 
 export type AssetPlacement = {
   asset: RacekartAssetKey;
@@ -21,6 +21,7 @@ export type DriveSurfaceSpec = AssetPlacement & {
   endHeight: number;
   kind: "ramp" | "bridge";
   assetYaw?: number;
+  rails?: boolean;
 };
 
 export type BarrierSpec = { x: number; z: number; rotation: number; length: number; boundary?: boolean };
@@ -33,6 +34,7 @@ export type RiggedArenaLayout = {
   description: string;
   difficulty: string;
   arenaKind: "ring" | "capsule";
+  terrainProfile: "flat" | "rolling";
   bowl?: OvalBowlConfig;
   radius: number;
   ringInnerRadius: number;
@@ -59,6 +61,7 @@ export const riggedArenaLayouts: Record<RiggedLevelId, RiggedArenaLayout> = {
     description: "One clean combat loop with an open center, four readable jumps, and room to hunt the rival.",
     difficulty: "COMBAT READY",
     arenaKind: "ring",
+    terrainProfile: "flat",
     radius: 100,
     ringInnerRadius: 60,
     ringOuterRadius: 88,
@@ -94,6 +97,7 @@ export const riggedArenaLayouts: Record<RiggedLevelId, RiggedArenaLayout> = {
     description: "A flat capsule stadium with long straights, rounded ends, a layered bank, and a hard upper guard.",
     difficulty: "WALL RIDE READY",
     arenaKind: "capsule",
+    terrainProfile: "flat",
     radius: 112,
     ringInnerRadius: 44,
     ringOuterRadius: 62,
@@ -113,6 +117,85 @@ export const riggedArenaLayouts: Record<RiggedLevelId, RiggedArenaLayout> = {
     barriers: [],
     targets: [],
   },
+  skyfoundry: {
+    id: "skyfoundry",
+    name: "Sky Foundry",
+    callsign: "ARENA 03 // HIGH STEEL",
+    description: "Four bridge inclines converge on a raised combat cross, leaving fast ground routes around the steelwork.",
+    difficulty: "VERTICAL COMBAT",
+    arenaKind: "ring",
+    terrainProfile: "flat",
+    radius: 106,
+    ringInnerRadius: 50,
+    ringOuterRadius: 90,
+    spawn: { x: 0, z: -78, heading: 0 },
+    opponentSpawn: { x: 0, z: 78, heading: half },
+    objective: "Take the high deck. Break line of sight. Drop on the rival.",
+    surfaces: [
+      { asset: "bridgeIncline", kind: "bridge", x: 0, z: -43, rotation: 0, width: 18, length: 30, startHeight: 0, endHeight: 9, assetYaw: quarter, label: "south foundry climb" },
+      { asset: "bridgeIncline", kind: "bridge", x: 0, z: 43, rotation: 0, width: 18, length: 30, startHeight: 9, endHeight: 0, assetYaw: quarter, label: "north foundry descent" },
+      { asset: "bridgeIncline", kind: "bridge", x: -43, z: 0, rotation: quarter, width: 18, length: 30, startHeight: 0, endHeight: 9, assetYaw: quarter, label: "west foundry climb" },
+      { asset: "bridgeIncline", kind: "bridge", x: 43, z: 0, rotation: quarter, width: 18, length: 30, startHeight: 9, endHeight: 0, assetYaw: quarter, label: "east foundry descent" },
+      { asset: "bridgeFlat", kind: "bridge", x: 0, z: 0, y: 9, rotation: 0, width: 18, length: 58, startHeight: 9, endHeight: 9, assetYaw: quarter, rails: false, label: "north south high deck" },
+      { asset: "bridgeFlat", kind: "bridge", x: 0, z: 0, y: 9, rotation: quarter, width: 18, length: 58, startHeight: 9, endHeight: 9, assetYaw: quarter, rails: false, label: "east west high deck" },
+    ],
+    track: [],
+    terrain: [],
+    props: [
+      { asset: "trackArch", x: 0, z: -61, rotation: quarter, scale: 7.5, label: "south foundry gate" },
+      { asset: "trackArch", x: 0, z: 61, rotation: quarter, scale: 7.5, label: "north foundry gate" },
+      { asset: "rockWide", x: -29, z: -29, rotation: .4, scale: 4.8, label: "southwest foundation rubble" },
+      { asset: "rockTall", x: 29, z: 29, rotation: -.35, scale: 4.2, label: "northeast foundation rubble" },
+    ],
+    barriers: [
+      { x: -31, z: -31, rotation: -quarter / 2, length: 13 },
+      { x: 31, z: 31, rotation: -quarter / 2, length: 13 },
+      { x: -31, z: 31, rotation: quarter / 2, length: 13 },
+      { x: 31, z: -31, rotation: quarter / 2, length: 13 },
+    ],
+    targets: [],
+  },
+  redmesa: {
+    id: "redmesa",
+    name: "Red Mesa",
+    callsign: "ARENA 04 // ROLLING BADLANDS",
+    description: "A broad dirt circuit rolls over crests, bowls, and off-camber hills with long sightlines across the valley.",
+    difficulty: "HILL COUNTRY",
+    arenaKind: "ring",
+    terrainProfile: "rolling",
+    radius: 108,
+    ringInnerRadius: 51,
+    ringOuterRadius: 92,
+    spawn: { x: 0, z: -78, heading: 0 },
+    opponentSpawn: { x: 0, z: 78, heading: half },
+    objective: "Use the crests for cover. Hunt through the low ground. Own the ridge.",
+    surfaces: [
+      { asset: "stuntRamp", kind: "ramp", x: -55, z: -18, rotation: -quarter, width: 11, length: 20, startHeight: 0, endHeight: 4.2, scale: 10, assetYaw: quarter, label: "west ridge kicker" },
+      { asset: "stuntRamp", kind: "ramp", x: 54, z: 24, rotation: quarter, width: 11, length: 20, startHeight: 0, endHeight: 4.2, scale: 10, assetYaw: quarter, label: "east ridge kicker" },
+    ],
+    track: [],
+    terrain: [],
+    props: [
+      { asset: "rockWide", x: -34, z: 8, rotation: .2, scale: 6.2, label: "west mesa crown" },
+      { asset: "rockTall", x: 32, z: 29, rotation: -.45, scale: 5.4, label: "east mesa crown" },
+      { asset: "rockWide", x: 19, z: -36, rotation: .75, scale: 4.7, label: "south valley rock" },
+      { asset: "hayBale", x: -13, z: -33, rotation: -.2, scale: 3.5, label: "valley hay one" },
+      { asset: "hayBale", x: -8, z: -35, rotation: .12, scale: 3.5, label: "valley hay two" },
+      { asset: "trackArch", x: 0, z: -65, rotation: quarter, scale: 7, label: "red mesa south gate" },
+    ],
+    barriers: [
+      { x: -17, z: 31, rotation: -.22, length: 14 },
+      { x: 17, z: -29, rotation: -.22, length: 14 },
+    ],
+    targets: [],
+  },
 };
 
 export const defaultRiggedLevel: RiggedLevelId = "dustring";
+
+export const riggedArenaOrder: readonly RiggedLevelId[] = ["dustring", "ovalbowl", "skyfoundry", "redmesa"];
+
+export function nextRiggedLevel(current: RiggedLevelId): RiggedLevelId {
+  const index = riggedArenaOrder.indexOf(current);
+  return riggedArenaOrder[(index + 1) % riggedArenaOrder.length];
+}
