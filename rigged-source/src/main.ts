@@ -150,7 +150,7 @@ const ui = {
   activeUpgrades: getElement("active-upgrades"), weaponSelect: getElement("weapon-select"),
   abilityName: getElement("ability-name"), abilityState: getElement("ability-state"), abilityCooldown: getElement("ability-cooldown"),
   draftAbilitySlot: getElement("draft-ability-slot"), weaponDeckCount: getElement("weapon-deck-count"), bodyDeckCount: getElement("body-deck-count"),
-  wheelDeckCount: getElement("wheel-deck-count"), abilityDeckCount: getElement("ability-deck-count"),
+  wheelDeckCount: getElement("wheel-deck-count"),
 };
 const initialParams = new URLSearchParams(location.search);
 const RUN_STORAGE_KEY = "rigged-roguelike-run-v1";
@@ -175,6 +175,8 @@ let renderedPickId = 0;
 let pickAnimationActive = false;
 let deckMotionVersion = 0;
 let aiPickPending = false;
+let aiTurnTimer = 0;
+let queuedAiTurnKey = "";
 let lastStartedRoomRound = 0;
 let selectedVehicleId:RiggedVehicleId=riggedAssetManifest.vehicle.defaultId;
 
@@ -1687,6 +1689,7 @@ const DRAFT_SHUFFLE_DURATION_MS=1080;
 const DRAFT_SHUFFLE_STAGGER_MS=67.5;
 const DRAFT_PICK_HOLD_MS=1575;
 const AI_PICK_DELAY_MS=400;
+const AI_PICK_RETRY_MS=1100;
 
 function setDraftTeamTheme(overlay:HTMLElement,myTurn:boolean):void{
   overlay.dataset.cardTeam=myTurn?"player":"rival";
@@ -1697,12 +1700,22 @@ function visibleDraftCards(grid:HTMLElement):HTMLElement[]{
   return Array.from(grid.querySelectorAll<HTMLElement>(draftCardSelector)).filter(card=>!card.hidden);
 }
 
+const draftDeckIds=["weapon","body","wheel"] as const;
+function positionCardAtSourceDeck(card:HTMLElement,index:number,deckRoot:HTMLElement):void{
+  const category=card.dataset.category,deckId=category==="weapon"||category==="turret"?"weapon":category==="body"?"body":category==="wheel"?"wheel":draftDeckIds[index%draftDeckIds.length];
+  const source=deckRoot.matches(".deck-stack")?deckRoot:deckRoot.querySelector<HTMLElement>(`[data-deck-pile="${deckId}"] .deck-cards`)??deckRoot.querySelector<HTMLElement>(".deck-cards")??deckRoot;
+  const sourceRect=source.getBoundingClientRect(),cardRect=card.getBoundingClientRect();
+  card.style.setProperty("--deck-x",`${sourceRect.left+sourceRect.width/2-cardRect.left-cardRect.width/2}px`);
+  card.style.setProperty("--deck-y",`${sourceRect.top+sourceRect.height/2-cardRect.top-cardRect.height/2}px`);
+  card.style.setProperty("--deal-rotate",`${(index-1)*5.5}deg`);
+}
+
 function dealCards(grid:HTMLElement):void{
   const version=++deckMotionVersion,deck=grid.closest(".draft-shell")?.querySelector<HTMLElement>(".deck-stack,.deck-rack");
   if(!deck)return;
   const cards=visibleDraftCards(grid);deck.classList.remove("is-collecting","is-dealing");
   cards.forEach((card,index)=>{
-    card.classList.remove("is-picked","is-shuffling-in","is-dealing");card.style.setProperty("--deal-delay",`${index*DRAFT_DEAL_STAGGER_MS}ms`);
+    card.classList.remove("is-picked","is-shuffling-in","is-dealing");positionCardAtSourceDeck(card,index,deck);card.style.setProperty("--deal-delay",`${index*DRAFT_DEAL_STAGGER_MS}ms`);
   });
   void grid.offsetWidth;
   deck.classList.add("is-dealing");cards.forEach(card=>card.classList.add("is-dealing"));canvas.dataset.deckAnimation="dealing";
@@ -1718,7 +1731,7 @@ function shuffleCardsToDeck(grid:HTMLElement,pickedId:string):void{
   const cards=visibleDraftCards(grid);deck.classList.remove("is-dealing","is-collecting");
   cards.forEach((card,index)=>{
     const picked=card.dataset.optionId===pickedId;
-    card.classList.remove("is-dealing","is-shuffling-in");card.classList.toggle("is-picked",picked);
+    card.classList.remove("is-dealing","is-shuffling-in");positionCardAtSourceDeck(card,index,deck);card.classList.toggle("is-picked",picked);
     card.style.setProperty("--shuffle-delay",`${picked?135:(cards.length-1-index)*DRAFT_SHUFFLE_STAGGER_MS}ms`);
     card.querySelectorAll<HTMLButtonElement>("button").forEach(button=>button.disabled=true);
   });
@@ -1776,6 +1789,7 @@ async function chooseVehicle(id:RiggedVehicleId):Promise<void>{
 function buildCardElement(card:UpgradeCard):HTMLElement{
   const article=document.createElement("article");article.className="upgrade-card";article.dataset.category=card.category;article.dataset.rarity=card.rarity;article.dataset.optionId=card.id;
   const icons:Record<string,string>={weapon:"⚙",body:"◆",wheel:"◉",ability:"Q",turret:"+"};
+  article.dataset.cardMark=icons[card.category]??"R";
   const meta=document.createElement("div");meta.className="upgrade-card__meta";const category=document.createElement("span");category.textContent=`${icons[card.category]} ${card.category==="ability"?"RARE Q ABILITY":card.category.toUpperCase()+" DECK"}`;const scope=document.createElement("span");scope.textContent=card.scope.toUpperCase();meta.append(category,scope);
   const title=document.createElement("h2");title.textContent=card.name.toUpperCase();
   const description=document.createElement("p");description.textContent=card.description;
@@ -1791,7 +1805,7 @@ function showCardDraft():void{
   const cards=resolveRoomCards(activeRoom.draftOptions,runState),turretReward=currentRound%3===0,myTurn=cardPreviewTest||(multiplayer?.isMyTurn()??false);
   setDraftTeamTheme(ui.cardDraft,myTurn);
   ui.draftAbilitySlot.textContent=runState.activeAbility==="none"?"Q SLOT // NONE EQUIPPED":`Q SLOT // ${abilityNames[runState.activeAbility].toUpperCase()}`;
-  ui.weaponDeckCount.textContent=`${remainingCardCount(runState,"weapon")} CARDS`;ui.bodyDeckCount.textContent=`${remainingCardCount(runState,"body")} CARDS`;ui.wheelDeckCount.textContent=`${remainingCardCount(runState,"wheel")} CARDS`;ui.abilityDeckCount.textContent=`${remainingCardCount(runState,"ability")} RARE CARDS`;
+  ui.weaponDeckCount.textContent=`${remainingCardCount(runState,"weapon")} CARDS`;ui.bodyDeckCount.textContent=`${remainingCardCount(runState,"body")} CARDS`;ui.wheelDeckCount.textContent=`${remainingCardCount(runState,"wheel")} CARDS`;
   roundPhase="card_select";ui.countdown.hidden=true;ui.starterSelect.hidden=true;ui.vehicleSelect.hidden=true;ui.cardDraft.hidden=false;ui.weaponSelect.classList.add("draft-open");ui.draftPickReveal.hidden=true;ui.cardGrid.replaceChildren(...cards.map(buildCardElement));canvas.dataset.roundPhase=roundPhase;canvas.dataset.cardDraft="visible";canvas.dataset.turretReward=turretReward?"offered":"not-due";dealCards(ui.cardGrid);
 }
 
@@ -2393,42 +2407,45 @@ function renderRoomLobby(room:RiggedRoom|null):void{
   ui.roomStatus.textContent=players.length<2?"Room ready. Invite a friend or add an AI rival.":canStart?"Both drivers connected. Launch when ready.":"Both drivers connected. Waiting for the host.";
 }
 
-function maybeRunAITurn(room:RiggedRoom):void{
-  const ai=roomPlayers(room).find(player=>player.isAI);
-  if(!ai||room.activePickerId!==ai.id||multiplayer?.isHost()!==true||aiPickPending||pickAnimationActive)return;
-  if(!["starter_draft","vehicle_select","upgrade_draft"].includes(room.phase))return;
-  aiPickPending=true;const sequence=room.pickSequence;
-  window.setTimeout(async()=>{
-    try{
-      if(!multiplayer||!activeRoom||activeRoom.pickSequence!==sequence||activeRoom.activePickerId!==ai.id)return;
-      const options=activeRoom.draftOptions;
-      if(!options.length)return;
-      const optionId=activeRoom.phase==="starter_draft"?(["sniper","rocket","mg"] as const).find(kind=>options.includes(kind))??options[0]:options[Math.floor(Math.random()*options.length)];
-      if(activeRoom.phase==="vehicle_select"){
-        if(isVehicleId(optionId))await multiplayer.submitAiVehiclePick(optionId,riggedVehicleCatalog[optionId].label);
-        return;
-      }
-      if(activeRoom.phase==="starter_draft"){
-        const kind=optionId as WeaponKind,nextState=activeRoom.runState?structuredClone(activeRoom.runState):createStarterRun(kind,currentRound);
-        if(activeRoom.runState)applyCard(nextState,createTurretCard(kind));
-        const nextOptions=activeRoom.draftTurn===0?["mg","rocket","sniper"] as WeaponKind[]:Object.keys(riggedVehicleCatalog);
-        await multiplayer.submitAiPick({optionId:kind,optionName:turretShortNames[kind],nextRunState:nextState,nextOptions});return;
-      }
-      if(!runState)return;const card=resolveRoomCards(options,runState).find(item=>item.id===optionId);if(!card)return;
-      const nextState=structuredClone(runState);applyCard(nextState,card);nextState.round=currentRound;
-      const nextOptions=activeRoom.draftTurn===0?draftCards(nextState).map(option=>option.id):[];
-      await multiplayer.submitAiPick({optionId:card.id,optionName:card.name,nextRunState:nextState,nextOptions});
-    }catch(error){showRoomError(error);}finally{aiPickPending=false;}
-  },AI_PICK_DELAY_MS);
+function aiTurnKey(room:RiggedRoom,aiId:string):string{return `${room.code}:${room.phase}:${room.pickSequence}:${aiId}`;}
+
+function queueAITurn(room:RiggedRoom,delay=pickAnimationActive?DRAFT_PICK_HOLD_MS+AI_PICK_DELAY_MS:AI_PICK_DELAY_MS):void{
+  const ai=roomPlayers(room).find(player=>player.isAI),eligible=Boolean(ai&&room.activePickerId===ai.id&&multiplayer?.isHost()===true&&["starter_draft","vehicle_select","upgrade_draft"].includes(room.phase));
+  if(!eligible||!ai){if(aiTurnTimer)window.clearTimeout(aiTurnTimer);aiTurnTimer=0;queuedAiTurnKey="";return;}
+  const key=aiTurnKey(room,ai.id);if(aiPickPending||aiTurnTimer&&queuedAiTurnKey===key)return;
+  if(aiTurnTimer)window.clearTimeout(aiTurnTimer);queuedAiTurnKey=key;canvas.dataset.aiDraftState="queued";
+  aiTurnTimer=window.setTimeout(()=>{aiTurnTimer=0;void runAITurn(key);},delay);
 }
 
-function armAiTurnRecovery(room:RiggedRoom):void{
-  const ai=roomPlayers(room).find(player=>player.isAI);if(!ai||room.activePickerId!==ai.id||multiplayer?.isHost()!==true)return;
-  const sequence=room.pickSequence;
-  window.setTimeout(()=>{
-    if(!activeRoom||activeRoom.pickSequence!==sequence||activeRoom.activePickerId!==ai.id)return;
-    aiPickPending=false;pickAnimationActive=false;canvas.dataset.aiDraftRecovery="retry";maybeRunAITurn(activeRoom);
-  },DRAFT_PICK_HOLD_MS+AI_PICK_DELAY_MS+2200);
+async function runAITurn(expectedKey:string):Promise<void>{
+  const room=activeRoom,ai=room&&roomPlayers(room).find(player=>player.isAI);
+  if(!room||!ai||aiTurnKey(room,ai.id)!==expectedKey||room.activePickerId!==ai.id||multiplayer?.isHost()!==true){queuedAiTurnKey="";return;}
+  if(aiPickPending)return;
+  aiPickPending=true;canvas.dataset.aiDraftState="choosing";
+  try{
+    const options=[...room.draftOptions];if(!options.length)throw new Error("The AI has no draft options to choose from.");
+    const optionId=room.phase==="starter_draft"?(["sniper","rocket","mg"] as const).find(kind=>options.includes(kind))??options[0]:options[Math.floor(Math.random()*options.length)];
+    if(room.phase==="vehicle_select"){
+      if(!isVehicleId(optionId))throw new Error("The AI received an invalid vehicle option.");
+      await multiplayer.submitAiVehiclePick(optionId,riggedVehicleCatalog[optionId].label);
+    }else if(room.phase==="starter_draft"){
+      const kind=optionId as WeaponKind,nextState=room.runState?structuredClone(room.runState):createStarterRun(kind,room.round);
+      if(room.runState)applyCard(nextState,createTurretCard(kind));
+      const nextOptions=room.draftTurn===0?["mg","rocket","sniper"] as WeaponKind[]:Object.keys(riggedVehicleCatalog);
+      await multiplayer.submitAiPick({optionId:kind,optionName:turretShortNames[kind],nextRunState:nextState,nextOptions});
+    }else{
+      const sharedState=normalizeRunState(room.runState)??runState;if(!sharedState)throw new Error("The AI could not load the shared run state.");
+      const card=resolveRoomCards(options,sharedState).find(item=>item.id===optionId);if(!card)throw new Error("The AI could not resolve its selected card.");
+      const nextState=structuredClone(sharedState);applyCard(nextState,card);nextState.round=room.round;
+      const nextOptions=room.draftTurn===0?draftCards(nextState).map(option=>option.id):[];
+      await multiplayer.submitAiPick({optionId:card.id,optionName:card.name,nextRunState:nextState,nextOptions});
+    }
+    canvas.dataset.aiDraftState="submitted";
+  }catch(error){showRoomError(error);canvas.dataset.aiDraftState="retrying";}
+  finally{
+    aiPickPending=false;queuedAiTurnKey="";
+    window.setTimeout(()=>{if(activeRoom&&ai&&activeRoom.activePickerId===ai.id&&aiTurnKey(activeRoom,ai.id)===expectedKey)queueAITurn(activeRoom,AI_PICK_RETRY_MS);},AI_PICK_RETRY_MS);
+  }
 }
 
 function syncRunFromRoom(room:RiggedRoom):void{
@@ -2455,9 +2472,9 @@ function animateRoomPick(pick:RiggedRoomPick):void{
 
 function finishPickAnimation():void{
   pickAnimationActive=false;const room=activeRoom;if(!room)return;
-  if(room.phase==="starter_draft"){showStarterTurretSelect();maybeRunAITurn(room);return;}
-  if(room.phase==="vehicle_select"){showVehicleSelect();maybeRunAITurn(room);return;}
-  if(room.phase==="upgrade_draft"){showCardDraft();maybeRunAITurn(room);return;}
+  if(room.phase==="starter_draft"){showStarterTurretSelect();queueAITurn(room);return;}
+  if(room.phase==="vehicle_select"){showVehicleSelect();queueAITurn(room);return;}
+  if(room.phase==="upgrade_draft"){showCardDraft();queueAITurn(room);return;}
   if(room.phase!=="playing"||room.round<=lastStartedRoomRound)return;
   ui.starterSelect.hidden=true;ui.vehicleSelect.hidden=true;ui.cardDraft.hidden=true;ui.weaponSelect.classList.remove("draft-open");canvas.dataset.starterSelection="complete";canvas.dataset.vehicleSelection="complete";canvas.dataset.cardApplied="true";startAudio();const firstRound=lastStartedRoomRound===0;lastStartedRoomRound=room.round;
   if(firstRound){currentRound=room.round;updateRoundHud();resetVehicle(false);resetOpponent();beginRoundCountdown();}
@@ -2465,15 +2482,15 @@ function finishPickAnimation():void{
 }
 
 function handleRoomSnapshot(room:RiggedRoom|null):void{
-  activeRoom=room;renderRoomLobby(room);if(!room)return;
+  activeRoom=room;renderRoomLobby(room);if(!room){if(aiTurnTimer)window.clearTimeout(aiTurnTimer);aiTurnTimer=0;queuedAiTurnKey="";return;}
   syncRunFromRoom(room);syncVehicleFromRoom(room);
-  armAiTurnRecovery(room);
   const newPick=room.lastPick&&room.lastPick.id>renderedPickId;
-  if(newPick){renderedPickId=room.lastPick!.id;if(levelStarted)animateRoomPick(room.lastPick!);return;}
+  if(newPick){renderedPickId=room.lastPick!.id;if(levelStarted)animateRoomPick(room.lastPick!);queueAITurn(room,levelStarted?DRAFT_PICK_HOLD_MS+AI_PICK_DELAY_MS:AI_PICK_DELAY_MS);return;}
+  queueAITurn(room);
   if(!levelStarted||pickAnimationActive)return;
-  if(room.phase==="starter_draft"){showStarterTurretSelect();maybeRunAITurn(room);return;}
-  if(room.phase==="vehicle_select"){showVehicleSelect();maybeRunAITurn(room);return;}
-  if(room.phase==="upgrade_draft"){showCardDraft();maybeRunAITurn(room);return;}
+  if(room.phase==="starter_draft"){showStarterTurretSelect();return;}
+  if(room.phase==="vehicle_select"){showVehicleSelect();return;}
+  if(room.phase==="upgrade_draft"){showCardDraft();return;}
   if(room.phase==="playing"&&room.round>lastStartedRoomRound)finishPickAnimation();
 }
 

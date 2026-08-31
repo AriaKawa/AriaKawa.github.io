@@ -1,4 +1,4 @@
-import type { ScraproadRunState } from "./RoguelikeRun";
+import { normalizeRunState, type ScraproadRunState } from "./RoguelikeRun.ts";
 
 export type RiggedRoomPhase = "lobby" | "starter_draft" | "vehicle_select" | "playing" | "upgrade_draft";
 
@@ -107,7 +107,7 @@ export function addAiPlayer(room: RiggedRoom, requesterId: string, now = Date.no
 
 export function normalizeRoomSnapshot(room: RiggedRoom | null): RiggedRoom | null {
   if(!room)return null;
-  const runState=room.runState?{...room.runState,upgrades:room.runState.upgrades??[]}:null;
+  const runState=normalizeRunState(room.runState);
   return {
     ...room,
     players:room.players??{},playerOrder:room.playerOrder??[],draftOptions:room.draftOptions??[],

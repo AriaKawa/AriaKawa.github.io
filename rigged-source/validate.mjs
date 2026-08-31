@@ -133,7 +133,8 @@ const sceneChecks = [
   ["team-colored draft cards", /function setDraftTeamTheme[\s\S]*dataset\.cardTeam=myTurn\?"player":"rival"[\s\S]*dataset\.cardTeam=myTurn\?"player-orange":"rival-purple"/],
   ["extended lightweight deck timing", /DRAFT_DEAL_DURATION_MS=975[\s\S]*DRAFT_DEAL_STAGGER_MS=75[\s\S]*DRAFT_SHUFFLE_DURATION_MS=1080[\s\S]*DRAFT_SHUFFLE_STAGGER_MS=67\.5[\s\S]*DRAFT_PICK_HOLD_MS=1575[\s\S]*AI_PICK_DELAY_MS=400[\s\S]*setTimeout\(finishPickAnimation,DRAFT_PICK_HOLD_MS\)/],
   ["vehicle cards omit redundant selection text", /picked\.textContent=owners\.length\?[\s\S]*myTurn\?"":"RIVAL IS CHOOSING"[\s\S]*if\(picked\.textContent\)copy\.append\(picked\)/],
-  ["AI waits for the rival-colored turn", /function maybeRunAITurn[\s\S]*pickAnimationActive\)return[\s\S]*function armAiTurnRecovery[\s\S]*function handleRoomSnapshot[\s\S]*armAiTurnRecovery\(room\)/],
+  ["AI turn queue survives draft animations", /function queueAITurn[\s\S]*function runAITurn[\s\S]*AI_PICK_RETRY_MS[\s\S]*function handleRoomSnapshot[\s\S]*queueAITurn\(room/],
+  ["cards use their physical source deck", /function positionCardAtSourceDeck[\s\S]*getBoundingClientRect[\s\S]*--deck-x[\s\S]*positionCardAtSourceDeck\(card,index,deck\)/],
   ["rival damage wins round", /function damageOpponent[\s\S]*awardPlayerRound\(\)/],
   ["barrel pitch mount", /let barrelPivot = new THREE\.Group/],
   ["mouse world ray", /intersectObjects\(aimSurfaces/],
@@ -225,11 +226,12 @@ const forbiddenWeaponScopes = new RegExp([["current","turret"],["active","turret
 if (forbiddenWeaponScopes.test(`${source}\n${html}\n${roguelikeSource}`)) throw new Error("Weapon copy must describe global turret effects");
 if (!/description\.textContent=card\.description/.test(source)) throw new Error("Upgrade cards must show concise descriptions");
 const styleChecks = [
-  ["visible category decks", /\.deck-rack[^\n]*grid-template-columns:repeat\(3/],
+  ["visible physical deck stacks", /\.deck-rack>\.draft-deck[^\n]*grid-template[\s\S]*\.deck-cards[^\n]*width:61px/],
   ["compositor-only card deal", /@keyframes card-deal-out[^\n]*translate3d/],
   ["compositor-only card shuffle", /@keyframes card-shuffle-in[^\n]*translate3d/],
   ["reduced motion card fallback", /prefers-reduced-motion:reduce/],
-  ["deal animation stays interactive", /\.starter-card\.is-dealing[^\n]*pointer-events:auto/],
+  ["deal animation blocks premature picks", /\.starter-card\.is-dealing[^\n]*pointer-events:none/],
+  ["playing-card proportions", /\.starter-card,\.upgrade-card[^\n]*aspect-ratio:5\/6\.7/],
   ["centered vehicle heading", /\.vehicle-shell > h1[^\n]*justify-content:center/],
 ];
 for (const [label, pattern] of styleChecks) {
@@ -255,7 +257,7 @@ const multiplayerChecks = [
   ["ordered vehicle selection", /resolveVehiclePick[\s\S]*vehicle_select[\s\S]*vehicleSelections/],
   ["host-controlled AI seat", /addAiPlayer[\s\S]*Gearhead AI[\s\S]*async addAI/],
   ["AI synchronized picks", /submitAiPick[\s\S]*submitAiVehiclePick/],
-  ["Firebase empty collection normalization", /normalizeRoomSnapshot[\s\S]*upgrades:room\.runState\.upgrades\?\?\[\]/],
+  ["Firebase empty collection normalization", /normalizeRoomSnapshot[\s\S]*normalizeRunState\(room\.runState\)/],
 ];
 for (const [label, pattern] of multiplayerChecks) {
   if (!pattern.test(multiplayerSource)) throw new Error(`Missing ${label} implementation`);
