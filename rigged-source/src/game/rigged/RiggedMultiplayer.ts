@@ -1,4 +1,4 @@
-import { normalizeRunState, type ScraproadRunState } from "./RoguelikeRun.ts";
+import { draftDrawCountForRound, normalizeRunState, type ScraproadRunState } from "./RoguelikeRun.ts";
 
 export type RiggedRoomPhase = "lobby" | "starter_draft" | "vehicle_select" | "playing" | "upgrade_draft";
 
@@ -120,12 +120,13 @@ export function resolveRoomPick(room: RiggedRoom, playerId: string, input: Rigge
   if (!isDraft || room.activePickerId !== playerId || !room.draftOptions.includes(input.optionId)) return undefined;
   const order = normalizedOrder(room);
   const nextTurn = room.draftTurn + 1;
-  const finished = nextTurn >= order.length,starterFinished=finished&&room.phase==="starter_draft";
+  const totalTurns=room.phase==="upgrade_draft"?order.length*draftDrawCountForRound(room.round):order.length;
+  const finished = nextTurn >= totalTurns,starterFinished=finished&&room.phase==="starter_draft";
   return {
     ...room,
     phase: starterFinished ? "vehicle_select" : finished ? "playing" : room.phase,
     round: finished && room.phase === "upgrade_draft" ? room.round + 1 : room.round,
-    activePickerId: starterFinished ? order[0] : finished ? "" : order[nextTurn],
+    activePickerId: starterFinished ? order[0] : finished ? "" : order[nextTurn%order.length],
     draftOptions: starterFinished ? input.nextOptions : finished ? [] : input.nextOptions,
     draftTurn: starterFinished ? 0 : nextTurn,
     pickSequence: (room.pickSequence ?? 0) + 1,

@@ -10,7 +10,7 @@ import {
   resolveVehiclePick,
   roomPlayers,
 } from "./src/game/rigged/RiggedMultiplayer.ts";
-import { applyCard, createStarterRun, createTurretCard, draftCards } from "./src/game/rigged/RoguelikeRun.ts";
+import { applyCard, createStarterRun, createTurretCard, draftCards, draftDrawCountForRound } from "./src/game/rigged/RoguelikeRun.ts";
 
 assert.equal(cleanPlayerName("   Road    Rat   "), "Road Rat");
 assert.equal(cleanPlayerName(""), "Road warrior");
@@ -82,5 +82,15 @@ assert.equal(hostReady.phase, "playing");
 const bothReady = resolveRoundReady(hostReady, "guest", draftCards(sharedStarter).map(card => card.id), sharedStarter, 7);
 assert.equal(bothReady.phase, "upgrade_draft");
 assert.equal(bothReady.activePickerId, "host");
+
+const bonusRound=Array.from({length:30},(_,index)=>index+1).find(round=>draftDrawCountForRound(round)===2);
+assert.ok(bonusRound);
+let bonusRoom={...bothReady,round:bonusRound,draftTurn:0,activePickerId:"host",draftOptions:["bonus-card"]};
+for(const [index,playerId] of ["host","guest","host","guest"].entries()){
+  bonusRoom=resolveRoomPick(bonusRoom,playerId,{optionId:"bonus-card",optionName:"Bonus Card",nextRunState:sharedStarter,nextOptions:["bonus-card"]},10+index);
+  assert.ok(bonusRoom);
+  if(index===1){assert.equal(bonusRoom.phase,"upgrade_draft","a bonus round continues into a second sequential draw");assert.equal(bonusRoom.activePickerId,"host");}
+}
+assert.equal(bonusRoom.phase,"playing","the bonus draft finishes after both players take their second draw");
 
 console.log("Rigged multiplayer room tests passed (names, codes, ordered turret/vehicle picks, shared state, and the both-player round gate). ");

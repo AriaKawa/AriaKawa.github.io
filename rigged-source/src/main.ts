@@ -30,6 +30,7 @@ import {
   collectDraftCards,
   dealDraftCards,
   isDraftDealActive,
+  markDraftCardPending,
   updateVisibleDeckCounts,
 } from "./game/rigged/CardDraftAnimation";
 import {
@@ -37,6 +38,7 @@ import {
   applyCard,
   createTurretCard,
   createStarterRun,
+  draftDrawCountForRound,
   draftCards,
   normalizeRunState,
   remainingCardCount,
@@ -155,7 +157,7 @@ const ui = {
   musicMuted: getElement<HTMLInputElement>("music-muted"),
   activeUpgrades: getElement("active-upgrades"), weaponSelect: getElement("weapon-select"),
   abilityName: getElement("ability-name"), abilityState: getElement("ability-state"), abilityCooldown: getElement("ability-cooldown"),
-  draftAbilitySlot: getElement("draft-ability-slot"), draftSummaryRound: getElement("draft-summary-round"),
+  draftSummaryRound: getElement("draft-summary-round"),
   draftSummaryAbility: getElement("draft-summary-ability"), draftSummaryTurrets: getElement("draft-summary-turrets"),
   draftSummaryUpgrades: getElement("draft-summary-upgrades"),
 };
@@ -199,7 +201,10 @@ function awardPlayerRound():void{
 
 function awardEnemyRound():void{finishRound("opponent");}
 
-const MAX_PIXEL_RATIO = 1.25;
+// Keep the full-screen renderer inside a predictable frame budget. Values
+// above 1 render substantially more pixels with little visible benefit once
+// the browser composites the HUD and crosshair over the canvas.
+const MAX_PIXEL_RATIO = 1;
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
 renderer.setPixelRatio(Math.min(devicePixelRatio, MAX_PIXEL_RATIO));
 renderer.setSize(innerWidth, innerHeight, false);
@@ -1689,7 +1694,7 @@ function updateLoadoutUi():void{
   canvas.dataset.ownedTurrets=runState?.ownedTurrets.join(",")??"none";canvas.dataset.activeUpgrades=runState?.upgrades.join(",")??"none";
 }
 
-const DRAFT_PICK_HOLD_MS=1180;
+const DRAFT_PICK_HOLD_MS=560;
 const AI_PICK_DELAY_MS=350;
 const AI_PICK_RETRY_MS=1100;
 
@@ -1728,7 +1733,7 @@ async function chooseStarterTurret(kind:WeaponKind):Promise<void>{
   if(!multiplayer?.isMyTurn()||!activeRoom?.draftOptions.includes(kind))return;
   const nextState=activeRoom.runState?structuredClone(activeRoom.runState):createStarterRun(kind,currentRound);
   if(activeRoom.runState)applyCard(nextState,createTurretCard(kind));
-  document.querySelectorAll<HTMLButtonElement>("[data-starter-turret]").forEach(button=>button.disabled=true);
+  markDraftCardPending(ui.starterGrid,kind,canvas);
   const nextOptions=activeRoom.draftTurn===0?["mg","rocket","sniper"] as WeaponKind[]:Object.keys(riggedVehicleCatalog);
   try{await multiplayer.submitPick({optionId:kind,optionName:turretShortNames[kind],nextRunState:nextState,nextOptions});}
   catch(error){showRoomError(error);showStarterTurretSelect();}
@@ -1750,7 +1755,7 @@ function showVehicleSelect():void{
 
 async function chooseVehicle(id:RiggedVehicleId):Promise<void>{
   if(!multiplayer?.isMyTurn()||activeRoom?.phase!=="vehicle_select")return;
-  ui.vehicleGrid.querySelectorAll<HTMLButtonElement>("button").forEach(button=>button.disabled=true);
+  markDraftCardPending(ui.vehicleGrid,id,canvas);
   try{await multiplayer.submitVehiclePick(id,riggedVehicleCatalog[id].label);}
   catch(error){showRoomError(error);showVehicleSelect();}
 }
@@ -1771,11 +1776,14 @@ function buildCardElement(card:UpgradeCard):HTMLElement{
   article.append(back,meta,title,description,statsList);if(replacement)article.append(replacement);article.append(button);return article;
 }
 
+function upgradeDraftHasNextPick(room:RiggedRoom):boolean{
+  return room.draftTurn+1<roomPlayers(room).length*draftDrawCountForRound(room.round);
+}
+
 function showCardDraft():void{
   if(!runState||!activeRoom||activeRoom.phase!=="upgrade_draft")return;
   const cards=resolveRoomCards(activeRoom.draftOptions,runState),turretReward=currentRound%3===0,myTurn=cardPreviewTest||(multiplayer?.isMyTurn()??false);
   setDraftTeamTheme(ui.cardDraft,myTurn);
-  ui.draftAbilitySlot.textContent=runState.activeAbility==="none"?"Q SLOT // NONE EQUIPPED":`Q SLOT // ${abilityNames[runState.activeAbility].toUpperCase()}`;
   roundPhase="card_select";ui.countdown.hidden=true;ui.starterSelect.hidden=true;ui.vehicleSelect.hidden=true;ui.cardDraft.hidden=false;ui.weaponSelect.classList.add("draft-open");ui.draftPickReveal.hidden=true;ui.cardGrid.replaceChildren(...cards.map(buildCardElement));updateDraftDeckUi();canvas.dataset.roundPhase=roundPhase;canvas.dataset.cardDraft="visible";canvas.dataset.turretReward=turretReward?"offered":"not-due";canvas.dataset.wildcardOffered=String(cards.some(card=>card.category==="ability"));dealDraftCards(ui.cardGrid,canvas);
 }
 
@@ -1784,8 +1792,8 @@ async function chooseUpgradeCard(card:UpgradeCard):Promise<void>{
   if(cardPreviewTest){const nextState=structuredClone(runState),before=card.deck?remainingCardCount(nextState,card.deck):0;applyCard(nextState,card);runState=nextState;ui.cardGrid.querySelectorAll<HTMLButtonElement>("button").forEach(button=>button.disabled=true);collectDraftCards(ui.cardGrid,card.id,canvas);updateDraftDeckUi();canvas.dataset.previewCardApplied=card.id;canvas.dataset.previewDeckDelta=card.deck?`${before}->${remainingCardCount(nextState,card.deck)}`:"special";return;}
   if(!multiplayer?.isMyTurn())return;
   const nextState=structuredClone(runState);applyCard(nextState,card);nextState.round=currentRound;
-  ui.cardGrid.querySelectorAll<HTMLButtonElement>("button").forEach(button=>button.disabled=true);
-  const nextOptions=activeRoom.draftTurn===0?draftCards(nextState).map(option=>option.id):[];
+  markDraftCardPending(ui.cardGrid,card.id,canvas);
+  const nextOptions=upgradeDraftHasNextPick(activeRoom)?draftCards(nextState).map(option=>option.id):[];
   try{await multiplayer.submitPick({optionId:card.id,optionName:card.name,nextRunState:nextState,nextOptions});}
   catch(error){showRoomError(error);showCardDraft();}
 }
@@ -2409,7 +2417,7 @@ async function runAITurn(expectedKey:string):Promise<void>{
       const sharedState=normalizeRunState(room.runState)??runState;if(!sharedState)throw new Error("The AI could not load the shared run state.");
       const card=resolveRoomCards(options,sharedState).find(item=>item.id===optionId);if(!card)throw new Error("The AI could not resolve its selected card.");
       const nextState=structuredClone(sharedState);applyCard(nextState,card);nextState.round=room.round;
-      const nextOptions=room.draftTurn===0?draftCards(nextState).map(option=>option.id):[];
+      const nextOptions=upgradeDraftHasNextPick(room)?draftCards(nextState).map(option=>option.id):[];
       await multiplayer.submitAiPick({optionId:card.id,optionName:card.name,nextRunState:nextState,nextOptions});
     }
     canvas.dataset.aiDraftState="submitted";
@@ -2534,7 +2542,17 @@ function chooseVisibleDraftByIndex(index:number):boolean{
 
 window.addEventListener("keydown",event=>{if(["KeyW","KeyA","KeyS","KeyD","Space","ShiftLeft","KeyC","KeyQ","KeyF","F3","Digit1","Digit2","Digit3"].includes(event.code))event.preventDefault();if(event.repeat)return;if(event.code.startsWith("Digit")&&chooseVisibleDraftByIndex(Number(event.code.slice(5))-1))return;if(!levelStarted)return;if(event.code==="Escape"){if(!ui.starterSelect.hidden||!ui.vehicleSelect.hidden||!ui.cardDraft.hidden)return;togglePause();return;}if(event.code==="KeyC"){toggleCameraMode();return;}if(event.code==="KeyQ"){activateAbility();return;}if(event.code.startsWith("Digit")){const kind=(["mg","rocket","sniper"] as const)[Number(event.code.slice(5))-1];if(kind)selectWeapon(kind);return;}if(event.code==="KeyR")resetVehicle();if(event.code==="KeyB"||event.code==="KeyH"||event.code==="F3")toggleDebug();if(event.code==="KeyF")setFireHeld(true);input.add(event.code);});
 window.addEventListener("keyup",event=>{input.delete(event.code);if(event.code==="KeyF")setFireHeld(false);});
-canvas.addEventListener("pointermove",event=>{const bounds=canvas.getBoundingClientRect();mouse.x=(event.clientX-bounds.left)/bounds.width*2-1;mouse.y=-(event.clientY-bounds.top)/bounds.height*2+1;const crosshair=getElement("crosshair");crosshair.style.left=`${event.clientX}px`;crosshair.style.top=`${event.clientY}px`;});
+const crosshair=getElement("crosshair");
+let canvasBounds=canvas.getBoundingClientRect();
+let pointerClientX=innerWidth*.5,pointerClientY=innerHeight*.5,pointerVisualDirty=true;
+function refreshCanvasBounds():void{canvasBounds=canvas.getBoundingClientRect();}
+function flushPointerVisual():void{
+  if(!pointerVisualDirty)return;
+  pointerVisualDirty=false;
+  crosshair.style.transform=`translate3d(${pointerClientX}px,${pointerClientY}px,0) translate(-50%,-50%)`;
+}
+canvas.addEventListener("pointerenter",refreshCanvasBounds);
+canvas.addEventListener("pointermove",event=>{const samples=event.getCoalescedEvents(),latest=samples.length?samples[samples.length-1]:event;pointerClientX=latest.clientX;pointerClientY=latest.clientY;mouse.x=(pointerClientX-canvasBounds.left)/canvasBounds.width*2-1;mouse.y=-(pointerClientY-canvasBounds.top)/canvasBounds.height*2+1;pointerVisualDirty=true;});
 canvas.addEventListener("pointerdown",event=>{if(event.button===0)setFireHeld(true);});
 window.addEventListener("pointerup",event=>{if(event.button===0)setFireHeld(false);});
 canvas.addEventListener("pointerleave",event=>{if(event.buttons&1)setFireHeld(false);});
@@ -2546,9 +2564,9 @@ window.addEventListener("pointerdown", startAudio, { capture: true });
 canvas.addEventListener("contextmenu",event=>event.preventDefault());
 getElement("controls-close").addEventListener("click",()=>toggleControls(false));getElement("resume-button").addEventListener("click",()=>togglePause(false));
 document.querySelectorAll<HTMLButtonElement>("[data-key]").forEach(button=>{const code=button.dataset.key??"";const press=(event:PointerEvent)=>{event.preventDefault();if(code==="Fire")setFireHeld(true);else input.add(code);};const release=(event:PointerEvent)=>{event.preventDefault();if(code==="Fire")setFireHeld(false);else input.delete(code);};button.addEventListener("pointerdown",press);button.addEventListener("pointerup",release);button.addEventListener("pointercancel",release);button.addEventListener("pointerleave",release);});
-window.addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight,false);renderer.setPixelRatio(Math.min(devicePixelRatio,MAX_PIXEL_RATIO));});
+window.addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight,false);renderer.setPixelRatio(Math.min(devicePixelRatio,MAX_PIXEL_RATIO));refreshCanvasBounds();});
 
-const clock=new THREE.Clock();let physicsAccumulator=0;let hudAccumulator=0;let debugAccumulator=0;let frameAverage=1/60;let physicsStepMs=0;
+const clock=new THREE.Clock();let physicsAccumulator=0;let hudAccumulator=0;let debugAccumulator=0;let frameAverage=1/60;let physicsStepMs=0;let renderWasBlocked=false;
 function updateDebug(frameDelta:number):void{
   if(!debugPhysics)return;frameAverage=THREE.MathUtils.lerp(frameAverage,frameDelta,.08);debugAccumulator+=frameDelta;if(debugAccumulator<.2)return;debugAccumulator=0;
   const fps=frameAverage>0?1/frameAverage:0;const contact=vehicle.grounded?(vehicle.activeRamp?vehicle.activeRamp.kind.toUpperCase():(activeLayout.arenaKind==="capsule"?"FLAT FLOOR":"TERRAIN")):"AIRBORNE";
@@ -2557,7 +2575,14 @@ function updateDebug(frameDelta:number):void{
   canvas.dataset.physicsFps="60";canvas.dataset.frameDeltaMs=(frameAverage*1000).toFixed(2);canvas.dataset.physicsStepMs=physicsStepMs.toFixed(2);
 }
 function animate():void{
-  requestAnimationFrame(animate);const frameDelta=Math.min(clock.getDelta(),MAX_FRAME_DELTA);
+  requestAnimationFrame(animate);const frameDelta=Math.min(clock.getDelta(),MAX_FRAME_DELTA);flushPointerVisual();
+  const renderBlocked=!ui.multiplayerLobby.hidden||!ui.starterSelect.hidden||!ui.vehicleSelect.hidden||!ui.cardDraft.hidden||!ui.pause.hidden||document.hidden;
+  if(renderBlocked){
+    physicsAccumulator=0;
+    if(!renderWasBlocked){renderWasBlocked=true;engineMix=0;engineLoop.volume=0;canvas.dataset.renderMode="overlay-suspended";}
+    return;
+  }
+  if(renderWasBlocked){renderWasBlocked=false;canvas.dataset.renderMode="live";}
   if(!paused&&levelStarted)updateRoundCountdown();
   lightShafts.rotation.y += frameDelta * .0025; atmosphericDust.rotation.y -= frameDelta * .0015;
   updateAudioFrame(frameDelta);

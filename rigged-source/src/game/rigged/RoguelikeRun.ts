@@ -175,6 +175,10 @@ function seededShuffle<T>(items: T[], seed: number): T[] {
   return copy;
 }
 
+function mixedSeed(seed: number): number {
+  let value=seed>>>0;value^=value>>>16;value=Math.imul(value,0x7feb352d);value^=value>>>15;value=Math.imul(value,0x846ca68b);return (value^(value>>>16))>>>0;
+}
+
 function availableCards(state: ScraproadRunState, deck: CardDeckId): UpgradeCard[] {
   const ids=new Set(state.remainingDecks[deck]);
   return upgradeCards.filter(card=>card.deck===deck&&ids.has(card.id));
@@ -182,21 +186,19 @@ function availableCards(state: ScraproadRunState, deck: CardDeckId): UpgradeCard
 
 export type DraftOptions = { forceAbility?: boolean };
 
+/** Roughly one round in three grants a second, sequential deck draw. */
+export function draftDrawCountForRound(round: number): 1 | 2 {
+  return mixedSeed(Math.max(1,Math.floor(round))*104729+0x51f15e) % 3 === 0 ? 2 : 1;
+}
+
 export function draftCards(state: ScraproadRunState, options: DraftOptions = {}): UpgradeCard[] {
   const seed=state.round*7919+state.pickedCards.length*104729+state.ownedTurrets.length*31;
-  const offers: UpgradeCard[]=[];
-  for(const [index,deck] of (["weapon","body","wheel"] as const).entries()){
-    const available=seededShuffle(availableCards(state,deck),seed+index*3571);
-    if(available[0])offers.push(available[0]);
-  }
-  const normalPool=seededShuffle([...availableCards(state,"weapon"),...availableCards(state,"body"),...availableCards(state,"wheel")],seed+1613)
-    .filter(card=>!offers.some(offer=>offer.id===card.id));
-  while(offers.length<3&&normalPool.length)offers.push(normalPool.shift()!);
-
   const abilities=availableCards(state,"ability").filter(card=>card.abilityId!==state.activeAbility);
   const abilityAppears=options.forceAbility===true||(abilities.length>0&&((seed>>>2)%8===0));
-  if(abilityAppears&&offers.length){const ability=seededShuffle(abilities,seed+8191)[0];if(ability)offers[seed%offers.length]=ability;}
-
+  const normalDecks=(['weapon','body','wheel'] as const).filter(deck=>availableCards(state,deck).length>0);
+  const selectedDeck=state.round%3===0?'weapon':abilityAppears&&abilities.length?'ability':seededShuffle(normalDecks,seed+1613)[0];
+  const deckPool=selectedDeck==='ability'?abilities:selectedDeck?availableCards(state,selectedDeck):[];
+  const offers=seededShuffle(deckPool,seed+8191).slice(0,3);
   if(state.round%3===0){
     const unowned=(Object.keys(turretNames) as WeaponKind[]).filter(kind=>!state.ownedTurrets.includes(kind));
     const reward=unowned.length?createTurretCard(seededShuffle(unowned,seed+43)[0]):createTurretMasteryCard(state.round);

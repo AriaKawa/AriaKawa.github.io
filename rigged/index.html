@@ -18,8 +18,8 @@
     <meta name="twitter:description" content="A browser-playable 3D vehicle combat prototype." />
     <meta name="twitter:image" content="https://ariakawa.github.io/rigged/og.png" />
     <title>Rigged</title>
-    <script type="module" crossorigin src="./assets/index-DTcLHg8x.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-DyrpF0jC.css">
+    <script type="module" crossorigin src="./assets/index-BwnLRYBd.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-B3qiC4pS.css">
   </head>
   <body>
     <main id="app">
@@ -108,9 +108,9 @@
         <div class="draft-overlay__backdrop"></div>
         <div class="draft-shell">
           <div class="deck-rack starter-deck-rack" aria-label="Three card decks">
-            <div class="draft-deck" data-deck-pile="weapon"><span>⚙</span><div class="deck-cards" aria-hidden="true"><i></i><i></i><i></i><i></i></div><b>WEAPON</b><small>ALL TURRETS</small></div>
-            <div class="draft-deck" data-deck-pile="body"><span>◆</span><div class="deck-cards" aria-hidden="true"><i></i><i></i><i></i><i></i></div><b>BODY</b><small>VEHICLE FRAME</small></div>
-            <div class="draft-deck" data-deck-pile="wheel"><span>◉</span><div class="deck-cards" aria-hidden="true"><i></i><i></i><i></i><i></i></div><b>WHEELS</b><small>HANDLING & GRIP</small></div>
+            <div class="draft-deck" data-deck-pile="weapon"><span>⚙</span><div class="deck-cards" aria-hidden="true"><i></i><i></i><i></i><i></i></div><b>WEAPON DECK</b><small>ALL TURRETS</small></div>
+            <div class="draft-deck" data-deck-pile="body"><span>◆</span><div class="deck-cards" aria-hidden="true"><i></i><i></i><i></i><i></i></div><b>BODY DECK</b><small>VEHICLE FRAME</small></div>
+            <div class="draft-deck" data-deck-pile="wheel"><span>◉</span><div class="deck-cards" aria-hidden="true"><i></i><i></i><i></i><i></i></div><b>WHEEL DECK</b><small>HANDLING & GRIP</small></div>
           </div>
           <p id="starter-turn" class="visually-hidden" aria-live="polite">Waiting for the first driver…</p>
           <div id="starter-pick-reveal" class="pick-reveal" hidden></div>
@@ -157,15 +157,12 @@
       <section id="card-draft" class="draft-overlay" hidden aria-label="Card draft">
         <div class="draft-overlay__backdrop"></div>
         <div class="draft-shell upgrade-draft-shell">
-          <div class="draft-heading">
-            <div><span class="eyebrow">RIGGED // BUILD DRAFT</span><h1>CHOOSE YOUR NEXT MOD</h1></div>
-            <p id="draft-ability-slot">Q SLOT // NONE EQUIPPED</p>
-          </div>
+          <div class="draft-heading"><h1>CHOOSE YOUR NEXT MOD</h1></div>
           <div id="draft-pick-reveal" class="pick-reveal" hidden></div>
           <div class="deck-rack" aria-label="Three remaining card decks">
-            <div class="draft-deck" data-deck-pile="weapon" data-deck-total="20"><span>⚙</span><div class="deck-cards" aria-hidden="true"><i></i><i></i><i></i><i></i></div><b>WEAPON</b><small id="weapon-deck-count">×20</small></div>
-            <div class="draft-deck" data-deck-pile="body" data-deck-total="16"><span>◆</span><div class="deck-cards" aria-hidden="true"><i></i><i></i><i></i><i></i></div><b>BODY</b><small id="body-deck-count">×16</small></div>
-            <div class="draft-deck" data-deck-pile="wheel" data-deck-total="16"><span>◉</span><div class="deck-cards" aria-hidden="true"><i></i><i></i><i></i><i></i></div><b>WHEELS</b><small id="wheel-deck-count">×16</small></div>
+            <div class="draft-deck" data-deck-pile="weapon" data-deck-total="20"><span>⚙</span><div class="deck-cards" aria-hidden="true"><i></i><i></i><i></i><i></i></div><b>WEAPON DECK</b><small id="weapon-deck-count">×20</small></div>
+            <div class="draft-deck" data-deck-pile="body" data-deck-total="16"><span>◆</span><div class="deck-cards" aria-hidden="true"><i></i><i></i><i></i><i></i></div><b>BODY DECK</b><small id="body-deck-count">×16</small></div>
+            <div class="draft-deck" data-deck-pile="wheel" data-deck-total="16"><span>◉</span><div class="deck-cards" aria-hidden="true"><i></i><i></i><i></i><i></i></div><b>WHEEL DECK</b><small id="wheel-deck-count">×16</small></div>
           </div>
           <div id="card-grid" class="card-grid"></div>
           <div class="draft-run-summary" aria-label="Current run summary">
@@ -209,6 +206,6 @@
         <div class="touch-steer"><button data-key="KeyA" aria-label="Steer left">◀</button><button data-key="KeyD" aria-label="Steer right">▶</button></div>
         <div class="touch-drive"><button data-key="KeyW" aria-label="Accelerate">▲</button><button data-key="KeyS" aria-label="Brake">▼</button><button data-key="Fire" class="touch-fire" aria-label="Fire">FIRE</button></div>
       </div>
-    </main>
+    </main>
   </body>
 </html>

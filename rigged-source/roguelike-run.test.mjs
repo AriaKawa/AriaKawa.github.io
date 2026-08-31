@@ -3,6 +3,7 @@ import {
   abilityCards,
   applyCard,
   createStarterRun,
+  draftDrawCountForRound,
   draftCards,
   normalizeRunState,
   remainingCardCount,
@@ -35,11 +36,16 @@ starter.round=2;
 const balancedDraft=draftCards(starter);
 assert.equal(balancedDraft.length,3);
 assert.equal(new Set(balancedDraft.map(card=>card.id)).size,3,"a draft avoids duplicate card ids");
-assert.ok(["weapon","body","wheel"].every(deck=>balancedDraft.some(card=>card.deck===deck)),"normal drafts draw from all three visible decks");
+assert.equal(new Set(balancedDraft.map(card=>card.deck)).size,1,"a draft draws every offer from one deck only");
+assert.ok(["weapon","body","wheel"].includes(balancedDraft[0].deck),"the selected normal deck is one of the three visible decks");
+
+const drawCounts=Array.from({length:24},(_,index)=>draftDrawCountForRound(index+1));
+assert.ok(drawCounts.includes(1)&&drawCounts.includes(2),"rounds randomly alternate between one draw and an occasional bonus draw");
 
 const abilityDraft=draftCards(starter,{forceAbility:true});
 const firstAbility=abilityDraft.find(card=>card.category==="ability");
 assert.ok(firstAbility,"the rare ability deck can replace a normal offer");
+assert.ok(abilityDraft.every(card=>card.category==="ability"),"ability draws are not mixed with visible-deck cards");
 applyCard(starter,firstAbility);
 assert.equal(starter.activeAbility,firstAbility.abilityId);
 assert.equal(remainingCardCount(starter,"ability"),3,"abilities have one copy");
@@ -51,6 +57,7 @@ starter.round=3;
 const rewardDraft=draftCards(starter);
 assert.equal(rewardDraft.length,3);
 assert.equal(rewardDraft[0].category,"turret","round three guarantees a turret reward");
+assert.ok(rewardDraft.every(card=>card.category==="weapon"||card.category==="turret"),"turret reward drafts stay entirely in the weapon deck");
 applyCard(starter,rewardDraft[0]);
 assert.equal(starter.ownedTurrets.length,2);
 const acquired=starter.activeTurret;

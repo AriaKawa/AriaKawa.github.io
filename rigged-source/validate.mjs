@@ -188,7 +188,10 @@ const sceneChecks = [
   ["gritty turret material", /gritty-turret-metal-v1\.png[\s\S]*const darkMetal = new THREE\.MeshStandardMaterial/],
   ["volumetric cloudy light shafts", /cloud-break-volumetric-light[\s\S]*volumetric-dust-motes/],
   ["optimized shadow map", /shadowMap\.type = THREE\.PCFShadowMap[\s\S]*shadow\.mapSize\.set\(1024, 1024\)[\s\S]*shadow\.normalBias/],
-  ["bounded render resolution", /MAX_PIXEL_RATIO = 1\.25[\s\S]*Math\.min\(devicePixelRatio, MAX_PIXEL_RATIO\)/],
+  ["bounded render resolution", /MAX_PIXEL_RATIO = 1[\s\S]*Math\.min\(devicePixelRatio, MAX_PIXEL_RATIO\)/],
+  ["cached coalesced pointer input", /let canvasBounds=canvas\.getBoundingClientRect\(\)[\s\S]*pointerenter[\s\S]*getCoalescedEvents\(\)[\s\S]*pointerVisualDirty=true/],
+  ["frame-synced compositor cursor", /function flushPointerVisual[\s\S]*translate3d\([\s\S]*flushPointerVisual\(\)/],
+  ["blocking overlays suspend WebGL", /const renderBlocked=[\s\S]*overlay-suspended[\s\S]*return;[\s\S]*renderer\.render\(scene,camera\)/],
   ["cached effect traversal", /function registerVisualEffect[\s\S]*meshes:THREE\.Mesh\[\][\s\S]*function removeVisualEffect/],
   ["disposed effect materials", /function removeVisualEffect[\s\S]*material\.dispose\(\)/],
   ["reused aim intersections", /aimIntersections\.length=0;raycaster\.intersectObjects\(aimSurfaces,true,aimIntersections\)/],
@@ -235,14 +238,18 @@ const styleChecks = [
   ["deal animation blocks premature picks", /\.starter-card\.is-dealing[^\n]*pointer-events:none/],
   ["playing-card proportions", /\.starter-card,\.upgrade-card[^\n]*aspect-ratio:5\/6\.7/],
   ["centered vehicle heading", /\.vehicle-shell > h1[^\n]*justify-content:center/],
+  ["isolated draft compositor", /\.draft-overlay[^\n]*contain:layout style paint[^\n]*isolation:isolate/],
+  ["composited custom crosshair", /\.crosshair[^\n]*will-change:transform[^\n]*contain:layout paint/],
 ];
 for (const [label, pattern] of styleChecks) {
   if (!pattern.test(styles)) throw new Error(`Missing ${label} implementation`);
 }
 const cardAnimationChecks = [
   ["physical deck card sequence", /function dealDraftCards[\s\S]*shuffling-and-dealing[\s\S]*function collectDraftCards[\s\S]*applying-pick/],
-  ["quick deck timing", /DRAFT_DEAL_DURATION_MS = 860[\s\S]*DRAFT_DEAL_LEAD_MS = 120[\s\S]*DRAFT_DEAL_STAGGER_MS = 65/],
-  ["cards use their physical source deck", /function positionCardAtSourceDeck[\s\S]*getBoundingClientRect[\s\S]*--deck-x[\s\S]*positionCardAtSourceDeck\(card, index, deckRoot\)/],
+  ["quick deck timing", /DRAFT_DEAL_DURATION_MS = 420[\s\S]*DRAFT_DEAL_LEAD_MS = 40[\s\S]*DRAFT_DEAL_STAGGER_MS = 35/],
+  ["cards batch physical source deck layout", /function positionCardsAtSourceDeck[\s\S]*const measurements = cards\.map[\s\S]*getBoundingClientRect[\s\S]*measurements\.forEach[\s\S]*--deck-x/],
+  ["draft motion starts without a forced layout", /function startMotionOnNextFrame[\s\S]*requestAnimationFrame[\s\S]*draft-motion-pending/],
+  ["immediate multiplayer pick feedback", /function markDraftCardPending[\s\S]*is-pick-pending[\s\S]*pick-pending/],
   ["remaining counts control stack thickness", /function updateVisibleDeckCounts[\s\S]*--deck-fill[\s\S]*visibleLayers/],
 ];
 for (const [label, pattern] of cardAnimationChecks) {
