@@ -6,9 +6,9 @@
     <meta name="theme-color" content="#11130f" />
     <meta name="description" content="Deadroad.io — deploy, defend, and reclaim a persistent zombie-infested continent." />
     <title>Deadroad.io</title>
-    <script type="module" crossorigin src="./assets/index-DQhxP4rO.js"></script>
+    <script type="module" crossorigin src="./assets/index-BFhDoGxN.js"></script>
     <link rel="modulepreload" crossorigin href="./assets/phaser-B61OQUcB.js">
-    <link rel="stylesheet" crossorigin href="./assets/index-CiKN41dG.css">
+    <link rel="stylesheet" crossorigin href="./assets/index-CodvOD2R.css">
   </head>
   <body>
     <main id="game-shell">
@@ -83,7 +83,7 @@
       <section id="hud" class="hud" hidden>
         <header class="topbar hud-topbar">
           <div class="brand-small hud-brand"><i></i><span class="brand-name">DEADROAD.IO</span><small><b id="tactical-view">BASE</b> · <span id="tactical-sector">AMERICAS</span></small></div>
-          <div class="wave-objective" aria-live="polite"><strong id="hud-wave-status">ROADWATCH READY</strong><span id="hud-objective">Drive the command vehicle and deploy on clear land</span></div>
+          <div class="wave-objective" aria-live="polite"><strong id="hud-wave-status">ROADWATCH READY</strong><span id="hud-objective">Drive the command vehicle and deploy on clear land</span><button id="start-wave-button" type="button" hidden>START NOW</button></div>
           <div class="resource-row" aria-label="Operation resources">
             <div class="resource"><small>SCRAP</small><strong id="scrap-value">250</strong></div>
             <div class="resource"><small>FUEL</small><strong id="fuel-value">100</strong></div>
@@ -203,6 +203,34 @@
           <p>Americas Theater. A clean major-highway backbone crosses state and national borders; local and stamped roads stay hidden in normal play.</p>
         </div>
       </section>
+
+      <section id="pause-overlay" class="game-modal" hidden aria-label="Game menu">
+        <div class="game-modal-card panel">
+          <div class="eyebrow">ROADWATCH // FIELD MENU</div>
+          <h2>GAME MENU</h2>
+          <div id="pause-main-actions" class="modal-actions">
+            <button id="resume-button" class="primary-button" type="button">RESUME <kbd>ESC</kbd></button>
+            <button id="settings-button" class="ghost-button" type="button">SETTINGS</button>
+            <button id="main-menu-button" class="danger-button" type="button">MAIN MENU</button>
+          </div>
+          <div id="settings-panel" hidden>
+            <div class="settings-heading"><h3>AUDIO SETTINGS</h3><button id="settings-back-button" type="button">BACK</button></div>
+            <label class="volume-control" for="music-volume"><span>MUSIC</span><output id="music-volume-value">18%</output><input id="music-volume" type="range" min="0" max="100" step="1" value="18" /></label>
+            <label class="volume-control" for="sfx-volume"><span>SOUND EFFECTS</span><output id="sfx-volume-value">50%</output><input id="sfx-volume" type="range" min="0" max="100" step="1" value="50" /></label>
+          </div>
+          <small class="modal-note">The continent keeps moving while this menu is open.</small>
+        </div>
+      </section>
+
+      <aside id="chat-panel" class="chat-panel panel closed" aria-hidden="true" aria-label="Player chat">
+        <div class="chat-heading"><div><span class="eyebrow">ROADWATCH COMMS</span><strong>PLAYER CHAT</strong></div><button id="chat-close-button" type="button" aria-label="Close player chat">×</button></div>
+        <div id="chat-messages" class="chat-messages" role="log" aria-live="polite"></div>
+        <form id="chat-form" autocomplete="off">
+          <label for="chat-input">MESSAGE PLAYERS</label>
+          <div><input id="chat-input" maxlength="180" placeholder="Type a message…" /><button type="submit">SEND</button></div>
+        </form>
+        <small><kbd>ENTER</kbd> OPEN CHAT · <kbd>ESC</kbd> CLOSE</small>
+      </aside>
     </main>
     <script src="./vendor/colyseus.js"></script>
   </body>
