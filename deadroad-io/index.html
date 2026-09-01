@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#11130f" />
     <meta name="description" content="Deadroad.io — deploy, defend, and reclaim a persistent zombie-infested continent." />
     <title>Deadroad.io</title>
-    <script type="module" crossorigin src="./assets/index-D-L5e0UX.js"></script>
+    <script type="module" crossorigin src="./assets/index-BIoDWY02.js"></script>
     <link rel="modulepreload" crossorigin href="./assets/phaser-B61OQUcB.js">
     <link rel="stylesheet" crossorigin href="./assets/index-CiKN41dG.css">
   </head>
@@ -25,7 +25,7 @@
           <button id="local-button">LOCAL TEST</button><button id="credits-button">CREDITS</button>
         </div>
         <p id="menu-status">Local continent server required on port 2567.</p>
-        <div id="credits-panel" hidden>“Hunger Pains” soundtrack: TheLazyStone Post-Apocalypse Pixel Art Asset Pack. Boundaries: U.S. Census Bureau and Natural Earth public-domain data. See LICENSES.md.</div>
+        <div id="credits-panel" hidden>“Hunger Pains” soundtrack: TheLazyStone Post-Apocalypse Pixel Art Asset Pack. Convoy engine loop: domasx2 (CC0). Boundaries: U.S. Census Bureau and Natural Earth public-domain data. See LICENSES.md.</div>
       </section>
 
       <section id="globe-deploy" class="globe-deploy" hidden>
@@ -83,7 +83,7 @@
       <section id="hud" class="hud" hidden>
         <header class="topbar hud-topbar">
           <div class="brand-small hud-brand"><i></i><span class="brand-name">DEADROAD.IO</span><small><b id="tactical-view">BASE</b> · <span id="tactical-sector">AMERICAS</span></small></div>
-          <div class="wave-objective" aria-live="polite"><strong id="hud-wave-status">ROADWATCH READY</strong><span id="hud-objective">Drive the command vehicle and deploy beside a road</span></div>
+          <div class="wave-objective" aria-live="polite"><strong id="hud-wave-status">ROADWATCH READY</strong><span id="hud-objective">Drive the command vehicle and deploy on clear land</span></div>
           <div class="resource-row" aria-label="Operation resources">
             <div class="resource"><small>SCRAP</small><strong id="scrap-value">250</strong></div>
             <div class="resource"><small>FUEL</small><strong id="fuel-value">100</strong></div>
@@ -121,8 +121,8 @@
             <div><dt>CONTRACT</dt><dd id="wave-value">NO ACTIVE HORDE</dd></div>
             <div><dt>HOSTILES</dt><dd id="zombie-value">0 ON ROAD</dd></div>
           </dl>
-          <p id="selection-copy">Drive the mobile command vehicle, stop beside a road, and deploy the base where you choose.</p>
-          <div class="field-rule"><i></i><span>Roads are enemy lanes. Bases deploy beside roads.</span></div>
+          <p id="selection-copy">Drive the mobile command vehicle, coast to a stop, and deploy the base where you choose.</p>
+          <div class="field-rule"><i></i><span>Highways are faster. Hordes cut angular paths through open terrain.</span></div>
           <button id="deploy-button" class="primary-button" disabled>CONVOY ENTRY ACTIVE</button>
           <button id="redeploy-button" class="ghost-button" hidden>REDEPLOY CONVOY</button>
         </aside>
@@ -134,7 +134,7 @@
             <div><dt>ROUTE DANGER</dt><dd id="contract-danger">—</dd></div>
             <div><dt>DEFENSE PADS</dt><dd id="contract-pads">—</dd></div>
           </dl>
-          <p id="contract-instructions">Roads are enemy lanes. Bases deploy beside roads. Build defenses along the marked route and protect the command core.</p>
+          <p id="contract-instructions">Build defenses along the generated horde route and protect the command core. Field routes approach through grass with sharp turns.</p>
         </aside>
 
         <aside id="core-health" class="core-health panel" aria-label="Command core health" hidden>
@@ -178,7 +178,7 @@
         </nav>
 
         <section id="convoy-actions" class="convoy-actions" hidden aria-label="Convoy deployment controls">
-          <div class="deployment-readout"><small>COMMAND VEHICLE</small><strong id="deployment-validity">Find valid roadside terrain</strong><span id="stowed-turrets">STOWED TURRETS: 0</span></div>
+          <div class="deployment-readout"><small>COMMAND VEHICLE</small><strong id="deployment-validity">Find clear dry land</strong><span id="stowed-turrets">STOWED TURRETS: 0</span></div>
           <button id="deploy-core-button" class="deploy-core-button" disabled>DEPLOY BASE <kbd>E</kbd></button>
           <button id="follow-vehicle-button" class="hud-button">FOLLOW VEHICLE</button>
         </section>
