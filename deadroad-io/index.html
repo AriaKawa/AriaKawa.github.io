@@ -6,9 +6,9 @@
     <meta name="theme-color" content="#11130f" />
     <meta name="description" content="Deadroad.io — deploy, defend, and reclaim a persistent zombie-infested continent." />
     <title>Deadroad.io</title>
-    <script type="module" crossorigin src="./assets/index-6O1nGrE0.js"></script>
+    <script type="module" crossorigin src="./assets/index-BOK0-4Mx.js"></script>
     <link rel="modulepreload" crossorigin href="./assets/phaser-B61OQUcB.js">
-    <link rel="stylesheet" crossorigin href="./assets/index-BKnoxm7w.css">
+    <link rel="stylesheet" crossorigin href="./assets/index-DNV7DCBs.css">
   </head>
   <body>
     <main id="game-shell">
@@ -25,7 +25,7 @@
           <button id="local-button">LOCAL TEST</button><button id="credits-button">CREDITS</button>
         </div>
         <p id="menu-status">Local continent server required on port 2567.</p>
-        <div id="credits-panel" hidden>“Hunger Pains” soundtrack: TheLazyStone Post-Apocalypse Pixel Art Asset Pack. Convoy engine loop: domasx2 (CC0). Continuous flame loop: qubodup (CC BY 3.0). Flame VFX: zonked (CC0). Boundaries: U.S. Census Bureau and Natural Earth public-domain data. See LICENSES.md.</div>
+        <div id="credits-panel" hidden>“Hunger Pains” soundtrack: TheLazyStone Post-Apocalypse Pixel Art Asset Pack. Convoy engine loop: domasx2 (CC0). Continuous flame loop: qubodup (CC BY 3.0). Flame VFX: zonked (CC0). Zombie cinder sparks: kurohina (CC0). Boundaries: U.S. Census Bureau and Natural Earth public-domain data. See LICENSES.md.</div>
       </section>
 
       <section id="globe-deploy" class="globe-deploy" hidden>
@@ -169,13 +169,32 @@
           <div class="squad-actions"><button id="squad-call-button" disabled>CALL FOR BACKUP</button><button id="squad-toggle-button" disabled>OPEN BASE</button></div>
         </aside>
 
+        <aside id="stash-panel" class="stash-panel hud-drawer panel closed" aria-label="Equipment stash" aria-hidden="true">
+          <div class="drawer-heading"><div><div class="eyebrow">CONVOY CARGO // LOOT STASH</div><h2>FIELD EQUIPMENT</h2></div><button class="drawer-close" data-close-panel aria-label="Close stash">×</button></div>
+          <p>Fallen infected can drop satchels. Click a satchel on the track to open it, then use recovered gear from the bar below.</p>
+          <div id="stash-grid" class="stash-grid" aria-label="Loot stash grid"></div>
+          <small class="stash-note"><b id="satchel-count">0</b> UNOPENED SATCHELS ON THE FIELD</small>
+        </aside>
+
         <nav class="action-dock" aria-label="HUD panels">
           <button id="sector-button" class="hud-button">SECTOR</button>
           <button id="contract-button" class="hud-button">CONTRACT</button>
           <button id="squad-button" class="hud-button" disabled title="Build a Squad Beacon to open this.">SQUAD</button>
           <button id="activity-button" class="hud-button">ACTIVITY <span id="activity-count" hidden>0</span></button>
+          <button id="stash-button" class="hud-button">STASH</button>
           <button id="pack-button" class="hud-button" disabled>PACK ALL &amp; DRIVE <kbd>P</kbd></button>
         </nav>
+
+        <section class="equipment-dock panel" aria-label="Field equipment quick bar">
+          <div class="equipment-dock-label"><span>FIELD GEAR</span><small id="equipment-hint">CLICK A SATCHEL TO LOOT · KEYS 1–5 USE GEAR</small></div>
+          <div id="equipment-bar" class="equipment-bar">
+            <button data-equipment="barbedWire" disabled><kbd>1</kbd><img src="./assets/loot/barbed-wire.png" alt=""><span>WIRE</span><b class="equipment-count">0</b></button>
+            <button data-equipment="overclockBooster" disabled><kbd>2</kbd><img src="./assets/loot/overclock-booster.png" alt=""><span>BOOST</span><b class="equipment-count">0</b></button>
+            <button data-equipment="proximityMine" disabled><kbd>3</kbd><img src="./assets/loot/proximity-mine.png" alt=""><span>MINE</span><b class="equipment-count">0</b></button>
+            <button data-equipment="fieldRepairKit" disabled><kbd>4</kbd><img src="./assets/loot/field-repair-kit.png" alt=""><span>REPAIR</span><b class="equipment-count">0</b></button>
+            <button data-equipment="roadFlare" disabled><kbd>5</kbd><img src="./assets/loot/road-flare.png" alt=""><span>FLARE</span><b class="equipment-count">0</b></button>
+          </div>
+        </section>
 
         <section id="convoy-actions" class="convoy-actions" hidden aria-label="Convoy deployment controls">
           <div class="deployment-readout"><small>COMMAND VEHICLE</small><strong id="deployment-validity">Find clear dry land</strong><span id="stowed-turrets">STOWED TURRETS: 0</span></div>
