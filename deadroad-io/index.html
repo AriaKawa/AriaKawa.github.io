@@ -6,9 +6,9 @@
     <meta name="theme-color" content="#11130f" />
     <meta name="description" content="Deadroad.io — deploy, defend, and reclaim a persistent zombie-infested continent." />
     <title>Deadroad.io</title>
-    <script type="module" crossorigin src="./assets/index-BOK0-4Mx.js"></script>
+    <script type="module" crossorigin src="./assets/index-Cq1EGcyM.js"></script>
     <link rel="modulepreload" crossorigin href="./assets/phaser-B61OQUcB.js">
-    <link rel="stylesheet" crossorigin href="./assets/index-DNV7DCBs.css">
+    <link rel="stylesheet" crossorigin href="./assets/index-DkEXnBDr.css">
   </head>
   <body>
     <main id="game-shell">
@@ -153,7 +153,7 @@
           <div class="drawer-heading"><div><div class="eyebrow">FIELD MANUAL</div><h2>CONTROLS</h2></div><button class="drawer-close" data-close-panel aria-label="Close help">×</button></div>
           <div class="controls-grid">
             <div><kbd>W / S</kbd><span>Throttle / reverse convoy</span></div><div><kbd>A / D</kbd><span>Steer left / right</span></div><div><kbd>ARROWS</kbd><span>Pan while driving</span></div>
-            <div><kbd>B</kbd><span>Open build dock</span></div><div><kbd>F</kbd><span>Return to base</span></div>
+            <div><kbd>B</kbd><span>Open build dock</span></div><div><kbd>G</kbd><span>Open field gear</span></div>
             <div><kbd>P</kbd><span>Pack all turrets & drive</span></div><div><kbd>E / SPACE</kbd><span>Deploy stopped convoy</span></div>
             <div><kbd>M</kbd><span>Open war map</span></div><div><kbd>F</kbd><span>Follow vehicle / return to base</span></div>
             <div><kbd>WHEEL</kbd><span>Zoom view</span></div><div><kbd>F3</kbd><span>Debug overlay</span></div>
@@ -169,24 +169,16 @@
           <div class="squad-actions"><button id="squad-call-button" disabled>CALL FOR BACKUP</button><button id="squad-toggle-button" disabled>OPEN BASE</button></div>
         </aside>
 
-        <aside id="stash-panel" class="stash-panel hud-drawer panel closed" aria-label="Equipment stash" aria-hidden="true">
-          <div class="drawer-heading"><div><div class="eyebrow">CONVOY CARGO // LOOT STASH</div><h2>FIELD EQUIPMENT</h2></div><button class="drawer-close" data-close-panel aria-label="Close stash">×</button></div>
-          <p>Fallen infected can drop satchels. Click a satchel on the track to open it, then use recovered gear from the bar below.</p>
-          <div id="stash-grid" class="stash-grid" aria-label="Loot stash grid"></div>
-          <small class="stash-note"><b id="satchel-count">0</b> UNOPENED SATCHELS ON THE FIELD</small>
-        </aside>
-
         <nav class="action-dock" aria-label="HUD panels">
           <button id="sector-button" class="hud-button">SECTOR</button>
           <button id="contract-button" class="hud-button">CONTRACT</button>
           <button id="squad-button" class="hud-button" disabled title="Build a Squad Beacon to open this.">SQUAD</button>
           <button id="activity-button" class="hud-button">ACTIVITY <span id="activity-count" hidden>0</span></button>
-          <button id="stash-button" class="hud-button">STASH</button>
           <button id="pack-button" class="hud-button" disabled>PACK ALL &amp; DRIVE <kbd>P</kbd></button>
         </nav>
 
-        <section class="equipment-dock panel" aria-label="Field equipment quick bar">
-          <div class="equipment-dock-label"><span>FIELD GEAR</span><small id="equipment-hint">CLICK A SATCHEL TO LOOT · KEYS 1–5 USE GEAR</small></div>
+        <section id="field-gear-menu" class="field-gear-menu panel closed" aria-label="Field equipment" aria-hidden="true">
+          <div class="build-heading"><div><span class="eyebrow">CONVOY CARGO // FIELD GEAR</span><b id="equipment-hint">CLICK A SATCHEL TO LOOT · KEYS 1–5 USE GEAR</b></div><button id="field-gear-close" aria-label="Close field gear">×</button></div>
           <div id="equipment-bar" class="equipment-bar">
             <button data-equipment="barbedWire" disabled><kbd>1</kbd><img src="./assets/loot/barbed-wire.png" alt=""><span>WIRE</span><b class="equipment-count">0</b></button>
             <button data-equipment="overclockBooster" disabled><kbd>2</kbd><img src="./assets/loot/overclock-booster.png" alt=""><span>BOOST</span><b class="equipment-count">0</b></button>
@@ -194,6 +186,7 @@
             <button data-equipment="fieldRepairKit" disabled><kbd>4</kbd><img src="./assets/loot/field-repair-kit.png" alt=""><span>REPAIR</span><b class="equipment-count">0</b></button>
             <button data-equipment="roadFlare" disabled><kbd>5</kbd><img src="./assets/loot/road-flare.png" alt=""><span>FLARE</span><b class="equipment-count">0</b></button>
           </div>
+          <small class="stash-note"><b id="satchel-count">0</b> UNOPENED SATCHELS ON THE FIELD</small>
         </section>
 
         <section id="convoy-actions" class="convoy-actions" hidden aria-label="Convoy deployment controls">
@@ -202,6 +195,7 @@
           <button id="follow-vehicle-button" class="hud-button">FOLLOW VEHICLE</button>
         </section>
 
+        <button id="field-gear-button" class="field-gear-button" aria-controls="field-gear-menu" aria-expanded="false">FIELD GEAR <kbd>G</kbd><span id="field-gear-total">0</span></button>
         <button id="build-button" class="build-button" disabled>BUILD <kbd>B</kbd></button>
 
         <section id="build-menu" class="build-menu panel closed" aria-hidden="true">
