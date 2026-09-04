@@ -6,9 +6,9 @@
     <meta name="theme-color" content="#11130f" />
     <meta name="description" content="Deadroad.io — deploy, defend, and reclaim a persistent zombie-infested continent." />
     <title>Deadroad.io</title>
-    <script type="module" crossorigin src="./assets/index-B71wIwDl.js"></script>
+    <script type="module" crossorigin src="./assets/index-DpyYX6CT.js"></script>
     <link rel="modulepreload" crossorigin href="./assets/phaser-B61OQUcB.js">
-    <link rel="stylesheet" crossorigin href="./assets/index-CPYC_IAf.css">
+    <link rel="stylesheet" crossorigin href="./assets/index-CWNWfEQi.css">
   </head>
   <body>
     <main id="game-shell">
@@ -84,8 +84,8 @@
 
         <div class="road-editor-workspace">
           <aside class="road-editor-sidebar panel" aria-label="Road tools">
-            <div class="eyebrow">ROAD AUTHORING TOOL</div>
-            <h1>DRAW A ROAD</h1>
+            <div class="eyebrow">CITIES-STYLE ROAD TOOL</div>
+            <h1>BUILD ON PLANET 1</h1>
             <label for="road-editor-type">ROAD TYPE</label>
             <select id="road-editor-type">
               <option value="highway">Highway</option>
@@ -98,6 +98,11 @@
             <input id="road-editor-name" maxlength="80" placeholder="Example: I-70" autocomplete="off">
             <label for="road-editor-width">WIDTH <output id="road-editor-width-value" for="road-editor-width">48px</output></label>
             <input id="road-editor-width" type="range" min="4" max="120" step="1" value="48">
+            <div class="editor-layer-toggles" aria-label="Editor layers and snapping">
+              <label class="editor-toggle"><input id="road-editor-snapping" type="checkbox" checked><span>SNAPPING</span><b id="road-editor-snap-status">READY</b></label>
+              <label class="editor-toggle"><input id="road-editor-reference-roads" type="checkbox" checked><span>PLANET 1 ROADS</span><b>LOCKED</b></label>
+              <label class="editor-toggle"><input id="road-editor-grid" type="checkbox"><span>GRID</span><b>OPTIONAL</b></label>
+            </div>
             <button id="road-editor-new" class="primary-button" type="button">+ NEW ROAD</button>
             <div class="editor-button-grid">
               <button id="road-editor-finish" type="button" disabled>FINISH <kbd>ENTER</kbd></button>
@@ -113,8 +118,9 @@
           </aside>
 
           <div class="road-editor-stage panel">
-            <canvas id="road-editor-canvas" role="application" aria-label="Missouri road drawing canvas. Left-click to add or select points, drag handles to edit, and use the mouse wheel to zoom."></canvas>
-            <div class="editor-stage-badge"><b>MISSOURI // 1600 × 1000</b><span id="road-editor-coordinates">X —&nbsp; Y —</span></div>
+            <canvas id="road-editor-canvas" role="application" aria-label="Planet 1 terrain road editor. Left-click to place connected road nodes, drag handles to edit, and use the mouse wheel to zoom."></canvas>
+            <div class="editor-stage-badge"><b>PLANET 1 SANDBOX // 6000 × 4000</b><span id="road-editor-coordinates">X —&nbsp; Y —</span></div>
+            <div class="editor-stage-readout"><span>ROAD <b id="road-editor-current-type">HIGHWAY</b></span><span>BASE LAYER <b>PLANET 1 · LOCKED</b></span></div>
             <div id="road-editor-status" class="road-editor-status" role="status" aria-live="polite">Editor ready.</div>
           </div>
 
@@ -134,15 +140,16 @@
                 <div><dt>ENTER</dt><dd>Finish road</dd></div><div><dt>BACKSPACE</dt><dd>Remove last point</dd></div>
                 <div><dt>DELETE</dt><dd>Delete selection</dd></div><div><dt>WHEEL</dt><dd>Zoom</dd></div>
                 <div><dt>RMB / MMB</dt><dd>Pan canvas</dd></div><div><dt>SPACE + DRAG</dt><dd>Pan canvas</dd></div>
+                <div><dt>SHIFT</dt><dd>Disable snapping</dd></div><div><dt>CTRL</dt><dd>15° angle snap</dd></div>
               </dl>
             </div>
-            <p class="editor-safety-copy">Planet 3 is isolated. Saving and editing here never changes Planet 1 or Planet 2.</p>
+            <p class="editor-safety-copy">Planet 1 terrain and roads are a locked reference layer. Only the separate Planet 3 road overlay can be edited, saved, imported, or exported.</p>
           </aside>
         </div>
 
         <dialog id="road-editor-data-dialog" class="road-editor-dialog">
           <div class="editor-dialog-heading"><div><div class="eyebrow">PLANET 3 // DATA TRANSFER</div><h2 id="road-editor-data-title">EXPORT ROAD DATA</h2></div><button id="road-editor-data-close" aria-label="Close" type="button">×</button></div>
-          <p id="road-editor-data-help">Copy this versioned JSON or download it for a later Planet 2 import.</p>
+          <p id="road-editor-data-help">Copy this versioned Planet 3 overlay. Planet 1 data is never included or changed.</p>
           <textarea id="road-editor-data-text" spellcheck="false" aria-label="Road editor JSON"></textarea>
           <pre id="road-editor-warnings" class="road-editor-warnings">Validation passed. No road warnings.</pre>
           <div class="editor-dialog-actions">
