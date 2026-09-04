@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#11130f" />
     <meta name="description" content="Deadroad.io — deploy, defend, and reclaim a persistent zombie-infested continent." />
     <title>Deadroad.io</title>
-    <script type="module" crossorigin src="./assets/index-DpyYX6CT.js"></script>
+    <script type="module" crossorigin src="./assets/index-Bs74qsLC.js"></script>
     <link rel="modulepreload" crossorigin href="./assets/phaser-B61OQUcB.js">
     <link rel="stylesheet" crossorigin href="./assets/index-CWNWfEQi.css">
   </head>
@@ -100,7 +100,8 @@
             <input id="road-editor-width" type="range" min="4" max="120" step="1" value="48">
             <div class="editor-layer-toggles" aria-label="Editor layers and snapping">
               <label class="editor-toggle"><input id="road-editor-snapping" type="checkbox" checked><span>SNAPPING</span><b id="road-editor-snap-status">READY</b></label>
-              <label class="editor-toggle"><input id="road-editor-reference-roads" type="checkbox" checked><span>PLANET 1 ROADS</span><b>LOCKED</b></label>
+              <label class="editor-toggle"><input id="road-editor-authored-roads" type="checkbox" checked><span>EDITOR ROADS</span><b>OVERLAY</b></label>
+              <label class="editor-toggle"><input id="road-editor-reference-roads" type="checkbox" checked><span>PLANET 1 REFERENCE ROADS</span><b>LOCKED</b></label>
               <label class="editor-toggle"><input id="road-editor-grid" type="checkbox"><span>GRID</span><b>OPTIONAL</b></label>
             </div>
             <button id="road-editor-new" class="primary-button" type="button">+ NEW ROAD</button>
@@ -119,7 +120,7 @@
 
           <div class="road-editor-stage panel">
             <canvas id="road-editor-canvas" role="application" aria-label="Planet 1 terrain road editor. Left-click to place connected road nodes, drag handles to edit, and use the mouse wheel to zoom."></canvas>
-            <div class="editor-stage-badge"><b>PLANET 1 SANDBOX // 6000 × 4000</b><span id="road-editor-coordinates">X —&nbsp; Y —</span></div>
+            <div class="editor-stage-badge"><b>LIVE PLANET 1 MAP // EDITOR OVERLAY</b><span id="road-editor-coordinates">LAT —&nbsp; LON —</span></div>
             <div class="editor-stage-readout"><span>ROAD <b id="road-editor-current-type">HIGHWAY</b></span><span>BASE LAYER <b>PLANET 1 · LOCKED</b></span></div>
             <div id="road-editor-status" class="road-editor-status" role="status" aria-live="polite">Editor ready.</div>
           </div>
