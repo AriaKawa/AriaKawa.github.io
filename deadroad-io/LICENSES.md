@@ -29,3 +29,7 @@ External assets:
 - Natural Earth administrative boundary data, Natural Earth contributors, https://www.naturalearthdata.com/, public domain. Used for the real U.S. state, Canadian province, and American country selection polygons and borders.
 - U.S. Census Bureau 2025 Cartographic Boundary File — States, 1:20,000,000, https://www2.census.gov/geo/tiger/GENZ2025/kml/cb_2025_us_state_20m.zip, public domain. Preprocessed into the shared U.S. state polygons, internal-border mesh, and national coastline used by both the globe and tactical map.
 Any future asset entry must record its name, author, source URL, license, and whether attribution is required.
+
+## Deadroad 3 scenery
+expedition-atlas.png: original AI-generated scenery created for Deadroad 3 on September 4, 2026; reused in the original Deadroad.io. Includes trees, rocks, buildings and roadside props. See docs/expedition-art-prompt.md.
+
