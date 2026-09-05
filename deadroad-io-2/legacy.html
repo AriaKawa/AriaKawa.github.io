@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#11130f" />
+    <meta name="description" content="Deadroad.io — deploy, defend, and reclaim a persistent zombie-infested continent." />
+    <title>Deadroad.io</title>
+    <script type="module" crossorigin src="./assets/legacy-DWlrq4aR.js"></script>
+    <link rel="modulepreload" crossorigin href="./assets/modulepreload-polyfill-B5Qt9EMX.js">
+    <link rel="modulepreload" crossorigin href="./assets/phaser-B61OQUcB.js">
+    <link rel="stylesheet" crossorigin href="./assets/legacy-CWNWfEQi.css">
+  </head>
+  <body>
+    <main id="game-shell">
+      <div id="game" aria-label="Deadroad.io battlefield"></div>
+
+      <section id="main-menu" class="menu-screen">
+        <div class="menu-kicker">ROADWATCH NETWORK // CONTINENT 01</div>
+        <h1>DEADROAD<span>.IO</span></h1>
+        <p class="tagline">Deploy. Defend. Reclaim the continent.</p>
+        <label for="commander-name">COMMANDER CALLSIGN</label>
+        <input id="commander-name" maxlength="18" value="Roadwarden" autocomplete="off" />
+        <button id="play-button" class="primary-button">PLAY <b>CONTINENT</b></button>
+        <div class="menu-actions">
+          <button id="local-button">LOCAL TEST</button><button id="credits-button">CREDITS</button>
+        </div>
+        <p id="menu-status">Local continent server required on port 2567.</p>
+        <div id="credits-panel" hidden>“Hunger Pains” soundtrack: TheLazyStone Post-Apocalypse Pixel Art Asset Pack. Convoy engine loop: domasx2 (CC0). Continuous flame loop: qubodup (CC BY 3.0). Flame VFX: zonked (CC0). Zombie cinder sparks: kurohina (CC0). Boundaries: U.S. Census Bureau and Natural Earth public-domain data. See LICENSES.md.</div>
+      </section>
+
+      <section id="globe-deploy" class="globe-deploy" hidden>
+        <div id="globe-canvas" class="globe-canvas"></div>
+        <header class="globe-topbar">
+          <div class="brand-small"><i></i> DEADROAD.IO <span id="globe-planet-label">PLANET 1 // CURRENT MAP</span></div>
+          <nav class="planet-switcher" aria-label="Planet maps">
+            <button id="planet-1-button" class="active" type="button">PLANET 1<br>MAIN MAP</button>
+            <button id="planet-2-button" type="button">PLANET 2<br>MISSOURI TEST</button>
+            <button id="planet-3-button" type="button">PLANET 3<br>ROAD EDITOR</button>
+          </nav>
+          <div class="globe-protection"><small id="globe-mode">COMMANDER MODE // PROTECTED</small><strong>NO CORE · NO PERSONAL HORDE</strong></div>
+          <button id="globe-back-button" class="key-button">ESC // BACK</button>
+        </header>
+        <aside class="globe-inspector panel">
+          <div class="eyebrow">ORBITAL DEPLOYMENT SURVEY</div>
+          <h2 id="globe-region">Rotate the colony world</h2>
+          <div class="state-line"><span id="globe-state" class="state safe">PROTECTED</span><span>ROADWATCH 87.9</span></div>
+          <div class="globe-grid">
+            <div><small>ZOMBIE PRESSURE</small><strong id="globe-biome">—</strong></div><div><small>SUPPLY</small><strong id="globe-terrain">—</strong></div>
+            <div class="wide"><small>HIGHWAY BACKBONE</small><strong id="globe-road">Major highways visible</strong></div>
+            <div class="wide"><small>ENTRY MODE</small><strong id="globe-river">Free location selection</strong></div>
+            <div class="wide"><small>LOCATION STATUS</small><strong id="globe-nearby">Click USA land to enter</strong></div>
+            <div><small>THREAT</small><strong id="globe-threat">—</strong></div><div><small>INFESTATION</small><strong id="globe-infestation">—</strong></div>
+            <div class="wide"><small>RECOMMENDED ACTION</small><strong id="globe-deployment">SURVEY REQUIRED</strong></div>
+            <div><small>ENTRY SUPPLIES</small><strong id="globe-scrap">—</strong></div><div><small>HORDE ROUTING</small><strong id="globe-horde">AFTER BASE DEPLOYMENT</strong></div>
+          </div>
+          <p id="globe-recommend">Drag to survey, then click any supported USA land location to enter.</p>
+          <button id="globe-random-button" class="random-button">[R] RANDOM SAFE DROP</button>
+          <button id="globe-focus-button" class="ghost-button">[F] FOCUS SELECTION</button>
+          <button id="globe-deploy-button" class="primary-button" disabled>CLICK USA LAND TO ENTER</button>
+        </aside>
+        <aside class="globe-controls panel">
+          <div><kbd>DRAG</kbd><span>Rotate planet</span></div><div><kbd>WHEEL</kbd><span>Zoom</span></div>
+          <div><kbd>WASD</kbd><span>Slow rotate</span></div><div><kbd>Q / E</kbd><span>Orbit</span></div>
+          <div><kbd>F</kbd><span>Focus location</span></div><div><kbd>M</kbd><span>Map layer</span></div>
+          <div><kbd>R</kbd><span>Random drop</span></div><div><kbd>RMB</kbd><span>Clear</span></div>
+          <button id="globe-territories-button" class="territory-toggle" hidden>[V] TERRITORIES ON</button>
+        </aside>
+        <div class="globe-legend"><small>THREAT</small><span class="threat-0">0</span><span class="threat-1">1</span><span class="threat-2">2</span><span class="threat-3">3</span><span class="threat-4">4</span><span class="threat-5">5</span><b>CLICK LAND // FREE ENTRY</b></div>
+        <div id="globe-tooltip" class="globe-tooltip" hidden></div>
+        <div class="globe-transmission">THE DEAD OWN THE OLD ROADS. PICK WHERE WE TAKE ONE BACK.</div>
+      </section>
+
+      <section id="road-editor" class="road-editor" aria-label="Planet 3 road editor" hidden>
+        <header class="road-editor-topbar">
+          <div class="brand-small"><i></i> DEADROAD.IO <span>PLANET 3 // ROAD EDITOR</span></div>
+          <nav class="planet-switcher" aria-label="Planet maps">
+            <button id="editor-planet-1-button" type="button">PLANET 1<br>MAIN MAP</button>
+            <button id="editor-planet-2-button" type="button">PLANET 2<br>MISSOURI TEST</button>
+            <button class="active" type="button" aria-current="page">PLANET 3<br>ROAD EDITOR</button>
+          </nav>
+          <div class="editor-local-warning"><small>SAFE DEV MODE</small><strong>CHANGES ARE LOCAL UNTIL EXPORTED</strong></div>
+          <button id="road-editor-back" class="key-button" type="button">BACK TO WAR GLOBE</button>
+        </header>
+
+        <div class="road-editor-workspace">
+          <aside class="road-editor-sidebar panel" aria-label="Road tools">
+            <div class="eyebrow">CITIES-STYLE ROAD TOOL</div>
+            <h1>BUILD ON PLANET 1</h1>
+            <label for="road-editor-type">ROAD TYPE</label>
+            <select id="road-editor-type">
+              <option value="highway">Highway</option>
+              <option value="major_road">Major Road</option>
+              <option value="rural_road">Rural Road</option>
+              <option value="dirt_road">Dirt Road</option>
+              <option value="service_road">Service Road</option>
+            </select>
+            <label for="road-editor-name">ROAD NAME</label>
+            <input id="road-editor-name" maxlength="80" placeholder="Example: I-70" autocomplete="off">
+            <label for="road-editor-width">WIDTH <output id="road-editor-width-value" for="road-editor-width">48px</output></label>
+            <input id="road-editor-width" type="range" min="4" max="120" step="1" value="48">
+            <div class="editor-layer-toggles" aria-label="Editor layers and snapping">
+              <label class="editor-toggle"><input id="road-editor-snapping" type="checkbox" checked><span>SNAPPING</span><b id="road-editor-snap-status">READY</b></label>
+              <label class="editor-toggle"><input id="road-editor-authored-roads" type="checkbox" checked><span>EDITOR ROADS</span><b>OVERLAY</b></label>
+              <label class="editor-toggle"><input id="road-editor-reference-roads" type="checkbox" checked><span>PLANET 1 REFERENCE ROADS</span><b>LOCKED</b></label>
+              <label class="editor-toggle"><input id="road-editor-grid" type="checkbox"><span>GRID</span><b>OPTIONAL</b></label>
+            </div>
+            <button id="road-editor-new" class="primary-button" type="button">+ NEW ROAD</button>
+            <div class="editor-button-grid">
+              <button id="road-editor-finish" type="button" disabled>FINISH <kbd>ENTER</kbd></button>
+              <button id="road-editor-cancel" type="button" disabled>CANCEL <kbd>ESC</kbd></button>
+              <button id="road-editor-delete" class="danger" type="button" disabled>DELETE SELECTED</button>
+              <button id="road-editor-undo" type="button" disabled>UNDO <kbd>CTRL+Z</kbd></button>
+              <button id="road-editor-redo" type="button" disabled>REDO <kbd>CTRL+Y</kbd></button>
+            </div>
+            <div class="editor-selection-card">
+              <small>ACTIVE SELECTION</small><strong id="road-editor-selection">NO ROAD SELECTED</strong>
+              <dl><div><dt>ROADS</dt><dd id="road-editor-road-count">0</dd></div><div><dt>POINTS</dt><dd id="road-editor-point-count">0</dd></div></dl>
+            </div>
+          </aside>
+
+          <div class="road-editor-stage panel">
+            <canvas id="road-editor-canvas" role="application" aria-label="Planet 1 terrain road editor. Left-click to place connected road nodes, drag handles to edit, and use the mouse wheel to zoom."></canvas>
+            <div class="editor-stage-badge"><b>LIVE PLANET 1 MAP // EDITOR OVERLAY</b><span id="road-editor-coordinates">LAT —&nbsp; LON —</span></div>
+            <div class="editor-stage-readout"><span>ROAD <b id="road-editor-current-type">HIGHWAY</b></span><span>BASE LAYER <b>PLANET 1 · LOCKED</b></span></div>
+            <div id="road-editor-status" class="road-editor-status" role="status" aria-live="polite">Editor ready.</div>
+          </div>
+
+          <aside class="road-editor-sidebar road-editor-sidebar-right panel" aria-label="Save, load, and help">
+            <div class="eyebrow">EDITOR DATA</div><h2>KEEP YOUR WORK</h2>
+            <div class="editor-button-stack">
+              <button id="road-editor-save" type="button">SAVE LOCAL</button>
+              <button id="road-editor-load" type="button">LOAD LOCAL</button>
+              <button id="road-editor-export" class="accent" type="button">EXPORT JSON</button>
+              <button id="road-editor-import" type="button">IMPORT / PASTE</button>
+              <button id="road-editor-clear" class="danger" type="button">CLEAR EDITOR</button>
+            </div>
+            <div class="editor-help">
+              <div class="eyebrow">CONTROLS</div>
+              <dl>
+                <div><dt>LEFT CLICK</dt><dd>Add / select</dd></div><div><dt>DRAG POINT</dt><dd>Reshape road</dd></div>
+                <div><dt>ENTER</dt><dd>Finish road</dd></div><div><dt>BACKSPACE</dt><dd>Remove last point</dd></div>
+                <div><dt>DELETE</dt><dd>Delete selection</dd></div><div><dt>WHEEL</dt><dd>Zoom</dd></div><div><dt>F</dt><dd>Focus selection / roads</dd></div>
+                <div><dt>RMB / MMB</dt><dd>Pan canvas</dd></div><div><dt>SPACE + DRAG</dt><dd>Pan canvas</dd></div>
+                <div><dt>SHIFT</dt><dd>Disable snapping</dd></div><div><dt>CTRL</dt><dd>15° angle snap</dd></div>
+              </dl>
+            </div>
+            <p class="editor-safety-copy">Planet 1 terrain and roads are a locked reference layer. Only the separate Planet 3 road overlay can be edited, saved, imported, or exported.</p>
+          </aside>
+        </div>
+
+        <dialog id="road-editor-data-dialog" class="road-editor-dialog">
+          <div class="editor-dialog-heading"><div><div class="eyebrow">PLANET 3 // DATA TRANSFER</div><h2 id="road-editor-data-title">EXPORT ROAD DATA</h2></div><button id="road-editor-data-close" aria-label="Close" type="button">×</button></div>
+          <p id="road-editor-data-help">Copy this versioned Planet 3 overlay. Planet 1 data is never included or changed.</p>
+          <textarea id="road-editor-data-text" spellcheck="false" aria-label="Road editor JSON"></textarea>
+          <pre id="road-editor-warnings" class="road-editor-warnings">Validation passed. No road warnings.</pre>
+          <div class="editor-dialog-actions">
+            <button id="road-editor-data-apply" class="primary-button" type="button" hidden>IMPORT AND REPLACE</button>
+            <button id="road-editor-data-copy" type="button">COPY JSON</button>
+            <button id="road-editor-data-download" class="primary-button" type="button">DOWNLOAD .JSON</button>
+          </div>
+        </dialog>
+      </section>
+
+      <section id="deployment-loading" class="deployment-loading" role="status" aria-live="polite" aria-busy="true" hidden>
+        <div class="deployment-loading-card">
+          <div class="loading-scan"></div>
+          <div class="eyebrow">ROADWATCH DEPLOYMENT LINK</div>
+          <h2>OPENING AMERICAS THEATER</h2>
+          <p id="deployment-loading-status">LOCKING SECTOR // PREPARING CONVOY</p>
+          <div class="deployment-loading-track"><i id="deployment-loading-bar"></i></div>
+          <small>TERRAIN · HIGHWAYS · OPERATIONS · DEFENSE GRID</small>
+        </div>
+      </section>
+
+      <section id="hud" class="hud" hidden>
+        <header class="topbar hud-topbar">
+          <div class="brand-small hud-brand"><i></i><span class="brand-name">DEADROAD.IO</span><small><b id="tactical-view">BASE</b> · <span id="tactical-sector">AMERICAS</span></small></div>
+          <div class="wave-objective" aria-live="polite"><strong id="hud-wave-status">ROADWATCH READY</strong><span id="hud-objective">Drive the command vehicle and deploy on clear land</span><button id="start-wave-button" type="button" hidden>START NOW</button></div>
+          <div class="resource-row" aria-label="Operation resources">
+            <div class="resource"><small>SCRAP</small><strong id="scrap-value">250</strong></div>
+            <div class="resource"><small>FUEL</small><strong id="fuel-value">100</strong></div>
+            <div class="resource"><small>SIGNAL</small><strong id="signal-value">0</strong></div>
+            <div class="resource"><small>THREAT</small><strong id="threat-value">—</strong></div>
+          </div>
+          <button id="map-button" class="hud-button">WAR MAP <kbd>M</kbd></button>
+          <button id="war-globe-button" class="hud-button">WAR GLOBE</button>
+          <button id="help-button" class="hud-button icon-button" aria-label="Open help">?</button>
+        </header>
+
+        <button id="sector-summary-button" class="sector-summary panel" aria-controls="sector-panel">
+          <span><small>SECTOR</small><strong id="sector-summary-name">AMERICAS</strong></span>
+          <span><small>PRESSURE</small><strong id="tactical-pressure">—</strong></span>
+          <span><small>STATE</small><strong id="sector-summary-state">OBSERVER</strong></span>
+        </button>
+
+        <aside id="tactical-zoom-panel" class="tactical-zoom" aria-label="Tactical map scale">
+          <span id="tactical-operations" hidden>0</span>
+          <button id="return-base-button" class="hud-button" hidden>RETURN TO BASE <kbd>F</kbd></button>
+        </aside>
+
+        <aside id="sector-panel" class="mission-panel hud-drawer panel closed" aria-label="Sector details" aria-hidden="true">
+          <div class="drawer-heading"><div class="eyebrow">SECTOR DETAILS</div><button class="drawer-close" data-close-panel aria-label="Close sector details">×</button></div>
+          <h2 id="territory-name">Convoy entering sector</h2>
+          <div class="state-line"><span id="territory-state" class="state safe">OBSERVER</span><span id="pressure-value">0% PRESSURE</span></div>
+          <div class="meter"><i id="pressure-fill"></i></div>
+          <dl>
+            <div><dt>SECTOR</dt><dd id="sector-name">NO OPERATION</dd></div>
+            <div><dt>WAR STATE</dt><dd id="sector-war-state">COMMANDER MODE</dd></div>
+            <div><dt>SUPPLY</dt><dd id="sector-supply">—</dd></div>
+            <div><dt>ALLIED OPS</dt><dd id="sector-allied">—</dd></div>
+            <div><dt>CONTRIBUTION</dt><dd id="sector-contribution">0</dd></div>
+            <div><dt>CORE</dt><dd id="base-status">NOT DEPLOYED</dd></div>
+            <div><dt>CONTRACT</dt><dd id="wave-value">NO ACTIVE HORDE</dd></div>
+            <div><dt>HOSTILES</dt><dd id="zombie-value">0 ON ROAD</dd></div>
+          </dl>
+          <p id="selection-copy">Drive the mobile command vehicle, coast to a stop, and deploy the base where you choose.</p>
+          <div class="field-rule"><i></i><span>Highways are faster. Hordes cut angular paths through open terrain.</span></div>
+          <button id="deploy-button" class="primary-button" disabled>CONVOY ENTRY ACTIVE</button>
+          <button id="redeploy-button" class="ghost-button" hidden>REDEPLOY CONVOY</button>
+        </aside>
+
+        <aside id="contract-panel" class="hud-drawer panel closed" aria-label="Contract details" aria-hidden="true">
+          <div class="drawer-heading"><div><div class="eyebrow">CURRENT CONTRACT</div><h2 id="contract-title">NO ACTIVE CONTRACT</h2></div><button class="drawer-close" data-close-panel aria-label="Close contract details">×</button></div>
+          <dl class="drawer-stats">
+            <div><dt>HORDE SOURCE</dt><dd id="contract-source">—</dd></div>
+            <div><dt>ROUTE DANGER</dt><dd id="contract-danger">—</dd></div>
+            <div><dt>DEFENSE PADS</dt><dd id="contract-pads">—</dd></div>
+          </dl>
+          <p id="contract-instructions">Build defenses along the generated horde route and protect the command core. Field routes approach through grass with sharp turns.</p>
+        </aside>
+
+        <aside id="core-health" class="core-health panel" aria-label="Command core health" hidden>
+          <div class="core-health-heading"><span>COMMAND CORE</span><strong id="core-health-value">1000 / 1000</strong></div>
+          <div class="core-health-meter"><i id="core-health-fill"></i></div>
+          <small id="core-health-state">PROTECTED</small>
+        </aside>
+
+        <aside id="activity-panel" class="hud-drawer panel closed" aria-label="Sector activity" aria-hidden="true">
+          <div class="drawer-heading"><div><div class="eyebrow">ROADWATCH 87.9</div><h2>SECTOR ACTIVITY</h2></div><button class="drawer-close" data-close-panel aria-label="Close activity">×</button></div>
+          <p id="radio-message" class="activity-current" aria-live="polite">Roadwatch online.</p>
+          <ul id="sector-feed" aria-label="Sector activity feed"></ul>
+        </aside>
+
+        <aside id="help-panel" class="hud-drawer panel closed" aria-label="Help and controls" aria-hidden="true">
+          <div class="drawer-heading"><div><div class="eyebrow">FIELD MANUAL</div><h2>CONTROLS</h2></div><button class="drawer-close" data-close-panel aria-label="Close help">×</button></div>
+          <div class="controls-grid">
+            <div><kbd>W / S</kbd><span>Throttle / reverse convoy</span></div><div><kbd>A / D</kbd><span>Steer left / right</span></div><div><kbd>ARROWS</kbd><span>Pan while driving</span></div>
+            <div><kbd>B</kbd><span>Open build dock</span></div><div><kbd>G</kbd><span>Open field gear</span></div>
+            <div><kbd>P</kbd><span>Pack all turrets & drive</span></div><div><kbd>E / SPACE</kbd><span>Deploy stopped convoy</span></div>
+            <div><kbd>M</kbd><span>Open war map</span></div><div><kbd>F</kbd><span>Follow vehicle / return to base</span></div>
+            <div><kbd>WHEEL</kbd><span>Zoom view</span></div><div><kbd>F3</kbd><span>Debug overlay</span></div>
+            <div><kbd>ESC</kbd><span>Cancel / close</span></div><div><kbd>RMB</kbd><span>Cancel build mode</span></div>
+          </div>
+        </aside>
+
+        <aside id="squad-panel" class="squad-panel hud-drawer panel closed" aria-label="Base squad status" aria-hidden="true">
+          <div class="drawer-heading"><div class="eyebrow">SQUAD // SHARED OPERATION</div><button class="drawer-close" data-close-panel aria-label="Close squad">×</button></div>
+          <div class="squad-heading"><strong id="squad-beacon-status">BEACON NOT BUILT</strong><span id="squad-joinable">JOINABLE: NO</span></div>
+          <div id="squad-slots" class="squad-slots">0 / 0 SLOTS FILLED</div>
+          <div id="squad-roster" class="squad-roster"><p>Build a Squad Beacon on a tower pad to let other commanders join this base.</p></div>
+          <div class="squad-actions"><button id="squad-call-button" disabled>CALL FOR BACKUP</button><button id="squad-toggle-button" disabled>OPEN BASE</button></div>
+        </aside>
+
+        <nav class="action-dock" aria-label="HUD panels">
+          <button id="sector-button" class="hud-button">SECTOR</button>
+          <button id="contract-button" class="hud-button">CONTRACT</button>
+          <button id="squad-button" class="hud-button" disabled title="Build a Squad Beacon to open this.">SQUAD</button>
+          <button id="activity-button" class="hud-button">ACTIVITY <span id="activity-count" hidden>0</span></button>
+          <button id="pack-button" class="hud-button" disabled>PACK ALL &amp; DRIVE <kbd>P</kbd></button>
+        </nav>
+
+        <section id="field-gear-menu" class="field-gear-menu panel closed" aria-label="Field equipment" aria-hidden="true">
+          <div id="equipment-bar" class="equipment-bar">
+            <button data-equipment="barbedWire" disabled><kbd>1</kbd><img src="./assets/loot/barbed-wire.png" alt=""><b class="equipment-count">0</b></button>
+            <button data-equipment="overclockBooster" disabled><kbd>2</kbd><img src="./assets/loot/overclock-booster.png" alt=""><b class="equipment-count">0</b></button>
+            <button data-equipment="proximityMine" disabled><kbd>3</kbd><img src="./assets/loot/proximity-mine.png" alt=""><b class="equipment-count">0</b></button>
+            <button data-equipment="fieldRepairKit" disabled><kbd>4</kbd><img src="./assets/loot/field-repair-kit.png" alt=""><b class="equipment-count">0</b></button>
+            <button data-equipment="roadFlare" disabled><kbd>5</kbd><img src="./assets/loot/road-flare.png" alt=""><b class="equipment-count">0</b></button>
+          </div>
+        </section>
+
+        <section id="convoy-actions" class="convoy-actions" hidden aria-label="Convoy deployment controls">
+          <div class="deployment-readout"><small>COMMAND VEHICLE</small><strong id="deployment-validity">Find clear dry land</strong><span id="stowed-turrets">STOWED TURRETS: 0</span></div>
+          <button id="deploy-core-button" class="deploy-core-button" disabled>DEPLOY BASE <kbd>E</kbd></button>
+          <button id="follow-vehicle-button" class="hud-button">FOLLOW VEHICLE</button>
+        </section>
+
+        <button id="field-gear-button" class="field-gear-button" aria-controls="field-gear-menu" aria-expanded="false">FIELD GEAR <kbd>G</kbd><span id="field-gear-total">0</span></button>
+        <button id="build-button" class="build-button" disabled>BUILD <kbd>B</kbd></button>
+
+        <section id="build-menu" class="build-menu panel closed" aria-hidden="true">
+          <div class="build-heading"><div><span class="eyebrow">DEFENSE FABRICATOR</span><b>SELECT TOWER, THEN CLICK A BUILD PAD</b></div><button id="build-close">×</button></div>
+          <div id="tower-cards"></div>
+        </section>
+
+        <div id="core-hit-effect" class="core-hit-effect" aria-hidden="true"></div>
+
+        <div id="notice" role="status"></div>
+      </section>
+
+      <section id="map-overlay" class="map-overlay" hidden>
+        <div class="map-card panel">
+          <div class="map-header"><div><span class="eyebrow">ROADWATCH STRATEGIC DISPLAY</span><h2>CONTINENT 01 // FRONT LINE</h2></div><button id="map-close">×</button></div>
+          <canvas id="continent-map" width="900" height="540"></canvas>
+          <div class="map-legend"><span class="safe">SAFE</span><span class="contested">CONTESTED</span><span class="infested">INFESTED</span><span class="overrun">OVERRUN</span><span class="reclaiming">RECLAIMING</span></div>
+          <p>Americas Theater. A clean major-highway backbone crosses state and national borders; local and stamped roads stay hidden in normal play.</p>
+        </div>
+      </section>
+
+      <section id="pause-overlay" class="game-modal" hidden aria-label="Game menu">
+        <div class="game-modal-card panel">
+          <div class="eyebrow">ROADWATCH // FIELD MENU</div>
+          <h2>GAME MENU</h2>
+          <div id="pause-main-actions" class="modal-actions">
+            <button id="resume-button" class="primary-button" type="button">RESUME <kbd>ESC</kbd></button>
+            <button id="settings-button" class="ghost-button" type="button">SETTINGS</button>
+            <button id="main-menu-button" class="danger-button" type="button">MAIN MENU</button>
+          </div>
+          <div id="settings-panel" hidden>
+            <div class="settings-heading"><h3>AUDIO SETTINGS</h3><button id="settings-back-button" type="button">BACK</button></div>
+            <label class="volume-control" for="music-volume"><span>MUSIC</span><output id="music-volume-value">18%</output><input id="music-volume" type="range" min="0" max="100" step="1" value="18" /></label>
+            <label class="volume-control" for="sfx-volume"><span>SOUND EFFECTS</span><output id="sfx-volume-value">50%</output><input id="sfx-volume" type="range" min="0" max="100" step="1" value="50" /></label>
+          </div>
+          <small class="modal-note">The continent keeps moving while this menu is open.</small>
+        </div>
+      </section>
+
+      <aside id="chat-panel" class="chat-panel panel closed" aria-hidden="true" aria-label="Player chat">
+        <div class="chat-heading"><div><span class="eyebrow">ROADWATCH COMMS</span><strong>PLAYER CHAT</strong></div><button id="chat-close-button" type="button" aria-label="Close player chat">×</button></div>
+        <div id="chat-messages" class="chat-messages" role="log" aria-live="polite"></div>
+        <form id="chat-form" autocomplete="off">
+          <label for="chat-input">MESSAGE PLAYERS</label>
+          <div><input id="chat-input" maxlength="180" placeholder="Type a message…" /><button type="submit">SEND</button></div>
+        </form>
+        <small><kbd>ENTER</kbd> OPEN CHAT · <kbd>ESC</kbd> CLOSE</small>
+      </aside>
+    </main>
+    <script src="./vendor/colyseus.js"></script>
+  </body>
+</html>
