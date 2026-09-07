@@ -1,0 +1,9 @@
+{
+  "roads": 76,
+  "dirtStates": 48,
+  "connected": true,
+  "onLand": true,
+  "maxJunctionArms": 4,
+  "compileMs": 2157,
+  "edges": 9270
+}

@@ -1,0 +1,11 @@
+# USA road expansion — 2026-09-06
+
+Planet 1 and the default Planet 3 editor now share 76 corridors: the retained backbone, nine new two-lane connectors, a Maine coastal/border highway returning through Vermont to New York, and 48 small dirt connections (one in every state on the contiguous-US map). I-25 and I-65 now use narrower two-lane surfaces, alongside the existing smaller roads. The northern I-15 and I-35 tails and California I-80/I-5 tails terminate on the connected network. Saved editor drafts remain available through Load Local.
+
+New centerlines are fixed data, with spline interpolation and exact shared sampled endpoints. World data preserves secondary and dirt classifications. Both overview and close-up rendering distinguish dirt surfaces. The existing polygon-union renderer prevents overlapping surfaces and clips junction markings.
+
+Performance: footprint ownership now considers only overlapping higher-priority roads and unions the total surface once. Full-country compilation measured about 2.2 seconds in the command-line geometry test versus 13 seconds before this optimization. Gameplay retains background rendering, bounded raster memory, one in-flight request, and cached pan/zoom reuse. Browser review measured 1–2 ms overview renders, 1547 ms for the initial background detail compilation with 185 UI frames and a 9 ms maximum frame gap, then 22–25 ms cached detail renders. These are measurements on this machine, not a guarantee across all hardware.
+
+Validation passed: production server/client build; road-network geometry suite (T/cross/acute junctions, duplicate segments, disjoint ownership, no extra holes); editor suite; raster/cache lifecycle suite; expanded network and Planet 1 tests. All 76 roads form one connected graph, all 100-samples-per-segment curves stay on schematic land, every dirt route stays in its tagged state, all repaired/new endpoints connect, and no junction exceeds four arms. Export/import retains data. Browser review covered the USA overview, northern ends, California, Maine/Vermont, dirt junction detail, performance, and the actual editor with 76 roads. No browser errors were observed in the review page.
+
+Production entry: index-QJKUM3kD.js. Background renderer: PlanetOneRoadWorker-nlCqjnY3.js. Source changes and reproducible review/tests are retained beside this README.

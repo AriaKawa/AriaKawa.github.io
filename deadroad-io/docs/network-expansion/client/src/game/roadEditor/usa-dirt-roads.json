@@ -1,0 +1,1574 @@
+[
+  {
+    "id": "curated-usa-dirt-al",
+    "name": "Alabama rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 143262.85714285713,
+        "y": 115448.07692307692
+      },
+      {
+        "x": 142772.08984615386,
+        "y": 115752.05862857144
+      },
+      {
+        "x": 142235.01745054947,
+        "y": 116267.86905494507
+      },
+      {
+        "x": 141987.84000000003,
+        "y": 116801.35384615387
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "AL"
+    ],
+    "notes": "Static through connection from I-65 · Gulf to Indiana to Gulf inland two-lane."
+  },
+  {
+    "id": "curated-usa-dirt-az",
+    "name": "Arizona rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 96951.14571428573,
+        "y": 113987.88173076924
+      },
+      {
+        "x": 96627.24695604396,
+        "y": 112959.37391703296
+      },
+      {
+        "x": 95941.27919505496,
+        "y": 111749.3616510989
+      },
+      {
+        "x": 95089.62857142858,
+        "y": 111055.92692307691
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "AZ"
+    ],
+    "notes": "Static through connection from I-10 · Southern coast-to-coast to I-40 · Desert to Carolina."
+  },
+  {
+    "id": "curated-usa-dirt-ar",
+    "name": "Arkansas rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 132868.23428571434,
+        "y": 111289.74230769232
+      },
+      {
+        "x": 132964.35395604398,
+        "y": 111564.49035824176
+      },
+      {
+        "x": 133159.70251648355,
+        "y": 111885.13612087912
+      },
+      {
+        "x": 133395.36857142858,
+        "y": 112065
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "AR"
+    ],
+    "notes": "Static through connection from I-40 · Desert to Carolina to Arkansas delta two-lane."
+  },
+  {
+    "id": "curated-usa-dirt-ca",
+    "name": "California rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 84050.84678571428,
+        "y": 105754.95288461537
+      },
+      {
+        "x": 84100.03255219781,
+        "y": 104687.0325370879
+      },
+      {
+        "x": 83874.04769917583,
+        "y": 103326.68041895604
+      },
+      {
+        "x": 83317.67357142858,
+        "y": 102390.73125
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "CA"
+    ],
+    "notes": "Static through connection from I-5 · Pacific spine to I-80 · Bay Area to New York."
+  },
+  {
+    "id": "curated-usa-dirt-co",
+    "name": "Colorado rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 111656.50285714287,
+        "y": 101196.92307692306
+      },
+      {
+        "x": 111868.4960934066,
+        "y": 100873.20758736262
+      },
+      {
+        "x": 112048.59749175826,
+        "y": 100407.69277747252
+      },
+      {
+        "x": 112047.5892857143,
+        "y": 100013.58173076922
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "CO"
+    ],
+    "notes": "Static through connection from I-25 · Front Range to I-70 · Rockies to Pennsylvania."
+  },
+  {
+    "id": "curated-usa-dirt-ct",
+    "name": "Connecticut rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 166783.92857142855,
+        "y": 95557.21153846155
+      },
+      {
+        "x": 167164.71428571426,
+        "y": 95562.3543956044
+      },
+      {
+        "x": 167646.42857142858,
+        "y": 95466.14010989013
+      },
+      {
+        "x": 167973.2142857143,
+        "y": 95257.21153846155
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "CT"
+    ],
+    "notes": "Static through connection from I-95 · Atlantic spine to Rhode Island two-lane."
+  },
+  {
+    "id": "curated-usa-dirt-de",
+    "name": "Delaware rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 161741.44285714283,
+        "y": 101192.5846153846
+      },
+      {
+        "x": 162032.1171428571,
+        "y": 101292.14703296703
+      },
+      {
+        "x": 162100.69499999998,
+        "y": 101446.86379120876
+      },
+      {
+        "x": 161966.41071428568,
+        "y": 101629.08984890107
+      },
+      {
+        "x": 161723.65714285712,
+        "y": 101757.04615384612
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "DE"
+    ],
+    "notes": "Two shared endpoints on Delaware inland two-lane; static state-contained geometry."
+  },
+  {
+    "id": "curated-usa-dirt-fl",
+    "name": "Florida rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 150813.94285714286,
+        "y": 125306.03076923077
+      },
+      {
+        "x": 151317.72553846153,
+        "y": 125266.73417142857
+      },
+      {
+        "x": 151942.60378021977,
+        "y": 125081.290021978
+      },
+      {
+        "x": 152349.12,
+        "y": 124765.66153846151
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "FL"
+    ],
+    "notes": "Static through connection from I-75 · Florida to Michigan to I-95 · Atlantic spine."
+  },
+  {
+    "id": "curated-usa-dirt-ga",
+    "name": "Georgia rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 148149.16285714286,
+        "y": 116130.04615384615
+      },
+      {
+        "x": 148170.1853076923,
+        "y": 115161.43652142858
+      },
+      {
+        "x": 147935.45999175825,
+        "y": 113933.95192582419
+      },
+      {
+        "x": 147410.76,
+        "y": 113098.25480769231
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "GA"
+    ],
+    "notes": "Static through connection from I-75 · Florida to Michigan to I-85 · Piedmont connector."
+  },
+  {
+    "id": "curated-usa-dirt-id",
+    "name": "Idaho rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 95339.22857142858,
+        "y": 92157.62307692306
+      },
+      {
+        "x": 96358.69263461539,
+        "y": 91983.87060494506
+      },
+      {
+        "x": 97691.51830219779,
+        "y": 92039.65654945055
+      },
+      {
+        "x": 98656.02749999998,
+        "y": 92462.92788461539
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "ID"
+    ],
+    "notes": "Static through connection from Oregon–Idaho two-lane to I-15 · Desert and mountain spine."
+  },
+  {
+    "id": "curated-usa-dirt-il",
+    "name": "Illinois rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 138277.49999999994,
+        "y": 98910.57692307692
+      },
+      {
+        "x": 138195.4397307692,
+        "y": 99768.79686346154
+      },
+      {
+        "x": 137860.45791346152,
+        "y": 100829.23231730767
+      },
+      {
+        "x": 137309.91,
+        "y": 101513.2860576923
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "IL"
+    ],
+    "notes": "Static through connection from I-55 · Mississippi valley to I-64 · Ohio valley to Virginia."
+  },
+  {
+    "id": "curated-usa-dirt-in",
+    "name": "Indiana rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 143535.98249999998,
+        "y": 99815.55432692305
+      },
+      {
+        "x": 143595.17110714284,
+        "y": 100229.87965549449
+      },
+      {
+        "x": 143781.57974999998,
+        "y": 100736.55036263734
+      },
+      {
+        "x": 144064.01785714284,
+        "y": 101055.82932692306
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "IN"
+    ],
+    "notes": "Static through connection from I-70 · Rockies to Pennsylvania to I-65 · Gulf to Indiana."
+  },
+  {
+    "id": "curated-usa-dirt-ia",
+    "name": "Iowa rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 131150.92285714284,
+        "y": 94432.67307692308
+      },
+      {
+        "x": 131321.91138461538,
+        "y": 94730.0005978022
+      },
+      {
+        "x": 131457.4060879121,
+        "y": 95151.16997802198
+      },
+      {
+        "x": 131436.30000000002,
+        "y": 95499.86538461539
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "IA"
+    ],
+    "notes": "Static through connection from I-35 · Texas to Minnesota to I-80 · Bay Area to New York."
+  },
+  {
+    "id": "curated-usa-dirt-ks",
+    "name": "Kansas rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 122807.83500000002,
+        "y": 101960.6798076923
+      },
+      {
+        "x": 123194.32692857145,
+        "y": 101708.16087197802
+      },
+      {
+        "x": 123613.74525,
+        "y": 101285.39020054945
+      },
+      {
+        "x": 123801.05142857143,
+        "y": 100854.0923076923
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "KS"
+    ],
+    "notes": "Static through connection from I-70 · Rockies to Pennsylvania to Central plains two-lane."
+  },
+  {
+    "id": "curated-usa-dirt-ky",
+    "name": "Kentucky rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 144018.37714285712,
+        "y": 104395.2
+      },
+      {
+        "x": 144361.4579340659,
+        "y": 104149.43651868131
+      },
+      {
+        "x": 144727.938989011,
+        "y": 103746.89564835164
+      },
+      {
+        "x": 144882.10285714283,
+        "y": 103345.66153846153
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "KY"
+    ],
+    "notes": "Static through connection from I-65 · Gulf to Indiana to I-64 · Ohio valley to Virginia."
+  },
+  {
+    "id": "curated-usa-dirt-la",
+    "name": "Louisiana rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 133991.04428571428,
+        "y": 121363.52884615384
+      },
+      {
+        "x": 134764.3687335165,
+        "y": 121035.77176648352
+      },
+      {
+        "x": 135828.2477472527,
+        "y": 120830.90843406595
+      },
+      {
+        "x": 136669.65321428567,
+        "y": 120985.30096153847
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "LA"
+    ],
+    "notes": "Static through connection from I-10 · Southern coast-to-coast to I-55 · Mississippi valley."
+  },
+  {
+    "id": "curated-usa-dirt-me",
+    "name": "Maine rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 174095.7214285714,
+        "y": 87191.40865384617
+      },
+      {
+        "x": 174530.85731868132,
+        "y": 87077.78428021981
+      },
+      {
+        "x": 174699.40884478024,
+        "y": 86766.50804258243
+      },
+      {
+        "x": 174612.98046428573,
+        "y": 86324.27062912089
+      },
+      {
+        "x": 174355.58035714287,
+        "y": 85961.53846153845
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "ME"
+    ],
+    "notes": "Two shared endpoints on Atlantic–Maine–Vermont highway loop; static state-contained geometry."
+  },
+  {
+    "id": "curated-usa-dirt-md",
+    "name": "Maryland rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 159558.12107142858,
+        "y": 101310.45432692306
+      },
+      {
+        "x": 159813.96653571428,
+        "y": 101370.39540906592
+      },
+      {
+        "x": 160152.85944642854,
+        "y": 101377.00177335164
+      },
+      {
+        "x": 160404.06428571424,
+        "y": 101284.67307692309
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "MD"
+    ],
+    "notes": "Static through connection from I-95 · Atlantic spine to Delaware inland two-lane."
+  },
+  {
+    "id": "curated-usa-dirt-ma",
+    "name": "Massachusetts rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 168460.24285714285,
+        "y": 94063.99615384616
+      },
+      {
+        "x": 168717.46096153845,
+        "y": 93785.72446318682
+      },
+      {
+        "x": 169116.97118406594,
+        "y": 93504.08372802199
+      },
+      {
+        "x": 169491.64500000002,
+        "y": 93411.46442307693
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "MA"
+    ],
+    "notes": "Static through connection from I-90 · Great Lakes to Boston to Atlantic–Maine–Vermont highway loop."
+  },
+  {
+    "id": "curated-usa-dirt-mi",
+    "name": "Michigan rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 147867.2228571429,
+        "y": 91208.53846153845
+      },
+      {
+        "x": 147815.43032967034,
+        "y": 92247.63758241758
+      },
+      {
+        "x": 148030.3536263736,
+        "y": 93572.33736263738
+      },
+      {
+        "x": 148568.3657142857,
+        "y": 94485.2307692308
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "MI"
+    ],
+    "notes": "Static through connection from Michigan inland two-lane loop to I-75 · Florida to Michigan."
+  },
+  {
+    "id": "curated-usa-dirt-mn",
+    "name": "Minnesota rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 128984.39999999998,
+        "y": 87524.13461538461
+      },
+      {
+        "x": 128780.0543818681,
+        "y": 88553.72533516483
+      },
+      {
+        "x": 128799.98105769229,
+        "y": 89907.57614010989
+      },
+      {
+        "x": 129202.90178571426,
+        "y": 90897.83653846153
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "MN"
+    ],
+    "notes": "Static through connection from Northern plains two-lane to I-90 · Northern plains."
+  },
+  {
+    "id": "curated-usa-dirt-ms",
+    "name": "Mississippi rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 137096.7771428571,
+        "y": 115826.21538461538
+      },
+      {
+        "x": 137249.60123076924,
+        "y": 116142.80597142856
+      },
+      {
+        "x": 137356.9876813187,
+        "y": 116583.37486813187
+      },
+      {
+        "x": 137309.64,
+        "y": 116938.28076923077
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "MS"
+    ],
+    "notes": "Static through connection from I-55 · Mississippi valley to Gulf inland two-lane."
+  },
+  {
+    "id": "curated-usa-dirt-mo",
+    "name": "Missouri rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 133148.57142857145,
+        "y": 101653.84615384614
+      },
+      {
+        "x": 133251.95604395607,
+        "y": 102422.95384615383
+      },
+      {
+        "x": 133589.80219780223,
+        "y": 103365.23076923077
+      },
+      {
+        "x": 134108.57142857145,
+        "y": 103961.53846153845
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "MO"
+    ],
+    "notes": "Static through connection from I-70 · Rockies to Pennsylvania to I-44 · Ozark connector."
+  },
+  {
+    "id": "curated-usa-dirt-mt",
+    "name": "Montana rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 103723.71749999998,
+        "y": 82389.9216346154
+      },
+      {
+        "x": 103531.3555054945,
+        "y": 83452.68746043957
+      },
+      {
+        "x": 103575.34609615385,
+        "y": 84845.15360439561
+      },
+      {
+        "x": 104007.04392857144,
+        "y": 85856.92067307692
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "MT"
+    ],
+    "notes": "Static through connection from Northern plains two-lane to I-90 · Northern plains."
+  },
+  {
+    "id": "curated-usa-dirt-ne",
+    "name": "Nebraska rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 120125.15785714284,
+        "y": 96827.22115384616
+      },
+      {
+        "x": 120913.51359065932,
+        "y": 97191.72040137363
+      },
+      {
+        "x": 122006.26294368131,
+        "y": 97438.8766195055
+      },
+      {
+        "x": 122881.03607142856,
+        "y": 97307.31778846154
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "NE"
+    ],
+    "notes": "Static through connection from I-80 · Bay Area to New York to Central plains two-lane."
+  },
+  {
+    "id": "curated-usa-dirt-nv",
+    "name": "Nevada rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 88866.96428571428,
+        "y": 98261.71875000001
+      },
+      {
+        "x": 88254.27721978023,
+        "y": 99152.71943489012
+      },
+      {
+        "x": 87241.11575686814,
+        "y": 100111.38976236264
+      },
+      {
+        "x": 86220.84214285715,
+        "y": 100526.08846153846
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "NV"
+    ],
+    "notes": "Static through connection from I-80 · Bay Area to New York to Great Basin two-lane."
+  },
+  {
+    "id": "curated-usa-dirt-nh",
+    "name": "New Hampshire rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 169778.83928571426,
+        "y": 92589.30288461539
+      },
+      {
+        "x": 169531.72733571424,
+        "y": 92382.2927076923
+      },
+      {
+        "x": 169522.87062321426,
+        "y": 92204.9571778846
+      },
+      {
+        "x": 169723.01910133928,
+        "y": 92077.11893798075
+      },
+      {
+        "x": 170008.9317857143,
+        "y": 92043.28990384615
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "NH"
+    ],
+    "notes": "Two shared endpoints on Atlantic–Maine–Vermont highway loop; static state-contained geometry."
+  },
+  {
+    "id": "curated-usa-dirt-nj",
+    "name": "New Jersey rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 163125.94285714286,
+        "y": 98472.73846153845
+      },
+      {
+        "x": 163063.47323076922,
+        "y": 98047.4401054945
+      },
+      {
+        "x": 163099.38039560438,
+        "y": 97494.11551648352
+      },
+      {
+        "x": 163284.47999999998,
+        "y": 97097.35384615386
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "NJ"
+    ],
+    "notes": "Static through connection from I-95 · Atlantic spine to I-80 · Bay Area to New York."
+  },
+  {
+    "id": "curated-usa-dirt-nm",
+    "name": "New Mexico rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 108316.93714285715,
+        "y": 111906.64615384616
+      },
+      {
+        "x": 108572.28637087911,
+        "y": 111555.58930054946
+      },
+      {
+        "x": 108799.70325824176,
+        "y": 111043.89227472528
+      },
+      {
+        "x": 108820.25892857142,
+        "y": 110602.23750000002
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "NM"
+    ],
+    "notes": "Static through connection from I-25 · Front Range to I-40 · Desert to Carolina."
+  },
+  {
+    "id": "curated-usa-dirt-ny",
+    "name": "New York rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 162041.96357142855,
+        "y": 92279.92499999999
+      },
+      {
+        "x": 163013.84467582413,
+        "y": 92035.31495934064
+      },
+      {
+        "x": 164305.75964835164,
+        "y": 91988.88682417582
+      },
+      {
+        "x": 165269.4857142857,
+        "y": 92325.23076923077
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "NY"
+    ],
+    "notes": "Static through connection from I-90 · Great Lakes to Boston to Atlantic–Maine–Vermont highway loop."
+  },
+  {
+    "id": "curated-usa-dirt-nc",
+    "name": "North Carolina rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 156076.485,
+        "y": 108623.3625
+      },
+      {
+        "x": 156049.38377472528,
+        "y": 108326.8437412088
+      },
+      {
+        "x": 155935.2240576923,
+        "y": 107960.121239011
+      },
+      {
+        "x": 155746.07142857145,
+        "y": 107723.07692307692
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "NC"
+    ],
+    "notes": "Static through connection from I-40 · Desert to Carolina to I-85 · Piedmont connector."
+  },
+  {
+    "id": "curated-usa-dirt-nd",
+    "name": "North Dakota rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 119192.05714285716,
+        "y": 83532.63461538461
+      },
+      {
+        "x": 119995.61882640379,
+        "y": 84220.17013051725
+      },
+      {
+        "x": 121309.06524729043,
+        "y": 84346.26189391578
+      },
+      {
+        "x": 122892.38701073879,
+        "y": 83965.82664450681
+      },
+      {
+        "x": 124029.25714285715,
+        "y": 83333.53846153847
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "ND"
+    ],
+    "notes": "Two shared endpoints on Northern plains two-lane; static state-contained geometry."
+  },
+  {
+    "id": "curated-usa-dirt-oh",
+    "name": "Ohio rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 149629.80214285717,
+        "y": 99284.56298076923
+      },
+      {
+        "x": 148889.25853846155,
+        "y": 99053.4851151099
+      },
+      {
+        "x": 147892.8049409341,
+        "y": 98961.73267994505
+      },
+      {
+        "x": 147133.44,
+        "y": 99180
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "OH"
+    ],
+    "notes": "Static through connection from I-70 · Rockies to Pennsylvania to I-75 · Florida to Michigan."
+  },
+  {
+    "id": "curated-usa-dirt-ok",
+    "name": "Oklahoma rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 124226.97107142859,
+        "y": 109390.67884615384
+      },
+      {
+        "x": 123983.5065412088,
+        "y": 109437.94417912088
+      },
+      {
+        "x": 123689.14566758243,
+        "y": 109563.22988736263
+      },
+      {
+        "x": 123508.52571428573,
+        "y": 109739.81538461539
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "OK"
+    ],
+    "notes": "Static through connection from I-35 · Texas to Minnesota to I-40 · Desert to Carolina."
+  },
+  {
+    "id": "curated-usa-dirt-or",
+    "name": "Oregon rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 83982.10285714283,
+        "y": 89827.26923076923
+      },
+      {
+        "x": 82991.03505494502,
+        "y": 89428.15796043957
+      },
+      {
+        "x": 81633.24731868131,
+        "y": 89192.01514285716
+      },
+      {
+        "x": 80566.65428571428,
+        "y": 89407.68461538463
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "OR"
+    ],
+    "notes": "Static through connection from Oregon–Idaho two-lane to I-5 · Pacific spine."
+  },
+  {
+    "id": "curated-usa-dirt-pa",
+    "name": "Pennsylvania rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 158144.91857142857,
+        "y": 96847.14086538459
+      },
+      {
+        "x": 158128.17960989012,
+        "y": 97483.86552115383
+      },
+      {
+        "x": 158278.7956195055,
+        "y": 98291.55152884613
+      },
+      {
+        "x": 158621.22857142857,
+        "y": 98842.54038461538
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "PA"
+    ],
+    "notes": "Static through connection from I-80 · Bay Area to New York to I-70 · Rockies to Pennsylvania."
+  },
+  {
+    "id": "curated-usa-dirt-ri",
+    "name": "Rhode Island rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 168833.57142857145,
+        "y": 95344.67307692306
+      },
+      {
+        "x": 168593.8842857143,
+        "y": 95245.79571428569
+      },
+      {
+        "x": 168544.1153571429,
+        "y": 95111.93695054945
+      },
+      {
+        "x": 168666.63562500002,
+        "y": 94965.3881043956
+      },
+      {
+        "x": 168877.71428571432,
+        "y": 94870.15384615386
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "RI"
+    ],
+    "notes": "Two shared endpoints on Rhode Island two-lane; static state-contained geometry."
+  },
+  {
+    "id": "curated-usa-dirt-sc",
+    "name": "South Carolina rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 153687.41785714286,
+        "y": 113694.5783653846
+      },
+      {
+        "x": 153027.37216483516,
+        "y": 112839.16199423077
+      },
+      {
+        "x": 152425.49736675824,
+        "y": 111582.10993269231
+      },
+      {
+        "x": 152343.22285714283,
+        "y": 110484.73846153848
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "SC"
+    ],
+    "notes": "Static through connection from I-95 · Atlantic spine to I-85 · Piedmont connector."
+  },
+  {
+    "id": "curated-usa-dirt-sd",
+    "name": "South Dakota rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 119548.125,
+        "y": 90497.95673076923
+      },
+      {
+        "x": 120066.74164615384,
+        "y": 91212.22036153846
+      },
+      {
+        "x": 121044.78530769229,
+        "y": 91484.31178846153
+      },
+      {
+        "x": 122293.35052499997,
+        "y": 91334.47452692308
+      },
+      {
+        "x": 123236.77499999997,
+        "y": 90904.58942307692
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "SD"
+    ],
+    "notes": "Two shared endpoints on I-90 · Northern plains; static state-contained geometry."
+  },
+  {
+    "id": "curated-usa-dirt-tn",
+    "name": "Tennessee rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 143401.96285714285,
+        "y": 108031.34999999999
+      },
+      {
+        "x": 143255.83117582416,
+        "y": 107827.5115978022
+      },
+      {
+        "x": 143016.5219340659,
+        "y": 107609.80074725274
+      },
+      {
+        "x": 142778.0357142857,
+        "y": 107518.26923076922
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "TN"
+    ],
+    "notes": "Static through connection from I-40 · Desert to Carolina to I-65 · Gulf to Indiana."
+  },
+  {
+    "id": "curated-usa-dirt-tx",
+    "name": "Texas rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 120111.77142857143,
+        "y": 121507.93846153846
+      },
+      {
+        "x": 121047.68407417582,
+        "y": 121881.4654021978
+      },
+      {
+        "x": 122127.51060164835,
+        "y": 122605.06088736263
+      },
+      {
+        "x": 122714.38178571427,
+        "y": 123447.05769230769
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "TX"
+    ],
+    "notes": "Static through connection from I-10 · Southern coast-to-coast to I-35 · Texas to Minnesota."
+  },
+  {
+    "id": "curated-usa-dirt-ut",
+    "name": "Utah rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 99335.35714285716,
+        "y": 100440.86538461539
+      },
+      {
+        "x": 99026.0326813187,
+        "y": 99599.23555384616
+      },
+      {
+        "x": 98862.84306593407,
+        "y": 98454.16684615385
+      },
+      {
+        "x": 99071.17714285714,
+        "y": 97564.98461538462
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "UT"
+    ],
+    "notes": "Static through connection from I-15 · Desert and mountain spine to I-80 · Bay Area to New York."
+  },
+  {
+    "id": "curated-usa-dirt-vt",
+    "name": "Vermont rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 166031.9625,
+        "y": 89636.28605769231
+      },
+      {
+        "x": 165721.4565659341,
+        "y": 89718.83188186813
+      },
+      {
+        "x": 165602.02347527473,
+        "y": 89941.74117445055
+      },
+      {
+        "x": 165665.16267857145,
+        "y": 90257.40622252747
+      },
+      {
+        "x": 165850.19464285715,
+        "y": 90515.73317307692
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "VT"
+    ],
+    "notes": "Two shared endpoints on Atlantic–Maine–Vermont highway loop; static state-contained geometry."
+  },
+  {
+    "id": "curated-usa-dirt-va",
+    "name": "Virginia rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 155299.61142857146,
+        "y": 104468.12307692308
+      },
+      {
+        "x": 155031.00685714287,
+        "y": 104462.72736263736
+      },
+      {
+        "x": 154693.6414285714,
+        "y": 104383.47593406595
+      },
+      {
+        "x": 154468.18285714282,
+        "y": 104228.42307692308
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "VA"
+    ],
+    "notes": "Static through connection from I-81 · Appalachian connector to I-64 · Ohio valley to Virginia."
+  },
+  {
+    "id": "curated-usa-dirt-wa",
+    "name": "Washington rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 84771.42857142858,
+        "y": 83123.07692307692
+      },
+      {
+        "x": 83732.69648076923,
+        "y": 83372.01464917582
+      },
+      {
+        "x": 82355.28773489011,
+        "y": 83405.87142445055
+      },
+      {
+        "x": 81332.27249999999,
+        "y": 83035.7610576923
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "WA"
+    ],
+    "notes": "Static through connection from I-90 · Northern plains to I-5 · Pacific spine."
+  },
+  {
+    "id": "curated-usa-dirt-wv",
+    "name": "West Virginia rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 152192.77714285714,
+        "y": 103552.8
+      },
+      {
+        "x": 152204.73283516485,
+        "y": 104190.50215384614
+      },
+      {
+        "x": 152577.83775824177,
+        "y": 104526.39253846154
+      },
+      {
+        "x": 153216.28714285715,
+        "y": 104554.29323076922
+      },
+      {
+        "x": 153801.97714285713,
+        "y": 104320.03846153847
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "WV"
+    ],
+    "notes": "Two shared endpoints on I-64 · Ohio valley to Virginia; static state-contained geometry."
+  },
+  {
+    "id": "curated-usa-dirt-wi",
+    "name": "Wisconsin rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 135962.88857142857,
+        "y": 90855.70384615385
+      },
+      {
+        "x": 136089.13577142858,
+        "y": 91450.87888615383
+      },
+      {
+        "x": 136628.66177142857,
+        "y": 91896.47614615384
+      },
+      {
+        "x": 137456.84462142855,
+        "y": 92152.26706615384
+      },
+      {
+        "x": 138171.42857142855,
+        "y": 92146.15384615384
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "WI"
+    ],
+    "notes": "Two shared endpoints on I-90 · Northern plains; static state-contained geometry."
+  },
+  {
+    "id": "curated-usa-dirt-wy",
+    "name": "Wyoming rural dirt connection",
+    "roadClass": "dirt_road",
+    "width": 18,
+    "points": [
+      {
+        "x": 108876.61714285715,
+        "y": 91753.47692307692
+      },
+      {
+        "x": 109390.7920879121,
+        "y": 91024.59196483517
+      },
+      {
+        "x": 109842.79068131867,
+        "y": 89966.49072527472
+      },
+      {
+        "x": 109871.86285714284,
+        "y": 89058.46153846155
+      }
+    ],
+    "source": "manual_editor",
+    "locked": false,
+    "visible": true,
+    "tags": [
+      "state-dirt",
+      "WY"
+    ],
+    "notes": "Static through connection from I-25 · Front Range to I-90 · Northern plains."
+  }
+]
