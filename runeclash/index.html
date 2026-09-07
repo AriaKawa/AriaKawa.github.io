@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Runeclash Tactics — Aria Kawa</title>
+<meta name="description" content="An original fantasy army autobattler built in Godot. Recruit eight unit types, deploy your formation, and break the enemy commander.">
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#09111b;color:#e5e9ed;font:14px system-ui,sans-serif}nav{height:38px;display:flex;align-items:center;gap:20px;padding:0 20px;background:#111d29;border-bottom:1px solid #31404d}nav a{color:#d9c08c;text-decoration:none}nav span{margin-left:auto;color:#8d9aa9}nav button{background:none;border:0;color:#72d9c2;cursor:pointer;font:inherit}#game{position:relative;width:100%;height:calc(100% - 38px)}canvas{display:block;width:100%;height:100%;outline:none}#loading{position:absolute;inset:0;display:grid;place-content:center;text-align:center;background:#09111b;padding:30px}h1{letter-spacing:.15em;color:#dfc087;font-size:36px}p{color:#94a6b5;line-height:1.6}progress{width:280px;max-width:100%;margin:20px auto;accent-color:#72d9c2}#error{color:#f08083;max-width:620px;white-space:pre-wrap}@media(max-width:700px){nav span{display:none}nav{font-size:12px;padding:0 10px;gap:14px}}
+</style></head><body>
+<nav><a href="../games.html">← All games</a><a href="../runeclash-godot/README.md" target="_blank">How to play & source</a><span>Runeclash Tactics · Godot fantasy autobattler</span><button id="fullscreen">Fullscreen</button></nav>
+<main id="game"><canvas id="canvas" aria-label="Runeclash Tactics game. Choose a shop card, then click a blue deployment tile." tabindex="0">Your browser needs WebGL 2 to play Runeclash.</canvas><div id="loading"><h1>RUNECLASH</h1><p>Summoning the war council…</p><progress id="progress"></progress><p id="error">First load downloads the Godot engine. Desktop / landscape recommended.</p></div></main>
+<script src="index.js"></script><script>
+const config={"args":[],"canvasResizePolicy":0,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":25564,"index.wasm":39509339},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
+const engine=new Engine(config);
+const canvas=document.getElementById('canvas');
+function resizeGame(){const area=document.getElementById('game');canvas.width=area.clientWidth;canvas.height=area.clientHeight;}
+resizeGame();window.addEventListener('resize',resizeGame);document.addEventListener('fullscreenchange',resizeGame);
+document.getElementById('fullscreen').onclick=()=>document.getElementById('game').requestFullscreen().catch(()=>{});
+engine.startGame({canvas:document.getElementById('canvas'),onProgress:(current,total)=>{const p=document.getElementById('progress');if(total>0){p.max=total;p.value=current;}}}).then(()=>{document.getElementById('loading').remove();document.getElementById('canvas').focus();}).catch(error=>{document.getElementById('error').textContent='Unable to start Runeclash. Enable WebGL 2 in a current browser, then reload.\n'+error.message;document.getElementById('progress').remove();});
+</script></body></html>
