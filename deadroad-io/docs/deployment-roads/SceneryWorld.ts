@@ -67,7 +67,7 @@ function generate(left: number, right: number, top: number, bottom: number, road
 /** Stable cached world data, independent of camera visibility and moving bases. */
 export class SceneryWorld {
  private chunks = new Map<string, SceneryProp[]>();
- constructor(private roads: Vec2[][], private sites: ScenerySite[], private isLand: (p: Vec2) => boolean) {}
+ constructor(private roads: Vec2[][], private sites: ScenerySite[], private isLand: (p: Vec2) => boolean, private roadWidths: number[] = []) {}
  query(left: number, top: number, right: number, bottom: number): SceneryProp[] {
   const found = new Map<string, SceneryProp>(), chunk = 1280;
   for (let y = Math.floor((top-400)/chunk); y <= Math.floor((bottom+400)/chunk); y++) for (let x = Math.floor((left-400)/chunk); x <= Math.floor((right+400)/chunk); x++) {
@@ -145,12 +145,42 @@ export class SceneryWorld {
   candidates.sort((a,b)=>Math.hypot(a.join.x-end.x,a.join.y-end.y)-Math.hypot(b.join.x-end.x,b.join.y-end.y));
   for(const {approach:start} of candidates.slice(0,6)) {
    try { const route=this.smooth(this.route([start,end],radius+3),radius);
-    if(length(route)>=400*scale && length(route)<=Math.min(1000*scale,Math.hypot(start.x-end.x,start.y-end.y)*1.6)) return route;
+    if(length(route)>=400*scale && length(route)<=Math.min(1000*scale,Math.hypot(start.x-end.x,start.y-end.y)*1.6)) return this.roadsideEntry(route);
    } catch { /* Nearby roads may be separated by impassable scenery. */ }
   }
   const route=this.smooth(this.route(points,radius+3),radius);
   if(length(route)>1650*scale) throw new Error('Deployment detour too long');
-  return route;
+  return this.roadsideEntry(route);
+ }
+ /** Keep only the approach after its last exit from the existing road surface. */
+ private roadsideEntry(points: Vec2[]): Vec2[] {
+  const left=Math.min(...points.map(p=>p.x))-100, right=Math.max(...points.map(p=>p.x))+100;
+  const top=Math.min(...points.map(p=>p.y))-100, bottom=Math.max(...points.map(p=>p.y))+100;
+  const segments: {a:Vec2;b:Vec2;halfWidth:number}[]=[];
+  this.roads.forEach((road,index)=>road.slice(1).forEach((b,i)=>{
+   const a=road[i];
+   if(Math.max(a.x,b.x)>=left && Math.min(a.x,b.x)<=right && Math.max(a.y,b.y)>=top && Math.min(a.y,b.y)<=bottom)
+    segments.push({a,b,halfWidth:(this.roadWidths[index]??48)/2});
+  }));
+  const paved=(p:Vec2)=>segments.some(({a,b,halfWidth})=>{
+   const dx=b.x-a.x,dy=b.y-a.y,t=Math.max(0,Math.min(1,((p.x-a.x)*dx+(p.y-a.y)*dy)/(dx*dx+dy*dy||1)));
+   return Math.hypot(p.x-a.x-t*dx,p.y-a.y-t*dy)<halfWidth;
+  });
+  if(paved(points.at(-1)!)) throw new Error('Deployment approach ends on a road');
+  let exit:Vec2|undefined, exitIndex=0, previous=points[0], wasPaved=paved(previous);
+  for(let i=1;i<points.length;i++) {
+   const a=points[i-1],b=points[i],samples=Math.max(1,Math.ceil(Math.hypot(b.x-a.x,b.y-a.y)/4));
+   for(let j=1;j<=samples;j++) {
+    const p={x:a.x+(b.x-a.x)*j/samples,y:a.y+(b.y-a.y)*j/samples},inside=paved(p);
+    if(wasPaved && !inside) {
+     let low=previous,high=p;
+     for(let k=0;k<20;k++){const mid={x:(low.x+high.x)/2,y:(low.y+high.y)/2};if(paved(mid))low=mid;else high=mid;}
+     exit=high;exitIndex=i;
+    }
+    previous=p;wasPaved=inside;
+   }
+  }
+  return exit ? [exit,...points.slice(exitIndex)] : points;
  }
  private smooth(points: Vec2[], radius: number): Vec2[] {
   let path=points;

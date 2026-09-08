@@ -1,3 +1,4 @@
+import { planetOneAuthoredRoads } from "../game/roadEditor/PlanetOneRoadNetwork";
 import { RoadMaterialLibrary } from "../game/roadEditor/RoadMaterialLibrary";
 import { buildZombieFrames } from "../game/ZombieRig";
 import { ZOMBIE_ROSTER } from "../../../server/src/sim/zombieRoster";
@@ -446,7 +447,14 @@ export class WorldScene extends Phaser.Scene {
   private refreshViewedTerritory(camera: Phaser.Cameras.Scene2D.Camera, force = false): void { const center = theaterLatLon({ x: camera.worldView.centerX / BATTLE_WORLD_SCALE, y: camera.worldView.centerY / BATTLE_WORLD_SCALE }); const territory = earthTerritoryAt(center.lat, center.lon); const id = territory?.id ?? "americas"; if (!force && id === this.lastViewedTerritoryId) return; this.lastViewedTerritoryId = id; this.setText("tactical-sector", territory?.name ?? this.battleSeed?.entryTerritoryName ?? "Americas"); }
 
   private ensureTheaterWorld(): void {
-    if (!this.world || !this.snapshot || this.theaterWorld) return; this.theaterWorld = this.isMissouriPlanet() ? createMissouriTileWorld(this.snapshot.lots) : createEarthGlobeWorld(this.world, this.snapshot.lots); this.sceneryRoads = (this.isMissouriPlanet() ? this.theaterWorld.roads : normalGameplayHighways(this.theaterWorld.roads)).map(r => r.pointLatLon.map(p => theaterPoint(p.lat,p.lon))); this.sceneryWorld = new SceneryWorld(this.sceneryRoads,(this.theaterWorld.roadPois ?? []).map(p=>({...theaterPoint(p.lat,p.lon),id:p.id,kind:p.kind})),p=>this.sceneryLand.some(m=>this.pointInPolygon(p,m.points)));
+    if (!this.world || !this.snapshot || this.theaterWorld) return;
+    this.theaterWorld = this.isMissouriPlanet() ? createMissouriTileWorld(this.snapshot.lots) : createEarthGlobeWorld(this.world, this.snapshot.lots);
+    const roads = this.isMissouriPlanet() ? this.theaterWorld.roads : normalGameplayHighways(this.theaterWorld.roads);
+    const widths = new Map(planetOneAuthoredRoads().map(road=>[road.id,road.width]));
+    this.sceneryRoads = roads.map(r=>r.pointLatLon.map(p=>theaterPoint(p.lat,p.lon)));
+    this.sceneryWorld = new SceneryWorld(this.sceneryRoads,
+      (this.theaterWorld.roadPois ?? []).map(p=>({...theaterPoint(p.lat,p.lon),id:p.id,kind:p.kind})),
+      p=>this.sceneryLand.some(m=>this.pointInPolygon(p,m.points)),roads.map(r=>widths.get(r.id)??48));
     this.network.setScenery(this.sceneryWorld,p=>this.toTheater(p),p=>this.toSimulation(p),TACTICAL_MAP_SCALE);
     this.visibleHighwayLines = undefined; this.drawWorld(); this.refreshZoomUi();
   }
@@ -710,7 +718,7 @@ export class WorldScene extends Phaser.Scene {
       ctx.strokeStyle='#574633';ctx.lineWidth=width*1.16;ctx.stroke();
       ctx.strokeStyle=this.dirtMaterials.surface(ctx,'dirt_road',{x:0,y:0},1);ctx.lineWidth=width;ctx.stroke();
       texture.refresh();
-      cached={key,image:this.add.image(left*BATTLE_WORLD_SCALE,top*BATTLE_WORLD_SCALE,key).setOrigin(0).setDisplaySize(w*BATTLE_WORLD_SCALE,h*BATTLE_WORLD_SCALE).setDepth(.8)};
+      cached={key,image:this.add.image(left*BATTLE_WORLD_SCALE,top*BATTLE_WORLD_SCALE,key).setOrigin(0).setDisplaySize(w*BATTLE_WORLD_SCALE,h*BATTLE_WORLD_SCALE).setDepth(TACTICAL_HIGHWAY_DEPTH-.01)};
       this.dirtPathImages.set(signature,cached);
       if(this.dirtPathImages.size>4){const oldest=this.dirtPathImages.keys().next().value!;const item=this.dirtPathImages.get(oldest)!;item.image.destroy();this.textures.remove(item.key);this.dirtPathImages.delete(oldest);}
     }

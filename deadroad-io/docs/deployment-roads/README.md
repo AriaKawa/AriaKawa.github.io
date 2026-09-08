@@ -10,3 +10,5 @@ Tree trunks use a radius of 2.2% of sprite size at the stump position. The truck
 
 Validation: TypeScript/production build, validate:contracts, validate:convoy, validate:scenery. Added regression coverage for deterministic curves, full road-width obstacle clearance, nearby versus distant roads, impassable water, and close trunk passes. Local browser deployment confirmed the dirt material and no console errors. Existing vendor-script and bundle-size build warnings remain. Release: published with the deployment-road update; GitHub Pages provides the live build.
 
+
+Junction/cache correction: trim approaches at the last exit from the actual road width and draw dirt below the highway surface. Cached textured roads remain active during asynchronous camera refreshes, with 512-pixel overscan and prefetch at 256 pixels remaining. Verified asphalt priority in the local Phaser junction review, both-side shoulder geometry, and delayed-worker pan tests. Production build passes.

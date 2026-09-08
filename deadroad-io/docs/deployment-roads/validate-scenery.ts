@@ -77,7 +77,8 @@ for(let i=1;i<curved.length;i++)assert(world.clear(curved[i-1],curved[i],22));
 assert.deepEqual(curved,world.deploymentRoute([{x:0,y:0},{x:1000,y:0}],22),'deterministic curves');
 const roadWorld=new SceneryWorld([[{x:-1500,y:0},{x:1500,y:0}]],[],()=>true);
 const connected=roadWorld.deploymentRoute([{x:1000,y:300},{x:0,y:300}],22);
-assert.equal(connected[0].y,0,'nearby road connection');
+assert(Math.abs(connected[0].y-24)<.001,'road starts on the highway edge, not its center');
+assert(connected.every(p=>p.y>=24-.001),'no saved dirt centerline inside the highway');
 assert.deepEqual(connected.at(-1),{x:0,y:300});
 const farWorld=new SceneryWorld([[{x:-1500,y:-2000},{x:1500,y:-2000}]],[],()=>true);
 const unconnected=farWorld.deploymentRoute([{x:1000,y:300},{x:0,y:300}],22);
@@ -93,3 +94,8 @@ console.log('Deployment curves, bounded road connections, deterministic clearanc
 
 const flooded=new SceneryWorld([],[],p=>p.x<100 || p.x>200);
 assert.throws(()=>flooded.deploymentRoute([{x:0,y:0},{x:300,y:0}],22),/route|detour/i,'no road through impassable water');
+
+const narrowRoad=new SceneryWorld([[{x:-1500,y:0},{x:1500,y:0}]],[],()=>true,[24]);
+const southEntry=narrowRoad.deploymentRoute([{x:1000,y:-300},{x:0,y:-300}],22);
+assert(Math.abs(southEntry[0].y+12)<.001,'opposite-side entry uses the actual narrow-road width');
+assert(southEntry.every(p=>p.y<=-12+.001),'branch must stay outside asphalt after the mouth');
