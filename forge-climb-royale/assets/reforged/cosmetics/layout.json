@@ -77,6 +77,48 @@
       "frames": 6,
       "width": 192,
       "height": 32
+    },
+    {
+      "slot": "helmet",
+      "variant": "tropical",
+      "frames": 6,
+      "width": 192,
+      "height": 32
+    },
+    {
+      "slot": "shirt",
+      "variant": "tropical",
+      "frames": 6,
+      "width": 192,
+      "height": 32
+    },
+    {
+      "slot": "pants",
+      "variant": "tropical",
+      "frames": 6,
+      "width": 192,
+      "height": 32
+    },
+    {
+      "slot": "helmet",
+      "variant": "maid",
+      "frames": 6,
+      "width": 192,
+      "height": 32
+    },
+    {
+      "slot": "shirt",
+      "variant": "maid",
+      "frames": 6,
+      "width": 192,
+      "height": 32
+    },
+    {
+      "slot": "pants",
+      "variant": "maid",
+      "frames": 6,
+      "width": 192,
+      "height": 32
     }
   ]
 }
