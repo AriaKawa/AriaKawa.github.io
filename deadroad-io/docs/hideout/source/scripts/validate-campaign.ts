@@ -25,8 +25,11 @@ sim.saveCharacter();const saved=loadCampaign();const serialized=storage.get(CAMP
 assert.equal(saved.slots[0]?.run.bases[0].hp,777);assert.equal(saved.slots[0]?.run.contracts[0].queue.length,1);
 sim.dispose();const resumed=new LocalSimulation('Successor',()=>{},()=>{});const resumedState=resumed as any;
 assert.equal(resumedState.bases[0].hp,777);assert.equal(resumedState.player.scrap,800);assert.equal(resumedState.towers.length,1);assert.equal(resumedState.contracts[0].queue.length,1);
-resumedState.contracts[0].queue=[];assert(resumed.extractToHideout());c=loadCampaign();assert.equal(c.bank.xp,325);assert.equal(c.bank.scrap,550);
+resumedState.contracts[0].queue=[];resumedState.player.turretRewards=[{type:'rifle',path:'damage',tier:1}];assert(resumed.extractToHideout());c=loadCampaign();assert.equal(c.bank.xp,325);assert.equal(c.bank.scrap,550);
+assert.equal(c.stash.length,1,'extracted hardware belongs to the shared Hideout');
+c.selected=2;createCharacter(c,'Scout');assert.equal(loadCampaign().stash.length,1,'new characters share recovered loot');c.selected=0;saveCampaign(c);
 assert(resumed.extractToHideout());assert.deepEqual(loadCampaign().bank,c.bank,'repeat extraction cannot duplicate rewards');
+assert.equal(loadCampaign().stash.length,1,'repeat extraction cannot duplicate hardware');
 resumedState.player.xp=500;resumedState.player.scrap=650;resumedState.loseCharacter();c=loadCampaign();assert.equal(c.slots[0]?.status,'dead');assert.deepEqual(c.bank,{xp:425,scrap:650});
 resumed.saveCharacter();assert.equal(loadCampaign().slots[0]?.run,undefined,'dead save must not be resurrected');
 resumed.dispose();

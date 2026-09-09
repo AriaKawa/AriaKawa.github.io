@@ -332,7 +332,13 @@ export class LocalSimulation {
     const contract = this.contracts.find(c => c.baseId === base?.id);
     if (contract?.queue.length || this.zombies.some(z => z.contractId === contract?.id || z.home && base && Math.hypot(z.x-base.coreX,z.y-base.coreY)<300)) { this.notice('Clear nearby enemies and finish the horde before extraction.',true); return false; }
     this.closePlayerOperation('evacuated', 'Convoy returned to the Hideout.'); this.removeBase(false);
-    if (this.characterId) { settleCharacter(loadCampaign(), this.characterId, this.player.xp || 0, this.player.scrap, false); this.player.scrap = Math.min(250, this.player.scrap); }
+    if (this.characterId) {
+      const campaign = loadCampaign();
+      campaign.stash.push(...(this.player.turretRewards || []));
+      this.player.turretRewards = [];
+      settleCharacter(campaign, this.characterId, this.player.xp || 0, this.player.scrap, false);
+      this.player.scrap = Math.min(250, this.player.scrap);
+    }
     this.saveCharacter(); this.emit(); return true;
   }
   research(type: TowerType, path: ResearchPath): void { if (!TOWER_INFO[type] || !unlockResearch(this.player, type, path)) return this.notice('Earn more research XP, or choose an unfinished branch.', true); this.saveProgression(); this.emit(); }

@@ -1,7 +1,7 @@
 export const CAMPAIGN_KEY = 'deadroad-campaign-v1';
 export type Upgrade = 'armor' | 'turrets' | 'field' | 'salvage';
 export type Character = { id: string; name: string; status: 'alive' | 'dead'; xp: number; scrap: number; bankedXp: number; created: number; died?: number; savedAt?: number; run?: any; battleSeed?: any; obituary?: { xp: number; scrap: number } };
-export type Campaign = { version: 1; selected: number; slots: (Character | null)[]; bank: { xp: number; scrap: number }; upgrades: Record<Upgrade, number>; history: { name: string; died: number; xp: number }[] };
+export type Campaign = { version: 1; selected: number; slots: (Character | null)[]; bank: { xp: number; scrap: number }; stash: { type: string; tier: number; path: string }[]; upgrades: Record<Upgrade, number>; history: { name: string; died: number; xp: number }[] };
 export const UPGRADES: { id: Upgrade; name: string; section: string; description: string; icon: string }[] = [
   { id: 'armor', name: 'Reinforced chassis', section: 'Convoy bay', description: '+150 convoy hull per level. Applied on the next insertion.', icon: '▰' },
   { id: 'turrets', name: 'Precision fabrication', section: 'Turret workshop', description: '+10% damage per level for every newly built turret.', icon: '⌖' },
@@ -9,7 +9,7 @@ export const UPGRADES: { id: Upgrade; name: string; section: string; description
   { id: 'salvage', name: 'Recovery network', section: 'Field upgrades', description: '+5% scrap recovered on death per level. Base recovery: 25%.', icon: '◇' }
 ];
 export function loadCampaign(): Campaign {
-  const empty: Campaign = { version: 1, selected: 0, slots: [null, null, null], bank: { xp: 0, scrap: 0 }, upgrades: { armor: 0, turrets: 0, field: 0, salvage: 0 }, history: [] };
+  const empty: Campaign = { version: 1, selected: 0, slots: [null, null, null], bank: { xp: 0, scrap: 0 }, stash: [], upgrades: { armor: 0, turrets: 0, field: 0, salvage: 0 }, history: [] };
   try {
     const raw = localStorage.getItem(CAMPAIGN_KEY);
     if (!raw) {
@@ -20,7 +20,14 @@ export function loadCampaign(): Campaign {
     }
     const data = JSON.parse(raw);
     if (data.version !== 1 || !Array.isArray(data.slots) || data.slots.length !== 3) throw new Error('Unsupported save');
-    return { ...empty, ...data, upgrades: { ...empty.upgrades, ...data.upgrades } };
+    const campaign: Campaign = { ...empty, ...data, stash: data.stash || [], upgrades: { ...empty.upgrades, ...data.upgrades } };
+    for (const survivor of campaign.slots) {
+      if (survivor?.status === 'alive' && !survivor.run?.bases?.length && survivor.run?.player?.turretRewards?.length) {
+        campaign.stash.push(...survivor.run.player.turretRewards);
+        survivor.run.player.turretRewards = [];
+      }
+    }
+    return campaign;
   } catch { return empty; }
 }
 export function saveCampaign(c: Campaign): void { localStorage.setItem(CAMPAIGN_KEY, JSON.stringify(c)); }
