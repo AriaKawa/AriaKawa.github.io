@@ -1,3 +1,4 @@
+import { ambientRandom } from './AmbientPopulation';
 import { resolveUsaTerrainBiome } from './TerrainBiomeResolver';
 import { theaterLatLon } from './AmericasTheater';
 import { threatAt } from './ThreatField';
@@ -79,14 +80,20 @@ export class SceneryWorld {
   this.roads.forEach((road,r)=>road.slice(1).forEach((b,i)=>{
    const a=road[i];
    if(Math.max(a.x,b.x)<center.x-radius || Math.min(a.x,b.x)>center.x+radius || Math.max(a.y,b.y)<center.y-radius || Math.min(a.y,b.y)>center.y+radius) return;
-   const length=Math.hypot(b.x-a.x,b.y-a.y),count=Math.max(1,Math.ceil(length/180));
+   const length=Math.hypot(b.x-a.x,b.y-a.y),count=Math.max(1,Math.ceil(length/1000));
    for(let j=0;j<count;j++) {
     const id='ambient:'+r+':'+i+':'+j,t=(j+.2+propRandom(id,21)*.6)/count,side=(propRandom(id,43)-.5)*24;
+    if(ambientRandom(id,617)>.4) continue;
     const p={x:a.x+(b.x-a.x)*t-(b.y-a.y)/(length||1)*side,y:a.y+(b.y-a.y)*t+(b.x-a.x)/(length||1)*side};
-    if(Math.hypot(p.x-center.x,p.y-center.y)<=radius && this.isLand(p) && !this.blocked(p,4)) result.push({id,...p});
+    if(Math.hypot(p.x-center.x,p.y-center.y)<=radius && this.isLand(p)) result.push({id,...p});
    }
   }));
-  return result.sort((a,b)=>Math.hypot(a.x-center.x,a.y-center.y)-Math.hypot(b.x-center.x,b.y-center.y)).slice(0,48);
+  const spaced: Array<Vec2 & {id:string}> = [];
+  for(const p of result.sort((a,b)=>Math.hypot(a.x-center.x,a.y-center.y)-Math.hypot(b.x-center.x,b.y-center.y))) {
+   if(spaced.every(q=>Math.hypot(p.x-q.x,p.y-q.y)>=900)) spaced.push(p);
+   if(spaced.length===4) break;
+  }
+  return spaced;
  }
  query(left: number, top: number, right: number, bottom: number): SceneryProp[] {
   const found = new Map<string, SceneryProp>(), chunk = 1280;

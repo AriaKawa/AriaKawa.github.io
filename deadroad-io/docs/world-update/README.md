@@ -9,3 +9,10 @@ The live browser authority streams deterministic roadside walkers around the con
 Validation: TypeScript and production build; scenery and progression suites; validate-world-update.ts covers density, road spawning, chase and disengage, return home, forward/reverse high-health kills, stationary contact, and death events. Browser verified rerolls, exact confirmed route, road rollout, 42 natural roadside zombies, exactly one splat per run-over, sparse details in three biomes, and zero runtime errors.
 
 The source directory mirrors changed files under the deadroad-io source checkout. This release targets the browser-authoritative GitHub Pages game; the legacy Colyseus server is not the live site's simulation.
+
+## Sparse encounter correction
+Roadside populations now have a hard cap of four in the wider active area, with rare seeded sites at least 900 world units apart. Only husks, shamblers, crawlers and occasional runners spawn. Detection is 260 simulation units and disengagement is 600, with a 750-unit home leash. Streaming scans run every three seconds over a smaller window and no longer generate collision chunks for discarded candidates. Existing wave populations are unchanged.
+
+Terrain baking previously required a stationary camera for 120 ms; continuous driving could postpone it indefinitely. It now makes bounded progress every 150 ms even during motion, generating the central visible chunks first and retaining the one-chunk-per-frame limit.
+
+Validated production build, population/chase/run-over regression tests, type distribution and cap during travel. Browser fixture: 3 ambient zombies (previously 42), 1.1 ms spawn scan, zero collision queries from population scanning; all four terrain chunks completed under continuous camera motion, 11.8 ms p95 frame interval on the test machine, zero runtime errors.

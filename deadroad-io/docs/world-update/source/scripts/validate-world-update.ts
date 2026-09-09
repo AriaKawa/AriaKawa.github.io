@@ -5,7 +5,7 @@ import { treeRetention, propRandom } from '../client/src/game/SceneryDensity';
 class EmptyWorld extends SceneryWorld { override query(){return [];} }
 const road=new EmptyWorld([[{x:-6000,y:0},{x:6000,y:0}]],[],()=>true);
 const spawns=road.roadsideSpawns({x:0,y:0},2600);
-assert(spawns.length>10 && spawns.length<=48);
+assert(spawns.length>0 && spawns.length<=4);
 assert.deepEqual(spawns,road.roadsideSpawns({x:0,y:0},2600));
 assert(spawns.every(p=>Math.abs(p.y)<=12));
 assert.equal(treeRetention(2),1); assert.equal(treeRetention(9),.7);
@@ -25,3 +25,14 @@ const parked={...victim,id:'ambient:parked',x:base.coreX,hp:999};s.zombies=[park
 
 console.log('World validation passed: deterministic road populations, 30% thinning, chase/disengage/return, high-HP run-over, reverse, guaranteed splats, parked contact.');
 
+
+import { ambientType } from '../client/src/game/AmbientPopulation';
+const lesserTypes=new Set(Array.from({length:100},(_,i)=>ambientType('ambient:0:0:'+i)));
+assert.deepEqual([...lesserTypes].sort(),['crawler','runner','shambler','walker']);
+for(const a of spawns) for(const b of spawns) if(a!==b) assert(Math.hypot(a.x-b.x,a.y-b.y)>=900,'ambient spawn sites stay far apart');
+let collisionQueries=0;road.query=()=>{collisionQueries++;return [];};
+road.roadsideSpawns({x:0,y:0},2600);assert.equal(collisionQueries,0,'population scan must not generate collision scenery');
+s.zombies=[];s.managed=false;
+for(let i=0;i<20;i++){base.coreX=i*90;s.updateAmbientPopulation(100000+i*3000);assert(s.zombies.length<=4,'streaming never accumulates more than four zombies');}
+s.managed=true;
+console.log('Sparse population checks passed: only four lesser types, wide spacing, hard cap during travel, no collision chunk generation during scans.');

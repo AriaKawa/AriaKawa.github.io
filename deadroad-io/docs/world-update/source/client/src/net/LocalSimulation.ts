@@ -1,6 +1,7 @@
 import { threatAt } from '../game/ThreatField';
 import { missionDifficulty, missionRewards, awardXp, unlockResearch, applyResearchUpgrade, enemyHealthMultiplier, enemyCountMultiplier, RESEARCH_PATHS, type ResearchPath } from '../../../server/src/sim/progression';
 import { ZOMBIE_ROSTER, planZombieWave, waveHealthScale, waveSpacingMs, waveRestMs } from "../../../server/src/sim/zombieRoster";
+import { ambientType } from '../game/AmbientPopulation';
 import { SceneryWorld } from "../game/SceneryWorld";
 import { AI_FRAME_KEYS, emptyAiFrame, type AiFrame, type AiReference, type AiRequest, type AiResponse, type AiScenery, type AiViewport } from './AiSimulationProtocol';
 import { earthTerritoryAt } from "../globe/EarthTerritories";
@@ -491,26 +492,31 @@ export class LocalSimulation {
 
   private updateAmbientPopulation(now: number): void {
     if(this.managed || !this.scenery || now<this.nextAmbientScan) return;
-    this.nextAmbientScan=now+1000;
+    this.nextAmbientScan=now+3000;
     const base=this.bases.find(b=>b.id===this.player.baseId);
     if(!base) {this.zombies=this.zombies.filter(z=>!z.home);return;}
     const center={x:base.coreX,y:base.coreY};
-    this.zombies=this.zombies.filter(z=>!z.home || Math.hypot(z.x-center.x,z.y-center.y)<3200);
+    this.zombies=this.zombies.filter(z=>!z.home || Math.hypot(z.x-center.x,z.y-center.y)<1800);
     for(const [id,until] of this.ambientDefeated) if(now>=until) this.ambientDefeated.delete(id);
     const existing=new Set(this.zombies.map(z=>z.id));
-    for(const spawn of this.scenery.roadsideSpawns(this.projectScenery(center),2600*this.sceneryScale)) {
+    let population=this.zombies.filter(z=>z.home).length;
+    if(population>=4) return;
+    for(const spawn of this.scenery.roadsideSpawns(this.projectScenery(center),1400*this.sceneryScale)) {
       if(existing.has(spawn.id) || this.ambientDefeated.has(spawn.id)) continue;
       const p=this.unprojectScenery(spawn);
       if(Math.hypot(p.x-center.x,p.y-center.y)<300) continue;
-      const stats=ZOMBIE_INFO.walker;
-      this.zombies.push({id:spawn.id,contractId:'ambient',territoryId:base.territoryId,type:'walker',...p,hp:stats.hp,maxHp:stats.hp,speed:stats.speed,routeIndex:0,alive:true,reachedCore:false,routePoints:[],home:{...p}});
+      if(this.zombies.some(z=>z.home && Math.hypot(z.home.x-p.x,z.home.y-p.y)<600) || this.sceneryBlocked(p,18)) continue;
+      const type=ambientType(spawn.id);
+      const stats=ZOMBIE_INFO[type];
+      this.zombies.push({id:spawn.id,contractId:'ambient',territoryId:base.territoryId,type,...p,hp:stats.hp,maxHp:stats.hp,speed:stats.speed,routeIndex:0,alive:true,reachedCore:false,routePoints:[],home:{...p}});
+      if(++population>=4) break;
     }
   }
   private moveAmbient(zombie: InternalZombie, dt: number, now: number): void {
     const base=this.bases.find(b=>b.id===this.player.baseId); if(!base) return;
     const distance=Math.hypot(zombie.x-base.coreX,zombie.y-base.coreY);
-    if(distance<420) zombie.chasing=true;
-    if(distance>850 || Math.hypot(zombie.x-zombie.home!.x,zombie.y-zombie.home!.y)>1100) zombie.chasing=false;
+    if(distance<260) zombie.chasing=true;
+    if(distance>600 || Math.hypot(zombie.x-zombie.home!.x,zombie.y-zombie.home!.y)>750) zombie.chasing=false;
     const target=zombie.chasing?{x:base.coreX,y:base.coreY}:zombie.home!;
     const dx=target.x-zombie.x,dy=target.y-zombie.y,d=Math.hypot(dx,dy);
     if(zombie.chasing && d<42) {
