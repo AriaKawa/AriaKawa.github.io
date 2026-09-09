@@ -1,3 +1,4 @@
+import { hideout, convoyStats } from '../game/Hideout';
 import { loadCampaign, saveCampaign, activeCharacter, settleCharacter } from '../game/Campaign';
 import { threatAt } from '../game/ThreatField';
 import { missionDifficulty, missionRewards, awardXp, unlockResearch, applyResearchUpgrade, enemyHealthMultiplier, enemyCountMultiplier, RESEARCH_PATHS, type ResearchPath } from '../../../server/src/sim/progression';
@@ -44,6 +45,8 @@ export class LocalSimulation {
   }
   private lastCampaignSave = 0;
   private onPageHide = () => this.saveCharacter();
+  private rig = {id:'warden',hull:1000,speed:1,capacity:6};
+  private permanentTurrets:Record<string,number> = {};
   private hideoutLevels = { armor: 0, turrets: 0, field: 0, salvage: 0 };
   private scenery?: SceneryWorld;
   private projectScenery: (p: Vec2) => Vec2 = p => p;
@@ -138,7 +141,7 @@ export class LocalSimulation {
     this.player = { id: this.playerId, name, scrap: 250, fuel: 100, signal: 0, protectedUntil: Date.now() + 120000, redeployCooldownUntil: 0, equipmentStash: [], equipmentBar: [...EQUIPMENT_TYPES] };
     if (!managed) {
       this.restoreWarState(); const campaign = loadCampaign(); const character = activeCharacter(campaign);
-      this.hideoutLevels = campaign.upgrades;
+      this.hideoutLevels = campaign.upgrades; this.rig = convoyStats(campaign); this.permanentTurrets = {...hideout(campaign).turrets};
       if (character?.status === 'alive') {
         this.characterId = character.id;
         this.player.xp = character.xp; this.player.scrap = character.scrap;
@@ -156,6 +159,11 @@ export class LocalSimulation {
         const stash = this.player.equipmentStash ??= []; const repair = stash.find(item => item.type === 'fieldRepairKit');
         if(repair) repair.count = Math.max(repair.count, this.hideoutLevels.field); else stash.push({type:'fieldRepairKit',count:this.hideoutLevels.field});
       }
+      if(character?.status==='alive' && !this.bases.length) {
+        const h=hideout(campaign); for(const [type,count] of Object.entries(h.supplies)){ if(!count)continue; const stash=this.player.equipmentStash??=[];const item=stash.find(i=>i.type===type);if(item)item.count+=count;else stash.push({type:type as EquipmentType,count}); } h.supplies={};
+        character.run={...(character.run||{}),player:structuredClone(this.player)};saveCampaign(campaign);
+      }
+      this.player.equipmentBar=[...EQUIPMENT_TYPES];
       window.addEventListener?.('pagehide', this.onPageHide);
     }
     this.syncSectorState();
@@ -303,7 +311,7 @@ export class LocalSimulation {
     this.world.roads = structuredClone(continentWorld.roads);
     const now = Date.now(); const baseId = `base-${this.id++}`; const operation = this.startPlayerOperation(target, baseId, reclaim, now, strategicContext); const entry = { ...target.nearbyRoadPoint };
     target.worldX = strategicContext?.worldX; target.worldY = strategicContext?.worldY;
-    this.bases.push({ id: baseId, ownerPlayerId: this.playerId, ownerName: this.player.name, isAI: false, territoryId: target.territoryId, lotId: target.id, operationId: operation.id, coreX: entry.x, coreY: entry.y, worldX: strategicContext?.worldX, worldY: strategicContext?.worldY, anchorX: target.x, anchorY: target.y, entryX: entry.x, entryY: entry.y, insertedAt: now, lastMovedAt: now, driveSpeed: 0, hp: (reclaim ? 850 : 1000) + this.hideoutLevels.armor * 150, maxHp: (reclaim ? 850 : 1000) + this.hideoutLevels.armor * 150, shieldEndsAt: 0, status: "packed", heading: 0, kind: reclaim ? "reclaim" : "command", joinable: false, squadBeaconLevel: 0, squadSlots: [] });
+    this.bases.push({ id: baseId, ownerPlayerId: this.playerId, ownerName: this.player.name, isAI: false, territoryId: target.territoryId, lotId: target.id, operationId: operation.id, coreX: entry.x, coreY: entry.y, worldX: strategicContext?.worldX, worldY: strategicContext?.worldY, anchorX: target.x, anchorY: target.y, entryX: entry.x, entryY: entry.y, insertedAt: now, lastMovedAt: now, driveSpeed: 0, hp: this.rig.hull - (reclaim ? 150 : 0) + this.hideoutLevels.armor * 150, maxHp: this.rig.hull - (reclaim ? 150 : 0) + this.hideoutLevels.armor * 150, shieldEndsAt: 0, status: "packed", heading: 0, kind: reclaim ? "reclaim" : "command", joinable: false, squadBeaconLevel: 0, squadSlots: [] });
     this.player.baseId = baseId; this.player.activeOperationId = operation.id;
     this.radio = "Convoy inserted at the sector entry point. Drive across the country and deploy on clear dry land."; this.pushFeed(`${reclaim ? "Reclaim" : "Defense"} convoy entered ${strategicContext?.regionName ?? territory.name}.`); this.notice("Convoy Entry Point — drive with WASD, coast to a stop, then deploy."); this.syncSectorState(); this.emit();
   }
@@ -408,10 +416,12 @@ export class LocalSimulation {
     if (this.sceneryBlocked(pad,pad.radius)) return this.notice("A solid object blocks this build pad.",true);
     if (base.status === "packed") return this.notice("Turrets are stowed while the convoy is mobile.", true);
     if (type === "squadBeacon" && (base.squadBeaconLevel ?? 0) > 0) return this.notice("This base already has a Squad Beacon. Upgrade the existing mast.", true);
+    if(this.towers.filter(t=>t.baseId===base.id).length>=this.rig.capacity)return this.notice('Convoy turret capacity reached. Upgrade capacity in the convoy bay.',true);
     const info = TOWER_INFO[type]; const rewardIndex = (this.player.turretRewards ?? []).findIndex(r => r.type === type); const reward = this.player.turretRewards?.[rewardIndex]; const cost = reward ? 0 : this.effectiveTowerCost(base.id, type); if (this.player.scrap < cost) return this.notice("Not enough scrap.", true);
     this.player.scrap -= cost; const towerId = `tower-${this.id++}`; pad.occupiedBy = towerId;
     const rate = TOWER_FIRE_RATE[type];
     this.towers.push({ id: towerId, ownerPlayerId: this.playerId, baseId: base.id, padId, type, x: pad.x, y: pad.y, level: 1, range: info.range, damage: info.damage * (1 + this.hideoutLevels.turrets * .1), fireRate: rate, lastFiredAt: 0 });
+    const permanent=this.permanentTurrets[type]||0;const built=this.towers[this.towers.length-1];built.damage*=1+permanent*.15;built.range*=1+permanent*.04;built.fireRate*=1+permanent*.05;
     if (reward) { const tower = this.towers[this.towers.length - 1]; tower.pathTiers = { [reward.path]: reward.tier }; tower.level = Math.min(3, reward.tier + 1); for (let i = 0; i < reward.tier; i++) applyResearchUpgrade(tower, reward.path); this.player.turretRewards!.splice(rewardIndex, 1); this.saveProgression(); }
     if (type === "squadBeacon") { base.squadBeaconLevel = 1; base.joinable = true; base.squadSlots = [{ id: `squad-slot-${this.id++}`, baseId: base.id, status: "empty", isAI: false }]; this.syncOperationSquad(base); this.radio = `${this.player.name} raised a Squad Beacon. This operation is now joinable.`; this.pushFeed(this.radio); }
     else this.radio = `${this.player.name} built a ${type === "cannon" ? "scrap cannon" : type} tower${cost < info.cost ? " with Builder support" : ""}.`;
@@ -463,7 +473,7 @@ export class LocalSimulation {
   driveBase(steering: number, throttle: number, deltaMs: number, onVisibleHighway = false): void {
     const base = this.bases.find((entry) => entry.id === this.player.baseId); if (!base || base.status !== "packed") return;
     const previousHeading = base.heading ?? 0;
-    const dt = Math.min(50, Math.max(0, deltaMs)) / 1000; const input = Math.max(-1, Math.min(1, throttle)); const fuelFactor = this.player.fuel > 0 ? 1 : .16; const targetSpeed = convoyTravelSpeed(onVisibleHighway) * fuelFactor * input;
+    const dt = Math.min(50, Math.max(0, deltaMs)) / 1000; const input = Math.max(-1, Math.min(1, throttle)); const fuelFactor = this.player.fuel > 0 ? 1 : .16; const targetSpeed = convoyTravelSpeed(onVisibleHighway) * this.rig.speed * fuelFactor * input;
     base.driveSpeed = dampConvoySpeed(base.driveSpeed ?? 0, targetSpeed, dt); const steeringDirection = Math.abs(base.driveSpeed) > .2 ? base.driveSpeed : input;
     if (Math.abs(steeringDirection) > .01) base.heading = steerConvoyHeading(base.heading ?? 0, steering, steeringDirection, dt);
     const distance = (base.driveSpeed ?? 0) * dt; if (Math.abs(distance) < .001) return;
@@ -521,6 +531,12 @@ export class LocalSimulation {
     const base = this.bases.find((entry) => entry.id === this.player.baseId); const contract = this.contracts.find((entry) => entry.baseId === base?.id);
     if (!base || base.status === "packed" || !contract) return this.notice("Deploy the command core before using field equipment.", true);
     const consume = () => { stack.count -= 1; this.player.equipmentStash = this.player.equipmentStash?.filter((entry) => entry.count > 0); };
+    if(type==='airstrike') {
+      if(!point||!Number.isFinite(point.x)||!Number.isFinite(point.y)||Math.hypot(point.x-base.coreX,point.y-base.coreY)>1800)return this.notice('Choose a target within 1,800 units of your convoy.',true);
+      for(const zombie of [...this.zombies])if(zombie.alive&&Math.hypot(zombie.x-point.x,zombie.y-point.y)<=220)this.damage(zombie,600);
+      this.placedEquipment.push({id:'strike-'+this.id++,ownerPlayerId:this.playerId,contractId:contract.id,type,x:point.x,y:point.y,placedAt:Date.now(),expiresAt:Date.now()+1500});
+      consume();this.notice('Airstrike impact — 600 area damage.');this.saveCharacter();this.emit();return;
+    }
     if (type === "fieldRepairKit") {
       if (base.hp >= base.maxHp) return this.notice("Command core integrity is already full.", true);
       base.hp = Math.min(base.maxHp, base.hp + 250); consume(); this.notice("Field Repair Kit restored 250 core integrity."); this.emit(); return;
@@ -637,7 +653,7 @@ export class LocalSimulation {
 
   private damage(zombie: InternalZombie, amount: number): void { zombie.hp -= amount; if (zombie.hp > 0) return;
     if(zombie.home) {this.ambientDefeated.set(zombie.id,Date.now()+180000);this.worldDeaths.push({id:zombie.id,x:zombie.x,y:zombie.y,at:Date.now()});}
-    const baseId = this.contracts.find((entry) => entry.id === zombie.contractId)?.baseId; const scavengerBonus = Math.min(.2, this.activeSquad(baseId, "scavenger").length * .1); this.player.scrap += Math.round(ZOMBIE_INFO[zombie.type].reward * (1 + scavengerBonus)); this.rollLootDrop(zombie); this.zombies = this.zombies.filter((entry) => entry.id !== zombie.id); }
+    const baseId = this.contracts.find((entry) => entry.id === zombie.contractId)?.baseId; const scavengerBonus = Math.min(.2, this.activeSquad(baseId, "scavenger").length * .1); this.player.scrap += Math.round(ZOMBIE_INFO[zombie.type].reward * (1 + scavengerBonus) * (this.rig.id === "scout" ? 1.2 : 1)); this.rollLootDrop(zombie); this.zombies = this.zombies.filter((entry) => entry.id !== zombie.id); }
 
   private rollLootDrop(zombie: InternalZombie): void {
     const chance = SATCHEL_DROP_CHANCE[zombie.type]; if (Math.random() > chance) return;

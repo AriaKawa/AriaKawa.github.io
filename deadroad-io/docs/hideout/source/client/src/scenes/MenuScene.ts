@@ -1,3 +1,7 @@
+import { CONVOYS,TURRETS,SUPPLY_COSTS,hideout,purchase,convoyStats } from '../game/Hideout';
+import { EQUIPMENT_INFO } from '../game/Equipment';
+import { TOWER_INFO } from '../game/constants';
+import type { EquipmentType, TowerType } from '../game/types';
 import Phaser from 'phaser';
 import { campMap } from '../ui/CampMap';
 import type { GameClient } from '../net/GameClient';
@@ -9,6 +13,8 @@ const esc = (s: string) => s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','
 export class MenuScene extends Phaser.Scene {
   private section = 'expeditions';
   private launching = false;
+  private selectedItem = '';
+  private controlsOpen = false;
   constructor() { super('MenuScene'); }
   create(): void {
     document.querySelector<HTMLElement>('#main-menu')!.hidden = false;
@@ -22,10 +28,10 @@ export class MenuScene extends Phaser.Scene {
     else document.querySelector<HTMLElement>('#campaign-panel')!.hidden = true;
   }
   private render(section = this.section): void {
-    this.section = section; const c = loadCampaign(); const ch = activeCharacter(c);
-    const p = document.querySelector<HTMLElement>('#campaign-panel')!; p.hidden = false;
+    if(section!==this.section){this.controlsOpen=false;this.selectedItem='';} this.section = section; const c = loadCampaign(); const ch = activeCharacter(c);
+    const p = document.querySelector<HTMLElement>('#campaign-panel')!; p.hidden = false; p.classList.toggle('immersive',section!=='expeditions');
     const away = c.slots.some(s => s?.status === 'alive' && s.run?.bases?.length);
-    p.innerHTML = `<header class="hideout-top"><h2>${section==='expeditions'?'JOIN THE EXPEDITION':'HIDEOUT'}</h2>${section==='expeditions'?'':`<div class="bank"><span>XP<strong>${c.bank.xp}</strong></span><span>SCRAP<strong>${c.bank.scrap}</strong></span></div>`}<button data-close aria-label="Back to menu">✕</button></header>${section==='expeditions'||section==='hideout'?'': '<nav class="hideout-nav"><button data-tab="hideout">← BASE CAMP</button></nav>'}<div class="hideout-content" id="hideout-content"></div>`;
+    p.innerHTML = `<header class="hideout-top"><h2>${section==='expeditions'?'JOIN THE EXPEDITION':''}</h2>${section==='expeditions'?'':`<div class="bank"><span>XP<strong>${c.bank.xp}</strong></span><span>SCRAP<strong>${c.bank.scrap}</strong></span></div>`}<button data-close aria-label="Back to menu">✕</button></header>${section==='expeditions'||section==='hideout'?'': '<nav class="hideout-nav"><button data-tab="hideout">← BASE CAMP</button></nav>'}<div class="hideout-content" id="hideout-content"></div>`;
     const body = p.querySelector<HTMLElement>('#hideout-content')!;
     if (section === 'expeditions') {
       body.innerHTML = `<div class="save-grid">${c.slots.map((s,i) => `<button class="save-card ${s?.status==='alive'?'occupied':'empty'}" data-slot="${i}" aria-label="${s?.status==='alive'?'Continue '+esc(s.name):'Start new character in slot '+(i+1)}">${s?.status==='alive'?`<div class="convoy-portrait"></div><h4>${esc(s.name)}</h4><p>${s.xp} XP</p><span class="slot-action">CONTINUE →</span>`:'<span class="empty-plus">+</span>'}</button>`).join('')}</div><button class="hero-secondary slots-hideout" data-tab="hideout">HIDEOUT</button>`;
@@ -37,25 +43,34 @@ export class MenuScene extends Phaser.Scene {
       });
     } else if (section === 'hideout') {
       body.innerHTML = campMap();
-    } else if (section === 'market') {
-      const rewards = c.stash;
-      body.innerHTML = `<div class="section-heading"><h3>Player market</h3></div><p class="market-status">Player trading offline</p><p>Shared salvage · 40 scrap each</p><div class="upgrade-grid">${rewards.length?rewards.map((r:any,i:number)=>`<article class="upgrade-card"><h4>${esc(String(r.type))} turret</h4><p>Tier ${Number(r.tier)} · ${esc(String(r.path))}</p><button data-sell="${i}" >SALVAGE / +40 SCRAP</button></article>`).join(''):'<div class="market-empty"><h4>No recovered hardware</h4><button data-tab="expeditions">JOIN THE EXPEDITION</button></div>'}</div>`;
-      body.querySelectorAll<HTMLButtonElement>('[data-sell]').forEach(b => b.onclick = () => { const fresh=loadCampaign(); const inventory=fresh.stash; const index=Number(b.dataset.sell); if(!inventory?.[index]) return; inventory.splice(index,1); fresh.bank.scrap+=40; saveCampaign(fresh); this.render(); });
-    } else if (section === 'manual') {
-      body.innerHTML = `<div class="manual"><small>FIELD MANUAL / 01</small><h3>Bring your people home.</h3><p>Pick one of three slots and recruit a survivor. Choose land on the war globe. Drive with WASD, deploy the convoy, and build turrets on the pads. Survive hordes to earn XP, scrap, and recovered hardware.</p><h4>Return before it is too late.</h4><p>Open the menu with Escape and choose “Extract to Hideout” between hordes. All newly earned XP and scrap above your 250 field supplies go into the shared bank. Spend both currencies in the Hideout workshops.</p><h4>One life. A lasting legacy.</h4><p>If your convoy is destroyed, that character dies permanently. You retain 50% of unbanked XP and 25% of surplus scrap, increased by recovery upgrades. Recruit a successor in the fallen slot; your Hideout and memorial remain.</p><h4>Take a break.</h4><p>“Save & return to title” pauses and saves the full expedition. Continue picks up the same run. Automatic saves happen every two seconds and when leaving the page. Saves belong to this browser; clearing site data removes them.</p></div>`;
     } else {
-      const list = UPGRADES.filter(u => section==='field'?u.id==='field'||u.id==='salvage':u.id===section);
-      body.innerHTML = `<div class="section-heading"><h3>${list[0]?.section || 'Workshop'}</h3></div><div class="upgrade-grid">${list.map(u=> {const level=c.upgrades[u.id];const cost=upgradeCost(level);return `<article class="upgrade-card"><h4>${u.name}</h4><p>${u.description}</p><div class="upgrade-levels">${[1,2,3,4,5].map(n=>`<i class="${n<=level?'filled':''}"></i>`).join('')}<span>${level} / 5</span></div><button data-upgrade="${u.id}" ${level>=5||away||c.bank.xp<cost.xp||c.bank.scrap<cost.scrap?'disabled':''}>${level>=5?'FULLY UPGRADED':`UPGRADE / ${cost.scrap} SCRAP + ${cost.xp} XP`}</button><small>${away?'EXTRACT ALL CONVOYS TO UPGRADE':level>=5?'READY FOR THE ROAD':'PAID FROM THE SHARED HIDEOUT BANK'}</small></article>`;}).join('')}</div>`;
+      const h=hideout(c);
+      const button=(kind:string,id:string,stat:string,level:number,cost:number)=>`<button data-buy="${kind}" data-id="${id}" data-stat="${stat}" ${level>=5||c.bank.scrap<cost?'disabled':''}>${level>=5?'MAX LEVEL':cost+' SCRAP · UPGRADE'}</button>`;
+      if(section==='turrets') {
+        const id=TURRETS.includes(this.selectedItem)?this.selectedItem:TURRETS[0];this.selectedItem=id;const level=h.turrets[id]||0;
+        body.innerHTML=`<h3>Turret workshop</h3><div class="item-bar">${TURRETS.map(t=>`<button data-item="${t}" class="${id===t?'selected':''}">${TOWER_INFO[t as TowerType].name}<small>LV ${h.turrets[t]||0}</small></button>`).join('')}</div><article class="upgrade-card"><h4>${TOWER_INFO[id as TowerType].name}</h4><p>Permanent fabrication · Level ${level} / 5</p><p>Each level adds 15% base damage, 4% range and 5% fire rate. Every new turret starts with these bonuses, across all survivors.</p>${button('turret',id,'',level,125*(level+1))}</article>`;
+      } else if(section==='armor') {
+        const rig=CONVOYS.find(v=>v.id===this.selectedItem)||CONVOYS.find(v=>v.id===h.convoy)||CONVOYS[0];this.selectedItem=rig.id;const u=h.convoys[rig.id]||{};
+        body.innerHTML=`<h3>Convoy bay</h3><div class="item-bar convoy-bar">${CONVOYS.map(v=>`<button data-item="${v.id}" class="${v.id===rig.id?'selected':''}">${v.name}<small>${v.id===h.convoy?'EQUIPPED':'AVAILABLE'}</small></button>`).join('')}${Array.from({length:7},(_,i)=>`<button disabled aria-label="Locked convoy ${i+4}">?<small>LOCKED</small></button>`).join('')}</div><h4>${rig.name}</h4><p>${rig.description} · ${rig.hull} base hull · 6 turret slots</p><button data-equip="${rig.id}" ${away?'disabled':''}>${rig.id===h.convoy?'EQUIPPED':'EQUIP CONVOY'}</button><p>${away?'Extract all convoys to change the equipped rig.':'Selected rig applies on your next insertion.'}</p><div class="upgrade-grid">${[['health','Hull integrity','+150 health'],['speed','Engine speed','+5% base speed'],['capacity','Turret capacity','+2 turret slots']].map(([stat,name,desc])=>`<article class="upgrade-card"><h4>${name}</h4><p>${desc} per level · ${u[stat]||0} / 5</p>${button('convoy',rig.id,stat,u[stat]||0,100*((u[stat]||0)+1))}</article>`).join('')}</div>`;
+      } else if(section==='field') {
+        body.innerHTML=`<h3>Field supply shop</h3><p>Purchased supplies travel with the next convoy you launch. Consumed on use; lost if that survivor dies.</p><div class="supply-grid">${Object.entries(SUPPLY_COSTS).map(([id,cost])=>{const info=EQUIPMENT_INFO[id as EquipmentType];return `<article class="upgrade-card"><h4>${info.name}</h4><small>${id==='airstrike'?'SHOP EXCLUSIVE · NEVER IN SALVAGE':'FIELD SUPPLY'}</small><p>${info.description}</p><p>In locker: ${h.supplies[id as EquipmentType]||0}</p><button data-buy="supply" data-id="${id}" ${c.bank.scrap<cost?'disabled':''}>BUY · ${cost} SCRAP</button></article>`;}).join('')}</div>`;
+      } else if(section==='market') body.innerHTML='<h3>Player market</h3><div class="market-empty"><h4>Trading offline</h4><p>The stalls are closed. Player listings and trades will appear here when the market opens.</p><button disabled>MARKET UNAVAILABLE</button></div>';
     }
     const interiors: Record<string, [string,string]> = { armor:['convoy-bay','Armored convoy in the garage'], turrets:['turret-workshop','Turret being serviced in the workshop'], field:['field-upgrades','Supplies inside the field tent'], market:['player-market','Salvage stalls in the player market'] };
     if (interiors[section]) {
       const [asset,alt] = interiors[section];
       const stage = document.createElement('div'); stage.className='workshop-stage';
       const art = document.createElement('img'); art.className='workshop-art'; art.src='./assets/'+asset+'.png'; art.alt=alt;
-      const controls=document.createElement('div'); controls.className='workshop-controls';
+      const controls=document.createElement('div'); controls.className='workshop-controls'; controls.hidden=!this.controlsOpen; controls.setAttribute('role','dialog'); controls.setAttribute('aria-label','Workshop controls');
+      const close=document.createElement('button');close.textContent='CLOSE ×';close.onclick=()=>{this.controlsOpen=false;controls.hidden=true;open.focus();};controls.append(close);
       while(body.firstChild) controls.append(body.firstChild);
-      stage.append(art,controls); body.append(stage);
+      const open=document.createElement('button');open.className='open-workshop';open.textContent=section==='field'?'OPEN SUPPLY SHOP':section==='market'?'OPEN MARKET':'OPEN UPGRADES';open.onclick=()=>{this.controlsOpen=true;controls.hidden=false;close.focus();};
+      controls.onkeydown=e=>{if(e.key==='Escape'){close.click();}if(e.key==='Tab'){const nodes=Array.from(controls.querySelectorAll<HTMLButtonElement>('button:not(:disabled)'));const first=nodes[0],last=nodes[nodes.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus();}}};
+      stage.append(art,open,controls); body.append(stage);
     }
+    p.querySelectorAll<HTMLButtonElement>('[data-item]').forEach(b=>b.onclick=()=>{this.selectedItem=b.dataset.item!;this.render();p.querySelector<HTMLButtonElement>('[data-item="'+this.selectedItem+'"]')?.focus();});
+    p.querySelectorAll<HTMLButtonElement>('[data-buy]').forEach(b=>b.onclick=()=>{purchase(b.dataset.buy!,b.dataset.id!,b.dataset.stat);this.render();});
+    p.querySelectorAll<HTMLButtonElement>('[data-equip]').forEach(b=>b.onclick=()=>{const fresh=loadCampaign();if(fresh.slots.some(s=>s?.run?.bases?.length))return;hideout(fresh).convoy=b.dataset.equip!;saveCampaign(fresh);this.render();});
     p.querySelector<HTMLButtonElement>('[data-close]')!.onclick = () => { p.hidden = true; this.create(); };
     p.querySelectorAll<HTMLElement>('[data-tab]').forEach(b => {
       b.onclick = () => this.render(b.dataset.tab);

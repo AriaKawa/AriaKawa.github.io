@@ -1,7 +1,8 @@
+import type { Hideout } from './Hideout';
 export const CAMPAIGN_KEY = 'deadroad-campaign-v1';
 export type Upgrade = 'armor' | 'turrets' | 'field' | 'salvage';
 export type Character = { id: string; name: string; status: 'alive' | 'dead'; xp: number; scrap: number; bankedXp: number; created: number; died?: number; savedAt?: number; run?: any; battleSeed?: any; obituary?: { xp: number; scrap: number } };
-export type Campaign = { version: 1; selected: number; slots: (Character | null)[]; bank: { xp: number; scrap: number }; stash: { type: string; tier: number; path: string }[]; upgrades: Record<Upgrade, number>; history: { name: string; died: number; xp: number }[] };
+export type Campaign = { hideout?: Hideout; version: 1; selected: number; slots: (Character | null)[]; bank: { xp: number; scrap: number }; stash: { type: string; tier: number; path: string }[]; upgrades: Record<Upgrade, number>; history: { name: string; died: number; xp: number }[] };
 export const UPGRADES: { id: Upgrade; name: string; section: string; description: string; icon: string }[] = [
   { id: 'armor', name: 'Reinforced chassis', section: 'Convoy bay', description: '+150 convoy hull per level. Applied on the next insertion.', icon: '▰' },
   { id: 'turrets', name: 'Precision fabrication', section: 'Turret workshop', description: '+10% damage per level for every newly built turret.', icon: '⌖' },

@@ -404,7 +404,7 @@ export class WorldScene extends Phaser.Scene {
 
   private selectEquipment(type: EquipmentType): void {
     const count = this.localPlayer()?.equipmentStash?.find((entry) => entry.type === type)?.count ?? 0;
-    if (!count) { this.showNotice(`${EQUIPMENT_INFO[type].name} slot is empty. Open satchels to stock it.`, true); return; }
+    if (!count) { this.showNotice(`${EQUIPMENT_INFO[type].name} slot is empty. ${type === "airstrike" ? "Buy airstrikes in the Hideout supply shop." : "Open satchels to stock it."}`, true); return; }
     if (type === "fieldRepairKit") { this.network.useEquipment(type); this.selectedEquipment = undefined; return; }
     this.selectedEquipment = this.selectedEquipment === type ? undefined : type; this.openHudPanel("none"); this.refreshEquipmentUi();
     if (this.selectedEquipment) this.showNotice(EQUIPMENT_INFO[type].useHint.replace("SELECT, THEN ", ""));
