@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { campMap } from '../ui/CampMap';
 import type { GameClient } from '../net/GameClient';
 import { playBackgroundMusic } from '../audio/BackgroundMusic';
 import { primeConvoyEngineAudio } from '../audio/ConvoyEngineAudio';
@@ -35,19 +36,31 @@ export class MenuScene extends Phaser.Scene {
         void this.begin();
       });
     } else if (section === 'hideout') {
-      body.innerHTML = `<div class="camp-map" aria-label="Base camp"><img src="./assets/hideout-camp.png" alt="A fortified base camp with a convoy garage, turret workshop, field tent and market">${[['armor','CONVOY BAY'],['turrets','TURRET WORKSHOP'],['field','FIELD UPGRADES'],['market','PLAYER MARKET']].map(([id,name])=>`<button class="camp-building camp-${id}" data-tab="${id}" aria-label="${name}"><span class="camp-highlight"></span><strong>${name}</strong></button>`).join('')}</div>`;
+      body.innerHTML = campMap();
     } else if (section === 'market') {
       const rewards = c.stash;
-      body.innerHTML = `<div class="section-heading"><div><small>THE EXCHANGE</small><h3>Player market</h3></div><p>Trade recovered hardware.<br>Give unused equipment a second life.</p></div><div class="market-status"><span>○ PLAYER TRADING OFFLINE</span><p>Online listings need a connected market server. No player listings are available in this browser edition.</p></div><h4 class="market-label">HIDEOUT SALVAGE COUNTER</h4><p>Shared recovered turrets · 40 scrap each.</p><div class="upgrade-grid">${rewards.length?rewards.map((r:any,i:number)=>`<article class="upgrade-card"><span class="upgrade-icon">⌖</span><small>RECOVERED HARDWARE</small><h4>${esc(String(r.type))} turret</h4><p>Tier ${Number(r.tier)} · ${esc(String(r.path))}</p><button data-sell="${i}" >SALVAGE / +40 SCRAP</button></article>`).join(''):'<div class="market-empty"><span>◇</span><h4>No recovered hardware</h4><p>Survive hordes to recover turrets, then bring them home.</p><button data-tab="expeditions">CHOOSE AN EXPEDITION ↗</button></div>'}</div>`;
+      body.innerHTML = `<div class="section-heading"><h3>Player market</h3></div><p class="market-status">Player trading offline</p><p>Shared salvage · 40 scrap each</p><div class="upgrade-grid">${rewards.length?rewards.map((r:any,i:number)=>`<article class="upgrade-card"><h4>${esc(String(r.type))} turret</h4><p>Tier ${Number(r.tier)} · ${esc(String(r.path))}</p><button data-sell="${i}" >SALVAGE / +40 SCRAP</button></article>`).join(''):'<div class="market-empty"><h4>No recovered hardware</h4><button data-tab="expeditions">JOIN THE EXPEDITION</button></div>'}</div>`;
       body.querySelectorAll<HTMLButtonElement>('[data-sell]').forEach(b => b.onclick = () => { const fresh=loadCampaign(); const inventory=fresh.stash; const index=Number(b.dataset.sell); if(!inventory?.[index]) return; inventory.splice(index,1); fresh.bank.scrap+=40; saveCampaign(fresh); this.render(); });
     } else if (section === 'manual') {
       body.innerHTML = `<div class="manual"><small>FIELD MANUAL / 01</small><h3>Bring your people home.</h3><p>Pick one of three slots and recruit a survivor. Choose land on the war globe. Drive with WASD, deploy the convoy, and build turrets on the pads. Survive hordes to earn XP, scrap, and recovered hardware.</p><h4>Return before it is too late.</h4><p>Open the menu with Escape and choose “Extract to Hideout” between hordes. All newly earned XP and scrap above your 250 field supplies go into the shared bank. Spend both currencies in the Hideout workshops.</p><h4>One life. A lasting legacy.</h4><p>If your convoy is destroyed, that character dies permanently. You retain 50% of unbanked XP and 25% of surplus scrap, increased by recovery upgrades. Recruit a successor in the fallen slot; your Hideout and memorial remain.</p><h4>Take a break.</h4><p>“Save & return to title” pauses and saves the full expedition. Continue picks up the same run. Automatic saves happen every two seconds and when leaving the page. Saves belong to this browser; clearing site data removes them.</p></div>`;
     } else {
       const list = UPGRADES.filter(u => section==='field'?u.id==='field'||u.id==='salvage':u.id===section);
-      body.innerHTML = `<div class="section-heading"><div><small>PERMANENT HIDEOUT RESEARCH</small><h3>${list[0]?.section || 'Workshop'}</h3></div><p>Built for the survivors who come after.<br>Upgrades apply to future equipment and insertions.</p></div><div class="upgrade-grid">${list.map(u=> {const level=c.upgrades[u.id];const cost=upgradeCost(level);return `<article class="upgrade-card"><span class="upgrade-icon">${u.icon}</span><small>${u.section.toUpperCase()}</small><h4>${u.name}</h4><p>${u.description}</p><div class="upgrade-levels">${[1,2,3,4,5].map(n=>`<i class="${n<=level?'filled':''}"></i>`).join('')}<span>${level} / 5</span></div><button data-upgrade="${u.id}" ${level>=5||away||c.bank.xp<cost.xp||c.bank.scrap<cost.scrap?'disabled':''}>${level>=5?'FULLY UPGRADED':`UPGRADE / ${cost.scrap} SCRAP + ${cost.xp} XP`}</button><small>${away?'EXTRACT ALL CONVOYS TO UPGRADE':level>=5?'READY FOR THE ROAD':'PAID FROM THE SHARED HIDEOUT BANK'}</small></article>`;}).join('')}</div>`;
+      body.innerHTML = `<div class="section-heading"><h3>${list[0]?.section || 'Workshop'}</h3></div><div class="upgrade-grid">${list.map(u=> {const level=c.upgrades[u.id];const cost=upgradeCost(level);return `<article class="upgrade-card"><h4>${u.name}</h4><p>${u.description}</p><div class="upgrade-levels">${[1,2,3,4,5].map(n=>`<i class="${n<=level?'filled':''}"></i>`).join('')}<span>${level} / 5</span></div><button data-upgrade="${u.id}" ${level>=5||away||c.bank.xp<cost.xp||c.bank.scrap<cost.scrap?'disabled':''}>${level>=5?'FULLY UPGRADED':`UPGRADE / ${cost.scrap} SCRAP + ${cost.xp} XP`}</button><small>${away?'EXTRACT ALL CONVOYS TO UPGRADE':level>=5?'READY FOR THE ROAD':'PAID FROM THE SHARED HIDEOUT BANK'}</small></article>`;}).join('')}</div>`;
+    }
+    const interiors: Record<string, [string,string]> = { armor:['convoy-bay','Armored convoy in the garage'], turrets:['turret-workshop','Turret being serviced in the workshop'], field:['field-upgrades','Supplies inside the field tent'], market:['player-market','Salvage stalls in the player market'] };
+    if (interiors[section]) {
+      const [asset,alt] = interiors[section];
+      const stage = document.createElement('div'); stage.className='workshop-stage';
+      const art = document.createElement('img'); art.className='workshop-art'; art.src='./assets/'+asset+'.png'; art.alt=alt;
+      const controls=document.createElement('div'); controls.className='workshop-controls';
+      while(body.firstChild) controls.append(body.firstChild);
+      stage.append(art,controls); body.append(stage);
     }
     p.querySelector<HTMLButtonElement>('[data-close]')!.onclick = () => { p.hidden = true; this.create(); };
-    p.querySelectorAll<HTMLButtonElement>('[data-tab]').forEach(b => b.onclick = () => this.render(b.dataset.tab));
+    p.querySelectorAll<HTMLElement>('[data-tab]').forEach(b => {
+      b.onclick = () => this.render(b.dataset.tab);
+      if(b.getAttribute('role')==='button') b.onkeydown = e => { if(e.key==='Enter'||e.key===' ') { e.preventDefault(); this.render(b.dataset.tab); } };
+    });
     p.querySelectorAll<HTMLButtonElement>('[data-upgrade]').forEach(b => b.onclick = () => { buyUpgrade(loadCampaign(), b.dataset.upgrade as Upgrade); this.render(); });
   }
   private async begin(): Promise<void> {
