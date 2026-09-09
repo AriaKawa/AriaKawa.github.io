@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "frameWidth": 32,
+  "frameHeight": 32,
+  "frames": [
+    "idle-a",
+    "idle-b",
+    "charge-start",
+    "charge-loop",
+    "jump",
+    "fall"
+  ],
+  "origin": [
+    0.5,
+    1
+  ],
+  "pieces": [
+    {
+      "slot": "helmet",
+      "variant": "original",
+      "frames": 6,
+      "width": 192,
+      "height": 32
+    },
+    {
+      "slot": "shirt",
+      "variant": "original",
+      "frames": 6,
+      "width": 192,
+      "height": 32
+    },
+    {
+      "slot": "pants",
+      "variant": "original",
+      "frames": 6,
+      "width": 192,
+      "height": 32
+    },
+    {
+      "slot": "helmet",
+      "variant": "steel",
+      "frames": 6,
+      "width": 192,
+      "height": 32
+    },
+    {
+      "slot": "shirt",
+      "variant": "steel",
+      "frames": 6,
+      "width": 192,
+      "height": 32
+    },
+    {
+      "slot": "pants",
+      "variant": "steel",
+      "frames": 6,
+      "width": 192,
+      "height": 32
+    },
+    {
+      "slot": "helmet",
+      "variant": "copper",
+      "frames": 6,
+      "width": 192,
+      "height": 32
+    },
+    {
+      "slot": "shirt",
+      "variant": "copper",
+      "frames": 6,
+      "width": 192,
+      "height": 32
+    },
+    {
+      "slot": "pants",
+      "variant": "copper",
+      "frames": 6,
+      "width": 192,
+      "height": 32
+    }
+  ]
+}
