@@ -1,0 +1,64 @@
+import assert from 'node:assert/strict';
+import { threatAt } from '../server/src/sim/threatField';
+import { commanderLevel, xpForLevel, missionDifficulty, missionRewards, enemyHealthMultiplier, unlockResearch } from '../server/src/sim/progression';
+import { LocalSimulation } from '../client/src/net/LocalSimulation';
+import { theaterPoint } from '../client/src/game/AmericasTheater';
+import { earthTerritories } from '../client/src/globe/EarthTerritories';
+import { ContinentRoom } from '../server/src/rooms/ContinentRoom';
+import { routeFromCore } from '../client/src/game/RouteRollout';
+
+const mo = earthTerritories.find(t => t.name === 'Missouri')!, il = earthTerritories.find(t => t.name === 'Illinois')!;
+assert(threatAt(mo.centerLat, mo.centerLon) > threatAt(il.centerLat, il.centerLon) + 3, 'Missouri must remain substantially harder than Illinois');
+let maxJump = 0; let previous = threatAt(38.5, -94);
+for (let lon = -93.99; lon <= -87; lon += .01) { const value = threatAt(38.5, lon); maxJump = Math.max(maxJump, Math.abs(value - previous)); previous = value; }
+assert(maxJump < .1, `No border discontinuity: largest step ${maxJump}`);
+for (let xp = 0; xp <= 100000; xp += 1000) { assert(missionDifficulty(9, xp) > missionDifficulty(2, xp) + 6); assert(commanderLevel(xp) >= 1); }
+assert.equal(commanderLevel(xpForLevel(10)), 10);
+assert(missionRewards(9).xp > missionRewards(2).xp); assert(missionRewards(9).scrap > missionRewards(2).scrap); assert(enemyHealthMultiplier(9) > enemyHealthMultiplier(2));
+const progress = { xp: 1000, researchXp: 100, research: {} }; assert(unlockResearch(progress, 'rifle', 'power')); assert.equal(progress.xp, 1000); assert.equal(progress.researchXp, 0); assert(!unlockResearch(progress, 'rifle', 'power'));
+
+const notices: string[] = []; const sim = new LocalSimulation('Progression test', () => {}, n => notices.push(n.text), true); const state = sim as any;
+const lot = state.lots.find((l: any) => l.status === 'empty'); const world = theaterPoint(mo.centerLat, mo.centerLon);
+sim.deploy(lot.id, false, { planetId: 'earth', regionId: mo.id, regionName: mo.name, centerLat: mo.centerLat, centerLon: mo.centerLon, worldX: world.x, worldY: world.y, threatLevel: mo.threat, infestation: mo.infestation, state: 'infested' });
+const base = state.bases[0]; base.coreX = lot.x; base.coreY = lot.y; base.lastMovedAt = 0;
+let preview = sim.previewDeployment(); assert(preview, 'Valid site produces a briefing');
+assert.equal(base.status, 'packed'); assert.equal(state.contracts.length, 0, 'Preview must not deploy or pay rewards');
+assert.deepEqual(sim.previewDeployment(), preview, 'Repeated previews must be deterministic');
+const originalPreview = preview; const fixedConvoy=JSON.stringify(base); preview = sim.previewDeployment(true); assert(preview);
+assert.equal(JSON.stringify(base),fixedConvoy,'Reroll cannot move or mutate the convoy');
+assert.deepEqual(preview.core,originalPreview.core,'All approaches must target the same convoy');
+state.warSectors.find((s: any) => s.regionId === mo.id).pressure += .1;
+assert.equal(sim.previewDeployment()?.stamp, preview.stamp, 'Ambient pressure drift must not invalidate an open briefing');
+assert.notDeepEqual(preview.routes, originalPreview.routes, 'Reroll must change the generated approach');
+assert.deepEqual(preview.rewards, originalPreview.rewards, 'Reroll must not change site rewards');
+sim.deployConvoy(true, originalPreview.stamp); assert.equal(base.status, 'packed', 'A reroll invalidates the previous confirmation');
+base.coreX += 1; sim.deployConvoy(true, preview.stamp); assert.equal(base.status, 'packed', 'Stale site confirmation rejected'); base.coreX -= 1; preview = sim.previewDeployment(); assert(preview);
+sim.deployConvoy(true, preview.stamp); assert.equal(base.status, 'setup', notices.join('\n'));
+const contract = state.contracts[0]; assert.equal(contract.difficulty, preview.difficulty); assert.deepEqual(contract.routes.map((r: any) => r.points), preview.routes, 'Preview route must match deployed route');
+state.player.scrap = 10000; state.player.researchXp = 10000;
+sim.build(lot.pads[0].id, 'rifle'); const tower = state.towers[0]; assert(tower);
+const damage = tower.damage; sim.upgrade(tower.id, 'power'); assert.equal(tower.damage, damage, 'Unresearched upgrades rejected');
+sim.research('rifle', 'power'); sim.upgrade(tower.id, 'power'); assert(tower.damage > damage);
+sim.research('rifle', 'reach'); sim.upgrade(tower.id, 'reach'); sim.research('rifle', 'tempo'); sim.upgrade(tower.id, 'tempo'); assert(!tower.pathTiers.tempo, 'Third branch rejected');
+sim.research('rifle', 'power'); sim.upgrade(tower.id, 'power'); sim.research('rifle', 'reach'); sim.upgrade(tower.id, 'reach'); assert.equal(tower.pathTiers.reach, 1, 'Secondary branch capped at one');
+state.player.turretRewards = [{ type: 'cannon', path: 'power', tier: 3 }]; const scrap = state.player.scrap; sim.build(lot.pads[1].id, 'cannon'); assert.equal(state.player.scrap, scrap); assert.equal(state.player.turretRewards.length, 0); assert.equal(state.towers[1].pathTiers.power, 3);
+state.startWave(contract, Date.now()); const xp = state.player.xp ?? 0; const beforeScrap = state.player.scrap; state.finishWave(contract, Date.now());
+assert.equal(state.player.xp - xp, missionRewards(contract.difficulty, contract.waveIndex).xp); assert.equal(state.player.scrap - beforeScrap, missionRewards(contract.difficulty, contract.waveIndex).scrap);
+console.log(`Progression validation passed: smooth field (max 0.01° step ${maxJump.toFixed(3)}), geographic difficulty, exact deployment preview, stale-preview rejection, research and crosspath caps, free turret consumption, wave XP and rewards.`);
+
+const room = new ContinentRoom() as any; room.resetWorld();
+const client = { sessionId: 'server-test', send: (_type: string, _data: unknown) => {} };
+const player = { id: client.sessionId, name: 'Server test', scrap: 10000, fuel: 100, signal: 0, protectedUntil: 0, redeployCooldownUntil: 0, xp: 0, researchXp: 1000, research: {}, turretRewards: [{ type: 'rifle', path: 'reach', tier: 2 }] };
+room.players.set(client.sessionId, player); const serverLot = room.lotList.find((l: any) => l.status === 'empty'); room.deploy(client, serverLot.id, 'command', { worldX: world.x, worldY: world.y });
+const serverBase = [...room.bases.values()][0] as any; serverBase.coreX = serverLot.x; serverBase.coreY = serverLot.y; serverBase.lastMovedAt = 0;
+const briefing = room.previewDeployment(client); assert(briefing); room.deployConvoy(client, true, briefing.stamp); const serverContract = [...room.contracts.values()][0] as any;
+assert.equal(serverContract.difficulty, briefing.difficulty); assert.deepEqual(serverContract.routePoints, briefing.routes[0]);
+const serverScrap = player.scrap; room.buildTower(client, serverLot.pads[0].id, 'rifle'); const serverTower = [...room.towers.values()][0] as any; assert.equal(player.scrap, serverScrap); assert.equal(serverTower.pathTiers.reach, 2); assert.equal(player.turretRewards.length, 0);
+const serverDamage = serverTower.damage; room.upgradeTower(client, serverTower.id, 'power'); assert.equal(serverTower.damage, serverDamage); assert(unlockResearch(player, 'rifle', 'power')); room.upgradeTower(client, serverTower.id, 'power'); assert(serverTower.damage > serverDamage);
+room.startWave(serverContract, Date.now()); room.finishWave(serverContract, Date.now()); assert.equal(player.xp, missionRewards(serverContract.difficulty, 1).xp);
+console.log('Authoritative server parity passed: deployment preview, geographic rating, research gating, free turret consumption and XP rewards.');
+const rolloutRoute = [{x:0,y:0},{x:100,y:0},{x:100,y:100}];
+assert.deepEqual(routeFromCore(rolloutRoute,0),[{x:100,y:100}]);
+assert.deepEqual(routeFromCore(rolloutRoute,.25),[{x:100,y:100},{x:100,y:50}]);
+assert.deepEqual(routeFromCore(rolloutRoute,1),rolloutRoute.slice().reverse());
+console.log('Route reroll and convoy-outward rollout validation passed.');
