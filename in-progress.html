@@ -8,9 +8,16 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css?v=category-city-20260519">
+    <link rel="stylesheet" href="vault-ui.css?v=20260910-pastel">
 </head>
-<body class="category-page">
-    <main class="category">
+<body class="category-page vault-ui">
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    <header class="studio-header">
+      <a class="studio-brand" href="index.html" aria-label="AriaKawa home"><span class="studio-mark" aria-hidden="true">ak</span>AriaKawa</a>
+      <nav class="studio-links" aria-label="Site navigation"><a href="games.html">Games</a><a href="education.html">Education</a><a href="other.html" aria-current="page">Other</a></nav>
+
+    </header>
+    <main class="category" id="main-content">
         <header class="category__header">
             <button class="category__back" type="button" data-back-button aria-label="Back">
                 <span aria-hidden="true">←</span>
@@ -18,38 +25,29 @@
             </button>
             <div>
                 <h1 class="category__title">In Progress</h1>
-                <p class="category__description">
-                    Preview experiments, prototypes, and other works still finding their final form.
-                </p>
+
             </div>
         </header>
 
         <section class="category__grid" aria-label="In-progress projects">
             <a class="category-card" href="AutoRogue">
                 <span class="category-card__title">AutoRogue</span>
-                <p class="category-card__description">
-                    Watch autonomous heroes battle through dungeon rooms while you tweak their builds.
-                </p>
+
             </a>
             <a class="category-card" href="Council.html">
                 <span class="category-card__title">Council of Power</span>
-                <p class="category-card__description">
-                    Explore a cinematic strategy UI mock-up that blends pie charts with city builder flair.
-                </p>
+
             </a>
             <button class="category-card" type="button" disabled>
                 <span class="category-card__title">Rhythm Reactor</span>
-                <p class="category-card__description">
-                    Coming soon — a cooperative beat lab for aspiring DJs and rhythm champions.
-                </p>
+
             </button>
             <button class="category-card" type="button" data-download-banana>
                 <span class="category-card__title">Download Banana</span>
-                <p class="category-card__description">
-                    Grab the original guild banana asset for your own experiments and memes.
-                </p>
+
             </button>
-        </section>
+
+</section>
     </main>
 
     <script>

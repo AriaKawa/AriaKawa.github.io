@@ -8,10 +8,16 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css?v=category-city-20260519">
-    <link rel="stylesheet" href="forge-climb-link.css">
+    <link rel="stylesheet" href="vault-ui.css?v=20260910-pastel">
 </head>
-<body class="category-page">
-    <main class="category">
+<body class="category-page vault-ui">
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    <header class="studio-header">
+      <a class="studio-brand" href="index.html" aria-label="AriaKawa home"><span class="studio-mark" aria-hidden="true">ak</span>AriaKawa</a>
+      <nav class="studio-links" aria-label="Site navigation"><a href="games.html" aria-current="page">Games</a><a href="education.html">Education</a><a href="other.html">Other</a></nav>
+
+    </header>
+    <main class="category" id="main-content">
         <header class="category__header">
             <button class="category__back" type="button" data-back-button aria-label="Back">
                 <span aria-hidden="true">←</span>
@@ -19,247 +25,153 @@
             </button>
             <div>
                 <h1 class="category__title">Games</h1>
-                <p class="category__description">
-                    Jump into party favorites and competitive showdowns built for friends, guildmates, and rivals alike.
-                </p>
+
             </div>
         </header>
 
         <section class="category__grid" aria-label="Playable games">
-            <a class="category-card forge-launch" href="forge-climb-royale/">
-                <span class="forge-launch__sprite" aria-hidden="true"></span>
-                <span class="forge-launch__title">Jump Royale</span>
-                <span class="forge-launch__badge">NEW</span>
-            </a>
-            <a class="category-card" href="runeclash/">
-                <span class="category-card__title">Runeclash Tactics</span>
-                <p class="category-card__description">Recruit knights, archers, mages, and monsters. Deploy your fantasy army, watch it clash, and break the enemy commander in this Godot autobattler.</p>
-            </a>
-            <a class="category-card" href="deadroad-3/">
-                <span class="category-card__title">Deadroad 3</span>
-                <p class="category-card__description">
-                    Take the original Deadroad back on the road: explore three regions, scavenge 15 locations, deploy upgradeable defenses, and reconnect the world.
-                </p>
-            </a>
+<a class="category-card category-card--featured" href="deadroad-io/"><img class="game-cover" src="assets/cards/deadroad.png" alt="" width="1536" height="1024"><span class="category-card__title">Deadroad</span></a>
+<a class="category-card category-card--featured" href="rigged/"><img class="game-cover" src="assets/cards/rigged.png" alt="" width="1536" height="1024"><span class="category-card__title">Rigged</span></a>
+
+<a class="category-card category-card--featured" href="forge-climb-royale/"><img class="game-cover" src="assets/cards/jump-royale.png" alt="" width="1536" height="1024"><span class="category-card__title">Jump Royale</span></a>
+<a class="category-card category-card--featured" href="pemdas-duel/"><img class="game-cover" src="assets/cards/mogul-math.png" alt="" width="1536" height="1024"><span class="category-card__title">Mogul Math</span></a>
+<a class="category-card category-card--featured" href="league-tracker.html"><img class="game-cover" src="assets/cards/league-tracker.png" alt="" width="1536" height="1024"><span class="category-card__title">League Tracker</span></a>
             <a class="category-card" href="game-night/">
                 <span class="category-card__title">Game Night</span>
-                <p class="category-card__description">
-                    Open a live room, add the games your crew wants, and see everyone’s colored votes converge on tonight’s pick.
-                </p>
+
             </a>
             <a class="category-card" href="riftbound-realms/">
                 <span class="category-card__title">Riftbound Realms</span>
-                <p class="category-card__description">
-                    Dive into an original arcane bullet-hell MMO-lite with six classes, realm bosses, portal dungeons, loot, inventory, bots, and persistent local runs.
-                </p>
+
             </a>
-            <a class="category-card" href="deadroad-io-2/">
-                <span class="category-card__title">Deadroad.io 2</span>
-                <p class="category-card__description">
-                    Last Light: drive a salvage convoy through three lost sectors, build five unique defenses, choose permanent upgrades, and survive nine waves to restore the final relay.
-                </p>
-            </a>
-            <a class="category-card" href="deadroad-io/">
-                <span class="category-card__title">Deadroad.io</span>
-                <p class="category-card__description">
-                    Deploy a mobile command core beside continent highways, build roadside defenses, survive zombie hordes, and reclaim overrun territory.
-                </p>
-            </a>
-            <a class="category-card" href="last-lot/">
-                <span class="category-card__title">Last Lot</span>
-                <p class="category-card__description">
-                    Hold an abandoned roadside service lot in a focused top-down survival test built with TheLazyStone's post-apocalypse pixel art.
-                </p>
-            </a>
-            <a class="category-card" href="rigged/">
-                <span class="category-card__title">Rigged</span>
-                <p class="category-card__description">
-                    Drive a weaponized wasteland rig, drift through a 3D scrapyard, loot modular car upgrades, and shred combat targets.
-                </p>
-            </a>
+<a class="category-card" href="last-lot/"><span class="category-card__title">Last Lot</span></a>
+
+
+
             <a class="category-card" href="arcforge-duel/">
                 <span class="category-card__title">Arcforge Duel</span>
-                <p class="category-card__description">
-                    Command an arcane-mech card battler with Runeterra-style board presence, minion combat, spells, shields, taunts, and a Riftsteel AI rival.
-                </p>
+
             </a>
+
             <a class="category-card" href="primal-war/">
                 <span class="category-card__title">Primal War</span>
-                <p class="category-card__description">
-                    Send Stone Age fighters across a polished side-view lane, build a rock-sling turret, and call down Stone Rain.
-                </p>
+
             </a>
             <a class="category-card" href="starwake-conquest/">
                 <span class="category-card__title">Starwake Conquest</span>
-                <p class="category-card__description">
-                    Capture planets, launch fleets, and race three rival commanders across a clean real-time sector war.
-                </p>
+
             </a>
             <a class="category-card" href="ron-io/">
                 <span class="category-card__title">Ron.io</span>
-                <p class="category-card__description">
-                    Ride a neon light cycle, collect datastreams to extend your laser, and cut rival riders with strict four-direction movement.
-                </p>
+
             </a>
             <a class="category-card" href="expansion-io-blob/">
-                <span class="category-card__title">Expansion.io Blob</span>
-                <p class="category-card__description">
-                    Command smooth Territorial-style color fields as factions expand, collide, build, and pressure the whole theater.
-                </p>
+                <span class="category-card__title">Expansion.io</span>
+
             </a>
             <a class="category-card" href="city-claim-io/">
                 <span class="category-card__title">City Claim.io</span>
-                <p class="category-card__description">
-                    Carve glowing routes, close territory loops, cut exposed rivals, and watch captured land grow into a procedural city.
-                </p>
+
             </a>
             <a class="category-card" href="kingdom-io/">
                 <span class="category-card__title">Kingdom.io</span>
-                <p class="category-card__description">
-                    Trace royal borders like a tiny .io monarch, then build farms, barracks, and watchtowers inside your pixel kingdom.
-                </p>
+
             </a>
             <a class="category-card" href="neon-arsenal/">
                 <span class="category-card__title">Neon Arsenal Arena</span>
-                <p class="category-card__description">
-                    Enter a neon multiplayer tank arena with stat builds, class evolutions, bots, bosses, shapes, and room-ready WebSocket combat.
-                </p>
+
             </a>
             <a class="category-card" href="anime-fantasy-td/">
                 <span class="category-card__title">Anime Fantasy Co-Op TD</span>
-                <p class="category-card__description">
-                    Defend twin fantasy lanes with shared lives, separate economies, elemental relic chests, and online room-code co-op.
-                </p>
+
             </a>
             <a class="category-card" href="nightbound-autobattler/">
                 <span class="category-card__title">Nightbound Auto-Battler</span>
-                <p class="category-card__description">
-                    Watch an AI survivor farm kills, draft upgrades, spend money, buy starting items, and loop until it gets stronger.
-                </p>
+
             </a>
             <a class="category-card" href="nightbound-survivors/">
                 <span class="category-card__title">Nightbound Survivors</span>
-                <p class="category-card__description">
-                    Survive a gothic-neon courtyard swarm with auto-firing weapons, XP drafts, boss waves, and persistent records.
-                </p>
+
             </a>
             <a class="category-card" href="2048-rogue/">
                 <span class="category-card__title">2048: Dungeon Shift</span>
-                <p class="category-card__description">
-                    Classic 2048 reworked as a dark roguelike run with floor rules, move pressure, relic drafts, and persistent records.
-                </p>
+
             </a>
             <a class="category-card" href="rat-royale/">
                 <span class="category-card__title">Rat Royale Casino</span>
-                <p class="category-card__description">
-                    Pick a rat, gamble twice, buy gear, and watch the table turn into a tiny arena.
-                </p>
+
             </a>
             <a class="category-card" href="isekai-reign.html">
                 <span class="category-card__title">Another World, Another Crown</span>
-                <p class="category-card__description">
-                    Swipe through isekai court dilemmas, balance guilds, nobles, mana, and the people, and survive as many days as possible.
-                </p>
+
             </a>
             <a class="category-card" href="grid-runners/">
                 <span class="category-card__title">Grid Runners: Overdrive</span>
-                <p class="category-card__description">
-                    Modern light-cycle combat with rival runners, ultimate abilities, wave pressure, and persistent rank unlocks.
-                </p>
+
             </a>
             <a class="category-card" href="neon-ouroboros/">
                 <span class="category-card__title">Neon Ouroboros</span>
-                <p class="category-card__description">
-                    A wild slither-like arena with rival trails, relic powerups, rift phases, and delicious illegal geometry.
-                </p>
+
             </a>
             <a class="category-card" href="RatRace.html">
                 <span class="category-card__title">Rat Race</span>
-                <p class="category-card__description">
-                    Bet on speedy rodents, trigger power-ups, and cheer through the ultimate critter derby.
-                </p>
+
             </a>
             <a class="category-card" href="blackjack.html">
                 <span class="category-card__title">Blackjack</span>
-                <p class="category-card__description">
-                    Face off against the dealer with crisp cards, deck customization, and quick-hit sessions.
-                </p>
+
             </a>
-            <a class="category-card" href="pemdas-duel/">
-                <span class="category-card__title">Mogul Math: PEMDAS Duel</span>
-                <p class="category-card__description">
-                    Race a friend through Firebase room-code PEMDAS rounds where the first player to five points claims the vault.
-                </p>
-            </a>
+
             <a class="category-card" href="type-off/">
                 <span class="category-card__title">Type-Off: Critical Mass</span>
-                <p class="category-card__description">
-                    Race a friend in room-code typing battles where speed and accuracy swell your character toward victory.
-                </p>
+
             </a>
             <a class="category-card" href="trolley-game.html">
                 <span class="category-card__title">Trolley Game</span>
-                <p class="category-card__description">
-                    Navigate impossible decisions in this chaotic spin on the classic moral dilemma.
-                </p>
+
             </a>
             <a class="category-card" href="thing-vs-thing.html">
                 <span class="category-card__title">Thing vs Thing</span>
-                <p class="category-card__description">
-                    Make rapid-fire comparisons, crown winners, and settle debates with friends in seconds.
-                </p>
+
             </a>
             <a class="category-card" href="rat-kingdom.html">
                 <span class="category-card__title">Rat Kingdom</span>
-                <p class="category-card__description">
-                    Recruit loyal subjects, expand your warren, and defend the throne in this royal ratventure.
-                </p>
+
             </a>
             <a class="category-card" href="grand-war.html">
                 <span class="category-card__title">Grand War</span>
-                <p class="category-card__description">
-                    Command squads across tactical lanes and unleash special abilities at just the right moment.
-                </p>
+
             </a>
             <a class="category-card" href="ForFriends.html">
                 <span class="category-card__title">Know Your Friends</span>
-                <p class="category-card__description">
-                    Put friendships to the test with quick prompts, secret answers, and lots of guessing.
-                </p>
+
             </a>
             <a class="category-card" href="newlywed.html">
                 <span class="category-card__title">Newlywed Game</span>
-                <p class="category-card__description">
-                    Pair up teammates, compare answers, and chase perfect scores in a party classic.
-                </p>
+
             </a>
             <a class="category-card" href="reaction-time.html">
                 <span class="category-card__title">Reaction Time</span>
-                <p class="category-card__description">
-                    Test your reflexes in a quick-tap challenge that tracks improvement round after round.
-                </p>
+
             </a>
             <a class="category-card" href="tapple.html">
                 <span class="category-card__title">Tapple</span>
-                <p class="category-card__description">
-                    Race the timer, lock letters, and keep the category streak alive in this fast party classic.
-                </p>
+
             </a>
             <a class="category-card" href="matthew-quiz.html">
                 <span class="category-card__title">Matthew Quiz</span>
-                <p class="category-card__description">
-                    Start Matthew Quiz instantly and jump right into room-code trivia gameplay.
-                </p>
+
             </a>
             <a class="category-card category-card--is-that-ai" href="is-that-ai/">
                 <span class="category-card__tag">New party game</span>
                 <span class="category-card__title">Is That AI?</span>
-                <p class="category-card__description">
-                    Hear ten mystery songs, vote AI or Human, and find out who can really tell the difference.
-                </p>
+
                 <span class="category-card__launch">Open game <span aria-hidden="true">&rarr;</span></span>
             </a>
-        </section>
+        <a class="category-card" href="runeclash/"><span class="category-card__title">Runeclash Tactics</span></a>
+<a class="category-card" href="deadroad-3/"><span class="category-card__title">Deadroad 3</span></a>
+<a class="category-card" href="deadroad-io-2/"><span class="category-card__title">Deadroad.io 2</span></a>
+</section>
     </main>
     <script>
         const backButton = document.querySelector('[data-back-button]');

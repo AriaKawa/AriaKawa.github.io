@@ -8,9 +8,16 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css?v=category-city-20260519">
+    <link rel="stylesheet" href="vault-ui.css?v=20260910-pastel">
 </head>
-<body class="category-page">
-    <main class="category">
+<body class="category-page vault-ui">
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    <header class="studio-header">
+      <a class="studio-brand" href="index.html" aria-label="AriaKawa home"><span class="studio-mark" aria-hidden="true">ak</span>AriaKawa</a>
+      <nav class="studio-links" aria-label="Site navigation"><a href="games.html">Games</a><a href="education.html">Education</a><a href="other.html" aria-current="page">Other</a></nav>
+
+    </header>
+    <main class="category" id="main-content">
         <header class="category__header">
             <button class="category__back" type="button" data-back-button aria-label="Back">
                 <span aria-hidden="true">&larr;</span>
@@ -18,42 +25,31 @@
             </button>
             <div>
                 <h1 class="category__title">Other</h1>
-                <p class="category__description">
-                    Misc utilities, experiments, prototypes, and works still taking shape.
-                </p>
+
             </div>
         </header>
 
         <section class="category__grid" aria-label="Other projects">
+<a class="category-card category-card--featured" href="league-tracker.html"><img class="game-cover" src="assets/cards/league-tracker.png" alt="" width="1536" height="1024"><span class="category-card__title">League Tracker</span></a>
             <a class="category-card" href="pokemon-collection/">
                 <span class="category-card__title">Pokémon Card Collection</span>
-                <p class="category-card__description">
-                    Browse a visual binder of full arts, promos, trainer galleries, and favorite Pokémon cards.
-                </p>
+
             </a>
             <a class="category-card" href="market-scout/">
                 <span class="category-card__title">Market Scout</span>
-                <p class="category-card__description">
-                    Compare Facebook Marketplace and eBay searches, auto-generate buyer keywords, score listings, and track the best deal leads.
-                </p>
+
             </a>
             <a class="category-card" href="voice-scale/">
                 <span class="category-card__title">VoiceScale</span>
-                <p class="category-card__description">
-                    Run a theatrical voice scan that analyzes pitch, energy, and resonance to make a novelty weight guess.
-                </p>
+
             </a>
             <a class="category-card" href="movie-grid.html">
                 <span class="category-card__title">Movie Grid</span>
-                <p class="category-card__description">
-                    Put your film knowledge to the test by matching performers to their cinematic achievements.
-                </p>
+
             </a>
             <a class="category-card" href="movie-recommender.html">
                 <span class="category-card__title">Movie Taste Recommender</span>
-                <p class="category-card__description">
-                    Upload IMDb or Letterboxd exports and get a ranked AI watchlist tuned to your taste.
-                </p>
+
             </a>
             <a class="category-card" href="Smash.html">
                 <span class="category-card__icon-strip" aria-hidden="true">
@@ -62,47 +58,31 @@
                     <img class="category-card__icon" src="https://akabab.github.io/smash-ultimate-api/characters/icon/link.png" alt="">
                 </span>
                 <span class="category-card__title">Smash 1v1 Picker</span>
-                <p class="category-card__description">
-                    Spin up a quick Super Smash Bros. matchup with randomized fighters and stages for your next duel.
-                </p>
+
             </a>
-            <a class="category-card" href="league-tracker.html">
-                <span class="category-card__title">League Tracker</span>
-                <p class="category-card__description">
-                    Keep a checklist of League of Legends champions and monitor which roles you still need to master.
-                </p>
-            </a>
+
             <a class="category-card" href="innuendo-tee.html">
                 <span class="category-card__title">Innuendo Tee Lab</span>
-                <p class="category-card__description">
-                    Dress a virtual shirt in randomly generated grown-up double entendres and playful party slogans.
-                </p>
+
             </a>
             <a class="category-card" href="AutoRogue">
                 <span class="category-card__title">AutoRogue</span>
-                <p class="category-card__description">
-                    Watch autonomous heroes battle through dungeon rooms while you tweak their builds.
-                </p>
+
             </a>
             <a class="category-card" href="Council.html">
                 <span class="category-card__title">Council of Power</span>
-                <p class="category-card__description">
-                    Explore a cinematic strategy UI mock-up that blends pie charts with city builder flair.
-                </p>
+
             </a>
             <button class="category-card" type="button" disabled>
                 <span class="category-card__title">Rhythm Reactor</span>
-                <p class="category-card__description">
-                    Coming soon: a cooperative beat lab for aspiring DJs and rhythm champions.
-                </p>
+
             </button>
             <button class="category-card" type="button" data-download-banana>
                 <span class="category-card__title">Download Banana</span>
-                <p class="category-card__description">
-                    Grab the original guild banana asset for your own experiments and memes.
-                </p>
+
             </button>
-        </section>
+
+</section>
     </main>
 
     <script>

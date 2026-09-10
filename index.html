@@ -3,16 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vault</title>
+    <title>AriaKawa — Games, learning &amp; experiments</title>
+    <meta name="description" content="Explore the AriaKawa collection of browser games, learning tools, and experiments. Keep your favorites close and find something to play.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="forge-climb-link.css">
+    <link rel="stylesheet" href="vault-ui.css?v=20260910-pastel">
 </head>
-<body>
-    <main class="landing">
+<body class="vault-ui">
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    <header class="studio-header">
+      <a class="studio-brand" href="index.html" aria-label="AriaKawa home"><span class="studio-mark" aria-hidden="true">ak</span>AriaKawa</a>
+      <nav class="studio-links" aria-label="Site navigation"><a href="games.html">Games</a><a href="education.html">Education</a><a href="other.html">Other</a></nav>
+
+    </header>
+    <main class="landing" id="main-content">
         <div class="landing__top-bar">
+
             <div class="account-menu" data-account-menu data-state="signed-out">
                 <button
                     type="button"
@@ -55,28 +63,18 @@
             </div>
         </div>
         <header class="landing__hero">
+
             <div class="landing__hero-copy">
-                <p class="landing__eyebrow">AriaKawa Studio</p>
-                <h1>Project Vault</h1>
-                <p class="landing__tagline">A private shelf for ideas, games, tools, and experiments.</p>
+
+                <h1>Vault</h1>
+
             </div>
         </header>
-        <a class="forge-launch" href="forge-climb-royale/">
-            <span class="forge-launch__sprite" aria-hidden="true"></span>
-            <span class="forge-launch__title">Jump Royale</span>
-            <span class="forge-launch__badge">NEW</span>
-        </a>
         <nav class="landing__nav" aria-label="Primary">
             <div class="vault-categories">
-                <a class="vault-category vault-category--education" href="education.html">
-                    <span>Education Apps</span>
-                </a>
-                <a class="vault-category vault-category--games" href="games.html">
-                    <span>Games</span>
-                </a>
-                <a class="vault-category vault-category--other" href="other.html">
-                    <span>Other</span>
-                </a>
+                <a class="vault-category vault-category--games" href="games.html"><span>Games</span></a>
+                <a class="vault-category vault-category--education" href="education.html"><span>Education</span></a>
+                <a class="vault-category vault-category--other" href="other.html"><span>Other</span></a>
             </div>
         </nav>
 
@@ -88,29 +86,29 @@
             <div class="favorites__grid">
                 <article class="favorite-card is-favorited" data-favorite-card data-favorite-id="league-tracker">
                     <button class="favorite-card__star" type="button" data-favorite-toggle aria-label="Remove League Tracker from favorites" aria-pressed="true"></button>
-                    <a class="favorite-card__link" href="league-tracker.html">
-                        <span class="favorite-card__label">Season Ready</span>
+                    <a class="favorite-card__link favorite-card__link--cover" href="league-tracker.html"><img class="favorite-cover" src="assets/cards/league-tracker.png" alt="" width="1536" height="1024">
+
                         <span class="favorite-card__title">League Tracker</span>
                     </a>
                 </article>
                 <article class="favorite-card is-favorited" data-favorite-card data-favorite-id="japanese-study">
                     <button class="favorite-card__star" type="button" data-favorite-toggle aria-label="Remove Japanese Study from favorites" aria-pressed="true"></button>
                     <a class="favorite-card__link" href="japanese-study.html">
-                        <span class="favorite-card__label">Study</span>
+
                         <span class="favorite-card__title">Japanese Study</span>
                     </a>
                 </article>
                 <article class="favorite-card is-favorited" data-favorite-card data-favorite-id="pokemon-type-trainer">
                     <button class="favorite-card__star" type="button" data-favorite-toggle aria-label="Remove Pokemon Type Trainer from favorites" aria-pressed="true"></button>
                     <a class="favorite-card__link" href="type-helper.html">
-                        <span class="favorite-card__label">Trainer</span>
+
                         <span class="favorite-card__title">Pokemon Type Trainer</span>
                     </a>
                 </article>
                 <article class="favorite-card is-favorited" data-favorite-card data-favorite-id="bass-guitar-frets">
                     <button class="favorite-card__star" type="button" data-favorite-toggle aria-label="Remove Bass Guitar Frets from favorites" aria-pressed="true"></button>
                     <a class="favorite-card__link" href="bass-guitar-frets.html">
-                        <span class="favorite-card__label">Music</span>
+
                         <span class="favorite-card__title">Bass Guitar Frets</span>
                     </a>
                 </article>
