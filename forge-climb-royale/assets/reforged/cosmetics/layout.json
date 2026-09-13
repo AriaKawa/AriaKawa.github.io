@@ -119,6 +119,69 @@
       "frames": 6,
       "width": 192,
       "height": 32
+    },
+    {
+      "slot": "helmet",
+      "variant": "diver",
+      "frames": 6,
+      "width": 192,
+      "height": 32
+    },
+    {
+      "slot": "shirt",
+      "variant": "diver",
+      "frames": 6,
+      "width": 192,
+      "height": 32
+    },
+    {
+      "slot": "pants",
+      "variant": "diver",
+      "frames": 6,
+      "width": 192,
+      "height": 32
+    },
+    {
+      "slot": "helmet",
+      "variant": "mage",
+      "frames": 6,
+      "width": 192,
+      "height": 32
+    },
+    {
+      "slot": "shirt",
+      "variant": "mage",
+      "frames": 6,
+      "width": 192,
+      "height": 32
+    },
+    {
+      "slot": "pants",
+      "variant": "mage",
+      "frames": 6,
+      "width": 192,
+      "height": 32
+    },
+    {
+      "slot": "helmet",
+      "variant": "mushroom",
+      "frames": 6,
+      "width": 192,
+      "height": 32
+    },
+    {
+      "slot": "shirt",
+      "variant": "mushroom",
+      "frames": 6,
+      "width": 192,
+      "height": 32
+    },
+    {
+      "slot": "pants",
+      "variant": "mushroom",
+      "frames": 6,
+      "width": 192,
+      "height": 32
     }
   ]
 }
