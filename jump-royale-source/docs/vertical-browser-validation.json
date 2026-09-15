@@ -1,0 +1,12 @@
+{
+  "jumps": 281,
+  "maxX": 2284.8537644999633,
+  "minX": 160.0455778764289,
+  "errors": [],
+  "final": {
+    "phase": "surge",
+    "winner": "practice-player",
+    "local": "practice-player"
+  },
+  "maximumStepMs": 96.60000000009313
+}

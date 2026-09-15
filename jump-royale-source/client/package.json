@@ -1,0 +1,20 @@
+{
+  "name": "@forge-climb/client",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --configLoader runner --host 127.0.0.1",
+    "build": "tsc -b && vite build --configLoader runner",
+    "build:site": "tsc -b && vite build --configLoader runner --base=/forge-climb-royale/ --mode hosted",
+    "typecheck": "tsc -b --pretty false"
+  },
+  "dependencies": {
+    "colyseus.js": "0.16.22",
+    "phaser": "^3.90.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3",
+    "vite": "^6.1.0"
+  }
+}

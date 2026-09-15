@@ -1,0 +1,31 @@
+{
+  "name": "forge-climb-royale",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "postinstall": "node scripts/restore-public.mjs",
+    "dev": "concurrently -n server,client -c yellow,cyan \"npm run dev -w server\" \"npm run dev -w client\"",
+    "dev:server": "npm run dev -w server",
+    "dev:client": "npm run dev -w client",
+    "build": "npm run build -w server && npm run build -w client",
+    "build:site": "npm run build:site -w client",
+    "typecheck": "npm run typecheck -w server && npm run typecheck -w client",
+    "assets": "node scripts/restore-public.mjs",
+    "assets:validate": "tsx scripts/validate-assets.ts",
+    "assets:vertical": "node scripts/generate-vertical-art.mjs && node scripts/generate-vertical-facades.mjs",
+    "test": "tsx scripts/test-reforged.ts && tsx scripts/test-bots.ts && tsx scripts/test-finale.ts",
+    "test:mountain": "tsx scripts/test-vertical.ts && tsx scripts/test-vertical-bots.ts",
+    "test:browser:mountain": "node scripts/browser-vertical.mjs",
+    "test:browser:online": "node scripts/browser-vertical-online.mjs"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.3"
+  }
+}
