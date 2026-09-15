@@ -13,7 +13,7 @@ try{
  await page.keyboard.up('Space');await page.waitForTimeout(150);assert(await page.evaluate(()=>{const s=window.__FORGE_DEV__.scene.getScene('Game');return s.snapshot.players.find(p=>p.id===s.localId).vy<0;}));
  console.log('PASS real keyboard grounded walking, charged release and committed flight');
  await page.reload();await page.getByRole('button',{name:'Start the Climb'}).click();await page.waitForFunction(()=>window.__FORGE_DEV__.scene.getScene('Game').snapshot?.phase==='playing');
- await page.evaluate(()=>{const s=window.__FORGE_DEV__.scene.getScene('Game'),h=s.client.hosted;clearInterval(h.loop);s.climbInput.snapshot=()=>({left:false,right:false,jumpHeld:false,seq:0});});
+ await page.evaluate(()=>{const s=window.__FORGE_DEV__.scene.getScene('Game'),h=s.client.hosted;clearInterval(h.loop);h.clock=h.roundStartedAt-1000/30;s.climbInput.snapshot=()=>({left:false,right:false,jumpHeld:false,seq:0});});
  const route=JSON.parse(fs.readFileSync('docs/vertical-route.json','utf8'));let maxX=0,minX=9999,frames=[];
  for(const step of route){
   const result=await page.evaluate(step=>{const s=window.__FORGE_DEV__.scene.getScene('Game'),h=s.client.hosted;const start=performance.now();

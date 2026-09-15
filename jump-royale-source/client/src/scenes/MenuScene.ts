@@ -1,4 +1,4 @@
-import {createWardrobe2} from '../game/wardrobe2Ui';
+import {COSTUMES,costumeFields} from '../assets/costumeSets';
 import {createSettings,settingsOpen} from '../game/settings';
 import {isBadName, nameRebuke, safePlayerName} from '../../../server/src/sim/names';
 import {drawMountainPreview} from '../game/mountainArt';
@@ -12,8 +12,14 @@ import { MAPS } from "../../../server/src/sim/maps";
 import { drawJunglePreview } from "../game/jungleArt";
 import Phaser from "phaser";
 import { ASSETS } from "../assets/assetManifest";
-import { SLOTS, loadOutfit, saveOutfit, outfitTexture, cosmeticName, pieceKey, outfitSlots, equipmentOptions, selectedPiece, type CosmeticSlot, type Outfit } from "../assets/cosmetics";
-import {isAnimal} from '../assets/animalRig';
+import { COSMETICS, loadOutfit, saveOutfit, outfitTexture, type Outfit } from "../assets/cosmetics";
+type CosmeticSlot='character'|'costume';
+const SLOTS:CosmeticSlot[]=['character','costume'];
+const outfitSlots=(o:Outfit):CosmeticSlot[]=>o.character==='original'?SLOTS:['character'];
+const equipmentOptions=(s:CosmeticSlot,_o:Outfit)=>s==='character'?COSMETICS.character:COSTUMES;
+const selectedPiece=(s:CosmeticSlot,o:Outfit)=>s==='character'?o.character:o.costume??'classic';
+const cosmeticName=(s:CosmeticSlot,id:string,o:Outfit)=>equipmentOptions(s,o).find(p=>p.id===id)?.name??id;
+const candidateOutfit=(o:Outfit,s:CosmeticSlot,id:string):Outfit=>s==='costume'?{...o,...costumeFields(id),character:'original'}:{...o,character:id,wardrobe2:id==='original'?costumeFields(o.costume??'classic').wardrobe2:undefined};
 import { GAME_HEIGHT, GAME_WIDTH } from "../game/constants";
 import { createLobbyPlayer, stepLobbyPlayer, resizeLobbyPlayer, LOBBY_SPRITE_SCALE } from "../game/lobbyPhysics";
 import { PLAYER_HEIGHT, PLAYER_WIDTH } from "../../../server/src/sim/constants";
@@ -33,9 +39,8 @@ export class MenuScene extends Phaser.Scene {
   private form?: HTMLFormElement;
   private preview!: Phaser.GameObjects.Sprite;
   private wardrobeOpen = false;
-  private wardrobe2?:ReturnType<typeof createWardrobe2>;
   private goldStore?: HTMLDialogElement;
-  private activeSlot: CosmeticSlot = "helmet";
+  private activeSlot: CosmeticSlot = "costume";
   private outfit: Outfit = loadOutfit();
   private animationPrefix = "";
   private held = false;
@@ -51,7 +56,7 @@ export class MenuScene extends Phaser.Scene {
 
   create(): void {
     this.input.keyboard?.disableGlobalCapture();
-    this.wardrobeOpen = false; this.activeSlot = "helmet";
+    this.wardrobeOpen = false; this.activeSlot = "costume";
     this.held = false; this.velocity = 0; this.airborne = false; this.landUntil = 0;
     this.lobbyPlayer = createLobbyPlayer(GAME_WIDTH,GAME_HEIGHT); this.lobbyHeight=GAME_HEIGHT; this.movement.clear(); this.accumulator = 0;
     this.outfit = playableOutfit(this.registry.get("outfit") ?? loadOutfit());
@@ -90,7 +95,7 @@ export class MenuScene extends Phaser.Scene {
 
   private createMenuUi(): void {
     this.ui = document.createElement("div"); this.ui.className = "menu-ui";
-    this.ui.innerHTML = `<div class="gold-marker" aria-label="Gold balance"><img src="${import.meta.env.BASE_URL}assets/menu/gold-bars.png" alt="Gold bars"><span class="gold-balance" aria-live="polite"></span><button class="gold-add" type="button" aria-label="Buy gold" title="Buy gold" aria-haspopup="dialog" aria-controls="gold-store"><span class="plus-icon" aria-hidden="true"></span></button></div><h1 class="menu-title" aria-label="Jump Royale"><span>JUMP</span><strong>ROYALE</strong></h1><div class="ranked-splash"><span>Ranked Coming Soon!</span></div><button class="wardrobe-toggle" type="button" aria-label="Open wardrobe" title="Wardrobe" aria-expanded="false" aria-controls="wardrobe-panel"><span class="wardrobe-art" aria-hidden="true"><img src="${import.meta.env.BASE_URL}assets/menu/wardrobe-pixel.png" alt=""><img src="${import.meta.env.BASE_URL}assets/menu/wardrobe-pixel-open.png" alt=""></span></button><form class="menu-form"><input id="climber-name" maxlength="18" autocomplete="off" placeholder="Name" aria-label="Climber name"><button type="submit">Start the Climb</button></form><div class="wardrobe-overlay" hidden><section id="wardrobe-panel" class="wardrobe-panel" role="dialog" aria-modal="true" aria-label="Wardrobe"><header><button class="wardrobe-close pixel-button" type="button" aria-label="Close wardrobe">&#215;</button></header><div class="wardrobe-tabs" role="tablist" aria-label="Equipment category">${SLOTS.map(slot=>`<button id="tab-${slot}" type="button" role="tab" data-slot="${slot}" aria-controls="equipment-grid" aria-selected="${slot===this.activeSlot}" tabindex="${slot===this.activeSlot?0:-1}">${({character:"Character",helmet:"Helmets",shirt:"Shirts",pants:"Pants",hair:"Hairstyles"})[slot]}</button>`).join("")}</div><div id="equipment-grid" class="equipment-grid" role="tabpanel" aria-labelledby="tab-helmet"></div><div class="purchase-bar" aria-live="polite"></div></section></div>`;
+    this.ui.innerHTML = `<div class="gold-marker" aria-label="Gold balance"><img src="${import.meta.env.BASE_URL}assets/menu/gold-bars.png" alt="Gold bars"><span class="gold-balance" aria-live="polite"></span><button class="gold-add" type="button" aria-label="Buy gold" title="Buy gold" aria-haspopup="dialog" aria-controls="gold-store"><span class="plus-icon" aria-hidden="true"></span></button></div><h1 class="menu-title" aria-label="Jump Royale"><span>JUMP</span><strong>ROYALE</strong></h1><div class="ranked-splash"><span>Ranked Coming Soon!</span></div><button class="wardrobe-toggle" type="button" aria-label="Open wardrobe" title="Wardrobe" aria-expanded="false" aria-controls="wardrobe-panel"><span class="wardrobe-art" aria-hidden="true"><img src="${import.meta.env.BASE_URL}assets/menu/wardrobe-pixel.png" alt=""><img src="${import.meta.env.BASE_URL}assets/menu/wardrobe-pixel-open.png" alt=""></span></button><form class="menu-form"><input id="climber-name" maxlength="18" autocomplete="off" placeholder="Name" aria-label="Climber name"><button type="submit">Start the Climb</button></form><div class="wardrobe-overlay" hidden><section id="wardrobe-panel" class="wardrobe-panel" role="dialog" aria-modal="true" aria-label="Wardrobe"><header><button class="wardrobe-close pixel-button" type="button" aria-label="Close wardrobe">&#215;</button></header><div class="wardrobe-tabs" role="tablist" aria-label="Equipment category">${SLOTS.map(slot=>`<button id="tab-${slot}" type="button" role="tab" data-slot="${slot}" aria-controls="equipment-grid" aria-selected="${slot===this.activeSlot}" tabindex="${slot===this.activeSlot?0:-1}">${({character:"Character",costume:"Costumes"})[slot]}</button>`).join("")}</div><div id="equipment-grid" class="equipment-grid" role="tabpanel" aria-labelledby="tab-costume"></div><div class="purchase-bar" aria-live="polite"></div></section></div>`;
     document.getElementById("game")!.appendChild(this.ui);
     this.removeSettings=createSettings(this.ui,()=>{this.held=false;this.movement.clear();this.lobbyPlayer.charging=false;this.lobbyPlayer.charge01=0;if(this.wardrobeOpen)this.setWardrobeOpen(false);});
     this.goldStore=createGoldStore(()=>{
@@ -135,7 +140,6 @@ export class MenuScene extends Phaser.Scene {
       this.scene.start("Game",{name,mapId:MAPS[this.mapIndex].id});
     });
     this.renderEquipment();
-    this.wardrobe2=createWardrobe2(this.ui,this.outfit.wardrobe2,()=>{if(this.wardrobeOpen)this.setWardrobeOpen(false);this.held=false;this.movement.clear();this.lobbyPlayer.charging=false;this.lobbyPlayer.charge01=0;},look=>{this.outfit={...this.outfit,character:'original',wardrobe2:look};saveOutfit(this.outfit);this.registry.set('outfit',this.outfit);this.showOutfit(this.outfit);});
     this.layoutUi(); this.scale.on(Phaser.Scale.Events.RESIZE,this.layoutUi,this);
   }
   private createMapSelector(): void {
@@ -234,8 +238,8 @@ export class MenuScene extends Phaser.Scene {
     grid.querySelectorAll<HTMLButtonElement>("button").forEach(button=>{
       const id=button.dataset.piece!;
       this.drawEquipmentIcon(button.querySelector("canvas")!,this.activeSlot,id);
-      const candidate:Outfit=isAnimal(this.outfit.character)&&this.activeSlot==='helmet'?{...this.outfit,animalHat:id as 'none'|'party'}:{...this.outfit,[this.activeSlot]:id};
-      const preview=()=>this.showOutfit({...candidate,wardrobe2:undefined});
+      const candidate=candidateOutfit(this.outfit,this.activeSlot,id);
+      const preview=()=>this.showOutfit(candidate);
       const restore=()=>this.showOutfit(this.outfit);
       button.addEventListener('pointerenter',preview);
       button.addEventListener('pointerleave',restore);
@@ -247,13 +251,13 @@ export class MenuScene extends Phaser.Scene {
           this.ui!.querySelector('.purchase-bar')!.textContent=wallet().gold<price(slot,id)?'Not enough gold.':'Purchase could not be saved on this browser.';
           return;
         }
-        this.outfit={...candidate,wardrobe2:undefined};
+        this.outfit=candidate;
         saveOutfit(this.outfit);this.registry.set('outfit',this.outfit);
         this.showOutfit(this.outfit);this.renderEquipment();
       });
     });
   }
-  private shopSlot():string {return isAnimal(this.outfit.character)&&this.activeSlot==='helmet'?'animalHat':this.activeSlot;}
+  private shopSlot():string {return this.activeSlot;}
   private showOutfit(outfit:Outfit):void {
     this.animationPrefix=outfitTexture(this,outfit);
     this.preview.stop().chain();this.preview.setTexture(this.animationPrefix,0);
@@ -267,26 +271,17 @@ export class MenuScene extends Phaser.Scene {
   private updateTabs():void {
     this.ui!.querySelectorAll<HTMLButtonElement>('.wardrobe-overlay [role=tab]').forEach(tab=>{
       tab.hidden=!outfitSlots(this.outfit).includes(tab.dataset.slot as CosmeticSlot);
-      if(tab.dataset.slot==='helmet')tab.textContent=isAnimal(this.outfit.character)?'Hats':'Helmets';
     });
   }
   private drawEquipmentIcon(canvas: HTMLCanvasElement,slot: CosmeticSlot,id: string): void {
-    const animalHat=isAnimal(this.outfit.character)&&slot==='helmet';
-    const sample=animalHat?{...this.outfit,animalHat:id as 'none'|'party'}:{...this.outfit,[slot]:id};
-    const key=slot==='character'||animalHat?outfitTexture(this,{...sample,wardrobe2:undefined}):slot==='hair'?'hair-'+id:slot==='helmet'&&id==='none'?'head-bare-v2':pieceKey(slot,id);
+    const sample=candidateOutfit(this.outfit,slot,id);
+    const key=outfitTexture(this,sample);
     const source=this.textures.get(key).getSourceImage() as HTMLImageElement;
-    const frameHeight=Math.min(40,source.height);
-    const scratch=document.createElement("canvas");scratch.width=32;scratch.height=frameHeight;
-    const context=scratch.getContext("2d")!;context.imageSmoothingEnabled=false;
-    context.drawImage(source,0,0,Math.min(32,source.width),frameHeight,0,0,Math.min(32,source.width),frameHeight);
-    const pixels=context.getImageData(0,0,32,frameHeight).data;
-    let left=32,top=frameHeight,right=0,bottom=0;
-    for(let y=0;y<frameHeight;y++)for(let x=0;x<32;x++)if(pixels[(y*32+x)*4+3]){left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y);}
-    if(left>right)return;
-    const width=right-left+1,height=bottom-top+1,scale=Math.max(1,Math.floor(64/Math.max(width,height)));
-    const target=canvas.getContext("2d")!;target.imageSmoothingEnabled=false;target.clearRect(0,0,64,64);
-    target.drawImage(scratch,left,top,width,height,Math.floor((64-width*scale)/2),Math.floor((64-height*scale)/2),width*scale,height*scale);
+    const frame=this.textures.get(key).get(0),scale=64/Math.max(frame.width,frame.height);
+    const target=canvas.getContext('2d')!;target.imageSmoothingEnabled=false;target.clearRect(0,0,64,64);
+    target.drawImage(source,frame.cutX,frame.cutY,frame.width,frame.height,(64-frame.width*scale)/2,(64-frame.height*scale)/2,frame.width*scale,frame.height*scale);
   }
+
   private layoutUi(): void {
     if (!this.ui) return;
     const rect=this.game.canvas.getBoundingClientRect();
@@ -299,7 +294,7 @@ export class MenuScene extends Phaser.Scene {
     const canvas=this.game.canvas; canvas.tabIndex=0;
     const editing=()=>document.activeElement?.matches("input,select,textarea,[contenteditable='true']") ?? false;
     const down=(event:KeyboardEvent)=>{
-      if(this.wardrobe2?.open() || settingsOpen() || this.goldStore?.open || editing() || event.ctrlKey || event.metaKey || event.altKey)return;
+      if(settingsOpen() || this.goldStore?.open || editing() || event.ctrlKey || event.metaKey || event.altKey)return;
       if(["Space","ArrowLeft","ArrowRight","KeyA","KeyD"].includes(event.code))event.preventDefault();
       if(event.code==="Space")this.held=true;
       this.movement.add(event.code);
@@ -318,7 +313,7 @@ export class MenuScene extends Phaser.Scene {
         if(!(event.target as Element)?.closest('button,input,select,textarea,[contenteditable=true]'))canvas.focus({preventScroll:true});
       }
     };
-    this.preview.on("pointerdown",()=>{if(this.wardrobe2?.open()||settingsOpen()||this.goldStore?.open||this.wardrobeOpen)return;canvas.focus();this.held=true;});
+    this.preview.on("pointerdown",()=>{if(settingsOpen()||this.goldStore?.open||this.wardrobeOpen)return;canvas.focus();this.held=true;});
     this.input.on("pointerup",()=>{this.held=false;});
     this.input.on("pointerupoutside",()=>{this.held=false;});
     window.addEventListener("keydown",down);window.addEventListener("keyup",up);window.addEventListener("blur",cancel);
@@ -327,7 +322,6 @@ export class MenuScene extends Phaser.Scene {
     this.removeControls=()=>{window.removeEventListener("keydown",down);window.removeEventListener("keyup",up);window.removeEventListener("blur",cancel);document.removeEventListener("focusin",focus);document.removeEventListener("visibilitychange",visible);document.removeEventListener('pointerdown',unfocusName,true);};
   }
   private cleanup(): void {
-    this.wardrobe2?.destroy();this.wardrobe2=undefined;
     this.removeSettings?.();this.removeSettings=undefined;
     this.removeControls?.();this.removeControls=undefined;this.scale.off(Phaser.Scale.Events.RESIZE,this.layoutUi,this);
     this.goldStore?.remove();this.goldStore=undefined;

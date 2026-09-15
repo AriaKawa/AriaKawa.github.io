@@ -6,13 +6,14 @@ const out='client/public/assets/jump-royale-ai';fs.mkdirSync(out,{recursive:true
 // Nothing is drawn, keyed, repainted, or substituted with vector assets.
 async function extract(input,box,file,platform=false){
  const {data,info}=await sharp(input).extract(box).ensureAlpha().raw().toBuffer({resolveWithObject:true});let minX=info.width,minY=info.height,maxX=0,maxY=0;const counts=[];
- for(let y=0;y<info.height;y++){let count=0;for(let x=0;x<info.width;x++)if(data[(y*info.width+x)*4+3]>32){count++;minX=Math.min(minX,x);maxX=Math.max(maxX,x);minY=Math.min(minY,y);maxY=Math.max(maxY,y);}counts.push(count);}
+ for(let y=0;y<info.height;y++){let count=0;for(let x=0;x<info.width;x++)if(data[(y*info.width+x)*4+3]>192){count++;minX=Math.min(minX,x);maxX=Math.max(maxX,x);minY=Math.min(minY,y);maxY=Math.max(maxY,y);}counts.push(count);}
  if(maxX<=minX||maxY<=minY)throw Error('Empty generated cell: '+file);
- const cap=counts.findIndex(n=>n>=Math.max(...counts)*.82);let capLeft=info.width,capRight=0;
+ const cap=counts.findIndex(n=>n>=Math.max(...counts)*.9);let capLeft=info.width,capRight=0;
  for(let x=0;x<info.width;x++)if(data[(cap*info.width+x)*4+3]>192){capLeft=Math.min(capLeft,x);capRight=Math.max(capRight,x);}
  if(platform)minY=cap; // Isolate the flat playable cap; exclude atlas spill and decorative protrusions.
  const width=maxX-minX+1,height=maxY-minY+1;
  await sharp(data,{raw:info}).extract({left:minX,top:minY,width,height}).webp({lossless:true}).toFile(out+'/'+file+'.webp');
+ if(platform && (capRight-capLeft+1<width*.65 || capLeft<minX || capRight>maxX))throw Error("Invalid platform cap: "+file);
  if(platform)metrics[file]={width,height,capLeft:capLeft-minX,capY:cap-minY,capWidth:capRight-capLeft+1};
  console.log(file,width,height,platform?'cap '+metrics[file].capY:'');
 }

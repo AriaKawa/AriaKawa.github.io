@@ -5,8 +5,8 @@ import {REGIONS,REGION_FLOORS,MOUNTAIN_WIDTH,mountainSection,mountainWind,genera
 export const MOUNTAIN_ASSETS=REGIONS.flatMap(r=>[r.key+'/background',...Array.from({length:4},(_,i)=>r.key+'/platform-'+i)]).concat(['props/bell','props/sigil','props/rotor','props/wind','props/cloud','props/water']);
 const key=(name:string)=>'ascent-ai-'+name;
 export function queueMountainAssets(scene:Phaser.Scene):void{
- for(const name of MOUNTAIN_ASSETS)scene.load.image(key(name),import.meta.env.BASE_URL+'assets/jump-royale-ai/'+name+'.webp');
- scene.load.json('ai-platform-metrics',import.meta.env.BASE_URL+'assets/jump-royale-ai/metrics.json');
+ for(const name of MOUNTAIN_ASSETS)scene.load.image(key(name),import.meta.env.BASE_URL+'assets/jump-royale-ai/'+name+'.webp?caps=2');
+ scene.load.json('ai-platform-metrics',import.meta.env.BASE_URL+'assets/jump-royale-ai/metrics.json?caps=2');
 }
 export function drawMountainPreview(scene:Phaser.Scene,c:CanvasRenderingContext2D):void{
  const source=(name:string)=>scene.textures.get(key(name)).getSourceImage() as HTMLImageElement;
@@ -52,8 +52,11 @@ export function renderMountainTerrain(scene:Phaser.Scene,p:Platform,c:Phaser.Gam
  const metrics=scene.cache.json.get('ai-platform-metrics') as Record<string,Cap>;
  const bays=p.w>280?Math.ceil(p.w/210):1,bay=p.w/bays;
  for(let i=0;i<bays;i++){
-  const asset=name+'/platform-'+((variant+i)%4),m=metrics[asset],scale=bay/m.capWidth;
-  c.add(scene.add.image(i*bay-m.capLeft*scale,-m.capY*scale,key(asset)).setOrigin(0).setDisplaySize(m.width*scale,m.height*scale));
+  const asset=name+'/platform-'+((variant+i)%4),m=metrics[asset];
+  // Bound stale or malformed atlas measurements before computing render scale.
+  const valid=Number.isFinite(m.capWidth)&&m.capWidth>=m.width*.65&&m.capWidth<=m.width&&m.capLeft>=0&&m.capLeft+m.capWidth<=m.width;
+  const scale=bay/(valid?m.capWidth:m.width);
+  c.add(scene.add.image(i*bay-(valid?m.capLeft:0)*scale,-m.capY*scale,key(asset)).setOrigin(0).setDisplaySize(m.width*scale,m.height*scale));
  }
  if(p.id==='crown')c.add(scene.add.image(p.w/2,0,key('props/bell')).setOrigin(.5,1).setDisplaySize(118,118));
  if(new URLSearchParams(location.search).has('debugWorld'))c.add(scene.add.text(0,-8,p.id,{fontSize:'8px',color:'#fff1a0'}).setOrigin(0,1));

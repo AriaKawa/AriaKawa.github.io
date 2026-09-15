@@ -45,3 +45,6 @@
 !/docs/ai-art-prompts.json
 !/docs/ai-source/
 !/scripts/verify-ai-world.mjs
+
+!/scripts/test-costumes.ts
+!/scripts/browser-revision.mjs

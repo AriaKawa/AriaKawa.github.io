@@ -18,7 +18,7 @@
     "assets": "node scripts/restore-public.mjs",
     "assets:validate": "tsx scripts/validate-assets.ts",
     "assets:vertical": "node scripts/compile-ai-world.mjs",
-    "test": "tsx scripts/test-reforged.ts && tsx scripts/test-bots.ts && tsx scripts/test-finale.ts",
+    "test": "tsx scripts/test-reforged.ts && tsx scripts/test-bots.ts && tsx scripts/test-finale.ts && tsx scripts/test-costumes.ts",
     "test:mountain": "tsx scripts/test-vertical.ts && tsx scripts/test-vertical-bots.ts",
     "test:browser:mountain": "node scripts/browser-vertical.mjs",
     "test:browser:online": "node scripts/browser-vertical-online.mjs"

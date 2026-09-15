@@ -1,3 +1,4 @@
+import {COSTUMES,costumeFields} from './costumeSets';
 import {labTexture,type LabLook} from './wardrobe2';
 import {drawGarment} from './garmentRig';
 import {demonTexture} from './demonRig';
@@ -8,7 +9,7 @@ import { ANIMALS, ANIMAL_HATS, isAnimal, animalTexture } from './animalRig';
 
 export const SLOTS = ["character", "helmet", "shirt", "pants", "hair"] as const;
 export type CosmeticSlot = typeof SLOTS[number];
-export type Outfit = Record<CosmeticSlot, string> & {animalHat?:'none'|'party';wardrobe2?:LabLook};
+export type Outfit = Record<CosmeticSlot, string> & {costume?:string;animalHat?:'none'|'party';wardrobe2?:LabLook};
 export const COSMETICS = {
   character: [{id:"original",name:"Finn"},{id:"puppy",name:"Biscuit · Puppy"},{id:'cat',name:'Mochi · Cat'},{id:'rat',name:'Pip · Rat'},{id:'demon',name:'Ember · Demon Lady'}],
   hair: [{id:"original",name:"Classic Crop"},{id:"waves",name:"Chestnut Waves"},{id:"ponytail",name:"Golden Ponytail"},{id:"braid",name:"Midnight Braid"},{id:"buns",name:"Rose Double Buns"},{id:"bob",name:"Lilac Bob"}],
@@ -16,7 +17,7 @@ export const COSMETICS = {
   shirt: [{ id: "original", name: "Forge Apron" }, { id: "steel", name: "Froststitch Jacket" }, { id: "copper", name: "Cinder Coat" }, { id: "tropical", name: "Hawaiian Shirt" }, { id: "maid", name: "Maid Blouse & Apron" }, {id:"mushroom",name:"Spore Scout Tunic"}, {id:"diver",name:"Deep-Sea Dive Suit"}, {id:"mage",name:"Starfall Tunic"}],
   pants: [{ id: "original", name: "Coal Trousers" }, { id: "steel", name: "Riveted Leather" }, { id: "copper", name: "Ashguard Pants" }, { id: "tropical", name: "Red Speedo" }, { id: "maid", name: "Maid Skirt & Stockings" }, {id:"mushroom",name:"Mosswalker Boots"}, {id:"diver",name:"Anchorweight Boots"}, {id:"mage",name:"Cometstride Pants"}]
 } as const;
-export const DEFAULT_OUTFIT: Outfit = { character:"original", hair:"original", helmet: "none", shirt: "original", pants: "original" };
+export const DEFAULT_OUTFIT: Outfit = { character:"original", costume:'classic', hair:"original", helmet: "none", shirt: "original", pants: "original" };
 const STORAGE_KEY = "forge-outfit-v1";
 const ROOT = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/assets/reforged/cosmetics`;
 export const pieceKey = (slot: CosmeticSlot, id: string) => `cosmetic-${slot}-${id}`;
@@ -32,10 +33,14 @@ export function sanitizeOutfit(value: unknown): Outfit {
   const source = value && typeof value === "object" ? value as Record<string,unknown> : {};
   const lab=source.wardrobe2 as LabLook|undefined;
   const wardrobe2=lab&&Number.isInteger(lab.variant)&&lab.variant>=0&&lab.variant<3&&Number.isInteger(lab.look)&&lab.look>=0&&lab.look<3?{variant:lab.variant,look:lab.look}:undefined;
-  return {wardrobe2,...Object.fromEntries(SLOTS.map(slot => [slot, COSMETICS[slot].some(piece => piece.id === source[slot]) ? source[slot] : "original"])),animalHat:source.animalHat==='party'?'party':'none'} as Outfit;
+  const result={wardrobe2,...Object.fromEntries(SLOTS.map(slot => [slot, COSMETICS[slot].some(piece => piece.id === source[slot]) ? source[slot] : "original"])),animalHat:source.animalHat==='party'?'party':'none'} as Outfit;
+  if(typeof source.costume==='string'&&COSTUMES.some(c=>c.id===source.costume)){Object.assign(result,costumeFields(source.costume));if(result.character!=='original')result.wardrobe2=undefined;}
+  return result;
 }
 export function loadOutfit(): Outfit {
-  try { return sanitizeOutfit(JSON.parse(localStorage.getItem(STORAGE_KEY) || "null")); }
+  try { const saved=sanitizeOutfit(JSON.parse(localStorage.getItem(STORAGE_KEY) || "null"));
+    if(!saved.costume){const id=saved.wardrobe2?['fieldwork','celestial','ember'][saved.wardrobe2.look]:saved.shirt==='original'?(saved.helmet==='none'?'classic':'original'):saved.shirt;Object.assign(saved,costumeFields(id));if(saved.character!=='original')saved.wardrobe2=undefined;}
+    return saved; }
   catch { return { ...DEFAULT_OUTFIT }; }
 }
 export function saveOutfit(outfit: Outfit): void {
@@ -102,6 +107,5 @@ function drawGeneratedHair(scene:Phaser.Scene,c:CanvasRenderingContext2D,o:Outfi
 export function botOutfit(id:string):Outfit {
   let hash=0; for(const char of id) hash=(hash*31+char.charCodeAt(0))>>>0;
   const themes=["original","steel","copper","tropical","maid"];
-  const hair=["waves","ponytail","braid","buns","bob"];
-  return {character:"original",helmet:hash%3?"none":themes[hash%5],shirt:themes[hash%5],pants:themes[Math.floor(hash/3)%5],hair:hair[Math.floor(hash/2)%5]};
+  return {character:'original',...costumeFields(themes[hash%5])};
 }
