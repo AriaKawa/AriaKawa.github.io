@@ -17,7 +17,7 @@
     "typecheck": "npm run typecheck -w server && npm run typecheck -w client",
     "assets": "node scripts/restore-public.mjs",
     "assets:validate": "tsx scripts/validate-assets.ts",
-    "assets:vertical": "node scripts/generate-vertical-art.mjs && node scripts/generate-vertical-facades.mjs",
+    "assets:vertical": "node scripts/compile-ai-world.mjs",
     "test": "tsx scripts/test-reforged.ts && tsx scripts/test-bots.ts && tsx scripts/test-finale.ts",
     "test:mountain": "tsx scripts/test-vertical.ts && tsx scripts/test-vertical-bots.ts",
     "test:browser:mountain": "node scripts/browser-vertical.mjs",

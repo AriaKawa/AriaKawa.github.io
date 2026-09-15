@@ -19,7 +19,7 @@
         "ticks": 20
       }
     ],
-    "margin": 101.3666666666665
+    "margin": 46.366666666666504
   },
   {
     "source": "foothills-0",
@@ -28,20 +28,20 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 21
+        "ticks": 4
       },
       {
         "direction": 1,
         "held": true,
-        "ticks": 20
+        "ticks": 24
       },
       {
         "direction": 1,
         "held": false,
-        "ticks": 18
+        "ticks": 19
       }
     ],
-    "margin": 63.066666666666606
+    "margin": 37.166666666666856
   },
   {
     "source": "foothills-1",
@@ -50,7 +50,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 12
+        "ticks": 4
       },
       {
         "direction": -1,
@@ -63,7 +63,7 @@
         "ticks": 18
       }
     ],
-    "margin": 65.33333333333366
+    "margin": 27.300000000000296
   },
   {
     "source": "foothills-2",
@@ -72,7 +72,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 21
+        "ticks": 4
       },
       {
         "direction": -1,
@@ -85,29 +85,29 @@
         "ticks": 18
       }
     ],
-    "margin": 97.03333333333347
+    "margin": 22.23333333333335
   },
   {
     "source": "foothills-3",
     "target": "foothills-4",
     "actions": [
       {
-        "direction": 1,
+        "direction": -1,
         "held": false,
-        "ticks": 20
+        "ticks": 4
       },
       {
-        "direction": -1,
+        "direction": 1,
         "held": true,
         "ticks": 24
       },
       {
-        "direction": -1,
+        "direction": 1,
         "held": false,
         "ticks": 19
       }
     ],
-    "margin": 62.70000000000016
+    "margin": 18.96666666666698
   },
   {
     "source": "foothills-4",
@@ -116,20 +116,20 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 9
+        "ticks": 5
       },
       {
         "direction": 1,
         "held": true,
-        "ticks": 24
+        "ticks": 21
       },
       {
         "direction": 1,
         "held": false,
-        "ticks": 18
+        "ticks": 17
       }
     ],
-    "margin": 82.59999999999985
+    "margin": 9.533333333333417
   },
   {
     "source": "foothills-5",
@@ -138,7 +138,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 8
+        "ticks": 3
       },
       {
         "direction": 1,
@@ -151,7 +151,7 @@
         "ticks": 18
       }
     ],
-    "margin": 87.5333333333329
+    "margin": 9.633333333334122
   },
   {
     "source": "foothills-6",
@@ -160,7 +160,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 16
+        "ticks": 4
       },
       {
         "direction": 1,
@@ -173,7 +173,7 @@
         "ticks": 18
       }
     ],
-    "margin": 77.39999999999998
+    "margin": 3.1000000000012733
   },
   {
     "source": "foothills-7",
@@ -182,20 +182,20 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 15
+        "ticks": 1
       },
       {
         "direction": -1,
         "held": true,
-        "ticks": 24
+        "ticks": 20
       },
       {
         "direction": -1,
         "held": false,
-        "ticks": 17
+        "ticks": 16
       }
     ],
-    "margin": 65.76666666666745
+    "margin": 13.599999999999
   },
   {
     "source": "foothills-8",
@@ -204,7 +204,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 18
+        "ticks": 4
       },
       {
         "direction": -1,
@@ -217,7 +217,7 @@
         "ticks": 18
       }
     ],
-    "margin": 101.63333333333236
+    "margin": 9.933333333333621
   },
   {
     "source": "foothills-9",
@@ -226,7 +226,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 21
+        "ticks": 3
       },
       {
         "direction": 1,
@@ -239,7 +239,7 @@
         "ticks": 18
       }
     ],
-    "margin": 63.33333333333218
+    "margin": 5.033333333334326
   },
   {
     "source": "foothills-10",
@@ -248,7 +248,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 8
+        "ticks": 5
       },
       {
         "direction": 1,
@@ -261,29 +261,29 @@
         "ticks": 18
       }
     ],
-    "margin": 87.73333333333392
+    "margin": 2.866666666668152
   },
   {
     "source": "foothills-11",
     "target": "foothills-12",
     "actions": [
       {
-        "direction": -1,
+        "direction": 1,
         "held": false,
-        "ticks": 17
+        "ticks": 1
       },
       {
-        "direction": 1,
+        "direction": -1,
         "held": true,
         "ticks": 24
       },
       {
-        "direction": 1,
+        "direction": -1,
         "held": false,
         "ticks": 19
       }
     ],
-    "margin": 100.8333333333336
+    "margin": 4.833333333332234
   },
   {
     "source": "foothills-12",
@@ -292,7 +292,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 6
+        "ticks": 3
       },
       {
         "direction": 1,
@@ -305,7 +305,7 @@
         "ticks": 20
       }
     ],
-    "margin": 191.3000000000004
+    "margin": 192.73333333333449
   },
   {
     "source": "foothills-13",
@@ -314,7 +314,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 41
+        "ticks": 45
       },
       {
         "direction": 1,
@@ -327,7 +327,7 @@
         "ticks": 21
       }
     ],
-    "margin": 158.73333333333017
+    "margin": 174.76666666666233
   },
   {
     "source": "foothills-14",
@@ -336,7 +336,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 22
+        "ticks": 19
       },
       {
         "direction": 1,
@@ -349,7 +349,7 @@
         "ticks": 19
       }
     ],
-    "margin": 96.4666666666626
+    "margin": 7.600000000004911
   },
   {
     "source": "foothills-15",
@@ -358,7 +358,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 19
+        "ticks": 1
       },
       {
         "direction": 1,
@@ -371,7 +371,7 @@
         "ticks": 18
       }
     ],
-    "margin": 82.50000000000068
+    "margin": 12.966666666670108
   },
   {
     "source": "foothills-16",
@@ -380,7 +380,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 12
+        "ticks": 3
       },
       {
         "direction": -1,
@@ -393,7 +393,7 @@
         "ticks": 17
       }
     ],
-    "margin": 87.56666666666342
+    "margin": 2.7999999999949523
   },
   {
     "source": "foothills-17",
@@ -402,20 +402,20 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 8
+        "ticks": 5
       },
       {
         "direction": -1,
         "held": true,
-        "ticks": 24
+        "ticks": 21
       },
       {
         "direction": -1,
         "held": false,
-        "ticks": 18
+        "ticks": 17
       }
     ],
-    "margin": 92.49999999999454
+    "margin": 8.299999999993133
   },
   {
     "source": "foothills-18",
@@ -424,20 +424,20 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 16
+        "ticks": 3
       },
       {
         "direction": -1,
         "held": true,
-        "ticks": 24
+        "ticks": 23
       },
       {
         "direction": -1,
         "held": false,
-        "ticks": 18
+        "ticks": 17
       }
     ],
-    "margin": 102.36666666665815
+    "margin": 8.933333333341807
   },
   {
     "source": "foothills-19",
@@ -446,7 +446,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 21
+        "ticks": 3
       },
       {
         "direction": 1,
@@ -459,7 +459,7 @@
         "ticks": 17
       }
     ],
-    "margin": 67.000000000005
+    "margin": 4.700000000006867
   },
   {
     "source": "foothills-20",
@@ -468,20 +468,20 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 13
+        "ticks": 6
       },
       {
         "direction": 1,
         "held": true,
-        "ticks": 24
+        "ticks": 23
       },
       {
         "direction": 1,
         "held": false,
-        "ticks": 18
+        "ticks": 17
       }
     ],
-    "margin": 72.23333333333107
+    "margin": 8.566666666671608
   },
   {
     "source": "foothills-21",
@@ -490,7 +490,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 14
+        "ticks": 2
       },
       {
         "direction": 1,
@@ -503,7 +503,7 @@
         "ticks": 17
       }
     ],
-    "margin": 66.56666666666615
+    "margin": 10.966666666670108
   },
   {
     "source": "foothills-22",
@@ -512,20 +512,20 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 12
+        "ticks": 2
       },
       {
         "direction": -1,
         "held": true,
-        "ticks": 24
+        "ticks": 20
       },
       {
         "direction": -1,
         "held": false,
-        "ticks": 17
+        "ticks": 16
       }
     ],
-    "margin": 83.49999999999795
+    "margin": 8.099999999995134
   },
   {
     "source": "foothills-23",
@@ -534,20 +534,20 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 15
+        "ticks": 3
       },
       {
         "direction": -1,
         "held": true,
-        "ticks": 24
+        "ticks": 21
       },
       {
         "direction": -1,
         "held": false,
-        "ticks": 18
+        "ticks": 17
       }
     ],
-    "margin": 97.000000000005
+    "margin": 8.866666666660194
   },
   {
     "source": "foothills-24",
@@ -556,7 +556,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 20
+        "ticks": 1
       },
       {
         "direction": 1,
@@ -569,7 +569,7 @@
         "ticks": 16
       }
     ],
-    "margin": 57.666666666668334
+    "margin": 9.833333333338487
   },
   {
     "source": "foothills-25",
@@ -578,7 +578,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 10
+        "ticks": 3
       },
       {
         "direction": 1,
@@ -591,7 +591,7 @@
         "ticks": 18
       }
     ],
-    "margin": 81.33333333333258
+    "margin": 4.933333333337032
   },
   {
     "source": "foothills-26",
@@ -600,7 +600,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 10
+        "ticks": 5
       },
       {
         "direction": 1,
@@ -613,7 +613,7 @@
         "ticks": 17
       }
     ],
-    "margin": 86.66666666666356
+    "margin": 4.433333333338851
   },
   {
     "source": "foothills-27",
@@ -622,7 +622,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 17
+        "ticks": 1
       },
       {
         "direction": -1,
@@ -635,16 +635,16 @@
         "ticks": 18
       }
     ],
-    "margin": 73.56666666666956
+    "margin": 3.9333333333299834
   },
   {
     "source": "foothills-28",
     "target": "foothills-29",
     "actions": [
       {
-        "direction": 1,
+        "direction": -1,
         "held": false,
-        "ticks": 23
+        "ticks": 1
       },
       {
         "direction": -1,
@@ -657,18 +657,13 @@
         "ticks": 18
       }
     ],
-    "margin": 103.99999999999909
+    "margin": 128.43333333333794
   },
   {
     "source": "foothills-29",
     "target": "village-0",
     "actions": [
       {
-        "direction": 1,
-        "held": false,
-        "ticks": 8
-      },
-      {
         "direction": -1,
         "held": true,
         "ticks": 24
@@ -679,7 +674,7 @@
         "ticks": 18
       }
     ],
-    "margin": 87.06666666666979
+    "margin": 11.566666666660694
   },
   {
     "source": "village-0",
@@ -688,20 +683,20 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 15
+        "ticks": 2
       },
       {
         "direction": -1,
         "held": true,
-        "ticks": 24
+        "ticks": 21
       },
       {
         "direction": -1,
         "held": false,
-        "ticks": 18
+        "ticks": 17
       }
     ],
-    "margin": 71.56666666667275
+    "margin": 7.966666666659194
   },
   {
     "source": "village-1",
@@ -710,20 +705,20 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 14
+        "ticks": 2
       },
       {
         "direction": 1,
         "held": true,
-        "ticks": 24
+        "ticks": 21
       },
       {
         "direction": 1,
         "held": false,
-        "ticks": 17
+        "ticks": 16
       }
     ],
-    "margin": 44.36666666666997
+    "margin": 7.100000000006048
   },
   {
     "source": "village-2",
@@ -732,7 +727,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 19
+        "ticks": 3
       },
       {
         "direction": 1,
@@ -745,7 +740,7 @@
         "ticks": 18
       }
     ],
-    "margin": 77.33333333333326
+    "margin": 2.2000000000043656
   },
   {
     "source": "village-3",
@@ -754,7 +749,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 15
+        "ticks": 3
       },
       {
         "direction": 1,
@@ -767,7 +762,7 @@
         "ticks": 17
       }
     ],
-    "margin": 81.50000000000296
+    "margin": 11.966666666669425
   },
   {
     "source": "village-4",
@@ -776,7 +771,51 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 13
+        "ticks": 3
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 19
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 6.533333333337623
+  },
+  {
+    "source": "village-5",
+    "target": "village-6",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 1
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 22
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 9.166666666661058
+  },
+  {
+    "source": "village-6",
+    "target": "village-7",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 1
       },
       {
         "direction": -1,
@@ -789,11 +828,517 @@
         "ticks": 18
       }
     ],
-    "margin": 97.73333333333312
+    "margin": 5.533333333326254
   },
   {
-    "source": "village-5",
-    "target": "village-6",
+    "source": "village-7",
+    "target": "village-8",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 21
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 17
+      }
+    ],
+    "margin": 10.933333333324754
+  },
+  {
+    "source": "village-8",
+    "target": "village-9",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 3
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 21
+      }
+    ],
+    "margin": 97.16666666667584
+  },
+  {
+    "source": "village-9",
+    "target": "village-10",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 64
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 21
+      }
+    ],
+    "margin": 171.6333333333426
+  },
+  {
+    "source": "village-10",
+    "target": "village-11",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 1
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 19
+      }
+    ],
+    "margin": 6.66666666667615
+  },
+  {
+    "source": "village-11",
+    "target": "village-12",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 21
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 17
+      }
+    ],
+    "margin": 2.066666666675985
+  },
+  {
+    "source": "village-12",
+    "target": "village-13",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 4
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 17
+      }
+    ],
+    "margin": 7.200000000009368
+  },
+  {
+    "source": "village-13",
+    "target": "village-14",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 19
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 6.266666666676656
+  },
+  {
+    "source": "village-14",
+    "target": "village-15",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 1
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 22
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 5.566666666676042
+  },
+  {
+    "source": "village-15",
+    "target": "village-16",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 1
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 18
+      }
+    ],
+    "margin": 11.200000000009425
+  },
+  {
+    "source": "village-16",
+    "target": "village-17",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 21
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 5.8666666666571246
+  },
+  {
+    "source": "village-17",
+    "target": "village-18",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 23
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 17
+      }
+    ],
+    "margin": 2.533333333342739
+  },
+  {
+    "source": "village-18",
+    "target": "village-19",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 4
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 17
+      }
+    ],
+    "margin": 5.333333333323935
+  },
+  {
+    "source": "village-19",
+    "target": "village-20",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 20
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 10.733333333343353
+  },
+  {
+    "source": "village-20",
+    "target": "village-21",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 3
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 21
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 17
+      }
+    ],
+    "margin": 4.033333333323981
+  },
+  {
+    "source": "village-21",
+    "target": "village-22",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 3
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 17
+      }
+    ],
+    "margin": 9.200000000009425
+  },
+  {
+    "source": "village-22",
+    "target": "village-23",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 20
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 4.8666666666571246
+  },
+  {
+    "source": "village-23",
+    "target": "village-24",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 17
+      }
+    ],
+    "margin": 4.533333333342739
+  },
+  {
+    "source": "village-24",
+    "target": "village-25",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 5
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 18
+      }
+    ],
+    "margin": 2.3666666666759966
+  },
+  {
+    "source": "village-25",
+    "target": "village-26",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 4
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 22
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 9.833333333323367
+  },
+  {
+    "source": "village-26",
+    "target": "village-27",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 3
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 18
+      }
+    ],
+    "margin": 5.266666666677338
+  },
+  {
+    "source": "village-27",
+    "target": "village-28",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 1
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 21
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 11.300000000010073
+  },
+  {
+    "source": "village-28",
+    "target": "village-29",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 3
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 18
+      }
+    ],
+    "margin": 126.79999999999063
+  },
+  {
+    "source": "village-29",
+    "target": "aqueduct-0",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 3
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 18
+      }
+    ],
+    "margin": 5.899999999990541
+  },
+  {
+    "source": "aqueduct-0",
+    "target": "aqueduct-1",
     "actions": [
       {
         "direction": 1,
@@ -811,557 +1356,7 @@
         "ticks": 17
       }
     ],
-    "margin": 77.33333333333462
-  },
-  {
-    "source": "village-6",
-    "target": "village-7",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 15
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 18
-      }
-    ],
-    "margin": 84.16666666666242
-  },
-  {
-    "source": "village-7",
-    "target": "village-8",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 15
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 18
-      }
-    ],
-    "margin": 96.33333333334053
-  },
-  {
-    "source": "village-8",
-    "target": "village-9",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 20
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 21
-      }
-    ],
-    "margin": 168.66666666667197
-  },
-  {
-    "source": "village-9",
-    "target": "village-10",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 45
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 21
-      }
-    ],
-    "margin": 160.16666666667186
-  },
-  {
-    "source": "village-10",
-    "target": "village-11",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 4
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 19
-      }
-    ],
-    "margin": 96.69999999999456
-  },
-  {
-    "source": "village-11",
-    "target": "village-12",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 17
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 18
-      }
-    ],
-    "margin": 72.46666666666113
-  },
-  {
-    "source": "village-12",
-    "target": "village-13",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 14
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 61.33333333333866
-  },
-  {
-    "source": "village-13",
-    "target": "village-14",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 15
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 18
-      }
-    ],
-    "margin": 51.83333333333894
-  },
-  {
-    "source": "village-14",
-    "target": "village-15",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 9
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 55.13333333332815
-  },
-  {
-    "source": "village-15",
-    "target": "village-16",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 17
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 18
-      }
-    ],
-    "margin": 96.63333333333867
-  },
-  {
-    "source": "village-16",
-    "target": "village-17",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 19
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 73.9999999999946
-  },
-  {
-    "source": "village-17",
-    "target": "village-18",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 9
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 18
-      }
-    ],
-    "margin": 81.3000000000053
-  },
-  {
-    "source": "village-18",
-    "target": "village-19",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 8
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 77.9000000000052
-  },
-  {
-    "source": "village-19",
-    "target": "village-20",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 15
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 65.06666666667252
-  },
-  {
-    "source": "village-20",
-    "target": "village-21",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 12
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 18
-      }
-    ],
-    "margin": 63.333333333328255
-  },
-  {
-    "source": "village-21",
-    "target": "village-22",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 9
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 81.7000000000051
-  },
-  {
-    "source": "village-22",
-    "target": "village-23",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 16
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 85.83333333332808
-  },
-  {
-    "source": "village-23",
-    "target": "village-24",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 12
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 71.76666666666148
-  },
-  {
-    "source": "village-24",
-    "target": "village-25",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 12
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 18
-      }
-    ],
-    "margin": 76.63333333333844
-  },
-  {
-    "source": "village-25",
-    "target": "village-26",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 9
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 77.6000000000057
-  },
-  {
-    "source": "village-26",
-    "target": "village-27",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 15
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 18
-      }
-    ],
-    "margin": 83.1000000000065
-  },
-  {
-    "source": "village-27",
-    "target": "village-28",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 4
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 21
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 16
-      }
-    ],
-    "margin": 92.30000000000587
-  },
-  {
-    "source": "village-28",
-    "target": "village-29",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 18
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 18
-      }
-    ],
-    "margin": 122.29999999999495
-  },
-  {
-    "source": "village-29",
-    "target": "aqueduct-0",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 4
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 18
-      }
-    ],
-    "margin": 79.76666666666154
-  },
-  {
-    "source": "aqueduct-0",
-    "target": "aqueduct-1",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 11
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 66.53333333333856
+    "margin": 4.29999999999049
   },
   {
     "source": "aqueduct-1",
@@ -1370,20 +1365,20 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 13
+        "ticks": 1
       },
       {
         "direction": 1,
         "held": true,
-        "ticks": 24
+        "ticks": 22
       },
       {
         "direction": 1,
         "held": false,
-        "ticks": 17
+        "ticks": 16
       }
     ],
-    "margin": 64.96666666667193
+    "margin": 2.40000000000947
   },
   {
     "source": "aqueduct-2",
@@ -1392,20 +1387,20 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 12
+        "ticks": 3
       },
       {
         "direction": 1,
         "held": true,
-        "ticks": 24
+        "ticks": 19
       },
       {
         "direction": 1,
         "held": false,
-        "ticks": 18
+        "ticks": 16
       }
     ],
-    "margin": 68.63333333332832
+    "margin": 3.83333333334258
   },
   {
     "source": "aqueduct-3",
@@ -1414,7 +1409,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 11
+        "ticks": 1
       },
       {
         "direction": 1,
@@ -1427,7 +1422,7 @@
         "ticks": 17
       }
     ],
-    "margin": 67.06666666667206
+    "margin": 2.866666666676565
   },
   {
     "source": "aqueduct-4",
@@ -1436,20 +1431,20 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 13
+        "ticks": 3
       },
       {
         "direction": 1,
         "held": true,
-        "ticks": 24
+        "ticks": 19
       },
       {
         "direction": 1,
         "held": false,
-        "ticks": 18
+        "ticks": 16
       }
     ],
-    "margin": 63.83333333333951
+    "margin": 2.3000000000105274
   },
   {
     "source": "aqueduct-5",
@@ -1458,20 +1453,20 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 12
+        "ticks": 1
       },
       {
         "direction": -1,
         "held": true,
-        "ticks": 24
+        "ticks": 23
       },
       {
         "direction": -1,
         "held": false,
-        "ticks": 17
+        "ticks": 16
       }
     ],
-    "margin": 76.23333333332789
+    "margin": 8.600000000009913
   },
   {
     "source": "aqueduct-6",
@@ -1480,7 +1475,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 13
+        "ticks": 2
       },
       {
         "direction": -1,
@@ -1493,7 +1488,7 @@
         "ticks": 17
       }
     ],
-    "margin": 81.33333333333803
+    "margin": 3.200000000009311
   },
   {
     "source": "aqueduct-7",
@@ -1502,20 +1497,20 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 14
+        "ticks": 1
       },
       {
         "direction": 1,
         "held": true,
-        "ticks": 24
+        "ticks": 20
       },
       {
         "direction": 1,
         "held": false,
-        "ticks": 16
+        "ticks": 15
       }
     ],
-    "margin": 65.80000000000507
+    "margin": 5.566666666676497
   },
   {
     "source": "aqueduct-8",
@@ -1524,20 +1519,20 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 6
+        "ticks": 2
       },
       {
         "direction": 1,
         "held": true,
-        "ticks": 24
+        "ticks": 19
       },
       {
         "direction": 1,
         "held": false,
-        "ticks": 18
+        "ticks": 16
       }
     ],
-    "margin": 82.0000000000058
+    "margin": 4.366666666656215
   },
   {
     "source": "aqueduct-9",
@@ -1546,7 +1541,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 9
+        "ticks": 1
       },
       {
         "direction": 1,
@@ -1559,16 +1554,16 @@
         "ticks": 18
       }
     ],
-    "margin": 91.30000000000655
+    "margin": 8.999999999989313
   },
   {
     "source": "aqueduct-10",
     "target": "aqueduct-11",
     "actions": [
       {
-        "direction": 1,
+        "direction": -1,
         "held": false,
-        "ticks": 6
+        "ticks": 2
       },
       {
         "direction": 1,
@@ -1581,11 +1576,1276 @@
         "ticks": 21
       }
     ],
-    "margin": 185.8999999999951
+    "margin": 153.73333333334222
   },
   {
     "source": "aqueduct-11",
     "target": "aqueduct-12",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 36
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 20
+      }
+    ],
+    "margin": 172.7999999999888
+  },
+  {
+    "source": "aqueduct-12",
+    "target": "aqueduct-13",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 38
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 20
+      }
+    ],
+    "margin": 162.06666666665205
+  },
+  {
+    "source": "aqueduct-13",
+    "target": "aqueduct-14",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 22
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 18
+      }
+    ],
+    "margin": 6.999999999983629
+  },
+  {
+    "source": "aqueduct-14",
+    "target": "aqueduct-15",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 21
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 3.933333333347491
+  },
+  {
+    "source": "aqueduct-15",
+    "target": "aqueduct-16",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 1
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 17
+      }
+    ],
+    "margin": 3.0999999999844476
+  },
+  {
+    "source": "aqueduct-16",
+    "target": "aqueduct-17",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 1
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 18
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 15
+      }
+    ],
+    "margin": 4.533333333347855
+  },
+  {
+    "source": "aqueduct-17",
+    "target": "aqueduct-18",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 23
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 7.399999999984175
+  },
+  {
+    "source": "aqueduct-18",
+    "target": "aqueduct-19",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 17
+      }
+    ],
+    "margin": 2.7999999999860847
+  },
+  {
+    "source": "aqueduct-19",
+    "target": "aqueduct-20",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 1
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 20
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 15
+      }
+    ],
+    "margin": 5.166666666651508
+  },
+  {
+    "source": "aqueduct-20",
+    "target": "aqueduct-21",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 19
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 4.76666666668325
+  },
+  {
+    "source": "aqueduct-21",
+    "target": "aqueduct-22",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 17
+      }
+    ],
+    "margin": 8.83333333331825
+  },
+  {
+    "source": "aqueduct-22",
+    "target": "aqueduct-23",
+    "actions": [
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 20
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 15
+      }
+    ],
+    "margin": 3.8333333333193877
+  },
+  {
+    "source": "aqueduct-23",
+    "target": "aqueduct-24",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 1
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 20
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 4.866666666682249
+  },
+  {
+    "source": "aqueduct-24",
+    "target": "aqueduct-25",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 4.199999999986403
+  },
+  {
+    "source": "aqueduct-25",
+    "target": "aqueduct-26",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 19
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 5.266666666651645
+  },
+  {
+    "source": "aqueduct-26",
+    "target": "aqueduct-27",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 21
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 2.3333333333168866
+  },
+  {
+    "source": "aqueduct-27",
+    "target": "aqueduct-28",
+    "actions": [
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 20
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 15
+      }
+    ],
+    "margin": 5.3333333333180235
+  },
+  {
+    "source": "aqueduct-28",
+    "target": "aqueduct-29",
+    "actions": [
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 18
+      }
+    ],
+    "margin": 131.3333333333194
+  },
+  {
+    "source": "aqueduct-29",
+    "target": "mine-0",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 3
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 18
+      }
+    ],
+    "margin": 5.566666666681385
+  },
+  {
+    "source": "mine-0",
+    "target": "mine-1",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 17
+      }
+    ],
+    "margin": 3.166666666682886
+  },
+  {
+    "source": "mine-1",
+    "target": "mine-2",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 17
+      }
+    ],
+    "margin": 14.632138929072426
+  },
+  {
+    "source": "mine-2",
+    "target": "mine-3",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 7
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 19
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 3.5431040427301923
+  },
+  {
+    "source": "mine-3",
+    "target": "mine-4",
+    "actions": [
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 20
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 15
+      }
+    ],
+    "margin": 6.543104042732011
+  },
+  {
+    "source": "mine-4",
+    "target": "mine-5",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 20
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 2.523562623936641
+  },
+  {
+    "source": "mine-5",
+    "target": "mine-6",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 23
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 8.590229290601883
+  },
+  {
+    "source": "mine-6",
+    "target": "mine-7",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 1
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 18
+      }
+    ],
+    "margin": 2.956895957267079
+  },
+  {
+    "source": "mine-7",
+    "target": "mine-8",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 1
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 21
+      }
+    ],
+    "margin": 93.40977070940107
+  },
+  {
+    "source": "mine-8",
+    "target": "mine-9",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 65
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 21
+      }
+    ],
+    "margin": 172.2431040427274
+  },
+  {
+    "source": "mine-9",
+    "target": "mine-10",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 43
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 20
+      }
+    ],
+    "margin": 173.34310404272736
+  },
+  {
+    "source": "mine-10",
+    "target": "mine-11",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 1
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 18
+      }
+    ],
+    "margin": 3.709770709394263
+  },
+  {
+    "source": "mine-11",
+    "target": "mine-12",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 1
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 20
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 4.409770709394081
+  },
+  {
+    "source": "mine-12",
+    "target": "mine-13",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 3
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 3.8431040427274183
+  },
+  {
+    "source": "mine-13",
+    "target": "mine-14",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 1
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 23
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 9.895423552450268
+  },
+  {
+    "source": "mine-14",
+    "target": "mine-15",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 7
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 20
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 2.7747534218136707
+  },
+  {
+    "source": "mine-15",
+    "target": "mine-16",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 2.841420088480163
+  },
+  {
+    "source": "mine-16",
+    "target": "mine-17",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 3
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 19
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 2.274753421813557
+  },
+  {
+    "source": "mine-17",
+    "target": "mine-18",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 23
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 8.341420088480845
+  },
+  {
+    "source": "mine-18",
+    "target": "mine-19",
+    "actions": [
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 20
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 15
+      }
+    ],
+    "margin": 3.3414200884802767
+  },
+  {
+    "source": "mine-19",
+    "target": "mine-20",
+    "actions": [
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 19
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 15
+      }
+    ],
+    "margin": 6.341420088480277
+  },
+  {
+    "source": "mine-20",
+    "target": "mine-21",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 1
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 22
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 3.3585799115195414
+  },
+  {
+    "source": "mine-21",
+    "target": "mine-22",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 1
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 3.3414200884802767
+  },
+  {
+    "source": "mine-22",
+    "target": "mine-23",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 4
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 22
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 3.8585799115197688
+  },
+  {
+    "source": "mine-23",
+    "target": "mine-24",
+    "actions": [
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 19
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 14
+      }
+    ],
+    "margin": 5.1919132448525716
+  },
+  {
+    "source": "mine-24",
+    "target": "mine-25",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 17
+      }
+    ],
+    "margin": 3.591913244853231
+  },
+  {
+    "source": "mine-25",
+    "target": "mine-26",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 1
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 20
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 15
+      }
+    ],
+    "margin": 6.958579911519735
+  },
+  {
+    "source": "mine-26",
+    "target": "mine-27",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 1
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 21
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 3.7414200884801403
+  },
+  {
+    "source": "mine-27",
+    "target": "mine-28",
+    "actions": [
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 20
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 15
+      }
+    ],
+    "margin": 6.741420088480709
+  },
+  {
+    "source": "mine-28",
+    "target": "mine-29",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 18
+      }
+    ],
+    "margin": 56.47475342181474
+  },
+  {
+    "source": "mine-29",
+    "target": "castle-0",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 18
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 17
+      }
+    ],
+    "margin": 6.591913244852435
+  },
+  {
+    "source": "castle-0",
+    "target": "castle-1",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 17
+      }
+    ],
+    "margin": 4.99191324485281
+  },
+  {
+    "source": "castle-1",
+    "target": "castle-2",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 1
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 20
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 15
+      }
+    ],
+    "margin": 8.374753421814148
+  },
+  {
+    "source": "castle-2",
+    "target": "castle-3",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 21
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 2.5585799115185637
+  },
+  {
+    "source": "castle-3",
+    "target": "castle-4",
+    "actions": [
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 20
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 15
+      }
+    ],
+    "margin": 5.558579911517995
+  },
+  {
+    "source": "castle-4",
+    "target": "castle-5",
+    "actions": [
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 19
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 15
+      }
+    ],
+    "margin": 3.5585799115185637
+  },
+  {
+    "source": "castle-5",
+    "target": "castle-6",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 23
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 8.374753421814148
+  },
+  {
+    "source": "castle-6",
+    "target": "castle-7",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 3
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 3.1919132448518894
+  },
+  {
+    "source": "castle-7",
+    "target": "castle-8",
+    "actions": [
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 19
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 15
+      }
+    ],
+    "margin": 6.191913244851321
+  },
+  {
+    "source": "castle-8",
+    "target": "castle-9",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 20
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 2.125246578185397
+  },
+  {
+    "source": "castle-9",
+    "target": "castle-10",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 1
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 20
+      }
+    ],
+    "margin": 136.90808675514631
+  },
+  {
+    "source": "castle-10",
+    "target": "castle-11",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 32
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 21
+      }
+    ],
+    "margin": 182.17475342181478
+  },
+  {
+    "source": "castle-11",
+    "target": "castle-12",
     "actions": [
       {
         "direction": 1,
@@ -1600,14 +2860,1260 @@
       {
         "direction": 1,
         "held": false,
+        "ticks": 21
+      }
+    ],
+    "margin": 167.85857991151306
+  },
+  {
+    "source": "castle-12",
+    "target": "castle-13",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 29
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 18
+      }
+    ],
+    "margin": 3.2252465781734827
+  },
+  {
+    "source": "castle-13",
+    "target": "castle-14",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 23
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 4.291913244842817
+  },
+  {
+    "source": "castle-14",
+    "target": "castle-15",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 3
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 21
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 2.2747534218235614
+  },
+  {
+    "source": "castle-15",
+    "target": "castle-16",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 2.34142008848994
+  },
+  {
+    "source": "castle-16",
+    "target": "castle-17",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 1
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 19
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 15
+      }
+    ],
+    "margin": 4.708086755159002
+  },
+  {
+    "source": "castle-17",
+    "target": "castle-18",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 20
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 15
+      }
+    ],
+    "margin": 8.025246578176848
+  },
+  {
+    "source": "castle-18",
+    "target": "castle-19",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 17
+      }
+    ],
+    "margin": 3.425246578177166
+  },
+  {
+    "source": "castle-19",
+    "target": "castle-20",
+    "actions": [
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 20
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 15
+      }
+    ],
+    "margin": 6.425246578176029
+  },
+  {
+    "source": "castle-20",
+    "target": "castle-21",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 21
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 15
+      }
+    ],
+    "margin": 4.308086755155955
+  },
+  {
+    "source": "castle-21",
+    "target": "castle-22",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 17
+      }
+    ],
+    "margin": 8.708086755155364
+  },
+  {
+    "source": "castle-22",
+    "target": "castle-23",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 1
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 20
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 15
+      }
+    ],
+    "margin": 3.0747534218244255
+  },
+  {
+    "source": "castle-23",
+    "target": "castle-24",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 1
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 22
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 5.625246578178121
+  },
+  {
+    "source": "castle-24",
+    "target": "castle-25",
+    "actions": [
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 21
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 15
+      }
+    ],
+    "margin": 3.6252465781776664
+  },
+  {
+    "source": "castle-25",
+    "target": "castle-26",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 22
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 4.691913244842908
+  },
+  {
+    "source": "castle-26",
+    "target": "castle-27",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 1
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 20
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 15
+      }
+    ],
+    "margin": 2.6747534218225155
+  },
+  {
+    "source": "castle-27",
+    "target": "castle-28",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 17
+      }
+    ],
+    "margin": 6.074753421822152
+  },
+  {
+    "source": "castle-28",
+    "target": "castle-29",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 18
+      }
+    ],
+    "margin": 105.80808675515846
+  },
+  {
+    "source": "castle-29",
+    "target": "windmill-0",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 7
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 17
+      }
+    ],
+    "margin": 6.708086755156728
+  },
+  {
+    "source": "windmill-0",
+    "target": "windmill-1",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 17
+      }
+    ],
+    "margin": 4.308086755157319
+  },
+  {
+    "source": "windmill-1",
+    "target": "windmill-2",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 1
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 20
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 15
+      }
+    ],
+    "margin": 3.4964605885224955
+  },
+  {
+    "source": "windmill-2",
+    "target": "windmill-3",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 5
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 17
+      }
+    ],
+    "margin": 3.0808631053764657
+  },
+  {
+    "source": "windmill-3",
+    "target": "windmill-4",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 3.1475297720458
+  },
+  {
+    "source": "windmill-4",
+    "target": "windmill-5",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 3
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 20
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 2.580863105378512
+  },
+  {
+    "source": "windmill-5",
+    "target": "windmill-6",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 22
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 8.647529772043754
+  },
+  {
+    "source": "windmill-6",
+    "target": "windmill-7",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 3
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 2.0623643692383666
+  },
+  {
+    "source": "windmill-7",
+    "target": "windmill-8",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 21
+      }
+    ],
+    "margin": 106.06773583381619
+  },
+  {
+    "source": "windmill-8",
+    "target": "windmill-9",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 60
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": -1,
+        "held": false,
         "ticks": 20
       }
     ],
-    "margin": 158.26666666665892
+    "margin": 165.97905809042527
   },
   {
-    "source": "aqueduct-12",
-    "target": "aqueduct-13",
+    "source": "windmill-9",
+    "target": "windmill-10",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 46
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 20
+      }
+    ],
+    "margin": 170.17905809042566
+  },
+  {
+    "source": "windmill-10",
+    "target": "windmill-11",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 40
+      },
+      {
+        "direction": 0,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": 0,
+        "held": false,
+        "ticks": 18
+      }
+    ],
+    "margin": 2.1542752429073744
+  },
+  {
+    "source": "windmill-11",
+    "target": "windmill-12",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 1
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 23
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 6.756924780812938
+  },
+  {
+    "source": "windmill-12",
+    "target": "windmill-13",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 5
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 22
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 17
+      }
+    ],
+    "margin": 2.37541244220904
+  },
+  {
+    "source": "windmill-13",
+    "target": "windmill-14",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 21
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 15
+      }
+    ],
+    "margin": 7.9046183844531015
+  },
+  {
+    "source": "windmill-14",
+    "target": "windmill-15",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 23
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 2.3429971558587113
+  },
+  {
+    "source": "windmill-15",
+    "target": "windmill-16",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 1
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 17
+      }
+    ],
+    "margin": 4.690336177474478
+  },
+  {
+    "source": "windmill-16",
+    "target": "windmill-17",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 16.631947016365075
+  },
+  {
+    "source": "windmill-17",
+    "target": "windmill-18",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 5
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 22
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 4.210156415023789
+  },
+  {
+    "source": "windmill-18",
+    "target": "windmill-19",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 4
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 2.7983068578562325
+  },
+  {
+    "source": "windmill-19",
+    "target": "windmill-20",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 1
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 20
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 15
+      }
+    ],
+    "margin": 4.818522596229968
+  },
+  {
+    "source": "windmill-20",
+    "target": "windmill-21",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 1
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 23
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 4.6115795342420824
+  },
+  {
+    "source": "windmill-21",
+    "target": "windmill-22",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 1
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 2.088420465757679
+  },
+  {
+    "source": "windmill-22",
+    "target": "windmill-23",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 1
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 22
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 3.6115795342420824
+  },
+  {
+    "source": "windmill-23",
+    "target": "windmill-24",
+    "actions": [
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 19
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 14
+      }
+    ],
+    "margin": 5.72175379909072
+  },
+  {
+    "source": "windmill-24",
+    "target": "windmill-25",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 17
+      }
+    ],
+    "margin": 4.237367751939814
+  },
+  {
+    "source": "windmill-25",
+    "target": "windmill-26",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 1
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 20
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 15
+      }
+    ],
+    "margin": 7.203511276850577
+  },
+  {
+    "source": "windmill-26",
+    "target": "windmill-27",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 1
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 23
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 3.9620158373179493
+  },
+  {
+    "source": "windmill-27",
+    "target": "windmill-28",
+    "actions": [
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 20
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 15
+      }
+    ],
+    "margin": 6.962015837317722
+  },
+  {
+    "source": "windmill-28",
+    "target": "windmill-29",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 18
+      }
+    ],
+    "margin": 66.77131749601551
+  },
+  {
+    "source": "windmill-29",
+    "target": "clouds-0",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 14
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 17
+      }
+    ],
+    "margin": 5.237984162682608
+  },
+  {
+    "source": "clouds-0",
+    "target": "clouds-1",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 3.8286825039840977
+  },
+  {
+    "source": "clouds-1",
+    "target": "clouds-2",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 1
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 21
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 15
+      }
+    ],
+    "margin": 8.46201583731738
+  },
+  {
+    "source": "clouds-2",
+    "target": "clouds-3",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 1
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 22
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 2.2379841626823236
+  },
+  {
+    "source": "clouds-3",
+    "target": "clouds-4",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 2.3046508293493844
+  },
+  {
+    "source": "clouds-4",
+    "target": "clouds-5",
+    "actions": [
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 21
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 15
+      }
+    ],
+    "margin": 4.6953491706510135
+  },
+  {
+    "source": "clouds-5",
+    "target": "clouds-6",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 22
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 7.237984162682608
+  },
+  {
+    "source": "clouds-6",
+    "target": "clouds-7",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 3
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 3.6713174960156607
+  },
+  {
+    "source": "clouds-7",
+    "target": "clouds-8",
+    "actions": [
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 20
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 15
+      }
+    ],
+    "margin": 6.671317496016059
+  },
+  {
+    "source": "clouds-8",
+    "target": "clouds-9",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 19
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 3.2620158373166532
+  },
+  {
+    "source": "clouds-9",
+    "target": "clouds-10",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 1
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 20
+      }
+    ],
+    "margin": 170.77131749601722
+  },
+  {
+    "source": "clouds-10",
+    "target": "clouds-11",
     "actions": [
       {
         "direction": 1,
@@ -1622,2596 +4128,10 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 20
-      }
-    ],
-    "margin": 156.2666666666555
-  },
-  {
-    "source": "aqueduct-13",
-    "target": "aqueduct-14",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 20
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 18
-      }
-    ],
-    "margin": 77.06666666667934
-  },
-  {
-    "source": "aqueduct-14",
-    "target": "aqueduct-15",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 10
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 71.73333333334222
-  },
-  {
-    "source": "aqueduct-15",
-    "target": "aqueduct-16",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 10
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 76.40000000000805
-  },
-  {
-    "source": "aqueduct-16",
-    "target": "aqueduct-17",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 15
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 58.566666666671836
-  },
-  {
-    "source": "aqueduct-17",
-    "target": "aqueduct-18",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 12
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 67.63333333333867
-  },
-  {
-    "source": "aqueduct-18",
-    "target": "aqueduct-19",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 13
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 66.79999999999859
-  },
-  {
-    "source": "aqueduct-19",
-    "target": "aqueduct-20",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 6
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 16
-      }
-    ],
-    "margin": 76.33333333333098
-  },
-  {
-    "source": "aqueduct-20",
-    "target": "aqueduct-21",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 14
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 18
-      }
-    ],
-    "margin": 87.46666666666147
-  },
-  {
-    "source": "aqueduct-21",
-    "target": "aqueduct-22",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 14
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 74.66666666666424
-  },
-  {
-    "source": "aqueduct-22",
-    "target": "aqueduct-23",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 10
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 66.66666666666674
-  },
-  {
-    "source": "aqueduct-23",
-    "target": "aqueduct-24",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 11
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 76.36666666666679
-  },
-  {
-    "source": "aqueduct-24",
-    "target": "aqueduct-25",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 7
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 16
-      }
-    ],
-    "margin": 72.4666666666642
-  },
-  {
-    "source": "aqueduct-25",
-    "target": "aqueduct-26",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 14
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 18
-      }
-    ],
-    "margin": 81.33333333333167
-  },
-  {
-    "source": "aqueduct-26",
-    "target": "aqueduct-27",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 11
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 81.63333333333412
-  },
-  {
-    "source": "aqueduct-27",
-    "target": "aqueduct-28",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 14
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 16
-      }
-    ],
-    "margin": 76.09999999999809
-  },
-  {
-    "source": "aqueduct-28",
-    "target": "aqueduct-29",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 1
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 18
-      }
-    ],
-    "margin": 131.7333333333304
-  },
-  {
-    "source": "aqueduct-29",
-    "target": "mine-0",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 2
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 18
-      }
-    ],
-    "margin": 82.99999999999795
-  },
-  {
-    "source": "mine-0",
-    "target": "mine-1",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 10
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 77.66666666666697
-  },
-  {
-    "source": "mine-1",
-    "target": "mine-2",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 15
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 49.56846760244275
-  },
-  {
-    "source": "mine-2",
-    "target": "mine-3",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 15
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 18
-      }
-    ],
-    "margin": 58.32554892108146
-  },
-  {
-    "source": "mine-3",
-    "target": "mine-4",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 17
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 16
-      }
-    ],
-    "margin": 65.89221558774625
-  },
-  {
-    "source": "mine-4",
-    "target": "mine-5",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 12
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 74.17445107892263
-  },
-  {
-    "source": "mine-5",
-    "target": "mine-6",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 6
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 72.04111774558737
-  },
-  {
-    "source": "mine-6",
-    "target": "mine-7",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 13
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 18
-      }
-    ],
-    "margin": 97.1922155877487
-  },
-  {
-    "source": "mine-7",
-    "target": "mine-8",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 20
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
         "ticks": 21
       }
     ],
-    "margin": 169.5255489210815
-  },
-  {
-    "source": "mine-8",
-    "target": "mine-9",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 45
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 21
-      }
-    ],
-    "margin": 161.02554892107673
-  },
-  {
-    "source": "mine-9",
-    "target": "mine-10",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 42
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 20
-      }
-    ],
-    "margin": 157.75888225440997
-  },
-  {
-    "source": "mine-10",
-    "target": "mine-11",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 5
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 18
-      }
-    ],
-    "margin": 96.40778441225643
-  },
-  {
-    "source": "mine-11",
-    "target": "mine-12",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 13
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 67.9744510789231
-  },
-  {
-    "source": "mine-12",
-    "target": "mine-13",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 8
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 16
-      }
-    ],
-    "margin": 66.29221558774333
-  },
-  {
-    "source": "mine-13",
-    "target": "mine-14",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 12
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 64.92283839414222
-  },
-  {
-    "source": "mine-14",
-    "target": "mine-15",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 11
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 70.14897066504992
-  },
-  {
-    "source": "mine-15",
-    "target": "mine-16",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 9
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 16
-      }
-    ],
-    "margin": 63.484362668283325
-  },
-  {
-    "source": "mine-16",
-    "target": "mine-17",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 11
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 18
-      }
-    ],
-    "margin": 66.51769600161651
-  },
-  {
-    "source": "mine-17",
-    "target": "mine-18",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 13
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 54.951029334950476
-  },
-  {
-    "source": "mine-18",
-    "target": "mine-19",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 7
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 16
-      }
-    ],
-    "margin": 71.05102933494982
-  },
-  {
-    "source": "mine-19",
-    "target": "mine-20",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 9
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 75.91563733171682
-  },
-  {
-    "source": "mine-20",
-    "target": "mine-21",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 13
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 81.65102933494998
-  },
-  {
-    "source": "mine-21",
-    "target": "mine-22",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 12
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 16
-      }
-    ],
-    "margin": 67.3843626682833
-  },
-  {
-    "source": "mine-22",
-    "target": "mine-23",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 10
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 62.717696001616446
-  },
-  {
-    "source": "mine-23",
-    "target": "mine-24",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 11
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 16
-      }
-    ],
-    "margin": 71.91563733171643
-  },
-  {
-    "source": "mine-24",
-    "target": "mine-25",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 14
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 74.71563733171718
-  },
-  {
-    "source": "mine-25",
-    "target": "mine-26",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 6
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 16
-      }
-    ],
-    "margin": 74.24897066505036
-  },
-  {
-    "source": "mine-26",
-    "target": "mine-27",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 14
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 69.55102933494942
-  },
-  {
-    "source": "mine-27",
-    "target": "mine-28",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 7
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 16
-      }
-    ],
-    "margin": 77.5489706650502
-  },
-  {
-    "source": "mine-28",
-    "target": "mine-29",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 1
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 18
-      }
-    ],
-    "margin": 132.81769600161715
-  },
-  {
-    "source": "mine-29",
-    "target": "castle-0",
-    "actions": [
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 81.15102933494984
-  },
-  {
-    "source": "castle-0",
-    "target": "castle-1",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 9
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 75.81563733171743
-  },
-  {
-    "source": "castle-1",
-    "target": "castle-2",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 10
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 16
-      }
-    ],
-    "margin": 67.18436266828292
-  },
-  {
-    "source": "castle-2",
-    "target": "castle-3",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 10
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 72.51769600161697
-  },
-  {
-    "source": "castle-3",
-    "target": "castle-4",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 14
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 16
-      }
-    ],
-    "margin": 69.01563733171565
-  },
-  {
-    "source": "castle-4",
-    "target": "castle-5",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 13
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 77.44897066504973
-  },
-  {
-    "source": "castle-5",
-    "target": "castle-6",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 8
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 81.95102933494957
-  },
-  {
-    "source": "castle-6",
-    "target": "castle-7",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 9
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 16
-      }
-    ],
-    "margin": 71.41563733171643
-  },
-  {
-    "source": "castle-7",
-    "target": "castle-8",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 10
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 66.08230399838237
-  },
-  {
-    "source": "castle-8",
-    "target": "castle-9",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 12
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 82.01563733171542
-  },
-  {
-    "source": "castle-9",
-    "target": "castle-10",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 9
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 20
-      }
-    ],
-    "margin": 191.35102933495068
-  },
-  {
-    "source": "castle-10",
-    "target": "castle-11",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 41
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 21
-      }
-    ],
-    "margin": 168.6823039983799
-  },
-  {
-    "source": "castle-11",
-    "target": "castle-12",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 42
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 21
-      }
-    ],
-    "margin": 157.0823039983743
-  },
-  {
-    "source": "castle-12",
-    "target": "castle-13",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 26
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 18
-      }
-    ],
-    "margin": 72.45102933496491
-  },
-  {
-    "source": "castle-13",
-    "target": "castle-14",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 10
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 67.11769600162779
-  },
-  {
-    "source": "castle-14",
-    "target": "castle-15",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 10
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 74.21563733170774
-  },
-  {
-    "source": "castle-15",
-    "target": "castle-16",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 10
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 16
-      }
-    ],
-    "margin": 67.21563733170888
-  },
-  {
-    "source": "castle-16",
-    "target": "castle-17",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 13
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 62.21769600162861
-  },
-  {
-    "source": "castle-17",
-    "target": "castle-18",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 9
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 16
-      }
-    ],
-    "margin": 71.41563733170824
-  },
-  {
-    "source": "castle-18",
-    "target": "castle-19",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 10
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 76.74897066504354
-  },
-  {
-    "source": "castle-19",
-    "target": "castle-20",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 10
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 72.08230399837453
-  },
-  {
-    "source": "castle-20",
-    "target": "castle-21",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 9
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 16
-      }
-    ],
-    "margin": 66.55102933495664
-  },
-  {
-    "source": "castle-21",
-    "target": "castle-22",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 10
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 64.11563733171124
-  },
-  {
-    "source": "castle-22",
-    "target": "castle-23",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 12
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 16
-      }
-    ],
-    "margin": 67.61769600162597
-  },
-  {
-    "source": "castle-23",
-    "target": "castle-24",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 12
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 78.55102933495527
-  },
-  {
-    "source": "castle-24",
-    "target": "castle-25",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 2
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 16
-      }
-    ],
-    "margin": 74.51563733171133
-  },
-  {
-    "source": "castle-25",
-    "target": "castle-26",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 12
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 77.41769600162456
-  },
-  {
-    "source": "castle-26",
-    "target": "castle-27",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 11
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 16
-      }
-    ],
-    "margin": 67.21563733171115
-  },
-  {
-    "source": "castle-27",
-    "target": "castle-28",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 6
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 76.65102933495427
-  },
-  {
-    "source": "castle-28",
-    "target": "castle-29",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 4
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 18
-      }
-    ],
-    "margin": 131.88230399837585
-  },
-  {
-    "source": "castle-29",
-    "target": "windmill-0",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 1
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 79.1823039983783
-  },
-  {
-    "source": "windmill-0",
-    "target": "windmill-1",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 10
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 71.4843626682873
-  },
-  {
-    "source": "windmill-1",
-    "target": "windmill-2",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 10
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 16
-      }
-    ],
-    "margin": 42.306069834840855
-  },
-  {
-    "source": "windmill-2",
-    "target": "windmill-3",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 12
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 68.41708741585444
-  },
-  {
-    "source": "windmill-3",
-    "target": "windmill-4",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 7
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 16
-      }
-    ],
-    "margin": 71.48291258414883
-  },
-  {
-    "source": "windmill-4",
-    "target": "windmill-5",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 7
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 82.28375408251782
-  },
-  {
-    "source": "windmill-5",
-    "target": "windmill-6",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 6
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 81.58291258414692
-  },
-  {
-    "source": "windmill-6",
-    "target": "windmill-7",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 4
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 16
-      }
-    ],
-    "margin": 78.01344521987653
-  },
-  {
-    "source": "windmill-7",
-    "target": "windmill-8",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 16
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 21
-      }
-    ],
-    "margin": 153.1600779078326
-  },
-  {
-    "source": "windmill-8",
-    "target": "windmill-9",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 46
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 20
-      }
-    ],
-    "margin": 150.63775457240706
-  },
-  {
-    "source": "windmill-9",
-    "target": "windmill-10",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 47
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 20
-      }
-    ],
-    "margin": 159.20442123907407
-  },
-  {
-    "source": "windmill-10",
-    "target": "windmill-11",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 6
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 18
-      }
-    ],
-    "margin": 82.99557876092584
-  },
-  {
-    "source": "windmill-11",
-    "target": "windmill-12",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 16
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 68.78350500256616
-  },
-  {
-    "source": "windmill-12",
-    "target": "windmill-13",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 8
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 51.77214408264433
-  },
-  {
-    "source": "windmill-13",
-    "target": "windmill-14",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 14
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 16
-      }
-    ],
-    "margin": 69.76118925068863
-  },
-  {
-    "source": "windmill-14",
-    "target": "windmill-15",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 13
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 67.80547741597746
-  },
-  {
-    "source": "windmill-15",
-    "target": "windmill-16",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 11
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 77.8945225840223
-  },
-  {
-    "source": "windmill-16",
-    "target": "windmill-17",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 11
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 16
-      }
-    ],
-    "margin": 64.02400524949542
-  },
-  {
-    "source": "windmill-17",
-    "target": "windmill-18",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 11
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 55.873517118839914
-  },
-  {
-    "source": "windmill-18",
-    "target": "windmill-19",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 8
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 16
-      }
-    ],
-    "margin": 73.25314220357507
-  },
-  {
-    "source": "windmill-19",
-    "target": "windmill-20",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 10
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 16
-      }
-    ],
-    "margin": 69.69429174627408
-  },
-  {
-    "source": "windmill-20",
-    "target": "windmill-21",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 9
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 73.72762507960704
-  },
-  {
-    "source": "windmill-21",
-    "target": "windmill-22",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 9
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 16
-      }
-    ],
-    "margin": 76.09429174627394
-  },
-  {
-    "source": "windmill-22",
-    "target": "windmill-23",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 11
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 65.7942917462737
-  },
-  {
-    "source": "windmill-23",
-    "target": "windmill-24",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 8
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 16
-      }
-    ],
-    "margin": 69.06095841294052
-  },
-  {
-    "source": "windmill-24",
-    "target": "windmill-25",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 10
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 76.80321690415258
-  },
-  {
-    "source": "windmill-25",
-    "target": "windmill-26",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 10
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 16
-      }
-    ],
-    "margin": 73.9889089091148
-  },
-  {
-    "source": "windmill-26",
-    "target": "windmill-27",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 10
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 78.65557557578103
-  },
-  {
-    "source": "windmill-27",
-    "target": "windmill-28",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 6
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 16
-      }
-    ],
-    "margin": 81.87775775755205
-  },
-  {
-    "source": "windmill-28",
-    "target": "windmill-29",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 4
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 18
-      }
-    ],
-    "margin": 131.5889089091143
-  },
-  {
-    "source": "windmill-29",
-    "target": "clouds-0",
-    "actions": [
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 76.07775775755204
-  },
-  {
-    "source": "clouds-0",
-    "target": "clouds-1",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 11
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 16
-      }
-    ],
-    "margin": 67.44442442421874
-  },
-  {
-    "source": "clouds-1",
-    "target": "clouds-2",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 8
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 16
-      }
-    ],
-    "margin": 66.822242242448
-  },
-  {
-    "source": "clouds-2",
-    "target": "clouds-3",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 9
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 67.78890890911441
-  },
-  {
-    "source": "clouds-3",
-    "target": "clouds-4",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 11
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 16
-      }
-    ],
-    "margin": 66.84442442421869
-  },
-  {
-    "source": "clouds-4",
-    "target": "clouds-5",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 10
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 16
-      }
-    ],
-    "margin": 73.84442442421908
-  },
-  {
-    "source": "clouds-5",
-    "target": "clouds-6",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 10
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 76.82224224244783
-  },
-  {
-    "source": "clouds-6",
-    "target": "clouds-7",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 11
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 16
-      }
-    ],
-    "margin": 67.81109109088572
-  },
-  {
-    "source": "clouds-7",
-    "target": "clouds-8",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 9
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 74.1555755757812
-  },
-  {
-    "source": "clouds-8",
-    "target": "clouds-9",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 9
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 18
-      }
-    ],
-    "margin": 87.54442442421805
-  },
-  {
-    "source": "clouds-9",
-    "target": "clouds-10",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 7
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 20
-      }
-    ],
-    "margin": 181.44442442421746
-  },
-  {
-    "source": "clouds-10",
-    "target": "clouds-11",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 39
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 21
-      }
-    ],
-    "margin": 156.7444244242149
+    "margin": 174.8953491706468
   },
   {
     "source": "clouds-11",
@@ -4220,7 +4140,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 45
+        "ticks": 44
       },
       {
         "direction": 1,
@@ -4233,7 +4153,7 @@
         "ticks": 20
       }
     ],
-    "margin": 146.577757757545
+    "margin": 160.3620158373103
   },
   {
     "source": "clouds-12",
@@ -4242,7 +4162,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 33
+        "ticks": 30
       },
       {
         "direction": 1,
@@ -4255,11 +4175,121 @@
         "ticks": 19
       }
     ],
-    "margin": 102.3444244242055
+    "margin": 4.97131749602886
   },
   {
     "source": "clouds-13",
     "target": "clouds-14",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 1
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 20
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 15
+      }
+    ],
+    "margin": 8.395349170640202
+  },
+  {
+    "source": "clouds-14",
+    "target": "clouds-15",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 21
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 15
+      }
+    ],
+    "margin": 2.128682503973323
+  },
+  {
+    "source": "clouds-15",
+    "target": "clouds-16",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 1
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 17
+      }
+    ],
+    "margin": 7.830483439634463
+  },
+  {
+    "source": "clouds-16",
+    "target": "clouds-17",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 21
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 15
+      }
+    ],
+    "margin": 4.600139366913936
+  },
+  {
+    "source": "clouds-17",
+    "target": "clouds-18",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 1
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 20
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 15
+      }
+    ],
+    "margin": 3.7665272997551256
+  },
+  {
+    "source": "clouds-18",
+    "target": "clouds-19",
     "actions": [
       {
         "direction": 1,
@@ -4274,120 +4304,10 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 16
-      }
-    ],
-    "margin": 67.22224224245838
-  },
-  {
-    "source": "clouds-14",
-    "target": "clouds-15",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 9
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 16
-      }
-    ],
-    "margin": 69.5889089091238
-  },
-  {
-    "source": "clouds-15",
-    "target": "clouds-16",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 14
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
         "ticks": 17
       }
     ],
-    "margin": 61.808774368929335
-  },
-  {
-    "source": "clouds-16",
-    "target": "clouds-17",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 10
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 16
-      }
-    ],
-    "margin": 53.743302105345265
-  },
-  {
-    "source": "clouds-17",
-    "target": "clouds-18",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 6
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 16
-      }
-    ],
-    "margin": 71.79003122799122
-  },
-  {
-    "source": "clouds-18",
-    "target": "clouds-19",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 8
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 78.39003122799204
+    "margin": 3.533193966422232
   },
   {
     "source": "clouds-19",
@@ -4396,20 +4316,20 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 8
+        "ticks": 1
       },
       {
         "direction": -1,
         "held": true,
-        "ticks": 24
+        "ticks": 21
       },
       {
         "direction": -1,
         "held": false,
-        "ticks": 16
+        "ticks": 15
       }
     ],
-    "margin": 74.34330210534335
+    "margin": 5.8998606330876555
   },
   {
     "source": "clouds-20",
@@ -4418,20 +4338,20 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 10
+        "ticks": 2
       },
       {
         "direction": 1,
         "held": true,
-        "ticks": 24
+        "ticks": 20
       },
       {
         "direction": 1,
         "held": false,
-        "ticks": 16
+        "ticks": 15
       }
     ],
-    "margin": 66.34330210534108
+    "margin": 4.833472700244329
   },
   {
     "source": "clouds-21",
@@ -4440,7 +4360,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 9
+        "ticks": 2
       },
       {
         "direction": 1,
@@ -4453,7 +4373,7 @@
         "ticks": 16
       }
     ],
-    "margin": 67.02336456132775
+    "margin": 5.90013936691048
   },
   {
     "source": "clouds-22",
@@ -4462,20 +4382,20 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 13
+        "ticks": 3
       },
       {
         "direction": 1,
         "held": true,
-        "ticks": 24
+        "ticks": 22
       },
       {
         "direction": 1,
         "held": false,
-        "ticks": 17
+        "ticks": 16
       }
     ],
-    "margin": 68.59003122799413
+    "margin": 2.3334727002466025
   },
   {
     "source": "clouds-23",
@@ -4484,20 +4404,20 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 9
+        "ticks": 1
       },
       {
         "direction": -1,
         "held": true,
-        "ticks": 24
+        "ticks": 23
       },
       {
         "direction": -1,
         "held": false,
-        "ticks": 16
+        "ticks": 15
       }
     ],
-    "margin": 69.77663543866925
+    "margin": 3.033193966422459
   },
   {
     "source": "clouds-24",
@@ -4506,7 +4426,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 10
+        "ticks": 3
       },
       {
         "direction": -1,
@@ -4519,7 +4439,7 @@
         "ticks": 17
       }
     ],
-    "margin": 76.55669789466447
+    "margin": 4.200139366910662
   },
   {
     "source": "clouds-25",
@@ -4528,20 +4448,20 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 6
+        "ticks": 1
       },
       {
         "direction": -1,
         "held": true,
-        "ticks": 24
+        "ticks": 20
       },
       {
         "direction": -1,
         "held": false,
-        "ticks": 16
+        "ticks": 15
       }
     ],
-    "margin": 76.09003122799595
+    "margin": 8.833472700245238
   },
   {
     "source": "clouds-26",
@@ -4550,20 +4470,20 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 8
+        "ticks": 2
       },
       {
         "direction": 1,
         "held": true,
-        "ticks": 24
+        "ticks": 20
       },
       {
         "direction": 1,
         "held": false,
-        "ticks": 16
+        "ticks": 15
       }
     ],
-    "margin": 67.82336456133135
+    "margin": 2.5668060335772225
   },
   {
     "source": "clouds-27",
@@ -4572,7 +4492,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 7
+        "ticks": 2
       },
       {
         "direction": 1,
@@ -4585,7 +4505,7 @@
         "ticks": 16
       }
     ],
-    "margin": 72.0766354386667
+    "margin": 2.6334727002431464
   },
   {
     "source": "clouds-28",
@@ -4594,7 +4514,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 5
+        "ticks": 3
       },
       {
         "direction": 1,
@@ -4607,16 +4527,16 @@
         "ticks": 18
       }
     ],
-    "margin": 132.09003122799868
+    "margin": 71.73347270024624
   },
   {
     "source": "clouds-29",
     "target": "frozen-0",
     "actions": [
       {
-        "direction": 1,
+        "direction": -1,
         "held": false,
-        "ticks": 9
+        "ticks": 5
       },
       {
         "direction": -1,
@@ -4629,19 +4549,24 @@
         "ticks": 17
       }
     ],
-    "margin": 122.94330210533099
+    "margin": 39.900139366910935
   },
   {
     "source": "frozen-0",
     "target": "frozen-1",
     "actions": [
       {
-        "direction": 1,
-        "held": false,
-        "ticks": 39
+        "direction": 0,
+        "held": true,
+        "ticks": 1
       },
       {
-        "direction": -1,
+        "direction": 0,
+        "held": false,
+        "ticks": 12
+      },
+      {
+        "direction": 1,
         "held": false,
         "ticks": 4
       },
@@ -4656,7 +4581,7 @@
         "ticks": 17
       }
     ],
-    "margin": 76.96780900577869
+    "margin": 2.6554161886433576
   },
   {
     "source": "frozen-1",
@@ -4665,20 +4590,20 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 6
+        "ticks": 1
       },
       {
         "direction": -1,
         "held": true,
-        "ticks": 24
+        "ticks": 20
       },
       {
         "direction": -1,
         "held": false,
-        "ticks": 16
+        "ticks": 15
       }
     ],
-    "margin": 76.50114233911017
+    "margin": 5.022082855308781
   },
   {
     "source": "frozen-2",
@@ -4687,29 +4612,29 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 11
+        "ticks": 2
       },
       {
         "direction": 1,
         "held": true,
-        "ticks": 24
+        "ticks": 21
       },
       {
         "direction": 1,
         "held": false,
-        "ticks": 16
+        "ticks": 15
       }
     ],
-    "margin": 70.86552432755411
+    "margin": 1.711250478023203
   },
   {
     "source": "frozen-3",
     "target": "frozen-4",
     "actions": [
       {
-        "direction": 1,
+        "direction": -1,
         "held": false,
-        "ticks": 3
+        "ticks": 1
       },
       {
         "direction": 1,
@@ -4722,12 +4647,32 @@
         "ticks": 16
       }
     ],
-    "margin": 121.09885766088655
+    "margin": 33.411250478021884
   },
   {
     "source": "frozen-4",
     "target": "frozen-5",
     "actions": [
+      {
+        "direction": 0,
+        "held": true,
+        "ticks": 1
+      },
+      {
+        "direction": 0,
+        "held": false,
+        "ticks": 12
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 5
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 2
+      },
       {
         "direction": -1,
         "held": true,
@@ -4739,29 +4684,24 @@
         "ticks": 17
       }
     ],
-    "margin": 76.56780900577883
+    "margin": 2.4109717441988323
   },
   {
     "source": "frozen-5",
     "target": "frozen-6",
     "actions": [
       {
-        "direction": 1,
-        "held": false,
-        "ticks": 5
-      },
-      {
         "direction": -1,
         "held": true,
-        "ticks": 24
+        "ticks": 19
       },
       {
         "direction": -1,
         "held": false,
-        "ticks": 16
+        "ticks": 14
       }
     ],
-    "margin": 79.26552432755625
+    "margin": 4.922361589135562
   },
   {
     "source": "frozen-6",
@@ -4770,7 +4710,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 8
+        "ticks": 1
       },
       {
         "direction": -1,
@@ -4783,7 +4723,7 @@
         "ticks": 17
       }
     ],
-    "margin": 86.15426374674985
+    "margin": 1.3044297948840722
   },
   {
     "source": "frozen-7",
@@ -4792,7 +4732,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 18
+        "ticks": 1
       },
       {
         "direction": -1,
@@ -4805,7 +4745,7 @@
         "ticks": 20
       }
     ],
-    "margin": 151.1271986041179
+    "margin": 85.19834948133393
   },
   {
     "source": "frozen-8",
@@ -4814,7 +4754,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 46
+        "ticks": 65
       },
       {
         "direction": -1,
@@ -4827,7 +4767,7 @@
         "ticks": 20
       }
     ],
-    "margin": 151.66609820828478
+    "margin": 169.1718166619438
   },
   {
     "source": "frozen-9",
@@ -4849,7 +4789,7 @@
         "ticks": 20
       }
     ],
-    "margin": 145.86609820828517
+    "margin": 163.3718166619443
   },
   {
     "source": "frozen-10",
@@ -4858,7 +4798,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 17
+        "ticks": 21
       },
       {
         "direction": -1,
@@ -4871,16 +4811,31 @@
         "ticks": 18
       }
     ],
-    "margin": 121.63276487495193
+    "margin": 39.671816661944376
   },
   {
     "source": "frozen-11",
     "target": "frozen-12",
     "actions": [
       {
+        "direction": 0,
+        "held": true,
+        "ticks": 1
+      },
+      {
+        "direction": 0,
+        "held": false,
+        "ticks": 12
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 6
+      },
+      {
         "direction": 1,
         "held": false,
-        "ticks": 9
+        "ticks": 3
       },
       {
         "direction": 1,
@@ -4893,29 +4848,24 @@
         "ticks": 16
       }
     ],
-    "margin": 67.03390179171475
+    "margin": 4.738483328610926
   },
   {
     "source": "frozen-12",
     "target": "frozen-13",
     "actions": [
       {
-        "direction": -1,
-        "held": false,
-        "ticks": 8
-      },
-      {
         "direction": 1,
         "held": true,
-        "ticks": 24
+        "ticks": 21
       },
       {
         "direction": 1,
         "held": false,
-        "ticks": 16
+        "ticks": 15
       }
     ],
-    "margin": 67.23276487495167
+    "margin": 2.7384833286108687
   },
   {
     "source": "frozen-13",
@@ -4924,20 +4874,20 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 7
+        "ticks": 1
       },
       {
         "direction": 1,
         "held": true,
-        "ticks": 24
+        "ticks": 20
       },
       {
         "direction": 1,
         "held": false,
-        "ticks": 16
+        "ticks": 15
       }
     ],
-    "margin": 71.13276487495204
+    "margin": 5.018593152207359
   },
   {
     "source": "frozen-14",
@@ -4946,7 +4896,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 14
+        "ticks": 2
       },
       {
         "direction": -1,
@@ -4959,31 +4909,31 @@
         "ticks": 16
       }
     ],
-    "margin": 99.33390179171528
+    "margin": 30.535417798832555
   },
   {
     "source": "frozen-15",
     "target": "frozen-16",
     "actions": [
       {
+        "direction": 0,
+        "held": true,
+        "ticks": 1
+      },
+      {
+        "direction": 0,
+        "held": false,
+        "ticks": 12
+      },
+      {
         "direction": 1,
         "held": false,
-        "ticks": 39
+        "ticks": 6
       },
       {
         "direction": -1,
         "held": false,
-        "ticks": 1
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 1
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 1
+        "ticks": 2
       },
       {
         "direction": -1,
@@ -4996,82 +4946,72 @@
         "ticks": 16
       }
     ],
-    "margin": 76.05612401393739
+    "margin": 3.5354177988325546
   },
   {
     "source": "frozen-16",
     "target": "frozen-17",
     "actions": [
       {
-        "direction": 1,
+        "direction": -1,
         "held": false,
-        "ticks": 9
+        "ticks": 1
       },
       {
         "direction": -1,
         "held": true,
-        "ticks": 24
+        "ticks": 19
       },
       {
         "direction": -1,
         "held": false,
-        "ticks": 16
+        "ticks": 14
       }
     ],
-    "margin": 77.31054265272931
+    "margin": 2.1645822011676046
   },
   {
     "source": "frozen-17",
     "target": "frozen-18",
     "actions": [
       {
-        "direction": -1,
-        "held": false,
-        "ticks": 11
-      },
-      {
         "direction": 1,
         "held": true,
-        "ticks": 24
+        "ticks": 19
       },
       {
         "direction": 1,
         "held": false,
-        "ticks": 16
+        "ticks": 14
       }
     ],
-    "margin": 67.32279068060393
+    "margin": 5.16875113216588
   },
   {
     "source": "frozen-18",
     "target": "frozen-19",
     "actions": [
       {
-        "direction": -1,
-        "held": false,
-        "ticks": 8
-      },
-      {
         "direction": 1,
         "held": true,
-        "ticks": 24
+        "ticks": 23
       },
       {
         "direction": 1,
         "held": false,
-        "ticks": 16
+        "ticks": 15
       }
     ],
-    "margin": 69.0561240139375
+    "margin": 1.168751132165994
   },
   {
     "source": "frozen-19",
     "target": "frozen-20",
     "actions": [
       {
-        "direction": 1,
+        "direction": -1,
         "held": false,
-        "ticks": 4
+        "ticks": 1
       },
       {
         "direction": 1,
@@ -5084,16 +5024,21 @@
         "ticks": 16
       }
     ],
-    "margin": 122.81054265272962
+    "margin": 29.439309932158494
   },
   {
     "source": "frozen-20",
     "target": "frozen-21",
     "actions": [
       {
-        "direction": -1,
+        "direction": 0,
+        "held": true,
+        "ticks": 1
+      },
+      {
+        "direction": 0,
         "held": false,
-        "ticks": 42
+        "ticks": 12
       },
       {
         "direction": 1,
@@ -5102,6 +5047,11 @@
       },
       {
         "direction": -1,
+        "held": false,
+        "ticks": 1
+      },
+      {
+        "direction": -1,
         "held": true,
         "ticks": 24
       },
@@ -5111,73 +5061,68 @@
         "ticks": 16
       }
     ],
-    "margin": 78.21054265272949
+    "margin": 1.7090046039235176
   },
   {
     "source": "frozen-21",
     "target": "frozen-22",
     "actions": [
       {
-        "direction": 1,
-        "held": false,
-        "ticks": 5
-      },
-      {
         "direction": -1,
         "held": true,
-        "ticks": 24
+        "ticks": 20
       },
       {
         "direction": -1,
         "held": false,
-        "ticks": 16
+        "ticks": 15
       }
     ],
-    "margin": 77.95612401393691
+    "margin": 4.7090046039235745
   },
   {
     "source": "frozen-22",
     "target": "frozen-23",
     "actions": [
       {
-        "direction": -1,
+        "direction": 1,
         "held": false,
-        "ticks": 11
+        "ticks": 1
       },
       {
         "direction": 1,
         "held": true,
-        "ticks": 24
+        "ticks": 19
       },
       {
         "direction": 1,
         "held": false,
-        "ticks": 16
+        "ticks": 14
       }
     ],
-    "margin": 66.58945734727047
+    "margin": 0.9909953960765279
   },
   {
     "source": "frozen-23",
     "target": "frozen-24",
     "actions": [
       {
-        "direction": -1,
+        "direction": 1,
         "held": false,
-        "ticks": 6
+        "ticks": 1
       },
       {
         "direction": 1,
         "held": true,
-        "ticks": 24
+        "ticks": 20
       },
       {
         "direction": 1,
         "held": false,
-        "ticks": 16
+        "ticks": 14
       }
     ],
-    "margin": 67.05612401393694
+    "margin": 3.2950976855013323
   },
   {
     "source": "frozen-24",
@@ -5186,20 +5131,20 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 6
+        "ticks": 1
       },
       {
         "direction": 1,
         "held": true,
-        "ticks": 24
+        "ticks": 20
       },
       {
         "direction": 1,
         "held": false,
-        "ticks": 16
+        "ticks": 15
       }
     ],
-    "margin": 73.01667631559678
+    "margin": 2.531860068616652
   },
   {
     "source": "frozen-25",
@@ -5208,64 +5153,59 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 9
+        "ticks": 1
       },
       {
         "direction": -1,
         "held": true,
-        "ticks": 24
+        "ticks": 21
       },
       {
         "direction": -1,
         "held": false,
-        "ticks": 16
+        "ticks": 15
       }
     ],
-    "margin": 77.96138741072264
+    "margin": 3.7967138184999385
   },
   {
     "source": "frozen-26",
     "target": "frozen-27",
     "actions": [
       {
-        "direction": 1,
+        "direction": -1,
         "held": false,
-        "ticks": 5
+        "ticks": 1
       },
       {
         "direction": -1,
         "held": true,
-        "ticks": 24
+        "ticks": 19
       },
       {
         "direction": -1,
         "held": false,
-        "ticks": 16
+        "ticks": 14
       }
     ],
-    "margin": 78.20527925594439
+    "margin": 1.6111066626233423
   },
   {
     "source": "frozen-27",
     "target": "frozen-28",
     "actions": [
       {
-        "direction": 1,
-        "held": false,
-        "ticks": 7
-      },
-      {
         "direction": -1,
         "held": true,
-        "ticks": 24
+        "ticks": 23
       },
       {
         "direction": -1,
         "held": false,
-        "ticks": 16
+        "ticks": 15
       }
     ],
-    "margin": 82.10527925594414
+    "margin": 4.611106662623456
   },
   {
     "source": "frozen-28",
@@ -5287,12 +5227,17 @@
         "ticks": 18
       }
     ],
-    "margin": 132.62805407738887
+    "margin": 51.344439995956805
   },
   {
     "source": "frozen-29",
     "target": "celestial-0",
     "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 19
+      },
       {
         "direction": -1,
         "held": true,
@@ -5304,29 +5249,24 @@
         "ticks": 17
       }
     ],
-    "margin": 70.96138741072252
+    "margin": 4.644439995957271
   },
   {
     "source": "celestial-0",
     "target": "celestial-1",
     "actions": [
       {
-        "direction": 1,
-        "held": false,
-        "ticks": 11
-      },
-      {
         "direction": -1,
         "held": true,
-        "ticks": 24
+        "ticks": 21
       },
       {
         "direction": -1,
         "held": false,
-        "ticks": 16
+        "ticks": 15
       }
     ],
-    "margin": 64.59472074405585
+    "margin": 2.644439995957242
   },
   {
     "source": "celestial-1",
@@ -5335,64 +5275,54 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 9
+        "ticks": 1
       },
       {
         "direction": 1,
         "held": true,
-        "ticks": 24
+        "ticks": 23
       },
       {
         "direction": 1,
         "held": false,
-        "ticks": 16
+        "ticks": 15
       }
     ],
-    "margin": 62.22805407738923
+    "margin": 5.011106662623945
   },
   {
     "source": "celestial-2",
     "target": "celestial-3",
     "actions": [
       {
-        "direction": -1,
-        "held": false,
-        "ticks": 8
-      },
-      {
         "direction": 1,
         "held": true,
-        "ticks": 24
+        "ticks": 19
       },
       {
         "direction": 1,
         "held": false,
-        "ticks": 16
+        "ticks": 14
       }
     ],
-    "margin": 65.49472074405566
+    "margin": 1.3222266707096537
   },
   {
     "source": "celestial-3",
     "target": "celestial-4",
     "actions": [
       {
-        "direction": -1,
-        "held": false,
-        "ticks": 11
-      },
-      {
         "direction": 1,
         "held": true,
-        "ticks": 24
+        "ticks": 23
       },
       {
         "direction": 1,
         "held": false,
-        "ticks": 16
+        "ticks": 15
       }
     ],
-    "margin": 64.1386125892775
+    "margin": 4.3222266707093695
   },
   {
     "source": "celestial-4",
@@ -5401,64 +5331,54 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 10
+        "ticks": 1
       },
       {
         "direction": -1,
         "held": true,
-        "ticks": 24
+        "ticks": 21
       },
       {
         "direction": -1,
         "held": false,
-        "ticks": 16
+        "ticks": 15
       }
     ],
-    "margin": 69.8613874107221
+    "margin": 1.6888933373763848
   },
   {
     "source": "celestial-5",
     "target": "celestial-6",
     "actions": [
       {
-        "direction": 1,
-        "held": false,
-        "ticks": 7
-      },
-      {
         "direction": -1,
         "held": true,
-        "ticks": 24
+        "ticks": 20
       },
       {
         "direction": -1,
         "held": false,
-        "ticks": 16
+        "ticks": 14
       }
     ],
-    "margin": 75.03861258927765
+    "margin": 5.644439995957214
   },
   {
     "source": "celestial-6",
     "target": "celestial-7",
     "actions": [
       {
-        "direction": -1,
-        "held": false,
-        "ticks": 8
-      },
-      {
         "direction": 1,
         "held": true,
-        "ticks": 24
+        "ticks": 20
       },
       {
         "direction": 1,
         "held": false,
-        "ticks": 16
+        "ticks": 15
       }
     ],
-    "margin": 64.22805407738878
+    "margin": 1.6444399959569296
   },
   {
     "source": "celestial-7",
@@ -5467,20 +5387,20 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 9
+        "ticks": 1
       },
       {
         "direction": 1,
         "held": true,
-        "ticks": 24
+        "ticks": 23
       },
       {
         "direction": 1,
         "held": false,
-        "ticks": 16
+        "ticks": 15
       }
     ],
-    "margin": 64.13861258927773
+    "margin": 4.011106662624002
   },
   {
     "source": "celestial-8",
@@ -5489,29 +5409,29 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 9
+        "ticks": 2
       },
       {
         "direction": 1,
         "held": true,
-        "ticks": 24
+        "ticks": 23
       },
       {
         "direction": 1,
         "held": false,
-        "ticks": 17
+        "ticks": 16
       }
     ],
-    "margin": 82.82805407738965
+    "margin": 1.9222266707087101
   },
   {
     "source": "celestial-9",
     "target": "celestial-10",
     "actions": [
       {
-        "direction": 1,
+        "direction": -1,
         "held": false,
-        "ticks": 7
+        "ticks": 1
       },
       {
         "direction": 1,
@@ -5524,7 +5444,7 @@
         "ticks": 20
       }
     ],
-    "margin": 177.07194592260976
+    "margin": 150.11110666262516
   },
   {
     "source": "celestial-10",
@@ -5533,7 +5453,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 38
+        "ticks": 35
       },
       {
         "direction": 1,
@@ -5546,7 +5466,7 @@
         "ticks": 20
       }
     ],
-    "margin": 146.3386125892739
+    "margin": 162.0555600040393
   },
   {
     "source": "celestial-11",
@@ -5568,7 +5488,7 @@
         "ticks": 20
       }
     ],
-    "margin": 147.43861258927086
+    "margin": 163.15556000403626
   },
   {
     "source": "celestial-12",
@@ -5577,7 +5497,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 23
+        "ticks": 19
       },
       {
         "direction": 1,
@@ -5590,7 +5510,7 @@
         "ticks": 19
       }
     ],
-    "margin": 86.46138741073264
+    "margin": 2.788893337366517
   },
   {
     "source": "celestial-13",
@@ -5599,42 +5519,37 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 5
+        "ticks": 1
       },
       {
         "direction": -1,
         "held": true,
-        "ticks": 24
+        "ticks": 23
       },
       {
         "direction": -1,
         "held": false,
-        "ticks": 16
+        "ticks": 15
       }
     ],
-    "margin": 64.70527925593615
+    "margin": 5.155560004034442
   },
   {
     "source": "celestial-14",
     "target": "celestial-15",
     "actions": [
       {
-        "direction": 1,
-        "held": false,
-        "ticks": 9
-      },
-      {
         "direction": -1,
         "held": true,
-        "ticks": 24
+        "ticks": 19
       },
       {
         "direction": -1,
         "held": false,
-        "ticks": 16
+        "ticks": 14
       }
     ],
-    "margin": 73.66138741073269
+    "margin": 1.1777733292999528
   },
   {
     "source": "celestial-15",
@@ -5643,7 +5558,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 8
+        "ticks": 1
       },
       {
         "direction": 1,
@@ -5656,7 +5571,7 @@
         "ticks": 16
       }
     ],
-    "margin": 41.34791953377248
+    "margin": 17.55204969503825
   },
   {
     "source": "celestial-16",
@@ -5665,64 +5580,54 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 13
+        "ticks": 2
       },
       {
         "direction": 1,
         "held": true,
-        "ticks": 24
+        "ticks": 19
       },
       {
         "direction": 1,
         "held": false,
-        "ticks": 16
+        "ticks": 14
       }
     ],
-    "margin": 62.86277108512604
+    "margin": 2.053443811845227
   },
   {
     "source": "celestial-17",
     "target": "celestial-18",
     "actions": [
       {
-        "direction": 1,
-        "held": false,
-        "ticks": 10
-      },
-      {
         "direction": -1,
         "held": true,
-        "ticks": 24
+        "ticks": 20
       },
       {
         "direction": -1,
         "held": false,
-        "ticks": 16
+        "ticks": 14
       }
     ],
-    "margin": 69.86277108512854
+    "margin": 5.279889521486666
   },
   {
     "source": "celestial-18",
     "target": "celestial-19",
     "actions": [
       {
-        "direction": 1,
-        "held": false,
-        "ticks": 7
-      },
-      {
         "direction": -1,
         "held": true,
-        "ticks": 24
+        "ticks": 21
       },
       {
         "direction": -1,
         "held": false,
-        "ticks": 16
+        "ticks": 15
       }
     ],
-    "margin": 73.76277108512659
+    "margin": 1.279889521487803
   },
   {
     "source": "celestial-19",
@@ -5731,20 +5636,20 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 8
+        "ticks": 1
       },
       {
         "direction": -1,
         "held": true,
-        "ticks": 24
+        "ticks": 23
       },
       {
         "direction": -1,
         "held": false,
-        "ticks": 16
+        "ticks": 15
       }
     ],
-    "margin": 72.02943775179119
+    "margin": 4.913222854822379
   },
   {
     "source": "celestial-20",
@@ -5753,108 +5658,93 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 10
+        "ticks": 2
       },
       {
         "direction": 1,
         "held": true,
-        "ticks": 24
+        "ticks": 21
       },
       {
         "direction": 1,
         "held": false,
-        "ticks": 16
+        "ticks": 15
       }
     ],
-    "margin": 65.02943775179347
+    "margin": 1.6465561881543636
   },
   {
     "source": "celestial-21",
     "target": "celestial-22",
     "actions": [
       {
-        "direction": -1,
-        "held": false,
-        "ticks": 8
-      },
-      {
         "direction": 1,
         "held": true,
-        "ticks": 24
+        "ticks": 23
       },
       {
         "direction": 1,
         "held": false,
-        "ticks": 16
+        "ticks": 15
       }
     ],
-    "margin": 64.23722891487114
+    "margin": 4.646556188153227
   },
   {
     "source": "celestial-22",
     "target": "celestial-23",
     "actions": [
       {
-        "direction": -1,
+        "direction": 1,
         "held": false,
-        "ticks": 12
+        "ticks": 1
       },
       {
         "direction": 1,
         "held": true,
-        "ticks": 24
+        "ticks": 19
       },
       {
         "direction": 1,
         "held": false,
-        "ticks": 16
+        "ticks": 14
       }
     ],
-    "margin": 69.97056224820335
+    "margin": 1.0534438118452272
   },
   {
     "source": "celestial-23",
     "target": "celestial-24",
     "actions": [
       {
-        "direction": 1,
-        "held": false,
-        "ticks": 7
-      },
-      {
         "direction": -1,
         "held": true,
-        "ticks": 24
+        "ticks": 20
       },
       {
         "direction": -1,
         "held": false,
-        "ticks": 16
+        "ticks": 14
       }
     ],
-    "margin": 74.9294377517981
+    "margin": 4.279889521486666
   },
   {
     "source": "celestial-24",
     "target": "celestial-25",
     "actions": [
       {
-        "direction": 1,
-        "held": false,
-        "ticks": 4
-      },
-      {
         "direction": -1,
         "held": true,
-        "ticks": 24
+        "ticks": 21
       },
       {
         "direction": -1,
         "held": false,
-        "ticks": 16
+        "ticks": 15
       }
     ],
-    "margin": 75.72943775179647
+    "margin": 2.279889521487803
   },
   {
     "source": "celestial-25",
@@ -5863,20 +5753,20 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 7
+        "ticks": 1
       },
       {
         "direction": -1,
         "held": true,
-        "ticks": 24
+        "ticks": 23
       },
       {
         "direction": -1,
         "held": false,
-        "ticks": 16
+        "ticks": 15
       }
     ],
-    "margin": 76.37056224820549
+    "margin": 5.913222854822379
   },
   {
     "source": "celestial-26",
@@ -5885,42 +5775,37 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 6
+        "ticks": 2
       },
       {
         "direction": -1,
         "held": true,
-        "ticks": 24
+        "ticks": 21
       },
       {
         "direction": -1,
         "held": false,
-        "ticks": 16
+        "ticks": 15
       }
     ],
-    "margin": 76.837228914874
+    "margin": 0.820110478509605
   },
   {
     "source": "celestial-27",
     "target": "celestial-28",
     "actions": [
       {
-        "direction": 1,
-        "held": false,
-        "ticks": 8
-      },
-      {
         "direction": -1,
         "held": true,
-        "ticks": 24
+        "ticks": 23
       },
       {
         "direction": -1,
         "held": false,
-        "ticks": 16
+        "ticks": 15
       }
     ],
-    "margin": 77.4294377517906
+    "margin": 3.820110478508468
   },
   {
     "source": "celestial-28",
@@ -5929,7 +5814,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 15
+        "ticks": 2
       },
       {
         "direction": -1,
@@ -5942,7 +5827,7 @@
         "ticks": 18
       }
     ],
-    "margin": 92.92943775178765
+    "margin": 45.553443811840225
   },
   {
     "source": "celestial-29",
@@ -5951,7 +5836,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 11
+        "ticks": 22
       },
       {
         "direction": -1,
@@ -5964,29 +5849,24 @@
         "ticks": 17
       }
     ],
-    "margin": 72.6294377517853
+    "margin": 4.713222854829951
   },
   {
     "source": "summit-0",
     "target": "summit-1",
     "actions": [
       {
-        "direction": 1,
-        "held": false,
-        "ticks": 10
-      },
-      {
         "direction": -1,
         "held": true,
-        "ticks": 24
+        "ticks": 21
       },
       {
         "direction": -1,
         "held": false,
-        "ticks": 16
+        "ticks": 15
       }
     ],
-    "margin": 66.37056224821538
+    "margin": 2.7132228548293824
   },
   {
     "source": "summit-1",
@@ -5995,64 +5875,54 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 10
+        "ticks": 1
       },
       {
         "direction": 1,
         "held": true,
-        "ticks": 24
+        "ticks": 23
       },
       {
         "direction": 1,
         "held": false,
-        "ticks": 16
+        "ticks": 15
       }
     ],
-    "margin": 62.62943775178394
+    "margin": 5.079889521496625
   },
   {
     "source": "summit-2",
     "target": "summit-3",
     "actions": [
       {
-        "direction": -1,
-        "held": false,
-        "ticks": 8
-      },
-      {
         "direction": 1,
         "held": true,
-        "ticks": 24
+        "ticks": 20
       },
       {
         "direction": 1,
         "held": false,
-        "ticks": 16
+        "ticks": 14
       }
     ],
-    "margin": 61.637228914881916
+    "margin": 1.2534438118377693
   },
   {
     "source": "summit-3",
     "target": "summit-4",
     "actions": [
       {
-        "direction": -1,
-        "held": false,
-        "ticks": 10
-      },
-      {
         "direction": 1,
         "held": true,
-        "ticks": 24
+        "ticks": 21
       },
       {
         "direction": 1,
         "held": false,
-        "ticks": 16
+        "ticks": 15
       }
     ],
-    "margin": 63.63722891487964
+    "margin": 4.253443811838906
   },
   {
     "source": "summit-4",
@@ -6061,64 +5931,54 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 11
+        "ticks": 1
       },
       {
         "direction": -1,
         "held": true,
-        "ticks": 24
+        "ticks": 23
       },
       {
         "direction": -1,
         "held": false,
-        "ticks": 16
+        "ticks": 15
       }
     ],
-    "margin": 68.72943775178464
+    "margin": 1.6201104785043299
   },
   {
     "source": "summit-5",
     "target": "summit-6",
     "actions": [
       {
-        "direction": 1,
-        "held": false,
-        "ticks": 10
-      },
-      {
         "direction": -1,
         "held": true,
-        "ticks": 24
+        "ticks": 19
       },
       {
         "direction": -1,
         "held": false,
-        "ticks": 16
+        "ticks": 14
       }
     ],
-    "margin": 75.27056224821763
+    "margin": 5.713222854829951
   },
   {
     "source": "summit-6",
     "target": "summit-7",
     "actions": [
       {
-        "direction": -1,
-        "held": false,
-        "ticks": 13
-      },
-      {
         "direction": 1,
         "held": true,
-        "ticks": 24
+        "ticks": 23
       },
       {
         "direction": 1,
         "held": false,
-        "ticks": 16
+        "ticks": 15
       }
     ],
-    "margin": 65.37056224821663
+    "margin": 1.7132228548289277
   },
   {
     "source": "summit-7",
@@ -6127,51 +5987,51 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 10
+        "ticks": 1
       },
       {
         "direction": 1,
         "held": true,
-        "ticks": 24
+        "ticks": 23
       },
       {
         "direction": 1,
         "held": false,
-        "ticks": 16
+        "ticks": 15
       }
     ],
-    "margin": 67.37056224821436
+    "margin": 4.079889521494351
   },
   {
     "source": "summit-8",
     "target": "summit-9",
     "actions": [
       {
-        "direction": 1,
+        "direction": -1,
         "held": false,
-        "ticks": 13
+        "ticks": 1
       },
       {
         "direction": -1,
         "held": true,
-        "ticks": 24
+        "ticks": 19
       },
       {
         "direction": -1,
         "held": false,
-        "ticks": 16
+        "ticks": 14
       }
     ],
-    "margin": 68.72943775178305
+    "margin": 1.2201104785046937
   },
   {
     "source": "summit-9",
     "target": "crown",
     "actions": [
       {
-        "direction": 1,
+        "direction": -1,
         "held": false,
-        "ticks": 3
+        "ticks": 1
       },
       {
         "direction": 0,
@@ -6184,6 +6044,6 @@
         "ticks": 12
       }
     ],
-    "margin": 61.829437751782734
+    "margin": 59.14655618816187
   }
 ]

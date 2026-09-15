@@ -40,3 +40,8 @@
 !/docs/vertical-validation.json
 !/docs/vertical-browser-validation.json
 !/scripts/verify-vertical-release.mjs
+
+!/scripts/compile-ai-world.mjs
+!/docs/ai-art-prompts.json
+!/docs/ai-source/
+!/scripts/verify-ai-world.mjs

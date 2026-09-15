@@ -29,11 +29,11 @@ function planJump(bot: PlayerState, support: Platform, target: Platform, platfor
       if (vy >= 0 && old <= target.y + 3 && feet >= target.y) { frames = frame; break; }
     }
     if (!frames) continue;
-    for (let x = support.x + 8; x <= support.x + support.w - PLAYER_WIDTH - 8; x += 8) {
+    for (let x = support.x + (support.mountain?-2:8); x <= support.x + support.w - PLAYER_WIDTH - (support.mountain?-2:8); x += support.mountain?2:8) {
       for (const direction of [-1, 0, 1] as const) {
         const landing = Math.max(SHAFT_LEFT, Math.min((support.mountain?worldForMap('mountain').right:SHAFT_RIGHT) - PLAYER_WIDTH, x + direction * HORIZONTAL_JUMP_SPEED * frames / 30));
         const margin = Math.min(landing - target.x, target.x + target.w - landing - PLAYER_WIDTH);
-        if (margin < (target.slippery ? target.w < 230 ? 8 : 108 : 8)) continue;
+        if (margin < (support.mountain?Math.min(1,Math.max(.1,(target.w-14)/2-1.8)):(target.slippery ? target.w < 230 ? 8 : 108 : 8))) continue;
         // Each climber favors a different safe part of the landing and balances
         // a short run-up against a centered landing. No teleporting or air steering.
         const style=(bot.bot?.pattern??0)%4;
@@ -72,6 +72,7 @@ export function updateBot(bot: PlayerState, platforms: Platform[], now: number):
     brain.cooldownUntil=Math.max(brain.cooldownUntil,now+skill.think*pace*(.6+random(bot))+(platforms[0]?.mountain?2200+random(bot)*2400:0));
   }
   const icySupport=platforms.find(p=>p.id===bot.groundedPlatformId)?.slippery;
+  if(icySupport&&platforms[0]?.mountain&&Math.abs(bot.vx)>100&&!bot.charging){bot.input.left=false;bot.input.right=false;bot.input.jumpHeld=true;brain.holdUntil=now+34;return;}
   if (now < brain.cooldownUntil) {
     bot.input.left = !!icySupport && bot.vx>15;
     bot.input.right = !!icySupport && bot.vx< -15;

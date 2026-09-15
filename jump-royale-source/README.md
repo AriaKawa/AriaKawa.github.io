@@ -21,7 +21,7 @@ Postinstall copies shared original assets from `../forge-climb-royale/assets` an
 
 For local multiplayer: `npm run dev`. For static practice development: `npm run dev:client -- --mode hosted --port 5215`.
 
-New artwork has editable SVGs and PNG exports in the published game's `assets/jump-royale`. The generators use Sharp; set `SHARP_PATH` to an installed Sharp package before `npm run assets:vertical` (the bundled workstation path is a fallback). Building the game does not require regenerating artwork.
+All Long Mountain environment art is AI-generated: ten matching backgrounds, forty platform variants and six props in the published game's `assets/jump-royale-ai`. Original PNG atlases and exact prompts are saved in `docs/ai-source` and `docs/ai-art-prompts.json`. The atlas compiler uses Sharp; set `SHARP_PATH` to an installed Sharp package before `npm run assets:vertical` (the bundled workstation path is a fallback). Building the game does not require regenerating artwork.
 
 ## Verification
 

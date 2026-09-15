@@ -11,7 +11,7 @@ export class ResultsScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor('#100c12');
     const ui=document.createElement('section');ui.className='results-ui';ui.setAttribute('aria-label','Round scoreboard');
     const map=data.mapId??this.registry.get('mapId')??'forge';
-    const paths:Record<MapId,string>={forge:'reforged/backdrop.png',jungle:'jungle/background.png',snow:'snow/background.png',mountain:'mountain/alpine-background.png'};
+    const paths:Record<MapId,string>={forge:'reforged/backdrop.png',jungle:'jungle/background.png',snow:'snow/background.png',mountain:'jump-royale-ai/summit/background.webp'};
     ui.style.backgroundImage=`linear-gradient(#07121c55,#07121c99),url("${import.meta.env.BASE_URL}assets/${paths[map as MapId]}")`;
     ui.style.backgroundSize='cover';ui.style.backgroundPosition='center';
     ui.innerHTML='<header><p>ROUND COMPLETE</p><h1></h1><p>Furthest climbed · ties go to the first to reach that height</p></header><div class="score-table-wrap"><table><thead><tr><th>Place</th><th>Climber</th><th>Height</th><th>Time to height</th></tr></thead><tbody></tbody></table></div><footer><p></p><button type="button">Climb again</button><button type="button">Lobby</button></footer>';

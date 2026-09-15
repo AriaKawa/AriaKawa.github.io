@@ -146,7 +146,7 @@ export class GameScene extends Phaser.Scene {
     if(this.mapId==='mountain'){
       const camera=this.cameras.main,collapse=this.snapshot?.players.find(p=>p.id===this.localId)?.crumblingPlatforms;
       for(const [id,c] of this.platformEntities)c.setVisible(c.y>camera.scrollY-280&&c.y<camera.scrollY+GAME_HEIGHT+100&&c.x<camera.scrollX+GAME_WIDTH+400&&c.x+(c.getData('width')??500)>camera.scrollX&&collapse?.[id]!==0);
-      this.flood?.setX(camera.scrollX);
+      this.flood?.setX(camera.scrollX).setDisplaySize(GAME_WIDTH,GAME_HEIGHT+160);
     }
     this.updateLava(time, delta);
     this.updateHud();
@@ -247,12 +247,15 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createHazard(): void {
+    if(this.mapId==='mountain'){
+      this.flood=this.add.image(0,0,'ascent-ai-props/water').setOrigin(0).setDepth(24).setDisplaySize(GAME_WIDTH,GAME_HEIGHT+160);return;
+    }
     if(this.mapId==='snow'){
       const left=-(GAME_WIDTH-WORLD_WIDTH)/2;
       this.lavaBody=this.add.tileSprite(left,0,GAME_WIDTH,this.worldHeight,'snow-storm').setOrigin(0).setDepth(24).setAlpha(.94);
       this.lavaSurface=this.add.tileSprite(left,0,GAME_WIDTH,16,'snow-storm-edge').setOrigin(0).setDepth(25);return;
     }
-    if(this.mapId==='jungle'||this.mapId==='mountain'){
+    if(this.mapId==='jungle'){
       const left=-(GAME_WIDTH-WORLD_WIDTH)/2;
       const key='continuous-flood';
       if(!this.textures.exists(key)){
