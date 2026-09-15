@@ -2,6 +2,7 @@ import {generateMountain} from './mountain.js';
 import { generateLevel } from './level.js';
 import { SPAWN_Y } from './constants.js';
 import type { Platform } from './types.js';
+import {sizePlatforms} from './platformSizing.js';
 
 export type MapId = 'forge' | 'jungle' | 'snow' | 'mountain';
 export const MAPS = [
@@ -36,7 +37,7 @@ export function generateJungle(): Platform[] {
     result.push({id:'jungle-'+i,...p,y,type:p.terrain==='log'?'wood':p.terrain==='ruin'?'anvil':'stone',solid:true});
   }
   result.push({id:'crown',x:224,y:72,w:192,h:48,type:'anvil',terrain:'ruin',solid:true});
-  return result;
+  return sizePlatforms(result,'jungle');
 }
 
 export function generateSnow(): Platform[] {
@@ -53,6 +54,6 @@ export function generateSnow(): Platform[] {
       crumbleSeconds:fragile?3.2:undefined,terrain:rest?'ruin':'island'});
   }
   result.push({id:'crown',x:224,y:72,w:192,h:56,type:'anvil',terrain:'ruin'});
-  return result;
+  return sizePlatforms(result,'snow');
 }
 export const levelForMap = (map: MapId): Platform[] => map === 'mountain' ? generateMountain() : map === 'snow' ? generateSnow() : map === 'jungle' ? generateJungle() : generateLevel();

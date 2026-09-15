@@ -1,4 +1,5 @@
 import type { Platform } from './types.js';
+import {sizePlatforms} from './platformSizing.js';
 /** Authored notation: left edge, rise from preceding landing, width, material.
  * Every row is a placed structure. No random seed or repeated platform phrase. */
 type Step = [number,number,number,string?];
@@ -106,5 +107,5 @@ export function generateMountain():Platform[]{
  // Offset below transitions, so they never intercept a successful upward jump.
  for(const r of [2,4,6,8])out.push({id:'catch-'+r,x:54,y:REGION_FLOORS[r]+55,w:MOUNTAIN_WIDTH-108,h:120,type:'stone',mountain:true,region:r,structure:r===2?'arch':r===4?'roof':'garden'});
  out.push({id:'crown',x:1130,y:72,w:140,h:80,type:'stone',mountain:true,region:9,structure:'temple',route:true});
- return out;
+ return sizePlatforms(out,'mountain');
 }

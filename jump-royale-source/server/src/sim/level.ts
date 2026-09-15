@@ -1,5 +1,6 @@
 import { SPAWN_Y, WORLD_WIDTH } from "./constants.js";
 import type { Platform } from "./types.js";
+import {sizePlatforms} from './platformSizing.js';
 
 export const CHAPTERS = [
   { name: "THE EMBER YARD", lesson: "Short holds. Wide landings.", color: "#ffc178" },
@@ -35,5 +36,5 @@ export function generateLevel(_seed = 0xf04e): Platform[] {
     platforms.push({ id: `summit-${y}`, x: 272, y, w: 96, h: 16, type: "anvil" });
   }
   platforms.push({ id: "crown", x: 224, y: 72, w: 192, h: 16, type: "anvil" });
-  return platforms;
+  return sizePlatforms(platforms,'forge');
 }
