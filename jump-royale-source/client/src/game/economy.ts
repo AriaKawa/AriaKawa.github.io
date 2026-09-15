@@ -15,6 +15,7 @@ export function claimGoldGift(hash:string):boolean {
 }
 export const goldForPlace=(place:number)=>place===1?5:place>=2&&place<=3?3:place>=4&&place<=6?1:0;
 export function price(slot:string,id:string):number {
+  if(slot==='character'&&id==='mushroom'&&(wallet().owned.includes('costume:mushroom')||['helmet','shirt','pants'].every(s=>owns(s,'mushroom'))))return 0;
   if(slot==='costume'){
     if(!COSTUMES.some(c=>c.id===id))return Infinity;
     return costumePieces(id).reduce((sum,[s,p])=>sum+(owns(s,p)?0:price(s,p)),0);
@@ -26,7 +27,8 @@ export function buy(slot:string,id:string):boolean {const w=wallet(),cost=price(
 export function reward(round:string,place:number):number {const w=wallet();if(w.rewards.includes(round))return 0;const amount=goldForPlace(place);w.gold+=amount;w.rewards.push(round);return persist(w)?amount:0;}
 export function lockedPieces(o:Outfit):[string,string][] {
   if(o.character==='original'&&o.costume)return owns('costume',o.costume)?[]:[['costume',o.costume]];
-  if(o.character==='demon')return owns('character','demon')?[]:[['character','demon']];
+  if(o.character==='mushroom')return owns('character','mushroom')?[]:[['character','mushroom']];
+  if(o.character==='demon')return ([['character','demon'],['hair',o.hair]] as [string,string][]).filter(([s,id])=>!owns(s,id));
   const animal=['puppy','cat','rat'].includes(o.character);
   const pieces:[string,string][] = animal?[['character',o.character],['animalHat',o.animalHat??'none']]:(['character','helmet','shirt','pants','hair'] as CosmeticSlot[]).map(s=>[s,o[s]]);
   return pieces.filter(([s,id])=>!owns(s,id));
@@ -34,6 +36,7 @@ export function lockedPieces(o:Outfit):[string,string][] {
 export function playableOutfit(o:Outfit):Outfit {
  const result={...o};
  if(!owns('character',result.character))result.character='original';
+ if(result.character==='mushroom')return result;
  if(result.character==='original'&&result.costume)return {...result,...costumeFields(owns('costume',result.costume)?result.costume:'classic')};
  for(const slot of ['character','helmet','shirt','pants','hair'] as CosmeticSlot[]){if(!owns(slot,result[slot]))result[slot]=slot==='helmet'?'none':'original';}
  if(!owns('animalHat',result.animalHat??'none'))result.animalHat='none';return result;

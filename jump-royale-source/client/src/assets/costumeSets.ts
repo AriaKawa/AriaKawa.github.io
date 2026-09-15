@@ -6,17 +6,13 @@ export const COSTUMES=[
  {id:'copper',name:'Cinder Knight',set:'copper',helmet:'copper'},
  {id:'tropical',name:'Island Cook',set:'tropical',helmet:'tropical'},
  {id:'maid',name:'Maid',set:'maid',helmet:'maid'},
- {id:'mushroom',name:'Spore Scout',set:'mushroom',helmet:'mushroom'},
  {id:'diver',name:'Deep-Sea Diver',set:'diver',helmet:'diver'},
  {id:'mage',name:'Starfall Mage',set:'mage',helmet:'mage'},
- {id:'fieldwork',name:'Trailblazer',set:'original',helmet:'none',lab:{variant:2,look:0}},
- {id:'celestial',name:'Celestial Guard',set:'original',helmet:'none',lab:{variant:2,look:1}},
- {id:'ember',name:'Ember Expedition',set:'original',helmet:'none',lab:{variant:2,look:2}},
 ];
 export const costumePieces=(id:string):[string,string][]=>{
  const c=COSTUMES.find(c=>c.id===id);return c?[['helmet',c.helmet],['shirt',c.set],['pants',c.set]]:[];
 };
 export function costumeFields(id:string){
  const c=COSTUMES.find(c=>c.id===id)??COSTUMES[0];
- return {costume:c.id,helmet:c.helmet,shirt:c.set,pants:c.set,hair:'original',wardrobe2:c.lab};
+ return {costume:c.id,helmet:c.helmet,shirt:c.set,pants:c.set,hair:'original',wardrobe2:undefined};
 }

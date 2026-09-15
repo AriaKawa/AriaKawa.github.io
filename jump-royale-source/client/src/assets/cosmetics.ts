@@ -1,17 +1,18 @@
-import {COSTUMES,costumeFields} from './costumeSets';
-import {labTexture,type LabLook} from './wardrobe2';
+import {costumeFields} from './costumeSets';
+import {type LabLook} from './wardrobe2';
 import {drawGarment} from './garmentRig';
 import {demonTexture} from './demonRig';
 import Phaser from "phaser";
 import { PLAYER_ANIMATIONS } from "./assetManifest";
-import { HEAD_POSES, drawHelmet, drawHairLayer, appendWalkFrames } from "./characterRig";
+import { HEAD_POSES, drawHelmet, appendWalkFrames } from "./characterRig";
 import { ANIMALS, ANIMAL_HATS, isAnimal, animalTexture } from './animalRig';
 
+export const DEMON_HAIRS=[{id:'original',name:'Midnight Locks'},{id:'buns',name:'Rose Horn Buns'},{id:'braid',name:'Silver Braid'}] as const;
 export const SLOTS = ["character", "helmet", "shirt", "pants", "hair"] as const;
 export type CosmeticSlot = typeof SLOTS[number];
 export type Outfit = Record<CosmeticSlot, string> & {costume?:string;animalHat?:'none'|'party';wardrobe2?:LabLook};
 export const COSMETICS = {
-  character: [{id:"original",name:"Finn"},{id:"puppy",name:"Biscuit · Puppy"},{id:'cat',name:'Mochi · Cat'},{id:'rat',name:'Pip · Rat'},{id:'demon',name:'Ember · Demon Lady'}],
+  character: [{id:"original",name:"Finn"},{id:"mushroom",name:"Spore Scout"},{id:"puppy",name:"Biscuit · Puppy"},{id:'cat',name:'Mochi · Cat'},{id:'rat',name:'Pip · Rat'},{id:'demon',name:'Ember · Demon Lady'}],
   hair: [{id:"original",name:"Classic Crop"},{id:"waves",name:"Chestnut Waves"},{id:"ponytail",name:"Golden Ponytail"},{id:"braid",name:"Midnight Braid"},{id:"buns",name:"Rose Double Buns"},{id:"bob",name:"Lilac Bob"}],
   helmet: [{id:"none",name:"No Helmet"},{ id: "original", name: "Ivory Helm" }, { id: "steel", name: "Quenched Steel" }, { id: "copper", name: "Copper Visor" }, { id: "tropical", name: "Cooking Pot" }, { id: "maid", name: "Maid Headband" }, {id:"mushroom",name:"Toadstool Cap"}, {id:"diver",name:"Abyssal Dive Helm"}, {id:"mage",name:"Crescent Cap"}],
   shirt: [{ id: "original", name: "Forge Apron" }, { id: "steel", name: "Froststitch Jacket" }, { id: "copper", name: "Cinder Coat" }, { id: "tropical", name: "Hawaiian Shirt" }, { id: "maid", name: "Maid Blouse & Apron" }, {id:"mushroom",name:"Spore Scout Tunic"}, {id:"diver",name:"Deep-Sea Dive Suit"}, {id:"mage",name:"Starfall Tunic"}],
@@ -31,16 +32,17 @@ export function cosmeticName(slot:CosmeticSlot,id:string,outfit:Outfit):string {
 
 export function sanitizeOutfit(value: unknown): Outfit {
   const source = value && typeof value === "object" ? value as Record<string,unknown> : {};
-  const lab=source.wardrobe2 as LabLook|undefined;
-  const wardrobe2=lab&&Number.isInteger(lab.variant)&&lab.variant>=0&&lab.variant<3&&Number.isInteger(lab.look)&&lab.look>=0&&lab.look<3?{variant:lab.variant,look:lab.look}:undefined;
-  const result={wardrobe2,...Object.fromEntries(SLOTS.map(slot => [slot, COSMETICS[slot].some(piece => piece.id === source[slot]) ? source[slot] : "original"])),animalHat:source.animalHat==='party'?'party':'none'} as Outfit;
-  if(typeof source.costume==='string'&&COSTUMES.some(c=>c.id===source.costume)){Object.assign(result,costumeFields(source.costume));if(result.character!=='original')result.wardrobe2=undefined;}
+  const result={...Object.fromEntries(SLOTS.map(slot => [slot, COSMETICS[slot].some(piece => piece.id === source[slot]) ? source[slot] : "original"])),animalHat:source.animalHat==='party'?'party':'none'} as Outfit;
+  // Migrate retired looks and the former Spore Scout costume on load and in matches.
+  if(result.character==='original'&&(source.costume==='mushroom'||(!source.costume&&source.shirt==='mushroom')))result.character='mushroom';
+  const legacy=source.shirt==='original'?(source.helmet==='none'?'classic':'original'):source.shirt;
+  Object.assign(result,costumeFields(typeof source.costume==='string'?source.costume:source.wardrobe2?'classic':String(legacy??'classic')));
+  if(result.character==='mushroom')Object.assign(result,{helmet:'mushroom',shirt:'mushroom',pants:'mushroom'});
+  result.hair=result.character==='demon'&&DEMON_HAIRS.some(h=>h.id===source.hair)?String(source.hair):'original';
   return result;
 }
 export function loadOutfit(): Outfit {
-  try { const saved=sanitizeOutfit(JSON.parse(localStorage.getItem(STORAGE_KEY) || "null"));
-    if(!saved.costume){const id=saved.wardrobe2?['fieldwork','celestial','ember'][saved.wardrobe2.look]:saved.shirt==='original'?(saved.helmet==='none'?'classic':'original'):saved.shirt;Object.assign(saved,costumeFields(id));if(saved.character!=='original')saved.wardrobe2=undefined;}
-    return saved; }
+  try { return sanitizeOutfit(JSON.parse(localStorage.getItem(STORAGE_KEY) || "null")); }
   catch { return { ...DEFAULT_OUTFIT }; }
 }
 export function saveOutfit(outfit: Outfit): void {
@@ -60,32 +62,23 @@ export function queueCosmetics(scene: Phaser.Scene): void {
  * animation timing. All equipment shares the same frame grid and foot origin. */
 export function outfitTexture(scene: Phaser.Scene, requested: Outfit): string {
   const outfit = sanitizeOutfit(requested);
-  if(outfit.wardrobe2)return labTexture(scene,outfit.wardrobe2);
-  if(outfit.character==='demon')return demonTexture(scene);
+  if(outfit.character==='demon')return demonTexture(scene,outfit.hair);
   if(isAnimal(outfit.character))return animalTexture(scene,outfit.character,outfit.animalHat);
   const key = `outfit-${SLOTS.map(slot => outfit[slot]).join("-")}`;
   if (scene.textures.exists(key)) return key;
   const canvas = document.createElement("canvas"); canvas.width = 320; canvas.height = 32;
   const context = canvas.getContext("2d")!; context.imageSmoothingEnabled = false;
   {
-    drawGeneratedHair(scene,context,outfit,true);
     for (const slot of ["pants", "shirt"] as const) {
       drawGarment(context,scene.textures.get(pieceKey(slot,outfit[slot])).getSourceImage() as HTMLImageElement,scene.textures.get(pieceKey(slot,'original')).getSourceImage() as HTMLImageElement);
     }
     for(let frame=0;frame<6;frame++) {
       if(outfit.helmet!=='none') drawHelmet(context,scene.textures.get(pieceKey('helmet',outfit.helmet)).getSourceImage() as HTMLImageElement,frame);
     }
-    drawGeneratedHair(scene,context,outfit,false);
-    // Every generated hairstyle has a different face opening. Keep the shared
-    // rounded face visible rather than letting opaque fringe hide the eyes.
+    // Finn's uncovered head stays bald in every animation pose.
     if(outfit.helmet==='none') for(let frame=0;frame<6;frame++) {
       const pose=HEAD_POSES[frame];
       context.drawImage(scene.textures.get('head-bare-v2').getSourceImage() as HTMLImageElement,frame*32+12+pose.x,pose.y,11,11);
-      {
-        // Keep the hairline over the skull while leaving the new face readable.
-        const hair=scene.textures.get('hair-'+outfit.hair).getSourceImage() as HTMLImageElement;
-        context.drawImage(hair,0,0,20,7,frame*32+6+pose.x,pose.y-3,20,7);
-      }
     }
   }
   appendWalkFrames(canvas);
@@ -97,11 +90,6 @@ export function outfitTexture(scene: Phaser.Scene, requested: Outfit): string {
     frameRate:animation.frameRate,repeat:animation.repeat
   });
   return key;
-}
-
-function drawGeneratedHair(scene:Phaser.Scene,c:CanvasRenderingContext2D,o:Outfit,back:boolean):void {
-  const image=scene.textures.get('hair-'+o.hair).getSourceImage() as HTMLImageElement;
-  for(let f=0;f<6;f++) drawHairLayer(c,image,f,back,o.helmet!=='none');
 }
 
 export function botOutfit(id:string):Outfit {
