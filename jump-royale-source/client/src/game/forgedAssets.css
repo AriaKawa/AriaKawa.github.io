@@ -117,3 +117,31 @@
  .forged-command .menu-form { margin-top:16px; }
  .forged-command .menu-form input { height:48px; }
 }
+/* Compact reference proportions and optically centered action text. */
+.forged-command .forge-eyebrow { justify-content:flex-end; }
+.forged-command .menu-form label { display:block; width:100%; text-align:center; font-size:13px; }
+.forged-command .menu-form input { text-align:center; font-size:clamp(20px,1.8vw,30px); }
+.forged-command .menu-form button { display:flex; align-items:center; justify-content:center; padding:0 7%; font-size:clamp(18px,1.7vw,30px); }
+.forged-command .menu-form button>span { transform:translateY(2px); }
+.forged-command .ranked-splash,.forged-command .ranked-splash>span:first-child { color:#ffc552; text-shadow:0 1px 0 #9b461b,0 0 12px #f78b293d; }
+.forged-command .ranked-splash small { color:#c8ac82; text-shadow:none; }
+.forged-command .forge-score-icon { display:block; width:52%; height:52%; object-fit:contain; image-rendering:auto; }
+@media(min-width:760px) {
+ .forged-command .forge-mission { width:27%; }
+ .forged-command .wardrobe-toggle,.forged-command .personal-scores { width:min(100%,14vh); height:14vh; min-height:0; flex-shrink:0; }
+ .forged-command .wardrobe-toggle,.forged-command .scores-toggle { border-width:9px!important; border-image-width:9px!important; }
+ .forged-command .wardrobe-toggle { display:flex; flex-direction:column; align-items:center; justify-content:center; }
+ .forged-command .wardrobe-art { height:58%; }
+ .forged-command .forge-nav-label,.forged-command .scores-toggle { font-size:clamp(9px,1.35vh,14px); }
+ .forged-command .scores-toggle { gap:4px; padding:0; }
+ .forged-command .map-caption h2 { font-size:clamp(18px,1.65vw,30px); text-align:center; }
+}
+@media(max-width:1000px) and (min-width:760px) {
+ .forged-command .forge-mission { width:30.75%; }
+}
+@media(max-width:759px) {
+ .forged-command .wardrobe-toggle,.forged-command .personal-scores { width:70px; height:70px; }
+ .forged-command .forge-score-icon { width:30px; height:30px; }
+ .forged-command .menu-form label { font-size:12px; }
+ .forged-command .menu-form button { font-size:16px; }
+}

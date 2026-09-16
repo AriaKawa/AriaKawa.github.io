@@ -21,3 +21,6 @@ Use case: ui-mockup. Produce a standalone reusable empty square UI frame asset, 
 ## helmet.png
 
 Use case: background-extraction. Extract and recreate ONLY the small medieval helmet icon inside the WARDROBE button on LEFT of reference. Isolated transparent PNG icon, steel and warm aged silver greathelm with dark T shaped face slit, brass highlights and dark neck shadow, same hand-painted pixel-art appearance. No button frame, no text or background. Front view slightly angled as reference, centered tight icon crop. Match original helmet closely. Entire icon visible.
+
+## Scores icon refinement
+Built-in imagegen generated `assets/menu/forged-command/scores.png` from the user's compact Scores reference. Prompt: Three close upright bronze/gold metal pillars on a shared baseline, center tallest, left shortest, right medium; beveled edges, warm gold top planes, dark bronze sides, weathered forged texture; dark fantasy pixel-painted craftsmanship. Icon only, no frame or words; centered square, fills 80%, transparent background. Source: exec-1f8993b9-1995-4fb3-aa43-513634dd0e21.png.

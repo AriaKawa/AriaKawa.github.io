@@ -15,8 +15,8 @@ try {
  page.on('response',r=>{if(r.status()>=400)errors.push(`${r.status()} ${r.url()}`);});
  await page.goto(base);
  await page.locator('.forged-command').waitFor();
- await page.getByRole('textbox',{name:'Climber name'}).fill('Ashen Anvil');
- await page.getByRole('textbox',{name:'Climber name'}).blur();
+ await page.getByRole('textbox',{name:'Name'}).fill('Ashen Anvil');
+ await page.getByRole('textbox',{name:'Name'}).blur();
  assert.equal(await page.locator('.map-track canvas').count(),0);
  assert.equal(await page.locator('.map-track img').count(),4);
  await page.waitForFunction(()=>Array.from(document.querySelectorAll('.map-track img,.forge-logo,.forge-helmet')).every(i=>i.complete&&i.naturalWidth>0));
@@ -51,7 +51,7 @@ try {
  await page.screenshot({path:'docs/forged-release-game.png'});
  await page.keyboard.press('Escape');await page.getByRole('button',{name:'Return to main menu',exact:true}).click();
  await page.locator('.forged-command').waitFor();
- assert.equal(await page.getByRole('textbox',{name:'Climber name'}).inputValue(),'Ashen Anvil');
+ assert.equal(await page.getByRole('textbox',{name:'Name'}).inputValue(),'Ashen Anvil');
  assert.equal(await page.locator('.forged-command').count(),1);
  for(const [width,height] of [[1280,720],[900,600],[390,844]]) {
    await page.setViewportSize({width,height});await page.waitForTimeout(400);
