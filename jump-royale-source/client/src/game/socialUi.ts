@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import {MAPS,type MapId} from '../../../server/src/sim/maps';
-import {COSMETICS,loadOutfit,outfitTexture,sanitizeOutfit} from '../assets/cosmetics';
+import {PORTRAITS,portraitImage,portraitId} from './portraits';
+import {loadOutfit,outfitTexture,sanitizeOutfit} from '../assets/cosmetics';
 import {safePlayerName} from '../../../server/src/sim/names';
 import {backend,playerId,party,partyMembers,isHost,joinParty,leaveParty,updateMember,updatePresence,startParty,returnToParty,type Member,type OnlineScore} from './online';
 import {equippedWallpaper} from './wallpapers';
@@ -8,18 +9,17 @@ import {scoreTime} from './scores';
 
 
 function dialog(root:HTMLElement,label:string){const d=document.createElement('dialog');d.className='social-dialog';d.setAttribute('aria-label',label);const h=document.createElement('header');h.innerHTML=`<h2>${label}</h2><button type="button" aria-label="Close ${label}">×</button>`;h.querySelector('button')!.onclick=()=>d.close();d.append(h);root.append(d);d.addEventListener('keydown',e=>e.stopPropagation());d.addEventListener('keyup',e=>e.stopPropagation());return d;}
-function avatar(scene:Phaser.Scene,character:string){const c=document.createElement('canvas');c.width=64;c.height=64;const key=outfitTexture(scene,sanitizeOutfit({character}));const f=scene.textures.getFrame(key,0),ctx=c.getContext('2d')!;ctx.imageSmoothingEnabled=false;const scale=60/Math.max(f.width,f.height);ctx.drawImage(scene.textures.get(key).getSourceImage() as HTMLImageElement,f.cutX,f.cutY,f.width,f.height,(64-f.width*scale)/2,(64-f.height*scale)/2,f.width*scale,f.height*scale);return c;}
 export function createPartyUi(scene:Phaser.Scene,root:HTMLElement,form:HTMLFormElement,getMap:()=>MapId,onStart:(map:MapId)=>void){
  const toggle=document.createElement('button');toggle.className='party-toggle';toggle.type='button';toggle.setAttribute('aria-label','Party and profile');toggle.title='Party and profile';
  root.querySelector('.forge-resources')!.prepend(toggle);
- const d=dialog(root,'Party and profile'),body=document.createElement('div'),notice=document.createElement('p');notice.className='party-readiness';notice.setAttribute('aria-live','polite');form.append(notice);d.append(body);
+ const d=dialog(root,'Party and profile'),body=document.createElement('div'),notice=document.createElement('p');notice.className='party-readiness';notice.setAttribute('aria-live','polite');form.append(notice);d.classList.add('party-dialog');d.append(body);
  let busy=false,started=party.data?.round??'',lastPresence=0,lastProfile=0,positioned=false;
  const sprites=new Map<string,{sprite:Phaser.GameObjects.Sprite;label:Phaser.GameObjects.Text;wallpaper:Phaser.GameObjects.Image}>();
- const icon=()=>localStorage.getItem('jump-profile-icon')??'original';
+ const icon=()=>portraitId(localStorage.getItem('jump-profile-icon')??'finn');
  const member=():Member=>({id:playerId,name:safePlayerName(form.querySelector('input')!.value),outfit:loadOutfit(),icon:icon(),wallpaper:equippedWallpaper(),ready:false,x:400,y:400,updated:Date.now()});
  const run=async(fn:()=>Promise<unknown>)=>{if(busy)return;busy=true;try{await fn();party.error='';}catch(e){party.error=e instanceof Error?e.message:'Unable to connect';}finally{busy=false;render();}};
  const render=()=>{
-  toggle.replaceChildren(avatar(scene,icon()));const dot=document.createElement('span');dot.textContent=party.code?String(partyMembers().length):'+';toggle.append(dot);
+  toggle.replaceChildren(portraitImage(icon()));const dot=document.createElement('span');dot.className='party-badge';dot.setAttribute('aria-hidden','true');dot.textContent=party.code?String(partyMembers().length):'+';toggle.append(dot);
   const start=form.querySelector<HTMLButtonElement>('button[type=submit]')!;
   const members=partyMembers(),mine=party.data?.members?.[playerId],notReady=members.filter(m=>m.id!==party.data?.host&&!m.ready);
   start.textContent=party.code&&!isHost()?(mine?.ready?'Ready ✓':'Ready'):'Start';
@@ -28,14 +28,14 @@ export function createPartyUi(scene:Phaser.Scene,root:HTMLElement,form:HTMLFormE
   root.querySelectorAll<HTMLButtonElement>('.map-arrow').forEach(b=>b.disabled=!!party.code&&!isHost());
   notice.textContent=party.error|| (party.code?(isHost()?(start.disabled?'Players not ready':'Everyone is ready'):(mine?.ready?'Waiting for the host':'Ready up to join the climb')):'');
   if(!d.open)return;body.replaceChildren();
-  const profile=document.createElement('button');profile.className='profile-button';profile.append(avatar(scene,icon()),document.createTextNode('Your profile · change icon'));body.append(profile);
+  const profile=document.createElement('button');profile.className='profile-button';profile.append(portraitImage(icon()),document.createTextNode('Your profile · change icon'));body.append(profile);
   const choices=document.createElement('div');choices.className='profile-icons';choices.hidden=true;body.append(choices);
-  profile.onclick=()=>{choices.hidden=!choices.hidden;};
-  for(const c of COSMETICS.character){const b=document.createElement('button');b.title=c.name;b.setAttribute('aria-label',c.name+' icon');b.append(avatar(scene,c.id));b.onclick=()=>{localStorage.setItem('jump-profile-icon',c.id);void run(()=>updateMember({icon:c.id}));};choices.append(b);}
+  profile.setAttribute('aria-expanded','false');profile.onclick=()=>{choices.hidden=!choices.hidden;profile.setAttribute('aria-expanded',String(!choices.hidden));};
+  for(const c of PORTRAITS){const b=document.createElement('button');b.title=c.name;b.setAttribute('aria-pressed',String(icon()===c.id));b.setAttribute('aria-label',c.name+' icon');b.append(portraitImage(c.id));b.onclick=()=>{localStorage.setItem('jump-profile-icon',c.id);void run(()=>updateMember({icon:c.id}));};choices.append(b);}
   const info=document.createElement('p');info.textContent=party.code?`Party code: ${party.code} · ${members.length}/8 players`:'Host a party or enter a friend’s code.';body.append(info);
   if(party.code){
    const copy=document.createElement('button');copy.textContent='Copy code';copy.onclick=()=>void run(()=>navigator.clipboard.writeText(party.code));body.append(copy);
-   for(const m of members){const row=document.createElement('div');row.className='party-member';row.append(avatar(scene,m.icon),document.createTextNode(`${m.name} · ${m.id===party.data?.host?'Host':m.ready?'Ready':'Not ready'}`));body.append(row);}
+   for(const m of members){const row=document.createElement('div');row.className='party-member';row.append(portraitImage(m.icon),document.createTextNode(`${m.name} · ${m.id===party.data?.host?'Host':m.ready?'Ready':'Not ready'}`));body.append(row);}
    const leave=document.createElement('button');leave.textContent=isHost()?'Close party':'Leave party';leave.onclick=()=>void run(leaveParty);body.append(leave);
   }else{
    const host=document.createElement('button');host.textContent='Host party';host.onclick=()=>void run(()=>joinParty(Array.from(crypto.getRandomValues(new Uint8Array(6)),n=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[n%31]).join(''),member(),true));
@@ -68,7 +68,7 @@ export function createPartyUi(scene:Phaser.Scene,root:HTMLElement,form:HTMLFormE
 
 export function createLeaderboards(root:HTMLElement,name:()=>string){
  const panel=document.createElement('section');panel.className='personal-scores';const toggle=document.createElement('button');toggle.type='button';toggle.className='scores-toggle';toggle.textContent='Leaderboards';panel.append(toggle);root.append(panel);
- const d=dialog(root,'Leaderboards'),maps=document.createElement('div'),metrics=document.createElement('div'),content=document.createElement('div'),footer=document.createElement('p');maps.className=metrics.className='leaderboard-tabs';content.className='leaderboard-rows';footer.className='leaderboard-self';d.append(maps,metrics,content,footer);
+ const d=dialog(root,'Leaderboards'),maps=document.createElement('div'),metrics=document.createElement('div'),content=document.createElement('div'),footer=document.createElement('p');maps.className=metrics.className='leaderboard-tabs';content.className='leaderboard-rows';footer.className='leaderboard-self';d.classList.add('leaderboards-dialog');d.append(maps,metrics,content,footer);
  let map:MapId=MAPS[0].id,metric:'wins'|'bestMs'='bestMs',generation=0;
  const render=async()=>{const n=++generation;maps.replaceChildren();metrics.replaceChildren();for(const m of MAPS){const b=document.createElement('button');b.textContent=m.name;b.setAttribute('aria-pressed',String(m.id===map));b.onclick=()=>{map=m.id;void render();};maps.append(b);}for(const [key,label] of [['bestMs','Fastest completion'],['wins','Most wins']] as const){const b=document.createElement('button');b.textContent=label;b.setAttribute('aria-pressed',String(key===metric));b.onclick=()=>{metric=key;void render();};metrics.append(b);}content.textContent='Loading leaderboard…';footer.textContent='';
   try{const b=await backend(),s=await b.get(b.at('boards/'+map));if(n!==generation||!d.open)return;

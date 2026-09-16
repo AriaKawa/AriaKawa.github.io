@@ -11,7 +11,7 @@ import {drawLootIcon} from '../game/lootIcons';
 import {ANIMAL_HATS,isAnimal} from '../assets/animalRig';
 import {createLootBox} from '../game/lootBox';
 import {COSTUMES,costumeFields} from '../assets/costumeSets';
-import {createSettings,settingsOpen} from '../game/settings';
+import {createSettings} from '../game/settings';
 import {isBadName, nameRebuke, safePlayerName} from '../../../server/src/sim/names';
 
 import {createGoldStore} from '../game/goldStore';
@@ -355,18 +355,26 @@ export class MenuScene extends Phaser.Scene {
   private installPreviewControls(): void {
     const canvas=this.game.canvas; canvas.tabIndex=0;
     const editing=()=>document.activeElement?.matches("input,select,textarea,[contenteditable='true']") ?? false;
+    const modalOpen=()=>!!document.querySelector('dialog[open],.wardrobe-overlay:not([hidden])');
     const down=(event:KeyboardEvent)=>{
-      if(this.wallpapers?.open() || this.wardrobeOpen || settingsOpen() || (this.goldStore?.open||this.lootBox?.open()) || editing() || document.activeElement?.matches('button') || event.ctrlKey || event.metaKey || event.altKey)return;
+      if(modalOpen() || editing() || event.ctrlKey || event.metaKey || event.altKey)return;
+      // A/D and arrows remain game controls when a menu button has keyboard focus.
+      // Space still activates a keyboard-focused button; pointer clicks return focus below.
+      if(event.code==='Space'&&document.activeElement?.matches('button'))return;
       if(["Space","ArrowLeft","ArrowRight","KeyA","KeyD"].includes(event.code))event.preventDefault();
       if(event.code==="Space")this.held=true;
       this.movement.add(event.code);
     };
     const up=(event:KeyboardEvent)=>{
-      if(event.code==="Space"){if(!(this.goldStore?.open||this.lootBox?.open()) && !editing())event.preventDefault();this.held=false;}
+      if(event.code==="Space"){if(this.held&&!editing())event.preventDefault();this.held=false;}
       this.movement.delete(event.code);
     };
     const cancel=()=>{this.held=false;this.movement.clear();this.lobbyPlayer.charging=false;this.lobbyPlayer.charge01=0;};
-    const focus=()=>{if(editing())cancel();};
+    const focus=()=>{if(editing()||modalOpen())cancel();};
+    const returnPointerFocus=(event:MouseEvent)=>{
+      if(event.detail===0||(event.target as Element)?.closest('input,select,textarea,[contenteditable=true]'))return;
+      queueMicrotask(()=>{if(this.scene.isActive()&&!modalOpen()&&!editing())canvas.focus({preventScroll:true});});
+    };
     const visible=()=>{if(document.hidden)cancel();};
     const unfocusName=(event:PointerEvent)=>{
       const active=document.activeElement;
@@ -378,7 +386,8 @@ export class MenuScene extends Phaser.Scene {
     window.addEventListener("keydown",down);window.addEventListener("keyup",up);window.addEventListener("blur",cancel);
     document.addEventListener("focusin",focus);document.addEventListener("visibilitychange",visible);
     document.addEventListener('pointerdown',unfocusName,true);
-    this.removeControls=()=>{window.removeEventListener("keydown",down);window.removeEventListener("keyup",up);window.removeEventListener("blur",cancel);document.removeEventListener("focusin",focus);document.removeEventListener("visibilitychange",visible);document.removeEventListener('pointerdown',unfocusName,true);};
+    document.addEventListener('click',returnPointerFocus);
+    this.removeControls=()=>{window.removeEventListener("keydown",down);window.removeEventListener("keyup",up);window.removeEventListener("blur",cancel);document.removeEventListener("focusin",focus);document.removeEventListener("visibilitychange",visible);document.removeEventListener('pointerdown',unfocusName,true);document.removeEventListener('click',returnPointerFocus);};
   }
   private cleanup(): void {
     this.partyUi?.destroy();this.removeMissions?.();

@@ -77,3 +77,5 @@
 !/scripts/test-social.ts
 !/scripts/browser-social.mjs
 !/scripts/browser-social-polish.mjs
+!/scripts/browser-menu-controls.mjs
+!/docs/portrait-prompts.md
