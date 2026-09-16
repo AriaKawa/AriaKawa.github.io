@@ -3,13 +3,13 @@ import type {RoundPhase} from './types';
 import './solidTerrainNotice.css';
 
 /** A short pre-round tutorial, illustrated with the game's existing pixel sprites. */
-export function createSolidTerrainNotice(scene:Phaser.Scene){
+export function createSolidTerrainNotice(scene:Phaser.Scene,platformKey='forest-ai-moss-slate'){
  const root=document.createElement('aside');root.className='solid-terrain-notice';root.hidden=true;
  root.setAttribute('role','note');root.setAttribute('aria-label','Solid Terrain');
  root.innerHTML='<canvas width="96" height="96" role="img" aria-label="A climber bumps their head on the underside of a solid platform and bounces back down"></canvas><div><h2>Solid Terrain</h2><p>You can’t jump through platforms.<br>Hit the underside and bounce off.</p></div>';
  document.getElementById('game')!.append(root);
  const canvas=root.querySelector('canvas')!,c=canvas.getContext('2d')!;
- const platform=scene.textures.get('forest-ai-moss-slate').getSourceImage() as HTMLImageElement;
+ const platform=scene.textures.get(platformKey).getSourceImage() as HTMLImageElement;
  const player=scene.textures.get('climber-v2'),source=player.getSourceImage() as HTMLImageElement;
  const reduced=window.matchMedia('(prefers-reduced-motion: reduce)');
  function draw(time:number){

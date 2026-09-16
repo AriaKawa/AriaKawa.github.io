@@ -4,6 +4,7 @@ export type RoundPhase = "waiting" | "countdown" | "playing" | "surge" | "victor
 
 export interface Platform {
   region?: number; structure?: string; route?: boolean; secret?: boolean;
+  magical?: boolean;
   forest?: boolean;
   mountain?: boolean;
   crumbleSeconds?: number;

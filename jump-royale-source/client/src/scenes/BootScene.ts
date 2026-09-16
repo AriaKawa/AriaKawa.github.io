@@ -1,3 +1,4 @@
+import {queueMagicalAssets} from '../game/magicalArt';
 import {queueForestAssets} from '../game/forestArt';
 import {queueMountainAssets} from '../game/mountainArt';
 import { queueSnowAssets } from "../game/snowArt";
@@ -17,7 +18,7 @@ export class BootScene extends Phaser.Scene {
     queueResolvedAssets(this, paths, v2);
     queueCosmetics(this);
     queueJungleAssets(this);
-    queueSnowAssets(this); queueMountainAssets(this); queueForestAssets(this);
+    queueSnowAssets(this); queueMountainAssets(this); queueForestAssets(this); queueMagicalAssets(this);
     this.load.once(Phaser.Loader.Events.COMPLETE, () => {
       prepareJungleFrames(this);
       const platform = this.textures.get(ASSETS.restPlatform.key);

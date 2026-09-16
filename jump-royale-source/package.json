@@ -23,7 +23,10 @@
     "test:browser:mountain": "node scripts/browser-vertical.mjs",
     "test:browser:online": "node scripts/browser-vertical-online.mjs",
     "test:forest": "tsx scripts/test-forest.ts",
-    "test:browser:forest": "node scripts/browser-forest.mjs"
+    "test:browser:forest": "node scripts/browser-forest.mjs",
+    "test:magical": "tsx scripts/test-magical.ts",
+    "test:browser:magical": "node scripts/browser-magical.mjs",
+    "assets:magical": "node scripts/compile-magical-art.mjs"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",

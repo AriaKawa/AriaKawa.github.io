@@ -31,7 +31,7 @@ function planJump(bot: PlayerState, support: Platform, target: Platform, platfor
     if (!frames) continue;
     for (let x = support.x + (support.mountain?-2:8); x <= support.x + support.w - PLAYER_WIDTH - (support.mountain?-2:8); x += support.mountain?2:8) {
       for (const direction of [-1, 0, 1] as const) {
-        const landing = Math.max(SHAFT_LEFT, Math.min((support.forest?worldForMap('forest').right:support.mountain?worldForMap('mountain').right:SHAFT_RIGHT) - PLAYER_WIDTH, x + direction * HORIZONTAL_JUMP_SPEED * frames / 30));
+        const landing = Math.max(SHAFT_LEFT, Math.min((support.magical?worldForMap('magical').right:support.forest?worldForMap('forest').right:support.mountain?worldForMap('mountain').right:SHAFT_RIGHT) - PLAYER_WIDTH, x + direction * HORIZONTAL_JUMP_SPEED * frames / 30));
         const margin = Math.min(landing - target.x, target.x + target.w - landing - PLAYER_WIDTH);
         if (margin < (support.mountain?Math.min(1,Math.max(.1,(target.w-14)/2-1.8)):(target.slippery ? target.w < 230 ? 8 : 108 : 8))) continue;
         // Each climber favors a different safe part of the landing and balances

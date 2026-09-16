@@ -32,3 +32,7 @@ See [world design and measured validation](docs/vertical-world.md). The `debugWo
 ## Moonveil Forest
 
 A new 16-bit nighttime forest with a 2,560 × 14,400 world, horizontal camera tracking, 119 primary jumps and 14 alternate trails. Details and checks: [Moonveil Forest](docs/moonveil-forest.md). Match loot points now require a final top-15 placement. Elimination and early departure do not award a point.
+
+## Starlight Reverie
+
+A magical-girl-inspired anime pixel map with six chapters, two generated backdrops, three platform variants and a rising stardust tide. A 2,880 × 15,600 world with 128 main jumps and 16 alternative routes. See [map and generated-art notes](docs/starlight-reverie.md).

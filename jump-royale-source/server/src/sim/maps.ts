@@ -1,3 +1,4 @@
+import {generateMagical} from './magical.js';
 import {generateForest} from './forest.js';
 import {generateMountain} from './mountain.js';
 import { generateLevel } from './level.js';
@@ -5,8 +6,9 @@ import { SPAWN_Y } from './constants.js';
 import type { Platform } from './types.js';
 import {sizePlatforms} from './platformSizing.js';
 
-export type MapId = 'forge' | 'jungle' | 'snow' | 'mountain' | 'forest';
+export type MapId = 'forge' | 'jungle' | 'snow' | 'mountain' | 'forest' | 'magical';
 export const MAPS = [
+  {id:'magical',name:'Starlight Reverie',subtitle:'Magical girl · Rose quartz · Moon palace',description:'Follow pink ribbons through a dream city, rose gardens and a celestial palace. Solid crystal ledges, branching trails and a rising stardust tide.'},
   {id:'forest',name:'Moonveil Forest',subtitle:'Nightfall · Branching trails · 16-bit',description:'A moonlit forest of outstretched boughs and mossy cliffs. Cross long switchbacks, choose your route, and climb to the moon shrine.'},
   {id:'mountain',name:'The Long Mountain',subtitle:'Ten regions · One enormous ascent',description:'Cross abandoned roofs, climb the bell tower, and reach the stars. Committed jumps, moving lifts, secrets and long falls. Flood rises after two minutes.'},
   { id: 'forge', name: 'The Crown Forge', subtitle: 'Embers · Steel · Precision', description: 'The original six-chapter ascent.' },
@@ -58,4 +60,4 @@ export function generateSnow(): Platform[] {
   result.push({id:'crown',x:224,y:72,w:192,h:56,type:'anvil',terrain:'ruin'});
   return sizePlatforms(result,'snow');
 }
-export const levelForMap = (map: MapId): Platform[] => map === 'forest' ? generateForest() : map === 'mountain' ? generateMountain() : map === 'snow' ? generateSnow() : map === 'jungle' ? generateJungle() : generateLevel();
+export const levelForMap = (map: MapId): Platform[] => map === 'magical' ? generateMagical() : map === 'forest' ? generateForest() : map === 'mountain' ? generateMountain() : map === 'snow' ? generateSnow() : map === 'jungle' ? generateJungle() : generateLevel();

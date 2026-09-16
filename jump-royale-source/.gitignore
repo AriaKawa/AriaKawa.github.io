@@ -66,3 +66,10 @@
 !/docs/forest-ai-source/
 
 !/scripts/browser-solid-terrain.mjs
+
+!/scripts/test-magical.ts
+!/scripts/browser-magical.mjs
+!/scripts/compile-magical-art.mjs
+!/docs/magical-ai-prompts.json
+!/docs/magical-ai-source/
+!/docs/starlight-reverie.md

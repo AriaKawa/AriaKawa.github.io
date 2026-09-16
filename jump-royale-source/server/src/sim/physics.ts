@@ -15,6 +15,8 @@ export interface WorldBounds { left:number; right:number; top:number; bounce?:nu
 const SHAFT_BOUNDS:WorldBounds={left:SHAFT_LEFT,right:SHAFT_RIGHT,top:0};
 export function stepPlayer(player: PlayerState, platforms: Platform[], dt: number, bounds:WorldBounds=SHAFT_BOUNDS): void {
   if (!player.alive) return;
+  const magical=!!platforms[0]?.magical;
+  if(magical)bounds={...worldForMap('magical'),...bounds,left:54,right:worldForMap('magical').right};
   const forest=!!platforms[0]?.forest;
   if(forest)bounds={...worldForMap('forest'),...bounds,left:54,right:worldForMap('forest').right};
   const mountain=!!platforms[0]?.mountain;
@@ -140,5 +142,5 @@ export function stepPlayer(player: PlayerState, platforms: Platform[], dt: numbe
       player.groundedPlatformId = undefined;
     }
   }
-  player.maxHeight = Math.max(player.maxHeight, Math.max(0, (forest?worldForMap('forest').spawnY:mountain?worldForMap('mountain').spawnY:SPAWN_Y) - player.y));
+  player.maxHeight = Math.max(player.maxHeight, Math.max(0, (magical?worldForMap('magical').spawnY:forest?worldForMap('forest').spawnY:mountain?worldForMap('mountain').spawnY:SPAWN_Y) - player.y));
 }

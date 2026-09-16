@@ -1,3 +1,4 @@
+import {drawMagical,renderMagicalTerrain} from '../game/magicalArt';
 import {createSolidTerrainNotice} from '../game/solidTerrainNotice';
 import {drawForest,renderForestTerrain,forestWater} from '../game/forestArt';
 import { footOrigin } from '../game/spriteFeet';
@@ -61,7 +62,7 @@ export class GameScene extends Phaser.Scene {
   private get worldHeight(){return this.world.height;}
   private mapId: MapId = "forge";
   private jungleBackground?: Phaser.GameObjects.Image;
-  private get hazardLabel(): string { if(this.mapId==="mountain"||this.mapId==='forest')return "FLOOD"; return this.mapId === "snow" ? "BLIZZARD" : this.mapId === "jungle" ? "FLOOD" : "LAVA"; }
+  private get hazardLabel(): string { if(this.mapId==='magical')return 'STARDUST'; if(this.mapId==="mountain"||this.mapId==='forest')return "FLOOD"; return this.mapId === "snow" ? "BLIZZARD" : this.mapId === "jungle" ? "FLOOD" : "LAVA"; }
   private backdrop?: Phaser.GameObjects.Image;
   private hudObjects: Phaser.GameObjects.GameObject[] = [];
   private client = new GameClient();
@@ -118,7 +119,7 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor("#0b0810");
     this.cameras.main.setBounds(this.wideWorld?0:-(GAME_WIDTH-WORLD_WIDTH)/2, 0, this.wideWorld?this.world.width:GAME_WIDTH, this.worldHeight);
     this.cameras.main.scrollX = -(GAME_WIDTH-WORLD_WIDTH)/2;
-    this.terrainNotice?.destroy();this.terrainNotice=createSolidTerrainNotice(this);
+    this.terrainNotice?.destroy();this.terrainNotice=createSolidTerrainNotice(this,this.mapId==='magical'?'magical-ai-ribbon-palace':'forest-ai-moss-slate');
     this.drawWorldBackdrop();
     this.createHazard();
     if(!this.textures.exists('forged-hud-frame')){const t=this.textures.createCanvas('forged-hud-frame',100,100)!;t.context.drawImage(this.textures.get('forged-frame').getSourceImage() as HTMLImageElement,0,0,100,100);t.refresh();}
@@ -131,7 +132,7 @@ export class GameScene extends Phaser.Scene {
     this.client.on("leave", () => { this.hud?.phase.setText("DISCONNECTED\nPress ESC for settings").setVisible(true); });
     this.client.on<LevelMessage>("level", (level) => this.drawLevel(level));
     this.client.on<Snapshot>("snapshot", (snapshot) => this.applySnapshot(snapshot));
-    this.client.on<{ id: string; name: string }>("eliminated", (message) => this.showToast(`${preferences.names?message.name:'A climber'} ${this.mapId === "snow" ? "was caught by the blizzard" : (this.mapId === "jungle" || this.mapId === "mountain" || this.mapId === 'forest') ? "was swept away by the flood" : "was claimed by the forge"}`));
+    this.client.on<{ id: string; name: string }>("eliminated", (message) => this.showToast(`${preferences.names?message.name:'A climber'} ${this.mapId === 'magical' ? 'was swept away by the stardust tide' : this.mapId === "snow" ? "was caught by the blizzard" : (this.mapId === "jungle" || this.mapId === "mountain" || this.mapId === 'forest') ? "was swept away by the flood" : "was claimed by the forge"}`));
     void this.connect();
     this.removeSettings=createSettings(document.getElementById("game")!,undefined,()=>this.leaveWithScoreboard());
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => { this.terrainNotice?.destroy();this.terrainNotice=undefined;this.removeSettings?.(); this.nativeText?.destroy();audio.lavaDistance(0);this.deathUi?.remove();this.deathUi=undefined;this.godPanel?.remove(); this.godPanel=undefined; void this.client.disconnect(); });
@@ -174,13 +175,14 @@ export class GameScene extends Phaser.Scene {
         const checkbox=this.godPanel.querySelector("input")!;
         checkbox.addEventListener("change",()=>{ this.client.setGodPowers(checkbox.checked); checkbox.blur(); });
       }
-      this.hud?.phase.setText(this.mapId === 'forest' ? 'ENTERING MOONVEIL FOREST...' : this.mapId === "mountain" ? "ENTERING THE MOUNTAIN..." : this.mapId === "snow" ? "ENTERING FROSTPEAK..." : this.mapId === "jungle" ? "ENTERING THE JUNGLE..." : "WAITING FOR THE FORGE...");
+      this.hud?.phase.setText(this.mapId==='magical'?'ENTERING STARLIGHT REVERIE...' : this.mapId === 'forest' ? 'ENTERING MOONVEIL FOREST...' : this.mapId === "mountain" ? "ENTERING THE MOUNTAIN..." : this.mapId === "snow" ? "ENTERING FROSTPEAK..." : this.mapId === "jungle" ? "ENTERING THE JUNGLE..." : "WAITING FOR THE FORGE...");
     } catch {
       this.hud?.phase.setText("CONNECTION LOST\nPress ESC for settings").setColor("#ff8f73");
     }
   }
 
   private drawWorldBackdrop(): void {
+    if(this.mapId==='magical'){drawMagical(this);return;}
     if(this.mapId==='forest'){drawForest(this);return;}
     if(this.mapId !== "forge"){ this.drawJungle(); return; }
     this.add.rectangle(-160, 0, GAME_WIDTH, this.worldHeight, 0x0b0810).setOrigin(0).setDepth(-30);
@@ -234,6 +236,7 @@ export class GameScene extends Phaser.Scene {
   private renderPlatform(platform: Platform): void {
     const container = this.add.container(platform.x, platform.y).setDepth(1).setData('width',platform.w);
     this.platformEntities.set(platform.id, container);
+    if(this.mapId === 'magical'){renderMagicalTerrain(this,platform,container);return;}
     if(this.mapId === 'forest'){renderForestTerrain(this,platform,container);return;}
     if(this.mapId === 'mountain'){renderMountainTerrain(this,platform,container);return;}
     if(this.mapId === 'snow'){ renderSnowTerrain(this,platform,container); return; }
@@ -259,6 +262,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createHazard(): void {
+    if(this.mapId==='magical'){this.flood=this.add.image(0,0,'magical-ai-stardust-tide').setOrigin(0).setDepth(24).setDisplaySize(GAME_WIDTH,GAME_HEIGHT+160);return;}
     if(this.mapId==='forest'){this.flood=this.add.image(0,0,forestWater(this)).setOrigin(0).setDepth(24).setDisplaySize(GAME_WIDTH,GAME_HEIGHT+160);return;}
     if(this.wideWorld){
       this.flood=this.add.image(0,0,'ascent-ai-props/water').setOrigin(0).setDepth(24).setDisplaySize(GAME_WIDTH,GAME_HEIGHT+160);return;
@@ -304,7 +308,7 @@ export class GameScene extends Phaser.Scene {
       phase:text(GAME_WIDTH/2,72,"CONNECTING...").setOrigin(0.5).setFontSize(30).setStroke("#1c1115",7).setDepth(110),
       help:text(GAME_WIDTH/2,GAME_HEIGHT-14,this.mapId==="mountain"?"A / D WALK    HOLD SPACE · RELEASE TO LEAP":"A / D WALK    HOLD SPACE TO AIM    RELEASE TO LEAP").setOrigin(0.5,1).setFontSize(9)
     };
-    this.dangerOverlay = this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, this.mapId !== "forge" ? 0x1fb8c9 : 0xff321c, 0).setOrigin(0).setScrollFactor(0).setDepth(90);
+    this.dangerOverlay = this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, this.mapId==='magical'?0xeb83c4:this.mapId !== "forge" ? 0x1fb8c9 : 0xff321c, 0).setOrigin(0).setScrollFactor(0).setDepth(90);
     this.minimap = undefined;
     this.hudObjects=this.children.list.filter(object=>!before.has(object));
   }
