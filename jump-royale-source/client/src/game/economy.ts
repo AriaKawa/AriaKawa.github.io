@@ -46,6 +46,11 @@ export function owns(slot:string,id:string):boolean {return wallet().owned.inclu
 export function buy(slot:string,id:string):boolean {const w=wallet(),cost=price(slot,id);if(owns(slot,id))return true;if(w.gold<cost)return false;w.gold-=cost;w.owned.push(slot+':'+id);return persist(w);}
 export function reward(round:string,place:number):number {const w=wallet();if(w.rewards.includes(round))return 0;const amount=goldForPlace(place);w.gold+=amount;w.rewards.push(round);return persist(w)?amount:0;}
 export function lockedPieces(o:Outfit):[string,string][] {
+  if(['cerberus','skeleton','magical-girl'].includes(o.character)){
+    const pieces:[string,string][]=[['character',o.character]];
+    if(o.character==='magical-girl'&&o.hair==='star-buns')pieces.push(['hair','star-buns']);
+    return pieces.filter(([s,id])=>!owns(s,id));
+  }
   if(o.character==='original'&&o.costume)return owns('costume',o.costume)?[]:[['costume',o.costume]];
   if(o.character==='mushroom')return owns('character','mushroom')?[]:[['character','mushroom']];
   if(o.character==='demon')return ([['character','demon'],['hair',o.hair]] as [string,string][]).filter(([s,id])=>!owns(s,id));

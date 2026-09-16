@@ -19,10 +19,11 @@ import { MAPS } from "../../../server/src/sim/maps";
 import Phaser from "phaser";
 
 import { COSMETICS, DEMON_HAIRS, sanitizeOutfit, loadOutfit, saveOutfit, outfitTexture, type Outfit } from "../assets/cosmetics";
+import {MAGICAL_HAIR} from '../assets/fantasyRig';
 type CosmeticSlot='character'|'costume'|'hair'|'animalHat';
 const SLOTS:CosmeticSlot[]=['character','costume','hair','animalHat'];
-const outfitSlots=(o:Outfit):CosmeticSlot[]=>o.character==='original'?['character','costume']:o.character==='demon'?['character','hair']:['puppy','cat','rat'].includes(o.character)?['character','animalHat']:['character'];
-const equipmentOptions=(s:CosmeticSlot,_o:Outfit)=>s==='character'?COSMETICS.character:s==='hair'?DEMON_HAIRS:s==='animalHat'?ANIMAL_HATS:COSTUMES;
+const outfitSlots=(o:Outfit):CosmeticSlot[]=>o.character==='original'?['character','costume']:(o.character==='demon'||o.character==='magical-girl')?['character','hair']:['puppy','cat','rat'].includes(o.character)?['character','animalHat']:['character'];
+const equipmentOptions=(s:CosmeticSlot,_o:Outfit)=>s==='character'?COSMETICS.character:s==='hair'?(_o.character==='magical-girl'?MAGICAL_HAIR:DEMON_HAIRS):s==='animalHat'?ANIMAL_HATS:COSTUMES;
 const selectedPiece=(s:CosmeticSlot,o:Outfit)=>s==='character'?o.character:s==='hair'?o.hair:s==='animalHat'?o.animalHat??'none':o.costume??'classic';
 const cosmeticName=(s:CosmeticSlot,id:string,o:Outfit)=>equipmentOptions(s,o).find(p=>p.id===id)?.name??id;
 const candidateOutfit=(o:Outfit,s:CosmeticSlot,id:string):Outfit=>sanitizeOutfit(s==='costume'?{...o,...costumeFields(id),character:'original'}:s==='hair'?{...o,hair:id}:s==='animalHat'?{...o,animalHat:id}:{...o,character:id});
