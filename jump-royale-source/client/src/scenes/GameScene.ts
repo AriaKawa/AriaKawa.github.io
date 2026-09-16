@@ -1,3 +1,5 @@
+import {missionProgress} from '../game/missions';
+import {party,submitRecord} from '../game/online';
 import {drawMagical,renderMagicalTerrain} from '../game/magicalArt';
 import {createSolidTerrainNotice} from '../game/solidTerrainNotice';
 import {drawForest,renderForestTerrain,forestWater} from '../game/forestArt';
@@ -296,7 +298,7 @@ export class GameScene extends Phaser.Scene {
     const left = (GAME_WIDTH-WORLD_WIDTH)/2 - 120;
     const right = (GAME_WIDTH+WORLD_WIDTH)/2 + 8;
     const boardTop = Math.max(26, 44 * GAME_HEIGHT / window.innerHeight);
-    Object.assign(MINI_MAP,{x:right,y:174,width:112,height:GAME_HEIGHT-190,innerX:right+8,innerY:202,innerWidth:96,innerHeight:GAME_HEIGHT-260});
+    Object.assign(MINI_MAP,{x:GAME_WIDTH-150,y:GAME_HEIGHT-245,width:136,height:210,innerX:GAME_WIDTH-140,innerY:GAME_HEIGHT-218,innerWidth:116,innerHeight:155});
     if(this.mapId === "forge") this.add.tileSprite(0,0,GAME_WIDTH,GAME_HEIGHT,ASSETS.wallTiles.key).setOrigin(0).setScrollFactor(0).setDepth(-29).setAlpha(0.12);
     const frame=(x:number,y:number,w:number,h:number)=>this.add.nineslice(x,y,'forged-hud-frame',undefined,w,h,12,12,12,12).setOrigin(0).setScrollFactor(0).setDepth(100);
     frame(left,16,112,38);frame(right,boardTop,112,146);
@@ -311,7 +313,8 @@ export class GameScene extends Phaser.Scene {
       help:text(GAME_WIDTH/2,GAME_HEIGHT-14,this.mapId==="mountain"?"A / D WALK    HOLD SPACE · RELEASE TO LEAP":"A / D WALK    HOLD SPACE TO AIM    RELEASE TO LEAP").setOrigin(0.5,1).setFontSize(9)
     };
     this.dangerOverlay = this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, this.mapId==='magical'?0xeb83c4:this.mapId !== "forge" ? 0x1fb8c9 : 0xff321c, 0).setOrigin(0).setScrollFactor(0).setDepth(90);
-    this.minimap = undefined;
+    frame(MINI_MAP.x,MINI_MAP.y,MINI_MAP.width,MINI_MAP.height);
+    this.minimap={graphics:this.add.graphics().setScrollFactor(0).setDepth(101),title:text(MINI_MAP.x+10,MINI_MAP.y+9,'NEARBY CLIMBERS').setFontSize(8),status:text(MINI_MAP.x+10,MINI_MAP.y+184,'').setFontSize(7)};
     this.hudObjects=this.children.list.filter(object=>!before.has(object));
   }
 
@@ -338,7 +341,7 @@ export class GameScene extends Phaser.Scene {
     if(snapshot.phase==='surge' && this.snapshot?.phase!=='surge') {
       this.cameras.main.scrollY=Phaser.Math.Clamp(snapshot.hazardY-GAME_HEIGHT*.65,0,this.worldHeight-GAME_HEIGHT);
       const score=snapshot.placements?.find(p=>p.id===this.client.localId);
-      if(score && !snapshot.assisted){rewardSpinPoint(this.mapId+':'+snapshot.roundStartedAt,score.place);saveScore(this.mapId,score);if(score.place===1)recordWin(this.mapId+':'+snapshot.roundStartedAt);this.goldEarned=reward(this.mapId+':'+snapshot.roundStartedAt,score.place);}
+      if(score && !snapshot.assisted){rewardSpinPoint(this.mapId+':'+snapshot.roundStartedAt,score.place);saveScore(this.mapId,score);if(score.place===1)recordWin(this.mapId+':'+snapshot.roundStartedAt);this.goldEarned=reward(this.mapId+':'+snapshot.roundStartedAt,score.place);missionProgress(this.mapId+':'+snapshot.roundStartedAt,score.maxHeight,score.place);void submitRecord(this.mapId,String(snapshot.roundStartedAt),this.playerName,score.place===1,score.place===1&&snapshot.completed?(snapshot.completionMs??snapshot.serverTime-snapshot.roundStartedAt):null).catch(()=>{});}
     }
     if(snapshot.phase==='countdown'){const count=Math.max(1,Math.ceil((snapshot.countdownEndsAt-snapshot.serverTime)/1000));if(count!==this.lastCountdown){audio.countdown();this.lastCountdown=count;}}
     if(snapshot.phase==='playing' && this.snapshot?.phase==='countdown')audio.countdown(true);
@@ -346,6 +349,7 @@ export class GameScene extends Phaser.Scene {
     this.snapshot = snapshot;
     const self=snapshot.players.find(p=>p.id===this.client.localId);
     if(self)audio.setMusicDead(!self.alive);
+    if(self&&!snapshot.assisted&&snapshot.phase==='playing')missionProgress(String(snapshot.roundStartedAt),self.maxHeight);
     if(self&&!self.alive&&!this.deathUi){
 
       this.deathUi=document.createElement('div');this.deathUi.className='elimination-ui';
@@ -422,7 +426,7 @@ export class GameScene extends Phaser.Scene {
 
   private createPlayerEntity(player: PlayerSnapshot): PlayerEntity {
     const local = player.id === this.localId;
-    const outfit=local ? this.registry.get("outfit") ?? loadOutfit() : botOutfit(player.id);
+    const outfit=local ? this.registry.get("outfit") ?? loadOutfit() : party.data?.members?.[player.id]?.outfit ?? botOutfit(player.id);
     const texture = outfitTexture(this,outfit);
     const animationPrefix = texture;
 
@@ -592,7 +596,9 @@ export class GameScene extends Phaser.Scene {
     const { graphics: g, status } = this.minimap;
     const { innerX, innerY, innerWidth, innerHeight } = MINI_MAP;
     const mapX = (worldX: number) => innerX + Phaser.Math.Clamp((worldX - this.world.left) / (this.world.right - this.world.left), 0, 1) * innerWidth;
-    const mapY = (worldY: number) => innerY + Phaser.Math.Clamp(worldY / this.worldHeight, 0, 1) * innerHeight;
+    const focus=snapshot.players.find(p=>p.id===this.localId);
+    const span=Math.min(1800,this.worldHeight),top=Phaser.Math.Clamp((focus?.y??this.world.spawnY)-span*.65,0,this.worldHeight-span);
+    const mapY = (worldY: number) => innerY + Phaser.Math.Clamp((worldY-top)/span, 0, 1) * innerHeight;
 
     g.clear();
 
@@ -601,6 +607,7 @@ export class GameScene extends Phaser.Scene {
     g.lineStyle(1, 0x8d7568, 0.65).strokeRect(innerX, innerY, innerWidth, innerHeight);
 
     for (const platform of this.minimapPlatforms) {
+      if(platform.y<top||platform.y>top+span)continue;
       if(snapshot.players.find(p => p.id === this.localId)?.crumblingPlatforms?.[platform.id] === 0) continue;
       const left = mapX(platform.x);
       const right = mapX(platform.x + platform.w);
@@ -615,8 +622,9 @@ export class GameScene extends Phaser.Scene {
     const ranked = [...snapshot.players].sort((a, b) => b.maxHeight - a.maxHeight);
     const leader = ranked[0];
     for (const player of ranked.slice().reverse()) {
+      if(player.y<top||player.y>top+span)continue;
       const markerX = mapX(player.x + PLAYER_WIDTH / 2);
-      const bestY = mapY((this.worldHeight - 240) - player.maxHeight);
+      const bestY = mapY(player.y);
       const local = player.id === this.localId;
       const leading = player.id === leader?.id;
       const color = local ? 0xfff0a6 : COLORS[player.colorIndex % COLORS.length];

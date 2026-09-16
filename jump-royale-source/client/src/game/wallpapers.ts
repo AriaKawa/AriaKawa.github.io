@@ -1,3 +1,5 @@
+import {owns} from './economy';
+export function equippedWallpaper():string {const id=localStorage.getItem('jump-wallpaper')??'forged-command';return ['starlight','moonveil'].includes(id)&&owns('wallpaper',id)?id:'forged-command';}
 import Phaser from 'phaser';
 import { outfitTexture, sanitizeOutfit } from '../assets/cosmetics';
 import { GAME_WIDTH, GAME_HEIGHT } from './constants';
@@ -18,7 +20,7 @@ export function createWallpapers(scene:Phaser.Scene,ui:HTMLElement,onPreview:(id
   const track=dialog.querySelector<HTMLElement>('.wallpaper-track')!;
   for(const item of WALLPAPERS){const img=document.createElement('img');img.src=import.meta.env.BASE_URL+'assets/menu/'+item.image;img.alt=item.name+' wallpaper';img.draggable=false;track.append(img);}
   ui.append(toggle,dialog);
-  let index=0;
+  let index=Math.max(0,WALLPAPERS.findIndex(w=>w.id===equippedWallpaper()));
   const effects:Phaser.GameObjects.GameObject[]=[];
   let timer:Phaser.Time.TimerEvent|undefined;
   const clear=()=>{timer?.remove();timer=undefined;for(const object of effects){scene.tweens.killTweensOf(object);object.destroy();}effects.length=0;};
@@ -39,16 +41,16 @@ export function createWallpapers(scene:Phaser.Scene,ui:HTMLElement,onPreview:(id
   const render=()=>{
     const item=WALLPAPERS[index];track.style.transform=`translateX(-${index*100}%)`;
     dialog.querySelector('h3')!.textContent=item.name;
-    dialog.querySelector('.wallpaper-status')!.textContent=item.locked?'🔒 Locked · Preview only':'Your current wallpaper';
+    dialog.querySelector('.wallpaper-status')!.textContent=item.locked&&!owns('wallpaper',item.id)?'Unlock in the loot box':item.id===equippedWallpaper()?'Your current wallpaper':'Owned · ready to equip';
     dialog.querySelector('.wallpaper-dots')!.textContent=WALLPAPERS.map((_,i)=>i===index?'●':'○').join('  ');
-    const equip=dialog.querySelector<HTMLButtonElement>('.wallpaper-equip')!;equip.disabled=item.locked;equip.textContent=item.locked?'Locked':'Equipped';
+    const equip=dialog.querySelector<HTMLButtonElement>('.wallpaper-equip')!;equip.disabled=item.locked&&!owns('wallpaper',item.id);equip.textContent=equip.disabled?'Unlock in loot box':item.id===equippedWallpaper()?'Equipped':'Equip';
     onPreview(item.id);animate(item.id);
   };
-  toggle.addEventListener('click',()=>{index=0;dialog.showModal();render();});
+  toggle.addEventListener('click',()=>{index=Math.max(0,WALLPAPERS.findIndex(w=>w.id===equippedWallpaper()));dialog.showModal();render();});
   dialog.querySelectorAll('.wallpaper-carousel>button').forEach((button,i)=>button.addEventListener('click',()=>{index=(index+(i?1:-1)+WALLPAPERS.length)%WALLPAPERS.length;render();}));
   dialog.querySelector('.wallpaper-close')!.addEventListener('click',()=>dialog.close());
-  dialog.querySelector('.wallpaper-equip')!.addEventListener('click',()=>{if(index===0)dialog.close();});
+  dialog.querySelector('.wallpaper-equip')!.addEventListener('click',()=>{if(index===0||owns('wallpaper',WALLPAPERS[index].id)){localStorage.setItem('jump-wallpaper',WALLPAPERS[index].id);dialog.close();}});
   dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close();}});
-  dialog.addEventListener('close',()=>{clear();onPreview('forged-command');toggle.focus();});
+  dialog.addEventListener('close',()=>{clear();onPreview(equippedWallpaper());animate(equippedWallpaper());toggle.focus();});
   return {open:()=>dialog.open,destroy:()=>{clear();dialog.remove();toggle.remove();}};
 }

@@ -23,6 +23,7 @@ export interface PlayerSnapshot {
 }
 export interface Placement { timeMs: number; id: string; name: string; place: number; maxHeight: number; isBot: boolean }
 export interface Snapshot {
+  completed?:boolean; completionMs?:number;
   assisted?: boolean;
   serverTime: number; phase: RoundPhase; countdownEndsAt: number; roundStartedAt: number;
   hazardY: number; winnerId?: string; players: PlayerSnapshot[]; platforms?: PlatformPosition[]; placements?: Placement[];

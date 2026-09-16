@@ -1,9 +1,12 @@
-import {createWallpapers,WALLPAPERS} from '../game/wallpapers';
+import {createMissions} from '../game/missions';
+import {createPartyUi,createLeaderboards} from '../game/socialUi';
+import {createWallpapers,WALLPAPERS,equippedWallpaper} from '../game/wallpapers';
 import { footOrigin } from '../game/spriteFeet';
 import '../game/forgedCommand.css';
 import '../game/forgedAssets.css';
 import '../game/wardrobeShop.css';
 import '../game/wallpapers.css';
+import '../game/social.css';
 import {drawLootIcon} from '../game/lootIcons';
 import {ANIMAL_HATS,isAnimal} from '../assets/animalRig';
 import {createLootBox} from '../game/lootBox';
@@ -14,7 +17,7 @@ import {isBadName, nameRebuke, safePlayerName} from '../../../server/src/sim/nam
 import {createGoldStore} from '../game/goldStore';
 import {audio} from '../game/audio';
 import {wallet,owns,buy,price,playableOutfit} from '../game/economy';
-import { loadScores, loadWins, scoreTime } from '../game/scores';
+
 import type { Platform } from '../../../server/src/sim/types';
 
 import { MAPS } from "../../../server/src/sim/maps";
@@ -40,6 +43,8 @@ const NAMES = ["Tongs", "Hammer", "Rivet", "Boots", "Bellows", "Spark", "Anvil",
 const randomName = () => `${PREFIXES[Math.floor(Math.random() * PREFIXES.length)]} ${NAMES[Math.floor(Math.random() * NAMES.length)]}`;
 
 export class MenuScene extends Phaser.Scene {
+  private partyUi?:ReturnType<typeof createPartyUi>;
+  private removeMissions?:()=>void;
   private removeSettings?:()=>void;
   private mapIndex = 0;
   private wallpaperId = 'forged-command';
@@ -76,13 +81,13 @@ export class MenuScene extends Phaser.Scene {
 
   create(): void {
     this.input.keyboard?.disableGlobalCapture();
-    this.wallpaperId='forged-command';
+    this.wallpaperId=equippedWallpaper();
     this.wardrobeOpen = false; this.activeSlot = "costume";
     this.held = false; this.velocity = 0; this.airborne = false; this.landUntil = 0;
     this.lobbyPlayer = createLobbyPlayer(GAME_WIDTH,GAME_HEIGHT); this.lobbyHeight=GAME_HEIGHT; this.movement.clear(); this.accumulator = 0;
     this.outfit = playableOutfit(this.registry.get("outfit") ?? loadOutfit());
     this.cameras.main.setBackgroundColor("#0d0b10");
-    this.background = this.add.image(GAME_WIDTH/2,GAME_HEIGHT,'forged-command').setOrigin(0.5,1).setDepth(-3);
+    this.background = this.add.image(GAME_WIDTH/2,GAME_HEIGHT,this.wallpaperId).setOrigin(0.5,1).setDepth(-3);
     this.shade = this.add.rectangle(0,0,GAME_WIDTH,GAME_HEIGHT,0x06101b,0.08).setOrigin(0).setDepth(-2);
     this.animationPrefix = outfitTexture(this,this.outfit);
     const frameWidth=this.textures.get(this.animationPrefix).get(0).width;
@@ -115,8 +120,8 @@ export class MenuScene extends Phaser.Scene {
     wardrobe.insertAdjacentHTML('beforeend','<span class="forge-nav-label">Wardrobe</span>');
     rail.append(brand,wardrobe,ui.querySelector('.personal-scores')!,ui.querySelector('.ranked-splash')!);
     rail.querySelector('.ranked-splash')!.innerHTML='<span aria-hidden="true">♛</span><span>RANKED<small>Coming soon</small></span>';
-    rail.querySelector('.scores-toggle')!.innerHTML=`<img class="forge-score-icon" src="${import.meta.env.BASE_URL}assets/menu/forged-command/scores.png" alt="" draggable="false">Scores`;
-    rail.querySelector('.scores-toggle')!.setAttribute('aria-label','Scores');
+    rail.querySelector('.scores-toggle')!.innerHTML=`<img class="forge-score-icon" src="${import.meta.env.BASE_URL}assets/menu/forged-command/scores.png" alt="" draggable="false">Leaderboards`;
+    rail.querySelector('.scores-toggle')!.setAttribute('aria-label','Leaderboards');
     const mission=document.createElement('section');mission.className='forge-mission';mission.setAttribute('aria-label','Prepare your climb');
     mission.innerHTML='<div class="forge-eyebrow"><span>'+String(this.mapIndex+1).padStart(2,'0')+' / '+String(MAPS.length+2).padStart(2,'0')+'</span></div>';
     mission.append(ui.querySelector('.map-selector')!,this.form!);
@@ -127,6 +132,8 @@ export class MenuScene extends Phaser.Scene {
     const note=document.createElement('p');note.className='forge-controls';note.innerHTML='<span>A / D</span> MOVE <i>·</i> HOLD <span>SPACE</span> TO JUMP';
     ui.append(rail,resources,mission,note);
     this.wallpapers=createWallpapers(this,ui,id=>{this.wallpaperId=id;this.background.setTexture(id).setDisplaySize(GAME_WIDTH,GAME_HEIGHT);this.held=false;this.movement.clear();this.placeOnPedestal();this.refreshSurfaces();});
+    this.partyUi=createPartyUi(this,ui,this.form!,()=>MAPS[this.mapIndex]?.id??'magical',map=>{const name=this.form!.querySelector('input')!.value;this.registry.set('mapId',map);this.scene.start('Game',{name,mapId:map});});
+    this.removeMissions=createMissions(ui,()=>{this.renderPurchase();this.lootBox?.refresh();});
     this.layoutUi();
   }
 
@@ -201,6 +208,7 @@ export class MenuScene extends Phaser.Scene {
       event.preventDefault();
       if(this.mapIndex>=MAPS.length || this.wallpapers?.open())return;
       if(moderate())return;
+      if(this.partyUi?.submit())return;
       this.showOutfit(this.outfit);
       const name=nameInput.value.trim() || randomName();
       try { localStorage.setItem("forge-climber-name",name); } catch { /* Session name remains usable. */ }
@@ -236,35 +244,7 @@ export class MenuScene extends Phaser.Scene {
     panel.querySelectorAll('button').forEach((button,i)=>button.addEventListener('click',()=>{this.mapIndex=(this.mapIndex+(i?1:-1)+total)%total;render();}));
     render();
   }
-  private createScores():void {
-    loadScores();
-    const panel=document.createElement('section');panel.className='personal-scores';panel.setAttribute('aria-label','Personal high scores');
-    panel.innerHTML='<div class="scores-popover" id="scores-popover" hidden></div><button type="button" class="scores-toggle" aria-expanded="false" aria-controls="scores-popover">SCORES</button>';
-    const popover=panel.querySelector<HTMLElement>('.scores-popover')!;
-    const render=()=>{
-      popover.replaceChildren();
-      const title=document.createElement('h2');title.textContent='WINS · '+loadWins();popover.append(title);
-      const name=this.form!.querySelector('input')!.value.trim() || 'You';
-      const heading=document.createElement('p');heading.textContent=name+' · Personal bests';popover.append(heading);
-      const scores=loadScores();
-      for(const map of MAPS){const h=document.createElement('h3');h.textContent=map.name;popover.append(h);
-        const best=scores[map.id],row=document.createElement('p');
-        row.textContent=best?'#'+best.place+' '+name+' · '+(best.maxHeight/10).toFixed(1)+'m · '+scoreTime(best.timeMs):'No round played yet';popover.append(row);
-      }
-      this.refreshSurfaces();
-    };
-    panel.querySelector('button')!.addEventListener('click',()=>{
-      popover.hidden=!popover.hidden;panel.querySelector('button')!.setAttribute('aria-expanded',String(!popover.hidden));render();
-    });
-    const close=()=>{popover.hidden=true;panel.querySelector('button')!.setAttribute('aria-expanded','false');this.refreshSurfaces();};
-    const outside=(event:PointerEvent)=>{if(!popover.hidden&&!panel.contains(event.target as Node))close();};
-    const escape=(event:KeyboardEvent)=>{if(event.key==='Escape')close();};
-    document.addEventListener('pointerdown',outside);document.addEventListener('keydown',escape);
-    this.removeScoresDismiss=()=>{document.removeEventListener('pointerdown',outside);document.removeEventListener('keydown',escape);};
-    this.form!.querySelector('input')!.addEventListener('input',()=>{if(!popover.hidden)render();});
-    this.ui!.appendChild(panel);
-
-  }
+  private createScores():void {this.removeScoresDismiss=createLeaderboards(this.ui!,()=>this.form!.querySelector('input')!.value.trim()||'You');}
   private refreshSurfaces():void {
     const canvas=this.game.canvas.getBoundingClientRect();
     if(!canvas.width || !this.ui)return;
@@ -401,6 +381,7 @@ export class MenuScene extends Phaser.Scene {
     this.removeControls=()=>{window.removeEventListener("keydown",down);window.removeEventListener("keyup",up);window.removeEventListener("blur",cancel);document.removeEventListener("focusin",focus);document.removeEventListener("visibilitychange",visible);document.removeEventListener('pointerdown',unfocusName,true);};
   }
   private cleanup(): void {
+    this.partyUi?.destroy();this.removeMissions?.();
     this.wallpapers?.destroy();this.wallpapers=undefined;this.removeScoresDismiss?.();this.removeScoresDismiss=undefined;
     this.removeSettings?.();this.removeSettings=undefined;
     this.removeControls?.();this.removeControls=undefined;this.scale.off(Phaser.Scale.Events.RESIZE,this.layoutUi,this);

@@ -1,3 +1,4 @@
+import {party} from '../game/online';
 import {createSettings,preferences} from '../game/settings';
 import Phaser from 'phaser';
 import type { Placement } from '../game/types';
@@ -29,7 +30,8 @@ export class ResultsScene extends Phaser.Scene {
     }
     ui.querySelector('footer p')!.textContent=data.assisted?'God powers round · personal records unchanged':data.leftEarly?'Standings frozen at departure':'';
     const [again,lobby]=ui.querySelectorAll('button');
-    again.addEventListener('click',()=>this.scene.start('Game',{name:data.name,mapId:map}));
+    again.textContent=party.code?'Return to party':'Climb again';
+    again.addEventListener('click',()=>party.code?this.scene.start('Menu'):this.scene.start('Game',{name:data.name,mapId:map}));
     lobby.addEventListener('click',()=>this.scene.start('Menu'));
     document.getElementById('game')!.appendChild(ui);
     const refreshNames=()=>{

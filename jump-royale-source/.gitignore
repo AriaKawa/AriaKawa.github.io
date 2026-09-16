@@ -73,3 +73,7 @@
 !/docs/magical-ai-prompts.json
 !/docs/magical-ai-source/
 !/docs/starlight-reverie.md
+!/docs/social-release.md
+!/scripts/test-social.ts
+!/scripts/browser-social.mjs
+!/scripts/browser-social-polish.mjs

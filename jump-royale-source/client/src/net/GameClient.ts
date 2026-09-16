@@ -1,3 +1,4 @@
+import {party} from '../game/online';
 import type { MapId } from "../../../server/src/sim/maps";
 import type { InputMessage, LevelMessage, Snapshot } from "../game/types";
 import { HostedGameClient } from "./HostedGameClient";
@@ -16,11 +17,12 @@ export class GameClient {
 
   async connect(name: string, mapId: MapId = "forge"): Promise<void> {
     const hostedMode = !import.meta.env.VITE_SERVER_URL && (import.meta.env.VITE_HOSTED_MODE === "true" || location.hostname.toLowerCase() === "ariakawa.github.io");
-    if (hostedMode || (mapId!=="forge" && mapId!=="mountain")) {
+    if (party.code || hostedMode || (mapId!=="forge" && mapId!=="mountain")) {
       this.hosted = new HostedGameClient(mapId);
       this.hosted.on<LevelMessage>("level", (message) => this.emit("level", message));
       this.hosted.on<Snapshot>("snapshot", (message) => this.emit("snapshot", message));
       this.hosted.on<{ id: string; name: string }>("eliminated", (message) => this.emit("eliminated", message));
+      this.hosted.on('leave',()=>this.emit('leave',undefined));
       await this.hosted.connect(name);
       this.localId = this.hosted.localId;
       return;
@@ -46,7 +48,7 @@ export class GameClient {
   }
 
   spectate():void {this.hosted?.spectate();this.room?.send("spectate");}
-  get supportsGodPowers(): boolean { return !!this.hosted; }
+  get supportsGodPowers(): boolean { return !!this.hosted&&!party.code; }
   get isFlying(): boolean { return this.hosted?.isFlying ?? false; }
   setGodPowers(enabled: boolean): void { this.hosted?.setGodPowers(enabled); }
   sendInput(input: InputMessage): void { this.hosted?.sendInput(input); this.room?.send("input", input); }

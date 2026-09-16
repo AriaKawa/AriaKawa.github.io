@@ -1,4 +1,4 @@
-import {wallet,openLoot,rollLoot,LOOT_ODDS,type LootEntry} from './economy';
+import {wallet,openLoot,rollLoot,lootChance,type LootEntry} from './economy';
 import {LOOT_POOL,RARITIES} from './lootCatalog';
 import './lootBox.css';
 
@@ -7,11 +7,12 @@ export function createLootBox(root:HTMLElement,onOpen:()=>void,onChange:()=>void
  const toggle=document.createElement('button');toggle.className='loot-toggle';toggle.type='button';
  toggle.setAttribute('aria-label','Open loot box');toggle.setAttribute('aria-haspopup','dialog');toggle.setAttribute('aria-controls','loot-dialog');
  const dialog=document.createElement('dialog');dialog.id='loot-dialog';dialog.className='loot-dialog';dialog.setAttribute('aria-label','Loot box');
- dialog.innerHTML=`<header><div class="loot-gold"><img src="${import.meta.env.BASE_URL}assets/menu/gold-bars.png" alt="Gold"><span class="loot-gold-amount" aria-live="polite"></span><button class="gold-add loot-gold-add" type="button" aria-label="Buy gold" aria-haspopup="dialog" aria-controls="gold-store"><span class="plus-icon" aria-hidden="true"></span></button></div><button class="loot-close" aria-label="Close loot box"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6L18 18M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2"/></svg></button></header><div class="loot-window"><div class="loot-reel"></div><span class="loot-pointer" aria-hidden="true"></span></div><p class="loot-result" role="status" aria-live="polite"></p><footer class="loot-controls"><div class="loot-actions"><button class="loot-buy">Buy · 2 gold</button><div class="loot-free-group"><button class="loot-free">Free spin</button><div class="loot-points" role="img"></div></div></div></footer><details class="loot-contents"><summary>Cache & drop chances</summary><p>Finish in the top 15 to earn 1 loot box point. Every 3 points earns a free spin. Final standings are required.</p><div class="loot-grid"></div></details>`;
+ dialog.innerHTML=`<header><div class="loot-gold"><img src="${import.meta.env.BASE_URL}assets/menu/gold-bars.png" alt="Gold"><span class="loot-gold-amount" aria-live="polite"></span><button class="gold-add loot-gold-add" type="button" aria-label="Buy gold" aria-haspopup="dialog" aria-controls="gold-store"><span class="plus-icon" aria-hidden="true"></span></button></div><button class="loot-close" aria-label="Close loot box"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6L18 18M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2"/></svg></button></header><div class="loot-window"><div class="loot-reel"></div><span class="loot-pointer" aria-hidden="true"></span></div><p class="loot-result" role="status" aria-live="polite"></p><footer class="loot-controls"><div class="loot-actions"><button class="loot-buy">Buy · 2 gold</button><div class="loot-free-group"><button class="loot-free">Free spin</button><div class="loot-points" role="img"></div></div></div></footer><details class="loot-contents"><summary>Cache & drop chances</summary><p>Finish in the top 15 to earn 1 loot box point. Every 3 points earns a free spin. Final standings are required. Rarity odds: blue 60%, purple 25%, pink 10%, red 4%, gold 1%. Within each rarity, unowned items are selected equally; duplicates only drop once you own that entire rarity. Individual odds below update with your collection.</p><div class="loot-grid"></div></details>`;
  (root.querySelector('.gold-marker')??root).append(toggle);root.append(dialog);
  let busy=false,animation:Animation|undefined;
  const reel=dialog.querySelector<HTMLElement>('.loot-reel')!,status=dialog.querySelector<HTMLElement>('.loot-result')!,buy=dialog.querySelector<HTMLButtonElement>('.loot-buy')!,free=dialog.querySelector<HTMLButtonElement>('.loot-free')!;
  const refresh=()=>{
+  dialog.querySelector('.loot-grid')!.replaceChildren(...LOOT_POOL.map(item=>card(item,true)));
   const w=wallet();toggle.dataset.freeSpins=String(w.freeSpins);toggle.innerHTML=chest()+`<span>Loot box</span>${w.freeSpins?`<b class="loot-badge">${w.freeSpins}</b>`:''}`;
   toggle.setAttribute('aria-label',`Open loot box${w.freeSpins?`, ${w.freeSpins} free spins`:''}`);
   dialog.querySelector('.loot-gold-amount')!.textContent=String(w.gold);
@@ -21,7 +22,7 @@ export function createLootBox(root:HTMLElement,onOpen:()=>void,onChange:()=>void
  };
  const card=(item:LootEntry,odds=false)=>{
   const el=document.createElement('article');el.className='loot-card';el.dataset.item=item.slot+':'+item.id;el.style.setProperty('--rarity',RARITIES[item.rarity].color);
-  const chance=LOOT_ODDS[item.rarity]/LOOT_POOL.filter(p=>p.rarity===item.rarity).length;
+  const chance=lootChance(item,LOOT_POOL);
   el.innerHTML=`<canvas width="64" height="64" aria-hidden="true"></canvas><strong>${item.name}</strong>${odds?`<span>${Number(chance.toFixed(2))}%</span>`:''}`;
   draw(el.querySelector('canvas')!,item);return el;
  };

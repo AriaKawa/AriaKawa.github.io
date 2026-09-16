@@ -55,8 +55,8 @@ class GameAudio {
     const active=this.musicMap==='magical';
     if(this.context){
       const now=this.context.currentTime;
-      this.musicGain?.gain.setTargetAtTime(active||document.hidden?0:preferences.music*.12,now,.03);
-      this.magicalGain?.gain.setTargetAtTime(active&&!document.hidden?preferences.music:0,now,.03);
+      this.musicGain?.gain.setTargetAtTime(active||document.hidden?0:preferences.music*.06,now,.03);
+      this.magicalGain?.gain.setTargetAtTime(active&&!document.hidden?preferences.music*.5:0,now,.03);
       // Let the current song recede smoothly while the player is a ghost.
       this.musicFilter?.frequency.setTargetAtTime(this.musicDead?850:20000,now,.22);
       this.musicDistanceGain?.gain.setTargetAtTime(this.musicDead?.4:1,now,.22);
@@ -70,7 +70,7 @@ class GameAudio {
   private musicTick():void {
     const c=this.context;if(!c||c.state!=='running'||document.hidden||this.musicMap==='magical')return;
     this.ensureMusicGraph();
-    this.musicGain!.gain.setTargetAtTime(preferences.music*.12,c.currentTime,.05);
+    this.musicGain!.gain.setTargetAtTime(preferences.music*.06,c.currentTime,.05);
     const melody=[64,67,71,67,62,66,69,66,60,64,67,64,62,66,69,71];
     const note=melody[this.musicBeat++%melody.length],o=c.createOscillator(),g=c.createGain();
     o.type='triangle';o.frequency.value=440*Math.pow(2,(note-69)/12);g.gain.setValueAtTime(0,c.currentTime);g.gain.linearRampToValueAtTime(.25,c.currentTime+.02);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+.55);

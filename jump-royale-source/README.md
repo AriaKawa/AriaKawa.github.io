@@ -2,7 +2,7 @@
 
 Playable website: https://ariakawa.github.io/forge-climb-royale/
 
-The map carousel defaults to **The Long Mountain**. The original forge, jungle and snow maps, wardrobe, local rewards, spectator mode and round finale remain available. The public GitHub Pages build runs local practice with 23 bots; the Colyseus multiplayer server remains supported for separately hosted/local sessions.
+The map carousel defaults to **The Long Mountain**. The original forge, jungle and snow maps, wardrobe, local rewards, spectator mode and round finale remain available. The public build supports solo practice with 23 bots and up to eight human players in code parties, with bots filling the remaining slots. Parties use Firebase anonymous sign-in and a host-run shared simulation; the host must keep the game open. The Colyseus server remains available for separately hosted/local sessions. See [the social release notes](docs/social-release.md) for leaderboards, missions, loot odds, and validation.
 
 ## Build from this repository
 
@@ -35,4 +35,4 @@ A new 16-bit nighttime forest with a 2,560 × 14,400 world, horizontal camera tr
 
 ## Starlight Reverie
 
-A magical-girl-inspired anime pixel map with six chapters, two generated backdrops, three platform variants and a rising stardust tide. A 2,880 × 15,600 world with 128 main jumps and 16 alternative routes. See [map and generated-art notes](docs/starlight-reverie.md).
+A magical-girl-inspired anime pixel map with six chapters, two generated backdrops, three platform variants and a rising stardust tide. A 2,880 × 10,920 world with 95 collision-tested main transitions and 46 alternate jumps. See [map and generated-art notes](docs/starlight-reverie.md).

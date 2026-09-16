@@ -15,7 +15,9 @@ export type LootEntry={slot:string;id:string;name:string;rarity:number};
 export const LOOT_ODDS=[60,25,10,4,1] as const;
 export function rollLoot<T extends LootEntry>(pool:readonly T[],random=()=>crypto.getRandomValues(new Uint32Array(1))[0]/4294967296):T {
  let roll=random()*100,tier=0;while(tier<LOOT_ODDS.length-1&&roll>=LOOT_ODDS[tier])roll-=LOOT_ODDS[tier++];
- const items=pool.filter(p=>p.rarity===tier);if(!items.length)throw new Error('Empty loot tier');
+ const unique=[...new Map(pool.map(p=>[p.slot+':'+p.id,p])).values()];
+ const tierItems=unique.filter(p=>p.rarity===tier),fresh=tierItems.filter(p=>!owns(p.slot,p.id));
+ const items=fresh.length?fresh:tierItems;if(!items.length)throw new Error('Empty loot tier');
  return items[Math.floor(random()*items.length)];
 }
 /** Save payment and prize together, before starting the visual reveal. */
@@ -26,6 +28,8 @@ export function openLoot<T extends LootEntry>(pool:readonly T[],free:boolean):{i
  if(duplicate){w.gold++;addSpinPoint(w);}else w.owned.push(key);
  return persist(w)?{item,duplicate}:null;
 }
+export function lootChance(item:LootEntry,pool:readonly LootEntry[]):number {const tier=[...new Map(pool.filter(p=>p.rarity===item.rarity).map(p=>[p.slot+':'+p.id,p])).values()],fresh=tier.filter(p=>!owns(p.slot,p.id)),items=fresh.length?fresh:tier;return items.some(p=>p.slot===item.slot&&p.id===item.id)?LOOT_ODDS[item.rarity]/items.length:0;}
+export function grantMissionGold(id:string,amount:number):boolean {const w=wallet(),receipt='mission:'+id;if(w.rewards.includes(receipt))return true;w.gold+=amount;w.rewards.push(receipt);return persist(w);}
 // A specific, one-time browser-wallet credit requested by the site owner.
 export function claimGoldGift(hash:string):boolean {
   const gift=hash==='#gift=loot-cache-20260916-c739a2'?'loot-cache-20260916-c739a2':'menu-fix-20260911-7c4b9e';

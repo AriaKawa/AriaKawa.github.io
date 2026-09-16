@@ -6,6 +6,7 @@ import type {LootEntry} from './economy';
 
 /** Display accessories on their own; characters and costumes show their full look. */
 export function drawLootIcon(scene:Phaser.Scene,canvas:HTMLCanvasElement,item:LootEntry):void {
+ if(item.slot==='wallpaper'){const source=scene.textures.get(item.id).getSourceImage() as HTMLImageElement;canvas.getContext('2d')!.drawImage(source,0,10,64,44);return;}
  if(item.slot==='animalHat'){drawAnimalHatIcon(canvas,item.id);return;}
  const sample=item.slot==='hdCostume'?{...DEFAULT_OUTFIT,character:item.id.replace(/-16$/,''),detailedCostumes:[item.id]}:item.slot==='magicalCostume'?{...DEFAULT_OUTFIT,character:'magical-girl',magicalCostume:'starlight-16' as const}:item.slot==='costume'?{...DEFAULT_OUTFIT,...costumeFields(item.id)}:item.slot==='hair'?{...DEFAULT_OUTFIT,character:item.id==='star-buns'?'magical-girl':'demon',hair:item.id}:{...DEFAULT_OUTFIT,character:item.id};
  const key=outfitTexture(scene,sample),frame=scene.textures.getFrame(key,0),source=scene.textures.get(key).getSourceImage() as HTMLImageElement;

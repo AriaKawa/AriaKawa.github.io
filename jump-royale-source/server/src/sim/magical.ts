@@ -1,10 +1,10 @@
 import type {Platform} from './types.js';
 
 export const MAGICAL_WIDTH=2880;
-export const MAGICAL_HEIGHT=15600;
+export const MAGICAL_HEIGHT=10920;
 export const MAGICAL_SPAWN=MAGICAL_HEIGHT-240;
 export const MAGICAL_CHAPTERS=['WISHING PLAZA','RIBBON ROOFTOPS','ROSEGLASS GARDENS','STAR CRYSTAL ARCADE','LUNAR SANCTUARY','HEART OF THE MOON'];
-export const magicalSection=(y:number)=>Math.max(0,Math.min(5,Math.floor((MAGICAL_SPAWN+32-y)/2560)));
+export const magicalSection=(y:number)=>Math.max(0,Math.min(5,Math.floor((MAGICAL_SPAWN+32-y)/1780)));
 
 /** Repeating two-jump left/right forks merge before each small precision landing. */
 export function generateMagical():Platform[]{
@@ -18,7 +18,7 @@ export function generateMagical():Platform[]{
   const small=phase===3,w=(small?84:Math.max(164,214-section*8))*.75;
   const x=center+(phase===0?160:phase===1?290:phase===3?direction*150:0);
   out.push({id:'magical-'+index,x:x-w/2,y,w,h:small?22:28,type:small?'wood':'stone',magical:true,solid:true});
-  if(phase<2){
+  if(phase<2&&y>400){
    const left=center-(phase===0?160:290);
    out.push({id:'magical-branch-'+index,x:left-w/2,y,w,h:28,type:'stone',magical:true,solid:true});
   }
