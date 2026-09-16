@@ -14,11 +14,12 @@ export function generateMagical():Platform[]{
   const section=magicalSection(y),phase=index%4;
   y-=Math.min([110,112,118,110][phase],y-180);
   if(center>2250)direction=-1;if(center<500)direction=1;
-  const small=phase===3,w=small?84:Math.max(164,214-section*8);
-  const x=center+(phase===0?160:phase===1?310:phase===3?direction*150:0);
+  // Difficulty tuning: 25% less landing width on both routes.
+  const small=phase===3,w=(small?84:Math.max(164,214-section*8))*.75;
+  const x=center+(phase===0?160:phase===1?290:phase===3?direction*150:0);
   out.push({id:'magical-'+index,x:x-w/2,y,w,h:small?22:28,type:small?'wood':'stone',magical:true,solid:true});
   if(phase<2){
-   const left=center-(phase===0?160:310);
+   const left=center-(phase===0?160:290);
    out.push({id:'magical-branch-'+index,x:left-w/2,y,w,h:28,type:'stone',magical:true,solid:true});
   }
   if(small)center=x;
