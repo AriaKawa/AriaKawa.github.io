@@ -30,6 +30,26 @@ try {
  await page.getByRole('button',{name:'Scores',exact:true}).click();
  await page.getByRole('button',{name:'Open wardrobe',exact:true}).click();
  assert(await page.getByRole('tab',{name:'Hairstyles',exact:true}).isVisible());
+ await page.getByRole('tab',{name:'Character',exact:true}).click();
+ const locked=page.locator('.equipment-card[data-owned=false]').first();
+ assert.equal(await locked.locator('span').innerText(),'?');
+ assert.equal(await locked.getAttribute('aria-label'),'Locked item');
+ assert.equal(await locked.locator('canvas').evaluate(e=>getComputedStyle(e).filter),'brightness(0)');
+ await page.waitForTimeout(250);
+ const preview=page.locator('.wardrobe-stage canvas');
+ assert(await preview.isVisible());
+ const outfitBefore=await page.locator('.wardrobe-stage').getAttribute('data-outfit');
+ await page.getByRole('button',{name:'Finn',exact:true}).hover();
+ assert.notEqual(await page.locator('.wardrobe-stage').getAttribute('data-outfit'),outfitBefore);
+ await page.locator('.wardrobe-panel header').hover();
+ assert.equal(await page.locator('.wardrobe-stage').getAttribute('data-outfit'),outfitBefore);
+ await locked.hover();
+ assert.equal(await page.locator('.wardrobe-stage').getAttribute('data-outfit'),outfitBefore);
+ await page.locator('.wardrobe-panel header').hover();
+ await page.screenshot({path:'docs/forged-release-wardrobe.png'});
+ await page.getByRole('tab',{name:'Hairstyles',exact:true}).click();
+ assert.equal(await page.locator('.equipment-card[data-owned=false]').first().locator('span').innerText(),'?');
+ await page.screenshot({path:'docs/forged-release-hair.png'});
  await page.keyboard.press('Escape');assert(!(await page.locator('.wardrobe-overlay').isVisible()));
  const loot=page.getByRole('button',{name:/^Open loot box/});
  assert.equal(await loot.getAttribute('data-free-spins'),'1');
@@ -43,8 +63,8 @@ try {
  assert.equal(await loot.getAttribute('data-free-spins'),'0');
  await page.getByRole('button',{name:'Close loot box',exact:true}).click();
  await page.locator('.forge-resources .gold-add').click();assert(await page.locator('#gold-store').isVisible());await page.keyboard.press('Escape');
- await page.locator('.settings-cog').click();assert(await page.locator('.game-settings').isVisible());await page.keyboard.press('Escape');
- await page.getByRole('button',{name:/^start the climb$/i}).click();
+ await page.locator('.settings-cog').click();assert(await page.locator('.game-settings').isVisible());await page.screenshot({path:'docs/forged-release-settings.png'});await page.keyboard.press('Escape');
+ await page.getByRole('button',{name:/^start$/i}).click();
  await page.locator('.forged-command').waitFor({state:'detached'});
  await page.waitForTimeout(1500);
  await page.keyboard.down('Space');await page.waitForTimeout(400);await page.keyboard.up('Space');
@@ -55,7 +75,7 @@ try {
  assert.equal(await page.locator('.forged-command').count(),1);
  for(const [width,height] of [[1280,720],[900,600],[390,844]]) {
    await page.setViewportSize({width,height});await page.waitForTimeout(400);
-   const play=await page.getByRole('button',{name:/^start the climb$/i}).boundingBox();
+   const play=await page.getByRole('button',{name:/^start$/i}).boundingBox();
    assert(play&&play.x>=0&&play.y>=0&&play.x+play.width<=width&&play.y+play.height<=height,`Play button outside ${width}x${height}`);
    await page.screenshot({path:`docs/forged-release-${width}.png`});
  }

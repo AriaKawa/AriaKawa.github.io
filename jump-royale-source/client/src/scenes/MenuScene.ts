@@ -109,7 +109,7 @@ export class MenuScene extends Phaser.Scene {
     mission.innerHTML='<div class="forge-eyebrow"><span>'+String(this.mapIndex+1).padStart(2,'0')+' / '+String(MAPS.length).padStart(2,'0')+'</span></div>';
     mission.append(ui.querySelector('.map-selector')!,this.form!);
     this.form!.querySelector('input')!.insertAdjacentHTML('beforebegin','<label for="climber-name">NAME</label>');
-    this.form!.querySelector('button')!.innerHTML='<span>Start the Climb</span>';
+    this.form!.querySelector('button')!.innerHTML='<span>Start</span>';
     const resources=document.createElement('div');resources.className='forge-resources';
     resources.append(ui.querySelector('.gold-marker')!,ui.querySelector('.loot-toggle')!,ui.querySelector('.settings-cog')!);
     const note=document.createElement('p');note.className='forge-controls';note.innerHTML='<span>A / D</span> MOVE <i>·</i> HOLD <span>SPACE</span> TO JUMP';
@@ -120,6 +120,13 @@ export class MenuScene extends Phaser.Scene {
   update(_time: number, delta: number): void {
     if(_time>this.surfaceRefreshAt){this.refreshSurfaces();this.surfaceRefreshAt=_time+200;}
     this.accumulator += Math.min(delta,100)/1000;
+    if(this.wardrobeOpen){
+      this.accumulator=0;
+      this.preview.play(this.animationPrefix+"-idle",true);
+      const canvas=this.ui?.querySelector<HTMLCanvasElement>(".wardrobe-stage canvas");
+      if(canvas){const c=canvas.getContext("2d")!,f=this.preview.frame; c.clearRect(0,0,160,192);c.imageSmoothingEnabled=false;const scale=144/Math.max(f.width,f.height);c.drawImage(this.preview.texture.getSourceImage() as HTMLImageElement,f.cutX,f.cutY,f.width,f.height,(160-f.width*scale)/2,192-f.height*scale,f.width*scale,f.height*scale);}
+      return;
+    }
     const p = this.lobbyPlayer;
     p.input = { left: this.movement.has('KeyA') || this.movement.has('ArrowLeft'),
       right: this.movement.has('KeyD') || this.movement.has('ArrowRight'), jumpHeld: this.held, seq: 0 };
@@ -140,7 +147,7 @@ export class MenuScene extends Phaser.Scene {
 
   private createMenuUi(): void {
     this.ui = document.createElement("div"); this.ui.className = "menu-ui";
-    this.ui.innerHTML = `<div class="gold-marker" aria-label="Gold balance"><img src="${import.meta.env.BASE_URL}assets/menu/gold-bars.png" alt="Gold bars"><span class="gold-balance" aria-live="polite"></span><button class="gold-add" type="button" aria-label="Buy gold" title="Buy gold" aria-haspopup="dialog" aria-controls="gold-store"><span class="plus-icon" aria-hidden="true"></span></button></div><h1 class="menu-title" aria-label="Jump Royale"><span>JUMP</span><strong>ROYALE</strong></h1><div class="ranked-splash"><span>Ranked Coming Soon!</span></div><button class="wardrobe-toggle" type="button" aria-label="Open wardrobe" title="Wardrobe" aria-expanded="false" aria-controls="wardrobe-panel"><span class="wardrobe-art" aria-hidden="true"><img src="${import.meta.env.BASE_URL}assets/menu/wardrobe-pixel.png" alt=""><img src="${import.meta.env.BASE_URL}assets/menu/wardrobe-pixel-open.png" alt=""></span></button><form class="menu-form"><input id="climber-name" maxlength="18" autocomplete="off" placeholder="Name" aria-label="Name"><button type="submit">Start the Climb</button></form><div class="wardrobe-overlay" hidden><section id="wardrobe-panel" class="wardrobe-panel" role="dialog" aria-modal="true" aria-label="Wardrobe"><header><button class="wardrobe-close pixel-button" type="button" aria-label="Close wardrobe">&#215;</button></header><div class="wardrobe-tabs" role="tablist" aria-label="Equipment category">${SLOTS.map(slot=>`<button id="tab-${slot}" type="button" role="tab" data-slot="${slot}" aria-controls="equipment-grid" aria-selected="${slot===this.activeSlot}" tabindex="${slot===this.activeSlot?0:-1}">${({character:"Character",costume:"Costumes",hair:"Hairstyles",animalHat:"Hats"})[slot]}</button>`).join("")}</div><div id="equipment-grid" class="equipment-grid" role="tabpanel" aria-labelledby="tab-costume"></div><div class="purchase-bar" aria-live="polite"></div></section></div>`;
+    this.ui.innerHTML = `<div class="gold-marker" aria-label="Gold balance"><img src="${import.meta.env.BASE_URL}assets/menu/gold-bars.png" alt="Gold bars"><span class="gold-balance" aria-live="polite"></span><button class="gold-add" type="button" aria-label="Buy gold" title="Buy gold" aria-haspopup="dialog" aria-controls="gold-store"><span class="plus-icon" aria-hidden="true"></span></button></div><h1 class="menu-title" aria-label="Jump Royale"><span>JUMP</span><strong>ROYALE</strong></h1><div class="ranked-splash"><span>Ranked Coming Soon!</span></div><button class="wardrobe-toggle" type="button" aria-label="Open wardrobe" title="Wardrobe" aria-expanded="false" aria-controls="wardrobe-panel"><span class="wardrobe-art" aria-hidden="true"><img src="${import.meta.env.BASE_URL}assets/menu/wardrobe-pixel.png" alt=""><img src="${import.meta.env.BASE_URL}assets/menu/wardrobe-pixel-open.png" alt=""></span></button><form class="menu-form"><input id="climber-name" maxlength="18" autocomplete="off" placeholder="Name" aria-label="Name"><button type="submit">Start</button></form><div class="wardrobe-overlay" hidden><div class="wardrobe-stage"><canvas width="160" height="192" aria-label="Outfit preview"></canvas><div class="wardrobe-plinth"></div></div><section id="wardrobe-panel" class="wardrobe-panel" role="dialog" aria-modal="true" aria-label="Wardrobe"><header><button class="wardrobe-close pixel-button" type="button" aria-label="Close wardrobe">&#215;</button></header><div class="wardrobe-tabs" role="tablist" aria-label="Equipment category">${SLOTS.map(slot=>`<button id="tab-${slot}" type="button" role="tab" data-slot="${slot}" aria-controls="equipment-grid" aria-selected="${slot===this.activeSlot}" tabindex="${slot===this.activeSlot?0:-1}">${({character:"Character",costume:"Costumes",hair:"Hairstyles",animalHat:"Hats"})[slot]}</button>`).join("")}</div><div id="equipment-grid" class="equipment-grid" role="tabpanel" aria-labelledby="tab-costume"></div><div class="purchase-bar" aria-live="polite"></div></section></div>`;
     document.getElementById("game")!.appendChild(this.ui);
     this.removeSettings=createSettings(this.ui,()=>{this.held=false;this.movement.clear();this.lobbyPlayer.charging=false;this.lobbyPlayer.charge01=0;if(this.wardrobeOpen)this.setWardrobeOpen(false);});
     this.goldStore=createGoldStore(()=>{
@@ -252,7 +259,7 @@ export class MenuScene extends Phaser.Scene {
   private setWardrobeOpen(open: boolean): void {
     audio.play('wardrobe',.22);
     this.showOutfit(this.outfit);
-    this.wardrobeOpen=open;this.held=false;this.movement.clear();
+    this.wardrobeOpen=open;this.preview.setVisible(!open);this.held=false;this.movement.clear();
     this.ui!.classList.toggle('forge-wardrobe-open',open);
     this.ui!.querySelectorAll<HTMLElement>('.forge-rail,.forge-resources,.forge-mission').forEach(e=>e.inert=open);
     this.ui!.querySelectorAll<HTMLElement>('.menu-title,.ranked-splash,.lobby-steps,.lobby-objects,.personal-scores').forEach(e=>e.hidden=open);
@@ -278,17 +285,17 @@ export class MenuScene extends Phaser.Scene {
     grid.setAttribute("aria-labelledby",`tab-${this.activeSlot}`);
     this.updateTabs();this.renderPurchase();
     if(!outfitSlots(this.outfit).includes(this.activeSlot)) {this.selectSlot('character');return;}
-    grid.innerHTML=equipmentOptions(this.activeSlot,this.outfit).map(piece=>`<button type="button" class="equipment-card" data-owned="${owns(this.shopSlot(),piece.id)}" data-piece="${piece.id}" aria-label="${cosmeticName(this.activeSlot,piece.id,this.outfit)}" aria-description="${owns(this.shopSlot(),piece.id)?'Owned':price(this.shopSlot(),piece.id)+' gold'}" aria-pressed="${selectedPiece(this.activeSlot,this.outfit)===piece.id}"><canvas width="64" height="64" aria-hidden="true"></canvas><span>${cosmeticName(this.activeSlot,piece.id,this.outfit)}${owns(this.shopSlot(),piece.id)?'':' · '+price(this.shopSlot(),piece.id)+' gold'}</span></button>`).join("");
+    grid.innerHTML=equipmentOptions(this.activeSlot,this.outfit).map(piece=>`<button type="button" class="equipment-card" data-owned="${owns(this.shopSlot(),piece.id)}" data-piece="${piece.id}" aria-label="${owns(this.shopSlot(),piece.id)?cosmeticName(this.activeSlot,piece.id,this.outfit):'Locked item'}" aria-description="${owns(this.shopSlot(),piece.id)?'Owned':price(this.shopSlot(),piece.id)+' gold'}" aria-pressed="${selectedPiece(this.activeSlot,this.outfit)===piece.id}"><canvas width="64" height="64" aria-hidden="true"></canvas><span>${owns(this.shopSlot(),piece.id)?cosmeticName(this.activeSlot,piece.id,this.outfit):'?'}</span></button>`).join("");
     grid.querySelectorAll<HTMLButtonElement>("button").forEach(button=>{
       const id=button.dataset.piece!;
       this.drawEquipmentIcon(button.querySelector("canvas")!,this.activeSlot,id);
       const candidate=candidateOutfit(this.outfit,this.activeSlot,id);
-      const preview=()=>this.showOutfit(candidate);
+      const preview=()=>{if(owns(this.shopSlot(),id))this.showOutfit(candidate);};
       const restore=()=>this.showOutfit(this.outfit);
       button.addEventListener('pointerenter',preview);
       button.addEventListener('pointerleave',restore);
-      button.addEventListener('focus',preview);
-      button.addEventListener('blur',restore);
+
+
       button.addEventListener("click",()=>{
         const slot=this.shopSlot();
         if(!owns(slot,id)&&!buy(slot,id)) {
@@ -303,6 +310,7 @@ export class MenuScene extends Phaser.Scene {
   }
   private shopSlot():string {return this.activeSlot;}
   private showOutfit(outfit:Outfit):void {
+    const stage=this.ui?.querySelector<HTMLElement>(".wardrobe-stage");if(stage)stage.dataset.outfit=JSON.stringify(outfit);
     this.animationPrefix=outfitTexture(this,outfit);
     this.preview.stop().chain();this.preview.setTexture(this.animationPrefix,0);
     const h=this.preview.frame.height;this.preview.setOrigin(.5,outfit.wardrobe2?31/32:(h-1)/h).setScale(Math.min(GAME_HEIGHT*.36,GAME_WIDTH*.22)/32*(outfit.wardrobe2?32/h:1));

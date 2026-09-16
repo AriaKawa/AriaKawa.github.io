@@ -5,9 +5,9 @@ import type { Platform, PlayerState } from "./types.js";
 
 interface Plan { x: number; ticks: number; direction: -1 | 0 | 1; score: number }
 const SKILLS = {
-  bad: { think: 740, settle: 400, mistake: .34, error: 3 },
-  average: { think: 400, settle: 230, mistake: .19, error: 2 },
-  good: { think: 180, settle: 110, mistake: .06, error: 1 },
+  bad: { think: 740, settle: 400, mistake: .46, error: 5 },
+  average: { think: 400, settle: 230, mistake: .28, error: 4 },
+  good: { think: 180, settle: 110, mistake: .11, error: 2 },
   cracked: { think: 65, settle: 35, mistake: 0, error: 0 }
 };
 function random(bot: PlayerState): number {
@@ -69,13 +69,16 @@ export function updateBot(bot: PlayerState, platforms: Platform[], now: number):
   if (!brain.initialized) { brain.initialized = true; brain.cooldownUntil = now + 80 + random(bot)*1200; }
   if(brain.supportId!==bot.groundedPlatformId) {
     brain.supportId=bot.groundedPlatformId; brain.targetId=undefined; brain.launchX=undefined; brain.alignedUntil=undefined;
-    brain.cooldownUntil=Math.max(brain.cooldownUntil,now+skill.think*pace*(.6+random(bot))+(platforms[0]?.mountain?2200+random(bot)*2400:0));
+    brain.cooldownUntil=Math.max(brain.cooldownUntil,now+skill.think*pace*(.6+random(bot))+(platforms[0]?.mountain?100+random(bot)*450:0));
   }
   const icySupport=platforms.find(p=>p.id===bot.groundedPlatformId)?.slippery;
   if(icySupport&&platforms[0]?.mountain&&Math.abs(bot.vx)>100&&!bot.charging){bot.input.left=false;bot.input.right=false;bot.input.jumpHeld=true;brain.holdUntil=now+34;return;}
   if (now < brain.cooldownUntil) {
-    bot.input.left = !!icySupport && bot.vx>15;
-    bot.input.right = !!icySupport && bot.vx< -15;
+    const support=platforms.find(p=>p.id===bot.groundedPlatformId);
+    const wiggle=Math.sin(now/(85+brain.pattern%7*19)+brain.pattern);
+    const room=support && support.w>55;
+    bot.input.left = icySupport ? bot.vx>15 : !!room && wiggle<-.25 && bot.x>support!.x+12;
+    bot.input.right = icySupport ? bot.vx< -15 : !!room && wiggle>.25 && bot.x+PLAYER_WIDTH<support!.x+support!.w-12;
     bot.input.jumpHeld=false; return;
   }
   if (bot.charging) {
@@ -96,7 +99,7 @@ export function updateBot(bot: PlayerState, platforms: Platform[], now: number):
       brain.targetId = target.id; brain.launchX = plan.x; brain.plannedTicks = plan.ticks; brain.plannedDirection = plan.direction; break;
     }
   }
-  if (!brain.targetId || brain.launchX === undefined) { brain.cooldownUntil = now + 300; return; }
+  if (!brain.targetId || brain.launchX === undefined) { brain.cooldownUntil = now + 180; bot.input.left=false;bot.input.right=false;bot.input.jumpHeld=false; return; }
   const dx = brain.launchX - bot.x;
   if(icySupport && Math.abs(dx)>3) {
     // Aim for a stopping point, rather than oscillating across the launch pixel.

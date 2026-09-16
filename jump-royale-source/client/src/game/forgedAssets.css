@@ -145,3 +145,22 @@
  .forged-command .menu-form label { font-size:12px; }
  .forged-command .menu-form button { font-size:16px; }
 }
+.forged-command .menu-form button { width:78%; margin:0 auto; height:clamp(74px,12vh,135px); }
+.forged-command .menu-form button>span { transform:translateY(-3px); }
+.game-settings,.results-ui .score-table-wrap,.death-panel { border:12px solid transparent; border-image:url('/assets/menu/forged-command/frame.png') 12% fill / 12px / 0 stretch; background:none; }
+.game-settings .pixel-button { border:7px solid transparent!important; border-image:url('/assets/menu/forged-command/frame.png') 12% fill / 7px / 0 stretch!important; background:none; color:#f9e8c7; }
+.game-settings header button,.forged-command .game-settings header button { display:grid; place-items:center; padding:0!important; line-height:1; }
+.game-settings header button svg { width:18px; height:18px; display:block; }
+.forged-command .wardrobe-panel { left:64%; width:min(58%,700px); }
+.wardrobe-stage { position:absolute; left:7%; top:30%; width:28%; height:44%; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; }
+.wardrobe-stage canvas { width:auto; max-width:100%; height:85%; object-fit:contain; image-rendering:pixelated; position:relative; z-index:1; }
+.wardrobe-plinth { width:90%; height:35px; background:linear-gradient(#76513a 0 12%,#302b29 12% 32%,#141719 32%); border:2px solid #ad783b; box-shadow:0 12px 0 #090b0d,0 15px 24px #000; transform:perspective(160px) rotateX(12deg); }
+.forged-command .equipment-card[data-owned=false] canvas { filter:brightness(0); opacity:.85; }
+.forged-command .equipment-card[data-owned=false] span { color:#f9e8c7; font-size:22px; }
+@media(max-width:759px) {
+ .forged-command .wardrobe-panel { left:50%; top:64%; width:94%; max-height:60%; }
+ .wardrobe-stage { top:3%; left:34%; width:32%; height:27%; }
+ .forged-command .menu-form button { height:80px; }
+}
+#game>.settings-cog { border:7px solid transparent; border-image:url('/assets/menu/forged-command/frame.png') 12% fill / 7px / 0 stretch; background:none; }
+.elimination-ui button,.results-ui button { border:9px solid transparent; border-image:url('/assets/menu/forged-command/frame.png') 12% fill / 9px / 0 stretch; background:none; color:#f9e8c7; }

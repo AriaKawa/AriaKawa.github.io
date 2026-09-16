@@ -83,6 +83,7 @@ export class GameScene extends Phaser.Scene {
 
   init(data: { name?: string; mapId?: MapId }): void { this.playerName = data.name || "Apprentice"; this.mapId = data.mapId ?? this.registry.get("mapId") ?? "forge"; }
 
+  preload():void { if(!this.textures.exists('forged-frame'))this.load.image('forged-frame',import.meta.env.BASE_URL+'assets/menu/forged-command/frame.png'); }
   create(): void {
     this.input.keyboard?.enableGlobalCapture();
     // Phaser reuses scene instances. Every round must begin with fresh network
@@ -114,6 +115,7 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.scrollX = -(GAME_WIDTH-WORLD_WIDTH)/2;
     this.drawWorldBackdrop();
     this.createHazard();
+    if(!this.textures.exists('forged-hud-frame')){const t=this.textures.createCanvas('forged-hud-frame',100,100)!;t.context.drawImage(this.textures.get('forged-frame').getSourceImage() as HTMLImageElement,0,0,100,100);t.refresh();}
     this.hudObjects = [];
     this.layoutHud();
     this.scale.on(Phaser.Scale.Events.RESIZE,this.layoutHud,this);
@@ -279,18 +281,17 @@ export class GameScene extends Phaser.Scene {
     const right = (GAME_WIDTH+WORLD_WIDTH)/2 + 8;
     Object.assign(MINI_MAP,{x:right,y:174,width:112,height:GAME_HEIGHT-190,innerX:right+8,innerY:202,innerWidth:96,innerHeight:GAME_HEIGHT-260});
     if(this.mapId === "forge") this.add.tileSprite(0,0,GAME_WIDTH,GAME_HEIGHT,ASSETS.wallTiles.key).setOrigin(0).setScrollFactor(0).setDepth(-29).setAlpha(0.12);
-    const panel = this.add.graphics().setScrollFactor(0).setDepth(100);
-    panel.fillStyle(0x101822,1).fillRect(left,16,112,110).fillRect(right,16,112,146);
-    panel.lineStyle(1,0x6f5144).strokeRect(left,16,112,110).strokeRect(right,16,112,146);
+    const frame=(x:number,y:number,w:number,h:number)=>this.add.nineslice(x,y,'forged-hud-frame',undefined,w,h,12,12,12,12).setOrigin(0).setScrollFactor(0).setDepth(100);
+    frame(left,16,112,38);frame(right,16,112,146);frame(MINI_MAP.x,MINI_MAP.y,MINI_MAP.width,MINI_MAP.height);
     const style = {fontFamily:"monospace",fontSize:"10px",color:"#f2e8dc"};
     const text=(x:number,y:number,value:string)=>this.add.text(x,y,value,style).setScrollFactor(0).setDepth(101);
     this.hud = {
-      alive:text(left+10,29,"24 ALIVE").setColor("#ffc65a"),
-      timer:text(left+10,49,"00:00"),
-      stats:text(left+10,75,`HEIGHT 0m\n${this.hazardLabel} --m`).setLineSpacing(6),
+      alive:text(left+10,29,"24 ALIVE").setVisible(false),
+      timer:text(left+10,49,"00:00").setVisible(false),
+      stats:text(left+10,29,`HEIGHT 0m\n${this.hazardLabel} --m`).setLineSpacing(6),
       board:text(right+8,29,"TOP OF THE TOWER").setFontSize(8).setLineSpacing(8),
       phase:text(GAME_WIDTH/2,72,"CONNECTING...").setOrigin(0.5).setFontSize(30).setStroke("#1c1115",7).setDepth(110),
-      help:text(GAME_WIDTH/2,GAME_HEIGHT-14,this.mapId==="mountain"?"A / D WALK    HOLD SPACE · RELEASE TO LEAP    PALE RIMS = LANDINGS":"A / D WALK    HOLD SPACE TO AIM    RELEASE TO LEAP").setOrigin(0.5,1).setFontSize(9)
+      help:text(GAME_WIDTH/2,GAME_HEIGHT-14,this.mapId==="mountain"?"A / D WALK    HOLD SPACE · RELEASE TO LEAP":"A / D WALK    HOLD SPACE TO AIM    RELEASE TO LEAP").setOrigin(0.5,1).setFontSize(9)
     };
     this.dangerOverlay = this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, this.mapId !== "forge" ? 0x1fb8c9 : 0xff321c, 0).setOrigin(0).setScrollFactor(0).setDepth(90);
     this.minimap = {
@@ -534,7 +535,7 @@ export class GameScene extends Phaser.Scene {
       this.minimap?.title.setText(['ROOT GARDEN','FERN HOLLOW','HANGING GROVE','MOSSBOUND RUINS','EMERALD HEIGHTS','CANOPY CROWN'][chapter]);
     }
     const hazardDistance = local ? Math.max(0, snapshot.hazardY - (local.y + PLAYER_HEIGHT)) : 0;
-    this.hud.stats.setText(`HEIGHT ${String(Math.round((local?.maxHeight || 0) / 10)).padStart(4, " ")}m\n${this.hazardLabel.padEnd(7)}${String(Math.round(hazardDistance / 10)).padStart(4, " ")}m`);
+    this.hud.stats.setText(`HEIGHT ${String(Math.round((local?.maxHeight || 0) / 10)).padStart(4, " ")}m`);
     const leaders = [...snapshot.players].sort((a, b) => b.maxHeight - a.maxHeight).slice(0, 5);
     this.hud.board.setText(["TOP OF THE TOWER", ...leaders.map((player, index) => `${index + 1}. ${player.isBot ? " " : "*"}${(preferences.names?player.name:'Climber').slice(0,9).padEnd(9)} ${Math.round(player.maxHeight / 10)}m`)].join("\n"));
     this.hud.help.setVisible(!local?.ghost);
@@ -562,13 +563,13 @@ export class GameScene extends Phaser.Scene {
   private drawMinimap(snapshot: Snapshot): void {
     if (!this.minimap) return;
     const { graphics: g, status } = this.minimap;
-    const { x, y, width, height, innerX, innerY, innerWidth, innerHeight } = MINI_MAP;
+    const { innerX, innerY, innerWidth, innerHeight } = MINI_MAP;
     const mapX = (worldX: number) => innerX + Phaser.Math.Clamp((worldX - this.world.left) / (this.world.right - this.world.left), 0, 1) * innerWidth;
     const mapY = (worldY: number) => innerY + Phaser.Math.Clamp(worldY / this.worldHeight, 0, 1) * innerHeight;
 
     g.clear();
-    g.fillStyle(0x09070d, 0.94).fillRoundedRect(x, y, width, height, 5);
-    g.lineStyle(2, 0x6f5144, 0.95).strokeRoundedRect(x, y, width, height, 5);
+
+
     g.fillStyle(0x120d14, 1).fillRect(innerX, innerY, innerWidth, innerHeight);
     g.lineStyle(1, 0x8d7568, 0.65).strokeRect(innerX, innerY, innerWidth, innerHeight);
 
