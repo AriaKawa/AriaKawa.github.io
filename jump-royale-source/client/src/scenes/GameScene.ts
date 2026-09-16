@@ -436,7 +436,7 @@ export class GameScene extends Phaser.Scene {
     const chargeBack = this.add.rectangle(player.x - 4, player.y + PLAYER_HEIGHT + 6, 22, 4, 0x161219, 0.9).setOrigin(0).setDepth(local ? 21 : 11).setVisible(false);
     const chargeFill = this.add.rectangle(player.x - 3, player.y + PLAYER_HEIGHT + 7, 0, 2, 0xffbd3e, 1).setOrigin(0).setDepth(local ? 22 : 12).setVisible(false);
     sprite.setAlpha(local ? LOCAL_PLAYER_ALPHA : BOT_ALPHA);
-    name.setAlpha(local ? 1 : player.isBot ? 0.6 : BOT_NAME_ALPHA); chargeBack.setAlpha(local ? 1 : 0.42); chargeFill.setAlpha(local ? 1 : 0.42);
+    name.setAlpha(local ? 1 : BOT_NAME_ALPHA); chargeBack.setAlpha(local ? 1 : BOT_ALPHA); chargeFill.setAlpha(local ? 1 : BOT_ALPHA);
     return {
       sprite, name, chargeBack, chargeFill, animationPrefix, targetX: player.x, targetY: player.y,
       previousGrounded: player.grounded, previousCharging: player.charging, isBot: player.isBot, landUntil: 0
@@ -444,11 +444,11 @@ export class GameScene extends Phaser.Scene {
   }
 
   private applyPlayerVisual(entity: PlayerEntity, player: PlayerSnapshot): void {
-    if(player.ghost){entity.sprite.setVisible(true).setAlpha(.42).setTint(0xc2eaff).setFlipX(player.facing<0);entity.sprite.play(entity.animationPrefix+'-idle',true);entity.name.setText(player.name+' · GHOST').setAlpha(.6);entity.chargeBack.setVisible(false);entity.chargeFill.setVisible(false);return;}
+    if(player.ghost){entity.sprite.setVisible(true).setAlpha(player.id === this.localId ? .42 : BOT_ALPHA).setTint(0xc2eaff).setFlipX(player.facing<0);entity.sprite.play(entity.animationPrefix+'-idle',true);entity.name.setText(player.name+' · GHOST').setAlpha(player.id === this.localId ? .6 : BOT_NAME_ALPHA);entity.chargeBack.setVisible(false);entity.chargeFill.setVisible(false);return;}
     if (!player.alive) {
       entity.sprite.setVisible(!player.departed);entity.name.setVisible(!player.departed);
       if (!entity.isBot && this.artV2.player) entity.sprite.play(`${entity.animationPrefix}-eliminated`, true);
-      entity.sprite.setAlpha(entity.isBot ? 0.08 : 0.5).setTint(entity.isBot ? 0x5f6178 : 0xffffff);
+      entity.sprite.setAlpha(player.id === this.localId ? 0.5 : BOT_ALPHA).setTint(entity.isBot ? 0x5f6178 : 0xffffff);
       entity.name.setText(`${player.name}  `).setAlpha(0.2);
       entity.chargeBack.setVisible(false); entity.chargeFill.setVisible(false);
       return;

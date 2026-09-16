@@ -23,8 +23,8 @@ export const ASSETS = {
   chains: asset('chains-new','chain'), hooks: asset('hooks-new','hook'),
   vents: asset('vents-new','vent'), anvils: asset('anvils-new','anvil')
 } as const;
-export const BOT_ALPHA = 0.864;
-export const BOT_NAME_ALPHA = 0.48;
+export const BOT_ALPHA = 0.25;
+export const BOT_NAME_ALPHA = 0.25;
 export const LOCAL_PLAYER_ALPHA = 1;
 export const LAVA_SURFACE_VISUAL_OFFSET = 0;
 export const LAVA_PARTICLE_RATE = 12;
