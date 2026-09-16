@@ -23,27 +23,28 @@ const HATS:Record<string,{pixels:string[];colors:Record<string,string>;anchor:nu
  unicorn:{pixels:['    G    ','    W    ','   GWG   ','   WCG   ','   GPWG  ','  GWCCG  ','  WPPWG  ',' GWWCCWG ',' DGGGGGD '],colors:{G:'#d9aa60',W:'#fff5da',C:'#84d9e7',P:'#e6a1dd',D:'#59405d'},anchor:7}
 };
 
-export function animalTexture(scene:Phaser.Scene,animal:Animal,hat='none'):string {
- const sourceKey=animal+'-sprites',design=HATS[hat],key=design?animal+'-'+hat:sourceKey;
+export function animalTexture(scene:Phaser.Scene,animal:Animal,hat='none',detailed=false):string {
+ const hd=detailed&&animal==='cerberus',unit=hd?2:1,size=32*unit,width=384*unit,height=40*unit,padding=8*unit;
+ const sourceKey=hd?'fantasy-cerberus-16':animal+'-sprites',design=HATS[hat],key=design?animal+(hd?'-16':'')+'-'+hat:sourceKey;
  if(design&&!scene.textures.exists(key)){
-  const canvas=document.createElement('canvas');canvas.width=384;canvas.height=40;
+  const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
   const c=canvas.getContext('2d')!;c.imageSmoothingEnabled=false;
-  c.drawImage(scene.textures.get(sourceKey).getSourceImage() as HTMLImageElement,0,8);
-  const pixels=c.getImageData(0,0,384,40).data;
+  c.drawImage(scene.textures.get(sourceKey).getSourceImage() as HTMLImageElement,0,padding);
+  const pixels=c.getImageData(0,0,width,height).data;
   for(let frame=0;frame<12;frame++){
-   const column=HEAD_COLUMNS[animal][frame];let headY=8;
-   while(headY<39&&pixels[(headY*384+frame*32+column)*4+3]<180)headY++;
-   if(headY>=39)throw new Error('Missing animal head anchor: '+animal+' frame '+frame);
+   const column=HEAD_COLUMNS[animal][frame]*unit;let headY=padding;
+   while(headY<height-1&&pixels[(headY*width+frame*size+column)*4+3]<180)headY++;
+   if(headY>=height-1)throw new Error('Missing animal head anchor: '+animal+' frame '+frame);
    const lean=frame===4?1:frame===5?-1:frame===7?2:0;
-   c.save();c.beginPath();c.rect(frame*32,0,32,40);c.clip();
+   c.save();c.beginPath();c.rect(frame*size,0,size,height);c.clip();
    for(let y=0;y<design.pixels.length;y++)for(let x=0;x<design.pixels[y].length;x++){
     const color=design.colors[design.pixels[y][x]];if(!color)continue;
-    c.fillStyle=color;c.fillRect(frame*32+column-Math.floor(design.pixels[0].length/2)+x+Math.round(lean*(design.pixels.length-1-y)/(design.pixels.length-1)),headY-design.anchor+y,1,1);
+    c.fillStyle=color;c.fillRect(frame*size+column+unit*(-Math.floor(design.pixels[0].length/2)+x+Math.round(lean*(design.pixels.length-1-y)/(design.pixels.length-1))),headY+unit*(-design.anchor+y),unit,unit);
    }
    c.restore();
   }
   const texture=scene.textures.addCanvas(key,canvas)!;
-  for(let frame=0;frame<12;frame++)texture.add(frame,0,frame*32,0,32,40);
+  for(let frame=0;frame<12;frame++)texture.add(frame,0,frame*size,0,size,height);
  }
  for(const [name,animation] of Object.entries(ANIMAL_ANIMATIONS)){
   const animationKey=key+'-'+name.replaceAll('_','-');

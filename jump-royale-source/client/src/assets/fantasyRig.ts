@@ -8,7 +8,7 @@ export const MAGICAL_HAIR=[{id:'original',name:'Starlight Twin Tails'},{id:'star
 export const MAGICAL_COSTUMES=[{id:'classic',name:'Starlight · Original'},{id:'starlight-16',name:'Starlight · 16-bit'}] as const;
 export const MAGICAL_HD_SHEETS=['magical-girl-16','magical-girl-buns-16'] as const;
 export function fantasyTexture(scene:Phaser.Scene,character:string,hair:string,magicalCostume='classic'):string {
-  const sheet=(character==='magical-girl'&&hair==='star-buns'?'magical-girl-buns':character)+(character==='magical-girl'&&magicalCostume==='starlight-16'?'-16':'');
+  const sheet=(character==='magical-girl'&&hair==='star-buns'?'magical-girl-buns':character)+((character==='magical-girl'&&magicalCostume==='starlight-16')||magicalCostume==='detailed'?'-16':'');
   const key='fantasy-'+sheet;
   for(const [name,animation] of Object.entries(ANIMAL_ANIMATIONS)) {
     const animationKey=key+'-'+name.replaceAll('_','-');

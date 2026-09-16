@@ -1,3 +1,4 @@
+import {validDetailedId} from '../assets/detailedCostumes';
 import type { Outfit, CosmeticSlot } from '../assets/cosmetics';
 import {COSTUMES,costumeFields,costumePieces} from '../assets/costumeSets';
 const KEY='jump-royale-wallet-v1';
@@ -35,6 +36,7 @@ export function claimGoldGift(hash:string):boolean {
 }
 export const goldForPlace=(place:number)=>place===1?5:place>=2&&place<=3?3:place>=4&&place<=6?1:0;
 export function price(slot:string,id:string):number {
+  if(slot==='hdCostume')return id==='classic'?0:validDetailedId(id)?5:Infinity;
   if(slot==='magicalCostume')return id==='classic'?0:id==='starlight-16'?5:Infinity;
   if(slot==='character'&&id==='mushroom'&&(wallet().owned.includes('costume:mushroom')||['helmet','shirt','pants'].every(s=>owns(s,'mushroom'))))return 0;
   if(slot==='costume'){
@@ -46,7 +48,7 @@ export function price(slot:string,id:string):number {
 export function owns(slot:string,id:string):boolean {return wallet().owned.includes(slot+':'+id)||price(slot,id)===0;}
 export function buy(slot:string,id:string):boolean {const w=wallet(),cost=price(slot,id);if(owns(slot,id))return true;if(w.gold<cost)return false;w.gold-=cost;w.owned.push(slot+':'+id);return persist(w);}
 export function reward(round:string,place:number):number {const w=wallet();if(w.rewards.includes(round))return 0;const amount=goldForPlace(place);w.gold+=amount;w.rewards.push(round);return persist(w)?amount:0;}
-export function lockedPieces(o:Outfit):[string,string][] {
+function lockedBase(o:Outfit):[string,string][] {
   if(['skeleton','magical-girl','neet'].includes(o.character)){
     const pieces:[string,string][]=[['character',o.character]];
     if(o.character==='magical-girl'&&o.hair==='star-buns')pieces.push(['hair','star-buns']);
@@ -60,8 +62,14 @@ export function lockedPieces(o:Outfit):[string,string][] {
   const pieces:[string,string][] = animal?[['character',o.character],['animalHat',o.animalHat??'none']]:(['character','helmet','shirt','pants','hair'] as CosmeticSlot[]).map(s=>[s,o[s]]);
   return pieces.filter(([s,id])=>!owns(s,id));
 }
+export function lockedPieces(o:Outfit):[string,string][] {
+ const pieces=lockedBase(o),id=o.character+'-16';
+ if(validDetailedId(id)&&o.detailedCostumes?.includes(id)&&!owns('hdCostume',id))pieces.push(['hdCostume',id]);
+ return pieces;
+}
 export function playableOutfit(o:Outfit):Outfit {
  const result={...o};
+ if(result.detailedCostumes)result.detailedCostumes=result.detailedCostumes.filter(id=>validDetailedId(id)&&owns('hdCostume',id));
  if(!owns('magicalCostume',result.magicalCostume??'classic'))result.magicalCostume='classic';
  if(!owns('character',result.character))result.character='original';
  if(result.character==='mushroom')return result;
