@@ -19,7 +19,16 @@ function solutions(a:Platform,b:Platform){let count=0;const nearby=level.filter(
 }
 let minimum=Infinity;
 for(let i=1;i<route.length;i++){const n=solutions(route[i-1],route[i]);assert(n>0,`${route[i-1].id} -> ${route[i].id} unreachable`);minimum=Math.min(n,minimum);}
-for(const b of level.filter(p=>p.id.includes('branch'))){const i=Number(b.id.split('-').at(-1));for(const [a,z] of [[level.find(p=>p.id==='magical-'+(i-1))!,b],[b,level.find(p=>p.id==='magical-'+i)!]])assert(solutions(a,z)>0,`branch ${a.id} -> ${z.id} unreachable`);}
+for(const b of level.filter(p=>p.id.includes('branch'))){
+ const i=Number(b.id.split('-').at(-1));
+ const before=i%4===0?(i===0?level[0]:level.find(p=>p.id==='magical-'+(i-1))!):level.find(p=>p.id==='magical-branch-'+(i-1))!;
+ const after=level.find(p=>p.id===(i%4===0?'magical-branch-':'magical-')+(i+1))??level.find(p=>p.id==='crown')!;
+ for(const [a,z] of [[before,b],[b,after]])assert(solutions(a,z)>0,`branch ${a.id} -> ${z.id} unreachable`);
+ if(i%4===0){const right=level.find(p=>p.id==='magical-'+i)!;assert(b.x+b.w/2<before.x+before.w/2&&right.x+right.w/2>before.x+before.w/2,'Fork must offer both left and right');}
+}
+const main=route.filter(p=>p.id.startsWith('magical-'));
+assert.equal(main.filter(p=>p.w<=84).length,Math.floor(main.length/4));
+for(const p of level){assert(p.x>=54&&p.x+p.w<=2826,`${p.id} outside map`);}
 console.log(`PASS ${route.length-1} main jumps; ${level.filter(p=>p.id.includes('branch')).length} connected alternative routes; minimum ${minimum} launch solutions. Top-15 reward boundaries and duplicate protection pass.`);
 const bots=Array.from({length:4},(_,i)=>({...player(level[0],313),id:'bot-'+i,isBot:true,skill:'cracked' as const,bot:{holdUntil:0,cooldownUntil:0,pattern:i,jumpCount:0,initialized:false}}));
 let water=MAGICAL_SPAWN+90;const flood=floodForMap('magical');
