@@ -2,7 +2,7 @@ import {wallet,openLoot,rollLoot,LOOT_ODDS,type LootEntry} from './economy';
 import {LOOT_POOL,RARITIES} from './lootCatalog';
 import './lootBox.css';
 
-const chest=()=>`<img class="loot-chest" src="${import.meta.env.BASE_URL}assets/menu/loot-chest.png" alt="">`;
+const chest=()=>`<img class="loot-chest" src="${import.meta.env.BASE_URL}assets/menu/forged-command/chest.png" alt="">`;
 export function createLootBox(root:HTMLElement,onOpen:()=>void,onChange:()=>void,draw:(canvas:HTMLCanvasElement,item:LootEntry)=>void,onGold:()=>void) {
  const toggle=document.createElement('button');toggle.className='loot-toggle';toggle.type='button';
  toggle.setAttribute('aria-label','Open loot box');toggle.setAttribute('aria-haspopup','dialog');toggle.setAttribute('aria-controls','loot-dialog');
@@ -12,7 +12,7 @@ export function createLootBox(root:HTMLElement,onOpen:()=>void,onChange:()=>void
  let busy=false,animation:Animation|undefined;
  const reel=dialog.querySelector<HTMLElement>('.loot-reel')!,status=dialog.querySelector<HTMLElement>('.loot-result')!,buy=dialog.querySelector<HTMLButtonElement>('.loot-buy')!,free=dialog.querySelector<HTMLButtonElement>('.loot-free')!;
  const refresh=()=>{
-  const w=wallet();toggle.innerHTML=chest()+`<span>Loot box</span>${w.freeSpins?`<b class="loot-badge">${w.freeSpins}</b>`:''}`;
+  const w=wallet();toggle.dataset.freeSpins=String(w.freeSpins);toggle.innerHTML=chest()+`<span>Loot box</span>${w.freeSpins?`<b class="loot-badge">${w.freeSpins}</b>`:''}`;
   toggle.setAttribute('aria-label',`Open loot box${w.freeSpins?`, ${w.freeSpins} free spins`:''}`);
   dialog.querySelector('.loot-gold-amount')!.textContent='× '+w.gold;
   const points=dialog.querySelector('.loot-points')!;points.setAttribute('aria-label',`${w.spinPoints} of 3 points toward a free spin`);

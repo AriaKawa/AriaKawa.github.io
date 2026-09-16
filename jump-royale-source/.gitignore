@@ -48,3 +48,7 @@
 
 !/scripts/test-costumes.ts
 !/scripts/browser-revision.mjs
+!/scripts/browser-forged-release.mjs
+!/docs/forged-map-previews.md
+!/docs/forged-command-asset-prompts.md
+!/docs/forged-command-release.md

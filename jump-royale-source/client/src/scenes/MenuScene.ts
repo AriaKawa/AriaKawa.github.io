@@ -1,20 +1,22 @@
+import '../game/forgedCommand.css';
+import '../game/forgedAssets.css';
 import {drawLootIcon} from '../game/lootIcons';
 import {ANIMAL_HATS} from '../assets/animalRig';
 import {createLootBox} from '../game/lootBox';
 import {COSTUMES,costumeFields} from '../assets/costumeSets';
 import {createSettings,settingsOpen} from '../game/settings';
 import {isBadName, nameRebuke, safePlayerName} from '../../../server/src/sim/names';
-import {drawMountainPreview} from '../game/mountainArt';
+
 import {createGoldStore} from '../game/goldStore';
 import {audio} from '../game/audio';
 import {wallet,owns,buy,price,playableOutfit} from '../game/economy';
 import { loadScores, loadWins, scoreTime } from '../game/scores';
 import type { Platform } from '../../../server/src/sim/types';
-import { drawSnowPreview } from "../game/snowArt";
+
 import { MAPS } from "../../../server/src/sim/maps";
-import { drawJunglePreview } from "../game/jungleArt";
+
 import Phaser from "phaser";
-import { ASSETS } from "../assets/assetManifest";
+
 import { COSMETICS, DEMON_HAIRS, sanitizeOutfit, loadOutfit, saveOutfit, outfitTexture, type Outfit } from "../assets/cosmetics";
 type CosmeticSlot='character'|'costume'|'hair'|'animalHat';
 const SLOTS:CosmeticSlot[]=['character','costume','hair','animalHat'];
@@ -58,6 +60,10 @@ export class MenuScene extends Phaser.Scene {
   private removeControls?: () => void;
   constructor() { super("Menu"); }
 
+  preload(): void {
+    if (!this.textures.exists('forged-command')) this.load.image('forged-command',import.meta.env.BASE_URL+'assets/menu/forged-command/background.png');
+  }
+
   create(): void {
     this.input.keyboard?.disableGlobalCapture();
     this.wardrobeOpen = false; this.activeSlot = "costume";
@@ -65,15 +71,50 @@ export class MenuScene extends Phaser.Scene {
     this.lobbyPlayer = createLobbyPlayer(GAME_WIDTH,GAME_HEIGHT); this.lobbyHeight=GAME_HEIGHT; this.movement.clear(); this.accumulator = 0;
     this.outfit = playableOutfit(this.registry.get("outfit") ?? loadOutfit());
     this.cameras.main.setBackgroundColor("#0d0b10");
-    this.background = this.add.image(GAME_WIDTH/2,GAME_HEIGHT,ASSETS.background.key).setOrigin(0.5,1);
-    this.shade = this.add.rectangle(0,0,GAME_WIDTH,GAME_HEIGHT,0x06101b,0.64).setOrigin(0);
+    this.background = this.add.image(GAME_WIDTH/2,GAME_HEIGHT,'forged-command').setOrigin(0.5,1);
+    this.shade = this.add.rectangle(0,0,GAME_WIDTH,GAME_HEIGHT,0x06101b,0.08).setOrigin(0);
     this.animationPrefix = outfitTexture(this,this.outfit);
     const frameHeight=this.textures.get(this.animationPrefix).get(0).height;
     this.preview = this.add.sprite(this.lobbyPlayer.x+PLAYER_WIDTH/2,this.lobbyPlayer.y+PLAYER_HEIGHT,this.animationPrefix).setOrigin(0.5,this.outfit.wardrobe2?31/32:(frameHeight-1)/frameHeight).setScale(LOBBY_SPRITE_SCALE*(this.outfit.wardrobe2?32/frameHeight:1)).setInteractive({useHandCursor:true});
     this.preview.play(`${this.animationPrefix}-idle`);
     this.mapIndex = Math.max(0,MAPS.findIndex(map=>map.id===this.registry.get("mapId")));
-    this.createMenuUi(); this.createMapSelector(); this.createScores(); this.installPreviewControls(); this.refreshSurfaces();
+    this.createMenuUi(); this.createMapSelector(); this.createScores(); this.composeForgedUi(); this.installPreviewControls(); this.refreshSurfaces();
+    this.placeOnPedestal();
     this.events.once(Phaser.Scenes.Events.SHUTDOWN,()=>this.cleanup());
+  }
+
+  private pedestal(): Platform {
+    const compact=window.innerWidth<760;
+    return {id:'forged-pedestal',x:GAME_WIDTH*(compact?.06:.18),y:GAME_HEIGHT*.695,w:GAME_WIDTH*(compact?.32:.36),h:12,type:'stone'};
+  }
+
+  private placeOnPedestal():void {
+    const p=this.pedestal();
+    Object.assign(this.lobbyPlayer,{x:p.x+p.w/2-PLAYER_WIDTH/2,y:p.y-PLAYER_HEIGHT,vx:0,vy:0,grounded:true,groundedPlatformId:p.id});
+  }
+
+  private composeForgedUi():void {
+    const ui=this.ui!;ui.classList.add('forged-command');
+    const rail=document.createElement('nav');rail.className='forge-rail';rail.setAttribute('aria-label','Home navigation');
+    const brand=ui.querySelector('.menu-title')!;
+    brand.innerHTML=`<img class="forge-logo" src="${import.meta.env.BASE_URL}assets/menu/forged-command/logo.png" alt="" draggable="false">`;
+    const wardrobe=ui.querySelector('.wardrobe-toggle:not(.w2-toggle)')!;
+    wardrobe.querySelector('.wardrobe-art')!.innerHTML=`<img class="forge-helmet" src="${import.meta.env.BASE_URL}assets/menu/forged-command/helmet.png" alt="" draggable="false">`;
+    wardrobe.insertAdjacentHTML('beforeend','<span class="forge-nav-label">Wardrobe</span>');
+    rail.append(brand,wardrobe,ui.querySelector('.personal-scores')!,ui.querySelector('.ranked-splash')!);
+    rail.querySelector('.ranked-splash')!.innerHTML='<span aria-hidden="true">♛</span><span>RANKED<small>Coming soon</small></span>';
+    rail.querySelector('.scores-toggle')!.innerHTML='<span class="forge-score-icon" aria-hidden="true">▂ ▅ █</span>Scores';
+    rail.querySelector('.scores-toggle')!.setAttribute('aria-label','Scores');
+    const mission=document.createElement('section');mission.className='forge-mission';mission.setAttribute('aria-label','Prepare your climb');
+    mission.innerHTML='<div class="forge-eyebrow"><span>YOUR NEXT ASCENT</span><span>'+String(this.mapIndex+1).padStart(2,'0')+' / '+String(MAPS.length).padStart(2,'0')+'</span></div>';
+    mission.append(ui.querySelector('.map-selector')!,this.form!);
+    this.form!.querySelector('input')!.insertAdjacentHTML('beforebegin','<label for="climber-name">CLIMBER NAME</label>');
+    this.form!.querySelector('button')!.innerHTML='<span>Start the Climb</span><small aria-hidden="true">◆</small>';
+    const resources=document.createElement('div');resources.className='forge-resources';
+    resources.append(ui.querySelector('.gold-marker')!,ui.querySelector('.loot-toggle')!,ui.querySelector('.settings-cog')!);
+    const note=document.createElement('p');note.className='forge-controls';note.innerHTML='<span>A / D</span> MOVE <i>·</i> HOLD <span>SPACE</span> TO JUMP';
+    ui.append(rail,resources,mission,note);
+    this.layoutUi();
   }
 
   update(_time: number, delta: number): void {
@@ -155,20 +196,14 @@ export class MenuScene extends Phaser.Scene {
     this.ui!.appendChild(panel);
     const track=panel.querySelector<HTMLElement>('.map-track')!;
     for(const map of MAPS){
-      const canvas=document.createElement('canvas');canvas.width=240;canvas.height=170;canvas.setAttribute('role','img');canvas.setAttribute('aria-label',map.name+' map preview');
-      const c=canvas.getContext('2d')!;c.imageSmoothingEnabled=false;
-      if(map.id==='mountain'){drawMountainPreview(this,c);}else if(map.id==='snow'){ drawSnowPreview(this,c); }else if(map.id==='jungle'){
-        drawJunglePreview(this,c);
-      }else{
-        const source=this.textures.get(ASSETS.background.key).getSourceImage() as HTMLImageElement;
-        c.drawImage(source,0,source.height*.42,source.width,source.height*.58,0,0,240,170);c.fillStyle='#0e10174d';c.fillRect(0,0,240,170);
-        const ledge=this.textures.get(ASSETS.restPlatform.key).getSourceImage() as HTMLImageElement;
-        for(const [x,y,w] of [[15,140,87],[138,102,83],[38,61,84],[137,24,85]])c.drawImage(ledge,0,0,96,32,x,y,w,16);
-      }
-      track.appendChild(canvas);
+      const image=document.createElement('img');
+      image.src=import.meta.env.BASE_URL+'assets/menu/map-previews/'+map.id+'.png';
+      image.alt=map.name+' scenery preview';image.draggable=false;
+      track.appendChild(image);
     }
     const render=()=>{
       const map=MAPS[this.mapIndex];this.registry.set('mapId',map.id);
+      const counter=this.ui?.querySelector('.forge-eyebrow span:last-child');if(counter)counter.textContent=String(this.mapIndex+1).padStart(2,'0')+' / '+String(MAPS.length).padStart(2,'0');
       track.style.transform='translateX(-'+this.mapIndex*100+'%)';
       panel.querySelector('.map-caption')!.innerHTML='<h2>'+map.name+'</h2>';
       panel.querySelector('.map-dots')!.textContent=MAPS.map((_,i)=>i===this.mapIndex?'●':'○').join('  ');
@@ -204,7 +239,7 @@ export class MenuScene extends Phaser.Scene {
     const canvas=this.game.canvas.getBoundingClientRect();
     if(!canvas.width || !this.ui)return;
     const sx=GAME_WIDTH/canvas.width,sy=GAME_HEIGHT/canvas.height;
-    this.lobbySurfaces=[];
+    this.lobbySurfaces=[this.pedestal()];
     const add=(r:DOMRect)=>{if(r.width>0&&r.height>0)this.lobbySurfaces.push({id:'ui-'+this.lobbySurfaces.length,x:(r.left-canvas.left)*sx,y:(r.top-canvas.top)*sy,w:r.width*sx,h:4,type:'stone'});};
     this.ui.querySelectorAll<HTMLElement>('.loot-toggle,.gold-marker img,.gold-balance,.gold-add,.settings-cog,.lobby-object,.wardrobe-art,.menu-form input,.menu-form button,.map-window,.map-arrow').forEach(e=>add(e.getBoundingClientRect()));
     this.ui.querySelectorAll<HTMLElement>('.ranked-splash span,.menu-title span,.menu-title strong,.menu-form label,.map-caption h2,.scores-toggle,.scores-popover p,.personal-scores h2,.personal-scores strong,.personal-scores span,.personal-scores small,.lobby-steps span').forEach(e=>{
@@ -218,6 +253,8 @@ export class MenuScene extends Phaser.Scene {
     audio.play('wardrobe',.22);
     this.showOutfit(this.outfit);
     this.wardrobeOpen=open;this.held=false;this.movement.clear();
+    this.ui!.classList.toggle('forge-wardrobe-open',open);
+    this.ui!.querySelectorAll<HTMLElement>('.forge-rail,.forge-resources,.forge-mission').forEach(e=>e.inert=open);
     this.ui!.querySelectorAll<HTMLElement>('.menu-title,.ranked-splash,.lobby-steps,.lobby-objects,.personal-scores').forEach(e=>e.hidden=open);
     this.lobbyPlayer.charging=false;this.lobbyPlayer.charge01=0;
     (this.ui!.querySelector(".wardrobe-overlay") as HTMLElement).hidden=!open;
@@ -268,7 +305,7 @@ export class MenuScene extends Phaser.Scene {
   private showOutfit(outfit:Outfit):void {
     this.animationPrefix=outfitTexture(this,outfit);
     this.preview.stop().chain();this.preview.setTexture(this.animationPrefix,0);
-    const h=this.preview.frame.height;this.preview.setOrigin(.5,outfit.wardrobe2?31/32:(h-1)/h).setScale(LOBBY_SPRITE_SCALE*(outfit.wardrobe2?32/h:1));
+    const h=this.preview.frame.height;this.preview.setOrigin(.5,outfit.wardrobe2?31/32:(h-1)/h).setScale(Math.min(GAME_HEIGHT*.36,GAME_WIDTH*.22)/32*(outfit.wardrobe2?32/h:1));
     this.preview.play(`${this.animationPrefix}-${this.airborne?this.velocity<0?'jump':'fall':'idle'}`);
   }
   private renderPurchase():void {
@@ -293,16 +330,20 @@ export class MenuScene extends Phaser.Scene {
   private layoutUi(): void {
     if (!this.ui) return;
     const rect=this.game.canvas.getBoundingClientRect();
-    this.background.setPosition(GAME_WIDTH/2,GAME_HEIGHT).setScale(Math.max(GAME_WIDTH/this.background.width, GAME_HEIGHT/this.background.height));
+    this.background.setPosition(GAME_WIDTH/2,GAME_HEIGHT).setDisplaySize(GAME_WIDTH,GAME_HEIGHT);
     this.shade.setSize(GAME_WIDTH,GAME_HEIGHT);
     Object.assign(this.ui.style,{width:rect.width+'px',height:rect.height+'px',left:rect.left+'px',top:rect.top+'px'});
+    const onPedestal=this.lobbyPlayer.groundedPlatformId==='forged-pedestal';
     resizeLobbyPlayer(this.lobbyPlayer,GAME_WIDTH,GAME_HEIGHT,this.lobbyHeight);this.lobbyHeight=GAME_HEIGHT;
+    if(onPedestal)this.placeOnPedestal();
+    const h=this.preview.frame.height;this.preview.setScale(Math.min(GAME_HEIGHT*.36,GAME_WIDTH*.22)/32*(this.outfit.wardrobe2?32/h:1));
+    this.refreshSurfaces();
   }
   private installPreviewControls(): void {
     const canvas=this.game.canvas; canvas.tabIndex=0;
     const editing=()=>document.activeElement?.matches("input,select,textarea,[contenteditable='true']") ?? false;
     const down=(event:KeyboardEvent)=>{
-      if(settingsOpen() || (this.goldStore?.open||this.lootBox?.open()) || editing() || event.ctrlKey || event.metaKey || event.altKey)return;
+      if(this.wardrobeOpen || settingsOpen() || (this.goldStore?.open||this.lootBox?.open()) || editing() || document.activeElement?.matches('button') || event.ctrlKey || event.metaKey || event.altKey)return;
       if(["Space","ArrowLeft","ArrowRight","KeyA","KeyD"].includes(event.code))event.preventDefault();
       if(event.code==="Space")this.held=true;
       this.movement.add(event.code);

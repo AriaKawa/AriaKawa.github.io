@@ -17,7 +17,7 @@ export function createSettings(parent:HTMLElement,onOpen?:()=>void,returnToMenu?
  const open=()=>{if(dialog.open)return;onOpen?.();dialog.showModal();};
  button.onclick=open;dialog.querySelector('header button')!.addEventListener('click',close);
  dialog.addEventListener('cancel',event=>{event.preventDefault();close();});
- const escape=(event:KeyboardEvent)=>{if(event.code!=='Escape')return;event.preventDefault();event.stopImmediatePropagation();if(event.repeat)return;const fitting=document.querySelector<HTMLDialogElement>('.gold-store[open],.w2-dialog[open],.loot-dialog[open]');if(fitting){fitting.close();return;}if(dialog.open)close();else{document.querySelectorAll<HTMLDialogElement>('dialog[open]').forEach(d=>d.close());open();}};
+ const escape=(event:KeyboardEvent)=>{if(event.code!=='Escape'||document.querySelector('.wardrobe-overlay:not([hidden])'))return;event.preventDefault();event.stopImmediatePropagation();if(event.repeat)return;const fitting=document.querySelector<HTMLDialogElement>('.gold-store[open],.w2-dialog[open],.loot-dialog[open]');if(fitting){fitting.close();return;}if(dialog.open)close();else{document.querySelectorAll<HTMLDialogElement>('dialog[open]').forEach(d=>d.close());open();}};
  window.addEventListener('keydown',escape,true);parent.append(button,dialog);
  return ()=>{window.removeEventListener('keydown',escape,true);dialog.remove();button.remove();};
 }
