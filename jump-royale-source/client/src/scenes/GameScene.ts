@@ -345,6 +345,7 @@ export class GameScene extends Phaser.Scene {
     if(!this.snapshot){const arrival=snapshot.players.find(p=>p.id===this.client.localId);if(arrival)this.cameras.main.scrollY=desiredCameraY(arrival.y,this.worldHeight);}
     this.snapshot = snapshot;
     const self=snapshot.players.find(p=>p.id===this.client.localId);
+    if(self)audio.setMusicDead(!self.alive);
     if(self&&!self.alive&&!this.deathUi){
 
       this.deathUi=document.createElement('div');this.deathUi.className='elimination-ui';
