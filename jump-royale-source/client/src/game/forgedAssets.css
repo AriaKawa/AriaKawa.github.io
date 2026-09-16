@@ -164,3 +164,16 @@
 }
 #game>.settings-cog { border:7px solid transparent; border-image:url('/assets/menu/forged-command/frame.png') 12% fill / 7px / 0 stretch; background:none; }
 .elimination-ui button,.results-ui button { border:9px solid transparent; border-image:url('/assets/menu/forged-command/frame.png') 12% fill / 9px / 0 stretch; background:none; color:#f9e8c7; }
+
+/* Resource icons and symmetric controls. */
+.forged-command .loot-close { display:grid; place-items:center; padding:0!important; box-sizing:border-box; flex-shrink:0; }
+.forged-command .loot-close svg { display:block; width:20px; height:20px; }
+.forged-command .loot-controls { display:flex; justify-content:center; }
+.forged-command .loot-actions { align-items:flex-start; }
+.forged-command .loot-free-group { display:flex; flex-direction:column; align-items:center; gap:12px; }
+.forged-command .loot-points { justify-self:center; justify-content:center; }
+.forged-command .loot-contents { border-top:0; }
+#game>.settings-cog { top:4px; right:4px; width:36px; height:36px; padding:4px; box-sizing:border-box; box-shadow:none; }
+.wardrobe-plinth { height:48px; flex-shrink:0; border:0; box-shadow:none; transform:none; background:transparent url('/assets/menu/forged-command/platform.png') center top/100% 100% no-repeat; }
+
+.wardrobe-stage canvas { object-position:center bottom; flex-shrink:1; min-height:0; }

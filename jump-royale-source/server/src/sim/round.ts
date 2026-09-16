@@ -1,6 +1,6 @@
 import type { Placement, PlayerState } from "./types.js";
 
-export function rankPlayers(players: Iterable<PlayerState>, winnerId?: string): Placement[] {
+export function rankPlayers(players: Iterable<Pick<PlayerState, "id" | "name" | "maxHeight" | "heightReachedMs" | "isBot">>, winnerId?: string): Placement[] {
   return [...players].sort((a, b) => {
     if (a.id === winnerId) return -1;
     if (b.id === winnerId) return 1;

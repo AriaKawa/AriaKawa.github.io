@@ -52,3 +52,6 @@
 !/docs/forged-map-previews.md
 !/docs/forged-command-asset-prompts.md
 !/docs/forged-command-release.md
+
+!/scripts/test-ui-polish.mjs
+!/docs/platform-asset.md

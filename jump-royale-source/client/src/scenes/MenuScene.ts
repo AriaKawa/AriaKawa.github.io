@@ -1,3 +1,4 @@
+import { footOrigin } from '../game/spriteFeet';
 import '../game/forgedCommand.css';
 import '../game/forgedAssets.css';
 import {drawLootIcon} from '../game/lootIcons';
@@ -75,7 +76,7 @@ export class MenuScene extends Phaser.Scene {
     this.shade = this.add.rectangle(0,0,GAME_WIDTH,GAME_HEIGHT,0x06101b,0.08).setOrigin(0);
     this.animationPrefix = outfitTexture(this,this.outfit);
     const frameHeight=this.textures.get(this.animationPrefix).get(0).height;
-    this.preview = this.add.sprite(this.lobbyPlayer.x+PLAYER_WIDTH/2,this.lobbyPlayer.y+PLAYER_HEIGHT,this.animationPrefix).setOrigin(0.5,this.outfit.wardrobe2?31/32:(frameHeight-1)/frameHeight).setScale(LOBBY_SPRITE_SCALE*(this.outfit.wardrobe2?32/frameHeight:1)).setInteractive({useHandCursor:true});
+    this.preview = this.add.sprite(this.lobbyPlayer.x+PLAYER_WIDTH/2,this.lobbyPlayer.y+PLAYER_HEIGHT,this.animationPrefix).setOrigin(0.5,footOrigin(this,this.animationPrefix)).setScale(LOBBY_SPRITE_SCALE*(this.outfit.wardrobe2?32/frameHeight:1));
     this.preview.play(`${this.animationPrefix}-idle`);
     this.mapIndex = Math.max(0,MAPS.findIndex(map=>map.id===this.registry.get("mapId")));
     this.createMenuUi(); this.createMapSelector(); this.createScores(); this.composeForgedUi(); this.installPreviewControls(); this.refreshSurfaces();
@@ -124,7 +125,7 @@ export class MenuScene extends Phaser.Scene {
       this.accumulator=0;
       this.preview.play(this.animationPrefix+"-idle",true);
       const canvas=this.ui?.querySelector<HTMLCanvasElement>(".wardrobe-stage canvas");
-      if(canvas){const c=canvas.getContext("2d")!,f=this.preview.frame; c.clearRect(0,0,160,192);c.imageSmoothingEnabled=false;const scale=144/Math.max(f.width,f.height);c.drawImage(this.preview.texture.getSourceImage() as HTMLImageElement,f.cutX,f.cutY,f.width,f.height,(160-f.width*scale)/2,192-f.height*scale,f.width*scale,f.height*scale);}
+      if(canvas){const c=canvas.getContext("2d")!,f=this.preview.frame; c.clearRect(0,0,160,192);c.imageSmoothingEnabled=false;const scale=144/Math.max(f.width,f.height);c.drawImage(this.preview.texture.getSourceImage() as HTMLImageElement,f.cutX,f.cutY,f.width,f.height,(160-f.width*scale)/2,192-f.height*footOrigin(this,this.animationPrefix)*scale,f.width*scale,f.height*scale);}
       return;
     }
     const p = this.lobbyPlayer;
@@ -313,11 +314,11 @@ export class MenuScene extends Phaser.Scene {
     const stage=this.ui?.querySelector<HTMLElement>(".wardrobe-stage");if(stage)stage.dataset.outfit=JSON.stringify(outfit);
     this.animationPrefix=outfitTexture(this,outfit);
     this.preview.stop().chain();this.preview.setTexture(this.animationPrefix,0);
-    const h=this.preview.frame.height;this.preview.setOrigin(.5,outfit.wardrobe2?31/32:(h-1)/h).setScale(Math.min(GAME_HEIGHT*.36,GAME_WIDTH*.22)/32*(outfit.wardrobe2?32/h:1));
+    const h=this.preview.frame.height;this.preview.setOrigin(.5,footOrigin(this,this.animationPrefix)).setScale(Math.min(GAME_HEIGHT*.36,GAME_WIDTH*.22)/32*(outfit.wardrobe2?32/h:1));
     this.preview.play(`${this.animationPrefix}-${this.airborne?this.velocity<0?'jump':'fall':'idle'}`);
   }
   private renderPurchase():void {
-    this.ui!.querySelector('.gold-balance')!.textContent='× '+wallet().gold;
+    this.ui!.querySelector('.gold-balance')!.textContent=String(wallet().gold);
     this.lootBox?.refresh();
     this.ui!.querySelector('.purchase-bar')!.replaceChildren();
   }
@@ -370,9 +371,6 @@ export class MenuScene extends Phaser.Scene {
         if(!(event.target as Element)?.closest('button,input,select,textarea,[contenteditable=true]'))canvas.focus({preventScroll:true});
       }
     };
-    this.preview.on("pointerdown",()=>{if(settingsOpen()||(this.goldStore?.open||this.lootBox?.open())||this.wardrobeOpen)return;canvas.focus();this.held=true;});
-    this.input.on("pointerup",()=>{this.held=false;});
-    this.input.on("pointerupoutside",()=>{this.held=false;});
     window.addEventListener("keydown",down);window.addEventListener("keyup",up);window.addEventListener("blur",cancel);
     document.addEventListener("focusin",focus);document.addEventListener("visibilitychange",visible);
     document.addEventListener('pointerdown',unfocusName,true);

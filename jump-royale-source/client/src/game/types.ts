@@ -17,7 +17,7 @@ export interface PlayerSnapshot {
   crumblingPlatforms?: Record<string, number>;
   id: string; name: string; x: number; y: number; vx: number; vy: number; alive: boolean;
   grounded: boolean; charging: boolean; charge01: number; facing: -1 | 0 | 1; isBot: boolean;
-  colorIndex: number; maxHeight: number; eliminatedAt?: number; skill?: string;
+  colorIndex: number; maxHeight: number; heightReachedMs?: number; eliminatedAt?: number; skill?: string;
 }
 export interface Placement { timeMs: number; id: string; name: string; place: number; maxHeight: number; isBot: boolean }
 export interface Snapshot {

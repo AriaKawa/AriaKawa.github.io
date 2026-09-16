@@ -1,3 +1,5 @@
+import { footOrigin } from '../game/spriteFeet';
+import { rankPlayers } from '../../../server/src/sim/round';
 import {rewardSpinPoint} from '../game/economy';
 import {worldForMap} from '../../../server/src/sim/world';
 import {createSettings,preferences,settingsOpen} from '../game/settings';
@@ -11,7 +13,6 @@ import { renderSnowTerrain } from "../game/snowArt";
 import { renderJungleTerrain } from "../game/jungleArt";
 import type { MapId } from "../../../server/src/sim/maps";
 import { botOutfit, loadOutfit, outfitTexture } from "../assets/cosmetics";
-import {isAnimal} from '../assets/animalRig';
 import Phaser from "phaser";
 import { ASSETS, BOT_ALPHA, BOT_NAME_ALPHA, LAVA_PARTICLE_RATE, LAVA_SURFACE_VISUAL_OFFSET, LOCAL_PLAYER_ALPHA } from "../assets/assetManifest";
 import type { ArtAvailability } from "../assets/assetLoader";
@@ -127,7 +128,7 @@ export class GameScene extends Phaser.Scene {
     this.client.on<Snapshot>("snapshot", (snapshot) => this.applySnapshot(snapshot));
     this.client.on<{ id: string; name: string }>("eliminated", (message) => this.showToast(`${preferences.names?message.name:'A climber'} ${this.mapId === "snow" ? "was caught by the blizzard" : (this.mapId === "jungle" || this.mapId === "mountain") ? "was swept away by the flood" : "was claimed by the forge"}`));
     void this.connect();
-    this.removeSettings=createSettings(document.getElementById("game")!,undefined,()=>{void this.client.disconnect();this.scene.start("Menu");});
+    this.removeSettings=createSettings(document.getElementById("game")!,undefined,()=>this.leaveWithScoreboard());
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => { this.removeSettings?.(); this.nativeText?.destroy();audio.lavaDistance(0);this.deathUi?.remove();this.deathUi=undefined;this.godPanel?.remove(); this.godPanel=undefined; void this.client.disconnect(); });
   }
 
@@ -279,30 +280,23 @@ export class GameScene extends Phaser.Scene {
     const before = new Set(this.children.list);
     const left = (GAME_WIDTH-WORLD_WIDTH)/2 - 120;
     const right = (GAME_WIDTH+WORLD_WIDTH)/2 + 8;
+    const boardTop = Math.max(26, 44 * GAME_HEIGHT / window.innerHeight);
     Object.assign(MINI_MAP,{x:right,y:174,width:112,height:GAME_HEIGHT-190,innerX:right+8,innerY:202,innerWidth:96,innerHeight:GAME_HEIGHT-260});
     if(this.mapId === "forge") this.add.tileSprite(0,0,GAME_WIDTH,GAME_HEIGHT,ASSETS.wallTiles.key).setOrigin(0).setScrollFactor(0).setDepth(-29).setAlpha(0.12);
     const frame=(x:number,y:number,w:number,h:number)=>this.add.nineslice(x,y,'forged-hud-frame',undefined,w,h,12,12,12,12).setOrigin(0).setScrollFactor(0).setDepth(100);
-    frame(left,16,112,38);frame(right,16,112,146);frame(MINI_MAP.x,MINI_MAP.y,MINI_MAP.width,MINI_MAP.height);
+    frame(left,16,112,38);frame(right,boardTop,112,146);
     const style = {fontFamily:"monospace",fontSize:"10px",color:"#f2e8dc"};
     const text=(x:number,y:number,value:string)=>this.add.text(x,y,value,style).setScrollFactor(0).setDepth(101);
     this.hud = {
       alive:text(left+10,29,"24 ALIVE").setVisible(false),
       timer:text(left+10,49,"00:00").setVisible(false),
-      stats:text(left+10,29,`HEIGHT 0m\n${this.hazardLabel} --m`).setLineSpacing(6),
-      board:text(right+8,29,"TOP OF THE TOWER").setFontSize(8).setLineSpacing(8),
+      stats:text(left+56,35,`HEIGHT 0m`).setOrigin(.5).setAlign("center"),
+      board:text(right+56,boardTop+73,"TOP OF THE TOWER").setOrigin(.5).setAlign("center").setFontSize(8).setLineSpacing(8),
       phase:text(GAME_WIDTH/2,72,"CONNECTING...").setOrigin(0.5).setFontSize(30).setStroke("#1c1115",7).setDepth(110),
       help:text(GAME_WIDTH/2,GAME_HEIGHT-14,this.mapId==="mountain"?"A / D WALK    HOLD SPACE · RELEASE TO LEAP":"A / D WALK    HOLD SPACE TO AIM    RELEASE TO LEAP").setOrigin(0.5,1).setFontSize(9)
     };
     this.dangerOverlay = this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, this.mapId !== "forge" ? 0x1fb8c9 : 0xff321c, 0).setOrigin(0).setScrollFactor(0).setDepth(90);
-    this.minimap = {
-      graphics: this.add.graphics().setScrollFactor(0).setDepth(102),
-      title: this.add.text(MINI_MAP.x + 10, MINI_MAP.y + 7, this.mapId === "snow" ? "FROSTPEAK // 720m" : this.mapId === "jungle" ? "CANOPY MAP // 720m" : "TOWER MAP  //  720m", {
-        fontFamily: "monospace", fontSize: "8px", fontStyle: "bold", color: "#d9c5ad"
-      }).setScrollFactor(0).setDepth(103),
-      status: this.add.text(MINI_MAP.x + 10, MINI_MAP.y + MINI_MAP.height - 36, `YOU --\n${this.hazardLabel} --`, {
-        fontFamily: "monospace", fontSize: "7px", fontStyle: "bold", color: "#fff0be", lineSpacing: 2
-      }).setScrollFactor(0).setDepth(103)
-    };
+    this.minimap = undefined;
     this.hudObjects=this.children.list.filter(object=>!before.has(object));
   }
 
@@ -342,7 +336,7 @@ export class GameScene extends Phaser.Scene {
       this.deathUi.innerHTML='<h1>ELIMINATED</h1><div><button type="button">Spectate</button><button type="button">Leave</button></div>';
       const [spectate,leave]=this.deathUi.querySelectorAll('button');
       spectate.addEventListener('click',()=>{this.client.spectate();spectate.hidden=true;this.godPanel?.remove();});
-      leave.addEventListener('click',()=>{void this.client.disconnect();this.scene.start('Menu');});
+      leave.addEventListener('click',()=>this.leaveWithScoreboard());
       document.getElementById('game')!.append(this.deathUi);this.godPanel?.remove();
     }
     audio.lavaDistance(this.mapId==='forge'&&self&&(self.alive||self.ghost)?Math.pow(Math.max(0,1-Math.abs(snapshot.hazardY-self.y-PLAYER_HEIGHT)/180),2):0);
@@ -393,13 +387,29 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  private leaveWithScoreboard(): void {
+    const snapshot=this.snapshot;
+    if(this.resultsStarted)return;
+    if(!snapshot || !snapshot.roundStartedAt){void this.client.disconnect();this.scene.start('Menu');return;}
+    this.resultsStarted=true;
+    const localId=this.client.localId || this.localId;
+    const placements=snapshot.placements?.map(p=>({...p})) ?? rankPlayers(snapshot.players);
+    const score=placements.find(p=>p.id===localId);
+    if(score && !snapshot.assisted) {
+      rewardSpinPoint(this.mapId+':'+snapshot.roundStartedAt);
+      saveScore(this.mapId,score);
+    }
+    void this.client.disconnect();
+    this.scene.start('Results',{name:this.playerName,winner:'',placements,localId,assisted:snapshot.assisted,goldEarned:this.goldEarned,mapId:this.mapId,leftEarly:true});
+  }
+
   private createPlayerEntity(player: PlayerSnapshot): PlayerEntity {
     const local = player.id === this.localId;
     const outfit=local ? this.registry.get("outfit") ?? loadOutfit() : botOutfit(player.id);
     const texture = outfitTexture(this,outfit);
     const animationPrefix = texture;
     const frameHeight=this.textures.get(texture).get(0).height;
-    const sprite = this.add.sprite(player.x + PLAYER_WIDTH / 2, player.y + PLAYER_HEIGHT, texture).setOrigin(0.5,isAnimal(outfit.character)?(frameHeight-1)/frameHeight:this.mapId !== "forge" ? 30/32 : 1).setDepth(local ? 20 : 10);
+    const sprite = this.add.sprite(player.x + PLAYER_WIDTH / 2, player.y + PLAYER_HEIGHT, texture).setOrigin(0.5,footOrigin(this,texture)).setDepth(local ? 20 : 10);
     if(outfit.wardrobe2)sprite.setScale(32/frameHeight);
     sprite.play(`${animationPrefix}-idle`);
     if (!player.isBot && this.artV2.player) sprite.play(`${animationPrefix}-idle`);
@@ -429,7 +439,7 @@ export class GameScene extends Phaser.Scene {
     if(player.id===this.localId){audio.step(player.grounded&&!player.charging&&Math.abs(player.x-entity.targetX)>.5,this.mapId);if(entity.previousGrounded&&!player.grounded&&player.vy<0)audio.jump((this.registry.get('outfit')??loadOutfit()).character==='puppy');}
     entity.sprite.setFlipX(player.facing < 0).setAngle(0);
     {
-      entity.sprite.setAlpha(entity.isBot ? 0.72 : LOCAL_PLAYER_ALPHA).clearTint();
+      entity.sprite.setAlpha(player.id === this.localId ? LOCAL_PLAYER_ALPHA : BOT_ALPHA).clearTint();
       if (!entity.previousGrounded && player.grounded) entity.landUntil = this.time.now + 180;
       if (this.artV2.player) {
         const animation = entity.sprite.anims.currentAnim?.key || "";

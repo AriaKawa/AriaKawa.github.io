@@ -12,7 +12,7 @@ export function createSettings(parent:HTMLElement,onOpen?:()=>void,returnToMenu?
  const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(preferences));}catch{}window.dispatchEvent(new Event('jump-settings-change'));};
  dialog.querySelectorAll<HTMLInputElement>('input[type=range]').forEach((input,i)=>{const key=i?'effects':'music',output=input.previousElementSibling!;input.value=String(Math.round(preferences[key]*100));output.textContent=input.value+'%';input.addEventListener('input',()=>{preferences[key]=Number(input.value)/100;output.textContent=input.value+'%';save();});});
  const names=dialog.querySelector<HTMLInputElement>('input[type=checkbox]')!;names.checked=preferences.names;names.addEventListener('change',()=>{preferences.names=names.checked;save();});
- if(returnToMenu){const back=document.createElement('button');back.className='pixel-button return-main';back.textContent='Return to main menu';back.onclick=()=>{dialog.close();returnToMenu();};dialog.append(back);}
+ if(returnToMenu){const back=document.createElement('button');back.className='pixel-button return-main';back.textContent='Leave match';back.onclick=()=>{dialog.close();returnToMenu();};dialog.append(back);}
  const close=()=>{dialog.close();button.focus();};
  const open=()=>{if(dialog.open)return;onOpen?.();dialog.showModal();};
  button.onclick=open;dialog.querySelector('header button')!.addEventListener('click',close);
