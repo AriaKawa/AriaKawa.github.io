@@ -41,3 +41,11 @@ export function animalTexture(scene:Phaser.Scene,animal:Animal,hat='none'):strin
  }
  return key;
 }
+
+/** Use the same authored pixels as the equipped hat. */
+export function drawAnimalHatIcon(canvas:HTMLCanvasElement):void {
+ const c=canvas.getContext('2d')!;c.imageSmoothingEnabled=false;
+ for(let y=0;y<HAT.length;y++)for(let x=0;x<HAT[y].length;x++){
+  const color=COLORS[HAT[y][x]];if(color){c.fillStyle=color;c.fillRect(8+x*6,8+y*6,6,6);}
+ }
+}

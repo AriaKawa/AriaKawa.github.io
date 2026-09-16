@@ -1,5 +1,6 @@
+import {drawLootIcon} from '../game/lootIcons';
+import {ANIMAL_HATS} from '../assets/animalRig';
 import {createLootBox} from '../game/lootBox';
-import {DEFAULT_OUTFIT} from '../assets/cosmetics';
 import {COSTUMES,costumeFields} from '../assets/costumeSets';
 import {createSettings,settingsOpen} from '../game/settings';
 import {isBadName, nameRebuke, safePlayerName} from '../../../server/src/sim/names';
@@ -15,13 +16,13 @@ import { drawJunglePreview } from "../game/jungleArt";
 import Phaser from "phaser";
 import { ASSETS } from "../assets/assetManifest";
 import { COSMETICS, DEMON_HAIRS, sanitizeOutfit, loadOutfit, saveOutfit, outfitTexture, type Outfit } from "../assets/cosmetics";
-type CosmeticSlot='character'|'costume'|'hair';
-const SLOTS:CosmeticSlot[]=['character','costume','hair'];
-const outfitSlots=(o:Outfit):CosmeticSlot[]=>o.character==='original'?['character','costume']:o.character==='demon'?['character','hair']:['character'];
-const equipmentOptions=(s:CosmeticSlot,_o:Outfit)=>s==='character'?COSMETICS.character:s==='hair'?DEMON_HAIRS:COSTUMES;
-const selectedPiece=(s:CosmeticSlot,o:Outfit)=>s==='character'?o.character:s==='hair'?o.hair:o.costume??'classic';
+type CosmeticSlot='character'|'costume'|'hair'|'animalHat';
+const SLOTS:CosmeticSlot[]=['character','costume','hair','animalHat'];
+const outfitSlots=(o:Outfit):CosmeticSlot[]=>o.character==='original'?['character','costume']:o.character==='demon'?['character','hair']:['puppy','cat','rat'].includes(o.character)?['character','animalHat']:['character'];
+const equipmentOptions=(s:CosmeticSlot,_o:Outfit)=>s==='character'?COSMETICS.character:s==='hair'?DEMON_HAIRS:s==='animalHat'?ANIMAL_HATS:COSTUMES;
+const selectedPiece=(s:CosmeticSlot,o:Outfit)=>s==='character'?o.character:s==='hair'?o.hair:s==='animalHat'?o.animalHat??'none':o.costume??'classic';
 const cosmeticName=(s:CosmeticSlot,id:string,o:Outfit)=>equipmentOptions(s,o).find(p=>p.id===id)?.name??id;
-const candidateOutfit=(o:Outfit,s:CosmeticSlot,id:string):Outfit=>sanitizeOutfit(s==='costume'?{...o,...costumeFields(id),character:'original'}:s==='hair'?{...o,hair:id}:{...o,character:id});
+const candidateOutfit=(o:Outfit,s:CosmeticSlot,id:string):Outfit=>sanitizeOutfit(s==='costume'?{...o,...costumeFields(id),character:'original'}:s==='hair'?{...o,hair:id}:s==='animalHat'?{...o,animalHat:id}:{...o,character:id});
 import { GAME_HEIGHT, GAME_WIDTH } from "../game/constants";
 import { createLobbyPlayer, stepLobbyPlayer, resizeLobbyPlayer, LOBBY_SPRITE_SCALE } from "../game/lobbyPhysics";
 import { PLAYER_HEIGHT, PLAYER_WIDTH } from "../../../server/src/sim/constants";
@@ -98,19 +99,17 @@ export class MenuScene extends Phaser.Scene {
 
   private createMenuUi(): void {
     this.ui = document.createElement("div"); this.ui.className = "menu-ui";
-    this.ui.innerHTML = `<div class="gold-marker" aria-label="Gold balance"><img src="${import.meta.env.BASE_URL}assets/menu/gold-bars.png" alt="Gold bars"><span class="gold-balance" aria-live="polite"></span><button class="gold-add" type="button" aria-label="Buy gold" title="Buy gold" aria-haspopup="dialog" aria-controls="gold-store"><span class="plus-icon" aria-hidden="true"></span></button></div><h1 class="menu-title" aria-label="Jump Royale"><span>JUMP</span><strong>ROYALE</strong></h1><div class="ranked-splash"><span>Ranked Coming Soon!</span></div><button class="wardrobe-toggle" type="button" aria-label="Open wardrobe" title="Wardrobe" aria-expanded="false" aria-controls="wardrobe-panel"><span class="wardrobe-art" aria-hidden="true"><img src="${import.meta.env.BASE_URL}assets/menu/wardrobe-pixel.png" alt=""><img src="${import.meta.env.BASE_URL}assets/menu/wardrobe-pixel-open.png" alt=""></span></button><form class="menu-form"><input id="climber-name" maxlength="18" autocomplete="off" placeholder="Name" aria-label="Climber name"><button type="submit">Start the Climb</button></form><div class="wardrobe-overlay" hidden><section id="wardrobe-panel" class="wardrobe-panel" role="dialog" aria-modal="true" aria-label="Wardrobe"><header><button class="wardrobe-close pixel-button" type="button" aria-label="Close wardrobe">&#215;</button></header><div class="wardrobe-tabs" role="tablist" aria-label="Equipment category">${SLOTS.map(slot=>`<button id="tab-${slot}" type="button" role="tab" data-slot="${slot}" aria-controls="equipment-grid" aria-selected="${slot===this.activeSlot}" tabindex="${slot===this.activeSlot?0:-1}">${({character:"Character",costume:"Costumes",hair:"Hairstyles"})[slot]}</button>`).join("")}</div><div id="equipment-grid" class="equipment-grid" role="tabpanel" aria-labelledby="tab-costume"></div><div class="purchase-bar" aria-live="polite"></div></section></div>`;
+    this.ui.innerHTML = `<div class="gold-marker" aria-label="Gold balance"><img src="${import.meta.env.BASE_URL}assets/menu/gold-bars.png" alt="Gold bars"><span class="gold-balance" aria-live="polite"></span><button class="gold-add" type="button" aria-label="Buy gold" title="Buy gold" aria-haspopup="dialog" aria-controls="gold-store"><span class="plus-icon" aria-hidden="true"></span></button></div><h1 class="menu-title" aria-label="Jump Royale"><span>JUMP</span><strong>ROYALE</strong></h1><div class="ranked-splash"><span>Ranked Coming Soon!</span></div><button class="wardrobe-toggle" type="button" aria-label="Open wardrobe" title="Wardrobe" aria-expanded="false" aria-controls="wardrobe-panel"><span class="wardrobe-art" aria-hidden="true"><img src="${import.meta.env.BASE_URL}assets/menu/wardrobe-pixel.png" alt=""><img src="${import.meta.env.BASE_URL}assets/menu/wardrobe-pixel-open.png" alt=""></span></button><form class="menu-form"><input id="climber-name" maxlength="18" autocomplete="off" placeholder="Name" aria-label="Climber name"><button type="submit">Start the Climb</button></form><div class="wardrobe-overlay" hidden><section id="wardrobe-panel" class="wardrobe-panel" role="dialog" aria-modal="true" aria-label="Wardrobe"><header><button class="wardrobe-close pixel-button" type="button" aria-label="Close wardrobe">&#215;</button></header><div class="wardrobe-tabs" role="tablist" aria-label="Equipment category">${SLOTS.map(slot=>`<button id="tab-${slot}" type="button" role="tab" data-slot="${slot}" aria-controls="equipment-grid" aria-selected="${slot===this.activeSlot}" tabindex="${slot===this.activeSlot?0:-1}">${({character:"Character",costume:"Costumes",hair:"Hairstyles",animalHat:"Hats"})[slot]}</button>`).join("")}</div><div id="equipment-grid" class="equipment-grid" role="tabpanel" aria-labelledby="tab-costume"></div><div class="purchase-bar" aria-live="polite"></div></section></div>`;
     document.getElementById("game")!.appendChild(this.ui);
     this.removeSettings=createSettings(this.ui,()=>{this.held=false;this.movement.clear();this.lobbyPlayer.charging=false;this.lobbyPlayer.charge01=0;if(this.wardrobeOpen)this.setWardrobeOpen(false);});
     this.goldStore=createGoldStore(()=>{
       this.held=false;this.movement.clear();this.lobbyPlayer.charging=false;this.lobbyPlayer.charge01=0;
       this.showOutfit(this.outfit);
-    },()=>this.ui?.querySelector<HTMLButtonElement>('.gold-add')?.focus());
+    },()=>{this.lootBox?.refresh();this.ui?.querySelector<HTMLButtonElement>(this.lootBox?.open()?'.loot-gold-add':'.gold-add')?.focus();});
     this.ui.appendChild(this.goldStore);
     this.lootBox=createLootBox(this.ui,()=>{if(this.wardrobeOpen)this.setWardrobeOpen(false);this.held=false;this.movement.clear();this.lobbyPlayer.charging=false;this.lobbyPlayer.charge01=0;},()=>this.renderPurchase(),(canvas,item)=>{
-      const sample=item.slot==='costume'?{...DEFAULT_OUTFIT,...costumeFields(item.id)}:item.slot==='hair'?{...DEFAULT_OUTFIT,character:'demon',hair:item.id}:{...DEFAULT_OUTFIT,character:item.id};
-      const key=outfitTexture(this,sample),frame=this.textures.getFrame(key,0),source=this.textures.get(key).getSourceImage() as HTMLImageElement;
-      const c=canvas.getContext('2d')!;c.imageSmoothingEnabled=false;c.drawImage(source,frame.cutX,frame.cutY,frame.cutWidth,frame.cutHeight,0,0,64,64);
-    });
+      drawLootIcon(this,canvas,item);
+    },()=>this.goldStore!.dispatchEvent(new Event('gold-store-open')));
     this.ui.querySelector('.gold-add')!.addEventListener('click',()=>this.goldStore!.dispatchEvent(new Event('gold-store-open')));
     this.form = this.ui.querySelector("form")!;
     const nameInput=this.form.querySelector("input")!;
@@ -274,6 +273,7 @@ export class MenuScene extends Phaser.Scene {
   }
   private renderPurchase():void {
     this.ui!.querySelector('.gold-balance')!.textContent='× '+wallet().gold;
+    this.lootBox?.refresh();
     this.ui!.querySelector('.purchase-bar')!.replaceChildren();
   }
   private updateTabs():void {
