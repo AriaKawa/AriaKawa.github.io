@@ -1,3 +1,4 @@
+import {rewardSpinPoint} from '../game/economy';
 import {worldForMap} from '../../../server/src/sim/world';
 import {createSettings,preferences,settingsOpen} from '../game/settings';
 import {NativeGameText} from '../game/nativeText';
@@ -327,7 +328,7 @@ export class GameScene extends Phaser.Scene {
     if(snapshot.phase==='surge' && this.snapshot?.phase!=='surge') {
       this.cameras.main.scrollY=Phaser.Math.Clamp(snapshot.hazardY-GAME_HEIGHT*.65,0,this.worldHeight-GAME_HEIGHT);
       const score=snapshot.placements?.find(p=>p.id===this.client.localId);
-      if(score && !snapshot.assisted){saveScore(this.mapId,score);if(score.place===1)recordWin(this.mapId+':'+snapshot.roundStartedAt);this.goldEarned=reward(this.mapId+':'+snapshot.roundStartedAt,score.place);}
+      if(score && !snapshot.assisted){rewardSpinPoint(this.mapId+':'+snapshot.roundStartedAt);saveScore(this.mapId,score);if(score.place===1)recordWin(this.mapId+':'+snapshot.roundStartedAt);this.goldEarned=reward(this.mapId+':'+snapshot.roundStartedAt,score.place);}
     }
     if(snapshot.phase==='countdown'){const count=Math.max(1,Math.ceil((snapshot.countdownEndsAt-snapshot.serverTime)/1000));if(count!==this.lastCountdown){audio.countdown();this.lastCountdown=count;}}
     if(snapshot.phase==='playing' && this.snapshot?.phase==='countdown')audio.countdown(true);
@@ -335,6 +336,7 @@ export class GameScene extends Phaser.Scene {
     this.snapshot = snapshot;
     const self=snapshot.players.find(p=>p.id===this.client.localId);
     if(self&&!self.alive&&!this.deathUi){
+      if(!snapshot.assisted&&snapshot.roundStartedAt)rewardSpinPoint(this.mapId+':'+snapshot.roundStartedAt);
       this.deathUi=document.createElement('div');this.deathUi.className='elimination-ui';
       this.deathUi.innerHTML='<h1>ELIMINATED</h1><div><button type="button">Spectate</button><button type="button">Leave</button></div>';
       const [spectate,leave]=this.deathUi.querySelectorAll('button');
@@ -380,6 +382,7 @@ export class GameScene extends Phaser.Scene {
     this.drawMinimap(snapshot);
     if (snapshot.phase === "finished" && !this.resultsStarted && snapshot.placements) {
       this.resultsStarted = true;
+      if(!snapshot.assisted&&snapshot.placements.some(p=>p.id===this.localId))rewardSpinPoint(this.mapId+':'+snapshot.roundStartedAt);
       const winner = snapshot.players.find((player) => player.id === snapshot.winnerId);
       const placement = snapshot.placements.find((player) => player.id === this.localId);
       this.time.delayedCall(900, () => {

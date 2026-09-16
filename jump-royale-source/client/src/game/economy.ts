@@ -1,12 +1,32 @@
 import type { Outfit, CosmeticSlot } from '../assets/cosmetics';
 import {COSTUMES,costumeFields,costumePieces} from '../assets/costumeSets';
 const KEY='jump-royale-wallet-v1';
-type Wallet={gold:number;owned:string[];rewards:string[]};
-export function wallet():Wallet {try{const w=JSON.parse(localStorage.getItem(KEY)||'null');if(w&&Number.isSafeInteger(w.gold)&&w.gold>=0&&Array.isArray(w.owned)&&Array.isArray(w.rewards))return w;}catch{}return {gold:0,owned:[],rewards:[]};}
+export type Wallet={gold:number;owned:string[];rewards:string[];spinPoints:number;freeSpins:number};
+export function wallet():Wallet {try{const w=JSON.parse(localStorage.getItem(KEY)||'null');if(w&&Number.isSafeInteger(w.gold)&&w.gold>=0&&Array.isArray(w.owned)&&Array.isArray(w.rewards))return {...w,spinPoints:Number.isSafeInteger(w.spinPoints)&&w.spinPoints>=0?w.spinPoints%3:0,freeSpins:Number.isSafeInteger(w.freeSpins)&&w.freeSpins>=0?w.freeSpins:0};}catch{}return {gold:0,owned:[],rewards:[],spinPoints:0,freeSpins:0};}
 function persist(w:Wallet):boolean {try{localStorage.setItem(KEY,JSON.stringify(w));return true;}catch{return false;}}
+function addSpinPoint(w:Wallet):void {w.spinPoints++;if(w.spinPoints>=3){w.freeSpins++;w.spinPoints-=3;}}
+export function rewardSpinPoint(round:string):boolean {
+ const w=wallet(),receipt='spin-point:'+round;if(w.rewards.includes(receipt))return false;
+ addSpinPoint(w);w.rewards.push(receipt);return persist(w);
+}
+export type LootEntry={slot:string;id:string;name:string;rarity:number};
+export const LOOT_ODDS=[60,25,10,4,1] as const;
+export function rollLoot<T extends LootEntry>(pool:readonly T[],random=()=>crypto.getRandomValues(new Uint32Array(1))[0]/4294967296):T {
+ let roll=random()*100,tier=0;while(tier<LOOT_ODDS.length-1&&roll>=LOOT_ODDS[tier])roll-=LOOT_ODDS[tier++];
+ const items=pool.filter(p=>p.rarity===tier);if(!items.length)throw new Error('Empty loot tier');
+ return items[Math.floor(random()*items.length)];
+}
+/** Save payment and prize together, before starting the visual reveal. */
+export function openLoot<T extends LootEntry>(pool:readonly T[],free:boolean):{item:T;duplicate:boolean}|null {
+ const w=wallet();if(free?w.freeSpins<1:w.gold<2)return null;
+ const item=rollLoot(pool),key=item.slot+':'+item.id,duplicate=owns(item.slot,item.id);
+ if(free)w.freeSpins--;else w.gold-=2;
+ if(duplicate){w.gold++;addSpinPoint(w);}else w.owned.push(key);
+ return persist(w)?{item,duplicate}:null;
+}
 // A specific, one-time browser-wallet credit requested by the site owner.
 export function claimGoldGift(hash:string):boolean {
-  const gift='menu-fix-20260911-7c4b9e';
+  const gift=hash==='#gift=loot-cache-20260916-c739a2'?'loot-cache-20260916-c739a2':'menu-fix-20260911-7c4b9e';
   if(hash!=='#gift='+gift)return false;
   const w=wallet(),receipt='gift:'+gift;
   if(w.rewards.includes(receipt))return true;

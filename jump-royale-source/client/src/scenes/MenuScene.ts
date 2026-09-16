@@ -1,3 +1,5 @@
+import {createLootBox} from '../game/lootBox';
+import {DEFAULT_OUTFIT} from '../assets/cosmetics';
 import {COSTUMES,costumeFields} from '../assets/costumeSets';
 import {createSettings,settingsOpen} from '../game/settings';
 import {isBadName, nameRebuke, safePlayerName} from '../../../server/src/sim/names';
@@ -40,6 +42,7 @@ export class MenuScene extends Phaser.Scene {
   private preview!: Phaser.GameObjects.Sprite;
   private wardrobeOpen = false;
   private goldStore?: HTMLDialogElement;
+  private lootBox?:ReturnType<typeof createLootBox>;
   private activeSlot: CosmeticSlot = "costume";
   private outfit: Outfit = loadOutfit();
   private animationPrefix = "";
@@ -103,6 +106,11 @@ export class MenuScene extends Phaser.Scene {
       this.showOutfit(this.outfit);
     },()=>this.ui?.querySelector<HTMLButtonElement>('.gold-add')?.focus());
     this.ui.appendChild(this.goldStore);
+    this.lootBox=createLootBox(this.ui,()=>{if(this.wardrobeOpen)this.setWardrobeOpen(false);this.held=false;this.movement.clear();this.lobbyPlayer.charging=false;this.lobbyPlayer.charge01=0;},()=>this.renderPurchase(),(canvas,item)=>{
+      const sample=item.slot==='costume'?{...DEFAULT_OUTFIT,...costumeFields(item.id)}:item.slot==='hair'?{...DEFAULT_OUTFIT,character:'demon',hair:item.id}:{...DEFAULT_OUTFIT,character:item.id};
+      const key=outfitTexture(this,sample),frame=this.textures.getFrame(key,0),source=this.textures.get(key).getSourceImage() as HTMLImageElement;
+      const c=canvas.getContext('2d')!;c.imageSmoothingEnabled=false;c.drawImage(source,frame.cutX,frame.cutY,frame.cutWidth,frame.cutHeight,0,0,64,64);
+    });
     this.ui.querySelector('.gold-add')!.addEventListener('click',()=>this.goldStore!.dispatchEvent(new Event('gold-store-open')));
     this.form = this.ui.querySelector("form")!;
     const nameInput=this.form.querySelector("input")!;
@@ -199,7 +207,7 @@ export class MenuScene extends Phaser.Scene {
     const sx=GAME_WIDTH/canvas.width,sy=GAME_HEIGHT/canvas.height;
     this.lobbySurfaces=[];
     const add=(r:DOMRect)=>{if(r.width>0&&r.height>0)this.lobbySurfaces.push({id:'ui-'+this.lobbySurfaces.length,x:(r.left-canvas.left)*sx,y:(r.top-canvas.top)*sy,w:r.width*sx,h:4,type:'stone'});};
-    this.ui.querySelectorAll<HTMLElement>('.gold-marker img,.gold-balance,.gold-add,.settings-cog,.lobby-object,.wardrobe-art,.menu-form input,.menu-form button,.map-window,.map-arrow').forEach(e=>add(e.getBoundingClientRect()));
+    this.ui.querySelectorAll<HTMLElement>('.loot-toggle,.gold-marker img,.gold-balance,.gold-add,.settings-cog,.lobby-object,.wardrobe-art,.menu-form input,.menu-form button,.map-window,.map-arrow').forEach(e=>add(e.getBoundingClientRect()));
     this.ui.querySelectorAll<HTMLElement>('.ranked-splash span,.menu-title span,.menu-title strong,.menu-form label,.map-caption h2,.scores-toggle,.scores-popover p,.personal-scores h2,.personal-scores strong,.personal-scores span,.personal-scores small,.lobby-steps span').forEach(e=>{
       for(const node of e.childNodes)if(node.nodeType===Node.TEXT_NODE)for(let i=0;i<(node.textContent?.length??0);i++) {
         if(!node.textContent![i].trim())continue;
@@ -294,13 +302,13 @@ export class MenuScene extends Phaser.Scene {
     const canvas=this.game.canvas; canvas.tabIndex=0;
     const editing=()=>document.activeElement?.matches("input,select,textarea,[contenteditable='true']") ?? false;
     const down=(event:KeyboardEvent)=>{
-      if(settingsOpen() || this.goldStore?.open || editing() || event.ctrlKey || event.metaKey || event.altKey)return;
+      if(settingsOpen() || (this.goldStore?.open||this.lootBox?.open()) || editing() || event.ctrlKey || event.metaKey || event.altKey)return;
       if(["Space","ArrowLeft","ArrowRight","KeyA","KeyD"].includes(event.code))event.preventDefault();
       if(event.code==="Space")this.held=true;
       this.movement.add(event.code);
     };
     const up=(event:KeyboardEvent)=>{
-      if(event.code==="Space"){if(!this.goldStore?.open && !editing())event.preventDefault();this.held=false;}
+      if(event.code==="Space"){if(!(this.goldStore?.open||this.lootBox?.open()) && !editing())event.preventDefault();this.held=false;}
       this.movement.delete(event.code);
     };
     const cancel=()=>{this.held=false;this.movement.clear();this.lobbyPlayer.charging=false;this.lobbyPlayer.charge01=0;};
@@ -313,7 +321,7 @@ export class MenuScene extends Phaser.Scene {
         if(!(event.target as Element)?.closest('button,input,select,textarea,[contenteditable=true]'))canvas.focus({preventScroll:true});
       }
     };
-    this.preview.on("pointerdown",()=>{if(settingsOpen()||this.goldStore?.open||this.wardrobeOpen)return;canvas.focus();this.held=true;});
+    this.preview.on("pointerdown",()=>{if(settingsOpen()||(this.goldStore?.open||this.lootBox?.open())||this.wardrobeOpen)return;canvas.focus();this.held=true;});
     this.input.on("pointerup",()=>{this.held=false;});
     this.input.on("pointerupoutside",()=>{this.held=false;});
     window.addEventListener("keydown",down);window.addEventListener("keyup",up);window.addEventListener("blur",cancel);
@@ -324,6 +332,7 @@ export class MenuScene extends Phaser.Scene {
   private cleanup(): void {
     this.removeSettings?.();this.removeSettings=undefined;
     this.removeControls?.();this.removeControls=undefined;this.scale.off(Phaser.Scale.Events.RESIZE,this.layoutUi,this);
+    this.lootBox?.destroy();this.lootBox=undefined;
     this.goldStore?.remove();this.goldStore=undefined;
     this.ui?.remove();this.ui=undefined;this.form=undefined;this.held=false;
   }
