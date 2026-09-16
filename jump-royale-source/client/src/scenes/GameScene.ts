@@ -91,6 +91,8 @@ export class GameScene extends Phaser.Scene {
 
   preload():void { if(!this.textures.exists('forged-frame'))this.load.image('forged-frame',import.meta.env.BASE_URL+'assets/menu/forged-command/frame.png'); }
   create(): void {
+    audio.setMusicMap(this.mapId);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN,()=>audio.setMusicMap());
     this.input.keyboard?.enableGlobalCapture();
     // Phaser reuses scene instances. Every round must begin with fresh network
     // and presentation state rather than references to objects destroyed at shutdown.

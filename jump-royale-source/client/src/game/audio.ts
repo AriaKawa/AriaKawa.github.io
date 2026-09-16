@@ -12,9 +12,29 @@ class GameAudio {
   private musicGain?:GainNode;
   private musicTimer?:ReturnType<typeof setInterval>;
   private musicBeat=0;
+  private musicMap='';
+  private magicalTrack?:HTMLAudioElement;
+  setMusicMap(map=''):void {
+    this.musicMap=map;
+    if(map==='magical'&&!this.magicalTrack){
+      this.magicalTrack=new Audio(`${import.meta.env.BASE_URL}assets/audio/mahou-shoujo.mp3`);
+      this.magicalTrack.loop=true;
+    }
+    if(map!=='magical'&&this.magicalTrack){this.magicalTrack.pause();this.magicalTrack.currentTime=0;}
+    this.syncMusic();
+  }
+  private syncMusic():void {
+    const active=this.musicMap==='magical';
+    if(this.context)this.musicGain?.gain.setTargetAtTime(active||document.hidden?0:preferences.music*.12,this.context.currentTime,.03);
+    if(!this.magicalTrack)return;
+    this.magicalTrack.volume=preferences.music;
+    if(active&&!document.hidden&&preferences.music>0&&this.context?.state==='running'){
+      if(this.magicalTrack.paused)void this.magicalTrack.play().catch(()=>{});
+    }else this.magicalTrack.pause();
+  }
   private musicTick():void {
-    const c=this.context;if(!c||c.state!=='running'||document.hidden)return;
-    this.musicGain??=c.createGain();this.musicGain.connect(c.destination);
+    const c=this.context;if(!c||c.state!=='running'||document.hidden||this.musicMap==='magical')return;
+    if(!this.musicGain){this.musicGain=c.createGain();this.musicGain.connect(c.destination);}
     this.musicGain.gain.setTargetAtTime(preferences.music*.12,c.currentTime,.05);
     const melody=[64,67,71,67,62,66,69,66,60,64,67,64,62,66,69,71];
     const note=melody[this.musicBeat++%melody.length],o=c.createOscillator(),g=c.createGain();
@@ -22,14 +42,15 @@ class GameAudio {
     o.connect(g).connect(this.musicGain);o.start();o.stop(c.currentTime+.6);o.onended=()=>{o.disconnect();g.disconnect();};
   }
   init():void {
-    window.addEventListener('jump-settings-change',()=>{this.lavaDistance(this.target);if(this.context)this.musicGain?.gain.setTargetAtTime(preferences.music*.12,this.context.currentTime,.03);});
+    window.addEventListener('jump-settings-change',()=>{this.lavaDistance(this.target);this.syncMusic();});
     document.addEventListener('pointerdown',()=>void this.unlock());
     document.addEventListener('keydown',()=>void this.unlock());
     document.addEventListener('click',e=>{if((e.target as Element)?.closest('button'))this.play('button',.18);});
-    document.addEventListener('visibilitychange',()=>{if(document.hidden)this.gain?.gain.setTargetAtTime(0,this.context!.currentTime,.06);else this.lavaDistance(this.target);});
+    document.addEventListener('visibilitychange',()=>{if(document.hidden)this.gain?.gain.setTargetAtTime(0,this.context!.currentTime,.06);else this.lavaDistance(this.target);this.syncMusic();});
   }
   async unlock():Promise<void> {
     this.context??=new AudioContext();await this.context.resume();
+    this.syncMusic();
     this.musicTimer??=setInterval(()=>this.musicTick(),360);
     this.loading??=Promise.all(['step','snow','grass','jump','button','wardrobe','ruff','lava'].map(async name=>{
       try{const r=await fetch(`${import.meta.env.BASE_URL}assets/audio/${name}.${name==='ruff'?'wav':'ogg'}`);if(!r.ok)return;this.buffers.set(name,await this.context!.decodeAudioData(await r.arrayBuffer()));}catch{}
