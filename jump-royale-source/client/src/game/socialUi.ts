@@ -8,7 +8,7 @@ import {equippedWallpaper} from './wallpapers';
 import {scoreTime} from './scores';
 
 
-function dialog(root:HTMLElement,label:string){const d=document.createElement('dialog');d.className='social-dialog';d.setAttribute('aria-label',label);const h=document.createElement('header');h.innerHTML=`<h2>${label}</h2><button type="button" aria-label="Close ${label}">×</button>`;h.querySelector('button')!.onclick=()=>d.close();d.append(h);root.append(d);d.addEventListener('keydown',e=>e.stopPropagation());d.addEventListener('keyup',e=>e.stopPropagation());return d;}
+function dialog(root:HTMLElement,label:string){const d=document.createElement('dialog');d.className='social-dialog';d.setAttribute('aria-label',label);const h=document.createElement('header');h.innerHTML=`<h2>${label}</h2><button type="button" aria-label="Close ${label}"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>`;h.querySelector('button')!.onclick=()=>d.close();d.append(h);root.append(d);d.addEventListener('keydown',e=>e.stopPropagation());d.addEventListener('keyup',e=>e.stopPropagation());return d;}
 export function createPartyUi(scene:Phaser.Scene,root:HTMLElement,form:HTMLFormElement,getMap:()=>MapId,onStart:(map:MapId)=>void){
  const toggle=document.createElement('button');toggle.className='party-toggle';toggle.type='button';toggle.setAttribute('aria-label','Party and profile');toggle.title='Party and profile';
  root.querySelector('.forge-resources')!.prepend(toggle);
