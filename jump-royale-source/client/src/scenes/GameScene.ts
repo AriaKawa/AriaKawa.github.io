@@ -1,3 +1,4 @@
+import {createSolidTerrainNotice} from '../game/solidTerrainNotice';
 import {drawForest,renderForestTerrain,forestWater} from '../game/forestArt';
 import { footOrigin } from '../game/spriteFeet';
 import { rankPlayers } from '../../../server/src/sim/round';
@@ -47,6 +48,7 @@ interface MiniMapHud {
 const MINI_MAP = { x: 806, y: 174, width: 136, height: 348, innerX: 816, innerY: 202, innerWidth: 116, innerHeight: 278 };
 
 export class GameScene extends Phaser.Scene {
+  private terrainNotice?:ReturnType<typeof createSolidTerrainNotice>;
   private nativeText?:NativeGameText;
   private lastCountdown=0;
   private flood?:Phaser.GameObjects.Image;
@@ -116,6 +118,7 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor("#0b0810");
     this.cameras.main.setBounds(this.wideWorld?0:-(GAME_WIDTH-WORLD_WIDTH)/2, 0, this.wideWorld?this.world.width:GAME_WIDTH, this.worldHeight);
     this.cameras.main.scrollX = -(GAME_WIDTH-WORLD_WIDTH)/2;
+    this.terrainNotice?.destroy();this.terrainNotice=createSolidTerrainNotice(this);
     this.drawWorldBackdrop();
     this.createHazard();
     if(!this.textures.exists('forged-hud-frame')){const t=this.textures.createCanvas('forged-hud-frame',100,100)!;t.context.drawImage(this.textures.get('forged-frame').getSourceImage() as HTMLImageElement,0,0,100,100);t.refresh();}
@@ -131,7 +134,7 @@ export class GameScene extends Phaser.Scene {
     this.client.on<{ id: string; name: string }>("eliminated", (message) => this.showToast(`${preferences.names?message.name:'A climber'} ${this.mapId === "snow" ? "was caught by the blizzard" : (this.mapId === "jungle" || this.mapId === "mountain" || this.mapId === 'forest') ? "was swept away by the flood" : "was claimed by the forge"}`));
     void this.connect();
     this.removeSettings=createSettings(document.getElementById("game")!,undefined,()=>this.leaveWithScoreboard());
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => { this.removeSettings?.(); this.nativeText?.destroy();audio.lavaDistance(0);this.deathUi?.remove();this.deathUi=undefined;this.godPanel?.remove(); this.godPanel=undefined; void this.client.disconnect(); });
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => { this.terrainNotice?.destroy();this.terrainNotice=undefined;this.removeSettings?.(); this.nativeText?.destroy();audio.lavaDistance(0);this.deathUi?.remove();this.deathUi=undefined;this.godPanel?.remove(); this.godPanel=undefined; void this.client.disconnect(); });
   }
 
   update(time: number, delta: number): void {
@@ -156,6 +159,7 @@ export class GameScene extends Phaser.Scene {
     }
     this.updateLava(time, delta);
     this.updateHud();
+    this.terrainNotice?.sync(this.snapshot?.phase??"waiting",this.minimapPlatforms.some(p=>p.solid&&p.id!=="spawn"),time);
     this.nativeText?.sync();
   }
 

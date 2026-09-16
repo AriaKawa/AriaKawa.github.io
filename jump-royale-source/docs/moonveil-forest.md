@@ -26,3 +26,7 @@ Hosted gameplay remains the existing local 24-competitor practice simulation. Sh
 The camera follows position only; changing facing direction no longer offsets the view. The browser regression checks both turn directions while stationary.
 
 Built-in image_gen produced all five images. Runtime assets are saved under `forge-climb-royale/assets/forest-ai/` in the repository and `client/public/assets/forest-ai/` in the source workspace. Original PNGs are retained in [forest-ai-source](forest-ai-source/). Full final prompts are saved in [forest-ai-prompts.json](forest-ai-prompts.json) and [forest-background-prompt.txt](forest-background-prompt.txt). `node scripts/compile-forest-art.mjs` packs the generated images, preserves alpha, records landing-cap metrics, and exports the backdrop preview. No generated RGB is repainted.
+
+## Solid Terrain notice
+
+A left-side tutorial card appears while players join and throughout the countdown on maps with solid platforms. An animated illustration reuses the existing climber and platform sprites to demonstrate a head bump. The card disappears on play, cleans up on replay/exit, fits narrow viewports, and respects reduced-motion preferences. Verified with `node scripts/browser-solid-terrain.mjs` against port 5224.

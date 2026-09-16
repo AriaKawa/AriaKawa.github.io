@@ -64,3 +64,5 @@
 !/docs/forest-ai-prompts.json
 !/docs/forest-background-prompt.txt
 !/docs/forest-ai-source/
+
+!/scripts/browser-solid-terrain.mjs
