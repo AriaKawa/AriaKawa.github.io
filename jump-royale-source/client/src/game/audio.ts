@@ -30,7 +30,7 @@ class GameAudio {
       this.musicFilter=c.createBiquadFilter();this.musicFilter.type='lowpass';
       this.musicFilter.Q.value=.5;
       this.musicFilter.frequency.value=this.musicDead?850:20000;
-      this.musicDistanceGain=c.createGain();this.musicDistanceGain.gain.value=this.musicDead?.32:1;
+      this.musicDistanceGain=c.createGain();this.musicDistanceGain.gain.value=this.musicDead?.4:1;
       this.musicFilter.connect(this.musicDistanceGain).connect(c.destination);
       this.musicGain=c.createGain();this.musicGain.gain.value=0;this.musicGain.connect(this.musicFilter);
     }
@@ -59,7 +59,7 @@ class GameAudio {
       this.magicalGain?.gain.setTargetAtTime(active&&!document.hidden?preferences.music:0,now,.03);
       // Let the current song recede smoothly while the player is a ghost.
       this.musicFilter?.frequency.setTargetAtTime(this.musicDead?850:20000,now,.22);
-      this.musicDistanceGain?.gain.setTargetAtTime(this.musicDead?.32:1,now,.22);
+      this.musicDistanceGain?.gain.setTargetAtTime(this.musicDead?.4:1,now,.22);
     }
     if(!this.magicalTrack)return;
     this.magicalTrack.volume=1;
