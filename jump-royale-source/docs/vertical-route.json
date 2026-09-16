@@ -19,7 +19,7 @@
         "ticks": 20
       }
     ],
-    "margin": 100.8666666666665
+    "margin": 89.3666666666665
   },
   {
     "source": "foothills-0",
@@ -41,7 +41,7 @@
         "ticks": 19
       }
     ],
-    "margin": 107.66666666666686
+    "margin": 101.66666666666686
   },
   {
     "source": "foothills-1",
@@ -63,7 +63,7 @@
         "ticks": 18
       }
     ],
-    "margin": 105.3000000000003
+    "margin": 99.3000000000003
   },
   {
     "source": "foothills-2",
@@ -85,7 +85,7 @@
         "ticks": 18
       }
     ],
-    "margin": 95.23333333333335
+    "margin": 78.23333333333335
   },
   {
     "source": "foothills-3",
@@ -107,7 +107,7 @@
         "ticks": 19
       }
     ],
-    "margin": 106.96666666666698
+    "margin": 46.96666666666698
   },
   {
     "source": "foothills-4",
@@ -129,7 +129,7 @@
         "ticks": 18
       }
     ],
-    "margin": 97.03333333333319
+    "margin": 82.53333333333319
   },
   {
     "source": "foothills-5",
@@ -151,7 +151,7 @@
         "ticks": 18
       }
     ],
-    "margin": 99.06666666666752
+    "margin": 88.56666666666752
   },
   {
     "source": "foothills-6",
@@ -173,7 +173,7 @@
         "ticks": 18
       }
     ],
-    "margin": 96.09999999999854
+    "margin": 46.599999999998545
   },
   {
     "source": "foothills-7",
@@ -195,7 +195,7 @@
         "ticks": 17
       }
     ],
-    "margin": 94.59999999999832
+    "margin": 79.59999999999832
   },
   {
     "source": "foothills-8",
@@ -217,7 +217,7 @@
         "ticks": 18
       }
     ],
-    "margin": 101.4333333333343
+    "margin": 92.9333333333343
   },
   {
     "source": "foothills-9",
@@ -239,7 +239,7 @@
         "ticks": 18
       }
     ],
-    "margin": 99.73333333333164
+    "margin": 90.23333333333164
   },
   {
     "source": "foothills-10",
@@ -261,7 +261,7 @@
         "ticks": 18
       }
     ],
-    "margin": 98.2333333333354
+    "margin": 88.2333333333354
   },
   {
     "source": "foothills-11",
@@ -283,7 +283,7 @@
         "ticks": 19
       }
     ],
-    "margin": 97.56666666666456
+    "margin": 87.06666666666456
   },
   {
     "source": "foothills-12",
@@ -305,7 +305,7 @@
         "ticks": 20
       }
     ],
-    "margin": 185.23333333333562
+    "margin": 158.23333333333562
   },
   {
     "source": "foothills-13",
@@ -314,7 +314,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 43
+        "ticks": 37
       },
       {
         "direction": 1,
@@ -327,7 +327,7 @@
         "ticks": 21
       }
     ],
-    "margin": 169.53333333332807
+    "margin": 127.83333333332871
   },
   {
     "source": "foothills-14",
@@ -336,7 +336,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 21
+        "ticks": 27
       },
       {
         "direction": 1,
@@ -349,7 +349,7 @@
         "ticks": 19
       }
     ],
-    "margin": 95.60000000000605
+    "margin": 44.10000000000605
   },
   {
     "source": "foothills-15",
@@ -371,7 +371,7 @@
         "ticks": 18
       }
     ],
-    "margin": 99.96666666667124
+    "margin": 93.46666666667124
   },
   {
     "source": "foothills-16",
@@ -393,7 +393,7 @@
         "ticks": 17
       }
     ],
-    "margin": 93.46666666667238
+    "margin": 80.46666666667238
   },
   {
     "source": "foothills-17",
@@ -415,7 +415,7 @@
         "ticks": 18
       }
     ],
-    "margin": 99.90000000000782
+    "margin": 93.40000000000782
   },
   {
     "source": "foothills-18",
@@ -437,7 +437,7 @@
         "ticks": 18
       }
     ],
-    "margin": 94.06666666665706
+    "margin": 83.06666666665706
   },
   {
     "source": "foothills-19",
@@ -459,7 +459,7 @@
         "ticks": 17
       }
     ],
-    "margin": 100.93333333334112
+    "margin": 95.93333333334112
   },
   {
     "source": "foothills-20",
@@ -481,7 +481,7 @@
         "ticks": 18
       }
     ],
-    "margin": 95.49999999999432
+    "margin": 43.999999999994316
   },
   {
     "source": "foothills-21",
@@ -503,7 +503,7 @@
         "ticks": 17
       }
     ],
-    "margin": 97.59999999999582
+    "margin": 91.59999999999582
   },
   {
     "source": "foothills-22",
@@ -525,7 +525,7 @@
         "ticks": 17
       }
     ],
-    "margin": 94.53333333333899
+    "margin": 85.53333333333899
   },
   {
     "source": "foothills-23",
@@ -547,7 +547,7 @@
         "ticks": 18
       }
     ],
-    "margin": 90.46666666667443
+    "margin": 78.46666666667443
   },
   {
     "source": "foothills-24",
@@ -569,7 +569,7 @@
         "ticks": 16
       }
     ],
-    "margin": 96.90000000000623
+    "margin": 90.40000000000623
   },
   {
     "source": "foothills-25",
@@ -591,7 +591,7 @@
         "ticks": 18
       }
     ],
-    "margin": 90.26666666666233
+    "margin": 42.76666666666233
   },
   {
     "source": "foothills-26",
@@ -613,7 +613,7 @@
         "ticks": 17
       }
     ],
-    "margin": 97.1333333333273
+    "margin": 91.1333333333273
   },
   {
     "source": "foothills-27",
@@ -635,7 +635,7 @@
         "ticks": 18
       }
     ],
-    "margin": 92.53333333333649
+    "margin": 42.033333333336486
   },
   {
     "source": "foothills-28",
@@ -657,7 +657,7 @@
         "ticks": 18
       }
     ],
-    "margin": 137.86666666667065
+    "margin": 129.36666666667065
   },
   {
     "source": "foothills-29",
@@ -679,7 +679,7 @@
         "ticks": 18
       }
     ],
-    "margin": 87.49999999999454
+    "margin": 72.99999999999454
   },
   {
     "source": "village-0",
@@ -701,7 +701,7 @@
         "ticks": 18
       }
     ],
-    "margin": 87.16666666667402
+    "margin": 42.16666666667402
   },
   {
     "source": "village-1",
@@ -723,7 +723,7 @@
         "ticks": 17
       }
     ],
-    "margin": 92.46666666666124
+    "margin": 85.46666666666124
   },
   {
     "source": "village-2",
@@ -745,7 +745,7 @@
         "ticks": 18
       }
     ],
-    "margin": 94.63333333333708
+    "margin": 88.63333333333708
   },
   {
     "source": "village-3",
@@ -767,7 +767,7 @@
         "ticks": 17
       }
     ],
-    "margin": 87.46666666666442
+    "margin": 74.46666666666442
   },
   {
     "source": "village-4",
@@ -789,7 +789,7 @@
         "ticks": 18
       }
     ],
-    "margin": 86.39999999999554
+    "margin": 72.89999999999554
   },
   {
     "source": "village-5",
@@ -811,7 +811,7 @@
         "ticks": 17
       }
     ],
-    "margin": 87.03333333332716
+    "margin": 40.533333333327164
   },
   {
     "source": "village-6",
@@ -833,7 +833,7 @@
         "ticks": 18
       }
     ],
-    "margin": 82.39999999999236
+    "margin": 67.39999999999236
   },
   {
     "source": "village-7",
@@ -855,7 +855,7 @@
         "ticks": 18
       }
     ],
-    "margin": 94.2666666666762
+    "margin": 41.2666666666762
   },
   {
     "source": "village-8",
@@ -864,7 +864,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 22
+        "ticks": 10
       },
       {
         "direction": -1,
@@ -877,7 +877,7 @@
         "ticks": 21
       }
     ],
-    "margin": 186.33333333334065
+    "margin": 122.43333333334238
   },
   {
     "source": "village-9",
@@ -886,7 +886,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 47
+        "ticks": 57
       },
       {
         "direction": -1,
@@ -899,14 +899,14 @@
         "ticks": 21
       }
     ],
-    "margin": 183.566666666674
+    "margin": 160.8333333333424
   },
   {
     "source": "village-10",
     "target": "village-11",
     "actions": [
       {
-        "direction": 1,
+        "direction": -1,
         "held": false,
         "ticks": 1
       },
@@ -921,7 +921,7 @@
         "ticks": 19
       }
     ],
-    "margin": 84.86666666667423
+    "margin": 72.866666666676
   },
   {
     "source": "village-11",
@@ -943,7 +943,7 @@
         "ticks": 18
       }
     ],
-    "margin": 82.43333333334078
+    "margin": 67.93333333334255
   },
   {
     "source": "village-12",
@@ -965,7 +965,7 @@
         "ticks": 17
       }
     ],
-    "margin": 84.83333333334076
+    "margin": 73.83333333334258
   },
   {
     "source": "village-13",
@@ -987,7 +987,7 @@
         "ticks": 18
       }
     ],
-    "margin": 86.76666666667484
+    "margin": 77.76666666667666
   },
   {
     "source": "village-14",
@@ -1009,7 +1009,7 @@
         "ticks": 17
       }
     ],
-    "margin": 82.86666666665917
+    "margin": 70.36666666665735
   },
   {
     "source": "village-15",
@@ -1031,7 +1031,7 @@
         "ticks": 18
       }
     ],
-    "margin": 87.23333333332579
+    "margin": 79.23333333332397
   },
   {
     "source": "village-16",
@@ -1053,7 +1053,7 @@
         "ticks": 17
       }
     ],
-    "margin": 80.40000000000765
+    "margin": 66.90000000000947
   },
   {
     "source": "village-17",
@@ -1075,7 +1075,7 @@
         "ticks": 18
       }
     ],
-    "margin": 78.46666666667426
+    "margin": 63.466666666676076
   },
   {
     "source": "village-18",
@@ -1097,7 +1097,7 @@
         "ticks": 17
       }
     ],
-    "margin": 85.36666666667418
+    "margin": 77.866666666676
   },
   {
     "source": "village-19",
@@ -1119,7 +1119,7 @@
         "ticks": 17
       }
     ],
-    "margin": 82.36666666667486
+    "margin": 72.86666666667668
   },
   {
     "source": "village-20",
@@ -1141,7 +1141,7 @@
         "ticks": 18
       }
     ],
-    "margin": 86.83333333332587
+    "margin": 81.33333333332405
   },
   {
     "source": "village-21",
@@ -1163,7 +1163,7 @@
         "ticks": 17
       }
     ],
-    "margin": 86.23333333332579
+    "margin": 80.73333333332397
   },
   {
     "source": "village-22",
@@ -1185,7 +1185,7 @@
         "ticks": 17
       }
     ],
-    "margin": 83.40000000000765
+    "margin": 75.40000000000947
   },
   {
     "source": "village-23",
@@ -1207,7 +1207,7 @@
         "ticks": 17
       }
     ],
-    "margin": 79.5999999999924
+    "margin": 68.09999999999059
   },
   {
     "source": "village-24",
@@ -1229,7 +1229,7 @@
         "ticks": 18
       }
     ],
-    "margin": 87.36666666667418
+    "margin": 83.366666666676
   },
   {
     "source": "village-25",
@@ -1251,7 +1251,7 @@
         "ticks": 17
       }
     ],
-    "margin": 82.76666666665847
+    "margin": 36.26666666665665
   },
   {
     "source": "village-26",
@@ -1273,7 +1273,7 @@
         "ticks": 18
       }
     ],
-    "margin": 86.33333333334224
+    "margin": 81.33333333334406
   },
   {
     "source": "village-27",
@@ -1295,7 +1295,7 @@
         "ticks": 16
       }
     ],
-    "margin": 84.13333333332503
+    "margin": 79.13333333332321
   },
   {
     "source": "village-28",
@@ -1317,7 +1317,7 @@
         "ticks": 18
       }
     ],
-    "margin": 133.53333333334092
+    "margin": 122.03333333334274
   },
   {
     "source": "village-29",
@@ -1339,7 +1339,7 @@
         "ticks": 18
       }
     ],
-    "margin": 75.80000000000769
+    "margin": 62.800000000009504
   },
   {
     "source": "aqueduct-0",
@@ -1361,7 +1361,7 @@
         "ticks": 17
       }
     ],
-    "margin": 76.40000000000776
+    "margin": 64.90000000000958
   },
   {
     "source": "aqueduct-1",
@@ -1383,7 +1383,7 @@
         "ticks": 17
       }
     ],
-    "margin": 80.23333333332556
+    "margin": 72.23333333332374
   },
   {
     "source": "aqueduct-2",
@@ -1405,7 +1405,7 @@
         "ticks": 18
       }
     ],
-    "margin": 74.16666666665913
+    "margin": 61.16666666665731
   },
   {
     "source": "aqueduct-3",
@@ -1427,7 +1427,7 @@
         "ticks": 17
       }
     ],
-    "margin": 78.36666666667486
+    "margin": 34.86666666667668
   },
   {
     "source": "aqueduct-4",
@@ -1449,7 +1449,7 @@
         "ticks": 18
       }
     ],
-    "margin": 73.83333333332439
+    "margin": 61.83333333332257
   },
   {
     "source": "aqueduct-5",
@@ -1471,7 +1471,7 @@
         "ticks": 17
       }
     ],
-    "margin": 81.66666666667493
+    "margin": 77.66666666667675
   },
   {
     "source": "aqueduct-6",
@@ -1493,7 +1493,7 @@
         "ticks": 17
       }
     ],
-    "margin": 80.76666666667427
+    "margin": 75.76666666667609
   },
   {
     "source": "aqueduct-7",
@@ -1515,7 +1515,7 @@
         "ticks": 16
       }
     ],
-    "margin": 72.06666666667479
+    "margin": 34.56666666667661
   },
   {
     "source": "aqueduct-8",
@@ -1537,7 +1537,7 @@
         "ticks": 18
       }
     ],
-    "margin": 77.1333333333422
+    "margin": 68.63333333334401
   },
   {
     "source": "aqueduct-9",
@@ -1559,7 +1559,7 @@
         "ticks": 18
       }
     ],
-    "margin": 76.0000000000091
+    "margin": 68.00000000001091
   },
   {
     "source": "aqueduct-10",
@@ -1581,7 +1581,7 @@
         "ticks": 21
       }
     ],
-    "margin": 175.66666666667334
+    "margin": 146.66666666667516
   },
   {
     "source": "aqueduct-11",
@@ -1590,7 +1590,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 41
+        "ticks": 34
       },
       {
         "direction": 1,
@@ -1603,7 +1603,7 @@
         "ticks": 20
       }
     ],
-    "margin": 165.1999999999905
+    "margin": 122.13333333332275
   },
   {
     "source": "aqueduct-12",
@@ -1612,7 +1612,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 41
+        "ticks": 48
       },
       {
         "direction": 1,
@@ -1625,7 +1625,7 @@
         "ticks": 20
       }
     ],
-    "margin": 159.93333333334658
+    "margin": 142.4333333333484
   },
   {
     "source": "aqueduct-13",
@@ -1647,7 +1647,7 @@
         "ticks": 18
       }
     ],
-    "margin": 69.499999999985
+    "margin": 55.999999999983174
   },
   {
     "source": "aqueduct-14",
@@ -1669,7 +1669,7 @@
         "ticks": 17
       }
     ],
-    "margin": 74.63333333332093
+    "margin": 67.13333333331911
   },
   {
     "source": "aqueduct-15",
@@ -1691,7 +1691,7 @@
         "ticks": 17
       }
     ],
-    "margin": 74.03333333331943
+    "margin": 33.533333333317614
   },
   {
     "source": "aqueduct-16",
@@ -1713,7 +1713,7 @@
         "ticks": 17
       }
     ],
-    "margin": 77.96666666667875
+    "margin": 72.96666666668057
   },
   {
     "source": "aqueduct-17",
@@ -1735,7 +1735,7 @@
         "ticks": 17
       }
     ],
-    "margin": 73.1000000000131
+    "margin": 32.600000000014916
   },
   {
     "source": "aqueduct-18",
@@ -1757,7 +1757,7 @@
         "ticks": 17
       }
     ],
-    "margin": 67.70000000001119
+    "margin": 54.700000000013006
   },
   {
     "source": "aqueduct-19",
@@ -1779,7 +1779,7 @@
         "ticks": 16
       }
     ],
-    "margin": 73.73333333332062
+    "margin": 68.7333333333188
   },
   {
     "source": "aqueduct-20",
@@ -1801,7 +1801,7 @@
         "ticks": 18
       }
     ],
-    "margin": 72.29999999998518
+    "margin": 32.299999999983356
   },
   {
     "source": "aqueduct-21",
@@ -1823,7 +1823,7 @@
         "ticks": 17
       }
     ],
-    "margin": 70.23333333334676
+    "margin": 62.23333333334858
   },
   {
     "source": "aqueduct-22",
@@ -1845,7 +1845,7 @@
         "ticks": 17
       }
     ],
-    "margin": 73.3999999999885
+    "margin": 67.39999999998668
   },
   {
     "source": "aqueduct-23",
@@ -1867,7 +1867,7 @@
         "ticks": 17
       }
     ],
-    "margin": 68.73333333334585
+    "margin": 58.23333333334767
   },
   {
     "source": "aqueduct-24",
@@ -1889,7 +1889,7 @@
         "ticks": 16
       }
     ],
-    "margin": 64.80000000001019
+    "margin": 52.300000000012005
   },
   {
     "source": "aqueduct-25",
@@ -1911,7 +1911,7 @@
         "ticks": 18
       }
     ],
-    "margin": 66.7666666666546
+    "margin": 56.76666666665278
   },
   {
     "source": "aqueduct-26",
@@ -1933,7 +1933,7 @@
         "ticks": 17
       }
     ],
-    "margin": 67.73333333334722
+    "margin": 31.233333333349037
   },
   {
     "source": "aqueduct-27",
@@ -1955,7 +1955,7 @@
         "ticks": 16
       }
     ],
-    "margin": 67.83333333332098
+    "margin": 58.33333333331916
   },
   {
     "source": "aqueduct-28",
@@ -1972,7 +1972,7 @@
         "ticks": 18
       }
     ],
-    "margin": 123.83333333332212
+    "margin": 103.3333333333203
   },
   {
     "source": "aqueduct-29",
@@ -1994,7 +1994,7 @@
         "ticks": 18
       }
     ],
-    "margin": 72.56666666665456
+    "margin": 69.56666666665274
   },
   {
     "source": "mine-0",
@@ -2016,7 +2016,7 @@
         "ticks": 17
       }
     ],
-    "margin": 69.96666666665305
+    "margin": 64.46666666665124
   },
   {
     "source": "mine-1",
@@ -2038,7 +2038,7 @@
         "ticks": 17
       }
     ],
-    "margin": 53.37180905945593
+    "margin": 48.628190940743934
   },
   {
     "source": "mine-2",
@@ -2060,7 +2060,7 @@
         "ticks": 18
       }
     ],
-    "margin": 50.463325209786944
+    "margin": 38.40950316057183
   },
   {
     "source": "mine-3",
@@ -2082,7 +2082,7 @@
         "ticks": 16
       }
     ],
-    "margin": 64.00334145687884
+    "margin": 52.44283649390627
   },
   {
     "source": "mine-4",
@@ -2104,7 +2104,7 @@
         "ticks": 17
       }
     ],
-    "margin": 70.50334145688134
+    "margin": 30.05716350609623
   },
   {
     "source": "mine-5",
@@ -2126,7 +2126,7 @@
         "ticks": 17
       }
     ],
-    "margin": 67.99665854312047
+    "margin": 62.44283649390559
   },
   {
     "source": "mine-6",
@@ -2148,7 +2148,7 @@
         "ticks": 18
       }
     ],
-    "margin": 70.62999187645528
+    "margin": 66.07616982724039
   },
   {
     "source": "mine-7",
@@ -2157,7 +2157,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 17
+        "ticks": 16
       },
       {
         "direction": -1,
@@ -2170,7 +2170,7 @@
         "ticks": 21
       }
     ],
-    "margin": 164.8633252097884
+    "margin": 147.94283649390695
   },
   {
     "source": "mine-8",
@@ -2179,7 +2179,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 51
+        "ticks": 49
       },
       {
         "direction": -1,
@@ -2192,7 +2192,7 @@
         "ticks": 21
       }
     ],
-    "margin": 169.93667479021724
+    "margin": 134.90950316056842
   },
   {
     "source": "mine-9",
@@ -2201,7 +2201,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 39
+        "ticks": 37
       },
       {
         "direction": -1,
@@ -2214,7 +2214,7 @@
         "ticks": 20
       }
     ],
-    "margin": 153.19665854311597
+    "margin": 105.30950316056817
   },
   {
     "source": "mine-10",
@@ -2223,7 +2223,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 4
+        "ticks": 9
       },
       {
         "direction": -1,
@@ -2236,7 +2236,7 @@
         "ticks": 18
       }
     ],
-    "margin": 65.3366747902171
+    "margin": 59.390496839431535
   },
   {
     "source": "mine-11",
@@ -2258,7 +2258,7 @@
         "ticks": 17
       }
     ],
-    "margin": 60.20334145688395
+    "margin": 49.25716350609838
   },
   {
     "source": "mine-12",
@@ -2267,7 +2267,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 2
+        "ticks": 3
       },
       {
         "direction": 1,
@@ -2280,7 +2280,7 @@
         "ticks": 16
       }
     ],
-    "margin": 66.86332520978272
+    "margin": 63.82383017276504
   },
   {
     "source": "mine-13",
@@ -2289,7 +2289,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 8
+        "ticks": 9
       },
       {
         "direction": -1,
@@ -2302,7 +2302,7 @@
         "ticks": 17
       }
     ],
-    "margin": 40.69314823552833
+    "margin": 4.139326186313895
   },
   {
     "source": "mine-14",
@@ -2324,7 +2324,7 @@
         "ticks": 17
       }
     ],
-    "margin": 57.85115021145634
+    "margin": 51.904972260670775
   },
   {
     "source": "mine-15",
@@ -2346,7 +2346,7 @@
         "ticks": 16
       }
     ],
-    "margin": 61.848849788543475
+    "margin": 52.79502773932904
   },
   {
     "source": "mine-16",
@@ -2368,7 +2368,7 @@
         "ticks": 18
       }
     ],
-    "margin": 63.782183121876756
+    "margin": 28.228361072662324
   },
   {
     "source": "mine-17",
@@ -2390,7 +2390,7 @@
         "ticks": 17
       }
     ],
-    "margin": 63.91551645521076
+    "margin": 58.86169440599633
   },
   {
     "source": "mine-18",
@@ -2412,7 +2412,7 @@
         "ticks": 16
       }
     ],
-    "margin": 60.151150211456525
+    "margin": 52.20497226067096
   },
   {
     "source": "mine-19",
@@ -2434,7 +2434,7 @@
         "ticks": 17
       }
     ],
-    "margin": 57.98218312187669
+    "margin": 46.928361072662256
   },
   {
     "source": "mine-20",
@@ -2456,7 +2456,7 @@
         "ticks": 17
       }
     ],
-    "margin": 60.34884978854353
+    "margin": 51.7950277393291
   },
   {
     "source": "mine-21",
@@ -2478,7 +2478,7 @@
         "ticks": 16
       }
     ],
-    "margin": 58.7178168781233
+    "margin": 27.271638927337733
   },
   {
     "source": "mine-22",
@@ -2500,7 +2500,7 @@
         "ticks": 17
       }
     ],
-    "margin": 60.28218312187664
+    "margin": 52.72836107266221
   },
   {
     "source": "mine-23",
@@ -2522,7 +2522,7 @@
         "ticks": 16
       }
     ],
-    "margin": 61.44884978854395
+    "margin": 55.39502773932952
   },
   {
     "source": "mine-24",
@@ -2544,7 +2544,7 @@
         "ticks": 17
       }
     ],
-    "margin": 61.04884978854329
+    "margin": 54.99502773932886
   },
   {
     "source": "mine-25",
@@ -2553,7 +2553,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 4
+        "ticks": 3
       },
       {
         "direction": -1,
@@ -2566,7 +2566,7 @@
         "ticks": 16
       }
     ],
-    "margin": 57.74884978854334
+    "margin": 24.938305594004362
   },
   {
     "source": "mine-26",
@@ -2575,7 +2575,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 5
+        "ticks": 4
       },
       {
         "direction": 1,
@@ -2588,7 +2588,7 @@
         "ticks": 17
       }
     ],
-    "margin": 57.751150211456775
+    "margin": 51.30497226067109
   },
   {
     "source": "mine-27",
@@ -2610,7 +2610,7 @@
         "ticks": 16
       }
     ],
-    "margin": 61.31551645521051
+    "margin": 57.261694405996195
   },
   {
     "source": "mine-28",
@@ -2619,7 +2619,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 15
+        "ticks": 14
       },
       {
         "direction": 1,
@@ -2632,7 +2632,7 @@
         "ticks": 18
       }
     ],
-    "margin": 101.81551645521131
+    "margin": 75.39502773933032
   },
   {
     "source": "mine-29",
@@ -2641,7 +2641,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 5
+        "ticks": 6
       },
       {
         "direction": -1,
@@ -2654,7 +2654,7 @@
         "ticks": 17
       }
     ],
-    "margin": 61.98218312187737
+    "margin": 58.42836107266305
   },
   {
     "source": "castle-0",
@@ -2676,7 +2676,7 @@
         "ticks": 17
       }
     ],
-    "margin": 54.582183121876994
+    "margin": 25.528361072662676
   },
   {
     "source": "castle-1",
@@ -2698,7 +2698,7 @@
         "ticks": 16
       }
     ],
-    "margin": 56.88218312187735
+    "margin": 49.32836107266303
   },
   {
     "source": "castle-2",
@@ -2720,7 +2720,7 @@
         "ticks": 17
       }
     ],
-    "margin": 54.515516455211355
+    "margin": 45.46169440599704
   },
   {
     "source": "castle-3",
@@ -2742,7 +2742,7 @@
         "ticks": 16
       }
     ],
-    "margin": 54.05115021145468
+    "margin": 46.104972260669
   },
   {
     "source": "castle-4",
@@ -2764,7 +2764,7 @@
         "ticks": 17
       }
     ],
-    "margin": 57.051150211455365
+    "margin": 24.104972260669683
   },
   {
     "source": "castle-5",
@@ -2786,7 +2786,7 @@
         "ticks": 17
       }
     ],
-    "margin": 54.94884978854395
+    "margin": 47.895027739329635
   },
   {
     "source": "castle-6",
@@ -2808,7 +2808,7 @@
         "ticks": 16
       }
     ],
-    "margin": 59.117816878122085
+    "margin": 55.8283610726636
   },
   {
     "source": "castle-7",
@@ -2830,7 +2830,7 @@
         "ticks": 17
       }
     ],
-    "margin": 52.3821831218786
+    "margin": 44.32836107266428
   },
   {
     "source": "castle-8",
@@ -2839,7 +2839,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 6
+        "ticks": 5
       },
       {
         "direction": 1,
@@ -2852,7 +2852,7 @@
         "ticks": 17
       }
     ],
-    "margin": 51.7511502114553
+    "margin": 54.17163892733629
   },
   {
     "source": "castle-9",
@@ -2861,7 +2861,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 12
+        "ticks": 13
       },
       {
         "direction": 1,
@@ -2874,7 +2874,7 @@
         "ticks": 20
       }
     ],
-    "margin": 180.31551645520858
+    "margin": 156.76169440599415
   },
   {
     "source": "castle-10",
@@ -2883,7 +2883,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 42
+        "ticks": 36
       },
       {
         "direction": 1,
@@ -2896,7 +2896,7 @@
         "ticks": 21
       }
     ],
-    "margin": 175.08448354478855
+    "margin": 134.43830559400362
   },
   {
     "source": "castle-11",
@@ -2905,7 +2905,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 43
+        "ticks": 46
       },
       {
         "direction": 1,
@@ -2918,7 +2918,7 @@
         "ticks": 21
       }
     ],
-    "margin": 172.6488497885507
+    "margin": 153.80497226066427
   },
   {
     "source": "castle-12",
@@ -2927,7 +2927,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 29
+        "ticks": 26
       },
       {
         "direction": 1,
@@ -2940,7 +2940,7 @@
         "ticks": 18
       }
     ],
-    "margin": 49.217816878109716
+    "margin": 40.27163892732506
   },
   {
     "source": "castle-13",
@@ -2949,7 +2949,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 6
+        "ticks": 5
       },
       {
         "direction": -1,
@@ -2962,7 +2962,7 @@
         "ticks": 17
       }
     ],
-    "margin": 51.41551645522031
+    "margin": 44.27163892732824
   },
   {
     "source": "castle-14",
@@ -2971,7 +2971,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 4
+        "ticks": 5
       },
       {
         "direction": -1,
@@ -2984,7 +2984,7 @@
         "ticks": 17
       }
     ],
-    "margin": 55.28218312188642
+    "margin": 51.72836107267108
   },
   {
     "source": "castle-15",
@@ -3006,7 +3006,7 @@
         "ticks": 16
       }
     ],
-    "margin": 50.78448354478087
+    "margin": 43.66169440600379
   },
   {
     "source": "castle-16",
@@ -3028,7 +3028,7 @@
         "ticks": 17
       }
     ],
-    "margin": 51.715516455222314
+    "margin": 45.66169440600697
   },
   {
     "source": "castle-17",
@@ -3050,7 +3050,7 @@
         "ticks": 16
       }
     ],
-    "margin": 49.048849788552616
+    "margin": 41.495027739337274
   },
   {
     "source": "castle-18",
@@ -3059,7 +3059,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 2
+        "ticks": 1
       },
       {
         "direction": -1,
@@ -3072,7 +3072,7 @@
         "ticks": 17
       }
     ],
-    "margin": 52.6488497885523
+    "margin": 21.038305593996256
   },
   {
     "source": "castle-19",
@@ -3081,7 +3081,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 5
+        "ticks": 6
       },
       {
         "direction": -1,
@@ -3094,7 +3094,7 @@
         "ticks": 17
       }
     ],
-    "margin": 48.85115021144588
+    "margin": 40.595027739339
   },
   {
     "source": "castle-20",
@@ -3116,7 +3116,7 @@
         "ticks": 16
       }
     ],
-    "margin": 46.81551645521904
+    "margin": 37.261694406003926
   },
   {
     "source": "castle-21",
@@ -3138,7 +3138,7 @@
         "ticks": 17
       }
     ],
-    "margin": 48.284483544781324
+    "margin": 22.338305593996665
   },
   {
     "source": "castle-22",
@@ -3160,7 +3160,7 @@
         "ticks": 16
       }
     ],
-    "margin": 50.98448354477841
+    "margin": 48.538305593993755
   },
   {
     "source": "castle-23",
@@ -3182,7 +3182,7 @@
         "ticks": 17
       }
     ],
-    "margin": 49.11781687811481
+    "margin": 45.17163892733015
   },
   {
     "source": "castle-24",
@@ -3204,7 +3204,7 @@
         "ticks": 16
       }
     ],
-    "margin": 49.0511502114482
+    "margin": 44.604972260663544
   },
   {
     "source": "castle-25",
@@ -3226,7 +3226,7 @@
         "ticks": 17
       }
     ],
-    "margin": 43.551150211446384
+    "margin": 35.104972260661725
   },
   {
     "source": "castle-26",
@@ -3235,7 +3235,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 4
+        "ticks": 5
       },
       {
         "direction": 1,
@@ -3248,7 +3248,7 @@
         "ticks": 16
       }
     ],
-    "margin": 45.24884978855198
+    "margin": 38.9383055939968
   },
   {
     "source": "castle-27",
@@ -3257,7 +3257,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 2
+        "ticks": 1
       },
       {
         "direction": 1,
@@ -3270,7 +3270,7 @@
         "ticks": 17
       }
     ],
-    "margin": 48.148849788551615
+    "margin": 43.595027739336274
   },
   {
     "source": "castle-28",
@@ -3279,7 +3279,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 8
+        "ticks": 9
       },
       {
         "direction": 1,
@@ -3292,17 +3292,12 @@
         "ticks": 18
       }
     ],
-    "margin": 120.58218312188865
+    "margin": 100.1049722606599
   },
   {
     "source": "castle-29",
     "target": "windmill-0",
     "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 1
-      },
       {
         "direction": -1,
         "held": true,
@@ -3314,7 +3309,7 @@
         "ticks": 17
       }
     ],
-    "margin": 43.28218312188619
+    "margin": 34.22836107267085
   },
   {
     "source": "windmill-0",
@@ -3336,7 +3331,7 @@
         "ticks": 17
       }
     ],
-    "margin": 46.38218312188678
+    "margin": 19.32836107267144
   },
   {
     "source": "windmill-1",
@@ -3345,7 +3340,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 4
+        "ticks": 5
       },
       {
         "direction": 1,
@@ -3358,7 +3353,7 @@
         "ticks": 16
       }
     ],
-    "margin": 28.328781991763435
+    "margin": 18.398315447499954
   },
   {
     "source": "windmill-2",
@@ -3380,7 +3375,7 @@
         "ticks": 17
       }
     ],
-    "margin": 37.69544865861644
+    "margin": 13.268832782583104
   },
   {
     "source": "windmill-3",
@@ -3402,7 +3397,7 @@
         "ticks": 16
       }
     ],
-    "margin": 43.99544865861935
+    "margin": 38.568832782586014
   },
   {
     "source": "windmill-4",
@@ -3411,7 +3406,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 3
+        "ticks": 6
       },
       {
         "direction": -1,
@@ -3424,7 +3419,7 @@
         "ticks": 17
       }
     ],
-    "margin": 36.76211532528532
+    "margin": 18.564500550747425
   },
   {
     "source": "windmill-5",
@@ -3433,7 +3428,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 7
+        "ticks": 4
       },
       {
         "direction": -1,
@@ -3446,7 +3441,7 @@
         "ticks": 17
       }
     ],
-    "margin": 46.995448658616624
+    "margin": 43.931167217415805
   },
   {
     "source": "windmill-6",
@@ -3468,7 +3463,7 @@
         "ticks": 16
       }
     ],
-    "margin": 44.586809141119375
+    "margin": 40.924531265612586
   },
   {
     "source": "windmill-7",
@@ -3477,7 +3472,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 12
+        "ticks": 11
       },
       {
         "direction": -1,
@@ -3490,7 +3485,7 @@
         "ticks": 21
       }
     ],
-    "margin": 139.78081987077394
+    "margin": 110.34721097764418
   },
   {
     "source": "windmill-8",
@@ -3499,7 +3494,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 47
+        "ticks": 42
       },
       {
         "direction": -1,
@@ -3512,7 +3507,7 @@
         "ticks": 20
       }
     ],
-    "margin": 140.05950622664068
+    "margin": 87.19487866948805
   },
   {
     "source": "windmill-9",
@@ -3534,17 +3529,12 @@
         "ticks": 20
       }
     ],
-    "margin": 144.259506226641
+    "margin": 92.89487866948826
   },
   {
     "source": "windmill-10",
     "target": "windmill-11",
     "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 6
-      },
       {
         "direction": -1,
         "held": true,
@@ -3556,7 +3546,7 @@
         "ticks": 18
       }
     ],
-    "margin": 42.059506226641105
+    "margin": 38.394878669488406
   },
   {
     "source": "windmill-11",
@@ -3565,7 +3555,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 3
+        "ticks": 5
       },
       {
         "direction": 1,
@@ -3578,33 +3568,11 @@
         "ticks": 17
       }
     ],
-    "margin": 30.995534273273393
+    "margin": 12.280296093175366
   },
   {
     "source": "windmill-12",
     "target": "windmill-13",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 3
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 31.733983423951145
-  },
-  {
-    "source": "windmill-13",
-    "target": "windmill-14",
     "actions": [
       {
         "direction": -1,
@@ -3619,10 +3587,32 @@
       {
         "direction": 1,
         "held": false,
+        "ticks": 17
+      }
+    ],
+    "margin": 35.695079165988204
+  },
+  {
+    "source": "windmill-13",
+    "target": "windmill-14",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 3
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": 1,
+        "held": false,
         "ticks": 16
       }
     ],
-    "margin": 42.87100190280421
+    "margin": 39.63854838671227
   },
   {
     "source": "windmill-14",
@@ -3644,7 +3634,7 @@
         "ticks": 17
       }
     ],
-    "margin": 39.18476039461859
+    "margin": 32.69980290297224
   },
   {
     "source": "windmill-15",
@@ -3666,7 +3656,7 @@
         "ticks": 17
       }
     ],
-    "margin": 41.3485729387146
+    "margin": 38.83353043036095
   },
   {
     "source": "windmill-16",
@@ -3688,7 +3678,7 @@
         "ticks": 16
       }
     ],
-    "margin": 22.4899027872774
+    "margin": 9.171682992485557
   },
   {
     "source": "windmill-17",
@@ -3697,12 +3687,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 8
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 1
+        "ticks": 6
       },
       {
         "direction": 1,
@@ -3715,12 +3700,17 @@
         "ticks": 17
       }
     ],
-    "margin": 27.86229670522664
+    "margin": 22.46165034081605
   },
   {
     "source": "windmill-18",
     "target": "windmill-19",
     "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 1
+      },
       {
         "direction": 1,
         "held": true,
@@ -3732,7 +3722,7 @@
         "ticks": 16
       }
     ],
-    "margin": 35.5048015721336
+    "margin": 34.536858624934666
   },
   {
     "source": "windmill-19",
@@ -3754,7 +3744,7 @@
         "ticks": 16
       }
     ],
-    "margin": 35.54654574602728
+    "margin": 13.680110204665084
   },
   {
     "source": "windmill-20",
@@ -3776,7 +3766,7 @@
         "ticks": 17
       }
     ],
-    "margin": 35.819576258315465
+    "margin": 31.717855055426753
   },
   {
     "source": "windmill-21",
@@ -3785,7 +3775,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 2
+        "ticks": 3
       },
       {
         "direction": -1,
@@ -3798,7 +3788,7 @@
         "ticks": 16
       }
     ],
-    "margin": 40.24709040835103
+    "margin": 38.78452172209359
   },
   {
     "source": "windmill-22",
@@ -3807,7 +3797,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 5
+        "ticks": 6
       },
       {
         "direction": 1,
@@ -3820,7 +3810,7 @@
         "ticks": 17
       }
     ],
-    "margin": 38.752909591648745
+    "margin": 32.84881161123997
   },
   {
     "source": "windmill-23",
@@ -3842,7 +3832,7 @@
         "ticks": 16
       }
     ],
-    "margin": 37.919576258316056
+    "margin": 15.182144944572656
   },
   {
     "source": "windmill-24",
@@ -3851,7 +3841,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 2
+        "ticks": 1
       },
       {
         "direction": 1,
@@ -3864,7 +3854,7 @@
         "ticks": 17
       }
     ],
-    "margin": 32.91195141037292
+    "margin": 23.861170260878794
   },
   {
     "source": "windmill-25",
@@ -3873,7 +3863,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 3
+        "ticks": 2
       },
       {
         "direction": -1,
@@ -3886,7 +3876,7 @@
         "ticks": 16
       }
     ],
-    "margin": 34.69899434457125
+    "margin": 13.384148716210916
   },
   {
     "source": "windmill-26",
@@ -3908,7 +3898,7 @@
         "ticks": 17
       }
     ],
-    "margin": 36.29974060685038
+    "margin": 30.29639237067795
   },
   {
     "source": "windmill-27",
@@ -3930,7 +3920,7 @@
         "ticks": 16
       }
     ],
-    "margin": 35.266926059816456
+    "margin": 15.229725704011116
   },
   {
     "source": "windmill-28",
@@ -3939,7 +3929,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 9
+        "ticks": 4
       },
       {
         "direction": 1,
@@ -3952,7 +3942,7 @@
         "ticks": 18
       }
     ],
-    "margin": 87.5669260598163
+    "margin": 48.23694096265547
   },
   {
     "source": "windmill-29",
@@ -3961,7 +3951,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 8
+        "ticks": 12
       },
       {
         "direction": -1,
@@ -3974,7 +3964,7 @@
         "ticks": 17
       }
     ],
-    "margin": 32.666407273516654
+    "margin": 26.970274295989213
   },
   {
     "source": "clouds-0",
@@ -3983,7 +3973,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 3
+        "ticks": 2
       },
       {
         "direction": -1,
@@ -3996,7 +3986,7 @@
         "ticks": 16
       }
     ],
-    "margin": 32.599740606850034
+    "margin": 24.596392370677492
   },
   {
     "source": "clouds-1",
@@ -4005,7 +3995,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 4
+        "ticks": 3
       },
       {
         "direction": 1,
@@ -4018,7 +4008,7 @@
         "ticks": 16
       }
     ],
-    "margin": 35.79974060685004
+    "margin": 32.33694096265583
   },
   {
     "source": "clouds-2",
@@ -4027,7 +4017,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 4
+        "ticks": 5
       },
       {
         "direction": 1,
@@ -4040,7 +4030,7 @@
         "ticks": 17
       }
     ],
-    "margin": 34.166407273516995
+    "margin": 13.663059037344453
   },
   {
     "source": "clouds-3",
@@ -4062,7 +4052,7 @@
         "ticks": 16
       }
     ],
-    "margin": 34.40025939315001
+    "margin": 32.90360762932255
   },
   {
     "source": "clouds-4",
@@ -4084,7 +4074,7 @@
         "ticks": 16
       }
     ],
-    "margin": 31.533073940183783
+    "margin": 24.029725704011184
   },
   {
     "source": "clouds-5",
@@ -4106,7 +4096,7 @@
         "ticks": 17
       }
     ],
-    "margin": 33.9669260598165
+    "margin": 32.9702742959891
   },
   {
     "source": "clouds-6",
@@ -4128,55 +4118,11 @@
         "ticks": 16
       }
     ],
-    "margin": 33.900259393149554
+    "margin": 30.096392370677847
   },
   {
     "source": "clouds-7",
     "target": "clouds-8",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 6
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 17
-      }
-    ],
-    "margin": 33.73307394018343
-  },
-  {
-    "source": "clouds-8",
-    "target": "clouds-9",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 6
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 18
-      }
-    ],
-    "margin": 30.966926059817297
-  },
-  {
-    "source": "clouds-9",
-    "target": "clouds-10",
     "actions": [
       {
         "direction": -1,
@@ -4191,10 +4137,54 @@
       {
         "direction": 1,
         "held": false,
+        "ticks": 17
+      }
+    ],
+    "margin": 31.40360762932255
+  },
+  {
+    "source": "clouds-8",
+    "target": "clouds-9",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 7
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 18
+      }
+    ],
+    "margin": 26.970274295989952
+  },
+  {
+    "source": "clouds-9",
+    "target": "clouds-10",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 4
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": 1,
+        "held": false,
         "ticks": 20
       }
     ],
-    "margin": 185.53307394018202
+    "margin": 177.10360762932396
   },
   {
     "source": "clouds-10",
@@ -4203,7 +4193,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 44
+        "ticks": 41
       },
       {
         "direction": 1,
@@ -4216,7 +4206,7 @@
         "ticks": 21
       }
     ],
-    "margin": 174.16640727351228
+    "margin": 147.92972570400661
   },
   {
     "source": "clouds-11",
@@ -4225,7 +4215,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 42
+        "ticks": 41
       },
       {
         "direction": 1,
@@ -4238,7 +4228,7 @@
         "ticks": 20
       }
     ],
-    "margin": 140.39974060684267
+    "margin": 99.79639237067045
   },
   {
     "source": "clouds-12",
@@ -4247,7 +4237,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 31
+        "ticks": 34
       },
       {
         "direction": 1,
@@ -4260,7 +4250,7 @@
         "ticks": 19
       }
     ],
-    "margin": 32.93307394017029
+    "margin": 29.92972570399752
   },
   {
     "source": "clouds-13",
@@ -4282,7 +4272,7 @@
         "ticks": 16
       }
     ],
-    "margin": 29.2330739401732
+    "margin": 22.22972570400043
   },
   {
     "source": "clouds-14",
@@ -4304,16 +4294,16 @@
         "ticks": 16
       }
     ],
-    "margin": 32.39974060684017
+    "margin": 11.8963923706674
   },
   {
     "source": "clouds-15",
     "target": "clouds-16",
     "actions": [
       {
-        "direction": 1,
+        "direction": -1,
         "held": false,
-        "ticks": 1
+        "ticks": 2
       },
       {
         "direction": 1,
@@ -4326,7 +4316,7 @@
         "ticks": 17
       }
     ],
-    "margin": 29.915547042372054
+    "margin": 8.59499825396324
   },
   {
     "source": "clouds-16",
@@ -4335,7 +4325,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 6
+        "ticks": 2
       },
       {
         "direction": 1,
@@ -4348,7 +4338,7 @@
         "ticks": 16
       }
     ],
-    "margin": 15.756546510290264
+    "margin": 25.927317498795674
   },
   {
     "source": "clouds-17",
@@ -4357,7 +4347,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 8
+        "ticks": 5
       },
       {
         "direction": -1,
@@ -4370,7 +4360,7 @@
         "ticks": 16
       }
     ],
-    "margin": 30.023213176960326
+    "margin": 26.760650832125975
   },
   {
     "source": "clouds-18",
@@ -4392,7 +4382,7 @@
         "ticks": 17
       }
     ],
-    "margin": 29.423213176960644
+    "margin": 23.860650832125657
   },
   {
     "source": "clouds-19",
@@ -4414,7 +4404,7 @@
         "ticks": 16
       }
     ],
-    "margin": 29.776786823040993
+    "margin": 25.060650832127294
   },
   {
     "source": "clouds-20",
@@ -4436,7 +4426,7 @@
         "ticks": 16
       }
     ],
-    "margin": 25.943453489705917
+    "margin": 9.227317498792218
   },
   {
     "source": "clouds-21",
@@ -4458,7 +4448,7 @@
         "ticks": 16
       }
     ],
-    "margin": 27.6232131769616
+    "margin": 26.160650832124702
   },
   {
     "source": "clouds-22",
@@ -4480,7 +4470,7 @@
         "ticks": 17
       }
     ],
-    "margin": 29.876786823041584
+    "margin": 26.160650832127885
   },
   {
     "source": "clouds-23",
@@ -4489,7 +4479,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 5
+        "ticks": 4
       },
       {
         "direction": -1,
@@ -4502,7 +4492,7 @@
         "ticks": 16
       }
     ],
-    "margin": 28.210120156371886
+    "margin": 25.139349167875025
   },
   {
     "source": "clouds-24",
@@ -4524,7 +4514,7 @@
         "ticks": 17
       }
     ],
-    "margin": 28.310120156371795
+    "margin": 25.539349167875116
   },
   {
     "source": "clouds-25",
@@ -4546,7 +4536,7 @@
         "ticks": 16
       }
     ],
-    "margin": 25.510120156373432
+    "margin": 24.83934916787348
   },
   {
     "source": "clouds-26",
@@ -4568,7 +4558,7 @@
         "ticks": 16
       }
     ],
-    "margin": 23.676786823038356
+    "margin": 20.172682501208556
   },
   {
     "source": "clouds-27",
@@ -4577,7 +4567,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 3
+        "ticks": 2
       },
       {
         "direction": 1,
@@ -4590,7 +4580,7 @@
         "ticks": 16
       }
     ],
-    "margin": 24.389879843628933
+    "margin": 17.39398416545737
   },
   {
     "source": "clouds-28",
@@ -4599,7 +4589,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 6
+        "ticks": 5
       },
       {
         "direction": 1,
@@ -4612,7 +4602,7 @@
         "ticks": 18
       }
     ],
-    "margin": 81.81012015637452
+    "margin": 60.72731749879404
   },
   {
     "source": "clouds-29",
@@ -4621,7 +4611,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 1
+        "ticks": 3
       },
       {
         "direction": -1,
@@ -4634,7 +4624,7 @@
         "ticks": 17
       }
     ],
-    "margin": 36.51012015637207
+    "margin": 30.839349167874843
   },
   {
     "source": "frozen-0",
@@ -4657,6 +4647,11 @@
       },
       {
         "direction": -1,
+        "held": false,
+        "ticks": 1
+      },
+      {
+        "direction": -1,
         "held": true,
         "ticks": 24
       },
@@ -4666,7 +4661,7 @@
         "ticks": 17
       }
     ],
-    "margin": 26.545435399182452
+    "margin": 24.46157139009574
   },
   {
     "source": "frozen-1",
@@ -4688,7 +4683,7 @@
         "ticks": 16
       }
     ],
-    "margin": 23.154564600819185
+    "margin": 20.238428609905895
   },
   {
     "source": "frozen-2",
@@ -4710,7 +4705,7 @@
         "ticks": 16
       }
     ],
-    "margin": 23.32123126748411
+    "margin": 20.40509527657082
   },
   {
     "source": "frozen-3",
@@ -4732,7 +4727,7 @@
         "ticks": 16
       }
     ],
-    "margin": 38.24543539918409
+    "margin": 33.16157139009738
   },
   {
     "source": "frozen-4",
@@ -4769,7 +4764,7 @@
         "ticks": 17
       }
     ],
-    "margin": 21.14543539918259
+    "margin": 7.061571390095651
   },
   {
     "source": "frozen-5",
@@ -4778,7 +4773,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 5
+        "ticks": 3
       },
       {
         "direction": -1,
@@ -4791,7 +4786,7 @@
         "ticks": 16
       }
     ],
-    "margin": 22.31210206584751
+    "margin": 10.494904723427453
   },
   {
     "source": "frozen-6",
@@ -4800,7 +4795,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 2
+        "ticks": 4
       },
       {
         "direction": -1,
@@ -4813,7 +4808,7 @@
         "ticks": 17
       }
     ],
-    "margin": 24.096237366142304
+    "margin": 21.653007409794782
   },
   {
     "source": "frozen-7",
@@ -4822,7 +4817,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 6
+        "ticks": 5
       },
       {
         "direction": -1,
@@ -4835,7 +4830,7 @@
         "ticks": 20
       }
     ],
-    "margin": 106.71574060766739
+    "margin": 91.48632755189078
   },
   {
     "source": "frozen-8",
@@ -4844,7 +4839,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 59
+        "ticks": 57
       },
       {
         "direction": -1,
@@ -4857,7 +4852,7 @@
         "ticks": 20
       }
     ],
-    "margin": 165.82189134505848
+    "margin": 145.7383202419436
   },
   {
     "source": "frozen-9",
@@ -4866,7 +4861,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 48
+        "ticks": 49
       },
       {
         "direction": -1,
@@ -4879,7 +4874,7 @@
         "ticks": 20
       }
     ],
-    "margin": 161.75522467839232
+    "margin": 140.03832024194406
   },
   {
     "source": "frozen-10",
@@ -4888,7 +4883,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 21
+        "ticks": 19
       },
       {
         "direction": -1,
@@ -4901,7 +4896,7 @@
         "ticks": 18
       }
     ],
-    "margin": 37.94477532160761
+    "margin": 14.92834642472252
   },
   {
     "source": "frozen-11",
@@ -4920,12 +4915,12 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 6
+        "ticks": 5
       },
       {
         "direction": 1,
         "held": false,
-        "ticks": 1
+        "ticks": 2
       },
       {
         "direction": 1,
@@ -4938,33 +4933,11 @@
         "ticks": 16
       }
     ],
-    "margin": 19.29966912283669
+    "margin": 14.560542464166247
   },
   {
     "source": "frozen-12",
     "target": "frozen-13",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 3
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 16
-      }
-    ],
-    "margin": 18.23300245616997
-  },
-  {
-    "source": "frozen-13",
-    "target": "frozen-14",
     "actions": [
       {
         "direction": -1,
@@ -4982,7 +4955,29 @@
         "ticks": 16
       }
     ],
-    "margin": 21.490512160649246
+    "margin": 14.139457535833799
+  },
+  {
+    "source": "frozen-13",
+    "target": "frozen-14",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 3
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 18.232646274339572
   },
   {
     "source": "frozen-14",
@@ -4991,7 +4986,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 5
+        "ticks": 4
       },
       {
         "direction": -1,
@@ -5004,7 +4999,7 @@
         "ticks": 16
       }
     ],
-    "margin": 38.49755749243684
+    "margin": 34.901302493021376
   },
   {
     "source": "frozen-15",
@@ -5023,7 +5018,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 4
+        "ticks": 5
       },
       {
         "direction": -1,
@@ -5041,7 +5036,7 @@
         "ticks": 16
       }
     ],
-    "margin": 19.29133139645205
+    "margin": 18.676475284756407
   },
   {
     "source": "frozen-16",
@@ -5063,7 +5058,7 @@
         "ticks": 16
       }
     ],
-    "margin": 18.091331396451892
+    "margin": 6.376475284756566
   },
   {
     "source": "frozen-17",
@@ -5072,7 +5067,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 5
+        "ticks": 2
       },
       {
         "direction": 1,
@@ -5085,7 +5080,7 @@
         "ticks": 16
       }
     ],
-    "margin": 18.92466472978532
+    "margin": 2.9431419514230583
   },
   {
     "source": "frozen-18",
@@ -5094,7 +5089,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 3
+        "ticks": 6
       },
       {
         "direction": 1,
@@ -5107,7 +5102,7 @@
         "ticks": 16
       }
     ],
-    "margin": 15.991331396452097
+    "margin": 14.023524715243639
   },
   {
     "source": "frozen-19",
@@ -5116,7 +5111,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 3
+        "ticks": 4
       },
       {
         "direction": 1,
@@ -5129,7 +5124,7 @@
         "ticks": 16
       }
     ],
-    "margin": 36.39701661012589
+    "margin": 30.73713434937224
   },
   {
     "source": "frozen-20",
@@ -5148,7 +5143,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 5
+        "ticks": 6
       },
       {
         "direction": -1,
@@ -5166,7 +5161,7 @@
         "ticks": 16
       }
     ],
-    "margin": 16.714083808660803
+    "margin": 12.890103593859408
   },
   {
     "source": "frozen-21",
@@ -5188,7 +5183,7 @@
         "ticks": 16
       }
     ],
-    "margin": 15.852582858005917
+    "margin": 10.45677026052607
   },
   {
     "source": "frozen-22",
@@ -5210,7 +5205,7 @@
         "ticks": 16
       }
     ],
-    "margin": 16.34741714199413
+    "margin": 12.256770260525968
   },
   {
     "source": "frozen-23",
@@ -5232,7 +5227,7 @@
         "ticks": 16
       }
     ],
-    "margin": 14.437020984288097
+    "margin": 10.98860157061074
   },
   {
     "source": "frozen-24",
@@ -5241,7 +5236,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 3
+        "ticks": 4
       },
       {
         "direction": 1,
@@ -5254,7 +5249,7 @@
         "ticks": 16
       }
     ],
-    "margin": 13.527412178941859
+    "margin": 14.23025437832905
   },
   {
     "source": "frozen-25",
@@ -5276,7 +5271,7 @@
         "ticks": 16
       }
     ],
-    "margin": 12.271062979009457
+    "margin": 12.295407180709049
   },
   {
     "source": "frozen-26",
@@ -5298,7 +5293,7 @@
         "ticks": 16
       }
     ],
-    "margin": 12.419211388657004
+    "margin": 6.482362194033499
   },
   {
     "source": "frozen-27",
@@ -5307,7 +5302,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 3
+        "ticks": 4
       },
       {
         "direction": -1,
@@ -5320,7 +5315,7 @@
         "ticks": 16
       }
     ],
-    "margin": 14.852544721990284
+    "margin": 14.782362194033453
   },
   {
     "source": "frozen-28",
@@ -5342,7 +5337,7 @@
         "ticks": 18
       }
     ],
-    "margin": 59.61412194467641
+    "margin": 48.684304472633244
   },
   {
     "source": "frozen-29",
@@ -5364,7 +5359,7 @@
         "ticks": 17
       }
     ],
-    "margin": 13.31921138865647
+    "margin": 11.749028860699639
   },
   {
     "source": "celestial-0",
@@ -5386,7 +5381,7 @@
         "ticks": 16
       }
     ],
-    "margin": 14.252544721989821
+    "margin": 12.317637805966996
   },
   {
     "source": "celestial-1",
@@ -5395,24 +5390,46 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 4
+        "ticks": 1
       },
       {
         "direction": 1,
         "held": true,
-        "ticks": 24
+        "ticks": 23
       },
       {
         "direction": 1,
         "held": false,
-        "ticks": 16
+        "ticks": 15
       }
     ],
-    "margin": 12.952544721989796
+    "margin": 3.6843044726336984
   },
   {
     "source": "celestial-2",
     "target": "celestial-3",
+    "actions": [
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 2
+      },
+      {
+        "direction": 1,
+        "held": true,
+        "ticks": 20
+      },
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 15
+      }
+    ],
+    "margin": 11.417637805966763
+  },
+  {
+    "source": "celestial-3",
+    "target": "celestial-4",
     "actions": [
       {
         "direction": -1,
@@ -5430,29 +5447,7 @@
         "ticks": 16
       }
     ],
-    "margin": 7.980788611343257
-  },
-  {
-    "source": "celestial-3",
-    "target": "celestial-4",
-    "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 4
-      },
-      {
-        "direction": 1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 16
-      }
-    ],
-    "margin": 13.28078861134361
+    "margin": 12.35097113930044
   },
   {
     "source": "celestial-4",
@@ -5474,7 +5469,7 @@
         "ticks": 16
       }
     ],
-    "margin": 10.652544721990125
+    "margin": 6.582362194033294
   },
   {
     "source": "celestial-5",
@@ -5483,20 +5478,20 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 4
+        "ticks": 3
       },
       {
         "direction": -1,
         "held": true,
-        "ticks": 24
+        "ticks": 23
       },
       {
         "direction": -1,
         "held": false,
-        "ticks": 16
+        "ticks": 15
       }
     ],
-    "margin": 7.452544721989852
+    "margin": 11.817637805966967
   },
   {
     "source": "celestial-6",
@@ -5505,7 +5500,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 1
+        "ticks": 3
       },
       {
         "direction": 1,
@@ -5518,7 +5513,7 @@
         "ticks": 16
       }
     ],
-    "margin": 11.747455278009852
+    "margin": 9.24902886069998
   },
   {
     "source": "celestial-7",
@@ -5527,7 +5522,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 4
+        "ticks": 3
       },
       {
         "direction": 1,
@@ -5540,7 +5535,7 @@
         "ticks": 16
       }
     ],
-    "margin": 14.047455278010261
+    "margin": 10.684304472633698
   },
   {
     "source": "celestial-8",
@@ -5562,7 +5557,7 @@
         "ticks": 17
       }
     ],
-    "margin": 12.68078861134427
+    "margin": 8.817637805967706
   },
   {
     "source": "celestial-9",
@@ -5584,7 +5579,7 @@
         "ticks": 20
       }
     ],
-    "margin": 141.81412194467816
+    "margin": 111.4509711393016
   },
   {
     "source": "celestial-10",
@@ -5593,7 +5588,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 33
+        "ticks": 26
       },
       {
         "direction": 1,
@@ -5606,7 +5601,7 @@
         "ticks": 20
       }
     ],
-    "margin": 126.11921138865318
+    "margin": 72.41569552736382
   },
   {
     "source": "celestial-11",
@@ -5615,7 +5610,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 43
+        "ticks": 44
       },
       {
         "direction": 1,
@@ -5628,7 +5623,7 @@
         "ticks": 20
       }
     ],
-    "margin": 133.71921138865014
+    "margin": 91.88236219402734
   },
   {
     "source": "celestial-12",
@@ -5637,7 +5632,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 24
+        "ticks": 29
       },
       {
         "direction": 1,
@@ -5650,7 +5645,7 @@
         "ticks": 19
       }
     ],
-    "margin": 10.814121944686576
+    "margin": 10.682362194023426
   },
   {
     "source": "celestial-13",
@@ -5672,7 +5667,7 @@
         "ticks": 16
       }
     ],
-    "margin": 11.11921138864841
+    "margin": 8.115695527358412
   },
   {
     "source": "celestial-14",
@@ -5681,20 +5676,20 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 4
+        "ticks": 3
       },
       {
         "direction": -1,
         "held": true,
-        "ticks": 24
+        "ticks": 21
       },
       {
         "direction": -1,
         "held": false,
-        "ticks": 16
+        "ticks": 15
       }
     ],
-    "margin": 5.919211388646772
+    "margin": 9.215695527356957
   },
   {
     "source": "celestial-15",
@@ -5708,25 +5703,20 @@
       {
         "direction": 1,
         "held": true,
-        "ticks": 24
+        "ticks": 23
       },
       {
         "direction": 1,
         "held": false,
-        "ticks": 16
+        "ticks": 15
       }
     ],
-    "margin": 5.254398607599114
+    "margin": 2.9438346008389544
   },
   {
     "source": "celestial-16",
     "target": "celestial-17",
     "actions": [
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 5
-      },
       {
         "direction": 1,
         "held": true,
@@ -5738,11 +5728,55 @@
         "ticks": 16
       }
     ],
-    "margin": 3.0492562126801204
+    "margin": 2.6666830290405414
   },
   {
     "source": "celestial-17",
     "target": "celestial-18",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 3
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 23
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 15
+      }
+    ],
+    "margin": 9.26668302904227
+  },
+  {
+    "source": "celestial-18",
+    "target": "celestial-19",
+    "actions": [
+      {
+        "direction": 1,
+        "held": false,
+        "ticks": 3
+      },
+      {
+        "direction": -1,
+        "held": true,
+        "ticks": 24
+      },
+      {
+        "direction": -1,
+        "held": false,
+        "ticks": 16
+      }
+    ],
+    "margin": 7.299983637625928
+  },
+  {
+    "source": "celestial-19",
+    "target": "celestial-20",
     "actions": [
       {
         "direction": 1,
@@ -5760,51 +5794,7 @@
         "ticks": 15
       }
     ],
-    "margin": 9.68258954601174
-  },
-  {
-    "source": "celestial-18",
-    "target": "celestial-19",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 2
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 16
-      }
-    ],
-    "margin": 8.884077120653501
-  },
-  {
-    "source": "celestial-19",
-    "target": "celestial-20",
-    "actions": [
-      {
-        "direction": 1,
-        "held": false,
-        "ticks": 3
-      },
-      {
-        "direction": -1,
-        "held": true,
-        "ticks": 24
-      },
-      {
-        "direction": -1,
-        "held": false,
-        "ticks": 16
-      }
-    ],
-    "margin": 4.317410453985303
+    "margin": 7.0666830290394955
   },
   {
     "source": "celestial-20",
@@ -5813,7 +5803,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 1
+        "ticks": 2
       },
       {
         "direction": 1,
@@ -5826,7 +5816,7 @@
         "ticks": 15
       }
     ],
-    "margin": 8.04925621268012
+    "margin": 4.666650304292489
   },
   {
     "source": "celestial-21",
@@ -5835,7 +5825,7 @@
       {
         "direction": -1,
         "held": false,
-        "ticks": 3
+        "ticks": 2
       },
       {
         "direction": 1,
@@ -5848,7 +5838,7 @@
         "ticks": 16
       }
     ],
-    "margin": 9.017410453988077
+    "margin": 3.2333169709577305
   },
   {
     "source": "celestial-22",
@@ -5862,15 +5852,15 @@
       {
         "direction": 1,
         "held": true,
-        "ticks": 24
+        "ticks": 21
       },
       {
         "direction": 1,
         "held": false,
-        "ticks": 16
+        "ticks": 15
       }
     ],
-    "margin": 2.0492562126796656
+    "margin": 7.466650304292216
   },
   {
     "source": "celestial-23",
@@ -5879,7 +5869,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 1
+        "ticks": 2
       },
       {
         "direction": -1,
@@ -5892,7 +5882,7 @@
         "ticks": 15
       }
     ],
-    "margin": 7.682589546011286
+    "margin": 5.766683029042724
   },
   {
     "source": "celestial-24",
@@ -5914,7 +5904,7 @@
         "ticks": 16
       }
     ],
-    "margin": 7.884077120653956
+    "margin": 3.833349695707966
   },
   {
     "source": "celestial-25",
@@ -5923,20 +5913,20 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 3
+        "ticks": 2
       },
       {
         "direction": -1,
         "held": true,
-        "ticks": 24
+        "ticks": 23
       },
       {
         "direction": -1,
         "held": false,
-        "ticks": 16
+        "ticks": 15
       }
     ],
-    "margin": 3.317410453985758
+    "margin": 5.93331697096005
   },
   {
     "source": "celestial-26",
@@ -5945,7 +5935,7 @@
       {
         "direction": 1,
         "held": false,
-        "ticks": 3
+        "ticks": 2
       },
       {
         "direction": -1,
@@ -5958,7 +5948,7 @@
         "ticks": 15
       }
     ],
-    "margin": 5.917410453984303
+    "margin": 6.3000163623719345
   },
   {
     "source": "celestial-27",
@@ -5980,7 +5970,7 @@
         "ticks": 16
       }
     ],
-    "margin": 6.850743787316105
+    "margin": 7.233349695703737
   },
   {
     "source": "celestial-28",
@@ -6002,7 +5992,7 @@
         "ticks": 18
       }
     ],
-    "margin": 33.58407712064786
+    "margin": 14.466683029035494
   },
   {
     "source": "celestial-29",
@@ -6024,7 +6014,7 @@
         "ticks": 17
       }
     ],
-    "margin": 6.682589546022427
+    "margin": 6.299983637634796
   },
   {
     "source": "summit-0",
@@ -6046,7 +6036,7 @@
         "ticks": 16
       }
     ],
-    "margin": 4.884077120644633
+    "margin": 5.266683029032265
   },
   {
     "source": "summit-1",
@@ -6068,7 +6058,7 @@
         "ticks": 15
       }
     ],
-    "margin": 5.017410453977391
+    "margin": 5.400016362365022
   },
   {
     "source": "summit-2",
@@ -6090,7 +6080,7 @@
         "ticks": 15
       }
     ],
-    "margin": 4.715922879355048
+    "margin": 4.333316970967417
   },
   {
     "source": "summit-3",
@@ -6112,7 +6102,7 @@
         "ticks": 16
       }
     ],
-    "margin": 2.78258954602029
+    "margin": 2.3999836376326584
   },
   {
     "source": "summit-4",
@@ -6129,7 +6119,7 @@
         "ticks": 15
       }
     ],
-    "margin": 2.217410453978573
+    "margin": 2.6000163623662047
   },
   {
     "source": "summit-5",
@@ -6146,7 +6136,7 @@
         "ticks": 14
       }
     ],
-    "margin": 4.384077120644292
+    "margin": 4.233316970968076
   },
   {
     "source": "summit-6",
@@ -6163,7 +6153,7 @@
         "ticks": 15
       }
     ],
-    "margin": 2.8840771206453155
+    "margin": 3.266683029032947
   },
   {
     "source": "summit-7",
@@ -6185,7 +6175,7 @@
         "ticks": 15
       }
     ],
-    "margin": 2.482589546020108
+    "margin": 2.0999836376324765
   },
   {
     "source": "summit-8",
@@ -6202,7 +6192,7 @@
         "ticks": 14
       }
     ],
-    "margin": 1.8159228793545026
+    "margin": 1.433316970966871
   },
   {
     "source": "summit-9",
@@ -6224,6 +6214,6 @@
         "ticks": 12
       }
     ],
-    "margin": 52.68258954602106
+    "margin": 47.29998363763343
   }
 ]
