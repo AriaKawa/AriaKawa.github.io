@@ -6,7 +6,8 @@ export type Wallet={gold:number;owned:string[];rewards:string[];spinPoints:numbe
 export function wallet():Wallet {try{const w=JSON.parse(localStorage.getItem(KEY)||'null');if(w&&Number.isSafeInteger(w.gold)&&w.gold>=0&&Array.isArray(w.owned)&&Array.isArray(w.rewards))return {...w,spinPoints:Number.isSafeInteger(w.spinPoints)&&w.spinPoints>=0?w.spinPoints%3:0,freeSpins:Number.isSafeInteger(w.freeSpins)&&w.freeSpins>=0?w.freeSpins:0};}catch{}return {gold:0,owned:[],rewards:[],spinPoints:0,freeSpins:0};}
 function persist(w:Wallet):boolean {try{localStorage.setItem(KEY,JSON.stringify(w));return true;}catch{return false;}}
 function addSpinPoint(w:Wallet):void {w.spinPoints++;if(w.spinPoints>=3){w.freeSpins++;w.spinPoints-=3;}}
-export function rewardSpinPoint(round:string):boolean {
+export function rewardSpinPoint(round:string,place:number):boolean {
+ if(!Number.isInteger(place)||place<1||place>15)return false;
  const w=wallet(),receipt='spin-point:'+round;if(w.rewards.includes(receipt))return false;
  addSpinPoint(w);w.rewards.push(receipt);return persist(w);
 }

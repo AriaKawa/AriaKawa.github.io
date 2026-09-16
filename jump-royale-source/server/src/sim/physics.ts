@@ -15,6 +15,8 @@ export interface WorldBounds { left:number; right:number; top:number; bounce?:nu
 const SHAFT_BOUNDS:WorldBounds={left:SHAFT_LEFT,right:SHAFT_RIGHT,top:0};
 export function stepPlayer(player: PlayerState, platforms: Platform[], dt: number, bounds:WorldBounds=SHAFT_BOUNDS): void {
   if (!player.alive) return;
+  const forest=!!platforms[0]?.forest;
+  if(forest)bounds={...worldForMap('forest'),...bounds,left:54,right:worldForMap('forest').right};
   const mountain=!!platforms[0]?.mountain;
   if(mountain)bounds={...worldForMap('mountain'),...bounds,left:54,right:worldForMap('mountain').right};
   // Each climber owns their collapse timers; never mutate the shared level.
@@ -138,5 +140,5 @@ export function stepPlayer(player: PlayerState, platforms: Platform[], dt: numbe
       player.groundedPlatformId = undefined;
     }
   }
-  player.maxHeight = Math.max(player.maxHeight, Math.max(0, (mountain?worldForMap('mountain').spawnY:SPAWN_Y) - player.y));
+  player.maxHeight = Math.max(player.maxHeight, Math.max(0, (forest?worldForMap('forest').spawnY:mountain?worldForMap('mountain').spawnY:SPAWN_Y) - player.y));
 }

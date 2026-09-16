@@ -28,3 +28,7 @@ All Long Mountain environment art is AI-generated: ten matching backgrounds, for
 `npm run test:mountain` uses actual 30 Hz physics, continuous walking and charging, moving surfaces, wind, ice, recovery exits, private collapse, secret/rotor access and expert bots. `npm run test:browser:mountain` expects hosted dev at port 5215. It uses real keyboard input first, then replays the entire course through the actual hosted client with an accelerated clock and no teleports. The online test expects a server on 2575 and Vite with `VITE_SERVER_URL=ws://127.0.0.1:2575` on port 5216. Browser scripts use the local bundled Playwright path; adjust that import for other machines.
 
 See [world design and measured validation](docs/vertical-world.md). The `debugWorld` URL parameter displays surface edges and IDs; normal gameplay hides these.
+
+## Moonveil Forest
+
+A new 16-bit nighttime forest with a 2,560 × 14,400 world, horizontal camera tracking, 119 primary jumps and 14 alternate trails. Details and checks: [Moonveil Forest](docs/moonveil-forest.md). Match loot points now require a final top-15 placement. Elimination and early departure do not award a point.

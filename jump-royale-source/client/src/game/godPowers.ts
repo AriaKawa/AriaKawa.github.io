@@ -5,7 +5,7 @@ import type { Platform, PlayerState } from "../../../server/src/sim/types";
 
 /** Flight belongs only to the local practice client; multiplayer input cannot enable it. */
 export function landPlayer(player: PlayerState, platforms: Platform[]): void {
-  const bounds=worldForMap(platforms[0]?.mountain?'mountain':'forge');
+  const bounds=worldForMap(platforms[0]?.forest?'forest':platforms[0]?.mountain?'mountain':'forge');
   const fits = (x: number, y: number) => !platforms.some(p => solidBoxes(p).some(b =>
     x < b.x + b.w && x + PLAYER_WIDTH > b.x && y < b.y + b.h && y + PLAYER_HEIGHT > b.y + .01));
   const below = platforms.filter(p => p.y >= player.y + PLAYER_HEIGHT - 1 &&

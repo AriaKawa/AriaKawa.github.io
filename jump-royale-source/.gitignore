@@ -55,3 +55,7 @@
 
 !/scripts/test-ui-polish.mjs
 !/docs/platform-asset.md
+
+!/scripts/test-forest.ts
+!/scripts/browser-forest.mjs
+!/docs/moonveil-forest.md

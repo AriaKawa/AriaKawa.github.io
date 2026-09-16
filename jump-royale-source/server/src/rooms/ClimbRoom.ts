@@ -181,7 +181,7 @@ export class ClimbRoom extends Room {
         }
       }
 
-      const winner = selectWinner([...this.players.values()], this.mapId==='mountain'?0:elapsed);
+      const winner = selectWinner([...this.players.values()], (this.mapId==='mountain'||this.mapId==='forest')?0:elapsed);
       if (winner) {
         this.phase = "surge";
         this.surgeStartY=this.hazardY;

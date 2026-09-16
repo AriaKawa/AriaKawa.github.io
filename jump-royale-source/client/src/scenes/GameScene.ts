@@ -1,3 +1,4 @@
+import {drawForest,renderForestTerrain,forestWater} from '../game/forestArt';
 import { footOrigin } from '../game/spriteFeet';
 import { rankPlayers } from '../../../server/src/sim/round';
 import {rewardSpinPoint} from '../game/economy';
@@ -54,10 +55,11 @@ export class GameScene extends Phaser.Scene {
   private goldEarned=0;
   private godPanel?: HTMLDivElement;
   private get world(){return worldForMap(this.mapId);}
+  private get wideWorld(){return this.world.width>WORLD_WIDTH;}
   private get worldHeight(){return this.world.height;}
   private mapId: MapId = "forge";
   private jungleBackground?: Phaser.GameObjects.Image;
-  private get hazardLabel(): string { if(this.mapId==="mountain")return "FLOOD"; return this.mapId === "snow" ? "BLIZZARD" : this.mapId === "jungle" ? "FLOOD" : "LAVA"; }
+  private get hazardLabel(): string { if(this.mapId==="mountain"||this.mapId==='forest')return "FLOOD"; return this.mapId === "snow" ? "BLIZZARD" : this.mapId === "jungle" ? "FLOOD" : "LAVA"; }
   private backdrop?: Phaser.GameObjects.Image;
   private hudObjects: Phaser.GameObjects.GameObject[] = [];
   private client = new GameClient();
@@ -112,7 +114,7 @@ export class GameScene extends Phaser.Scene {
     this.toastY = 116;
     this.artV2 = this.registry.get("artV2") as ArtAvailability;
     this.cameras.main.setBackgroundColor("#0b0810");
-    this.cameras.main.setBounds(this.mapId==='mountain'?0:-(GAME_WIDTH-WORLD_WIDTH)/2, 0, this.mapId==='mountain'?this.world.width:GAME_WIDTH, this.worldHeight);
+    this.cameras.main.setBounds(this.wideWorld?0:-(GAME_WIDTH-WORLD_WIDTH)/2, 0, this.wideWorld?this.world.width:GAME_WIDTH, this.worldHeight);
     this.cameras.main.scrollX = -(GAME_WIDTH-WORLD_WIDTH)/2;
     this.drawWorldBackdrop();
     this.createHazard();
@@ -126,7 +128,7 @@ export class GameScene extends Phaser.Scene {
     this.client.on("leave", () => { this.hud?.phase.setText("DISCONNECTED\nPress ESC for settings").setVisible(true); });
     this.client.on<LevelMessage>("level", (level) => this.drawLevel(level));
     this.client.on<Snapshot>("snapshot", (snapshot) => this.applySnapshot(snapshot));
-    this.client.on<{ id: string; name: string }>("eliminated", (message) => this.showToast(`${preferences.names?message.name:'A climber'} ${this.mapId === "snow" ? "was caught by the blizzard" : (this.mapId === "jungle" || this.mapId === "mountain") ? "was swept away by the flood" : "was claimed by the forge"}`));
+    this.client.on<{ id: string; name: string }>("eliminated", (message) => this.showToast(`${preferences.names?message.name:'A climber'} ${this.mapId === "snow" ? "was caught by the blizzard" : (this.mapId === "jungle" || this.mapId === "mountain" || this.mapId === 'forest') ? "was swept away by the flood" : "was claimed by the forge"}`));
     void this.connect();
     this.removeSettings=createSettings(document.getElementById("game")!,undefined,()=>this.leaveWithScoreboard());
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => { this.removeSettings?.(); this.nativeText?.destroy();audio.lavaDistance(0);this.deathUi?.remove();this.deathUi=undefined;this.godPanel?.remove(); this.godPanel=undefined; void this.client.disconnect(); });
@@ -147,7 +149,7 @@ export class GameScene extends Phaser.Scene {
       const travel=Math.max(0,this.jungleBackground.displayHeight-GAME_HEIGHT);
       this.jungleBackground.y=-Phaser.Math.Clamp(this.cameras.main.scrollY/(this.worldHeight-GAME_HEIGHT),0,1)*travel;
     }
-    if(this.mapId==='mountain'){
+    if(this.wideWorld){
       const camera=this.cameras.main,collapse=this.snapshot?.players.find(p=>p.id===this.localId)?.crumblingPlatforms;
       for(const [id,c] of this.platformEntities)c.setVisible(c.y>camera.scrollY-280&&c.y<camera.scrollY+GAME_HEIGHT+100&&c.x<camera.scrollX+GAME_WIDTH+400&&c.x+(c.getData('width')??500)>camera.scrollX&&collapse?.[id]!==0);
       this.flood?.setX(camera.scrollX).setDisplaySize(GAME_WIDTH,GAME_HEIGHT+160);
@@ -168,13 +170,14 @@ export class GameScene extends Phaser.Scene {
         const checkbox=this.godPanel.querySelector("input")!;
         checkbox.addEventListener("change",()=>{ this.client.setGodPowers(checkbox.checked); checkbox.blur(); });
       }
-      this.hud?.phase.setText(this.mapId === "mountain" ? "ENTERING THE MOUNTAIN..." : this.mapId === "snow" ? "ENTERING FROSTPEAK..." : this.mapId === "jungle" ? "ENTERING THE JUNGLE..." : "WAITING FOR THE FORGE...");
+      this.hud?.phase.setText(this.mapId === 'forest' ? 'ENTERING MOONVEIL FOREST...' : this.mapId === "mountain" ? "ENTERING THE MOUNTAIN..." : this.mapId === "snow" ? "ENTERING FROSTPEAK..." : this.mapId === "jungle" ? "ENTERING THE JUNGLE..." : "WAITING FOR THE FORGE...");
     } catch {
       this.hud?.phase.setText("CONNECTION LOST\nPress ESC for settings").setColor("#ff8f73");
     }
   }
 
   private drawWorldBackdrop(): void {
+    if(this.mapId==='forest'){drawForest(this);return;}
     if(this.mapId !== "forge"){ this.drawJungle(); return; }
     this.add.rectangle(-160, 0, GAME_WIDTH, this.worldHeight, 0x0b0810).setOrigin(0).setDepth(-30);
     this.backdrop = this.add.image(0, -420, ASSETS.background.key).setOrigin(0)
@@ -227,6 +230,7 @@ export class GameScene extends Phaser.Scene {
   private renderPlatform(platform: Platform): void {
     const container = this.add.container(platform.x, platform.y).setDepth(1).setData('width',platform.w);
     this.platformEntities.set(platform.id, container);
+    if(this.mapId === 'forest'){renderForestTerrain(this,platform,container);return;}
     if(this.mapId === 'mountain'){renderMountainTerrain(this,platform,container);return;}
     if(this.mapId === 'snow'){ renderSnowTerrain(this,platform,container); return; }
     if(this.mapId === 'jungle'){
@@ -251,7 +255,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createHazard(): void {
-    if(this.mapId==='mountain'){
+    if(this.mapId==='forest'){this.flood=this.add.image(0,0,forestWater(this)).setOrigin(0).setDepth(24).setDisplaySize(GAME_WIDTH,GAME_HEIGHT+160);return;}
+    if(this.wideWorld){
       this.flood=this.add.image(0,0,'ascent-ai-props/water').setOrigin(0).setDepth(24).setDisplaySize(GAME_WIDTH,GAME_HEIGHT+160);return;
     }
     if(this.mapId==='snow'){
@@ -303,8 +308,8 @@ export class GameScene extends Phaser.Scene {
   private layoutHud(): void {
     for(const object of this.hudObjects) object.destroy();
     this.hudObjects=[];
-    this.cameras.main.setBounds(this.mapId==='mountain'?0:-(GAME_WIDTH-WORLD_WIDTH)/2,0,this.mapId==='mountain'?this.world.width:GAME_WIDTH,this.worldHeight);
-    this.cameras.main.scrollX=-(GAME_WIDTH-WORLD_WIDTH)/2;
+    this.cameras.main.setBounds(this.wideWorld?0:-(GAME_WIDTH-WORLD_WIDTH)/2,0,this.wideWorld?this.world.width:GAME_WIDTH,this.worldHeight);
+    this.cameras.main.scrollX=this.wideWorld?Phaser.Math.Clamp(this.cameras.main.scrollX,0,Math.max(0,this.world.width-GAME_WIDTH)):-(GAME_WIDTH-WORLD_WIDTH)/2;
     this.createHud();
     this.jungleBackground?.setDisplaySize(GAME_WIDTH,Math.max(GAME_WIDTH*1.5,GAME_HEIGHT+500));
     if(this.mapId!=='forge'){
@@ -323,7 +328,7 @@ export class GameScene extends Phaser.Scene {
     if(snapshot.phase==='surge' && this.snapshot?.phase!=='surge') {
       this.cameras.main.scrollY=Phaser.Math.Clamp(snapshot.hazardY-GAME_HEIGHT*.65,0,this.worldHeight-GAME_HEIGHT);
       const score=snapshot.placements?.find(p=>p.id===this.client.localId);
-      if(score && !snapshot.assisted){rewardSpinPoint(this.mapId+':'+snapshot.roundStartedAt);saveScore(this.mapId,score);if(score.place===1)recordWin(this.mapId+':'+snapshot.roundStartedAt);this.goldEarned=reward(this.mapId+':'+snapshot.roundStartedAt,score.place);}
+      if(score && !snapshot.assisted){rewardSpinPoint(this.mapId+':'+snapshot.roundStartedAt,score.place);saveScore(this.mapId,score);if(score.place===1)recordWin(this.mapId+':'+snapshot.roundStartedAt);this.goldEarned=reward(this.mapId+':'+snapshot.roundStartedAt,score.place);}
     }
     if(snapshot.phase==='countdown'){const count=Math.max(1,Math.ceil((snapshot.countdownEndsAt-snapshot.serverTime)/1000));if(count!==this.lastCountdown){audio.countdown();this.lastCountdown=count;}}
     if(snapshot.phase==='playing' && this.snapshot?.phase==='countdown')audio.countdown(true);
@@ -331,7 +336,7 @@ export class GameScene extends Phaser.Scene {
     this.snapshot = snapshot;
     const self=snapshot.players.find(p=>p.id===this.client.localId);
     if(self&&!self.alive&&!this.deathUi){
-      if(!snapshot.assisted&&snapshot.roundStartedAt)rewardSpinPoint(this.mapId+':'+snapshot.roundStartedAt);
+
       this.deathUi=document.createElement('div');this.deathUi.className='elimination-ui';
       this.deathUi.innerHTML='<h1>ELIMINATED</h1><div><button type="button">Spectate</button><button type="button">Leave</button></div>';
       const [spectate,leave]=this.deathUi.querySelectorAll('button');
@@ -377,7 +382,8 @@ export class GameScene extends Phaser.Scene {
     this.drawMinimap(snapshot);
     if (snapshot.phase === "finished" && !this.resultsStarted && snapshot.placements) {
       this.resultsStarted = true;
-      if(!snapshot.assisted&&snapshot.placements.some(p=>p.id===this.localId))rewardSpinPoint(this.mapId+':'+snapshot.roundStartedAt);
+      const finalPlace=snapshot.placements.find(p=>p.id===this.client.localId)?.place;
+      if(!snapshot.assisted && finalPlace!==undefined)rewardSpinPoint(this.mapId+':'+snapshot.roundStartedAt,finalPlace);
       const winner = snapshot.players.find((player) => player.id === snapshot.winnerId);
       const placement = snapshot.placements.find((player) => player.id === this.localId);
       this.time.delayedCall(900, () => {
@@ -396,7 +402,7 @@ export class GameScene extends Phaser.Scene {
     const placements=snapshot.placements?.map(p=>({...p})) ?? rankPlayers(snapshot.players);
     const score=placements.find(p=>p.id===localId);
     if(score && !snapshot.assisted) {
-      rewardSpinPoint(this.mapId+':'+snapshot.roundStartedAt);
+      if(snapshot.placements)rewardSpinPoint(this.mapId+':'+snapshot.roundStartedAt,score.place);
       saveScore(this.mapId,score);
     }
     void this.client.disconnect();
@@ -477,10 +483,10 @@ export class GameScene extends Phaser.Scene {
     const spectating=(this.snapshot?.phase==='victory' || this.snapshot?.phase==='finished');
     const local = this.playerEntities.get(spectating ? this.snapshot?.winnerId || this.localId : this.localId);
     if (local) {
-      if(spectating)this.cameras.main.setBounds(this.mapId==='mountain'?0:-(GAME_WIDTH-WORLD_WIDTH)/2,-220,this.mapId==='mountain'?this.world.width:GAME_WIDTH,this.worldHeight+220);
+      if(spectating)this.cameras.main.setBounds(this.wideWorld?0:-(GAME_WIDTH-WORLD_WIDTH)/2,-220,this.wideWorld?this.world.width:GAME_WIDTH,this.worldHeight+220);
       const desired = spectating ? -180 : desiredCameraY(local.sprite.y - PLAYER_HEIGHT,this.worldHeight);
       this.cameras.main.scrollY = Phaser.Math.Linear(this.cameras.main.scrollY, desired, 0.18);
-      const targetX=this.mapId==='mountain'?Phaser.Math.Clamp(local.sprite.x-GAME_WIDTH*.5+(this.snapshot?.players.find(p=>p.id===this.localId)?.facing??0)*80,0,Math.max(0,this.world.width-GAME_WIDTH)):-(GAME_WIDTH-WORLD_WIDTH)/2;
+      const targetX=this.wideWorld?Phaser.Math.Clamp(local.sprite.x-GAME_WIDTH*.5+(this.snapshot?.players.find(p=>p.id===this.localId)?.facing??0)*80,0,Math.max(0,this.world.width-GAME_WIDTH)):-(GAME_WIDTH-WORLD_WIDTH)/2;
       this.cameras.main.scrollX=Phaser.Math.Linear(this.cameras.main.scrollX,targetX,1-Math.exp(-delta/180));
     }
   }
