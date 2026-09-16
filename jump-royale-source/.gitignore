@@ -59,3 +59,8 @@
 !/scripts/test-forest.ts
 !/scripts/browser-forest.mjs
 !/docs/moonveil-forest.md
+
+!/scripts/compile-forest-art.mjs
+!/docs/forest-ai-prompts.json
+!/docs/forest-background-prompt.txt
+!/docs/forest-ai-source/

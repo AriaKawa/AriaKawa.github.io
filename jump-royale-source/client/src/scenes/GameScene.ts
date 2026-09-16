@@ -486,7 +486,7 @@ export class GameScene extends Phaser.Scene {
       if(spectating)this.cameras.main.setBounds(this.wideWorld?0:-(GAME_WIDTH-WORLD_WIDTH)/2,-220,this.wideWorld?this.world.width:GAME_WIDTH,this.worldHeight+220);
       const desired = spectating ? -180 : desiredCameraY(local.sprite.y - PLAYER_HEIGHT,this.worldHeight);
       this.cameras.main.scrollY = Phaser.Math.Linear(this.cameras.main.scrollY, desired, 0.18);
-      const targetX=this.wideWorld?Phaser.Math.Clamp(local.sprite.x-GAME_WIDTH*.5+(this.snapshot?.players.find(p=>p.id===this.localId)?.facing??0)*80,0,Math.max(0,this.world.width-GAME_WIDTH)):-(GAME_WIDTH-WORLD_WIDTH)/2;
+      const targetX=this.wideWorld?Phaser.Math.Clamp(local.sprite.x-GAME_WIDTH*.5,0,Math.max(0,this.world.width-GAME_WIDTH)):-(GAME_WIDTH-WORLD_WIDTH)/2;
       this.cameras.main.scrollX=Phaser.Math.Linear(this.cameras.main.scrollX,targetX,1-Math.exp(-delta/180));
     }
   }
