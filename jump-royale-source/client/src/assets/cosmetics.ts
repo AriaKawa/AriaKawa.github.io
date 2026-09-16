@@ -2,16 +2,16 @@ import {costumeFields} from './costumeSets';
 import {type LabLook} from './wardrobe2';
 import {drawGarment} from './garmentRig';
 import {demonTexture} from './demonRig';
-import {FANTASY_SHEETS,isFantasy,fantasyTexture,MAGICAL_HAIR} from './fantasyRig';
+import {FANTASY_SHEETS,MAGICAL_HD_SHEETS,isFantasy,fantasyTexture,MAGICAL_HAIR} from './fantasyRig';
 import Phaser from "phaser";
 import { PLAYER_ANIMATIONS } from "./assetManifest";
 import { HEAD_POSES, drawHelmet, appendWalkFrames } from "./characterRig";
-import { ANIMALS, ANIMAL_HATS, isAnimal, animalTexture } from './animalRig';
+import { ANIMALS, ANIMAL_HATS, isAnimal, animalTexture, type AnimalHat } from './animalRig';
 
 export const DEMON_HAIRS=[{id:'original',name:'Midnight Locks'},{id:'buns',name:'Rose Horn Buns'},{id:'braid',name:'Silver Braid'}] as const;
 export const SLOTS = ["character", "helmet", "shirt", "pants", "hair"] as const;
 export type CosmeticSlot = typeof SLOTS[number];
-export type Outfit = Record<CosmeticSlot, string> & {costume?:string;animalHat?:'none'|'party';wardrobe2?:LabLook};
+export type Outfit = Record<CosmeticSlot, string> & {costume?:string;magicalCostume?:'classic'|'starlight-16';animalHat?:AnimalHat;wardrobe2?:LabLook};
 export const COSMETICS = {
   character: [{id:"original",name:"Finn"},{id:"mushroom",name:"Spore Scout"},{id:"puppy",name:"Biscuit · Puppy"},{id:'cat',name:'Mochi · Cat'},{id:'rat',name:'Pip · Rat'},{id:'demon',name:'Ember · Demon Lady'},{id:'cerberus',name:'Cerberus · Hellhound'},{id:'magical-girl',name:'Stella · Magical Girl'},{id:'skeleton',name:'Rattle · Skeleton'},{id:'neet',name:'Kenji · NEET'},{id:'kangaroo',name:'Roo · Kangaroo'}],
   hair: [{id:"original",name:"Classic Crop"},{id:"waves",name:"Chestnut Waves"},{id:"ponytail",name:"Golden Ponytail"},{id:"braid",name:"Midnight Braid"},{id:"buns",name:"Rose Double Buns"},{id:"bob",name:"Lilac Bob"},{id:"star-buns",name:"Starlight Star Buns"}],
@@ -33,7 +33,7 @@ export function cosmeticName(slot:CosmeticSlot,id:string,outfit:Outfit):string {
 
 export function sanitizeOutfit(value: unknown): Outfit {
   const source = value && typeof value === "object" ? value as Record<string,unknown> : {};
-  const result={...Object.fromEntries(SLOTS.map(slot => [slot, COSMETICS[slot].some(piece => piece.id === source[slot]) ? source[slot] : "original"])),animalHat:source.animalHat==='party'?'party':'none'} as Outfit;
+  const result={...Object.fromEntries(SLOTS.map(slot => [slot, COSMETICS[slot].some(piece => piece.id === source[slot]) ? source[slot] : "original"])),animalHat:ANIMAL_HATS.some(h=>h.id===source.animalHat)?source.animalHat:'none',magicalCostume:source.magicalCostume==='starlight-16'?'starlight-16':'classic'} as Outfit;
   // Migrate retired looks and the former Spore Scout costume on load and in matches.
   if(result.character==='original'&&(source.costume==='mushroom'||(!source.costume&&source.shirt==='mushroom')))result.character='mushroom';
   const legacy=source.shirt==='original'?(source.helmet==='none'?'classic':'original'):source.shirt;
@@ -50,6 +50,7 @@ export function saveOutfit(outfit: Outfit): void {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitizeOutfit(outfit))); } catch { /* Session selection still works with storage disabled. */ }
 }
 export function queueCosmetics(scene: Phaser.Scene): void {
+  for(const sheet of MAGICAL_HD_SHEETS)scene.load.spritesheet('fantasy-'+sheet,`${ROOT}/${sheet}.png`,{frameWidth:64,frameHeight:64});
   for(const sheet of FANTASY_SHEETS)scene.load.spritesheet('fantasy-'+sheet,`${ROOT}/${sheet}.png`,{frameWidth:32,frameHeight:32});
   scene.load.image('demon-source',`${ROOT}/demon.png`);
   for(const animal of ANIMALS)scene.load.spritesheet(animal+'-sprites', `${ROOT}/${animal}.png`, {frameWidth:32,frameHeight:32});
@@ -64,9 +65,9 @@ export function queueCosmetics(scene: Phaser.Scene): void {
  * animation timing. All equipment shares the same frame grid and foot origin. */
 export function outfitTexture(scene: Phaser.Scene, requested: Outfit): string {
   const outfit = sanitizeOutfit(requested);
-  if(isFantasy(outfit.character))return fantasyTexture(scene,outfit.character,outfit.hair);
-  if(outfit.character==='demon')return demonTexture(scene,outfit.hair);
   if(isAnimal(outfit.character))return animalTexture(scene,outfit.character,outfit.animalHat);
+  if(isFantasy(outfit.character))return fantasyTexture(scene,outfit.character,outfit.hair,outfit.magicalCostume);
+  if(outfit.character==='demon')return demonTexture(scene,outfit.hair);
   const key = `outfit-${SLOTS.map(slot => outfit[slot]).join("-")}`;
   if (scene.textures.exists(key)) return key;
   const canvas = document.createElement("canvas"); canvas.width = 320; canvas.height = 32;

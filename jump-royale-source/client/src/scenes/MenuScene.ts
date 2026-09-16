@@ -3,7 +3,7 @@ import '../game/forgedCommand.css';
 import '../game/forgedAssets.css';
 import '../game/wardrobeShop.css';
 import {drawLootIcon} from '../game/lootIcons';
-import {ANIMAL_HATS} from '../assets/animalRig';
+import {ANIMAL_HATS,isAnimal} from '../assets/animalRig';
 import {createLootBox} from '../game/lootBox';
 import {COSTUMES,costumeFields} from '../assets/costumeSets';
 import {createSettings,settingsOpen} from '../game/settings';
@@ -20,14 +20,14 @@ import { MAPS } from "../../../server/src/sim/maps";
 import Phaser from "phaser";
 
 import { COSMETICS, DEMON_HAIRS, sanitizeOutfit, loadOutfit, saveOutfit, outfitTexture, type Outfit } from "../assets/cosmetics";
-import {MAGICAL_HAIR} from '../assets/fantasyRig';
+import {MAGICAL_HAIR,MAGICAL_COSTUMES} from '../assets/fantasyRig';
 type CosmeticSlot='character'|'costume'|'hair'|'animalHat';
 const SLOTS:CosmeticSlot[]=['character','costume','hair','animalHat'];
-const outfitSlots=(o:Outfit):CosmeticSlot[]=>o.character==='original'?['character','costume']:(o.character==='demon'||o.character==='magical-girl')?['character','hair']:['puppy','cat','rat'].includes(o.character)?['character','animalHat']:['character'];
-const equipmentOptions=(s:CosmeticSlot,_o:Outfit)=>s==='character'?COSMETICS.character:s==='hair'?(_o.character==='magical-girl'?MAGICAL_HAIR:DEMON_HAIRS):s==='animalHat'?ANIMAL_HATS:COSTUMES;
-const selectedPiece=(s:CosmeticSlot,o:Outfit)=>s==='character'?o.character:s==='hair'?o.hair:s==='animalHat'?o.animalHat??'none':o.costume??'classic';
+const outfitSlots=(o:Outfit):CosmeticSlot[]=>o.character==='original'?['character','costume']:o.character==='magical-girl'?['character','costume','hair']:o.character==='demon'?['character','hair']:isAnimal(o.character)?['character','animalHat']:['character'];
+const equipmentOptions=(s:CosmeticSlot,_o:Outfit)=>s==='character'?COSMETICS.character:s==='hair'?(_o.character==='magical-girl'?MAGICAL_HAIR:DEMON_HAIRS):s==='animalHat'?ANIMAL_HATS:_o.character==='magical-girl'?MAGICAL_COSTUMES:COSTUMES;
+const selectedPiece=(s:CosmeticSlot,o:Outfit)=>s==='character'?o.character:s==='hair'?o.hair:s==='animalHat'?o.animalHat??'none':o.character==='magical-girl'?o.magicalCostume??'classic':o.costume??'classic';
 const cosmeticName=(s:CosmeticSlot,id:string,o:Outfit)=>equipmentOptions(s,o).find(p=>p.id===id)?.name??id;
-const candidateOutfit=(o:Outfit,s:CosmeticSlot,id:string):Outfit=>sanitizeOutfit(s==='costume'?{...o,...costumeFields(id),character:'original'}:s==='hair'?{...o,hair:id}:s==='animalHat'?{...o,animalHat:id}:{...o,character:id});
+const candidateOutfit=(o:Outfit,s:CosmeticSlot,id:string):Outfit=>sanitizeOutfit(s==='costume'?(o.character==='magical-girl'?{...o,magicalCostume:id}:{...o,...costumeFields(id),character:'original'}):s==='hair'?{...o,hair:id}:s==='animalHat'?{...o,animalHat:id}:{...o,character:id});
 import { GAME_HEIGHT, GAME_WIDTH } from "../game/constants";
 import { createLobbyPlayer, stepLobbyPlayer, resizeLobbyPlayer, LOBBY_SPRITE_SCALE } from "../game/lobbyPhysics";
 import { PLAYER_HEIGHT, PLAYER_WIDTH } from "../../../server/src/sim/constants";
@@ -77,8 +77,8 @@ export class MenuScene extends Phaser.Scene {
     this.background = this.add.image(GAME_WIDTH/2,GAME_HEIGHT,'forged-command').setOrigin(0.5,1);
     this.shade = this.add.rectangle(0,0,GAME_WIDTH,GAME_HEIGHT,0x06101b,0.08).setOrigin(0);
     this.animationPrefix = outfitTexture(this,this.outfit);
-    const frameHeight=this.textures.get(this.animationPrefix).get(0).height;
-    this.preview = this.add.sprite(this.lobbyPlayer.x+PLAYER_WIDTH/2,this.lobbyPlayer.y+PLAYER_HEIGHT,this.animationPrefix).setOrigin(0.5,footOrigin(this,this.animationPrefix)).setScale(LOBBY_SPRITE_SCALE*(this.outfit.wardrobe2?32/frameHeight:1));
+    const frameWidth=this.textures.get(this.animationPrefix).get(0).width;
+    this.preview = this.add.sprite(this.lobbyPlayer.x+PLAYER_WIDTH/2,this.lobbyPlayer.y+PLAYER_HEIGHT,this.animationPrefix).setOrigin(0.5,footOrigin(this,this.animationPrefix)).setScale(LOBBY_SPRITE_SCALE*(32/frameWidth));
     this.preview.play(`${this.animationPrefix}-idle`);
     this.mapIndex = Math.max(0,MAPS.findIndex(map=>map.id===this.registry.get("mapId")));
     this.createMenuUi(); this.createMapSelector(); this.createScores(); this.composeForgedUi(); this.installPreviewControls(); this.refreshSurfaces();
@@ -312,12 +312,12 @@ export class MenuScene extends Phaser.Scene {
       });
     });
   }
-  private shopSlot():string {return this.activeSlot;}
+  private shopSlot():string {return this.activeSlot==='costume'&&this.outfit.character==='magical-girl'?'magicalCostume':this.activeSlot;}
   private showOutfit(outfit:Outfit):void {
     const stage=this.ui?.querySelector<HTMLElement>(".wardrobe-stage");if(stage)stage.dataset.outfit=JSON.stringify(outfit);
     this.animationPrefix=outfitTexture(this,outfit);
     this.preview.stop().chain();this.preview.setTexture(this.animationPrefix,0);
-    const h=this.preview.frame.height;this.preview.setOrigin(.5,footOrigin(this,this.animationPrefix)).setScale(Math.min(GAME_HEIGHT*.36,GAME_WIDTH*.22)/32*(outfit.wardrobe2?32/h:1));
+    this.preview.setOrigin(.5,footOrigin(this,this.animationPrefix)).setScale(Math.min(GAME_HEIGHT*.36,GAME_WIDTH*.22)/32*(32/this.preview.frame.width));
     this.preview.play(`${this.animationPrefix}-${this.airborne?this.velocity<0?'jump':'fall':'idle'}`);
   }
   private renderPurchase():void {
@@ -349,7 +349,7 @@ export class MenuScene extends Phaser.Scene {
     const onPedestal=this.lobbyPlayer.groundedPlatformId==='forged-pedestal';
     resizeLobbyPlayer(this.lobbyPlayer,GAME_WIDTH,GAME_HEIGHT,this.lobbyHeight);this.lobbyHeight=GAME_HEIGHT;
     if(onPedestal)this.placeOnPedestal();
-    const h=this.preview.frame.height;this.preview.setScale(Math.min(GAME_HEIGHT*.36,GAME_WIDTH*.22)/32*(this.outfit.wardrobe2?32/h:1));
+    this.preview.setScale(Math.min(GAME_HEIGHT*.36,GAME_WIDTH*.22)/32*(32/this.preview.frame.width));
     this.refreshSurfaces();
   }
   private installPreviewControls(): void {

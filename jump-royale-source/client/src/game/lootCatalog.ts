@@ -7,5 +7,8 @@ export const LOOT_POOL:LootEntry[]=[
  ...COSMETICS.character.filter(p=>p.id!=='original').map(p=>({slot:'character',id:p.id,name:p.name,rarity:p.id==='demon'||p.id==='cerberus'?4:p.id==='mushroom'?2:3})),
  ...DEMON_HAIRS.filter(p=>p.id!=='original').map(p=>({slot:'hair',id:p.id,name:p.name,rarity:1})),
  {slot:'hair',id:'star-buns',name:'Starlight Star Buns',rarity:2},
- {slot:'animalHat',id:'party',name:'Party Hat',rarity:2}
+ {slot:'animalHat',id:'party',name:'Party Hat',rarity:2},
+ {slot:'animalHat',id:'fedora',name:'Fedora',rarity:1},
+ {slot:'animalHat',id:'unicorn',name:'Unicorn Horn',rarity:2},
+ {slot:'magicalCostume',id:'starlight-16',name:'Starlight · 16-bit',rarity:3}
 ];

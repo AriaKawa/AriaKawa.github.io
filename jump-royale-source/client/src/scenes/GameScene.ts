@@ -408,9 +408,9 @@ export class GameScene extends Phaser.Scene {
     const outfit=local ? this.registry.get("outfit") ?? loadOutfit() : botOutfit(player.id);
     const texture = outfitTexture(this,outfit);
     const animationPrefix = texture;
-    const frameHeight=this.textures.get(texture).get(0).height;
+
     const sprite = this.add.sprite(player.x + PLAYER_WIDTH / 2, player.y + PLAYER_HEIGHT, texture).setOrigin(0.5,footOrigin(this,texture)).setDepth(local ? 20 : 10);
-    if(outfit.wardrobe2)sprite.setScale(32/frameHeight);
+    sprite.setScale(32/sprite.frame.width);
     sprite.play(`${animationPrefix}-idle`);
     if (!player.isBot && this.artV2.player) sprite.play(`${animationPrefix}-idle`);
     const name = this.add.text(player.x + PLAYER_WIDTH / 2, player.y - 8, local ? player.name.toUpperCase() : player.name, {
