@@ -14,8 +14,35 @@ class GameAudio {
   private musicBeat=0;
   private musicMap='';
   private magicalTrack?:HTMLAudioElement;
+  private magicalSource?:MediaElementAudioSourceNode;
+  private magicalGain?:GainNode;
+  private musicFilter?:BiquadFilterNode;
+  private musicDistanceGain?:GainNode;
+  private musicDead=false;
+  setMusicDead(dead:boolean):void {
+    if(this.musicDead===dead)return;
+    this.musicDead=dead;
+    this.syncMusic();
+  }
+  private ensureMusicGraph():void {
+    const c=this.context;if(!c)return;
+    if(!this.musicFilter){
+      this.musicFilter=c.createBiquadFilter();this.musicFilter.type='lowpass';
+      this.musicFilter.Q.value=.5;
+      this.musicFilter.frequency.value=this.musicDead?850:20000;
+      this.musicDistanceGain=c.createGain();this.musicDistanceGain.gain.value=this.musicDead?.32:1;
+      this.musicFilter.connect(this.musicDistanceGain).connect(c.destination);
+      this.musicGain=c.createGain();this.musicGain.gain.value=0;this.musicGain.connect(this.musicFilter);
+    }
+    if(this.magicalTrack&&!this.magicalSource){
+      this.magicalSource=c.createMediaElementSource(this.magicalTrack);
+      this.magicalGain=c.createGain();this.magicalGain.gain.value=0;
+      this.magicalSource.connect(this.magicalGain).connect(this.musicFilter);
+    }
+  }
   setMusicMap(map=''):void {
     this.musicMap=map;
+    this.musicDead=false;
     if(map==='magical'&&!this.magicalTrack){
       this.magicalTrack=new Audio(`${import.meta.env.BASE_URL}assets/audio/mahou-shoujo.mp3`);
       this.magicalTrack.loop=true;
@@ -24,22 +51,30 @@ class GameAudio {
     this.syncMusic();
   }
   private syncMusic():void {
+    this.ensureMusicGraph();
     const active=this.musicMap==='magical';
-    if(this.context)this.musicGain?.gain.setTargetAtTime(active||document.hidden?0:preferences.music*.12,this.context.currentTime,.03);
+    if(this.context){
+      const now=this.context.currentTime;
+      this.musicGain?.gain.setTargetAtTime(active||document.hidden?0:preferences.music*.12,now,.03);
+      this.magicalGain?.gain.setTargetAtTime(active&&!document.hidden?preferences.music:0,now,.03);
+      // Let the current song recede smoothly while the player is a ghost.
+      this.musicFilter?.frequency.setTargetAtTime(this.musicDead?850:20000,now,.22);
+      this.musicDistanceGain?.gain.setTargetAtTime(this.musicDead?.32:1,now,.22);
+    }
     if(!this.magicalTrack)return;
-    this.magicalTrack.volume=preferences.music;
+    this.magicalTrack.volume=1;
     if(active&&!document.hidden&&preferences.music>0&&this.context?.state==='running'){
       if(this.magicalTrack.paused)void this.magicalTrack.play().catch(()=>{});
     }else this.magicalTrack.pause();
   }
   private musicTick():void {
     const c=this.context;if(!c||c.state!=='running'||document.hidden||this.musicMap==='magical')return;
-    if(!this.musicGain){this.musicGain=c.createGain();this.musicGain.connect(c.destination);}
-    this.musicGain.gain.setTargetAtTime(preferences.music*.12,c.currentTime,.05);
+    this.ensureMusicGraph();
+    this.musicGain!.gain.setTargetAtTime(preferences.music*.12,c.currentTime,.05);
     const melody=[64,67,71,67,62,66,69,66,60,64,67,64,62,66,69,71];
     const note=melody[this.musicBeat++%melody.length],o=c.createOscillator(),g=c.createGain();
     o.type='triangle';o.frequency.value=440*Math.pow(2,(note-69)/12);g.gain.setValueAtTime(0,c.currentTime);g.gain.linearRampToValueAtTime(.25,c.currentTime+.02);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+.55);
-    o.connect(g).connect(this.musicGain);o.start();o.stop(c.currentTime+.6);o.onended=()=>{o.disconnect();g.disconnect();};
+    o.connect(g).connect(this.musicGain!);o.start();o.stop(c.currentTime+.6);o.onended=()=>{o.disconnect();g.disconnect();};
   }
   init():void {
     window.addEventListener('jump-settings-change',()=>{this.lavaDistance(this.target);this.syncMusic();});
