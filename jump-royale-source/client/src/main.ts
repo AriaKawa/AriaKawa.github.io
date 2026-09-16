@@ -8,8 +8,10 @@ import { GameScene } from "./scenes/GameScene";
 import { MenuScene } from "./scenes/MenuScene";
 import { ResultsScene } from "./scenes/ResultsScene";
 import {claimGoldGift} from './game/economy';
+import {handleWardrobeReset} from './game/wardrobeReset';
 
 if(claimGoldGift(location.hash))history.replaceState(null,'',location.pathname+location.search);
+handleWardrobeReset();
 
 updateViewport();
 const game = new Phaser.Game({

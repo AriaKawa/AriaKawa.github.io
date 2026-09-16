@@ -1,6 +1,7 @@
 import { footOrigin } from '../game/spriteFeet';
 import '../game/forgedCommand.css';
 import '../game/forgedAssets.css';
+import '../game/wardrobeShop.css';
 import {drawLootIcon} from '../game/lootIcons';
 import {ANIMAL_HATS} from '../assets/animalRig';
 import {createLootBox} from '../game/lootBox';
@@ -149,7 +150,7 @@ export class MenuScene extends Phaser.Scene {
 
   private createMenuUi(): void {
     this.ui = document.createElement("div"); this.ui.className = "menu-ui";
-    this.ui.innerHTML = `<div class="gold-marker" aria-label="Gold balance"><img src="${import.meta.env.BASE_URL}assets/menu/gold-bars.png" alt="Gold bars"><span class="gold-balance" aria-live="polite"></span><button class="gold-add" type="button" aria-label="Buy gold" title="Buy gold" aria-haspopup="dialog" aria-controls="gold-store"><span class="plus-icon" aria-hidden="true"></span></button></div><h1 class="menu-title" aria-label="Jump Royale"><span>JUMP</span><strong>ROYALE</strong></h1><div class="ranked-splash"><span>Ranked Coming Soon!</span></div><button class="wardrobe-toggle" type="button" aria-label="Open wardrobe" title="Wardrobe" aria-expanded="false" aria-controls="wardrobe-panel"><span class="wardrobe-art" aria-hidden="true"><img src="${import.meta.env.BASE_URL}assets/menu/wardrobe-pixel.png" alt=""><img src="${import.meta.env.BASE_URL}assets/menu/wardrobe-pixel-open.png" alt=""></span></button><form class="menu-form"><input id="climber-name" maxlength="18" autocomplete="off" placeholder="Name" aria-label="Name"><button type="submit">Start</button></form><div class="wardrobe-overlay" hidden><div class="wardrobe-stage"><canvas width="160" height="192" aria-label="Outfit preview"></canvas><div class="wardrobe-plinth"></div></div><section id="wardrobe-panel" class="wardrobe-panel" role="dialog" aria-modal="true" aria-label="Wardrobe"><header><button class="wardrobe-close pixel-button" type="button" aria-label="Close wardrobe">&#215;</button></header><div class="wardrobe-tabs" role="tablist" aria-label="Equipment category">${SLOTS.map(slot=>`<button id="tab-${slot}" type="button" role="tab" data-slot="${slot}" aria-controls="equipment-grid" aria-selected="${slot===this.activeSlot}" tabindex="${slot===this.activeSlot?0:-1}">${({character:"Character",costume:"Costumes",hair:"Hairstyles",animalHat:"Hats"})[slot]}</button>`).join("")}</div><div id="equipment-grid" class="equipment-grid" role="tabpanel" aria-labelledby="tab-costume"></div><div class="purchase-bar" aria-live="polite"></div></section></div>`;
+    this.ui.innerHTML = `<div class="gold-marker" aria-label="Gold balance"><img src="${import.meta.env.BASE_URL}assets/menu/gold-bars.png" alt="Gold bars"><span class="gold-balance" aria-live="polite"></span><button class="gold-add" type="button" aria-label="Buy gold" title="Buy gold" aria-haspopup="dialog" aria-controls="gold-store"><span class="plus-icon" aria-hidden="true"></span></button></div><h1 class="menu-title" aria-label="Jump Royale"><span>JUMP</span><strong>ROYALE</strong></h1><div class="ranked-splash"><span>Ranked Coming Soon!</span></div><button class="wardrobe-toggle" type="button" aria-label="Open wardrobe" title="Wardrobe" aria-expanded="false" aria-controls="wardrobe-panel"><span class="wardrobe-art" aria-hidden="true"><img src="${import.meta.env.BASE_URL}assets/menu/wardrobe-pixel.png" alt=""><img src="${import.meta.env.BASE_URL}assets/menu/wardrobe-pixel-open.png" alt=""></span></button><form class="menu-form"><input id="climber-name" maxlength="18" autocomplete="off" placeholder="Name" aria-label="Name"><button type="submit">Start</button></form><div class="wardrobe-overlay" hidden><div class="wardrobe-stage"><canvas width="160" height="192" aria-label="Outfit preview"></canvas><div class="wardrobe-plinth"></div></div><section id="wardrobe-panel" class="wardrobe-panel" role="dialog" aria-modal="true" aria-label="Wardrobe"><header><span class="wardrobe-wallet"><img src="${import.meta.env.BASE_URL}assets/menu/gold-bars.png" alt="Gold"><b class="wardrobe-gold-balance"></b></span><button class="wardrobe-close pixel-button" type="button" aria-label="Close wardrobe">&#215;</button></header><div class="wardrobe-tabs" role="tablist" aria-label="Equipment category">${SLOTS.map(slot=>`<button id="tab-${slot}" type="button" role="tab" data-slot="${slot}" aria-controls="equipment-grid" aria-selected="${slot===this.activeSlot}" tabindex="${slot===this.activeSlot?0:-1}">${({character:"Character",costume:"Costumes",hair:"Hairstyles",animalHat:"Hats"})[slot]}</button>`).join("")}</div><div id="equipment-grid" class="equipment-grid" role="tabpanel" aria-labelledby="tab-costume"></div><div class="purchase-bar" aria-live="polite"></div></section></div>`;
     document.getElementById("game")!.appendChild(this.ui);
     this.removeSettings=createSettings(this.ui,()=>{this.held=false;this.movement.clear();this.lobbyPlayer.charging=false;this.lobbyPlayer.charge01=0;if(this.wardrobeOpen)this.setWardrobeOpen(false);});
     this.goldStore=createGoldStore(()=>{
@@ -180,7 +181,7 @@ export class MenuScene extends Phaser.Scene {
       if(!this.wardrobeOpen)return;
       if(event.key==="Escape"){event.preventDefault();event.stopPropagation();this.setWardrobeOpen(false);}
       if(event.key==="Tab"){
-        const buttons=Array.from(this.ui!.querySelectorAll<HTMLButtonElement>(".wardrobe-overlay .wardrobe-panel button:not([tabindex='-1']):not([hidden])"));
+        const buttons=Array.from(this.ui!.querySelectorAll<HTMLElement>(".wardrobe-overlay .wardrobe-panel button:not([tabindex='-1']):not([hidden]),.wardrobe-overlay .equipment-grid"));
         const first=buttons[0],last=buttons[buttons.length-1];
         if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
         else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
@@ -287,7 +288,8 @@ export class MenuScene extends Phaser.Scene {
     grid.setAttribute("aria-labelledby",`tab-${this.activeSlot}`);
     this.updateTabs();this.renderPurchase();
     if(!outfitSlots(this.outfit).includes(this.activeSlot)) {this.selectSlot('character');return;}
-    grid.innerHTML=equipmentOptions(this.activeSlot,this.outfit).map(piece=>`<button type="button" class="equipment-card" data-owned="${owns(this.shopSlot(),piece.id)}" data-piece="${piece.id}" aria-label="${owns(this.shopSlot(),piece.id)?cosmeticName(this.activeSlot,piece.id,this.outfit):'Locked item'}" aria-description="${owns(this.shopSlot(),piece.id)?'Owned':price(this.shopSlot(),piece.id)+' gold'}" aria-pressed="${selectedPiece(this.activeSlot,this.outfit)===piece.id}"><canvas width="64" height="64" aria-hidden="true"></canvas><span>${owns(this.shopSlot(),piece.id)?cosmeticName(this.activeSlot,piece.id,this.outfit):'?'}</span></button>`).join("");
+    grid.tabIndex=0;
+    grid.innerHTML=equipmentOptions(this.activeSlot,this.outfit).map(piece=>`<button type="button" class="equipment-card" data-owned="${owns(this.shopSlot(),piece.id)}" data-piece="${piece.id}" aria-label="${cosmeticName(this.activeSlot,piece.id,this.outfit)}" aria-description="${owns(this.shopSlot(),piece.id)?'Owned':price(this.shopSlot(),piece.id)+' gold'}" aria-pressed="${selectedPiece(this.activeSlot,this.outfit)===piece.id}"><canvas width="64" height="64" aria-hidden="true"></canvas><span class="equipment-name">${cosmeticName(this.activeSlot,piece.id,this.outfit)}</span><span class="equipment-price">${owns(this.shopSlot(),piece.id)?(selectedPiece(this.activeSlot,this.outfit)===piece.id?'Equipped':'Equip'):`<img src="${import.meta.env.BASE_URL}assets/menu/gold-bars.png" alt="Gold"> <b>${price(this.shopSlot(),piece.id)}</b><small>Buy</small>`}</span></button>`).join("");
     grid.querySelectorAll<HTMLButtonElement>("button").forEach(button=>{
       const id=button.dataset.piece!;
       this.drawEquipmentIcon(button.querySelector("canvas")!,this.activeSlot,id);
@@ -320,6 +322,7 @@ export class MenuScene extends Phaser.Scene {
   }
   private renderPurchase():void {
     this.ui!.querySelector('.gold-balance')!.textContent=String(wallet().gold);
+    this.ui!.querySelector('.wardrobe-gold-balance')!.textContent=String(wallet().gold);
     this.lootBox?.refresh();
     this.ui!.querySelector('.purchase-bar')!.replaceChildren();
   }

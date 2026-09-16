@@ -1,0 +1,32 @@
+.forged-command .wardrobe-panel {
+ display:flex; flex-direction:column; overflow:hidden;
+ height:min(740px,85%); max-height:85%; min-height:0; box-sizing:border-box;
+}
+.forged-command .wardrobe-panel header { flex-shrink:0; justify-content:space-between; }
+.forged-command .wardrobe-tabs { flex-shrink:0; }
+.forged-command .wardrobe-wallet { display:flex; align-items:center; gap:10px; color:#ffe6a5; font:700 20px Consolas,monospace; }
+.forged-command .wardrobe-wallet img { width:42px; height:30px; object-fit:contain; image-rendering:pixelated; }
+.forged-command .equipment-grid {
+ flex:1; min-height:0; overflow-y:scroll; overflow-x:hidden;
+ align-content:start; overscroll-behavior:contain; touch-action:pan-y;
+ padding:4px 10px 8px 4px; scrollbar-gutter:stable;
+ scrollbar-width:auto; scrollbar-color:#c79a51 #151416;
+}
+.forged-command .equipment-grid::-webkit-scrollbar { width:14px; }
+.forged-command .equipment-grid::-webkit-scrollbar-track { background:#151416; border:1px solid #604627; border-radius:3px; }
+.forged-command .equipment-grid::-webkit-scrollbar-thumb { background:linear-gradient(90deg,#876036,#e3b66b,#9e703a); border:2px solid #211b18; border-radius:4px; min-height:40px; }
+.forged-command .equipment-grid:focus-visible { outline:2px solid #e3b66b; outline-offset:2px; }
+.forged-command .equipment-card { min-width:0; min-height:162px; gap:6px; }
+.forged-command .equipment-card[data-owned] .equipment-name { font:700 13px/1.3 Consolas,monospace; color:#f9e8c7; overflow-wrap:anywhere; }
+.forged-command .equipment-card[data-owned] .equipment-price { display:flex; align-items:center; justify-content:center; gap:6px; min-height:30px; font:700 14px Consolas,monospace; color:#ffe3a0; }
+.forged-command .equipment-price img { width:28px; height:22px; object-fit:contain; image-rendering:pixelated; }
+.forged-command .equipment-price small { font:700 11px Consolas,monospace; }
+.forged-command .equipment-card[data-owned=false] .equipment-price { padding:2px 9px; border:1px solid #aa7a3f; background:#221c16; border-radius:3px; }
+.forged-command .purchase-bar { flex-shrink:0; }
+@media(max-width:759px) {
+ .forged-command .wardrobe-panel { height:60%; max-height:60%; padding:12px; }
+ .forged-command .equipment-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+ .forged-command .equipment-card { min-height:142px; padding:6px 3px; }
+ .forged-command .equipment-card[data-owned] .equipment-name { font-size:12px; }
+ .forged-command .wardrobe-wallet { font-size:17px; }
+}
