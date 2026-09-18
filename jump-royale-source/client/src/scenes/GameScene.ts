@@ -314,7 +314,7 @@ export class GameScene extends Phaser.Scene {
     };
     this.dangerOverlay = this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, this.mapId==='magical'?0xeb83c4:this.mapId !== "forge" ? 0x1fb8c9 : 0xff321c, 0).setOrigin(0).setScrollFactor(0).setDepth(90);
     frame(MINI_MAP.x,MINI_MAP.y,MINI_MAP.width,MINI_MAP.height);
-    this.minimap={graphics:this.add.graphics().setScrollFactor(0).setDepth(101),title:text(MINI_MAP.x+10,MINI_MAP.y+9,'NEARBY CLIMBERS').setFontSize(8),status:text(MINI_MAP.x+10,MINI_MAP.y+184,'').setFontSize(7)};
+    this.minimap={graphics:this.add.graphics().setScrollFactor(0).setDepth(101),title:text(MINI_MAP.x+10,MINI_MAP.y+9,'').setFontSize(8),status:text(MINI_MAP.x+MINI_MAP.width/2,MINI_MAP.y+184,'').setFontSize(7).setOrigin(.5,0).setAlign('center')};
     this.hudObjects=this.children.list.filter(object=>!before.has(object));
   }
 

@@ -46,14 +46,25 @@ export function createWallpapers(scene:Phaser.Scene,ui:HTMLElement,onPreview:(id
     const equip=dialog.querySelector<HTMLButtonElement>('.wallpaper-equip')!;equip.disabled=item.locked&&!owns('wallpaper',item.id);equip.textContent=equip.disabled?'Unlock in loot box':item.id===equippedWallpaper()?'Equipped':'Equip';
     onPreview(item.id);animate(item.id);
   };
-  const size=()=>{const map=ui.querySelector<HTMLElement>('.map-window'),img=ui.querySelector<HTMLElement>('.map-track img');if(map&&img){dialog.style.setProperty('--wallpaper-width',map.getBoundingClientRect().width+'px');dialog.style.setProperty('--wallpaper-height',img.getBoundingClientRect().height+'px');}};
+  const size=()=>{
+    const map=ui.querySelector<HTMLElement>('.map-window'),img=ui.querySelector<HTMLElement>('.map-track img'),name=ui.querySelector<HTMLElement>('.menu-form input');
+    if(!map||!img||!name)return;
+    const r=map.getBoundingClientRect(),n=name.getBoundingClientRect(),border=getComputedStyle(map);
+    const left=Number.parseFloat(border.borderLeftWidth),top=Number.parseFloat(border.borderTopWidth),right=Number.parseFloat(border.borderRightWidth);
+    dialog.style.setProperty('--wallpaper-x',r.left-18+'px');
+    dialog.style.setProperty('--wallpaper-y',r.top-18+'px');
+    dialog.style.setProperty('--wallpaper-width',r.width+36+'px');
+    dialog.style.setProperty('--wallpaper-box-height',n.bottom-r.top+18+'px');
+    dialog.style.setProperty('--wallpaper-height',img.getBoundingClientRect().height+'px');
+    dialog.style.setProperty('--wallpaper-border-left',left+'px');dialog.style.setProperty('--wallpaper-border-right',right+'px');dialog.style.setProperty('--wallpaper-border-top',top+'px');
+  };
   const observer=new ResizeObserver(size);observer.observe(ui);
   dialog.addEventListener('keydown',e=>e.stopPropagation());dialog.addEventListener('keyup',e=>e.stopPropagation());
-  toggle.addEventListener('click',()=>{size();index=Math.max(0,WALLPAPERS.findIndex(w=>w.id===equippedWallpaper()));dialog.showModal();render();});
+  toggle.addEventListener('click',()=>{size();index=Math.max(0,WALLPAPERS.findIndex(w=>w.id===equippedWallpaper()));ui.classList.add('wallpaper-open');dialog.showModal();render();});
   dialog.querySelectorAll('.wallpaper-carousel>button').forEach((button,i)=>button.addEventListener('click',()=>{index=(index+(i?1:-1)+WALLPAPERS.length)%WALLPAPERS.length;render();}));
   dialog.querySelector('.wallpaper-close')!.addEventListener('click',()=>dialog.close());
   dialog.querySelector('.wallpaper-equip')!.addEventListener('click',()=>{if(index===0||owns('wallpaper',WALLPAPERS[index].id)){localStorage.setItem('jump-wallpaper',WALLPAPERS[index].id);dialog.close();}});
   dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close();}});
-  dialog.addEventListener('close',()=>{clear();onPreview(equippedWallpaper());animate(equippedWallpaper());toggle.focus();});
-  return {open:()=>dialog.open,destroy:()=>{observer.disconnect();clear();dialog.remove();toggle.remove();}};
+  dialog.addEventListener('close',()=>{ui.classList.remove('wallpaper-open');clear();onPreview(equippedWallpaper());animate(equippedWallpaper());toggle.focus();});
+  return {open:()=>dialog.open,destroy:()=>{ui.classList.remove('wallpaper-open');observer.disconnect();clear();dialog.remove();toggle.remove();}};
 }

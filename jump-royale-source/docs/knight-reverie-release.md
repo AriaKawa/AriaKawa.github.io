@@ -1,0 +1,11 @@
+# Knight, exact wallpaper alignment and varied Reverie routes
+
+The wallpaper image replaces the map image at the same screen coordinates and dimensions. Its forged outer panel ends exactly at the name input's bottom edge. The map selector, map counter and name controls are hidden while the panel is open and restored on close. Geometry follows resize through ResizeObserver. The caption and minimap status text are centered; the Nearby Climbers label is removed.
+
+Finn's previous blacksmith sheets are removed. Classic Finn now uses a compact blue-armored knight with a gold visor and red cape, imported on a 48-pixel frame grid to retain the readable chunky pixel design at lobby size. The detailed 16-bit knight has separate 64-pixel frames. Both use a static idle frame with no bob or arm motion, and authored charge/jump/fall/land/walk poses. Existing classic and finn-16 saved selections and ownership still select the corresponding replacement automatically.
+
+Starlight Reverie retains its height and physics but replaces the four-step repeated generator with seventeen authored sections: offset climbs, long traverses, direction reversals, precision landings and wider recovery shelves. There are 96 main jumps and 30 independent side routes containing 125 platforms. Side routes vary from two to seven intermediate landings, depart left or right and reconnect at differing heights. The published coordinates are deterministic. No four-platform main-route shape repeats.
+
+Validation: every intended main/branch connection collision-tested using the actual 30 Hz physics; minimum 34 launch solutions across main jumps; all four expert bot styles finish ahead of the flood; map bounds and variety assertions; standard physics/bot/finale/costume tests; economy/mission checks; TypeScript; hosted production build. Browser checks at 1440×900, 390×844 and 844×390 measured zero pixel difference in wallpaper image x/y/width/height and outer-box/name-bar bottom. They also verified hidden/restored controls, centered close icon, classic/HD knight loading, single-frame idle, new game start and centered minimap status with no title.
+
+Relevant regression checks: scripts/test-magical.ts and scripts/browser-knight-reverie.mjs. Generated assets: assets/reforged/cosmetics/finn-knight.png and finn-knight-16.png.
