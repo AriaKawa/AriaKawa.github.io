@@ -16,7 +16,7 @@ export function createWallpapers(scene:Phaser.Scene,ui:HTMLElement,onPreview:(id
   toggle.setAttribute('aria-label','Wallpapers');toggle.setAttribute('aria-haspopup','dialog');
   toggle.innerHTML='<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="4" width="26" height="24" rx="2"/><circle cx="22" cy="11" r="3"/><path d="m5 25 8-12 6 8 4-5 5 9"/></svg><span>Wallpapers</span>';
   const dialog=document.createElement('dialog');dialog.className='wallpaper-dialog';dialog.setAttribute('aria-label','Wallpapers');
-  dialog.innerHTML='<header><h2>Wallpapers</h2><button class="wallpaper-close" aria-label="Close wallpapers">×</button></header><div class="wallpaper-carousel"><button aria-label="Previous wallpaper">‹</button><div class="wallpaper-window"><div class="wallpaper-track"></div></div><button aria-label="Next wallpaper">›</button></div><h3 aria-live="polite"></h3><p class="wallpaper-status"></p><div class="wallpaper-dots" aria-hidden="true"></div><button class="wallpaper-equip">Equipped</button>';
+  dialog.innerHTML='<header><h2>Wallpapers</h2><button class="wallpaper-close" aria-label="Close wallpapers"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6L18 18M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></header><div class="wallpaper-carousel"><button aria-label="Previous wallpaper"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2"/></svg></button><div class="wallpaper-window"><div class="wallpaper-track"></div></div><button aria-label="Next wallpaper"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" fill="none" stroke="currentColor" stroke-width="2"/></svg></button></div><h3 aria-live="polite"></h3><p class="wallpaper-status"></p><div class="wallpaper-dots" aria-hidden="true"></div><button class="wallpaper-equip">Equipped</button>';
   const track=dialog.querySelector<HTMLElement>('.wallpaper-track')!;
   for(const item of WALLPAPERS){const img=document.createElement('img');img.src=import.meta.env.BASE_URL+'assets/menu/'+item.image;img.alt=item.name+' wallpaper';img.draggable=false;track.append(img);}
   ui.append(toggle,dialog);
@@ -46,11 +46,14 @@ export function createWallpapers(scene:Phaser.Scene,ui:HTMLElement,onPreview:(id
     const equip=dialog.querySelector<HTMLButtonElement>('.wallpaper-equip')!;equip.disabled=item.locked&&!owns('wallpaper',item.id);equip.textContent=equip.disabled?'Unlock in loot box':item.id===equippedWallpaper()?'Equipped':'Equip';
     onPreview(item.id);animate(item.id);
   };
-  toggle.addEventListener('click',()=>{index=Math.max(0,WALLPAPERS.findIndex(w=>w.id===equippedWallpaper()));dialog.showModal();render();});
+  const size=()=>{const map=ui.querySelector<HTMLElement>('.map-window'),img=ui.querySelector<HTMLElement>('.map-track img');if(map&&img){dialog.style.setProperty('--wallpaper-width',map.getBoundingClientRect().width+'px');dialog.style.setProperty('--wallpaper-height',img.getBoundingClientRect().height+'px');}};
+  const observer=new ResizeObserver(size);observer.observe(ui);
+  dialog.addEventListener('keydown',e=>e.stopPropagation());dialog.addEventListener('keyup',e=>e.stopPropagation());
+  toggle.addEventListener('click',()=>{size();index=Math.max(0,WALLPAPERS.findIndex(w=>w.id===equippedWallpaper()));dialog.showModal();render();});
   dialog.querySelectorAll('.wallpaper-carousel>button').forEach((button,i)=>button.addEventListener('click',()=>{index=(index+(i?1:-1)+WALLPAPERS.length)%WALLPAPERS.length;render();}));
   dialog.querySelector('.wallpaper-close')!.addEventListener('click',()=>dialog.close());
   dialog.querySelector('.wallpaper-equip')!.addEventListener('click',()=>{if(index===0||owns('wallpaper',WALLPAPERS[index].id)){localStorage.setItem('jump-wallpaper',WALLPAPERS[index].id);dialog.close();}});
   dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close();}});
   dialog.addEventListener('close',()=>{clear();onPreview(equippedWallpaper());animate(equippedWallpaper());toggle.focus();});
-  return {open:()=>dialog.open,destroy:()=>{clear();dialog.remove();toggle.remove();}};
+  return {open:()=>dialog.open,destroy:()=>{observer.disconnect();clear();dialog.remove();toggle.remove();}};
 }

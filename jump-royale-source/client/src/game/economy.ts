@@ -45,6 +45,7 @@ export function price(slot:string,id:string):number {
   if(slot==='magicalCostume')return id==='classic'?0:id==='starlight-16'?5:Infinity;
   if(slot==='character'&&id==='mushroom'&&(wallet().owned.includes('costume:mushroom')||['helmet','shirt','pants'].every(s=>owns(s,'mushroom'))))return 0;
   if(slot==='costume'){
+    if(id==='finn-16')return 5;
     if(!COSTUMES.some(c=>c.id===id))return Infinity;
     return costumePieces(id).reduce((sum,[s,p])=>sum+(owns(s,p)?0:price(s,p)),0);
   }

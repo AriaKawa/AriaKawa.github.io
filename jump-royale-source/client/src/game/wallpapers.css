@@ -19,3 +19,33 @@
 @media(prefers-reduced-motion:reduce){.wallpaper-track{transition:none}}
 @media(max-height:450px) and (min-width:760px){.forged-command .forge-mission{top:14%;bottom:2%}.forged-command .forge-eyebrow{margin-bottom:4px}.forged-command .map-track img{height:20vh;min-height:65px}.forged-command .map-caption h2{font-size:17px}.forged-command .map-caption{padding:0}.forged-command .menu-form label{font-size:10px;margin-bottom:2px}.forged-command .menu-form input{height:36px;font-size:18px}.forged-command .menu-form button{height:64px}.forged-command .map-dots{margin-top:3px}}
 @media(max-height:450px) and (min-width:760px){.forged-command .menu-form input{height:40px;font-size:16px;border-width:8px!important;border-image-width:8px!important}}
+/* Match the map viewport exactly, with a slightly larger forged outer frame. */
+.forged-command .wallpaper-dialog{width:calc(var(--wallpaper-width,36vw) + 36px);max-width:96vw;inset:0 max(1vw,calc(3vw - 18px)) 0 auto;margin:auto 0;max-height:94dvh;padding:4px;border:14px solid transparent;border-image:url('/assets/menu/forged-command/frame.png') 12% fill / 14px / 0 stretch;background:none;overflow:auto}
+.wallpaper-dialog header{position:relative;min-height:42px;padding:0 48px 0 10px;margin:4px 0 8px;align-items:center}
+.wallpaper-dialog h2{font-size:20px}
+.wallpaper-dialog button{box-sizing:border-box;border:8px solid transparent;border-image:url('/assets/menu/forged-command/frame.png') 12% fill / 8px / 0 stretch;background:none;color:#f9e8c7;padding:0;display:grid;place-items:center}
+.wallpaper-dialog .wallpaper-close{position:absolute;right:0;top:0;width:40px;height:40px}
+.wallpaper-dialog button svg{display:block;width:20px;height:20px;flex-shrink:0}
+.wallpaper-carousel{position:relative;display:block}
+.wallpaper-window{width:100%;box-sizing:border-box;border:14px solid transparent;border-image:url('/assets/menu/forged-command/frame.png') 12% fill / 14px / 0 stretch}
+.wallpaper-track img{height:var(--wallpaper-height,29vh);aspect-ratio:auto;object-fit:cover;object-position:center}
+.wallpaper-carousel>button{position:absolute;z-index:2;top:calc(50% - 23px);width:36px;height:46px}
+.wallpaper-carousel>button:first-child{left:21px}.wallpaper-carousel>button:last-child{right:21px}
+.wallpaper-dialog h3{font-size:clamp(21px,2.1vw,38px);margin:8px 0 4px}.wallpaper-status{font-size:14px;margin:4px 0}.wallpaper-dots{margin:5px 0}
+.wallpaper-dialog .wallpaper-equip{width:190px;min-height:46px;padding:5px 12px;margin:8px auto;font:16px Georgia,serif}
+.wallpaper-dialog button:focus-visible{outline:2px solid #ffe3a4;outline-offset:2px}
+@media(max-width:759px){.forged-command .wallpaper-dialog{inset:0;margin:auto;max-width:96vw}.wallpaper-dialog header{margin-top:0}.wallpaper-dialog h2{font-size:18px}.wallpaper-dialog h3{font-size:20px}.wallpaper-status{font-size:12px}}
+@media(max-height:450px){.wallpaper-dialog header{min-height:36px;margin-bottom:3px}.wallpaper-dialog .wallpaper-close{width:34px;height:34px}.wallpaper-dialog h3{font-size:18px;margin:2px}.wallpaper-status,.wallpaper-dots{font-size:11px;margin:2px}.wallpaper-dialog .wallpaper-equip{min-height:36px;margin:3px auto;font-size:13px}}
+/* Compact caption beside the equip control keeps the selector rectangular. */
+.forged-command .wallpaper-dialog[open]{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:8px}
+.wallpaper-dialog header{position:absolute;z-index:3;left:28px;right:28px;top:26px;padding:0 44px 0 8px;margin:0;pointer-events:none}
+.wallpaper-dialog h2{padding:5px 8px;background:#080c12d9;font-size:15px;max-width:max-content}
+.wallpaper-dialog header button{pointer-events:auto}
+.wallpaper-dialog .wallpaper-close{width:40px;height:40px;border-width:6px;border-image-width:6px}
+.wallpaper-dialog .wallpaper-carousel{grid-column:1/-1}
+.wallpaper-dialog h3{grid-column:1;grid-row:2;margin:8px 0 2px;font-size:22px}
+.wallpaper-dialog .wallpaper-status{grid-column:1;grid-row:3;margin:2px 0;font-size:12px}
+.wallpaper-dialog .wallpaper-dots{grid-column:1;grid-row:4;margin:3px 0 7px;font-size:12px}
+.wallpaper-dialog .wallpaper-equip{grid-column:2;grid-row:2/5;align-self:center;width:132px;margin:4px 3px 4px 0;font-size:13px}
+@media(max-width:759px){.wallpaper-dialog h3{font-size:17px}.wallpaper-dialog .wallpaper-equip{width:76px;min-height:44px;padding:3px;font-size:10px}.wallpaper-dialog .wallpaper-status{font-size:10px}.wallpaper-dialog h2{font-size:12px}.wallpaper-dialog header{left:25px;right:25px;top:25px}}
+@media(max-height:450px){.wallpaper-dialog header{position:relative;grid-column:1/-1;grid-row:1;inset:auto;min-height:40px;margin:0 0 4px;padding-left:0}.wallpaper-dialog h2{font-size:13px;background:none}.wallpaper-dialog .wallpaper-carousel{grid-row:2}.wallpaper-dialog h3{grid-row:3;font-size:18px}.wallpaper-dialog .wallpaper-status{grid-row:4}.wallpaper-dialog .wallpaper-dots{grid-row:5}.wallpaper-dialog .wallpaper-equip{grid-row:3/6;width:108px}}

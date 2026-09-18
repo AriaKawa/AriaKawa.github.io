@@ -51,6 +51,8 @@ export function saveOutfit(outfit: Outfit): void {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitizeOutfit(outfit))); } catch { /* Session selection still works with storage disabled. */ }
 }
 export function queueCosmetics(scene: Phaser.Scene): void {
+  scene.load.spritesheet('fantasy-finn',`${ROOT}/finn.png`,{frameWidth:32,frameHeight:32});
+  scene.load.spritesheet('fantasy-finn-16',`${ROOT}/finn-16.png`,{frameWidth:64,frameHeight:64});
   for(const sheet of [...MAGICAL_HD_SHEETS,...DETAILED_SHEETS])scene.load.spritesheet('fantasy-'+sheet,`${ROOT}/${sheet}.png`,{frameWidth:64,frameHeight:64});
   for(const sheet of FANTASY_SHEETS)scene.load.spritesheet('fantasy-'+sheet,`${ROOT}/${sheet}.png`,{frameWidth:32,frameHeight:32});
   scene.load.image('demon-source',`${ROOT}/demon.png`);
@@ -66,6 +68,7 @@ export function queueCosmetics(scene: Phaser.Scene): void {
  * animation timing. All equipment shares the same frame grid and foot origin. */
 export function outfitTexture(scene: Phaser.Scene, requested: Outfit): string {
   const outfit = sanitizeOutfit(requested);
+  if(outfit.character==='original'&&(outfit.costume==='classic'||outfit.costume==='finn-16'))return fantasyTexture(scene,'finn',outfit.hair,outfit.costume==='finn-16'?'detailed':'classic');
   if(isAnimal(outfit.character))return animalTexture(scene,outfit.character,outfit.animalHat,outfit.detailedCostumes?.includes(outfit.character+'-16'));
   if(outfit.detailedCostumes?.includes(outfit.character+'-16'))return fantasyTexture(scene,outfit.character==='demon'&&outfit.hair!=='original'?'demon-'+outfit.hair:outfit.character+'',outfit.hair,'detailed');
   if(isFantasy(outfit.character))return fantasyTexture(scene,outfit.character,outfit.hair,outfit.magicalCostume);

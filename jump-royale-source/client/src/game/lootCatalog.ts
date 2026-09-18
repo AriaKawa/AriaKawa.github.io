@@ -6,7 +6,7 @@ export const LOOT_POOL:LootEntry[]=[
  {slot:'wallpaper',id:'starlight',name:'Starlight Wallpaper',rarity:1},
  {slot:'wallpaper',id:'moonveil',name:'Moonveil Wallpaper',rarity:0},
  ...[{id:'demon-16',name:'Ember · 16-bit'},{id:'neet-16',name:'Kenji · 16-bit'},{id:'cerberus-16',name:'Cerberus · 16-bit'}].map(p=>({...p,slot:'hdCostume',rarity:3})),
- ...COSTUMES.filter(p=>p.id!=='classic').map(p=>({slot:'costume',id:p.id,name:p.name,rarity:p.id==='mage'?2:['maid','diver'].includes(p.id)?1:0})),
+ ...COSTUMES.filter(p=>p.id!=='classic').map(p=>({slot:'costume',id:p.id,name:p.name,rarity:p.id==='finn-16'?3:p.id==='mage'?2:['maid','diver'].includes(p.id)?1:0})),
  ...COSMETICS.character.filter(p=>p.id!=='original').map(p=>({slot:'character',id:p.id,name:p.name,rarity:p.id==='demon'||p.id==='cerberus'?4:p.id==='mushroom'?2:3})),
  ...DEMON_HAIRS.filter(p=>p.id!=='original').map(p=>({slot:'hair',id:p.id,name:p.name,rarity:1})),
  {slot:'hair',id:'star-buns',name:'Starlight Star Buns',rarity:2},
