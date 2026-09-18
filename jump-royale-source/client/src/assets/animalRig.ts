@@ -24,8 +24,8 @@ const HATS:Record<string,{pixels:string[];colors:Record<string,string>;anchor:nu
 };
 
 export function animalTexture(scene:Phaser.Scene,animal:Animal,hat='none',detailed=false):string {
- const hd=detailed&&animal==='cerberus',unit=hd?2:1,size=32*unit,width=384*unit,height=40*unit,padding=8*unit;
- const sourceKey=hd?'fantasy-cerberus-16':animal+'-sprites',design=HATS[hat],key=design?animal+(hd?'-16':'')+'-'+hat:sourceKey;
+ const hd=detailed,unit=hd?2:1,size=32*unit,width=384*unit,height=40*unit,padding=8*unit;
+ const sourceKey=hd?'fantasy-'+animal+'-16':animal+'-sprites',design=HATS[hat],key=design?animal+(hd?'-16':'')+'-'+hat:sourceKey;
  if(design&&!scene.textures.exists(key)){
   const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
   const c=canvas.getContext('2d')!;c.imageSmoothingEnabled=false;
