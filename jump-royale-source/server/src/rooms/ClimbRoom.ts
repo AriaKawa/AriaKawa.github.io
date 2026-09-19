@@ -1,3 +1,4 @@
+import {forgeLavaPools,touchesForgeLava} from '../sim/level.js';
 import {worldForMap,floodForMap} from '../sim/world.js';
 import {safePlayerName} from '../sim/names.js';
 import {levelForMap, MAPS, type MapId} from '../sim/maps.js';
@@ -170,10 +171,11 @@ export class ClimbRoom extends Room {
       for (const player of this.players.values()) {
         if(!player.alive)continue;
         const previousHeight=Math.floor(player.maxHeight);
+        const previousY=player.y;
         if (player.isBot) updateBot(player, this.platforms, now);
         stepPlayer(player, this.platforms, dt,{...this.world,time:(now-this.roundStartedAt)/1000});
         if(Math.floor(player.maxHeight)>previousHeight)player.heightReachedMs=Math.round(now-this.roundStartedAt);
-        if (player.alive && (player.y + PLAYER_HEIGHT >= this.hazardY || player.y > this.world.height+50)) {
+        if (player.alive && (player.y + PLAYER_HEIGHT >= this.hazardY || (this.mapId === "forge" && touchesForgeLava(player,forgeLavaPools(this.platforms),previousY)) || player.y > this.world.height+50)) {
           player.alive = false;
           player.charging = false;
           player.eliminatedAt = now;

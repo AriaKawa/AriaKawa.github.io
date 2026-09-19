@@ -1,3 +1,5 @@
+import {updateMovingPlatforms} from './platforms.js';
+import {forgeLavaPools,touchesForgeLava} from './level.js';
 import {worldForMap} from './world.js';
 import { stepPlayer, solidBoxes } from "./physics.js";
 import { GRAVITY, HORIZONTAL_JUMP_SPEED, MAX_CHARGE_MS, MAX_JUMP_VELOCITY_Y, MIN_JUMP_VELOCITY_Y, PLAYER_WIDTH, SHAFT_LEFT, SHAFT_RIGHT } from "./constants.js";
@@ -19,6 +21,7 @@ function random(bot: PlayerState): number {
 /** Search discrete 30 Hz launch arcs, matching the authoritative integrator. */
 function planJump(bot: PlayerState, support: Platform, target: Platform, platforms: Platform[]): Plan | undefined {
   let best: Plan | undefined;
+  const lava=forgeLavaPools(platforms);
   for (let ticks = 10; ticks <= 24; ticks++) {
     const charge = Math.min(1, ticks * 1000 / 30 / MAX_CHARGE_MS);
     const eased = charge * charge * (3 - 2 * charge);
@@ -46,7 +49,8 @@ function planJump(bot: PlayerState, support: Platform, target: Platform, platfor
             let robust=true;
             for(const offset of [-3,0,3]){
               const probe:PlayerState={...bot,crumblingPlatforms:{...bot.crumblingPlatforms},x:x+offset,y:support.y-20,vx:0,vy:0,grounded:true,groundedPlatformId:support.id,charging:true,charge01:charge,chargeDirection:direction,input:{left:direction<0,right:direction>0,jumpHeld:false,seq:0}};
-              for(let frame=0;frame<40;frame++){stepPlayer(probe,platforms,1/30);if(probe.grounded)break;}
+              for(let frame=0;frame<40;frame++){const previousY=probe.y;stepPlayer(probe,platforms,1/30);if(touchesForgeLava(probe,lava,previousY)){robust=false;break;}if(probe.grounded)break;}
+              if(!robust)break;
               if(probe.groundedPlatformId!==target.id){robust=false;break;}
             }
             if(!robust)continue;
@@ -71,6 +75,28 @@ export function updateBot(bot: PlayerState, platforms: Platform[], now: number):
   if(brain.supportId!==bot.groundedPlatformId) {
     brain.supportId=bot.groundedPlatformId; brain.targetId=undefined; brain.launchX=undefined; brain.alignedUntil=undefined;
     brain.cooldownUntil=Math.max(brain.cooldownUntil,now+skill.think*pace*(.6+random(bot))+(platforms[0]?.mountain?100+random(bot)*450:0));
+  }
+  const ferrySupport=platforms.find(p=>p.id===bot.groundedPlatformId);
+  if(ferrySupport && /^(dock|ferry)-/.test(ferrySupport.id)){
+    const chapter=ferrySupport.id.split('-')[1];
+    const targetId=(ferrySupport.type==='moving'?'exit-':'ferry-')+chapter;
+    bot.input.left=false;bot.input.right=false;bot.input.jumpHeld=true;
+    if(bot.charge01<.99)return;
+    const clock=platforms.find(p=>p.type==='moving')?.motionTimeMs??0;
+    const nearby=platforms.filter(p=>Math.abs(p.y-ferrySupport.y)<350);
+    for(const direction of [-1,0,1]){
+      const copies=nearby.map(p=>({...p,deltaX:0,deltaY:0}));
+      const probe:PlayerState={...bot,crumblingPlatforms:{},input:{left:direction<0,right:direction>0,jumpHeld:false,seq:0}};
+      let safe=true;
+      for(let tick=0;tick<36;tick++){
+        updateMovingPlatforms(copies,clock+tick*1000/30);
+        stepPlayer(probe,copies,1/30);
+        if(touchesForgeLava(probe,forgeLavaPools(copies))){safe=false;break;}
+        if(probe.grounded)break;
+      }
+      if(safe&&probe.groundedPlatformId===targetId){bot.input.left=direction<0;bot.input.right=direction>0;bot.input.jumpHeld=false;break;}
+    }
+    return;
   }
   const icySupport=platforms.find(p=>p.id===bot.groundedPlatformId)?.slippery;
   if(icySupport&&platforms[0]?.mountain&&Math.abs(bot.vx)>100&&!bot.charging){bot.input.left=false;bot.input.right=false;bot.input.jumpHeld=true;brain.holdUntil=now+34;return;}

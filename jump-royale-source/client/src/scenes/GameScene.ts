@@ -1,4 +1,5 @@
 import {CANOPY_VINE,vinePose} from '../../../server/src/sim/vines';
+import {forgeLavaPools} from '../../../server/src/sim/level';
 import {spriteScale} from '../game/spriteSizing';
 import {missionProgress} from '../game/missions';
 import {party,submitRecord} from '../game/online';
@@ -84,6 +85,7 @@ export class GameScene extends Phaser.Scene {
   private lavaSurface?: Phaser.GameObjects.TileSprite;
   private lavaBody?: Phaser.GameObjects.TileSprite;
   private lavaParticleAccumulator = 0;
+  private forgePools: Phaser.GameObjects.TileSprite[]=[];
   private hud?: { alive: Phaser.GameObjects.Text; timer: Phaser.GameObjects.Text; stats: Phaser.GameObjects.Text; board: Phaser.GameObjects.Text; phase: Phaser.GameObjects.Text; help: Phaser.GameObjects.Text };
   private dangerOverlay?: Phaser.GameObjects.Rectangle;
   private minimap?: MiniMapHud;
@@ -118,6 +120,7 @@ export class GameScene extends Phaser.Scene {
     this.lavaSurface = undefined;
     this.lavaBody = undefined;
     this.lavaParticleAccumulator = 0;
+    this.forgePools=[];
     this.hud = undefined;
     this.dangerOverlay = undefined;
     this.minimap = undefined;
@@ -131,7 +134,7 @@ export class GameScene extends Phaser.Scene {
     this.uiCamera=this.cameras.add(0,0,GAME_WIDTH,GAME_HEIGHT,false,'hud');
     this.cameras.main.setBounds(this.wideWorld?0:-(GAME_WIDTH-WORLD_WIDTH)/2, 0, this.wideWorld?this.world.width:GAME_WIDTH, this.worldHeight);
     this.cameras.main.scrollX = -(GAME_WIDTH-WORLD_WIDTH)/2;
-    this.terrainNotice?.destroy();this.terrainNotice=createSolidTerrainNotice(this,this.mapId==='jungle'?'canopy-vine':this.mapId==='snow'?'snow-ice':this.mapId==='mountain'?'ascent-ai-props/slope':this.mapId==='magical'?'magical-ai-ribbon-palace':'forest-ai-moss-slate',this.mapId==='jungle'?'vine':this.mapId==='snow'?'ice':this.mapId==='mountain'?'slope':'solid');
+    this.terrainNotice?.destroy();this.terrainNotice=createSolidTerrainNotice(this,this.mapId==='forge'?ASSETS.platformTiles.key:this.mapId==='jungle'?'canopy-vine':this.mapId==='snow'?'snow-ice':this.mapId==='mountain'?'ascent-ai-props/slope':this.mapId==='magical'?'magical-ai-ribbon-palace':'forest-ai-moss-slate',this.mapId==='jungle'?'vine':this.mapId==='snow'?'ice':this.mapId==='mountain'?'slope':'solid');
     this.drawWorldBackdrop();
     this.createHazard();
     if(!this.textures.exists('forged-hud-frame')){const t=this.textures.createCanvas('forged-hud-frame',100,100)!;t.context.drawImage(this.textures.get('forged-frame').getSourceImage() as HTMLImageElement,0,0,100,100);t.refresh();}
@@ -215,7 +218,7 @@ export class GameScene extends Phaser.Scene {
     if(this.mapId !== "forge"){ this.drawJungle(); return; }
     this.add.rectangle(-160, 0, GAME_WIDTH, this.worldHeight, 0x0b0810).setOrigin(0).setDepth(-30);
     this.backdrop = this.add.image(0, -420, ASSETS.background.key).setOrigin(0)
-      .setDisplaySize(WORLD_WIDTH, 960).setDepth(-25).setScrollFactor(1, 0).setAlpha(0.56);
+      .setDisplaySize(WORLD_WIDTH, 960).setDepth(-25).setScrollFactor(1, 0).setAlpha(0.85);
     for (const x of [82, WORLD_WIDTH - 98]) {
       this.add.tileSprite(x, 0, 16, this.worldHeight, ASSETS.chains.key)
         .setOrigin(0).setDepth(-15).setScrollFactor(1, 0.55).setAlpha(0.72);
@@ -268,6 +271,12 @@ export class GameScene extends Phaser.Scene {
     this.levelDrawn = true;
     this.minimapPlatforms = level.platforms;
     for (const platform of level.platforms) this.renderPlatform(platform);
+    if(this.mapId==='forge')for(const pool of forgeLavaPools(level.platforms)){
+      this.add.image(pool.x-8,pool.y+pool.h-2,ASSETS.restPlatform.key).setOrigin(0).setDisplaySize(pool.w+16,24).setDepth(-1);
+      const lava=this.add.tileSprite(pool.x,pool.y,pool.w,pool.h,ASSETS.lavaSurface.key).setOrigin(0).setDepth(2);
+      this.forgePools.push(lava);
+      this.add.rectangle(pool.x,pool.y,pool.w,2,0xffd16a).setOrigin(0).setDepth(3);
+    }
   }
 
   private renderPlatform(platform: Platform): void {
@@ -281,20 +290,15 @@ export class GameScene extends Phaser.Scene {
       renderJungleTerrain(this,platform,container);
       return;
     }
-    const frames = { stone: 0, anvil: 1, wood: 2, cracked: 3, moving: 4, ice: 1 };
-    const frame = platform.id === "crown" || /route-\d-9/.test(platform.id) ? 5 : frames[platform.type];
-    if (frame === 5) {
-      // Cap each end once; repeat the middle instead of stretching large ornaments.
-      container.add(this.add.image(0,0,ASSETS.restPlatform.key,"left").setOrigin(0).setDisplaySize(8,24));
-      container.add(this.add.tileSprite(8,0,platform.w-16,32,ASSETS.restPlatform.key,"middle").setOrigin(0).setScale(1,0.75));
-      container.add(this.add.image(platform.w-8,0,ASSETS.restPlatform.key,"right").setOrigin(0).setDisplaySize(8,24));
-    } else {
-      container.add(this.add.image(0, 0, ASSETS.platformTiles.key, frame).setOrigin(0).setDisplaySize(platform.w, 26)
-        .setTint(platform.type === "ice" ? 0x94e8ef : 0xffffff));
+    const rest=platform.type==='anvil';
+    const key=platform.type==='moving'?'forge-ferry':rest?ASSETS.restPlatform.key:ASSETS.platformTiles.key;
+    container.add(this.add.image(0,0,key).setOrigin(0).setDisplaySize(platform.w,platform.h));
+    container.add(this.add.rectangle(0,0,platform.w,1,platform.type==='moving'?0x94f3e5:0xffd49a).setOrigin(0));
+    if(platform.id==='crown'||/route-\d-9/.test(platform.id))container.add(this.add.image(platform.w/2,-2,ASSETS.anvils.key).setOrigin(.5,1));
+    if(platform.type==='moving'){
+      this.add.rectangle(platform.baseX!+platform.w/2,platform.y+platform.h/2,platform.moveRange!*2+platform.w,2,0xc49b60,.3).setDepth(-2);
     }
-    // The thin landing edge exactly matches the physical surface.
-    container.add(this.add.rectangle(0, 0, platform.w, 2, frame === 5 ? 0xbad4df : platform.type === "moving" ? 0x78f1dd : 0xd9dfce).setOrigin(0));
-    if (/route-\d-9/.test(platform.id)) container.add(this.add.image(platform.w / 2, -3, ASSETS.anvils.key).setOrigin(0.5,1).setScale(0.6));
+    if(platform.id.startsWith('dock-'))container.add(this.add.text(platform.w/2,platform.h+8,'WAIT · BOARD · RIDE',{fontFamily:'sans-serif',fontSize:'8px',color:'#f4c78e'}).setOrigin(.5,0));
   }
 
   private createHazard(): void {
@@ -321,7 +325,7 @@ export class GameScene extends Phaser.Scene {
       return;
     }
     this.lavaBody = this.add.tileSprite(0, 0, WORLD_WIDTH, this.worldHeight, ASSETS.lavaBody.key).setOrigin(0).setDepth(24);
-    this.lavaSurface = this.add.tileSprite(0, 0, WORLD_WIDTH, 16, ASSETS.lavaSurface.key).setOrigin(0).setDepth(25);
+    this.lavaSurface = this.add.tileSprite(0, 0, WORLD_WIDTH, 24, ASSETS.lavaSurface.key).setOrigin(0).setDepth(25);
   }
 
   private createHud(): void {
@@ -428,7 +432,7 @@ export class GameScene extends Phaser.Scene {
     }
     if (this.lavaSurface && this.lavaBody) {
       this.lavaSurface.y = snapshot.hazardY + LAVA_SURFACE_VISUAL_OFFSET;
-      this.lavaBody.y = snapshot.hazardY + (this.mapId !== "forge" ? 7 : 14);
+      this.lavaBody.y = snapshot.hazardY + (this.mapId !== "forge" ? 7 : 22);
     }
     if(this.flood){this.flood.y=snapshot.hazardY;this.flood.setVisible(true);}
     for (const position of snapshot.platforms ?? []) {
@@ -558,6 +562,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private updateLava(time: number, delta: number): void {
+    for(const pool of this.forgePools)pool.tilePositionX=time*.025;
     if (!this.lavaSurface || !this.lavaBody) return;
     if(this.mapId!=='forge'){
       this.lavaSurface.tilePositionX=time*.027;

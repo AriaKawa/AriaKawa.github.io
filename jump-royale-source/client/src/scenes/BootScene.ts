@@ -16,13 +16,14 @@ export class BootScene extends Phaser.Scene {
     const { paths, v2 } = await resolveArtAssets();
     this.registry.set("artV2", v2);
     queueResolvedAssets(this, paths, v2);
+    this.load.image('forge-ferry',import.meta.env.BASE_URL+'assets/crown-forge/moving.webp');
     queueCosmetics(this);
     queueJungleAssets(this);
     queueSnowAssets(this); queueMountainAssets(this); queueForestAssets(this); queueMagicalAssets(this);
     this.load.once(Phaser.Loader.Events.COMPLETE, () => {
       prepareJungleFrames(this);
-      const platform = this.textures.get(ASSETS.restPlatform.key);
-      platform.add("left",0,0,0,8,32); platform.add("middle",0,8,0,80,32); platform.add("right",0,88,0,8,32);
+      for(const asset of Object.values(ASSETS))if(asset.image.includes('/crown-forge/'))this.textures.get(asset.key).setFilter(Phaser.Textures.FilterMode.LINEAR);
+      this.textures.get('forge-ferry').setFilter(Phaser.Textures.FilterMode.LINEAR);
       if (v2.player) this.createPlayerAnimations();
       this.scene.start("Menu");
     });

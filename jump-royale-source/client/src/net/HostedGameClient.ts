@@ -1,3 +1,4 @@
+import {forgeLavaPools,touchesForgeLava} from '../../../server/src/sim/level';
 import {COUNTDOWN_SECONDS} from '../../../server/src/sim/constants';
 import {backend,party,playerId,isHost,partyMembers} from '../game/online';
 import {worldForMap,floodForMap} from '../../../server/src/sim/world';
@@ -121,12 +122,13 @@ export class HostedGameClient {
       for (const player of this.players.values()) {
         if(!player.alive)continue;
         const previousHeight=Math.floor(player.maxHeight);
+        const previousY=player.y;
         if (player.isBot) updateBot(player, this.platforms, this.clock);
         if (!player.isBot && this.godPowers) {
           if (this.flying) stepFlight(player,1/30,this.world); else stepPlayer(player,this.platforms,1/30,{...this.world,time:elapsed});
         } else stepPlayer(player, this.platforms, 1 / 30,{...this.world,time:elapsed});
         if(Math.floor(player.maxHeight)>previousHeight)player.heightReachedMs=Math.round(this.clock-this.roundStartedAt);
-        if (player.alive && !(this.godPowers && !player.isBot) && player.y + PLAYER_HEIGHT >= this.hazardY) {
+        if (player.alive && !(this.godPowers && !player.isBot) && (player.y + PLAYER_HEIGHT >= this.hazardY || (this.mapId === "forge" && touchesForgeLava(player,forgeLavaPools(this.platforms),previousY)))) {
           player.alive = false; player.charging = false; player.eliminatedAt = this.clock;
           this.emit("eliminated", { id: player.id, name: player.name });
         }

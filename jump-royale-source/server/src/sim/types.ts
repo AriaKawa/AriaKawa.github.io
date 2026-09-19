@@ -25,6 +25,7 @@ export interface Platform {
   movePeriodMs?: number;
   movePhase?: number;
   deltaX?: number;
+  motionTimeMs?: number;
 }
 
 export interface InputMessage {

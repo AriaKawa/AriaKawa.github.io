@@ -11,7 +11,7 @@ export const MAPS = [
   {id:'magical',name:'Starlight Reverie',subtitle:'Magical girl · Rose quartz · Moon palace',description:'Follow pink ribbons through a dream city, rose gardens and a celestial palace. Solid crystal ledges, branching trails and a rising stardust tide.'},
   {id:'forest',name:'Moonveil Forest',subtitle:'Nightfall · Branching trails · 16-bit',description:'A moonlit forest of outstretched boughs and mossy cliffs. Cross long switchbacks, choose your route, and climb to the moon shrine.'},
   {id:'mountain',name:'The Long Mountain',subtitle:'Ten regions · One enormous ascent',description:'Cross abandoned roofs, climb the bell tower, and reach the stars. Committed jumps, moving lifts, secrets and long falls. Flood rises after two minutes.'},
-  { id: 'forge', name: 'The Crown Forge', subtitle: 'Embers · Steel · Precision', description: 'The original six-chapter ascent.' },
+  { id: 'forge', name: 'The Crown Forge', subtitle: 'Embers · Steel · Precision', description: 'A molten royal foundry. Solid basalt ledges, open lava crucibles, and mandatory ferries: wait, board, ride, then jump.' },
   { id: 'jungle', name: 'Verdant Canopy', subtitle: 'Swinging vine · Ancient jungle · Rising flood', description: 'Start on the right, leap left and catch the vine. W / S climb; Space releases with your swing momentum.' },
   { id: 'snow', name: 'Frostpeak Summit', subtitle: 'Snow · Precision ledges · Occasional ice', description: 'Cross varied snow ledges. Occasional cyan ice slides; Space grips.' }
 ] as const;
