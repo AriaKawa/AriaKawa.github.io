@@ -37,3 +37,11 @@ Visible idle-body bounds set character scale consistently in matches, the lobby,
 ## Selected home-screen previews
 
 Applied the user choices: Starlight Reverie A, Moonveil Forest B, The Long Mountain B, The Crown Forge C, and Frostpeak Summit C. Verdant Canopy retains its existing image. The selected original PNGs were resized to the same 1200-by-800 framing as the gallery and installed at the existing home-screen preview paths.
+
+## Animal size, steady camera and coffee icon
+
+Animals use a 0.5 visual multiplier, including hats and retro versions. Other character scales remain unchanged. The shared simulation does not receive character or outfit data: everyone retains PLAYER_WIDTH/PLAYER_HEIGHT, the same charge curve, launch velocity, air control and collision rules. Removed the sole camera shake call from the shared danger HUD.
+
+Coffee asset: forge-climb-royale/assets/menu/coffee-cup.png. Generated with the built-in imagegen tool, preserving alpha and resized with nearest-neighbor sampling. Final prompt: "Generate a single game UI icon: a steaming ceramic coffee cup filled with dark coffee, handle on the right, warm ivory ceramic with subtle amber highlights and a dark brown pixel outline. True 16-bit console pixel-art sprite, crisp square pixel clusters, simple readable silhouette at 48 pixels. Centered isolated full cup and two little steam curls, transparent background with genuine alpha. No saucer, no text, no badge, no surrounding scenery or border. Square canvas. Intended beside a fantasy game's treasure chest menu icon."
+
+The icon is visual only, immediately after the loot box; no destination or purchasing action was requested. The right-aligned toolbar shifts preceding items left, with a compact narrow-phone layout. Browser verification covers 104 outfit/hat/retro size combinations, four viewport widths, and forced high-danger HUD updates on every map with camera shake instrumented to fail the test.

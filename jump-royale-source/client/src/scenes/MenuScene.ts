@@ -133,7 +133,8 @@ export class MenuScene extends Phaser.Scene {
     this.form!.querySelector('input')!.insertAdjacentHTML('beforebegin','<label for="climber-name">NAME</label>');
     this.form!.querySelector('button')!.innerHTML='<span>Start</span>';
     const resources=document.createElement('div');resources.className='forge-resources';
-    resources.append(ui.querySelector('.gold-marker')!,ui.querySelector('.loot-toggle')!,ui.querySelector('.settings-cog')!);
+    const coffee=document.createElement('img');coffee.className='coffee-icon';coffee.src=import.meta.env.BASE_URL+'assets/menu/coffee-cup.png';coffee.alt='Coffee';coffee.title='Coffee';coffee.draggable=false;
+    resources.append(ui.querySelector('.gold-marker')!,ui.querySelector('.loot-toggle')!,coffee,ui.querySelector('.settings-cog')!);
     const note=document.createElement('p');note.className='forge-controls';note.innerHTML='<span>A / D</span> MOVE <i>·</i> HOLD <span>SPACE</span> TO JUMP';
     ui.append(rail,resources,mission,note);
     this.wallpapers=createWallpapers(this,ui,id=>{this.wallpaperId=id;this.background.setTexture(id).setDisplaySize(GAME_WIDTH,GAME_HEIGHT);this.held=false;this.movement.clear();this.placeOnPedestal();this.refreshSurfaces();});

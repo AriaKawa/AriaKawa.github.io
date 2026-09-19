@@ -600,7 +600,7 @@ export class GameScene extends Phaser.Scene {
     if(this.deathUi)this.hud.phase.setVisible(false);
     const danger = snapshot.phase==='surge' ? .18 + Math.sin(this.time.now*.02)*.07 : local?.alive ? Phaser.Math.Clamp(1 - hazardDistance / 400, 0, 0.46) : 0;
     this.dangerOverlay?.setAlpha(danger);
-    if (danger > 0.22 && Math.random() < 0.025) this.cameras.main.shake(80, 0.0022);
+    // Camera shake is disabled on every map.
   }
 
   private drawMinimap(snapshot: Snapshot): void {
