@@ -165,7 +165,7 @@ export class GameScene extends Phaser.Scene {
     if(this.wideWorld){
       const camera=this.cameras.main,collapse=this.snapshot?.players.find(p=>p.id===this.localId)?.crumblingPlatforms;
       for(const [id,c] of this.platformEntities)c.setVisible(c.y>camera.scrollY-280&&c.y<camera.scrollY+GAME_HEIGHT+100&&c.x<camera.scrollX+GAME_WIDTH+400&&c.x+(c.getData('width')??500)>camera.scrollX&&collapse?.[id]!==0);
-      this.flood?.setX(camera.scrollX).setDisplaySize(GAME_WIDTH,GAME_HEIGHT+160);
+      this.flood?.setX(camera.scrollX).setDisplaySize(GAME_WIDTH,this.mapId==='forest'?this.worldHeight+GAME_HEIGHT:GAME_HEIGHT+160);
     }
     if(this.mapId==='snow'&&this.flood){
       const camera=this.cameras.main;this.flood.setX(camera.scrollX).setDisplaySize(GAME_WIDTH,GAME_HEIGHT+160);
@@ -281,7 +281,7 @@ export class GameScene extends Phaser.Scene {
 
   private createHazard(): void {
     if(this.mapId==='magical'){this.flood=this.add.image(0,0,'magical-ai-stardust-tide').setOrigin(0).setDepth(24).setDisplaySize(GAME_WIDTH,GAME_HEIGHT+160);return;}
-    if(this.mapId==='forest'){this.flood=this.add.image(0,0,forestWater(this)).setOrigin(0).setDepth(24).setDisplaySize(GAME_WIDTH,GAME_HEIGHT+160);return;}
+    if(this.mapId==='forest'){this.flood=this.add.image(0,0,forestWater(this)).setOrigin(0).setDepth(24).setDisplaySize(GAME_WIDTH,this.worldHeight+GAME_HEIGHT);return;}
     if(this.wideWorld){
       this.flood=this.add.image(0,0,'ascent-ai-props/water').setOrigin(0).setDepth(24).setDisplaySize(GAME_WIDTH,GAME_HEIGHT+160);return;
     }

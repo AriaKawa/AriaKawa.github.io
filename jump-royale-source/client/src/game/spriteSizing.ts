@@ -1,4 +1,5 @@
 import type Phaser from 'phaser';
+import {footOrigin} from './spriteFeet';
 
 type Bounds={left:number;top:number;right:number;bottom:number;width:number;height:number;bodyHeight:number};
 const cache=new Map<string,Bounds>();
@@ -28,5 +29,5 @@ export function drawOutfitPreview(scene:Phaser.Scene,canvas:HTMLCanvasElement,ke
  const texture=scene.textures.get(key),frame=texture.get(frameIndex),bounds=spriteBounds(scene,key),c=canvas.getContext('2d')!;
  const scale=Math.min(canvas.height*.84/bounds.bodyHeight,canvas.width*.9/bounds.width,canvas.height*.94/bounds.height)*characterVisualScale(key);
  c.clearRect(0,0,canvas.width,canvas.height);c.imageSmoothingEnabled=false;
- c.drawImage(texture.getSourceImage() as HTMLImageElement,frame.cutX,frame.cutY,frame.width,frame.height,canvas.width/2-(bounds.left+bounds.width/2)*scale,canvas.height*.97-bounds.bottom*scale,frame.width*scale,frame.height*scale);
+ c.drawImage(texture.getSourceImage() as HTMLImageElement,frame.cutX,frame.cutY,frame.width,frame.height,canvas.width/2-(bounds.left+bounds.width/2)*scale,canvas.height-footOrigin(scene,key,frameIndex)*frame.height*scale,frame.width*scale,frame.height*scale);
 }

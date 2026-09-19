@@ -28,7 +28,7 @@ export function renderForestTerrain(scene:Phaser.Scene,p:Platform,container:Phas
  const deco=scene.add.graphics();const r=random(seed+44);
  for(let i=0;i<Math.floor(w/45);i++){
   const x=12+r()*(w-24);deco.lineStyle(1,0x477765).lineBetween(x,0,x-4,-12);deco.lineBetween(x-2,-4,x-9,-8);deco.lineBetween(x-3,-8,x+3,-13);
-  if(i%2===0){deco.fillStyle(0x669ba2).fillRect(x+9,-6,2,6);deco.fillStyle(0x9ae1ce).fillRect(x+6,-8,8,3);deco.fillStyle(0xe2f9c0).fillRect(x+8,-9,3,1);}
+  if(i%2===0)container.add(scene.add.image(x,1,'forest-ai-mushrooms').setOrigin(.5,1).setDisplaySize(24,28));
  }
  if(p.w>=290 || p.id==='crown'){
   container.add(scene.add.image(p.w-25,0,'forest-ai-lantern').setOrigin(.5,1).setDisplaySize(24,78));
@@ -39,8 +39,20 @@ export function renderForestTerrain(scene:Phaser.Scene,p:Platform,container:Phas
  container.add(deco);
 }
 
-export function forestWater(_scene:Phaser.Scene):string{return 'forest-ai-water';}
+export function forestWater(scene:Phaser.Scene):string {
+ const key='forest-continuous-water';
+ if(!scene.textures.exists(key)){
+  // Keep the authored crest at normal scale and fade into an opaque deep body.
+  const texture=scene.textures.createCanvas(key,1024,4096)!,c=texture.context;
+  c.fillStyle='#031630';c.fillRect(0,0,1024,4096);
+  c.drawImage(scene.textures.get('forest-ai-water').getSourceImage() as HTMLImageElement,0,0,1024,160);
+  const fade=c.createLinearGradient(0,90,0,160);fade.addColorStop(0,'#03163000');fade.addColorStop(1,'#031630');
+  c.fillStyle=fade;c.fillRect(0,90,1024,70);texture.refresh();
+ }
+ return key;
+}
 
 export function queueForestAssets(scene:Phaser.Scene):void {
- for(const name of ['moss-slate','root-slate','moon-ruin','water','background','lantern','bucket'])scene.load.image('forest-ai-'+name,import.meta.env.BASE_URL+'assets/forest-ai/'+name+'.webp');
+ for(const name of ['moss-slate','root-slate','moon-ruin','water','background','lantern','bucket','mushrooms'])scene.load.image('forest-ai-'+name,import.meta.env.BASE_URL+'assets/forest-ai/'+name+'.webp');
 }
+
