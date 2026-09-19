@@ -9,7 +9,7 @@ export const WALLPAPERS = [
   {id:'forged-command',name:'The Forge',image:'forged-command/background.png',locked:false},
   {id:'starlight',name:'Starlight',image:'wallpapers/starlight.png',locked:true},
   {id:'moonveil',name:'Moonveil',image:'wallpapers/moonveil.png',locked:true},
-  ...EXPEDITION_WALLPAPERS.map(w=>({...w,image:'wallpapers/'+w.id+'.png'+(w.id==='corsair-cove'?'?v=20260919-no-cannon':w.id==='moonwalk'?'?v=20260919-closeup':''),locked:true})),
+  ...EXPEDITION_WALLPAPERS.map(w=>({...w,image:'wallpapers/'+(w.id==='moonwalk'?'moonwalk-nebula':w.id)+'.png'+(w.id==='corsair-cove'?'?v=20260919-no-cannon':''),locked:true})),
 ] as const;
 
 export function createWallpapers(scene:Phaser.Scene,ui:HTMLElement,onPreview:(id:string)=>void) {

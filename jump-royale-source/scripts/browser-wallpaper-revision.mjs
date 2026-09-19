@@ -45,7 +45,7 @@ try{
   const ledge={id:'ui-test',x:400,y:220,w:160,h:4,type:'stone'};
   resetMoon(actor);actor.input.jumpHeld=true;for(let i=0;i<25;i++)stepMoon(actor,1/30,960,540,[ledge]);actor.input.jumpHeld=false;
   for(let i=0;i<200;i++)stepMoon(actor,1/30,960,540,[ledge]);
-  if(actor.groundedPlatformId!=='ui-test')throw Error('Moon UI fallthrough');
+  if(actor.groundedPlatformId!=='little-moon')throw Error('UI interrupted lunar attraction');
   actor.input.right=true;for(let i=0;i<100;i++)stepMoon(actor,1/30,960,540,[ledge]);if(actor.groundedPlatformId==='ui-test')throw Error('Cannot leave UI');
   return {angle,hidden,flight,geometry:moonGeometry(960,540)};
  });
