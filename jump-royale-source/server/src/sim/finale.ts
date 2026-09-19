@@ -11,6 +11,7 @@ export function surgeHeight(startY: number, elapsedMs: number): number {
 }
 export function prepareWinner(player: PlayerState, platforms: Platform[]): void {
   const crown = platforms.find(p => p.id === 'crown')!;
+  player.vineId=undefined;player.vineRadius=undefined;
   player.alive = true;
   if (player.y + PLAYER_HEIGHT > crown.y + 2) {
     player.x = crown.x + crown.w / 2; player.y = crown.y - PLAYER_HEIGHT;

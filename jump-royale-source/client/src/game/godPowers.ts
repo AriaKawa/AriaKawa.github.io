@@ -5,6 +5,7 @@ import type { Platform, PlayerState } from "../../../server/src/sim/types";
 
 /** Flight belongs only to the local practice client; multiplayer input cannot enable it. */
 export function landPlayer(player: PlayerState, platforms: Platform[]): void {
+  player.vineId=undefined;player.vineRadius=undefined;
   const bounds=worldForMap(platforms[0]?.magical?'magical':platforms[0]?.forest?'forest':platforms[0]?.mountain?'mountain':'forge');
   const fits = (x: number, y: number) => !platforms.some(p => solidBoxes(p).some(b =>
     x < b.x + b.w && x + PLAYER_WIDTH > b.x && y < b.y + b.h && y + PLAYER_HEIGHT > b.y + .01));
@@ -24,6 +25,7 @@ export function landPlayer(player: PlayerState, platforms: Platform[]): void {
 }
 
 export function stepFlight(player: PlayerState, dt: number, bounds={left:SHAFT_LEFT,right:SHAFT_RIGHT,height:WORLD_HEIGHT,spawnY:SPAWN_Y}): void {
+  player.vineId=undefined;player.vineRadius=undefined;
   const dx = Number(player.input.right)-Number(player.input.left);
   const dy = Number(!!player.input.down)-Number(!!player.input.up);
   const speed = 440 / Math.max(1, Math.hypot(dx,dy));

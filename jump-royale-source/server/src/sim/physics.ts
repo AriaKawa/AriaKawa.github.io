@@ -1,3 +1,4 @@
+import {stepVine} from './vines.js';
 import {platformSurfaceY} from './platformSurface.js';
 import {worldForMap} from './world.js';
 import {mountainWind} from './mountain.js';
@@ -16,6 +17,7 @@ export interface WorldBounds { left:number; right:number; top:number; bounce?:nu
 const SHAFT_BOUNDS:WorldBounds={left:SHAFT_LEFT,right:SHAFT_RIGHT,top:0};
 export function stepPlayer(player: PlayerState, platforms: Platform[], dt: number, bounds:WorldBounds=SHAFT_BOUNDS): void {
   if (!player.alive) return;
+  if(platforms.some(p=>p.id==='jungle-0')&&stepVine(player,platforms,dt,bounds.time??0))return;
   const magical=!!platforms[0]?.magical;
   if(magical)bounds={...worldForMap('magical'),...bounds,left:54,right:worldForMap('magical').right};
   const forest=!!platforms[0]?.forest;

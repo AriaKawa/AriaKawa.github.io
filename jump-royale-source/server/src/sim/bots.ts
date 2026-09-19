@@ -63,6 +63,7 @@ export function updateBot(bot: PlayerState, platforms: Platform[], now: number):
   const brain = bot.bot;
   if (!bot.alive || !brain) return;
   platforms = platforms.filter(p => bot.crumblingPlatforms?.[p.id] !== 0);
+  if(bot.vineId){bot.input.left=false;bot.input.right=false;bot.input.up=false;bot.input.down=false;bot.input.jumpHeld=bot.x<235&&bot.vx<0;return;}
   const skill=SKILLS[bot.skill??"average"];
   const pace=[1.4,.65,1,1.15][brain.pattern%4];
   if (!bot.grounded) { bot.input.jumpHeld = false; brain.alignedUntil=undefined; return; }

@@ -3,7 +3,7 @@ import { SHAFT_LEFT, SHAFT_RIGHT, PLAYER_WIDTH, PLAYER_HEIGHT, WORLD_HEIGHT } fr
 
 export function becomeGhost(p:PlayerState):void {
   if(p.alive)return;
-  p.ghost=true;p.departed=false;p.charging=false;p.grounded=false;p.vx=0;p.vy=0;
+  p.vineId=undefined;p.vineRadius=undefined;p.ghost=true;p.departed=false;p.charging=false;p.grounded=false;p.vx=0;p.vy=0;
 }
 /** Spectators never change their final competitive height or return to play. */
 export function stepGhosts(players:Iterable<PlayerState>,now:number,dt:number,bounds={left:SHAFT_LEFT,right:SHAFT_RIGHT,height:WORLD_HEIGHT}):void {

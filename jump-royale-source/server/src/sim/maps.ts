@@ -12,7 +12,7 @@ export const MAPS = [
   {id:'forest',name:'Moonveil Forest',subtitle:'Nightfall · Branching trails · 16-bit',description:'A moonlit forest of outstretched boughs and mossy cliffs. Cross long switchbacks, choose your route, and climb to the moon shrine.'},
   {id:'mountain',name:'The Long Mountain',subtitle:'Ten regions · One enormous ascent',description:'Cross abandoned roofs, climb the bell tower, and reach the stars. Committed jumps, moving lifts, secrets and long falls. Flood rises after two minutes.'},
   { id: 'forge', name: 'The Crown Forge', subtitle: 'Embers · Steel · Precision', description: 'The original six-chapter ascent.' },
-  { id: 'jungle', name: 'Verdant Canopy', subtitle: 'Cliffs · Canopy · Rising flood', description: 'Climb the wild terrain. Outrun the flood.' },
+  { id: 'jungle', name: 'Verdant Canopy', subtitle: 'Swinging vine · Ancient jungle · Rising flood', description: 'Start on the right, leap left and catch the vine. W / S climb; Space releases with your swing momentum.' },
   { id: 'snow', name: 'Frostpeak Summit', subtitle: 'Snow · Precision ledges · Occasional ice', description: 'Cross varied snow ledges. Occasional cyan ice slides; Space grips.' }
 ] as const;
 
@@ -20,8 +20,8 @@ export const MAPS = [
 export function generateJungle(): Platform[] {
   const result: Platform[] = [{id:'spawn',x:54,y:SPAWN_Y+32,w:532,h:320,type:'stone',terrain:'ground',solid:true}];
   const phrase: {x:number;w:number;h:number;terrain:Platform['terrain']}[] = [
-    {x:402,w:184,h:180,terrain:'right'},
-    {x:276,w:88,h:38,terrain:'island'},
+    {x:54,w:152,h:90,terrain:'left'},
+    {x:430,w:156,h:80,terrain:'right'},
     {x:54,w:136,h:210,terrain:'left'},
     {x:224,w:174,h:26,terrain:'log'},
     {x:456,w:130,h:185,terrain:'right'},

@@ -234,7 +234,7 @@ export class MenuScene extends Phaser.Scene {
     const track=panel.querySelector<HTMLElement>('.map-track')!;
     for(const map of MAPS){
       const image=document.createElement('img');
-      image.src=import.meta.env.BASE_URL+'assets/menu/map-previews/'+map.id+'.png';
+      image.src=import.meta.env.BASE_URL+(map.id==='jungle'?'assets/jungle-hd/background.webp':'assets/menu/map-previews/'+map.id+'.png');
       image.alt=map.name+' scenery preview';image.draggable=false;
       track.appendChild(image);
     }

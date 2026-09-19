@@ -17,6 +17,7 @@ export interface Platform {
 }
 export interface PlatformPosition { id: string; x: number; y?: number }
 export interface PlayerSnapshot {
+  vineId?:string; vineRadius?:number;
   ghost?: boolean; departed?: boolean;
   crumblingPlatforms?: Record<string, number>;
   id: string; name: string; x: number; y: number; vx: number; vy: number; alive: boolean;

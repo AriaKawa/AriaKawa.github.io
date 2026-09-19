@@ -38,6 +38,7 @@ export interface InputMessage {
 }
 
 export interface PlayerState {
+  vineId?:string; vineRadius?:number; vineCooldown?:number; vineJumpHeld?:boolean;
   ghost?: boolean; departed?: boolean;
   crumblingPlatforms?: Record<string, number>;
   id: string;

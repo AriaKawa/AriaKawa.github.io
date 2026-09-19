@@ -1,3 +1,4 @@
+import {CANOPY_VINE,vinePose} from '../../../server/src/sim/vines';
 import {spriteScale} from '../game/spriteSizing';
 import {missionProgress} from '../game/missions';
 import {party,submitRecord} from '../game/online';
@@ -67,6 +68,7 @@ export class GameScene extends Phaser.Scene {
   private get wideWorld(){return this.world.width>WORLD_WIDTH;}
   private get worldHeight(){return this.world.height;}
   private mapId: MapId = "forge";
+  private canopyVine?:Phaser.GameObjects.Image;
   private jungleBackground?: Phaser.GameObjects.Image;
   private get hazardLabel(): string { if(this.mapId==='magical')return 'STARDUST'; if(this.mapId==="mountain"||this.mapId==='forest')return "FLOOD"; return this.mapId === "snow" ? "BLIZZARD" : this.mapId === "jungle" ? "FLOOD" : "LAVA"; }
   private backdrop?: Phaser.GameObjects.Image;
@@ -98,6 +100,7 @@ export class GameScene extends Phaser.Scene {
   preload():void { if(!this.textures.exists('forged-frame'))this.load.image('forged-frame',import.meta.env.BASE_URL+'assets/menu/forged-command/frame.png'); }
   create(): void {
     audio.setMusicMap(this.mapId);
+    if(this.mapId==='jungle'){this.game.canvas.style.imageRendering='auto';this.events.once(Phaser.Scenes.Events.SHUTDOWN,()=>{this.game.canvas.style.imageRendering='';});}
     this.events.once(Phaser.Scenes.Events.SHUTDOWN,()=>audio.setMusicMap());
     this.input.keyboard?.enableGlobalCapture();
     // Phaser reuses scene instances. Every round must begin with fresh network
@@ -106,7 +109,7 @@ export class GameScene extends Phaser.Scene {
     this.goldEarned=0;this.deathUi?.remove();this.deathUi=undefined;
     this.registry.set("outfit",playableOutfit(this.registry.get("outfit")??loadOutfit()));
     this.client = new GameClient();
-    this.backdrop = undefined; this.jungleBackground = undefined;
+    this.backdrop = undefined; this.jungleBackground = undefined;this.canopyVine=undefined;
     this.climbInput = undefined;
     this.playerEntities.clear();
     this.platformEntities.clear();
@@ -128,7 +131,7 @@ export class GameScene extends Phaser.Scene {
     this.uiCamera=this.cameras.add(0,0,GAME_WIDTH,GAME_HEIGHT,false,'hud');
     this.cameras.main.setBounds(this.wideWorld?0:-(GAME_WIDTH-WORLD_WIDTH)/2, 0, this.wideWorld?this.world.width:GAME_WIDTH, this.worldHeight);
     this.cameras.main.scrollX = -(GAME_WIDTH-WORLD_WIDTH)/2;
-    this.terrainNotice?.destroy();this.terrainNotice=createSolidTerrainNotice(this,this.mapId==='snow'?'snow-ice':this.mapId==='mountain'?'ascent-ai-props/slope':this.mapId==='magical'?'magical-ai-ribbon-palace':'forest-ai-moss-slate',this.mapId==='snow'?'ice':this.mapId==='mountain'?'slope':'solid');
+    this.terrainNotice?.destroy();this.terrainNotice=createSolidTerrainNotice(this,this.mapId==='jungle'?'canopy-vine':this.mapId==='snow'?'snow-ice':this.mapId==='mountain'?'ascent-ai-props/slope':this.mapId==='magical'?'magical-ai-ribbon-palace':'forest-ai-moss-slate',this.mapId==='jungle'?'vine':this.mapId==='snow'?'ice':this.mapId==='mountain'?'slope':'solid');
     this.drawWorldBackdrop();
     this.createHazard();
     if(!this.textures.exists('forged-hud-frame')){const t=this.textures.createCanvas('forged-hud-frame',100,100)!;t.context.drawImage(this.textures.get('forged-frame').getSourceImage() as HTMLImageElement,0,0,100,100);t.refresh();}
@@ -158,6 +161,10 @@ export class GameScene extends Phaser.Scene {
       this.client.sendInput(input);
     }
     this.updateEntities(delta);
+    if(this.canopyVine){
+      const s=this.snapshot,t=s?.roundStartedAt?Math.max(0,(s.serverTime-s.roundStartedAt)/1000):0;
+      this.canopyVine.setRotation(-vinePose(t).angle);
+    }
     if(this.jungleBackground){
       const travel=Math.max(0,this.jungleBackground.displayHeight-GAME_HEIGHT);
       this.jungleBackground.y=-Phaser.Math.Clamp(this.cameras.main.scrollY/(this.worldHeight-GAME_HEIGHT),0,1)*travel;
@@ -235,11 +242,22 @@ export class GameScene extends Phaser.Scene {
     this.add.rectangle(SHAFT_RIGHT - 1, 0, 3, this.worldHeight, 0xd7a66d, 0.9).setOrigin(0).setDepth(-3);
   }
 
+  private sizeJungleBackground():void {
+    if(!this.jungleBackground)return;
+    if(this.mapId==='jungle'){
+      const width=Math.max(GAME_WIDTH,(GAME_HEIGHT+160)*1.5);
+      this.jungleBackground.setDisplaySize(width,width/1.5).setX((GAME_WIDTH-width)/2);
+    }else this.jungleBackground.setDisplaySize(GAME_WIDTH,Math.max(GAME_WIDTH*1.5,GAME_HEIGHT+500));
+  }
   private drawJungle(): void {
     if(this.mapId==='mountain'){drawMountain(this);return;}
     this.cameras.main.setBackgroundColor(this.mapId==='snow'?'#263e61':'#173f37');
-    this.jungleBackground=this.add.image(0,0,this.mapId==='snow'?'snow-background':'jungle-background').setOrigin(0).setScrollFactor(0).setDepth(-30);
-    this.jungleBackground.setDisplaySize(GAME_WIDTH,Math.max(GAME_WIDTH*1.5,GAME_HEIGHT+500));
+    this.jungleBackground=this.add.image(0,0,this.mapId==='snow'?'snow-background':'canopy-background').setOrigin(0).setScrollFactor(0).setDepth(-30);
+    this.sizeJungleBackground();
+    if(this.mapId==='jungle'){
+      this.canopyVine=this.add.image(CANOPY_VINE.x,CANOPY_VINE.y,'canopy-vine').setOrigin(.5,0).setDisplaySize(43,CANOPY_VINE.length).setDepth(3);
+      this.add.image(CANOPY_VINE.x,CANOPY_VINE.y-5,'jungle-fern').setDisplaySize(60,36).setDepth(4);
+    }
     // A subtle atmospheric veil keeps detailed scenery behind readable terrain.
     this.add.rectangle(0,0,4000,4000,this.mapId==='snow'?0x122a4f:0x082a26,.12).setOrigin(0).setScrollFactor(0).setDepth(-29);
 
@@ -348,7 +366,7 @@ export class GameScene extends Phaser.Scene {
     this.createHud();
     this.uiCamera?.setSize(GAME_WIDTH,GAME_HEIGHT);
     this.syncCameraLayers();
-    this.jungleBackground?.setDisplaySize(GAME_WIDTH,Math.max(GAME_WIDTH*1.5,GAME_HEIGHT+500));
+    this.sizeJungleBackground();
     if(this.mapId!=='forge'){
       if(this.levelDrawn){
         for(const container of this.platformEntities.values())container.destroy(true);
@@ -488,7 +506,8 @@ export class GameScene extends Phaser.Scene {
       if (!entity.previousGrounded && player.grounded) entity.landUntil = this.time.now + 180;
       if (this.artV2.player) {
         const animation = entity.sprite.anims.currentAnim?.key || "";
-        if (this.time.now < entity.landUntil) entity.sprite.play(`${entity.animationPrefix}-land`, true);
+        if(player.vineId){entity.sprite.play(`${entity.animationPrefix}-jump`,true);entity.sprite.setAngle(-(this.canopyVine?.angle??0)*.18);}
+        else if (this.time.now < entity.landUntil) entity.sprite.play(`${entity.animationPrefix}-land`, true);
         else if (player.charging && !entity.previousCharging) entity.sprite.play(`${entity.animationPrefix}-charge-start`, true).chain(`${entity.animationPrefix}-charge-loop`);
         else if (player.charging && ![`${entity.animationPrefix}-charge-start`, `${entity.animationPrefix}-charge-loop`].includes(animation)) entity.sprite.play(`${entity.animationPrefix}-charge-loop`, true);
         else if (!player.grounded && player.vy < 0) entity.sprite.play(`${entity.animationPrefix}-jump`, true);
@@ -602,6 +621,7 @@ export class GameScene extends Phaser.Scene {
     const leaders = [...snapshot.players].sort((a, b) => b.maxHeight - a.maxHeight).slice(0, 5);
     this.hud.board.setText(["TOP OF THE TOWER", ...leaders.map((player, index) => `${index + 1}. ${player.isBot ? " " : "*"}${(preferences.names?player.name:'Climber').slice(0,9).padEnd(9)} ${Math.round(player.maxHeight / 10)}m`)].join("\n"));
     this.hud.help.setVisible(!local?.ghost);
+    if(this.mapId==='jungle')this.hud.help.setText(local?.vineId?'VINE GRABBED · W / S OR ↑ / ↓ CLIMB · PRESS SPACE TO RELEASE':'LEAP LEFT TO AUTO-GRAB THE VINE · W / S CLIMB · SPACE RELEASE');
     if(snapshot.phase === "waiting") {
       this.hud.phase.setText(`WAITING FOR PLAYERS  ${snapshot.players.length}/24`).setFontSize(24).setVisible(true);
       this.hud.alive.setText(`${snapshot.players.length}/24 JOINED`);

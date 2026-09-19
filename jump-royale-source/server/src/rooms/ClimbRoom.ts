@@ -97,7 +97,7 @@ export class ClimbRoom extends Room {
     const col = slot % 6;
     const row = Math.floor(slot / 6);
     return {
-      id, name, x: isBot ? 174 + col * 48 + (row % 2) * 20 : 313, y: this.world.spawnY + 12, vx: 0, vy: 0,
+      id, name, x: this.mapId==='jungle' ? 472+(slot%6)*15 : isBot ? 174 + col * 48 + (row % 2) * 20 : 313, y: this.world.spawnY + 12, vx: 0, vy: 0,
       alive: true, grounded: true, charging: false, charge01: 0, chargeDirection: 0, groundedPlatformId: "spawn", facing: 0, isBot,
       colorIndex: slot % 8, maxHeight: 0, heightReachedMs:0, eliminatedAt:undefined, crumblingPlatforms:undefined, skill: isBot ? SKILLS[slot % SKILLS.length] : undefined,
       input: { left: false, right: false, jumpHeld: false, seq: 0 },

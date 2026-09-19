@@ -73,7 +73,7 @@ export class HostedGameClient {
         this.unwatch.push(b.onValue(b.at(this.onlinePath+'/snapshot'),(s:any)=>{const value=s.val();if(!value)return;this.remoteLastSeen=Date.now();value.players=Object.values(value.players??{});value.platforms=Object.values(value.platforms??{});if(value.placements)value.placements=Object.values(value.placements);this.emit('snapshot',value);},()=>this.emit('leave',undefined)));
         this.watchdog=setInterval(()=>{if(Date.now()-this.remoteLastSeen>15000)this.emit('leave',undefined);},5000);return;
       }
-      this.unwatch.push(b.onValue(b.at(this.onlinePath+'/inputs'),(s:any)=>{for(const [id,value] of Object.entries(s.val()??{})){const p=this.players.get(id);if(p&&!p.isBot&&id!==this.localId){const v=value as any;p.input={left:!!v.left,right:!!v.right,jumpHeld:!!v.jumpHeld,seq:Number(v.seq)||0};if(v.spectate)becomeGhost(p);if(v.departed){p.alive=false;p.departed=true;p.input={left:false,right:false,jumpHeld:false,seq:0};}}}}));
+      this.unwatch.push(b.onValue(b.at(this.onlinePath+'/inputs'),(s:any)=>{for(const [id,value] of Object.entries(s.val()??{})){const p=this.players.get(id);if(p&&!p.isBot&&id!==this.localId){const v=value as any;p.input={left:!!v.left,right:!!v.right,up:!!v.up,down:!!v.down,jumpHeld:!!v.jumpHeld,seq:Number(v.seq)||0};if(v.spectate)becomeGhost(p);if(v.departed){p.alive=false;p.departed=true;p.input={left:false,right:false,jumpHeld:false,seq:0};}}}}));
       await b.onDisconnect(b.at(this.onlinePath)).remove();
     }
     this.reset();
@@ -96,7 +96,7 @@ export class HostedGameClient {
       const member=members[i];
       const id = member?.id??(i ? `bot-${i}` : this.localId);
       const player: PlayerState = { id, name: member?.name??(i ? names[i-1] : this.name),
-        x: i ? 174 + (i % 6) * 48 : 313, y: this.world.spawnY + 12, vx: 0, vy: 0,
+        x: this.mapId==='jungle' ? 472+(i%6)*15 : i ? 174 + (i % 6) * 48 : 313, y: this.world.spawnY + 12, vx: 0, vy: 0,
         alive: true, grounded: true, charging: false, charge01: 0, chargeDirection: 0,
         groundedPlatformId: "spawn", facing: 0, isBot: i > 0 && !member, colorIndex: i % 8, maxHeight: 0,
         skill: skills[i % 4], input: { left: false, right: false, jumpHeld: false, seq: 0 },
@@ -152,7 +152,7 @@ export class HostedGameClient {
     this.listeners.get(event)!.add(listener as Listener<unknown>);
     return () => this.listeners.get(event)?.delete(listener as Listener<unknown>);
   }
-  sendInput(input: InputMessage): void { if(this.onlinePath&&!this.onlineHost){void this.net.update(this.net.at(this.onlinePath+'/inputs/'+this.localId),{left:input.left,right:input.right,jumpHeld:input.jumpHeld,seq:input.seq}).catch(()=>this.emit('leave',undefined));return;}const p = this.players.get(this.localId); if (p) {
+  sendInput(input: InputMessage): void { if(this.onlinePath&&!this.onlineHost){void this.net.update(this.net.at(this.onlinePath+'/inputs/'+this.localId),{left:input.left,right:input.right,up:!!input.up,down:!!input.down,jumpHeld:input.jumpHeld,seq:input.seq}).catch(()=>this.emit('leave',undefined));return;}const p = this.players.get(this.localId); if (p) {
     if(input.toggleFlight && this.godPowers) { this.flying=!this.flying; if(!this.flying) landPlayer(p,this.platforms); }
     p.input={...input,jumpHeld:this.flying && this.phase==='playing'?false:input.jumpHeld,toggleFlight:false};
   } }
