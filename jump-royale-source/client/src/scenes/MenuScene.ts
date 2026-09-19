@@ -167,7 +167,7 @@ export class MenuScene extends Phaser.Scene {
       right: this.movement.has('KeyD') || this.movement.has('ArrowRight'), jumpHeld: this.held, seq: 0 };
     const wasGrounded = p.grounded, wasCharging = p.charging;
     while (this.accumulator >= 1/30) {
-      if(this.wallpaperId==='moonwalk')this.preview.setRotation(stepMoon(p,1/30,GAME_WIDTH,GAME_HEIGHT));
+      if(this.wallpaperId==='moonwalk')this.preview.setRotation(stepMoon(p,1/30,GAME_WIDTH,GAME_HEIGHT,this.lobbySurfaces));
       else stepLobbyPlayer(p,1/30,GAME_WIDTH,GAME_HEIGHT,this.lobbySurfaces,this.wallpaperId==='starlight'||isExpedition(this.wallpaperId));
       this.accumulator -= 1/30;
     }
@@ -270,9 +270,8 @@ export class MenuScene extends Phaser.Scene {
     if(!canvas.width || !this.ui)return;
     const sx=GAME_WIDTH/canvas.width,sy=GAME_HEIGHT/canvas.height;
     this.lobbySurfaces=this.wallpaperId==='moonwalk'?[]:[this.pedestal()];
-    if(isExpedition(this.wallpaperId))return;
     const add=(r:DOMRect)=>{if(r.width>0&&r.height>0)this.lobbySurfaces.push({id:'ui-'+this.lobbySurfaces.length,x:(r.left-canvas.left)*sx,y:(r.top-canvas.top)*sy,w:r.width*sx,h:4,type:'stone'});};
-    this.ui.querySelectorAll<HTMLElement>('.loot-toggle,.gold-marker img,.gold-balance,.gold-add,.settings-cog,.lobby-object,.wardrobe-art,.menu-form input,.menu-form button,.map-window,.map-arrow').forEach(e=>add(e.getBoundingClientRect()));
+    this.ui.querySelectorAll<HTMLElement>('button,a.coffee-link,.loot-toggle,.gold-marker img,.gold-balance,.lobby-object,.wardrobe-art,.menu-form input,.map-window').forEach(e=>{if(!e.closest('[hidden],dialog:not([open])')&&getComputedStyle(e).visibility!=='hidden')add(e.getBoundingClientRect());});
     this.ui.querySelectorAll<HTMLElement>('.ranked-splash span,.menu-title span,.menu-title strong,.menu-form label,.map-caption h2,.scores-toggle,.scores-popover p,.personal-scores h2,.personal-scores strong,.personal-scores span,.personal-scores small,.lobby-steps span').forEach(e=>{
       for(const node of e.childNodes)if(node.nodeType===Node.TEXT_NODE)for(let i=0;i<(node.textContent?.length??0);i++) {
         if(!node.textContent![i].trim())continue;
@@ -359,10 +358,10 @@ export class MenuScene extends Phaser.Scene {
     drawOutfitPreview(this,canvas,key);
   }
 
-  private previewHeight():number {return Math.min(GAME_HEIGHT*(this.wallpaperId==='moonwalk'?.18:.315),GAME_WIDTH*.1925);}
+  private previewHeight():number {return Math.min(GAME_HEIGHT*(this.wallpaperId==='moonwalk'?.18:this.wallpaperId==='corsair-cove'?.23:.315),GAME_WIDTH*.1925);}
   private layoutBackground():void {
-    const width=this.wallpaperId==='moonwalk'?GAME_HEIGHT*16/9:GAME_WIDTH;
-    this.background.setPosition(GAME_WIDTH/2+(this.wallpaperId==='moonwalk'?width*.019:0),GAME_HEIGHT*(this.wallpaperId==='moonwalk'?.974:1)).setDisplaySize(width,GAME_HEIGHT);
+    const width=this.wallpaperId==='moonwalk'?GAME_HEIGHT*1.5:GAME_WIDTH;
+    this.background.setPosition(GAME_WIDTH/2,GAME_HEIGHT).setDisplaySize(width,GAME_HEIGHT);
   }
   private layoutUi(): void {
     if (!this.ui) return;

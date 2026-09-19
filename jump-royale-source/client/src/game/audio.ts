@@ -93,6 +93,18 @@ class GameAudio {
   }
   play(cue:Cue,volume=.28):void {const b=this.buffers.get(cue);if(!b||!this.context||this.muted||document.hidden)return;const s=this.context.createBufferSource(),g=this.context.createGain();s.buffer=b;g.gain.value=volume*preferences.effects;s.connect(g).connect(this.context.destination);s.start();s.onended=()=>{s.disconnect();g.disconnect();};}
   step(moving:boolean,map='forge'):void {if(moving&&performance.now()-this.lastStep>270){this.lastStep=performance.now();this.play(map==='snow'?'snow':map==='jungle'?'grass':'step',.18);}}
+  async cannon():Promise<void> {
+    await this.unlock();
+    const c=this.context;if(!c||this.muted||document.hidden||preferences.effects===0)return;
+    const now=c.currentTime,duration=1.2,buffer=c.createBuffer(1,Math.ceil(c.sampleRate*duration),c.sampleRate),data=buffer.getChannelData(0);
+    for(let i=0;i<data.length;i++)data[i]=(Math.random()*2-1)*Math.exp(-i/c.sampleRate*5);
+    const blast=c.createBufferSource(),filter=c.createBiquadFilter(),gain=c.createGain();
+    blast.buffer=buffer;filter.type='lowpass';filter.frequency.setValueAtTime(3000,now);filter.frequency.exponentialRampToValueAtTime(150,now+duration);
+    gain.gain.value=.65*preferences.effects;blast.connect(filter).connect(gain).connect(c.destination);blast.start();
+    const boom=c.createOscillator(),low=c.createGain();boom.frequency.setValueAtTime(95,now);boom.frequency.exponentialRampToValueAtTime(28,now+.7);
+    low.gain.setValueAtTime(.55*preferences.effects,now);low.gain.exponentialRampToValueAtTime(.001,now+.85);boom.connect(low).connect(c.destination);boom.start();boom.stop(now+.9);
+    blast.onended=()=>{blast.disconnect();filter.disconnect();gain.disconnect();};boom.onended=()=>{boom.disconnect();low.disconnect();};
+  }
   countdown(go=false):void {
     const c=this.context;if(!c||c.state!=='running'||this.muted||preferences.effects===0||document.hidden)return;
     const tone=c.createOscillator(),gain=c.createGain(),now=c.currentTime,duration=go?.32:.1;
