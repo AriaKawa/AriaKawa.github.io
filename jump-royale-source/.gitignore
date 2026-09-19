@@ -103,3 +103,5 @@
 !/docs/map-preview-manifest.json
 
 !/scripts/browser-animal-coffee.mjs
+
+!/scripts/browser-zoom-opacity.mjs

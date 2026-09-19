@@ -49,9 +49,11 @@ interface MiniMapHud {
   status: Phaser.GameObjects.Text;
 }
 
+const GAMEPLAY_ZOOM=1.25;
 const MINI_MAP = { x: 806, y: 174, width: 136, height: 348, innerX: 816, innerY: 202, innerWidth: 116, innerHeight: 278 };
 
 export class GameScene extends Phaser.Scene {
+  private uiCamera?:Phaser.Cameras.Scene2D.Camera;
   private frostWind?:Phaser.GameObjects.Graphics;
   private terrainNotice?:ReturnType<typeof createSolidTerrainNotice>;
   private nativeText?:NativeGameText;
@@ -122,7 +124,8 @@ export class GameScene extends Phaser.Scene {
     this.levelDrawn = false;
     this.toastY = 116;
     this.artV2 = this.registry.get("artV2") as ArtAvailability;
-    this.cameras.main.setBackgroundColor("#0b0810");
+    this.cameras.main.setBackgroundColor("#0b0810").setZoom(GAMEPLAY_ZOOM);
+    this.uiCamera=this.cameras.add(0,0,GAME_WIDTH,GAME_HEIGHT,false,'hud');
     this.cameras.main.setBounds(this.wideWorld?0:-(GAME_WIDTH-WORLD_WIDTH)/2, 0, this.wideWorld?this.world.width:GAME_WIDTH, this.worldHeight);
     this.cameras.main.scrollX = -(GAME_WIDTH-WORLD_WIDTH)/2;
     this.terrainNotice?.destroy();this.terrainNotice=createSolidTerrainNotice(this,this.mapId==='snow'?'snow-ice':this.mapId==='magical'?'magical-ai-ribbon-palace':'forest-ai-moss-slate',this.mapId==='snow'?'ice':'solid');
@@ -178,6 +181,7 @@ export class GameScene extends Phaser.Scene {
     this.updateLava(time, delta);
     this.updateHud();
     this.terrainNotice?.sync(this.snapshot?.phase??"waiting",this.mapId==='snow'||this.minimapPlatforms.some(p=>p.solid&&p.id!=="spawn"),time);
+    this.syncCameraLayers();
     this.nativeText?.sync();
   }
 
@@ -330,12 +334,23 @@ export class GameScene extends Phaser.Scene {
     this.hudObjects=this.children.list.filter(object=>!before.has(object));
   }
 
+  private syncCameraLayers():void {
+    const world=this.cameras.main,hud=this.uiCamera;if(!hud)return;
+    for(const object of this.children.list){
+      if(object instanceof Phaser.GameObjects.Text){object.cameraFilter|=world.id|hud.id;continue;}
+      const fixed=(object as Phaser.GameObjects.Image).depth>=90;
+      object.cameraFilter=(object.cameraFilter&~(world.id|hud.id))|(fixed?world.id:hud.id);
+    }
+  }
+
   private layoutHud(): void {
     for(const object of this.hudObjects) object.destroy();
     this.hudObjects=[];
     this.cameras.main.setBounds(this.wideWorld?0:-(GAME_WIDTH-WORLD_WIDTH)/2,0,this.wideWorld?this.world.width:GAME_WIDTH,this.worldHeight);
     this.cameras.main.scrollX=this.wideWorld?Phaser.Math.Clamp(this.cameras.main.scrollX,0,Math.max(0,this.world.width-GAME_WIDTH)):-(GAME_WIDTH-WORLD_WIDTH)/2;
     this.createHud();
+    this.uiCamera?.setSize(GAME_WIDTH,GAME_HEIGHT);
+    this.syncCameraLayers();
     this.jungleBackground?.setDisplaySize(GAME_WIDTH,Math.max(GAME_WIDTH*1.5,GAME_HEIGHT+500));
     if(this.mapId!=='forge'){
       if(this.levelDrawn){
@@ -357,7 +372,7 @@ export class GameScene extends Phaser.Scene {
     }
     if(snapshot.phase==='countdown'){const count=Math.max(1,Math.ceil((snapshot.countdownEndsAt-snapshot.serverTime)/1000));if(count!==this.lastCountdown){audio.countdown();this.lastCountdown=count;}}
     if(snapshot.phase==='playing' && this.snapshot?.phase==='countdown')audio.countdown(true);
-    if(!this.snapshot){const arrival=snapshot.players.find(p=>p.id===this.client.localId);if(arrival)this.cameras.main.scrollY=desiredCameraY(arrival.y,this.worldHeight);}
+    if(!this.snapshot){const arrival=snapshot.players.find(p=>p.id===this.client.localId);if(arrival)this.cameras.main.scrollY=desiredCameraY(arrival.y,this.worldHeight,GAMEPLAY_ZOOM);}
     this.snapshot = snapshot;
     const self=snapshot.players.find(p=>p.id===this.client.localId);
     if(self)audio.setMusicDead(!self.alive);
@@ -494,10 +509,18 @@ export class GameScene extends Phaser.Scene {
 
   private updateEntities(delta: number): void {
     const smoothing = 1 - Math.pow(0.000001, delta / 1000);
-    for (const entity of this.playerEntities.values()) {
+    for (const [id,entity] of this.playerEntities) {
       const x = Phaser.Math.Linear(entity.sprite.x, entity.targetX + PLAYER_WIDTH / 2, smoothing);
-      const y = Phaser.Math.Linear(entity.sprite.y, entity.targetY + PLAYER_HEIGHT, smoothing);
-      entity.sprite.setPosition(Math.round(x), Math.round(y));
+      const player=this.snapshot?.players.find(p=>p.id===id);
+      // Snap grounded feet to the shared collision surface, including moving platforms.
+      const y=player?.grounded?entity.targetY+PLAYER_HEIGHT:Phaser.Math.Linear(entity.sprite.y,entity.targetY+PLAYER_HEIGHT,smoothing);
+      entity.sprite.setOrigin(.5,footOrigin(this,entity.animationPrefix,player?.grounded?Number(entity.sprite.frame.name):0));
+      entity.sprite.setPosition(Math.round(x),player?.grounded?y:Math.round(y));
+      if(id!==this.localId){
+        entity.sprite.setAlpha(preferences.enemyOpacity);
+        entity.name.setAlpha(preferences.enemyOpacity*(player?.alive===false&&!player?.ghost? .8:1));
+        entity.chargeBack.setAlpha(preferences.enemyOpacity);entity.chargeFill.setAlpha(preferences.enemyOpacity);
+      }
       entity.name.setVisible(preferences.names && entity.sprite.visible);
       entity.name.setPosition(entity.sprite.x, entity.sprite.y - PLAYER_HEIGHT - 8);
       entity.chargeBack.setPosition(entity.sprite.x - 11, entity.sprite.y + 6);
@@ -511,9 +534,9 @@ export class GameScene extends Phaser.Scene {
     const local = this.playerEntities.get(spectating ? this.snapshot?.winnerId || this.localId : this.localId);
     if (local) {
       if(spectating)this.cameras.main.setBounds(this.wideWorld?0:-(GAME_WIDTH-WORLD_WIDTH)/2,-220,this.wideWorld?this.world.width:GAME_WIDTH,this.worldHeight+220);
-      const desired = spectating ? -180 : desiredCameraY(local.sprite.y - PLAYER_HEIGHT,this.worldHeight);
+      const desired = spectating ? -180 : desiredCameraY(local.sprite.y - PLAYER_HEIGHT,this.worldHeight,GAMEPLAY_ZOOM);
       this.cameras.main.scrollY = Phaser.Math.Linear(this.cameras.main.scrollY, desired, 0.18);
-      const targetX=this.wideWorld?Phaser.Math.Clamp(local.sprite.x-GAME_WIDTH*.5,0,Math.max(0,this.world.width-GAME_WIDTH)):-(GAME_WIDTH-WORLD_WIDTH)/2;
+      const targetX=this.wideWorld?this.cameras.main.clampX(local.sprite.x-GAME_WIDTH*.5):-(GAME_WIDTH-WORLD_WIDTH)/2;
       this.cameras.main.scrollX=Phaser.Math.Linear(this.cameras.main.scrollX,targetX,1-Math.exp(-delta/180));
     }
   }

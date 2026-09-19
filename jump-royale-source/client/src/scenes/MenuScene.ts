@@ -169,6 +169,7 @@ export class MenuScene extends Phaser.Scene {
       this.landUntil = this.time.now+180; this.preview.play(this.animationPrefix+'-land');
     } else if (this.time.now >= this.landUntil) this.preview.play(this.animationPrefix+(p.input.left!==p.input.right?'-walk':'-idle'),true);
     this.preview.setFlipX(p.facing < 0);
+    this.preview.setOrigin(.5,footOrigin(this,this.animationPrefix,p.grounded?Number(this.preview.frame.name):0));
     this.preview.setPosition(Math.round(p.x+PLAYER_WIDTH/2),Math.round(p.y+PLAYER_HEIGHT));
   }
 
