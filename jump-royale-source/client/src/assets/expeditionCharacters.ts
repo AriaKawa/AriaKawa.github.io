@@ -12,7 +12,7 @@ export const EXPEDITION_ANIMATIONS={
 };
 export function expeditionTexture(scene:Phaser.Scene,id:string):string {
  const key='expedition-'+id;
- scene.textures.get(key).setFilter(Phaser.Textures.FilterMode.LINEAR);
+ scene.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST);
  for(const [name,animation] of Object.entries(EXPEDITION_ANIMATIONS))if(!scene.anims.exists(key+'-'+name))scene.anims.create({key:key+'-'+name,frames:animation.frames.map(frame=>({key,frame})),frameRate:animation.rate,repeat:animation.repeat});
  return key;
 }

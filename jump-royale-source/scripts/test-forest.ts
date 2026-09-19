@@ -9,7 +9,7 @@ const memory=new Map<string,string>();Object.assign(globalThis,{localStorage:{ge
 for(const p of [0,16,24,-1,NaN,1.5])assert.equal(rewardSpinPoint('bad-'+p,p),false);
 for(const p of [1,8,15]){assert(rewardSpinPoint('good-'+p,p));assert(!rewardSpinPoint('good-'+p,p));}
 assert.equal(wallet().freeSpins,1);assert.equal(wallet().spinPoints,0);
-const level=generateForest(),route=level.filter(p=>!p.id.includes('branch')&&!p.bucket);
+const level=generateForest(),route=level.filter(p=>!p.id.includes('branch')&&!p.bucket&&!p.ceiling);
 const player=(p:Platform,x:number):PlayerState=>({id:'test',name:'Test',x,y:p.y-20,vx:0,vy:0,alive:true,grounded:true,groundedPlatformId:p.id,charging:false,charge01:0,chargeDirection:0,facing:0,isBot:false,colorIndex:0,maxHeight:0,input:{left:false,right:false,jumpHeld:false,seq:0}});
 function solutions(a:Platform,b:Platform){let count=0;const nearby=level.filter(p=>p.id==='spawn'||(p.y>a.y-240&&p.y<a.y+80&&p.x<a.x+a.w+350&&p.x+p.w>a.x-350));
  for(let x=a.x+2;x<=a.x+a.w-14;x+=2)for(const dir of [-1,0,1])for(let hold=6;hold<=24;hold++){
@@ -18,6 +18,15 @@ function solutions(a:Platform,b:Platform){let count=0;const nearby=level.filter(
  }return count;
 }
 assert.equal(floodForMap('forest').grace,10);
+const ceilings=level.filter(p=>p.ceiling);
+assert.equal(ceilings.length,10,'Overhead shelves remain occasional');
+for(const roof of ceilings){
+ const p=player(roof,roof.x+roof.w/2-7);
+ p.y=roof.y+roof.h+2;p.grounded=false;p.vy=-400;
+ stepPlayer(p,level,1/30);
+ assert.equal(p.y,roof.y+roof.h,'Jump stops at the underside');
+ assert.equal(p.vy,0,'Ceiling collision cancels upward velocity');
+}
 assert(level.filter(p=>p.id.includes('branch')).every(p=>p.w<=24),'Branches include precision landings');
 assert(route.filter((p,i)=>i>0&&route[i-1].y-p.y<=36&&Math.abs((p.x+p.w/2)-(route[i-1].x+route[i-1].w/2))>=268).length>=50,'Long horizontal crossings span the forest');
 let minimum=Infinity;

@@ -53,7 +53,7 @@ export function saveOutfit(outfit: Outfit): void {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitizeOutfit(outfit))); } catch { /* Session selection still works with storage disabled. */ }
 }
 export function queueCosmetics(scene: Phaser.Scene): void {
-  for(const character of EXPEDITION_CHARACTERS)scene.load.spritesheet('expedition-'+character.id,`${ROOT}/${character.id}-expedition.png`,{frameWidth:256,frameHeight:256});
+  for(const character of EXPEDITION_CHARACTERS)scene.load.spritesheet('expedition-'+character.id,`${ROOT}/${character.id}-expedition-16.png`,{frameWidth:256,frameHeight:256});
   for(const hat of ['party','fedora','unicorn'])scene.load.image('animal-hat-'+hat,`${ROOT}/hat-${hat}-16.png`);
   for(const costume of KNIGHT_COSTUMES)scene.load.spritesheet('fantasy-finn-'+costume+'-16',`${ROOT}/finn-${costume}-16.png`,{frameWidth:64,frameHeight:64});
   scene.load.spritesheet('fantasy-aria-16',`${ROOT}/aria-detail.png`,{frameWidth:128,frameHeight:128});

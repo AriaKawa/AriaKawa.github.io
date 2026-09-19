@@ -111,6 +111,7 @@
 !/docs/terrain-refresh.md
 
 !/scripts/compile-expedition.cjs
+!/scripts/browser-pixel-forest.mjs
 !/scripts/browser-expedition.mjs
 !/scripts/browser-expedition-live.mjs
 !/docs/expedition-content/

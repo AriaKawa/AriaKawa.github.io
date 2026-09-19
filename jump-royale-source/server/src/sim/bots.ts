@@ -118,7 +118,7 @@ export function updateBot(bot: PlayerState, platforms: Platform[], now: number):
   const support = platforms.find(p => p.id === bot.groundedPlatformId);
   if (!support) return;
   if (!brain.targetId) {
-    const candidates = platforms.filter(p => !p.bucket && (p.type !== "moving" || support.mountain) && p.y < support.y - (support.mountain||support.forest?8:48) && p.y > support.y - 174).sort((a,b) => b.y-a.y);
+    const candidates = platforms.filter(p => !p.ceiling && !p.bucket && (p.type !== "moving" || support.mountain) && p.y < support.y - (support.mountain||support.forest?8:48) && p.y > support.y - 174).sort((a,b) => b.y-a.y);
     if(brain.pattern%4===2 && bot.skill!=="bad" && random(bot)<.55) candidates.reverse();
     for (const target of candidates) {
       const plan = planJump(bot, support, target, platforms);

@@ -20,6 +20,11 @@ export function renderForestTerrain(scene:Phaser.Scene,p:Platform,container:Phas
  const variants=['moss-slate','root-slate','moon-ruin'] as const;
  const index=p.id==='crown'?2:p.type==='wood'?1:(Math.floor(p.y/100)+forestSection(p.y))%3;
  const variant=variants[index],m=artMetrics[variant],scaleX=p.w/m.capWidth;
+ if(p.ceiling){
+  // Rotate around the authored landing edge: its moss cap now faces down.
+  container.add(scene.add.image(p.w/2,p.h,'forest-ai-'+variant).setOrigin(.5,0).setDisplaySize(m.width*scaleX,p.h).setAngle(180));
+  return;
+ }
  const artHeight=Math.max(p.h+12,Math.min(64,p.w*m.height/m.capWidth));
  container.setData('width',p.w);
  container.add(scene.add.image(-m.capLeft*scaleX,0,'forest-ai-'+variant).setOrigin(0).setDisplaySize(m.width*scaleX,artHeight));
@@ -53,6 +58,6 @@ export function forestWater(scene:Phaser.Scene):string {
 }
 
 export function queueForestAssets(scene:Phaser.Scene):void {
- for(const name of ['moss-slate','root-slate','moon-ruin','water','background','lantern','bucket','mushrooms'])scene.load.image('forest-ai-'+name,import.meta.env.BASE_URL+'assets/forest-ai/'+name+'.webp');
+ for(const name of ['moss-slate','root-slate','moon-ruin','water','background','lantern','bucket','mushrooms'])scene.load.image('forest-ai-'+name,import.meta.env.BASE_URL+'assets/forest-ai/'+(name==='bucket'?'bucket-16':name)+'.webp');
 }
 

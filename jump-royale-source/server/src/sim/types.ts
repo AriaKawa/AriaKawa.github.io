@@ -8,6 +8,7 @@ export interface Platform {
   region?: number; structure?: string; route?: boolean; secret?: boolean;
   magical?: boolean;
   forest?: boolean;
+  ceiling?: boolean;
   mountain?: boolean;
   crumbleSeconds?: number;
   slippery?: boolean;

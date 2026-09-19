@@ -21,7 +21,7 @@ export function spriteBounds(scene:Phaser.Scene,key:string):Bounds {
  const result={left,top,right,bottom,width,height,bodyHeight};cache.set(key,result);return result;
 }
 /** Cosmetic scale only: all characters retain the shared physics body. */
-export const characterVisualScale=(key:string)=>/^(?:fantasy-)?(?:puppy|cat|rat|cerberus|kangaroo)(?:-|$)/.test(key)?.575:1;
+export const characterVisualScale=(key:string)=>key==='expedition-axolotl'||/^(?:fantasy-)?(?:puppy|cat|rat|cerberus|kangaroo)(?:-|$)/.test(key)?.575:1;
 export const spriteScale=(scene:Phaser.Scene,key:string,bodyHeight:number)=>characterVisualScale(key)*bodyHeight/spriteBounds(scene,key).bodyHeight;
 
 /** Shared framing for the wardrobe, reward reveals and collection cards. */
