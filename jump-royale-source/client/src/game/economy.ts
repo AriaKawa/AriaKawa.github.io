@@ -58,7 +58,7 @@ export function owns(slot:string,id:string):boolean {const w=wallet();const lega
 export function buy(slot:string,id:string):boolean {const w=wallet(),cost=price(slot,id);if(!Number.isFinite(cost))return false;if(owns(slot,id))return true;if(w.gold<cost)return false;w.gold-=cost;w.owned.push(slot+':'+id);return persist(w);}
 export function reward(round:string,place:number):number {const w=wallet();if(w.rewards.includes(round))return 0;const amount=goldForPlace(place);w.gold+=amount;w.rewards.push(round);return persist(w)?amount:0;}
 function lockedBase(o:Outfit):[string,string][] {
-  if(['skeleton','magical-girl','neet','pogo','aria'].includes(o.character)){
+  if(['skeleton','magical-girl','neet','pogo','aria','pirate','astro-monkey','axolotl'].includes(o.character)){
     const pieces:[string,string][]=[['character',o.character]];
     if(o.character==='magical-girl'&&o.hair==='star-buns')pieces.push(['hair','star-buns']);
 

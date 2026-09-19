@@ -1,3 +1,4 @@
+import {EXPEDITION_CHARACTERS,isExpeditionCharacter,expeditionTexture} from './expeditionCharacters';
 import {knightCostumeTexture,KNIGHT_COSTUMES} from './knightCostumes';
 import {DETAILED_SHEETS,validDetailedId} from './detailedCostumes';
 import {costumeFields} from './costumeSets';
@@ -15,7 +16,7 @@ export const SLOTS = ["character", "helmet", "shirt", "pants", "hair"] as const;
 export type CosmeticSlot = typeof SLOTS[number];
 export type Outfit = Record<CosmeticSlot, string> & {costume?:string;retroCostumes?:string[];detailedCostumes?:string[];magicalCostume?:'classic'|'starlight-16';animalHat?:AnimalHat;wardrobe2?:LabLook};
 export const COSMETICS = {
-  character: [{id:"original",name:"Finn"},{id:"mushroom",name:"Spore Scout"},{id:"puppy",name:"Biscuit"},{id:'cat',name:'Mochi'},{id:'rat',name:'Pip'},{id:'demon',name:'Ember'},{id:'cerberus',name:'Cerberus'},{id:'magical-girl',name:'Stella'},{id:'skeleton',name:'Rattle'},{id:'neet',name:'Kenji'},{id:'kangaroo',name:'Roo'},{id:'pogo',name:'Pippa'},{id:'aria',name:'Aria'}],
+  character: [...EXPEDITION_CHARACTERS,{id:"original",name:"Finn"},{id:"mushroom",name:"Spore Scout"},{id:"puppy",name:"Biscuit"},{id:'cat',name:'Mochi'},{id:'rat',name:'Pip'},{id:'demon',name:'Ember'},{id:'cerberus',name:'Cerberus'},{id:'magical-girl',name:'Stella'},{id:'skeleton',name:'Rattle'},{id:'neet',name:'Kenji'},{id:'kangaroo',name:'Roo'},{id:'pogo',name:'Pippa'},{id:'aria',name:'Aria'}],
   hair: [{id:"original",name:"Classic Crop"},{id:"waves",name:"Chestnut Waves"},{id:"ponytail",name:"Golden Ponytail"},{id:"braid",name:"Midnight Braid"},{id:"buns",name:"Rose Double Buns"},{id:"bob",name:"Lilac Bob"},{id:"star-buns",name:"Starlight Star Buns"}],
   helmet: [{id:"none",name:"No Helmet"},{ id: "original", name: "Ivory Helm" }, { id: "steel", name: "Quenched Steel" }, { id: "copper", name: "Copper Visor" }, { id: "tropical", name: "Cooking Pot" }, { id: "maid", name: "Maid Headband" }, {id:"mushroom",name:"Toadstool Cap"}, {id:"diver",name:"Abyssal Dive Helm"}, {id:"mage",name:"Crescent Cap"}],
   shirt: [{ id: "original", name: "Forge Apron" }, { id: "steel", name: "Froststitch Jacket" }, { id: "copper", name: "Cinder Coat" }, { id: "tropical", name: "Hawaiian Shirt" }, { id: "maid", name: "Maid Blouse & Apron" }, {id:"mushroom",name:"Spore Scout Tunic"}, {id:"diver",name:"Deep-Sea Dive Suit"}, {id:"mage",name:"Starfall Tunic"}],
@@ -35,7 +36,7 @@ export function cosmeticName(slot:CosmeticSlot,id:string,outfit:Outfit):string {
 
 export function sanitizeOutfit(value: unknown): Outfit {
   const source = value && typeof value === "object" ? value as Record<string,unknown> : {};
-  const result={retroCostumes:Array.isArray(source.retroCostumes)?[...new Set(source.retroCostumes.filter((id):id is string=>typeof id==='string'&&COSMETICS.character.some(c=>c.id===id)&&!['pogo','aria'].includes(id)))]:[],detailedCostumes:Array.isArray(source.detailedCostumes)?[...new Set(source.detailedCostumes.filter(validDetailedId))]:[],...Object.fromEntries(SLOTS.map(slot => [slot, COSMETICS[slot].some(piece => piece.id === source[slot]) ? source[slot] : "original"])),animalHat:ANIMAL_HATS.some(h=>h.id===source.animalHat)?source.animalHat:'none',magicalCostume:source.magicalCostume==='starlight-16'?'starlight-16':'classic'} as Outfit;
+  const result={retroCostumes:Array.isArray(source.retroCostumes)?[...new Set(source.retroCostumes.filter((id):id is string=>typeof id==='string'&&COSMETICS.character.some(c=>c.id===id)&&!['pogo','aria',...EXPEDITION_CHARACTERS.map(c=>c.id)].includes(id)))]:[],detailedCostumes:Array.isArray(source.detailedCostumes)?[...new Set(source.detailedCostumes.filter(validDetailedId))]:[],...Object.fromEntries(SLOTS.map(slot => [slot, COSMETICS[slot].some(piece => piece.id === source[slot]) ? source[slot] : "original"])),animalHat:ANIMAL_HATS.some(h=>h.id===source.animalHat)?source.animalHat:'none',magicalCostume:source.magicalCostume==='starlight-16'?'starlight-16':'classic'} as Outfit;
   // Migrate retired looks and the former Spore Scout costume on load and in matches.
   if(result.character==='original'&&(source.costume==='mushroom'||(!source.costume&&source.shirt==='mushroom')))result.character='mushroom';
   const legacy=source.shirt==='original'?(source.helmet==='none'?'classic':'original'):source.shirt;
@@ -52,6 +53,7 @@ export function saveOutfit(outfit: Outfit): void {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitizeOutfit(outfit))); } catch { /* Session selection still works with storage disabled. */ }
 }
 export function queueCosmetics(scene: Phaser.Scene): void {
+  for(const character of EXPEDITION_CHARACTERS)scene.load.spritesheet('expedition-'+character.id,`${ROOT}/${character.id}-expedition.png`,{frameWidth:256,frameHeight:256});
   for(const hat of ['party','fedora','unicorn'])scene.load.image('animal-hat-'+hat,`${ROOT}/hat-${hat}-16.png`);
   for(const costume of KNIGHT_COSTUMES)scene.load.spritesheet('fantasy-finn-'+costume+'-16',`${ROOT}/finn-${costume}-16.png`,{frameWidth:64,frameHeight:64});
   scene.load.spritesheet('fantasy-aria-16',`${ROOT}/aria-detail.png`,{frameWidth:128,frameHeight:128});
@@ -73,6 +75,7 @@ export function queueCosmetics(scene: Phaser.Scene): void {
  * animation timing. All equipment shares the same frame grid and foot origin. */
 export function outfitTexture(scene: Phaser.Scene, requested: Outfit): string {
   const outfit = sanitizeOutfit(requested);
+  if(isExpeditionCharacter(outfit.character))return expeditionTexture(scene,outfit.character);
   const retro=outfit.retroCostumes?.includes(outfit.character)??false;
   if(outfit.character==='aria')return fantasyTexture(scene,'aria','original','detailed');
   if(outfit.character==='pogo')return fantasyTexture(scene,'pogo','original','detailed');

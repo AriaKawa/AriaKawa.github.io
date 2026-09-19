@@ -1,0 +1,7 @@
+.expedition-interaction{position:absolute;left:18%;bottom:11%;max-width:38%;pointer-events:auto;text-align:center;color:#fff4df;text-shadow:0 2px 4px #000;font-size:12px;z-index:3}
+.expedition-interaction[hidden],.expedition-interaction button[hidden],.forge-wardrobe-open .expedition-interaction,.wallpaper-open .expedition-interaction{display:none}
+.expedition-interaction p{margin:0 0 8px;line-height:1.5;background:#101b2cba;border-radius:8px;padding:6px 10px}
+.expedition-interaction button{font:inherit;color:#fff3d6;background:#192d41ed;border:1px solid #dbbb78;border-radius:6px;padding:9px 15px;cursor:pointer;box-shadow:0 3px 12px #0006}
+.expedition-interaction button:hover{background:#345573}
+.expedition-interaction button:focus-visible{outline:3px solid #fff;outline-offset:3px}
+@media(max-width:760px){.expedition-interaction{left:3%;bottom:15%;max-width:45%;font-size:10px}.expedition-interaction p{padding:4px}.expedition-interaction button{padding:8px}}

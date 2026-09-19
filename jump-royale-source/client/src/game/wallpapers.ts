@@ -1,5 +1,6 @@
+import {EXPEDITION_WALLPAPERS} from './expeditionWorlds';
 import {owns} from './economy';
-export function equippedWallpaper():string {const id=localStorage.getItem('jump-wallpaper')??'forged-command';return ['starlight','moonveil'].includes(id)&&owns('wallpaper',id)?id:'forged-command';}
+export function equippedWallpaper():string {const id=localStorage.getItem('jump-wallpaper')??'forged-command';return ['starlight','moonveil',...EXPEDITION_WALLPAPERS.map(w=>w.id)].includes(id)&&owns('wallpaper',id)?id:'forged-command';}
 import Phaser from 'phaser';
 import { outfitTexture, sanitizeOutfit } from '../assets/cosmetics';
 import { GAME_WIDTH, GAME_HEIGHT } from './constants';
@@ -8,6 +9,7 @@ export const WALLPAPERS = [
   {id:'forged-command',name:'The Forge',image:'forged-command/background.png',locked:false},
   {id:'starlight',name:'Starlight',image:'wallpapers/starlight.png',locked:true},
   {id:'moonveil',name:'Moonveil',image:'wallpapers/moonveil.png',locked:true},
+  ...EXPEDITION_WALLPAPERS.map(w=>({...w,image:'wallpapers/'+w.id+'.png',locked:true})),
 ] as const;
 
 export function createWallpapers(scene:Phaser.Scene,ui:HTMLElement,onPreview:(id:string)=>void) {
@@ -66,7 +68,7 @@ export function createWallpapers(scene:Phaser.Scene,ui:HTMLElement,onPreview:(id
   toggle.addEventListener('click',()=>{size();index=Math.max(0,WALLPAPERS.findIndex(w=>w.id===equippedWallpaper()));ui.classList.add('wallpaper-open');dialog.showModal();render();});
   dialog.querySelectorAll('.wallpaper-carousel>button').forEach((button,i)=>button.addEventListener('click',()=>{index=(index+(i?1:-1)+WALLPAPERS.length)%WALLPAPERS.length;render();}));
   dialog.querySelector('.wallpaper-close')!.addEventListener('click',()=>dialog.close());
-  dialog.querySelector('.wallpaper-equip')!.addEventListener('click',()=>{if(index===0||owns('wallpaper',WALLPAPERS[index].id)){localStorage.setItem('jump-wallpaper',WALLPAPERS[index].id);dialog.close();}});
+  dialog.querySelector('.wallpaper-equip')!.addEventListener('click',()=>{if(!WALLPAPERS[index].locked||owns('wallpaper',WALLPAPERS[index].id)){localStorage.setItem('jump-wallpaper',WALLPAPERS[index].id);dialog.close();}});
   dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close();}});
   dialog.addEventListener('close',()=>{ui.classList.remove('wallpaper-open');const id=equippedWallpaper();if(id!==applied){applied=id;onPreview(id);animate(id);}scene.game.canvas.focus({preventScroll:true});});
   return {open:()=>dialog.open,destroy:()=>{ui.classList.remove('wallpaper-open');observer.disconnect();clear();dialog.remove();toggle.remove();}};

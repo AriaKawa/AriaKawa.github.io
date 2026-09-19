@@ -1,3 +1,5 @@
+import {expeditionPlatform,isExpedition,resetMoon,stepMoon} from '../game/expeditionWorlds';
+import {createExpeditionInteraction} from '../game/expeditionInteraction';
 import {spriteScale,drawOutfitPreview} from '../game/spriteSizing';
 import {itemRarity} from '../game/lootCatalog';
 import {createMissions} from '../game/missions';
@@ -47,6 +49,7 @@ const NAMES = ["Tongs", "Hammer", "Rivet", "Boots", "Bellows", "Spark", "Anvil",
 const randomName = () => `${PREFIXES[Math.floor(Math.random() * PREFIXES.length)]} ${NAMES[Math.floor(Math.random() * NAMES.length)]}`;
 
 export class MenuScene extends Phaser.Scene {
+  private expeditionInteraction?:ReturnType<typeof createExpeditionInteraction>;
   private partyUi?:ReturnType<typeof createPartyUi>;
   private removeMissions?:()=>void;
   private removeSettings?:()=>void;
@@ -84,6 +87,7 @@ export class MenuScene extends Phaser.Scene {
   }
 
   create(): void {
+    for(const wallpaper of WALLPAPERS)if(isExpedition(wallpaper.id))this.textures.get(wallpaper.id).setFilter(Phaser.Textures.FilterMode.LINEAR);
     this.input.keyboard?.disableGlobalCapture();
     this.wallpaperId=equippedWallpaper();
     this.wardrobeOpen = false; this.activeSlot = "costume";
@@ -104,6 +108,7 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private pedestal(): Platform {
+    const expedition=expeditionPlatform(this.wallpaperId,GAME_WIDTH,GAME_HEIGHT);if(expedition)return expedition;
     if(this.wallpaperId==='starlight')return {id:'forged-pedestal',x:0,y:GAME_HEIGHT*.585,w:GAME_WIDTH*.55,h:12,type:'stone'};
     if(this.wallpaperId!=='forged-command')return {id:'forged-pedestal',x:GAME_WIDTH*.12,y:GAME_HEIGHT*.585,w:GAME_WIDTH*.43,h:12,type:'stone'};
     const compact=window.innerWidth<760;
@@ -111,6 +116,8 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private placeOnPedestal():void {
+    this.preview?.setRotation(0);
+    if(this.wallpaperId==='moonwalk'){resetMoon(this.lobbyPlayer);stepMoon(this.lobbyPlayer,0,GAME_WIDTH,GAME_HEIGHT);return;}
     const p=this.pedestal();
     Object.assign(this.lobbyPlayer,{x:p.x+p.w/2-PLAYER_WIDTH/2,y:p.y-PLAYER_HEIGHT,vx:0,vy:0,grounded:true,groundedPlatformId:p.id});
   }
@@ -138,7 +145,8 @@ export class MenuScene extends Phaser.Scene {
     resources.append(ui.querySelector('.gold-marker')!,ui.querySelector('.loot-toggle')!,coffee,ui.querySelector('.settings-cog')!);
     const note=document.createElement('p');note.className='forge-controls';note.innerHTML='<span>A / D</span> MOVE <i>·</i> HOLD <span>SPACE</span> TO JUMP';
     ui.append(rail,resources,mission,note);
-    this.wallpapers=createWallpapers(this,ui,id=>{this.wallpaperId=id;this.background.setTexture(id).setDisplaySize(GAME_WIDTH,GAME_HEIGHT);this.held=false;this.movement.clear();this.placeOnPedestal();this.refreshSurfaces();});
+    this.wallpapers=createWallpapers(this,ui,id=>{this.wallpaperId=id;this.background.setTexture(id);this.layoutUi();this.expeditionInteraction?.setWallpaper(id);this.held=false;this.movement.clear();this.placeOnPedestal();this.refreshSurfaces();});
+    this.expeditionInteraction=createExpeditionInteraction(this,ui,this.lobbyPlayer,()=>({width:GAME_WIDTH,height:GAME_HEIGHT}));this.expeditionInteraction.setWallpaper(this.wallpaperId);
     this.partyUi=createPartyUi(this,ui,this.form!,()=>MAPS[this.mapIndex]?.id??'magical',map=>{const name=this.form!.querySelector('input')!.value;this.registry.set('mapId',map);this.scene.start('Game',{name,mapId:map});});
     this.removeMissions=createMissions(ui,()=>{this.renderPurchase();this.lootBox?.refresh();});
     this.layoutUi();
@@ -158,7 +166,11 @@ export class MenuScene extends Phaser.Scene {
     p.input = { left: this.movement.has('KeyA') || this.movement.has('ArrowLeft'),
       right: this.movement.has('KeyD') || this.movement.has('ArrowRight'), jumpHeld: this.held, seq: 0 };
     const wasGrounded = p.grounded, wasCharging = p.charging;
-    while (this.accumulator >= 1/30) { stepLobbyPlayer(p,1/30,GAME_WIDTH,GAME_HEIGHT,this.lobbySurfaces,this.wallpaperId==='starlight'); this.accumulator -= 1/30; }
+    while (this.accumulator >= 1/30) {
+      if(this.wallpaperId==='moonwalk')this.preview.setRotation(stepMoon(p,1/30,GAME_WIDTH,GAME_HEIGHT));
+      else stepLobbyPlayer(p,1/30,GAME_WIDTH,GAME_HEIGHT,this.lobbySurfaces,this.wallpaperId==='starlight'||isExpedition(this.wallpaperId));
+      this.accumulator -= 1/30;
+    }
     audio.step(p.grounded && p.input.left!==p.input.right);
     if(wasGrounded&&!p.grounded&&p.vy<0)audio.jump(this.outfit.character==='puppy');
     this.airborne = !p.grounded; this.velocity = p.vy; if (p.charging) {
@@ -234,7 +246,7 @@ export class MenuScene extends Phaser.Scene {
     const track=panel.querySelector<HTMLElement>('.map-track')!;
     for(const map of MAPS){
       const image=document.createElement('img');
-      image.src=import.meta.env.BASE_URL+'assets/menu/map-previews/'+map.id+'.png';
+      image.src=import.meta.env.BASE_URL+(map.id==='jungle'?'assets/jungle-hd/background.webp':'assets/menu/map-previews/'+map.id+'.png');
       image.alt=map.name+' scenery preview';image.draggable=false;
       track.appendChild(image);
     }
@@ -257,7 +269,8 @@ export class MenuScene extends Phaser.Scene {
     const canvas=this.game.canvas.getBoundingClientRect();
     if(!canvas.width || !this.ui)return;
     const sx=GAME_WIDTH/canvas.width,sy=GAME_HEIGHT/canvas.height;
-    this.lobbySurfaces=[this.pedestal()];
+    this.lobbySurfaces=this.wallpaperId==='moonwalk'?[]:[this.pedestal()];
+    if(isExpedition(this.wallpaperId))return;
     const add=(r:DOMRect)=>{if(r.width>0&&r.height>0)this.lobbySurfaces.push({id:'ui-'+this.lobbySurfaces.length,x:(r.left-canvas.left)*sx,y:(r.top-canvas.top)*sy,w:r.width*sx,h:4,type:'stone'});};
     this.ui.querySelectorAll<HTMLElement>('.loot-toggle,.gold-marker img,.gold-balance,.gold-add,.settings-cog,.lobby-object,.wardrobe-art,.menu-form input,.menu-form button,.map-window,.map-arrow').forEach(e=>add(e.getBoundingClientRect()));
     this.ui.querySelectorAll<HTMLElement>('.ranked-splash span,.menu-title span,.menu-title strong,.menu-form label,.map-caption h2,.scores-toggle,.scores-popover p,.personal-scores h2,.personal-scores strong,.personal-scores span,.personal-scores small,.lobby-steps span').forEach(e=>{
@@ -326,7 +339,7 @@ export class MenuScene extends Phaser.Scene {
     const stage=this.ui?.querySelector<HTMLElement>(".wardrobe-stage");if(stage)stage.dataset.outfit=JSON.stringify(outfit);
     this.animationPrefix=outfitTexture(this,outfit);
     this.preview.stop().chain();this.preview.setTexture(this.animationPrefix,0);
-    this.preview.setOrigin(.5,footOrigin(this,this.animationPrefix)).setScale(spriteScale(this,this.animationPrefix,Math.min(GAME_HEIGHT*.315,GAME_WIDTH*.1925)));
+    this.preview.setOrigin(.5,footOrigin(this,this.animationPrefix)).setScale(spriteScale(this,this.animationPrefix,this.previewHeight()));
     this.preview.play(`${this.animationPrefix}-${this.airborne?this.velocity<0?'jump':'fall':'idle'}`);
   }
   private renderPurchase():void {
@@ -346,16 +359,21 @@ export class MenuScene extends Phaser.Scene {
     drawOutfitPreview(this,canvas,key);
   }
 
+  private previewHeight():number {return Math.min(GAME_HEIGHT*(this.wallpaperId==='moonwalk'?.18:.315),GAME_WIDTH*.1925);}
+  private layoutBackground():void {
+    const width=this.wallpaperId==='moonwalk'?GAME_HEIGHT*16/9:GAME_WIDTH;
+    this.background.setPosition(GAME_WIDTH/2+(this.wallpaperId==='moonwalk'?width*.019:0),GAME_HEIGHT*(this.wallpaperId==='moonwalk'?.974:1)).setDisplaySize(width,GAME_HEIGHT);
+  }
   private layoutUi(): void {
     if (!this.ui) return;
     const rect=this.game.canvas.getBoundingClientRect();
-    this.background.setPosition(GAME_WIDTH/2,GAME_HEIGHT).setDisplaySize(GAME_WIDTH,GAME_HEIGHT);
+    this.layoutBackground();
     this.shade.setSize(GAME_WIDTH,GAME_HEIGHT);
     Object.assign(this.ui.style,{width:rect.width+'px',height:rect.height+'px',left:rect.left+'px',top:rect.top+'px'});
     const onPedestal=this.lobbyPlayer.groundedPlatformId==='forged-pedestal';
     resizeLobbyPlayer(this.lobbyPlayer,GAME_WIDTH,GAME_HEIGHT,this.lobbyHeight);this.lobbyHeight=GAME_HEIGHT;
-    if(onPedestal)this.placeOnPedestal();
-    this.preview.setScale(spriteScale(this,this.animationPrefix,Math.min(GAME_HEIGHT*.315,GAME_WIDTH*.1925)));
+    if(onPedestal||this.wallpaperId==='moonwalk')this.placeOnPedestal();
+    this.preview.setScale(spriteScale(this,this.animationPrefix,this.previewHeight()));
     this.refreshSurfaces();
   }
   private installPreviewControls(): void {
@@ -398,6 +416,7 @@ export class MenuScene extends Phaser.Scene {
   private cleanup(): void {
     this.partyUi?.destroy();this.removeMissions?.();
     this.wallpapers?.destroy();this.wallpapers=undefined;this.removeScoresDismiss?.();this.removeScoresDismiss=undefined;
+    this.expeditionInteraction?.destroy();this.expeditionInteraction=undefined;
     this.removeSettings?.();this.removeSettings=undefined;
     this.removeControls?.();this.removeControls=undefined;this.scale.off(Phaser.Scale.Events.RESIZE,this.layoutUi,this);
     this.lootBox?.destroy();this.lootBox=undefined;

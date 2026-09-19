@@ -109,3 +109,8 @@
 !/scripts/browser-terrain-refresh.mjs
 !/scripts/browser-terrain-live.mjs
 !/docs/terrain-refresh.md
+
+!/scripts/compile-expedition.cjs
+!/scripts/browser-expedition.mjs
+!/docs/expedition-content/
+/docs/expedition-content/qa/
