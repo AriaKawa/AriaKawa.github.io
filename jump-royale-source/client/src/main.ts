@@ -10,7 +10,10 @@ import { MenuScene } from "./scenes/MenuScene";
 import { ResultsScene } from "./scenes/ResultsScene";
 import {claimGoldGift} from './game/economy';
 import {handleWardrobeReset} from './game/wardrobeReset';
+import {unlockCollection} from './game/wardrobeUnlock';
+import {LOOT_POOL} from './game/lootCatalog';
 
+if(unlockCollection(location.hash,LOOT_POOL))history.replaceState(null,'',location.pathname+location.search);
 if(claimGoldGift(location.hash))history.replaceState(null,'',location.pathname+location.search);
 handleWardrobeReset();
 
