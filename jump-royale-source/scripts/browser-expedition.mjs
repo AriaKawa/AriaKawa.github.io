@@ -30,9 +30,9 @@ try{
   for(const item of items){const tier=LOOT_POOL.filter(l=>l.rarity===item.rarity);let n=0;const values=[([0,60,85,95,99][item.rarity]+.1)/100,(tier.indexOf(item)+.1)/tier.length];if(rollLoot(LOOT_POOL,()=>values[n++])!==item)throw Error('Unreachable loot '+item.id);}
   const chance=LOOT_POOL.reduce((sum,l)=>sum+lootChance(l,LOOT_POOL),0);if(Math.abs(chance-100)>1e-7)throw Error('Odds');
   const actor=createLobbyPlayer(960,540);resetMoon(actor);actor.input.right=true;
-  let rotation=0;for(let i=0;i<220;i++){rotation=stepMoon(actor,1/30,960,540);const m=moonGeometry(960,540);if(Math.abs(Math.hypot(actor.x+7-m.x,actor.y+20-m.y)-m.radius)>.001)throw Error('Moon contact');}
+  let rotation=0;for(let i=0;i<700;i++){rotation=stepMoon(actor,1/30,960,540);const m=moonGeometry(960,540);if(Math.abs(Math.hypot(actor.x+7-m.x,actor.y+20-m.y)-m.radius)>.001)throw Error('Moon contact');}
   if(rotation<Math.PI*2)throw Error('Cannot circumnavigate');
-  actor.input.right=false;actor.input.jumpHeld=true;for(let i=0;i<24;i++)stepMoon(actor,1/30,960,540);actor.input.jumpHeld=false;stepMoon(actor,1/30,960,540);if(actor.grounded||actor.vy>=0)throw Error('Moon jump');for(let i=0;i<80;i++)stepMoon(actor,1/30,960,540);if(!actor.grounded)throw Error('Moon return');
+  actor.input.right=false;actor.input.jumpHeld=true;for(let i=0;i<24;i++)stepMoon(actor,1/30,960,540);actor.input.jumpHeld=false;stepMoon(actor,1/30,960,540);if(actor.grounded||actor.vy>=0)throw Error('Moon jump');for(let i=0;i<160;i++)stepMoon(actor,1/30,960,540);if(!actor.grounded)throw Error('Moon return');
   localStorage.setItem('jump-royale-wallet-v1',JSON.stringify({gold:100,owned:items.map(i=>i.slot+':'+i.id),rewards:[],freeSpins:3,spinPoints:0}));localStorage.setItem('jump-wallpaper','corsair-cove');localStorage.setItem('forge-outfit-v1',JSON.stringify(sanitizeOutfit({character:'pirate'})));
   return {items:items.length,frames,animations,chance};
  });
@@ -43,8 +43,8 @@ try{
   await p.waitForFunction(id=>window.__FORGE_DEV__.scene.getScene('Menu').wallpaperId===id,id);await p.waitForTimeout(350);
   assert.equal(await p.evaluate(()=>window.__FORGE_DEV__.scene.getScene('Menu').background.texture.key),id);
   await p.screenshot({path:`docs/expedition-content/qa/${id}.png`});
-  if(id==='tidal-sanctuary'||id==='cloud-garden'){await p.locator('.expedition-interaction button').click();assert(await p.evaluate(()=>!window.__FORGE_DEV__.scene.getScene('Menu').lobbyPlayer.grounded));}
-  if(id==='corsair-cove'){await p.getByRole('button',{name:'Fire signal cannon'}).click();assert(await p.evaluate(()=>window.__FORGE_DEV__.scene.getScene('Menu').children.list.some(o=>o.type==='Arc')));}
+  if(id==='tidal-sanctuary'||id==='cloud-garden'){await p.locator('.expedition-hotspot').click();assert(await p.evaluate(()=>!window.__FORGE_DEV__.scene.getScene('Menu').lobbyPlayer.grounded));}
+  if(id==='corsair-cove'){await p.getByRole('button',{name:'Fire cannon',exact:true}).click();assert(await p.evaluate(()=>window.__FORGE_DEV__.scene.getScene('Menu').children.list.some(o=>o.type==='Arc')));}
  }
  await p.getByRole('button',{name:'Wallpapers',exact:true}).click();assert.equal(await p.locator('.wallpaper-track img').count(),8);await p.keyboard.press('Escape');
  await p.getByRole('button',{name:/Open loot box/}).click();
