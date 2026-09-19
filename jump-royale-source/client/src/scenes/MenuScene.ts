@@ -171,7 +171,7 @@ export class MenuScene extends Phaser.Scene {
       else stepLobbyPlayer(p,1/30,GAME_WIDTH,GAME_HEIGHT,this.lobbySurfaces,this.wallpaperId==='starlight'||isExpedition(this.wallpaperId));
       this.accumulator -= 1/30;
     }
-    audio.step(p.grounded && p.input.left!==p.input.right);
+    audio.step(p.grounded && !p.charging && Math.abs(p.vx)>0);
     if(wasGrounded&&!p.grounded&&p.vy<0)audio.jump(this.outfit.character==='puppy');
     this.airborne = !p.grounded; this.velocity = p.vy; if (p.charging) {
       if (!wasCharging) this.preview.play(this.animationPrefix+'-charge-start').chain(this.animationPrefix+'-charge-loop');

@@ -41,7 +41,32 @@ const target=path.join(root,'client/public/assets/reforged/cosmetics');
   const input=await sharp(cell.rgba,{raw:{width:cell.w,height:cell.h,channels:4}}).extract({left:cell.left,top:cell.top,width:cell.width,height:cell.height}).resize(w,h,{kernel:'nearest'}).png({palette:true,colours:24,dither:0}).toBuffer();
   composite.push({input,left:(frame%4)*64+Math.round((64-w)/2),top:Math.floor(frame/4)*64+60-h});
  }
- const packed=await sharp({create:{width:256,height:256,channels:4,background:'#00000000'}}).composite(composite).png().toBuffer();
- await sharp(packed).resize(1024,1024,{kernel:'nearest'}).png().toFile(path.join(target,id+'-expedition-16.png'));
- console.log(id+': 16 aligned transparent poses');
+ // Dedicated six-frame full stride atlas. Preserve one scale through the cycle.
+ const walk=await sharp(path.join(source,'walk-cycles.png')).ensureAlpha().raw().toBuffer({resolveWithObject:true});
+ const occupancy=Array(walk.info.height).fill(0);
+ for(let y=0;y<walk.info.height;y++)for(let x=0;x<walk.info.width;x++)if(walk.data[(y*walk.info.width+x)*4+3]>24)occupancy[y]++;
+ const bands=[0];
+ for(let row=1;row<3;row++){
+  const center=walk.info.height*row/3;let best=[0,0],start=-1;
+  for(let y=Math.floor(center-90);y<Math.ceil(center+90);y++){
+   if(occupancy[y]===0){if(start<0)start=y;}else if(start>=0){if(y-start>best[1]-best[0])best=[start,y];start=-1;}
+  }
+  if(best[1]-best[0]<2)throw Error('No walk gutter');bands.push(Math.round((best[0]+best[1])/2));
+ }
+ bands.push(walk.info.height);
+ const row=['pirate','astro-monkey','axolotl'].indexOf(id),poses=[];
+ for(let f=0;f<6;f++){
+  const x0=Math.round(f*walk.info.width/6),x1=Math.round((f+1)*walk.info.width/6);let l=x1,r=x0,t=bands[row+1],b=bands[row];
+  for(let y=bands[row];y<bands[row+1];y++)for(let x=x0;x<x1;x++)if(walk.data[(y*walk.info.width+x)*4+3]>100){l=Math.min(l,x);r=Math.max(r,x+1);t=Math.min(t,y);b=Math.max(b,y+1);}
+  poses.push({left:l,top:t,width:r-l,height:b-t});
+ }
+ const walkScale=cells[0].height*scale/Math.max(...poses.map(p=>p.height));
+ for(let f=0;f<6;f++){
+  const pose=poses[f],w=Math.round(pose.width*walkScale),h=Math.round(pose.height*walkScale),frame=16+f;
+  const input=await sharp(walk.data,{raw:walk.info}).extract(pose).resize(w,h,{kernel:'nearest'}).png({palette:true,colours:24,dither:0}).toBuffer();
+  composite.push({input,left:(frame%4)*64+Math.round((64-w)/2),top:Math.floor(frame/4)*64+60-h});
+ }
+ const packed=await sharp({create:{width:256,height:384,channels:4,background:'#00000000'}}).composite(composite).png().toBuffer();
+ await sharp(packed).resize(1024,1536,{kernel:'nearest'}).png().toFile(path.join(target,id+'-expedition-v2.png'));
+ console.log(id+': 22 aligned transparent poses, including six stride frames');
 }})().catch(e=>{console.error(e);process.exit(1)});
