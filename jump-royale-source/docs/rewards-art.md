@@ -1,6 +1,6 @@
 # Reward reveal and Aria artwork
 
-Generated with the built-in imagegen tool, then cropped and resized with nearest-neighbor sampling for the game. The three hats use shared generated sprites, explicit per-frame crown anchors on every 16-bit animal, and the same art in reward icons. Aria has twelve 64px frames and no retro variant.
+Generated with the built-in imagegen tool, then cropped and resized with nearest-neighbor sampling for the game. The three hats use shared generated sprites, explicit per-frame crown anchors on every 16-bit animal, and the same art in reward icons. Aria has twelve frames and no retro variant. The currency/frost update restores those frames from the original generation at 128px each to retain more outfit detail.
 
 ## References
 

@@ -1,3 +1,4 @@
+import './game/currencyExchange.css';
 import {audio} from './game/audio';
 audio.init();
 import Phaser from "phaser";

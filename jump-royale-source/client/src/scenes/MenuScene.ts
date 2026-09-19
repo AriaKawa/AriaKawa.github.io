@@ -1,3 +1,4 @@
+import {spriteScale,drawOutfitPreview} from '../game/spriteSizing';
 import {itemRarity} from '../game/lootCatalog';
 import {createMissions} from '../game/missions';
 import {createPartyUi,createLeaderboards} from '../game/socialUi';
@@ -93,8 +94,8 @@ export class MenuScene extends Phaser.Scene {
     this.background = this.add.image(GAME_WIDTH/2,GAME_HEIGHT,this.wallpaperId).setOrigin(0.5,1).setDepth(-3);
     this.shade = this.add.rectangle(0,0,GAME_WIDTH,GAME_HEIGHT,0x06101b,0.08).setOrigin(0).setDepth(-2);
     this.animationPrefix = outfitTexture(this,this.outfit);
-    const frameWidth=this.textures.get(this.animationPrefix).get(0).width;
-    this.preview = this.add.sprite(this.lobbyPlayer.x+PLAYER_WIDTH/2,this.lobbyPlayer.y+PLAYER_HEIGHT,this.animationPrefix).setOrigin(0.5,footOrigin(this,this.animationPrefix)).setScale(LOBBY_SPRITE_SCALE*(32/frameWidth));
+
+    this.preview = this.add.sprite(this.lobbyPlayer.x+PLAYER_WIDTH/2,this.lobbyPlayer.y+PLAYER_HEIGHT,this.animationPrefix).setOrigin(0.5,footOrigin(this,this.animationPrefix)).setScale(spriteScale(this,this.animationPrefix,28*LOBBY_SPRITE_SCALE));
     this.preview.play(`${this.animationPrefix}-idle`);
     this.mapIndex = Math.max(0,MAPS.findIndex(map=>map.id===this.registry.get("mapId")));
     this.createMenuUi(); this.createMapSelector(); this.createScores(); this.composeForgedUi(); this.installPreviewControls(); this.refreshSurfaces();
@@ -148,7 +149,7 @@ export class MenuScene extends Phaser.Scene {
       this.accumulator=0;
       this.preview.play(this.animationPrefix+"-idle",true);
       const canvas=this.ui?.querySelector<HTMLCanvasElement>(".wardrobe-stage canvas");
-      if(canvas){const c=canvas.getContext("2d")!,f=this.preview.frame; c.clearRect(0,0,160,192);c.imageSmoothingEnabled=false;const scale=144/Math.max(f.width,f.height);c.drawImage(this.preview.texture.getSourceImage() as HTMLImageElement,f.cutX,f.cutY,f.width,f.height,(160-f.width*scale)/2,192-f.height*footOrigin(this,this.animationPrefix)*scale,f.width*scale,f.height*scale);}
+      if(canvas)drawOutfitPreview(this,canvas,this.animationPrefix,Number(this.preview.frame.name));
       return;
     }
     const p = this.lobbyPlayer;
@@ -322,7 +323,7 @@ export class MenuScene extends Phaser.Scene {
     const stage=this.ui?.querySelector<HTMLElement>(".wardrobe-stage");if(stage)stage.dataset.outfit=JSON.stringify(outfit);
     this.animationPrefix=outfitTexture(this,outfit);
     this.preview.stop().chain();this.preview.setTexture(this.animationPrefix,0);
-    this.preview.setOrigin(.5,footOrigin(this,this.animationPrefix)).setScale(Math.min(GAME_HEIGHT*.36,GAME_WIDTH*.22)/32*(32/this.preview.frame.width));
+    this.preview.setOrigin(.5,footOrigin(this,this.animationPrefix)).setScale(spriteScale(this,this.animationPrefix,Math.min(GAME_HEIGHT*.315,GAME_WIDTH*.1925)));
     this.preview.play(`${this.animationPrefix}-${this.airborne?this.velocity<0?'jump':'fall':'idle'}`);
   }
   private renderPurchase():void {
@@ -339,10 +340,7 @@ export class MenuScene extends Phaser.Scene {
   private drawEquipmentIcon(canvas: HTMLCanvasElement,slot: CosmeticSlot,id: string): void {
     const sample=candidateOutfit(this.outfit,slot,id);
     const key=outfitTexture(this,sample);
-    const source=this.textures.get(key).getSourceImage() as HTMLImageElement;
-    const frame=this.textures.get(key).get(0),scale=64/Math.max(frame.width,frame.height);
-    const target=canvas.getContext('2d')!;target.imageSmoothingEnabled=false;target.clearRect(0,0,64,64);
-    target.drawImage(source,frame.cutX,frame.cutY,frame.width,frame.height,(64-frame.width*scale)/2,(64-frame.height*scale)/2,frame.width*scale,frame.height*scale);
+    drawOutfitPreview(this,canvas,key);
   }
 
   private layoutUi(): void {
@@ -354,7 +352,7 @@ export class MenuScene extends Phaser.Scene {
     const onPedestal=this.lobbyPlayer.groundedPlatformId==='forged-pedestal';
     resizeLobbyPlayer(this.lobbyPlayer,GAME_WIDTH,GAME_HEIGHT,this.lobbyHeight);this.lobbyHeight=GAME_HEIGHT;
     if(onPedestal)this.placeOnPedestal();
-    this.preview.setScale(Math.min(GAME_HEIGHT*.36,GAME_WIDTH*.22)/32*(32/this.preview.frame.width));
+    this.preview.setScale(spriteScale(this,this.animationPrefix,Math.min(GAME_HEIGHT*.315,GAME_WIDTH*.1925)));
     this.refreshSurfaces();
   }
   private installPreviewControls(): void {

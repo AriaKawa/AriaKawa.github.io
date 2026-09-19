@@ -1,3 +1,4 @@
+import {COUNTDOWN_SECONDS} from '../../../server/src/sim/constants';
 import {backend,party,playerId,isHost,partyMembers} from '../game/online';
 import {worldForMap,floodForMap} from '../../../server/src/sim/world';
 import {safePlayerName} from '../../../server/src/sim/names';
@@ -109,7 +110,7 @@ export class HostedGameClient {
     if(this.phase === "waiting" && this.clock >= this.nextJoinAt) {
       const joined=this.pendingPlayers.shift();if(joined)this.players.set(joined.id,joined);
       this.nextJoinAt=this.clock+160;
-      if(this.players.size===24 && !this.pendingPlayers.length){this.phase="countdown";this.countdownEndsAt=this.clock+3000;}
+      if(this.players.size===24 && !this.pendingPlayers.length){this.phase="countdown";this.countdownEndsAt=this.clock+COUNTDOWN_SECONDS*1000;}
     }
     if (this.phase === "countdown" && this.clock >= this.countdownEndsAt) { this.phase = "playing"; this.roundStartedAt = this.clock; }
     if (this.phase === "playing") {

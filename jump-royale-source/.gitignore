@@ -98,3 +98,6 @@
 
 !/scripts/browser-rewards.mjs
 !/docs/rewards-art.md
+!/scripts/browser-currency-frost.mjs
+!/docs/currency-frost-art.md
+!/docs/map-preview-manifest.json

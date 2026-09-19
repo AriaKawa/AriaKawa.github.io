@@ -20,5 +20,5 @@ export const HAZARD_ACCEL_PER_SECOND = 0.3;
 export const HAZARD_MAX_SPEED = 80;
 export const SPAWN_Y = WORLD_HEIGHT - 240;
 export const MIN_COMPETITORS = 24;
-export const COUNTDOWN_SECONDS = 3;
+export const COUNTDOWN_SECONDS = 5;
 export const ROUND_RESET_SECONDS = 8;

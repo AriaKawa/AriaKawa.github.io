@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {wallet,owns,buy,price,playableOutfit,lockedPieces,claimGoldGift,rollLoot,lootChance,LOOT_ODDS} from '../client/src/game/economy';
 import {GOLD_PACKS} from '../client/src/game/goldStore';
+import {COUNTDOWN_SECONDS} from '../server/src/sim/constants';
 import {costumeFields} from '../client/src/assets/costumeSets';
 const store=new Map<string,string>();
 Object.assign(globalThis,{localStorage:{getItem:(key:string)=>store.get(key)??null,setItem:(key:string,value:string)=>store.set(key,value)}});
@@ -18,6 +19,8 @@ save();assert(claimGoldGift('#gift=royale-overhaul-20260918-81c62f749a'));assert
 assert(claimGoldGift('#gift=royale-overhaul-20260918-81c62f749a'));assert.equal(wallet().gold,1100);
 assert(!claimGoldGift('#gift=invalid'));assert(!claimGoldGift('#gift=toString'));
 const pack=GOLD_PACKS.find(p=>p.usdCents===5000)!;assert.equal(pack.baseGold+pack.bonusGold,60);assert.equal(pack.bonusGold/pack.baseGold,.2);
+assert.deepEqual(GOLD_PACKS.map(p=>[p.usdCents,p.baseGold+p.bonusGold]),[[100,1],[500,5],[1000,10],[5000,60]]);
+assert.equal(COUNTDOWN_SECONDS,5);
 const pool=LOOT_ODDS.flatMap((_,rarity)=>[0,1].map(id=>({slot:'test',id:`${rarity}-${id}`,name:'Test',rarity})));
 save();assert(Math.abs(pool.reduce((sum,p)=>sum+lootChance(p,pool),0)-100)<1e-9);
 let lower=0;for(let tier=0;tier<5;tier++){for(const r of [lower/100,(lower+LOOT_ODDS[tier]-.000001)/100])assert.equal(rollLoot(pool,()=>r).rarity,tier);lower+=LOOT_ODDS[tier];}

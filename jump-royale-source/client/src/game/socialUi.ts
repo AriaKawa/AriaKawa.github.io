@@ -1,3 +1,6 @@
+import {spriteScale} from './spriteSizing';
+import {footOrigin} from './spriteFeet';
+import {GAME_WIDTH,GAME_HEIGHT} from './constants';
 import Phaser from 'phaser';
 import {MAPS,type MapId} from '../../../server/src/sim/maps';
 import {PORTRAITS,portraitImage,portraitId} from './portraits';
@@ -57,7 +60,7 @@ export function createPartyUi(scene:Phaser.Scene,root:HTMLElement,form:HTMLFormE
   const seen=new Set<string>();
   for(const m of partyMembers()){if(m.id===playerId)continue;seen.add(m.id);let e=sprites.get(m.id);const key=outfitTexture(scene,sanitizeOutfit(m.outfit));
    if(!e){e={sprite:scene.add.sprite(m.x,m.y,key).setDepth(5).setScale(3.5).setOrigin(.5,1),label:scene.add.text(0,0,'',{fontSize:'12px',color:'#fff0ce',backgroundColor:'#101725'}).setDepth(6).setOrigin(.5),wallpaper:scene.add.image(0,0,m.wallpaper).setDepth(-1).setAlpha(.75)};sprites.set(m.id,e);}
-   e.sprite.setTexture(key).setPosition(m.x+12,m.y+16);e.sprite.play(key+'-idle',true);e.label.setText(m.name).setPosition(m.x+12,m.y-112);
+   e.sprite.setTexture(key).setScale(spriteScale(scene,key,Math.min(GAME_HEIGHT*.315,GAME_WIDTH*.1925))).setOrigin(.5,footOrigin(scene,key)).setPosition(m.x+12,m.y+20);e.sprite.play(key+'-idle',true);e.label.setText(m.name).setPosition(m.x+12,m.y-112);
    e.wallpaper.setTexture(['starlight','moonveil'].includes(m.wallpaper)?m.wallpaper:'forged-command').setPosition(m.x+12,m.y-42).setDisplaySize(150,110).setAlpha(.65);
   }
   for(const [id,e] of sprites)if(!seen.has(id)){e.sprite.destroy();e.label.destroy();e.wallpaper.destroy();sprites.delete(id);}

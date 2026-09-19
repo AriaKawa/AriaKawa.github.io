@@ -2,7 +2,7 @@ import type Phaser from 'phaser';
 import type { Platform } from './types';
 import { GAME_WIDTH, WORLD_HEIGHT } from './constants';
 
-export const SNOW_ASSETS=['background','ground','soil','ledge','ice','log','ruin','pine','storm','storm-edge'] as const;
+export const SNOW_ASSETS=['blizzard-wall','background','ground','soil','ledge','ice','log','ruin','pine','storm','storm-edge'] as const;
 export function queueSnowAssets(scene:Phaser.Scene):void {
   for(const name of SNOW_ASSETS)scene.load.image('snow-'+name,import.meta.env.BASE_URL+'assets/snow/'+name+'.png');
 }

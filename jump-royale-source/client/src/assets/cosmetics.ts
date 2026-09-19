@@ -54,7 +54,7 @@ export function saveOutfit(outfit: Outfit): void {
 export function queueCosmetics(scene: Phaser.Scene): void {
   for(const hat of ['party','fedora','unicorn'])scene.load.image('animal-hat-'+hat,`${ROOT}/hat-${hat}-16.png`);
   for(const costume of KNIGHT_COSTUMES)scene.load.spritesheet('fantasy-finn-'+costume+'-16',`${ROOT}/finn-${costume}-16.png`,{frameWidth:64,frameHeight:64});
-  scene.load.spritesheet('fantasy-aria-16',`${ROOT}/aria-16.png`,{frameWidth:64,frameHeight:64});
+  scene.load.spritesheet('fantasy-aria-16',`${ROOT}/aria-detail.png`,{frameWidth:128,frameHeight:128});
   scene.load.spritesheet('fantasy-pogo-16',`${ROOT}/pogo-16.png`,{frameWidth:64,frameHeight:64});
   scene.load.spritesheet('fantasy-finn',`${ROOT}/finn-knight.png`,{frameWidth:48,frameHeight:48});
   scene.load.spritesheet('fantasy-finn-16',`${ROOT}/finn-knight-16.png`,{frameWidth:64,frameHeight:64});

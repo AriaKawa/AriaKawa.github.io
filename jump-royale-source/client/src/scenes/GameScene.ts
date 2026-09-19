@@ -1,3 +1,4 @@
+import {spriteScale} from '../game/spriteSizing';
 import {missionProgress} from '../game/missions';
 import {party,submitRecord} from '../game/online';
 import {drawMagical,renderMagicalTerrain} from '../game/magicalArt';
@@ -51,6 +52,7 @@ interface MiniMapHud {
 const MINI_MAP = { x: 806, y: 174, width: 136, height: 348, innerX: 816, innerY: 202, innerWidth: 116, innerHeight: 278 };
 
 export class GameScene extends Phaser.Scene {
+  private frostWind?:Phaser.GameObjects.Graphics;
   private terrainNotice?:ReturnType<typeof createSolidTerrainNotice>;
   private nativeText?:NativeGameText;
   private lastCountdown=0;
@@ -98,7 +100,7 @@ export class GameScene extends Phaser.Scene {
     this.input.keyboard?.enableGlobalCapture();
     // Phaser reuses scene instances. Every round must begin with fresh network
     // and presentation state rather than references to objects destroyed at shutdown.
-    this.lastCountdown=0;this.flood=undefined;this.nativeText=new NativeGameText(this);
+    this.lastCountdown=0;this.flood=undefined;this.frostWind=undefined;this.nativeText=new NativeGameText(this);
     this.goldEarned=0;this.deathUi?.remove();this.deathUi=undefined;
     this.registry.set("outfit",playableOutfit(this.registry.get("outfit")??loadOutfit()));
     this.client = new GameClient();
@@ -123,7 +125,7 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor("#0b0810");
     this.cameras.main.setBounds(this.wideWorld?0:-(GAME_WIDTH-WORLD_WIDTH)/2, 0, this.wideWorld?this.world.width:GAME_WIDTH, this.worldHeight);
     this.cameras.main.scrollX = -(GAME_WIDTH-WORLD_WIDTH)/2;
-    this.terrainNotice?.destroy();this.terrainNotice=createSolidTerrainNotice(this,this.mapId==='magical'?'magical-ai-ribbon-palace':'forest-ai-moss-slate');
+    this.terrainNotice?.destroy();this.terrainNotice=createSolidTerrainNotice(this,this.mapId==='snow'?'snow-ice':this.mapId==='magical'?'magical-ai-ribbon-palace':'forest-ai-moss-slate',this.mapId==='snow'?'ice':'solid');
     this.drawWorldBackdrop();
     this.createHazard();
     if(!this.textures.exists('forged-hud-frame')){const t=this.textures.createCanvas('forged-hud-frame',100,100)!;t.context.drawImage(this.textures.get('forged-frame').getSourceImage() as HTMLImageElement,0,0,100,100);t.refresh();}
@@ -162,9 +164,20 @@ export class GameScene extends Phaser.Scene {
       for(const [id,c] of this.platformEntities)c.setVisible(c.y>camera.scrollY-280&&c.y<camera.scrollY+GAME_HEIGHT+100&&c.x<camera.scrollX+GAME_WIDTH+400&&c.x+(c.getData('width')??500)>camera.scrollX&&collapse?.[id]!==0);
       this.flood?.setX(camera.scrollX).setDisplaySize(GAME_WIDTH,GAME_HEIGHT+160);
     }
+    if(this.mapId==='snow'&&this.flood){
+      const camera=this.cameras.main;this.flood.setX(camera.scrollX).setDisplaySize(GAME_WIDTH,GAME_HEIGHT+160);
+      const wind=this.frostWind!;wind.clear();
+      if(this.flood.visible&&!matchMedia('(prefers-reduced-motion: reduce)').matches){
+        const crest=this.flood.y;
+        for(let i=0;i<26;i++){
+          const x=camera.scrollX+((i*83+time*.22)%(GAME_WIDTH+70))-35,y=crest-14+(i*31)%150;
+          wind.lineStyle(i%3===0?2:1,0xdaf5ff,.12+(i%4)*.08).beginPath().moveTo(x,y).lineTo(x+22+(i%3)*9,y-9).strokePath();
+        }
+      }
+    }
     this.updateLava(time, delta);
     this.updateHud();
-    this.terrainNotice?.sync(this.snapshot?.phase??"waiting",this.minimapPlatforms.some(p=>p.solid&&p.id!=="spawn"),time);
+    this.terrainNotice?.sync(this.snapshot?.phase??"waiting",this.mapId==='snow'||this.minimapPlatforms.some(p=>p.solid&&p.id!=="spawn"),time);
     this.nativeText?.sync();
   }
 
@@ -272,9 +285,8 @@ export class GameScene extends Phaser.Scene {
       this.flood=this.add.image(0,0,'ascent-ai-props/water').setOrigin(0).setDepth(24).setDisplaySize(GAME_WIDTH,GAME_HEIGHT+160);return;
     }
     if(this.mapId==='snow'){
-      const left=-(GAME_WIDTH-WORLD_WIDTH)/2;
-      this.lavaBody=this.add.tileSprite(left,0,GAME_WIDTH,this.worldHeight,'snow-storm').setOrigin(0).setDepth(24).setAlpha(.94);
-      this.lavaSurface=this.add.tileSprite(left,0,GAME_WIDTH,16,'snow-storm-edge').setOrigin(0).setDepth(25);return;
+      this.flood=this.add.image(-(GAME_WIDTH-WORLD_WIDTH)/2,0,'snow-blizzard-wall').setVisible(false).setOrigin(0).setDepth(24).setDisplaySize(GAME_WIDTH,GAME_HEIGHT+160);
+      this.frostWind=this.add.graphics().setDepth(25);return;
     }
     if(this.mapId==='jungle'){
       const left=-(GAME_WIDTH-WORLD_WIDTH)/2;
@@ -332,7 +344,7 @@ export class GameScene extends Phaser.Scene {
         for(const platform of this.minimapPlatforms)this.renderPlatform(platform);
       }
       for(const water of [this.lavaBody,this.lavaSurface])water?.setX(-(GAME_WIDTH-WORLD_WIDTH)/2).setSize(GAME_WIDTH,water.height);
-      this.flood?.setX(-(GAME_WIDTH-WORLD_WIDTH)/2).setDisplaySize(GAME_WIDTH,this.worldHeight+GAME_HEIGHT);
+      this.flood?.setX(-(GAME_WIDTH-WORLD_WIDTH)/2).setDisplaySize(GAME_WIDTH,this.mapId==='snow'?GAME_HEIGHT+160:this.worldHeight+GAME_HEIGHT);
     }
     if(this.snapshot)this.drawMinimap(this.snapshot);
   }
@@ -388,7 +400,7 @@ export class GameScene extends Phaser.Scene {
       this.lavaSurface.y = snapshot.hazardY + LAVA_SURFACE_VISUAL_OFFSET;
       this.lavaBody.y = snapshot.hazardY + (this.mapId !== "forge" ? 7 : 14);
     }
-    if(this.flood)this.flood.y=snapshot.hazardY;
+    if(this.flood){this.flood.y=snapshot.hazardY;this.flood.setVisible(true);}
     for (const position of snapshot.platforms ?? []) {
       const platform = this.minimapPlatforms.find((candidate) => candidate.id === position.id);
       if (platform) {platform.x = position.x;if(position.y!==undefined)platform.y=position.y;}
@@ -431,7 +443,7 @@ export class GameScene extends Phaser.Scene {
     const animationPrefix = texture;
 
     const sprite = this.add.sprite(player.x + PLAYER_WIDTH / 2, player.y + PLAYER_HEIGHT, texture).setOrigin(0.5,footOrigin(this,texture)).setDepth(local ? 20 : 10);
-    sprite.setScale(32/sprite.frame.width);
+    sprite.setScale(spriteScale(this,texture,28));
     sprite.play(`${animationPrefix}-idle`);
     if (!player.isBot && this.artV2.player) sprite.play(`${animationPrefix}-idle`);
     const name = this.add.text(player.x + PLAYER_WIDTH / 2, player.y - 8, local ? player.name.toUpperCase() : player.name, {
