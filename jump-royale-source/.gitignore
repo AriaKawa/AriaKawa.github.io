@@ -112,6 +112,7 @@
 
 !/scripts/compile-expedition.cjs
 !/scripts/browser-expedition.mjs
+!/scripts/browser-expedition-live.mjs
 !/docs/expedition-content/
 /docs/expedition-content/qa/
 !/scripts/compile-crown-forge-art.mjs

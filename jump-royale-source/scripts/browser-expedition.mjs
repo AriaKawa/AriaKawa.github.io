@@ -47,6 +47,18 @@ try{
   if(id==='corsair-cove'){await p.getByRole('button',{name:'Fire signal cannon'}).click();assert(await p.evaluate(()=>window.__FORGE_DEV__.scene.getScene('Menu').children.list.some(o=>o.type==='Arc')));}
  }
  await p.getByRole('button',{name:'Wallpapers',exact:true}).click();assert.equal(await p.locator('.wallpaper-track img').count(),8);await p.keyboard.press('Escape');
+ await p.getByRole('button',{name:/Open loot box/}).click();
+ await p.evaluate(async()=>{
+  const {LOOT_POOL}=await import('/src/game/lootCatalog.ts'),{owns}=await import('/src/game/economy.ts');
+  const wallet=JSON.parse(localStorage.getItem('jump-royale-wallet-v1'));wallet.owned=wallet.owned.filter(k=>k!=='wallpaper:corsair-cove');localStorage.setItem('jump-royale-wallet-v1',JSON.stringify(wallet));
+  const fresh=LOOT_POOL.filter(i=>i.rarity===2&&!owns(i.slot,i.id));const index=fresh.findIndex(i=>i.id==='corsair-cove');
+  const values=[.86,(index+.1)/fresh.length];let n=0;window.originalRandom=crypto.getRandomValues.bind(crypto);crypto.getRandomValues=a=>{a[0]=Math.floor((values[n++]??.1)*4294967296);return a;};
+ });
+ await p.locator('.loot-free').click();
+ await p.evaluate(()=>document.getAnimations().filter(a=>a.effect?.target?.classList.contains('loot-reel')).forEach(a=>a.finish()));
+ await p.waitForSelector('.loot-reveal[open]');assert.match(await p.locator('.loot-reveal h2').textContent(),/Corsair Cove/);
+ assert(await p.evaluate(()=>JSON.parse(localStorage.getItem('jump-royale-wallet-v1')).owned.includes('wallpaper:corsair-cove')));
+ await p.evaluate(()=>{crypto.getRandomValues=window.originalRandom;});await p.keyboard.press('Escape');await p.keyboard.press('Escape');
  for(const size of [{width:390,height:844},{width:844,height:390}]){await p.setViewportSize(size);await p.waitForTimeout(200);await p.screenshot({path:`docs/expedition-content/qa/mobile-${size.width}.png`});}
  await p.setViewportSize({width:1440,height:900});await p.getByRole('button',{name:'Start',exact:true}).click();await p.waitForFunction(()=>window.__FORGE_DEV__.scene.getScene('Game').snapshot?.phase==='playing');
  assert(await p.evaluate(()=>{const s=window.__FORGE_DEV__.scene.getScene('Game');return s.playerEntities.get(s.localId).animationPrefix==='expedition-axolotl';}));

@@ -516,7 +516,10 @@ export class GameScene extends Phaser.Scene {
         else if (player.charging && ![`${entity.animationPrefix}-charge-start`, `${entity.animationPrefix}-charge-loop`].includes(animation)) entity.sprite.play(`${entity.animationPrefix}-charge-loop`, true);
         else if (!player.grounded && player.vy < 0) entity.sprite.play(`${entity.animationPrefix}-jump`, true);
         else if (!player.grounded) entity.sprite.play(`${entity.animationPrefix}-fall`, true);
-        else if (!player.charging && this.time.now >= entity.landUntil) entity.sprite.play(`${entity.animationPrefix}-${Math.abs(player.x-entity.targetX)>.5?'walk':'idle'}`, true);
+        else if (!player.charging && this.time.now >= entity.landUntil) {
+          const celebrating=this.snapshot?.phase==='victory'&&this.snapshot.winnerId===player.id&&this.anims.exists(entity.animationPrefix+'-victory');
+          entity.sprite.play(`${entity.animationPrefix}-${Math.abs(player.x-entity.targetX)>.5?'walk':celebrating?'victory':'idle'}`,true);
+        }
       }
     }
     entity.chargeBack.setVisible(player.charging);

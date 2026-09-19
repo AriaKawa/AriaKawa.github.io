@@ -29,3 +29,8 @@ Validation: full client/server typecheck; production hosted build;
 odds, ownership, 48 frames and 27 animations, moon contact through a complete
 orbit, jump/landing, all five scenes, interactive actions, carousel count,
 mobile viewports, persistence and a real hosted-mode match start.
+
+The broader legacy `test-jump-royale.ts` and `test-progression.ts` scripts
+fail on bot launch alignment and ghost/departure counts respectively. Their
+simulation dependencies match the live base revision and are unchanged by
+this cosmetic/lobby update. Economy overhaul and social reward tests pass.

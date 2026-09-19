@@ -1,4 +1,4 @@
-import type Phaser from 'phaser';
+import Phaser from 'phaser';
 export const EXPEDITION_CHARACTERS=[{id:'pirate',name:'Captain Marlow'},{id:'astro-monkey',name:'Cosmo'},{id:'axolotl',name:'Mochi Rose'}] as const;
 export const isExpeditionCharacter=(id:string)=>EXPEDITION_CHARACTERS.some(c=>c.id===id);
 export const EXPEDITION_ANIMATIONS={
@@ -12,6 +12,7 @@ export const EXPEDITION_ANIMATIONS={
 };
 export function expeditionTexture(scene:Phaser.Scene,id:string):string {
  const key='expedition-'+id;
+ scene.textures.get(key).setFilter(Phaser.Textures.FilterMode.LINEAR);
  for(const [name,animation] of Object.entries(EXPEDITION_ANIMATIONS))if(!scene.anims.exists(key+'-'+name))scene.anims.create({key:key+'-'+name,frames:animation.frames.map(frame=>({key,frame})),frameRate:animation.rate,repeat:animation.repeat});
  return key;
 }
