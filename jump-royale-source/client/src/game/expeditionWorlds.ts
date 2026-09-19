@@ -2,7 +2,7 @@ import type {PlayerState,Platform} from '../../../server/src/sim/types';
 import {PLAYER_HEIGHT,PLAYER_WIDTH} from '../../../server/src/sim/constants';
 
 export const EXPEDITION_WALLPAPERS=[
- {id:'corsair-cove',name:'Corsair Cove',rarity:2,description:'Your own pirate deck. Fire the signal cannon.'},
+ {id:'corsair-cove',name:'Corsair Cove',rarity:2,description:'Your own pirate deck at sunset.'},
  {id:'moonwalk',name:'Little Moon',rarity:3,description:'Walk all the way around. Hold and release Space to orbit-jump.'},
  {id:'neon-rooftops',name:'Neon Rooftops',rarity:1,description:'A quiet rooftop above a glittering city.'},
  {id:'tidal-sanctuary',name:'Tidal Sanctuary',rarity:2,description:'Wake the bubble current for an underwater lift.'},
