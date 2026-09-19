@@ -33,3 +33,7 @@ The blizzard prompt requested one continuous opaque weather mass with blue-gray 
 Visible idle-body bounds set character scale consistently in matches, the lobby, wardrobe and rewards. The scale remains fixed across animation frames, and hats use the underlying animal's body height. Pippa's pogo stick is excluded from body-height measurement. Physics dimensions and abilities are unchanged.
 
 `npm test` checks all four gold-pack values and the shared five-second countdown. `scripts/browser-currency-frost.mjs` checks character scale, Currency Exchange contents and close-icon centering, desktop/phone layout, countdown timing, the ice tutorial, and the single-image storm. Existing reward and Aria gameplay checks also pass. Gallery validation covers all eighteen image loads, choice persistence, enlarged previews, Escape, and mobile overflow.
+
+## Selected home-screen previews
+
+Applied the user choices: Starlight Reverie A, Moonveil Forest B, The Long Mountain B, The Crown Forge C, and Frostpeak Summit C. Verdant Canopy retains its existing image. The selected original PNGs were resized to the same 1200-by-800 framing as the gallery and installed at the existing home-screen preview paths.
