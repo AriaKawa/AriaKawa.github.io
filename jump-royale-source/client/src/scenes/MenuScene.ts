@@ -133,7 +133,8 @@ export class MenuScene extends Phaser.Scene {
     this.form!.querySelector('input')!.insertAdjacentHTML('beforebegin','<label for="climber-name">NAME</label>');
     this.form!.querySelector('button')!.innerHTML='<span>Start</span>';
     const resources=document.createElement('div');resources.className='forge-resources';
-    const coffee=document.createElement('img');coffee.className='coffee-icon';coffee.src=import.meta.env.BASE_URL+'assets/menu/coffee-cup.png';coffee.alt='Coffee';coffee.title='Coffee';coffee.draggable=false;
+    const coffee=document.createElement('a');coffee.className='coffee-link';coffee.href='https://buymeacoffee.com/ariakawa';coffee.target='_blank';coffee.rel='noopener noreferrer';coffee.setAttribute('aria-label','Buy me a coffee (opens in a new tab)');coffee.title='Buy me a coffee';
+    const coffeeIcon=document.createElement('img');coffeeIcon.className='coffee-icon';coffeeIcon.src=import.meta.env.BASE_URL+'assets/menu/coffee-cup.png';coffeeIcon.alt='';coffeeIcon.draggable=false;coffee.append(coffeeIcon);
     resources.append(ui.querySelector('.gold-marker')!,ui.querySelector('.loot-toggle')!,coffee,ui.querySelector('.settings-cog')!);
     const note=document.createElement('p');note.className='forge-controls';note.innerHTML='<span>A / D</span> MOVE <i>·</i> HOLD <span>SPACE</span> TO JUMP';
     ui.append(rail,resources,mission,note);
