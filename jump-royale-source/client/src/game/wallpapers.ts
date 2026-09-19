@@ -21,6 +21,7 @@ export function createWallpapers(scene:Phaser.Scene,ui:HTMLElement,onPreview:(id
   for(const item of WALLPAPERS){const img=document.createElement('img');img.src=import.meta.env.BASE_URL+'assets/menu/'+item.image;img.alt=item.name+' wallpaper';img.draggable=false;track.append(img);}
   ui.append(toggle,dialog);
   let index=Math.max(0,WALLPAPERS.findIndex(w=>w.id===equippedWallpaper()));
+  let applied=equippedWallpaper();
   const effects:Phaser.GameObjects.GameObject[]=[];
   let timer:Phaser.Time.TimerEvent|undefined;
   const clear=()=>{timer?.remove();timer=undefined;for(const object of effects){scene.tweens.killTweensOf(object);object.destroy();}effects.length=0;};
@@ -44,7 +45,8 @@ export function createWallpapers(scene:Phaser.Scene,ui:HTMLElement,onPreview:(id
     dialog.querySelector('.wallpaper-status')!.textContent=item.locked&&!owns('wallpaper',item.id)?'Unlock in the loot box':item.id===equippedWallpaper()?'Your current wallpaper':'Owned · ready to equip';
     dialog.querySelector('.wallpaper-dots')!.textContent=WALLPAPERS.map((_,i)=>i===index?'●':'○').join('  ');
     const equip=dialog.querySelector<HTMLButtonElement>('.wallpaper-equip')!;equip.disabled=item.locked&&!owns('wallpaper',item.id);equip.textContent=equip.disabled?'Unlock in loot box':item.id===equippedWallpaper()?'Equipped':'Equip';
-    onPreview(item.id);animate(item.id);
+    // Browsing never mutates the equipped lobby background.
+
   };
   const size=()=>{
     const map=ui.querySelector<HTMLElement>('.map-window'),img=ui.querySelector<HTMLElement>('.map-track img'),name=ui.querySelector<HTMLElement>('.menu-form input');
@@ -58,6 +60,7 @@ export function createWallpapers(scene:Phaser.Scene,ui:HTMLElement,onPreview:(id
     dialog.style.setProperty('--wallpaper-height',img.getBoundingClientRect().height+'px');
     dialog.style.setProperty('--wallpaper-border-left',left+'px');dialog.style.setProperty('--wallpaper-border-right',right+'px');dialog.style.setProperty('--wallpaper-border-top',top+'px');
   };
+  animate(equippedWallpaper());
   const observer=new ResizeObserver(size);observer.observe(ui);
   dialog.addEventListener('keydown',e=>e.stopPropagation());dialog.addEventListener('keyup',e=>e.stopPropagation());
   toggle.addEventListener('click',()=>{size();index=Math.max(0,WALLPAPERS.findIndex(w=>w.id===equippedWallpaper()));ui.classList.add('wallpaper-open');dialog.showModal();render();});
@@ -65,6 +68,6 @@ export function createWallpapers(scene:Phaser.Scene,ui:HTMLElement,onPreview:(id
   dialog.querySelector('.wallpaper-close')!.addEventListener('click',()=>dialog.close());
   dialog.querySelector('.wallpaper-equip')!.addEventListener('click',()=>{if(index===0||owns('wallpaper',WALLPAPERS[index].id)){localStorage.setItem('jump-wallpaper',WALLPAPERS[index].id);dialog.close();}});
   dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close();}});
-  dialog.addEventListener('close',()=>{ui.classList.remove('wallpaper-open');clear();onPreview(equippedWallpaper());animate(equippedWallpaper());toggle.focus();});
+  dialog.addEventListener('close',()=>{ui.classList.remove('wallpaper-open');const id=equippedWallpaper();if(id!==applied){applied=id;onPreview(id);animate(id);}scene.game.canvas.focus({preventScroll:true});});
   return {open:()=>dialog.open,destroy:()=>{ui.classList.remove('wallpaper-open');observer.disconnect();clear();dialog.remove();toggle.remove();}};
 }

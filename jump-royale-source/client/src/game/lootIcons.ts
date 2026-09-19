@@ -8,12 +8,12 @@ import type {LootEntry} from './economy';
 export function drawLootIcon(scene:Phaser.Scene,canvas:HTMLCanvasElement,item:LootEntry):void {
  if(item.slot==='wallpaper'){const source=scene.textures.get(item.id).getSourceImage() as HTMLImageElement;canvas.getContext('2d')!.drawImage(source,0,10,64,44);return;}
  if(item.slot==='animalHat'){drawAnimalHatIcon(canvas,item.id);return;}
- const sample=item.slot==='hdCostume'?{...DEFAULT_OUTFIT,character:item.id.replace(/-16$/,''),detailedCostumes:[item.id]}:item.slot==='magicalCostume'?{...DEFAULT_OUTFIT,character:'magical-girl',magicalCostume:'starlight-16' as const}:item.slot==='costume'?{...DEFAULT_OUTFIT,...costumeFields(item.id)}:item.slot==='hair'?{...DEFAULT_OUTFIT,character:item.id==='star-buns'?'magical-girl':'demon',hair:item.id}:{...DEFAULT_OUTFIT,character:item.id};
+ const sample=item.slot==='retroCostume'?{...DEFAULT_OUTFIT,character:item.id,retroCostumes:[item.id]}:item.slot==='hdCostume'?{...DEFAULT_OUTFIT,character:item.id.replace(/-16$/,''),detailedCostumes:[item.id]}:item.slot==='magicalCostume'?{...DEFAULT_OUTFIT,character:'magical-girl',magicalCostume:'starlight-16' as const}:item.slot==='costume'?{...DEFAULT_OUTFIT,...costumeFields(item.id)}:item.slot==='hair'?{...DEFAULT_OUTFIT,character:item.id==='star-buns'?'magical-girl':'demon',hair:item.id}:{...DEFAULT_OUTFIT,character:item.id};
  const key=outfitTexture(scene,sample),frame=scene.textures.getFrame(key,0),source=scene.textures.get(key).getSourceImage() as HTMLImageElement;
  const target=canvas.getContext('2d')!;target.imageSmoothingEnabled=false;
  if(item.slot!=='hair'){const scale=64/Math.max(frame.cutWidth,frame.cutHeight);target.drawImage(source,frame.cutX,frame.cutY,frame.cutWidth,frame.cutHeight,(64-frame.cutWidth*scale)/2,(64-frame.cutHeight*scale)/2,frame.cutWidth*scale,frame.cutHeight*scale);return;}
  const scratch=document.createElement('canvas');scratch.width=32;scratch.height=32;
- const c=scratch.getContext('2d')!;c.drawImage(source,0,0,32,32,0,0,32,32);
+ const c=scratch.getContext('2d')!;c.imageSmoothingEnabled=false;c.drawImage(source,frame.cutX,frame.cutY,frame.cutWidth,frame.cutHeight,0,0,32,32);
  const pixels=c.getImageData(0,0,32,32);let left=32,top=32,right=0,bottom=0;
  for(let y=0;y<32;y++)for(let x=0;x<32;x++){
   const i=(y*32+x)*4,r=pixels.data[i],g=pixels.data[i+1],b=pixels.data[i+2];

@@ -1,0 +1,80 @@
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+const require=createRequire(import.meta.url),{chromium}=require('C:/Users/Swagg/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const browser=await chromium.launch({headless:true,channel:'msedge'});
+try{
+ const page=await browser.newPage({viewport:{width:1440,height:900}}),errors=[];
+ page.on('pageerror',e=>errors.push(e.message));
+ await page.goto('http://127.0.0.1:5247');
+ await page.waitForFunction(()=>window.__FORGE_DEV__?.scene.isActive('Menu'));
+ const audit=await page.evaluate(async()=>{
+  const {COSMETICS,sanitizeOutfit,outfitTexture}=await import('/src/assets/cosmetics.ts');
+  const {COSTUMES}=await import('/src/assets/costumeSets.ts');
+  const {LOOT_POOL}=await import('/src/game/lootCatalog.ts');
+  const {lootChance,rollLoot}=await import('/src/game/economy.ts');
+  const scene=window.__FORGE_DEV__.scene.getScene('Menu');let frames=0;
+  const check=o=>{const key=outfitTexture(scene,sanitizeOutfit(o));for(let f=0;f<12;f++){const frame=scene.textures.getFrame(key,f);if(!frame||frame.width!==64)throw Error('Missing 16-bit frame '+key+':'+f);frames++;}return key;};
+  const base=COSMETICS.character.map(c=>[c.id,check({character:c.id,costume:'classic'})]);
+  for(const costume of COSTUMES)check({character:'original',costume:costume.id});
+  for(const character of ['puppy','cat','rat','cerberus','kangaroo'])for(const animalHat of ['party','fedora','unicorn'])check({character,animalHat});
+  for(const c of COSMETICS.character.filter(c=>c.id!=='pogo')){const k=outfitTexture(scene,sanitizeOutfit({character:c.id,retroCostumes:[c.id]}));if(k.includes('-16'))throw Error('Retro uses HD '+k);}
+  const keys=LOOT_POOL.map(p=>p.slot+':'+p.id);if(new Set(keys).size!==keys.length)throw Error('Duplicate loot');
+  for(const c of COSMETICS.character.filter(c=>c.id!=='original'))if(!keys.includes('character:'+c.id))throw Error('Missing character prize '+c.id);
+  for(const c of COSTUMES.filter(c=>c.id!=='classic'))if(!keys.includes('costume:'+c.id))throw Error('Missing costume prize '+c.id);
+  for(const c of COSMETICS.character.filter(c=>c.id!=='pogo'))if(!keys.includes('retroCostume:'+c.id))throw Error('Missing retro prize '+c.id);
+  if(LOOT_POOL.some(p=>['hdCostume','magicalCostume'].includes(p.slot)||p.id==='finn-16'))throw Error('Retired upgrade remains in loot');
+  const odds=LOOT_POOL.reduce((sum,p)=>sum+lootChance(p,LOOT_POOL),0);if(Math.abs(odds-100)>1e-8)throw Error('Odds do not sum to 100');
+  for(const item of LOOT_POOL){const tier=LOOT_POOL.filter(p=>p.rarity===item.rarity);const lower=[0,60,85,95,99][item.rarity];let call=0;const won=rollLoot(LOOT_POOL,()=>call++===0?(lower+.001)/100:(tier.indexOf(item)+.5)/tier.length);if(won!==item)throw Error('Unreachable prize '+item.id);}
+  localStorage.setItem('jump-royale-wallet-v1',JSON.stringify({gold:100,owned:['wallpaper:starlight','wallpaper:moonveil'],rewards:[],freeSpins:0,spinPoints:0}));
+  return {frames,base,loot:LOOT_POOL.length,odds};
+ });
+ await page.getByRole('button',{name:'Wallpapers',exact:true}).click();
+ await page.getByRole('button',{name:'Next wallpaper',exact:true}).click();
+ assert.equal(await page.evaluate(()=>window.__FORGE_DEV__.scene.getScene('Menu').wallpaperId),'forged-command');
+ await page.getByRole('button',{name:'Equip',exact:true}).click();
+ await page.waitForFunction(()=>!document.querySelector('.wallpaper-dialog').open);
+ for(const key of ['w','a','s','d','Space'])await page.keyboard.press(key);
+ assert.equal(await page.locator('.wallpaper-dialog').getAttribute('open'),null);
+ assert.equal(await page.evaluate(()=>localStorage.getItem('jump-wallpaper')),'starlight');
+ assert.equal(await page.evaluate(()=>window.__FORGE_DEV__.scene.getScene('Menu').wallpaperId),'starlight');
+ await page.reload();await page.waitForFunction(()=>window.__FORGE_DEV__?.scene.isActive('Menu'));
+ assert.equal(await page.evaluate(()=>window.__FORGE_DEV__.scene.getScene('Menu').wallpaperId),'starlight');
+ await page.getByRole('button',{name:'Open wardrobe',exact:true}).click();
+ assert.equal(await page.getByRole('button',{name:'Finn · 16-bit',exact:true}).count(),0);
+ await page.getByRole('button',{name:'Retro · 8-bit Special',exact:true}).click();
+ assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('jump-royale-wallet-v1')).gold),95);
+ assert.equal(await page.getByRole('button',{name:'Retro · 8-bit Special',exact:true}).getAttribute('aria-pressed'),'true');
+ await page.getByRole('button',{name:'Maid',exact:true}).click();
+ assert.equal(await page.evaluate(()=>window.__FORGE_DEV__.scene.getScene('Menu').animationPrefix),'fantasy-finn-maid-16');
+ await page.getByRole('tab',{name:'Character',exact:true}).click();
+ await page.getByRole('button',{name:'Pippa',exact:true}).click();
+ assert.equal(await page.evaluate(()=>window.__FORGE_DEV__.scene.getScene('Menu').animationPrefix),'fantasy-pogo-16');
+ await page.screenshot({path:'docs/overhaul-wardrobe.png'});
+ await page.getByRole('button',{name:'Close wardrobe',exact:true}).click();
+ await page.getByRole('button',{name:'Buy gold',exact:true}).click();
+ assert.match(await page.locator('[data-pack="fifty"]').innerText(),/60\s+GOLD/);
+ assert.match(await page.locator('[data-pack="fifty"]').innerText(),/20% EXTRA/);
+ await page.screenshot({path:'docs/overhaul-store.png'});
+ await page.getByRole('button',{name:'Close gold store',exact:true}).click();
+ await page.getByRole('button',{name:/^start$/i}).click();
+ await page.waitForFunction(()=>window.__FORGE_DEV__.scene.isActive('Game'));
+ await page.waitForFunction(()=>{const s=window.__FORGE_DEV__.scene.getScene('Game');return s.localId&&s.playerEntities.has(s.localId);});
+ assert.equal(await page.evaluate(()=>{const s=window.__FORGE_DEV__.scene.getScene('Game');return s.playerEntities.get(s.localId).sprite.texture.key;}),'fantasy-pogo-16');
+ await page.keyboard.press('d');await page.keyboard.press('Space');
+ await page.screenshot({path:'docs/overhaul-match.png'});
+ for(const [width,height] of [[390,844],[844,390]]){
+  await page.setViewportSize({width,height});await page.reload();await page.waitForFunction(()=>window.__FORGE_DEV__?.scene.isActive('Menu'));
+  await page.getByRole('button',{name:'Wallpapers',exact:true}).click();
+  await page.getByRole('button',{name:'Next wallpaper',exact:true}).click();
+  await page.locator('.wallpaper-track').evaluate(async el=>{getComputedStyle(el).transform;await Promise.all(el.getAnimations().map(a=>a.finished));});
+  await page.screenshot({path:`docs/overhaul-wallpaper-${width}.png`});
+  await page.getByRole('button',{name:'Close wallpapers',exact:true}).click();
+  assert.equal(await page.evaluate(()=>localStorage.getItem('jump-wallpaper')),'starlight');
+  await page.getByRole('button',{name:'Buy gold',exact:true}).click();
+  await page.locator('[data-pack="fifty"]').scrollIntoViewIfNeeded();
+  assert(await page.locator('[data-pack="fifty"]').isVisible());
+  await page.screenshot({path:`docs/overhaul-store-${width}.png`});
+ }
+ assert.deepEqual(errors,[]);
+ console.log('PASS',JSON.stringify(audit),'wallpaper WASD/Space, persistence, retro purchase, knight costume, Pippa equip/match, gold pack; zero browser errors.');
+}finally{await browser.close();}

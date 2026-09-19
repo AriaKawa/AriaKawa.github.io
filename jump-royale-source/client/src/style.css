@@ -176,7 +176,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid #9af1ed; outline-
 .gold-store h2 { font-size:clamp(23px,4vw,34px); margin:0 0 10px; letter-spacing:-.06em; }
 .gold-store-header p:last-child { color:#b9c7cd; font-size:13px; margin:0; }
 .gold-store-close { flex-shrink:0; width:36px; height:36px; font-size:24px; line-height:24px; }
-.gold-packs { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+.gold-packs { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
 .gold-pack { text-align:center; padding:18px 12px; border:2px solid #536673; background:linear-gradient(#314553,#1c2c37); box-shadow:inset 0 0 0 3px #192a34; }
 .gold-pack:last-child { border-color:#d7ad62; background:linear-gradient(#504333,#252c32); }
 .gold-pack-badge { display:block; min-height:26px; color:#f4d698; font-weight:bold; font-size:10px; letter-spacing:.04em; }
@@ -185,6 +185,10 @@ button:focus-visible, input:focus-visible { outline: 2px solid #9af1ed; outline-
 .gold-pack-art-1 img:first-child,.gold-pack-art-2 img:first-child { left:0; }
 .gold-pack-art-1 img:nth-child(2),.gold-pack-art-2 img:nth-child(2) { left:calc(100% - 90px); }
 .gold-pack-art-2 img:nth-child(3) { bottom:23px; }
+.gold-pack-art-3 img:nth-child(1) { left:0; }
+.gold-pack-art-3 img:nth-child(2) { left:calc(100% - 90px); }
+.gold-pack-art-3 img:nth-child(3) { left:0; bottom:23px; }
+.gold-pack-art-3 img:nth-child(4) { left:calc(100% - 90px); bottom:38px; }
 .gold-pack h3 { font-size:14px; margin:16px 0 10px; color:#d5dfe0; }
 .gold-pack-amount { font-weight:bold; font-size:40px; color:#ffe3a0; margin:0; }
 .gold-pack-amount span { font-size:13px; }

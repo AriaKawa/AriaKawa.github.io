@@ -32,15 +32,18 @@ export function lootChance(item:LootEntry,pool:readonly LootEntry[]):number {con
 export function grantMissionGold(id:string,amount:number):boolean {const w=wallet(),receipt='mission:'+id;if(w.rewards.includes(receipt))return true;w.gold+=amount;w.rewards.push(receipt);return persist(w);}
 // A specific, one-time browser-wallet credit requested by the site owner.
 export function claimGoldGift(hash:string):boolean {
-  const gift=hash==='#gift=loot-cache-20260916-c739a2'?'loot-cache-20260916-c739a2':'menu-fix-20260911-7c4b9e';
-  if(hash!=='#gift='+gift)return false;
+  const gifts:Record<string,number>={'loot-cache-20260916-c739a2':100,'menu-fix-20260911-7c4b9e':100,'royale-overhaul-20260918-81c62f749a':1000};
+  if(!hash.startsWith('#gift='))return false;
+  const gift=hash.slice(6),amount=gifts[gift];
+  if(!Number.isSafeInteger(amount))return false;
   const w=wallet(),receipt='gift:'+gift;
   if(w.rewards.includes(receipt))return true;
-  if(!Number.isSafeInteger(w.gold+100))return false;
-  w.gold+=100;w.rewards.push(receipt);return persist(w);
+  if(!Number.isSafeInteger(w.gold+amount))return false;
+  w.gold+=amount;w.rewards.push(receipt);return persist(w);
 }
 export const goldForPlace=(place:number)=>place===1?5:place>=2&&place<=3?3:place>=4&&place<=6?1:0;
 export function price(slot:string,id:string):number {
+  if(slot==='retroCostume')return ['original','mushroom','puppy','cat','rat','demon','cerberus','magical-girl','skeleton','neet','kangaroo'].includes(id)?5:Infinity;
   if(slot==='hdCostume')return id==='classic'?0:validDetailedId(id)?5:Infinity;
   if(slot==='magicalCostume')return id==='classic'?0:id==='starlight-16'?5:Infinity;
   if(slot==='character'&&id==='mushroom'&&(wallet().owned.includes('costume:mushroom')||['helmet','shirt','pants'].every(s=>owns(s,'mushroom'))))return 0;
@@ -51,14 +54,14 @@ export function price(slot:string,id:string):number {
   }
   return id==='none'||(id==='original'&&slot!=='helmet')?0:slot==='character'||id==='party'?5:3;
 }
-export function owns(slot:string,id:string):boolean {return wallet().owned.includes(slot+':'+id)||price(slot,id)===0;}
-export function buy(slot:string,id:string):boolean {const w=wallet(),cost=price(slot,id);if(owns(slot,id))return true;if(w.gold<cost)return false;w.gold-=cost;w.owned.push(slot+':'+id);return persist(w);}
+export function owns(slot:string,id:string):boolean {const w=wallet();const legacy=slot==='retroCostume'?(id==='original'?'costume:finn-16':id==='magical-girl'?'magicalCostume:starlight-16':'hdCostume:'+id+'-16'):slot==='character'?(id==='magical-girl'?'magicalCostume:starlight-16':'hdCostume:'+id+'-16'):'';return (legacy!==''&&w.owned.includes(legacy))|| wallet().owned.includes(slot+':'+id)||price(slot,id)===0;}
+export function buy(slot:string,id:string):boolean {const w=wallet(),cost=price(slot,id);if(!Number.isFinite(cost))return false;if(owns(slot,id))return true;if(w.gold<cost)return false;w.gold-=cost;w.owned.push(slot+':'+id);return persist(w);}
 export function reward(round:string,place:number):number {const w=wallet();if(w.rewards.includes(round))return 0;const amount=goldForPlace(place);w.gold+=amount;w.rewards.push(round);return persist(w)?amount:0;}
 function lockedBase(o:Outfit):[string,string][] {
-  if(['skeleton','magical-girl','neet'].includes(o.character)){
+  if(['skeleton','magical-girl','neet','pogo'].includes(o.character)){
     const pieces:[string,string][]=[['character',o.character]];
     if(o.character==='magical-girl'&&o.hair==='star-buns')pieces.push(['hair','star-buns']);
-    if(o.character==='magical-girl'&&o.magicalCostume==='starlight-16')pieces.push(['magicalCostume','starlight-16']);
+
     return pieces.filter(([s,id])=>!owns(s,id));
   }
   if(o.character==='original'&&o.costume)return owns('costume',o.costume)?[]:[['costume',o.costume]];
@@ -69,12 +72,13 @@ function lockedBase(o:Outfit):[string,string][] {
   return pieces.filter(([s,id])=>!owns(s,id));
 }
 export function lockedPieces(o:Outfit):[string,string][] {
- const pieces=lockedBase(o),id=o.character+'-16';
- if(validDetailedId(id)&&o.detailedCostumes?.includes(id)&&!owns('hdCostume',id))pieces.push(['hdCostume',id]);
+ const pieces=lockedBase(o);
+ if(o.retroCostumes?.includes(o.character)&&!owns('retroCostume',o.character))pieces.push(['retroCostume',o.character]);
  return pieces;
 }
 export function playableOutfit(o:Outfit):Outfit {
  const result={...o};
+ if(result.retroCostumes)result.retroCostumes=result.retroCostumes.filter(id=>owns('retroCostume',id));
  if(result.detailedCostumes)result.detailedCostumes=result.detailedCostumes.filter(id=>validDetailedId(id)&&owns('hdCostume',id));
  if(!owns('magicalCostume',result.magicalCostume??'classic'))result.magicalCostume='classic';
  if(!owns('character',result.character))result.character='original';

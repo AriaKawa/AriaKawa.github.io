@@ -1,0 +1,16 @@
+{
+  "tool": "Built-in ImageGen",
+  "pogoPrompt": "Create a production 16-bit pixel-art game sprite atlas, transparent background, 4 columns by 3 rows evenly spaced, exactly 12 full-body frames of the SAME adult athletic woman riding a pogo stick facing right. Sporty teal sports bra, navy gym shorts, barefoot with feet on the pogo footrests, auburn ponytail, cheerful determined face. Compact charming SNES platformer proportions, crisp pixels and dark outlines, richly shaded 16-bit sprite. Every cell same size, no overlap, no text, no scenery, no shadows outside character. Pogo stick must be visible and gripped in both hands in all frames. Frames reading order: idle upright, idle breathing, crouch compressing pogo spring, deep charge compressed spring, airborne rise extended pogo, airborne fall, landing compressed, defeated seated beside pogo, four distinct bouncing travel poses. Consistent character size and face across frames. This is game-ready animation art; transparent alpha background. 1536x1024.",
+  "pogoBackgroundEdit": "Edit only the background of this exact sprite atlas. Replace all brown/black gradient backdrop with perfectly flat solid chroma key magenta #FF00FF. Preserve the exact 12 sprites, their outlines, pixels, positions, dimensions, clothing, poses and pogo sticks. No gradient, no glow, no scenery, no shadow. Background must be uniform #FF00FF right up to the dark outlines and in all gaps. Keep original 1536x1024, 4x3 sprite layout unchanged.",
+  "knightReference": "Existing Finn knight 16-bit idle sprite",
+  "knightTemplate": "Create a new 16-bit pixel-art sprite atlas for the SAME compact cute armored knight model as the reference image, but costume is {description}. Retain knight proportions, facing right and same helmeted identity. Exactly 12 full body frames in 4 equal columns x 3 equal rows, 1536x1024. Each sprite centered in its own cell. Flat solid chroma key magenta #FF00FF background. Crisp pixels, polished SNES game sprite shading. No text, no grid lines, no props outside character. Reading-order frames: idle, idle breathing, crouch, deep crouch charge, rising jump, falling jump, landing crouch, defeated seated, walk step 1, walk step 2, walk step 3, walk step 4. Consistent scale and costume through all frames. Plenty of magenta space between each sprite. All backgrounds and gaps perfectly flat magenta, no gradients or shadows.",
+  "variants": {
+    "original": "Forge Knight: ivory enamel armor, brass trim, deep crimson cape",
+    "steel": "Froststitch Knight: silver steel armor, ice-blue trim, navy quilted cape",
+    "copper": "Cinder Knight: copper armor, charcoal joints, ember orange cape",
+    "tropical": "Island Cook Knight: knight helmet shaped like a cooking pot, bright floral Hawaiian tunic over knight body, red shorts, armored boots",
+    "maid": "Maid Knight: same knight helmet and armored body wearing a black and white maid dress with white apron, white frilled headband around helmet and dark armored boots",
+    "diver": "Deep-Sea Diver Knight: round brass diving helmet with face window, teal diving suit and heavy brass boots",
+    "mage": "Starfall Mage Knight: same knight visor face with tall crescent wizard hat, violet robes over armor, golden star details"
+  }
+}

@@ -87,3 +87,11 @@
 
 !/scripts/browser-roster.mjs
 !/docs/complete-hd-roster.md
+
+!/scripts/test-overhaul.ts
+!/scripts/browser-overhaul.mjs
+!/scripts/import-overhaul.cjs
+!/docs/skin-overhaul.md
+!/docs/overhaul-art.json
+!/docs/overhaul-prompts.json
+!/docs/overhaul-ai-source/

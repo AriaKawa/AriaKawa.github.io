@@ -25,15 +25,17 @@ import { MAPS } from "../../../server/src/sim/maps";
 import Phaser from "phaser";
 
 import { COSMETICS, DEMON_HAIRS, sanitizeOutfit, loadOutfit, saveOutfit, outfitTexture, type Outfit } from "../assets/cosmetics";
-import {hasDetailedCostume,detailedOptions} from '../assets/detailedCostumes';
-import {MAGICAL_HAIR,MAGICAL_COSTUMES} from '../assets/fantasyRig';
+import {hasDetailedCostume} from '../assets/detailedCostumes';
+import {MAGICAL_HAIR} from '../assets/fantasyRig';
 type CosmeticSlot='character'|'costume'|'hair'|'animalHat';
 const SLOTS:CosmeticSlot[]=['character','costume','hair','animalHat'];
 const outfitSlots=(o:Outfit):CosmeticSlot[]=>o.character==='original'?['character','costume']:o.character==='magical-girl'?['character','costume','hair']:o.character==='demon'?['character','costume','hair']:hasDetailedCostume(o.character)?(isAnimal(o.character)?['character','costume','animalHat']:['character','costume']):isAnimal(o.character)?['character','animalHat']:['character'];
-const equipmentOptions=(s:CosmeticSlot,_o:Outfit)=>s==='character'?COSMETICS.character:s==='hair'?(_o.character==='magical-girl'?MAGICAL_HAIR:DEMON_HAIRS):s==='animalHat'?ANIMAL_HATS:_o.character==='magical-girl'?MAGICAL_COSTUMES:hasDetailedCostume(_o.character)?detailedOptions(_o.character):COSTUMES;
-const selectedPiece=(s:CosmeticSlot,o:Outfit)=>s==='character'?o.character:s==='hair'?o.hair:s==='animalHat'?o.animalHat??'none':o.character==='magical-girl'?o.magicalCostume??'classic':hasDetailedCostume(o.character)?(o.detailedCostumes?.includes(o.character+'-16')?o.character+'-16':'classic'):o.costume??'classic';
+const baseOptions=(o:Outfit)=>o.character==='original'?COSTUMES:[{id:'classic',name:'Base · 16-bit'}];
+const characterCostumes=(o:Outfit)=>[...baseOptions(o),...(o.character==='pogo'?[]:[{id:'retro',name:'Retro · 8-bit Special'}])];
+const equipmentOptions=(s:CosmeticSlot,_o:Outfit)=>s==='character'?COSMETICS.character:s==='hair'?(_o.character==='magical-girl'?MAGICAL_HAIR:DEMON_HAIRS):s==='animalHat'?ANIMAL_HATS:characterCostumes(_o);
+const selectedPiece=(s:CosmeticSlot,o:Outfit)=>s==='character'?o.character:s==='hair'?o.hair:s==='animalHat'?o.animalHat??'none':o.retroCostumes?.includes(o.character)?'retro':o.character==='original'?o.costume??'classic':'classic';
 const cosmeticName=(s:CosmeticSlot,id:string,o:Outfit)=>equipmentOptions(s,o).find(p=>p.id===id)?.name??id;
-const candidateOutfit=(o:Outfit,s:CosmeticSlot,id:string):Outfit=>sanitizeOutfit(s==='costume'?(o.character==='magical-girl'?{...o,magicalCostume:id}:hasDetailedCostume(o.character)?{...o,detailedCostumes:[...(o.detailedCostumes??[]).filter(c=>c!==o.character+'-16'),...(id==='classic'?[]:[id])]}:{...o,...costumeFields(id),character:'original'}):s==='hair'?{...o,hair:id}:s==='animalHat'?{...o,animalHat:id}:{...o,character:id});
+const candidateOutfit=(o:Outfit,s:CosmeticSlot,id:string):Outfit=>sanitizeOutfit(s==='costume'?{...o,...(o.character==='original'?costumeFields(id==='retro'?'classic':id):{}),retroCostumes:[...(o.retroCostumes??[]).filter(c=>c!==o.character),...(id==='retro'?[o.character]:[])]}:s==='hair'?{...o,hair:id}:s==='animalHat'?{...o,animalHat:id}:{...o,character:id});
 import { GAME_HEIGHT, GAME_WIDTH } from "../game/constants";
 import { createLobbyPlayer, stepLobbyPlayer, resizeLobbyPlayer, LOBBY_SPRITE_SCALE } from "../game/lobbyPhysics";
 import { PLAYER_HEIGHT, PLAYER_WIDTH } from "../../../server/src/sim/constants";
@@ -289,21 +291,21 @@ export class MenuScene extends Phaser.Scene {
     this.updateTabs();this.renderPurchase();
     if(!outfitSlots(this.outfit).includes(this.activeSlot)) {this.selectSlot('character');return;}
     grid.tabIndex=0;
-    grid.innerHTML=equipmentOptions(this.activeSlot,this.outfit).map(piece=>`<button type="button" class="equipment-card" data-owned="${owns(this.shopSlot(),piece.id)}" data-piece="${piece.id}" aria-label="${cosmeticName(this.activeSlot,piece.id,this.outfit)}" aria-description="${owns(this.shopSlot(),piece.id)?'Owned':price(this.shopSlot(),piece.id)+' gold'}" aria-pressed="${selectedPiece(this.activeSlot,this.outfit)===piece.id}"><canvas width="64" height="64" aria-hidden="true"></canvas><span class="equipment-name">${cosmeticName(this.activeSlot,piece.id,this.outfit)}</span><span class="equipment-price">${owns(this.shopSlot(),piece.id)?(selectedPiece(this.activeSlot,this.outfit)===piece.id?'Equipped':'Equip'):`<img src="${import.meta.env.BASE_URL}assets/menu/gold-bars.png" alt="Gold"> <b>${price(this.shopSlot(),piece.id)}</b><small>Buy</small>`}</span></button>`).join("");
+    grid.innerHTML=equipmentOptions(this.activeSlot,this.outfit).map(piece=>`<button type="button" class="equipment-card" data-owned="${owns(this.shopSlot(piece.id),this.shopId(piece.id))}" data-piece="${piece.id}" aria-label="${cosmeticName(this.activeSlot,piece.id,this.outfit)}" aria-description="${owns(this.shopSlot(piece.id),this.shopId(piece.id))?'Owned':price(this.shopSlot(piece.id),this.shopId(piece.id))+' gold'}" aria-pressed="${selectedPiece(this.activeSlot,this.outfit)===piece.id}"><canvas width="64" height="64" aria-hidden="true"></canvas><span class="equipment-name">${cosmeticName(this.activeSlot,piece.id,this.outfit)}</span><span class="equipment-price">${owns(this.shopSlot(piece.id),this.shopId(piece.id))?(selectedPiece(this.activeSlot,this.outfit)===piece.id?'Equipped':'Equip'):`<img src="${import.meta.env.BASE_URL}assets/menu/gold-bars.png" alt="Gold"> <b>${price(this.shopSlot(piece.id),this.shopId(piece.id))}</b><small>Buy</small>`}</span></button>`).join("");
     grid.querySelectorAll<HTMLButtonElement>("button").forEach(button=>{
       const id=button.dataset.piece!;
       this.drawEquipmentIcon(button.querySelector("canvas")!,this.activeSlot,id);
       const candidate=candidateOutfit(this.outfit,this.activeSlot,id);
-      const preview=()=>{if(owns(this.shopSlot(),id))this.showOutfit(candidate);};
+      const preview=()=>{if(owns(this.shopSlot(id),this.shopId(id)))this.showOutfit(candidate);};
       const restore=()=>this.showOutfit(this.outfit);
       button.addEventListener('pointerenter',preview);
       button.addEventListener('pointerleave',restore);
 
 
       button.addEventListener("click",()=>{
-        const slot=this.shopSlot();
-        if(!owns(slot,id)&&!buy(slot,id)) {
-          this.ui!.querySelector('.purchase-bar')!.textContent=wallet().gold<price(slot,id)?'Not enough gold.':'Purchase could not be saved on this browser.';
+        const slot=this.shopSlot(id),purchaseId=this.shopId(id);
+        if(!owns(slot,purchaseId)&&!buy(slot,purchaseId)) {
+          this.ui!.querySelector('.purchase-bar')!.textContent=wallet().gold<price(slot,purchaseId)?'Not enough gold.':'Purchase could not be saved on this browser.';
           return;
         }
         this.outfit=candidate;
@@ -312,7 +314,8 @@ export class MenuScene extends Phaser.Scene {
       });
     });
   }
-  private shopSlot():string {return this.activeSlot==='costume'&&this.outfit.character==='magical-girl'?'magicalCostume':this.activeSlot==='costume'&&hasDetailedCostume(this.outfit.character)?'hdCostume':this.activeSlot;}
+  private shopSlot(id?:string):string {return this.activeSlot==='costume'?(id==='retro'?'retroCostume':'costume'):this.activeSlot;}
+  private shopId(id:string):string {return this.activeSlot==='costume'&&id==='retro'?this.outfit.character:id;}
   private showOutfit(outfit:Outfit):void {
     const stage=this.ui?.querySelector<HTMLElement>(".wardrobe-stage");if(stage)stage.dataset.outfit=JSON.stringify(outfit);
     this.animationPrefix=outfitTexture(this,outfit);

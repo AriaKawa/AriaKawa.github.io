@@ -1,7 +1,6 @@
 /** Complete Finn looks. Legacy piece IDs remain only for art and save migration. */
 export const COSTUMES=[
- {id:'classic',name:'Classic Finn',set:'original',helmet:'none'},
- {id:'finn-16',name:'Finn · 16-bit',set:'original',helmet:'none'},
+ {id:'classic',name:'Finn · Base 16-bit',set:'original',helmet:'none'},
  {id:'original',name:'Forge Knight',set:'original',helmet:'original'},
  {id:'steel',name:'Froststitch Knight',set:'steel',helmet:'steel'},
  {id:'copper',name:'Cinder Knight',set:'copper',helmet:'copper'},

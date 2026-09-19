@@ -1,3 +1,4 @@
+import {knightCostumeTexture,KNIGHT_COSTUMES} from './knightCostumes';
 import {DETAILED_SHEETS,validDetailedId} from './detailedCostumes';
 import {costumeFields} from './costumeSets';
 import {type LabLook} from './wardrobe2';
@@ -12,9 +13,9 @@ import { ANIMALS, ANIMAL_HATS, isAnimal, animalTexture, type AnimalHat } from '.
 export const DEMON_HAIRS=[{id:'original',name:'Midnight Locks'},{id:'buns',name:'Rose Horn Buns'},{id:'braid',name:'Silver Braid'}] as const;
 export const SLOTS = ["character", "helmet", "shirt", "pants", "hair"] as const;
 export type CosmeticSlot = typeof SLOTS[number];
-export type Outfit = Record<CosmeticSlot, string> & {costume?:string;detailedCostumes?:string[];magicalCostume?:'classic'|'starlight-16';animalHat?:AnimalHat;wardrobe2?:LabLook};
+export type Outfit = Record<CosmeticSlot, string> & {costume?:string;retroCostumes?:string[];detailedCostumes?:string[];magicalCostume?:'classic'|'starlight-16';animalHat?:AnimalHat;wardrobe2?:LabLook};
 export const COSMETICS = {
-  character: [{id:"original",name:"Finn"},{id:"mushroom",name:"Spore Scout"},{id:"puppy",name:"Biscuit"},{id:'cat',name:'Mochi'},{id:'rat',name:'Pip'},{id:'demon',name:'Ember'},{id:'cerberus',name:'Cerberus'},{id:'magical-girl',name:'Stella'},{id:'skeleton',name:'Rattle'},{id:'neet',name:'Kenji'},{id:'kangaroo',name:'Roo'}],
+  character: [{id:"original",name:"Finn"},{id:"mushroom",name:"Spore Scout"},{id:"puppy",name:"Biscuit"},{id:'cat',name:'Mochi'},{id:'rat',name:'Pip'},{id:'demon',name:'Ember'},{id:'cerberus',name:'Cerberus'},{id:'magical-girl',name:'Stella'},{id:'skeleton',name:'Rattle'},{id:'neet',name:'Kenji'},{id:'kangaroo',name:'Roo'},{id:'pogo',name:'Pippa'}],
   hair: [{id:"original",name:"Classic Crop"},{id:"waves",name:"Chestnut Waves"},{id:"ponytail",name:"Golden Ponytail"},{id:"braid",name:"Midnight Braid"},{id:"buns",name:"Rose Double Buns"},{id:"bob",name:"Lilac Bob"},{id:"star-buns",name:"Starlight Star Buns"}],
   helmet: [{id:"none",name:"No Helmet"},{ id: "original", name: "Ivory Helm" }, { id: "steel", name: "Quenched Steel" }, { id: "copper", name: "Copper Visor" }, { id: "tropical", name: "Cooking Pot" }, { id: "maid", name: "Maid Headband" }, {id:"mushroom",name:"Toadstool Cap"}, {id:"diver",name:"Abyssal Dive Helm"}, {id:"mage",name:"Crescent Cap"}],
   shirt: [{ id: "original", name: "Forge Apron" }, { id: "steel", name: "Froststitch Jacket" }, { id: "copper", name: "Cinder Coat" }, { id: "tropical", name: "Hawaiian Shirt" }, { id: "maid", name: "Maid Blouse & Apron" }, {id:"mushroom",name:"Spore Scout Tunic"}, {id:"diver",name:"Deep-Sea Dive Suit"}, {id:"mage",name:"Starfall Tunic"}],
@@ -34,11 +35,11 @@ export function cosmeticName(slot:CosmeticSlot,id:string,outfit:Outfit):string {
 
 export function sanitizeOutfit(value: unknown): Outfit {
   const source = value && typeof value === "object" ? value as Record<string,unknown> : {};
-  const result={detailedCostumes:Array.isArray(source.detailedCostumes)?[...new Set(source.detailedCostumes.filter(validDetailedId))]:[],...Object.fromEntries(SLOTS.map(slot => [slot, COSMETICS[slot].some(piece => piece.id === source[slot]) ? source[slot] : "original"])),animalHat:ANIMAL_HATS.some(h=>h.id===source.animalHat)?source.animalHat:'none',magicalCostume:source.magicalCostume==='starlight-16'?'starlight-16':'classic'} as Outfit;
+  const result={retroCostumes:Array.isArray(source.retroCostumes)?[...new Set(source.retroCostumes.filter((id):id is string=>typeof id==='string'&&COSMETICS.character.some(c=>c.id===id)&&id!=='pogo'))]:[],detailedCostumes:Array.isArray(source.detailedCostumes)?[...new Set(source.detailedCostumes.filter(validDetailedId))]:[],...Object.fromEntries(SLOTS.map(slot => [slot, COSMETICS[slot].some(piece => piece.id === source[slot]) ? source[slot] : "original"])),animalHat:ANIMAL_HATS.some(h=>h.id===source.animalHat)?source.animalHat:'none',magicalCostume:source.magicalCostume==='starlight-16'?'starlight-16':'classic'} as Outfit;
   // Migrate retired looks and the former Spore Scout costume on load and in matches.
   if(result.character==='original'&&(source.costume==='mushroom'||(!source.costume&&source.shirt==='mushroom')))result.character='mushroom';
   const legacy=source.shirt==='original'?(source.helmet==='none'?'classic':'original'):source.shirt;
-  Object.assign(result,costumeFields(typeof source.costume==='string'?source.costume:source.wardrobe2?'classic':String(legacy??'classic')));
+  Object.assign(result,costumeFields(source.costume==='finn-16'?'classic':typeof source.costume==='string'?source.costume:source.wardrobe2?'classic':String(legacy??'classic')));
   if(result.character==='mushroom')Object.assign(result,{helmet:'mushroom',shirt:'mushroom',pants:'mushroom'});
   result.hair=result.character==='magical-girl'?(source.hair==='star-buns'?'star-buns':'original'):result.character==='demon'&&DEMON_HAIRS.some(h=>h.id===source.hair)?String(source.hair):'original';
   return result;
@@ -51,6 +52,8 @@ export function saveOutfit(outfit: Outfit): void {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitizeOutfit(outfit))); } catch { /* Session selection still works with storage disabled. */ }
 }
 export function queueCosmetics(scene: Phaser.Scene): void {
+  for(const costume of KNIGHT_COSTUMES)scene.load.spritesheet('fantasy-finn-'+costume+'-16',`${ROOT}/finn-${costume}-16.png`,{frameWidth:64,frameHeight:64});
+  scene.load.spritesheet('fantasy-pogo-16',`${ROOT}/pogo-16.png`,{frameWidth:64,frameHeight:64});
   scene.load.spritesheet('fantasy-finn',`${ROOT}/finn-knight.png`,{frameWidth:48,frameHeight:48});
   scene.load.spritesheet('fantasy-finn-16',`${ROOT}/finn-knight-16.png`,{frameWidth:64,frameHeight:64});
   for(const sheet of [...MAGICAL_HD_SHEETS,...DETAILED_SHEETS])scene.load.spritesheet('fantasy-'+sheet,`${ROOT}/${sheet}.png`,{frameWidth:64,frameHeight:64});
@@ -68,10 +71,12 @@ export function queueCosmetics(scene: Phaser.Scene): void {
  * animation timing. All equipment shares the same frame grid and foot origin. */
 export function outfitTexture(scene: Phaser.Scene, requested: Outfit): string {
   const outfit = sanitizeOutfit(requested);
-  if(outfit.character==='original'&&(outfit.costume==='classic'||outfit.costume==='finn-16'))return fantasyTexture(scene,'finn',outfit.hair,outfit.costume==='finn-16'?'detailed':'classic');
-  if(isAnimal(outfit.character))return animalTexture(scene,outfit.character,outfit.animalHat,outfit.detailedCostumes?.includes(outfit.character+'-16'));
-  if(outfit.detailedCostumes?.includes(outfit.character+'-16'))return fantasyTexture(scene,outfit.character==='demon'&&outfit.hair!=='original'?'demon-'+outfit.hair:outfit.character+'',outfit.hair,'detailed');
-  if(isFantasy(outfit.character))return fantasyTexture(scene,outfit.character,outfit.hair,outfit.magicalCostume);
+  const retro=outfit.retroCostumes?.includes(outfit.character)??false;
+  if(outfit.character==='pogo')return fantasyTexture(scene,'pogo','original','detailed');
+  if(outfit.character==='original')return retro?fantasyTexture(scene,'finn','original','classic'):knightCostumeTexture(scene,outfit.costume??'classic');
+  if(isAnimal(outfit.character))return animalTexture(scene,outfit.character,outfit.animalHat,!retro);
+  if(!retro)return fantasyTexture(scene,outfit.character==='demon'&&outfit.hair!=='original'?'demon-'+outfit.hair:outfit.character+'',outfit.hair,'detailed');
+  if(isFantasy(outfit.character))return fantasyTexture(scene,outfit.character,outfit.hair,'classic');
   if(outfit.character==='demon')return demonTexture(scene,outfit.hair);
   const key = `outfit-${SLOTS.map(slot => outfit[slot]).join("-")}`;
   if (scene.textures.exists(key)) return key;
