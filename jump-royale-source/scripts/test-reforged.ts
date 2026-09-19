@@ -10,6 +10,8 @@ const route=level.filter(p=>!p.id.startsWith('pocket'));
 let worst=Infinity;
 for(let n=1;n<route.length;n++){
  const from=route[n-1],to=route[n];let solutions=0;
+ // Moving links are exercised with real motion and four arrival phases in test-crown-forge.
+ if(from.type==='moving'||to.type==='moving')continue;
  for(let x=from.x+8;x<=from.x+from.w-22;x+=8)for(const direction of [-1,0,1])for(let hold=3;hold<=24;hold++){
   const p=player(from,x);p.input={left:direction<0,right:direction>0,jumpHeld:true,seq:0};
   for(let t=0;t<hold;t++)stepPlayer(p,level,1/30);

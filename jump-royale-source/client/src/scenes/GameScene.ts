@@ -1,3 +1,5 @@
+import {CANOPY_VINE,vinePose} from '../../../server/src/sim/vines';
+import {forgeLavaPools} from '../../../server/src/sim/level';
 import {spriteScale} from '../game/spriteSizing';
 import {missionProgress} from '../game/missions';
 import {party,submitRecord} from '../game/online';
@@ -67,6 +69,7 @@ export class GameScene extends Phaser.Scene {
   private get wideWorld(){return this.world.width>WORLD_WIDTH;}
   private get worldHeight(){return this.world.height;}
   private mapId: MapId = "forge";
+  private canopyVine?:Phaser.GameObjects.Image;
   private jungleBackground?: Phaser.GameObjects.Image;
   private get hazardLabel(): string { if(this.mapId==='magical')return 'STARDUST'; if(this.mapId==="mountain"||this.mapId==='forest')return "FLOOD"; return this.mapId === "snow" ? "BLIZZARD" : this.mapId === "jungle" ? "FLOOD" : "LAVA"; }
   private backdrop?: Phaser.GameObjects.Image;
@@ -82,6 +85,7 @@ export class GameScene extends Phaser.Scene {
   private lavaSurface?: Phaser.GameObjects.TileSprite;
   private lavaBody?: Phaser.GameObjects.TileSprite;
   private lavaParticleAccumulator = 0;
+  private forgePools: Phaser.GameObjects.TileSprite[]=[];
   private hud?: { alive: Phaser.GameObjects.Text; timer: Phaser.GameObjects.Text; stats: Phaser.GameObjects.Text; board: Phaser.GameObjects.Text; phase: Phaser.GameObjects.Text; help: Phaser.GameObjects.Text };
   private dangerOverlay?: Phaser.GameObjects.Rectangle;
   private minimap?: MiniMapHud;
@@ -98,6 +102,7 @@ export class GameScene extends Phaser.Scene {
   preload():void { if(!this.textures.exists('forged-frame'))this.load.image('forged-frame',import.meta.env.BASE_URL+'assets/menu/forged-command/frame.png'); }
   create(): void {
     audio.setMusicMap(this.mapId);
+    if(this.mapId==='jungle'){this.game.canvas.style.imageRendering='auto';this.events.once(Phaser.Scenes.Events.SHUTDOWN,()=>{this.game.canvas.style.imageRendering='';});}
     this.events.once(Phaser.Scenes.Events.SHUTDOWN,()=>audio.setMusicMap());
     this.input.keyboard?.enableGlobalCapture();
     // Phaser reuses scene instances. Every round must begin with fresh network
@@ -106,7 +111,7 @@ export class GameScene extends Phaser.Scene {
     this.goldEarned=0;this.deathUi?.remove();this.deathUi=undefined;
     this.registry.set("outfit",playableOutfit(this.registry.get("outfit")??loadOutfit()));
     this.client = new GameClient();
-    this.backdrop = undefined; this.jungleBackground = undefined;
+    this.backdrop = undefined; this.jungleBackground = undefined;this.canopyVine=undefined;
     this.climbInput = undefined;
     this.playerEntities.clear();
     this.platformEntities.clear();
@@ -115,6 +120,7 @@ export class GameScene extends Phaser.Scene {
     this.lavaSurface = undefined;
     this.lavaBody = undefined;
     this.lavaParticleAccumulator = 0;
+    this.forgePools=[];
     this.hud = undefined;
     this.dangerOverlay = undefined;
     this.minimap = undefined;
@@ -128,7 +134,7 @@ export class GameScene extends Phaser.Scene {
     this.uiCamera=this.cameras.add(0,0,GAME_WIDTH,GAME_HEIGHT,false,'hud');
     this.cameras.main.setBounds(this.wideWorld?0:-(GAME_WIDTH-WORLD_WIDTH)/2, 0, this.wideWorld?this.world.width:GAME_WIDTH, this.worldHeight);
     this.cameras.main.scrollX = -(GAME_WIDTH-WORLD_WIDTH)/2;
-    this.terrainNotice?.destroy();this.terrainNotice=createSolidTerrainNotice(this,this.mapId==='snow'?'snow-ice':this.mapId==='mountain'?'ascent-ai-props/slope':this.mapId==='magical'?'magical-ai-ribbon-palace':'forest-ai-moss-slate',this.mapId==='snow'?'ice':this.mapId==='mountain'?'slope':'solid');
+    this.terrainNotice?.destroy();this.terrainNotice=createSolidTerrainNotice(this,this.mapId==='forge'?ASSETS.platformTiles.key:this.mapId==='jungle'?'canopy-vine':this.mapId==='snow'?'snow-ice':this.mapId==='mountain'?'ascent-ai-props/slope':this.mapId==='magical'?'magical-ai-ribbon-palace':'forest-ai-moss-slate',this.mapId==='jungle'?'vine':this.mapId==='snow'?'ice':this.mapId==='mountain'?'slope':'solid');
     this.drawWorldBackdrop();
     this.createHazard();
     if(!this.textures.exists('forged-hud-frame')){const t=this.textures.createCanvas('forged-hud-frame',100,100)!;t.context.drawImage(this.textures.get('forged-frame').getSourceImage() as HTMLImageElement,0,0,100,100);t.refresh();}
@@ -158,6 +164,10 @@ export class GameScene extends Phaser.Scene {
       this.client.sendInput(input);
     }
     this.updateEntities(delta);
+    if(this.canopyVine){
+      const s=this.snapshot,t=s?.roundStartedAt?Math.max(0,(s.serverTime-s.roundStartedAt)/1000):0;
+      this.canopyVine.setRotation(-vinePose(t).angle);
+    }
     if(this.jungleBackground){
       const travel=Math.max(0,this.jungleBackground.displayHeight-GAME_HEIGHT);
       this.jungleBackground.y=-Phaser.Math.Clamp(this.cameras.main.scrollY/(this.worldHeight-GAME_HEIGHT),0,1)*travel;
@@ -208,7 +218,7 @@ export class GameScene extends Phaser.Scene {
     if(this.mapId !== "forge"){ this.drawJungle(); return; }
     this.add.rectangle(-160, 0, GAME_WIDTH, this.worldHeight, 0x0b0810).setOrigin(0).setDepth(-30);
     this.backdrop = this.add.image(0, -420, ASSETS.background.key).setOrigin(0)
-      .setDisplaySize(WORLD_WIDTH, 960).setDepth(-25).setScrollFactor(1, 0).setAlpha(0.56);
+      .setDisplaySize(WORLD_WIDTH, 960).setDepth(-25).setScrollFactor(1, 0).setAlpha(0.85);
     for (const x of [82, WORLD_WIDTH - 98]) {
       this.add.tileSprite(x, 0, 16, this.worldHeight, ASSETS.chains.key)
         .setOrigin(0).setDepth(-15).setScrollFactor(1, 0.55).setAlpha(0.72);
@@ -235,11 +245,22 @@ export class GameScene extends Phaser.Scene {
     this.add.rectangle(SHAFT_RIGHT - 1, 0, 3, this.worldHeight, 0xd7a66d, 0.9).setOrigin(0).setDepth(-3);
   }
 
+  private sizeJungleBackground():void {
+    if(!this.jungleBackground)return;
+    if(this.mapId==='jungle'){
+      const width=Math.max(GAME_WIDTH,(GAME_HEIGHT+160)*1.5);
+      this.jungleBackground.setDisplaySize(width,width/1.5).setX((GAME_WIDTH-width)/2);
+    }else this.jungleBackground.setDisplaySize(GAME_WIDTH,Math.max(GAME_WIDTH*1.5,GAME_HEIGHT+500));
+  }
   private drawJungle(): void {
     if(this.mapId==='mountain'){drawMountain(this);return;}
     this.cameras.main.setBackgroundColor(this.mapId==='snow'?'#263e61':'#173f37');
-    this.jungleBackground=this.add.image(0,0,this.mapId==='snow'?'snow-background':'jungle-background').setOrigin(0).setScrollFactor(0).setDepth(-30);
-    this.jungleBackground.setDisplaySize(GAME_WIDTH,Math.max(GAME_WIDTH*1.5,GAME_HEIGHT+500));
+    this.jungleBackground=this.add.image(0,0,this.mapId==='snow'?'snow-background':'canopy-background').setOrigin(0).setScrollFactor(0).setDepth(-30);
+    this.sizeJungleBackground();
+    if(this.mapId==='jungle'){
+      this.canopyVine=this.add.image(CANOPY_VINE.x,CANOPY_VINE.y,'canopy-vine').setOrigin(.5,0).setDisplaySize(43,CANOPY_VINE.length).setDepth(3);
+      this.add.image(CANOPY_VINE.x,CANOPY_VINE.y-5,'jungle-fern').setDisplaySize(60,36).setDepth(4);
+    }
     // A subtle atmospheric veil keeps detailed scenery behind readable terrain.
     this.add.rectangle(0,0,4000,4000,this.mapId==='snow'?0x122a4f:0x082a26,.12).setOrigin(0).setScrollFactor(0).setDepth(-29);
 
@@ -250,6 +271,12 @@ export class GameScene extends Phaser.Scene {
     this.levelDrawn = true;
     this.minimapPlatforms = level.platforms;
     for (const platform of level.platforms) this.renderPlatform(platform);
+    if(this.mapId==='forge')for(const pool of forgeLavaPools(level.platforms)){
+      this.add.image(pool.x-8,pool.y+pool.h-2,ASSETS.restPlatform.key).setOrigin(0).setDisplaySize(pool.w+16,24).setDepth(-1);
+      const lava=this.add.tileSprite(pool.x,pool.y,pool.w,pool.h,ASSETS.lavaSurface.key).setOrigin(0).setDepth(2);
+      this.forgePools.push(lava);
+      this.add.rectangle(pool.x,pool.y,pool.w,2,0xffd16a).setOrigin(0).setDepth(3);
+    }
   }
 
   private renderPlatform(platform: Platform): void {
@@ -263,20 +290,15 @@ export class GameScene extends Phaser.Scene {
       renderJungleTerrain(this,platform,container);
       return;
     }
-    const frames = { stone: 0, anvil: 1, wood: 2, cracked: 3, moving: 4, ice: 1 };
-    const frame = platform.id === "crown" || /route-\d-9/.test(platform.id) ? 5 : frames[platform.type];
-    if (frame === 5) {
-      // Cap each end once; repeat the middle instead of stretching large ornaments.
-      container.add(this.add.image(0,0,ASSETS.restPlatform.key,"left").setOrigin(0).setDisplaySize(8,24));
-      container.add(this.add.tileSprite(8,0,platform.w-16,32,ASSETS.restPlatform.key,"middle").setOrigin(0).setScale(1,0.75));
-      container.add(this.add.image(platform.w-8,0,ASSETS.restPlatform.key,"right").setOrigin(0).setDisplaySize(8,24));
-    } else {
-      container.add(this.add.image(0, 0, ASSETS.platformTiles.key, frame).setOrigin(0).setDisplaySize(platform.w, 26)
-        .setTint(platform.type === "ice" ? 0x94e8ef : 0xffffff));
+    const rest=platform.type==='anvil';
+    const key=platform.type==='moving'?'forge-ferry':rest?ASSETS.restPlatform.key:ASSETS.platformTiles.key;
+    container.add(this.add.image(0,0,key).setOrigin(0).setDisplaySize(platform.w,platform.h));
+    container.add(this.add.rectangle(0,0,platform.w,1,platform.type==='moving'?0x94f3e5:0xffd49a).setOrigin(0));
+    if(platform.id==='crown'||/route-\d-9/.test(platform.id))container.add(this.add.image(platform.w/2,-2,ASSETS.anvils.key).setOrigin(.5,1));
+    if(platform.type==='moving'){
+      this.add.rectangle(platform.baseX!+platform.w/2,platform.y+platform.h/2,platform.moveRange!*2+platform.w,2,0xc49b60,.3).setDepth(-2);
     }
-    // The thin landing edge exactly matches the physical surface.
-    container.add(this.add.rectangle(0, 0, platform.w, 2, frame === 5 ? 0xbad4df : platform.type === "moving" ? 0x78f1dd : 0xd9dfce).setOrigin(0));
-    if (/route-\d-9/.test(platform.id)) container.add(this.add.image(platform.w / 2, -3, ASSETS.anvils.key).setOrigin(0.5,1).setScale(0.6));
+    if(platform.id.startsWith('dock-'))container.add(this.add.text(platform.w/2,platform.h+8,'WAIT · BOARD · RIDE',{fontFamily:'sans-serif',fontSize:'8px',color:'#f4c78e'}).setOrigin(.5,0));
   }
 
   private createHazard(): void {
@@ -303,7 +325,7 @@ export class GameScene extends Phaser.Scene {
       return;
     }
     this.lavaBody = this.add.tileSprite(0, 0, WORLD_WIDTH, this.worldHeight, ASSETS.lavaBody.key).setOrigin(0).setDepth(24);
-    this.lavaSurface = this.add.tileSprite(0, 0, WORLD_WIDTH, 16, ASSETS.lavaSurface.key).setOrigin(0).setDepth(25);
+    this.lavaSurface = this.add.tileSprite(0, 0, WORLD_WIDTH, 24, ASSETS.lavaSurface.key).setOrigin(0).setDepth(25);
   }
 
   private createHud(): void {
@@ -348,7 +370,7 @@ export class GameScene extends Phaser.Scene {
     this.createHud();
     this.uiCamera?.setSize(GAME_WIDTH,GAME_HEIGHT);
     this.syncCameraLayers();
-    this.jungleBackground?.setDisplaySize(GAME_WIDTH,Math.max(GAME_WIDTH*1.5,GAME_HEIGHT+500));
+    this.sizeJungleBackground();
     if(this.mapId!=='forge'){
       if(this.levelDrawn){
         for(const container of this.platformEntities.values())container.destroy(true);
@@ -410,7 +432,7 @@ export class GameScene extends Phaser.Scene {
     }
     if (this.lavaSurface && this.lavaBody) {
       this.lavaSurface.y = snapshot.hazardY + LAVA_SURFACE_VISUAL_OFFSET;
-      this.lavaBody.y = snapshot.hazardY + (this.mapId !== "forge" ? 7 : 14);
+      this.lavaBody.y = snapshot.hazardY + (this.mapId !== "forge" ? 7 : 22);
     }
     if(this.flood){this.flood.y=snapshot.hazardY;this.flood.setVisible(true);}
     for (const position of snapshot.platforms ?? []) {
@@ -488,7 +510,8 @@ export class GameScene extends Phaser.Scene {
       if (!entity.previousGrounded && player.grounded) entity.landUntil = this.time.now + 180;
       if (this.artV2.player) {
         const animation = entity.sprite.anims.currentAnim?.key || "";
-        if (this.time.now < entity.landUntil) entity.sprite.play(`${entity.animationPrefix}-land`, true);
+        if(player.vineId){entity.sprite.play(`${entity.animationPrefix}-jump`,true);entity.sprite.setAngle(-(this.canopyVine?.angle??0)*.18);}
+        else if (this.time.now < entity.landUntil) entity.sprite.play(`${entity.animationPrefix}-land`, true);
         else if (player.charging && !entity.previousCharging) entity.sprite.play(`${entity.animationPrefix}-charge-start`, true).chain(`${entity.animationPrefix}-charge-loop`);
         else if (player.charging && ![`${entity.animationPrefix}-charge-start`, `${entity.animationPrefix}-charge-loop`].includes(animation)) entity.sprite.play(`${entity.animationPrefix}-charge-loop`, true);
         else if (!player.grounded && player.vy < 0) entity.sprite.play(`${entity.animationPrefix}-jump`, true);
@@ -539,6 +562,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private updateLava(time: number, delta: number): void {
+    for(const pool of this.forgePools)pool.tilePositionX=time*.025;
     if (!this.lavaSurface || !this.lavaBody) return;
     if(this.mapId!=='forge'){
       this.lavaSurface.tilePositionX=time*.027;
@@ -602,6 +626,7 @@ export class GameScene extends Phaser.Scene {
     const leaders = [...snapshot.players].sort((a, b) => b.maxHeight - a.maxHeight).slice(0, 5);
     this.hud.board.setText(["TOP OF THE TOWER", ...leaders.map((player, index) => `${index + 1}. ${player.isBot ? " " : "*"}${(preferences.names?player.name:'Climber').slice(0,9).padEnd(9)} ${Math.round(player.maxHeight / 10)}m`)].join("\n"));
     this.hud.help.setVisible(!local?.ghost);
+    if(this.mapId==='jungle')this.hud.help.setText(local?.vineId?'VINE GRABBED · W / S OR ↑ / ↓ CLIMB · PRESS SPACE TO RELEASE':'LEAP LEFT TO AUTO-GRAB THE VINE · W / S CLIMB · SPACE RELEASE');
     if(snapshot.phase === "waiting") {
       this.hud.phase.setText(`WAITING FOR PLAYERS  ${snapshot.players.length}/24`).setFontSize(24).setVisible(true);
       this.hud.alive.setText(`${snapshot.players.length}/24 JOINED`);

@@ -1,15 +1,17 @@
 import { terrainArtScale } from "../../../server/src/sim/terrainGeometry";
 import type Phaser from 'phaser';
 import type { Platform } from './types';
-import { GAME_WIDTH, WORLD_WIDTH, WORLD_HEIGHT } from './constants';
+import { GAME_WIDTH, WORLD_WIDTH } from './constants';
 
 export const JUNGLE_ASSETS = ['background','ground','soil','cliff-v3','island','log','ruin','fern','flood-surface','flood-body'] as const;
 export function queueJungleAssets(scene: Phaser.Scene): void {
+  for(const name of ['background','riverbank','vine','alligator'])scene.load.image('canopy-'+name,import.meta.env.BASE_URL+'assets/jungle-hd/'+name+'.webp');
   const root=import.meta.env.BASE_URL+'assets/jungle/';
   for(const name of JUNGLE_ASSETS)scene.load.image('jungle-'+name,root+name+'.png');
 }
 
 export function prepareJungleFrames(scene:Phaser.Scene):void {
+  for(const name of ['background','riverbank','vine','alligator'])scene.textures.get('canopy-'+name).setFilter(1);
   const texture=scene.textures.get('jungle-cliff-v3');
   texture.add('wall',0,0,0,224,341);
   texture.add('edge',0,224,0,288,341);
@@ -22,9 +24,12 @@ export function renderJungleTerrain(scene:Phaser.Scene,p:Platform,container:Phas
   if(terrain==='ground'){
     // Continuous earth fills the bottom of the world and the entire view.
     const width=Math.max(GAME_WIDTH+80,1000),left=320-width/2-p.x;
-    container.add(scene.add.tileSprite(left,16,width,WORLD_HEIGHT-p.y+400,'jungle-soil').setOrigin(0));
-    container.add(scene.add.tileSprite(left,-3,width,48,'jungle-ground').setOrigin(0));
-    for(const x of [90,490])container.add(scene.add.image(x-p.x,-1,'jungle-fern').setOrigin(.5,1).setDisplaySize(54,43));
+    container.add(scene.add.image(left,-98,'canopy-riverbank').setOrigin(0).setDisplaySize(width,287));
+    container.add(scene.add.rectangle(left,188,width,600,0x172e25).setOrigin(0));
+    const gator=scene.add.image(292-p.x,1,'canopy-alligator').setOrigin(.5,1).setDisplaySize(150,39);
+    container.add(gator);
+    scene.tweens.add({targets:gator,scaleY:gator.scaleY*1.035,yoyo:true,repeat:-1,duration:2100,ease:'Sine.easeInOut'});
+    container.add(scene.add.text(245-p.x,-40,'z  z',{fontFamily:'Georgia',fontSize:'10px',color:'#c5e4bd'}).setAlpha(.75));
     return;
   }
   const art=terrainArtScale(p)!;
@@ -46,8 +51,8 @@ export function renderJungleTerrain(scene:Phaser.Scene,p:Platform,container:Phas
 
 export function drawJunglePreview(scene:Phaser.Scene,c:CanvasRenderingContext2D):void {
   const source=(name:string)=>scene.textures.get('jungle-'+name).getSourceImage() as HTMLImageElement;
-  const bg=source('background');c.drawImage(bg,0,bg.height*.47,bg.width,bg.height*.5,0,0,240,170);
-  c.drawImage(source('soil'),0,143,240,27);c.drawImage(source('ground'),0,138,240,18);
+  const bg=scene.textures.get('canopy-background').getSourceImage() as HTMLImageElement;c.drawImage(bg,0,0,bg.width,bg.height,0,0,240,170);
+  c.drawImage(scene.textures.get('canopy-riverbank').getSourceImage() as HTMLImageElement,0,320,1536,704,0,138,240,50);
   c.save();c.translate(240,0);c.scale(-1,1);c.drawImage(source('cliff-v3'),224,30,288,311,0,98,74,64);c.restore();
   c.drawImage(source('island'),112,69,29,20);c.drawImage(source('cliff-v3'),0,30,512,311,-55,30,123,92);
   c.drawImage(source('flood-body'),0,163,240,7);c.drawImage(source('flood-surface'),0,160,240,4);

@@ -6,6 +6,7 @@ export function updateMovingPlatforms(platforms: Platform[], elapsedMs: number):
       platform.deltaX = 0; platform.deltaY=0;
       continue;
     }
+    platform.motionTimeMs = elapsedMs;
     const previousX = platform.x;
     const angle = elapsedMs / platform.movePeriodMs * Math.PI * 2 + (platform.movePhase ?? 0);
     platform.x = platform.baseX + Math.sin(angle) * platform.moveRange;

@@ -114,3 +114,10 @@
 !/scripts/browser-expedition.mjs
 !/docs/expedition-content/
 /docs/expedition-content/qa/
+!/scripts/compile-crown-forge-art.mjs
+!/scripts/test-crown-forge.ts
+!/scripts/browser-crown-forge.mjs
+!/docs/crown-forge-prompts.json
+!/docs/crown-forge-source/
+!/docs/crown-forge-overhaul.md
+!/docs/crown-forge-*.png

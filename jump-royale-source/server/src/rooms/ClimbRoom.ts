@@ -1,3 +1,4 @@
+import {forgeLavaPools,touchesForgeLava} from '../sim/level.js';
 import {worldForMap,floodForMap} from '../sim/world.js';
 import {safePlayerName} from '../sim/names.js';
 import {levelForMap, MAPS, type MapId} from '../sim/maps.js';
@@ -97,7 +98,7 @@ export class ClimbRoom extends Room {
     const col = slot % 6;
     const row = Math.floor(slot / 6);
     return {
-      id, name, x: isBot ? 174 + col * 48 + (row % 2) * 20 : 313, y: this.world.spawnY + 12, vx: 0, vy: 0,
+      id, name, x: this.mapId==='jungle' ? 472+(slot%6)*15 : isBot ? 174 + col * 48 + (row % 2) * 20 : 313, y: this.world.spawnY + 12, vx: 0, vy: 0,
       alive: true, grounded: true, charging: false, charge01: 0, chargeDirection: 0, groundedPlatformId: "spawn", facing: 0, isBot,
       colorIndex: slot % 8, maxHeight: 0, heightReachedMs:0, eliminatedAt:undefined, crumblingPlatforms:undefined, skill: isBot ? SKILLS[slot % SKILLS.length] : undefined,
       input: { left: false, right: false, jumpHeld: false, seq: 0 },
@@ -170,10 +171,11 @@ export class ClimbRoom extends Room {
       for (const player of this.players.values()) {
         if(!player.alive)continue;
         const previousHeight=Math.floor(player.maxHeight);
+        const previousY=player.y;
         if (player.isBot) updateBot(player, this.platforms, now);
         stepPlayer(player, this.platforms, dt,{...this.world,time:(now-this.roundStartedAt)/1000});
         if(Math.floor(player.maxHeight)>previousHeight)player.heightReachedMs=Math.round(now-this.roundStartedAt);
-        if (player.alive && (player.y + PLAYER_HEIGHT >= this.hazardY || player.y > this.world.height+50)) {
+        if (player.alive && (player.y + PLAYER_HEIGHT >= this.hazardY || (this.mapId === "forge" && touchesForgeLava(player,forgeLavaPools(this.platforms),previousY)) || player.y > this.world.height+50)) {
           player.alive = false;
           player.charging = false;
           player.eliminatedAt = now;

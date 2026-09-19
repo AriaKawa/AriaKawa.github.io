@@ -2,14 +2,14 @@ import assert from 'node:assert/strict';
 import {HostedGameClient} from '../client/src/net/HostedGameClient';
 import {rankPlayers} from '../server/src/sim/round';
 import {SURGE_MS,VICTORY_MS,SURGE_TOP} from '../server/src/sim/finale';
-import {HAZARD_GRACE_SECONDS} from '../server/src/sim/constants';
+import {floodForMap} from '../server/src/sim/world';
 import {loadScores,saveScore,SCORE_KEY} from '../client/src/game/scores';
 (globalThis as any).window={setInterval:()=>1,clearInterval:()=>{}};
 const storage=new Map();(globalThis as any).localStorage={getItem:(k:string)=>storage.get(k),setItem:(k:string,v:string)=>storage.set(k,v)};
 for(const map of ['forge','jungle','snow'] as const){
  const h:any=new HostedGameClient(map);await h.connect('Tester');while(h.phase==='waiting')h.tick();h.phase='playing';h.roundStartedAt=h.clock;
  const initial=h.hazardY;
- for(let i=0;i<HAZARD_GRACE_SECONDS*30-1;i++)h.tick();assert.equal(h.hazardY,initial);
+ for(let i=0;i<floodForMap(map).grace*30-1;i++)h.tick();assert.equal(h.hazardY,initial);
  for(let i=0;i<4;i++)h.tick();assert(h.hazardY<initial);
  const p=h.players.get(h.localId),crown=h.platforms.find((x:any)=>x.id==='crown');
  p.x=crown.x+50;p.y=crown.y-20;p.grounded=true;p.groundedPlatformId='crown';p.vx=0;p.vy=0;
@@ -29,3 +29,4 @@ assert.deepEqual(rankPlayers([base,early,higher]).map(x=>x.id),['higher','early'
 const best=loadScores().forge!;saveScore('forge',{...best,place:2});assert.equal(loadScores().forge?.place,1);
 storage.set(SCORE_KEY,'bad json');assert.deepEqual(loadScores(),{});
 console.log('PASS: three maps, early lava, complete surge and elimination, controllable winner, frozen standings, replay, height/time ties and saved records.');
+
