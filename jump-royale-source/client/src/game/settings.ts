@@ -1,3 +1,4 @@
+import {installMenuBack} from './menuBack';
 export interface Preferences { music:number; effects:number; names:boolean }
 const KEY='jump-royale-settings-v1';
 const clamp=(v:unknown,fallback:number)=>typeof v==='number'&&Number.isFinite(v)?Math.max(0,Math.min(1,v)):fallback;
@@ -17,7 +18,6 @@ export function createSettings(parent:HTMLElement,onOpen?:()=>void,returnToMenu?
  const open=()=>{if(dialog.open)return;onOpen?.();dialog.showModal();};
  button.onclick=open;dialog.querySelector('header button')!.addEventListener('click',close);
  dialog.addEventListener('cancel',event=>{event.preventDefault();close();});
- const escape=(event:KeyboardEvent)=>{if(event.code!=='Escape'||document.querySelector('.wardrobe-overlay:not([hidden])'))return;event.preventDefault();event.stopImmediatePropagation();if(event.repeat)return;const fitting=document.querySelector<HTMLDialogElement>('dialog[open]:not(.game-settings)');if(fitting){fitting.close();return;}if(dialog.open)close();else{document.querySelectorAll<HTMLDialogElement>('dialog[open]').forEach(d=>d.close());open();}};
- window.addEventListener('keydown',escape,true);parent.append(button,dialog);
- return ()=>{window.removeEventListener('keydown',escape,true);dialog.remove();button.remove();};
+ const removeBack=installMenuBack(open);parent.append(button,dialog);
+ return ()=>{removeBack();dialog.remove();button.remove();};
 }

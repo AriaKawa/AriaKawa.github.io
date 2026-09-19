@@ -5,13 +5,15 @@ export const RARITIES=[{name:'Mil-Spec',color:'#559bff'},{name:'Restricted',colo
 export const LOOT_POOL:LootEntry[]=[
  {slot:'wallpaper',id:'starlight',name:'Starlight Wallpaper',rarity:1},
  {slot:'wallpaper',id:'moonveil',name:'Moonveil Wallpaper',rarity:0},
- ...COSMETICS.character.filter(c=>c.id!=='pogo').map(c=>({id:c.id,name:c.name+' · 8-bit Special',slot:'retroCostume',rarity:3})),
+ ...COSMETICS.character.filter(c=>!['pogo','aria'].includes(c.id)).map(c=>({id:c.id,name:c.name+' · 8-bit Special',slot:'retroCostume',rarity:3})),
  ...COSTUMES.filter(p=>p.id!=='classic').map(p=>({slot:'costume',id:p.id,name:p.name,rarity:p.id==='finn-16'?3:p.id==='mage'?2:['maid','diver'].includes(p.id)?1:0})),
- ...COSMETICS.character.filter(p=>p.id!=='original').map(p=>({slot:'character',id:p.id,name:p.name,rarity:p.id==='demon'||p.id==='cerberus'?4:p.id==='mushroom'?2:3})),
+ ...COSMETICS.character.filter(p=>p.id!=='original').map(p=>({slot:'character',id:p.id,name:p.name,rarity:p.id==='aria'||p.id==='demon'||p.id==='cerberus'?4:p.id==='mushroom'?2:3})),
  ...DEMON_HAIRS.filter(p=>p.id!=='original').map(p=>({slot:'hair',id:p.id,name:p.name,rarity:1})),
  {slot:'hair',id:'star-buns',name:'Starlight Star Buns',rarity:2},
  {slot:'animalHat',id:'party',name:'Party Hat',rarity:2},
  {slot:'animalHat',id:'fedora',name:'Fedora',rarity:1},
  {slot:'animalHat',id:'unicorn',name:'Unicorn Horn',rarity:2},
 
-];
+].sort((a,b)=>a.rarity-b.rarity);
+
+export const itemRarity=(slot:string,id:string)=>LOOT_POOL.find(p=>p.slot===slot&&p.id===id)?.rarity??-1;

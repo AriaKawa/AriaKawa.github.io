@@ -95,3 +95,6 @@
 !/docs/overhaul-art.json
 !/docs/overhaul-prompts.json
 !/docs/overhaul-ai-source/
+
+!/scripts/browser-rewards.mjs
+!/docs/rewards-art.md

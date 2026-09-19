@@ -1,7 +1,7 @@
 import type Phaser from 'phaser';
 import {ANIMAL_ANIMATIONS} from './animalRig';
 
-export const FANTASY_CHARACTERS=['cerberus','magical-girl','skeleton','neet','kangaroo'] as const;
+export const FANTASY_CHARACTERS=['cerberus','magical-girl','skeleton','neet','kangaroo','aria'] as const;
 export const FANTASY_SHEETS=['cerberus','magical-girl','magical-girl-buns','skeleton','neet','kangaroo'] as const;
 export const isFantasy=(id:string)=>FANTASY_CHARACTERS.some(character=>character===id);
 export const MAGICAL_HAIR=[{id:'original',name:'Starlight Twin Tails'},{id:'star-buns',name:'Starlight Star Buns'}] as const;

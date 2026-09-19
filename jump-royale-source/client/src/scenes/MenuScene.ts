@@ -1,3 +1,4 @@
+import {itemRarity} from '../game/lootCatalog';
 import {createMissions} from '../game/missions';
 import {createPartyUi,createLeaderboards} from '../game/socialUi';
 import {createWallpapers,WALLPAPERS,equippedWallpaper} from '../game/wallpapers';
@@ -31,7 +32,7 @@ type CosmeticSlot='character'|'costume'|'hair'|'animalHat';
 const SLOTS:CosmeticSlot[]=['character','costume','hair','animalHat'];
 const outfitSlots=(o:Outfit):CosmeticSlot[]=>o.character==='original'?['character','costume']:o.character==='magical-girl'?['character','costume','hair']:o.character==='demon'?['character','costume','hair']:hasDetailedCostume(o.character)?(isAnimal(o.character)?['character','costume','animalHat']:['character','costume']):isAnimal(o.character)?['character','animalHat']:['character'];
 const baseOptions=(o:Outfit)=>o.character==='original'?COSTUMES:[{id:'classic',name:'Base · 16-bit'}];
-const characterCostumes=(o:Outfit)=>[...baseOptions(o),...(o.character==='pogo'?[]:[{id:'retro',name:'Retro · 8-bit Special'}])];
+const characterCostumes=(o:Outfit)=>[...baseOptions(o),...(['pogo','aria'].includes(o.character)?[]:[{id:'retro',name:'Retro · 8-bit Special'}])];
 const equipmentOptions=(s:CosmeticSlot,_o:Outfit)=>s==='character'?COSMETICS.character:s==='hair'?(_o.character==='magical-girl'?MAGICAL_HAIR:DEMON_HAIRS):s==='animalHat'?ANIMAL_HATS:characterCostumes(_o);
 const selectedPiece=(s:CosmeticSlot,o:Outfit)=>s==='character'?o.character:s==='hair'?o.hair:s==='animalHat'?o.animalHat??'none':o.retroCostumes?.includes(o.character)?'retro':o.character==='original'?o.costume??'classic':'classic';
 const cosmeticName=(s:CosmeticSlot,id:string,o:Outfit)=>equipmentOptions(s,o).find(p=>p.id===id)?.name??id;
@@ -102,6 +103,7 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private pedestal(): Platform {
+    if(this.wallpaperId==='starlight')return {id:'forged-pedestal',x:0,y:GAME_HEIGHT*.585,w:GAME_WIDTH*.55,h:12,type:'stone'};
     if(this.wallpaperId!=='forged-command')return {id:'forged-pedestal',x:GAME_WIDTH*.12,y:GAME_HEIGHT*.585,w:GAME_WIDTH*.43,h:12,type:'stone'};
     const compact=window.innerWidth<760;
     return {id:'forged-pedestal',x:GAME_WIDTH*(compact?.06:.18),y:GAME_HEIGHT*.695,w:GAME_WIDTH*(compact?.32:.36),h:12,type:'stone'};
@@ -153,7 +155,7 @@ export class MenuScene extends Phaser.Scene {
     p.input = { left: this.movement.has('KeyA') || this.movement.has('ArrowLeft'),
       right: this.movement.has('KeyD') || this.movement.has('ArrowRight'), jumpHeld: this.held, seq: 0 };
     const wasGrounded = p.grounded, wasCharging = p.charging;
-    while (this.accumulator >= 1/30) { stepLobbyPlayer(p,1/30,GAME_WIDTH,GAME_HEIGHT,this.lobbySurfaces); this.accumulator -= 1/30; }
+    while (this.accumulator >= 1/30) { stepLobbyPlayer(p,1/30,GAME_WIDTH,GAME_HEIGHT,this.lobbySurfaces,this.wallpaperId==='starlight'); this.accumulator -= 1/30; }
     audio.step(p.grounded && p.input.left!==p.input.right);
     if(wasGrounded&&!p.grounded&&p.vy<0)audio.jump(this.outfit.character==='puppy');
     this.airborne = !p.grounded; this.velocity = p.vy; if (p.charging) {
@@ -177,8 +179,8 @@ export class MenuScene extends Phaser.Scene {
       this.showOutfit(this.outfit);
     },()=>{this.lootBox?.refresh();this.ui?.querySelector<HTMLButtonElement>(this.lootBox?.open()?'.loot-gold-add':'.gold-add')?.focus();});
     this.ui.appendChild(this.goldStore);
-    this.lootBox=createLootBox(this.ui,()=>{if(this.wardrobeOpen)this.setWardrobeOpen(false);this.held=false;this.movement.clear();this.lobbyPlayer.charging=false;this.lobbyPlayer.charge01=0;},()=>this.renderPurchase(),(canvas,item)=>{
-      drawLootIcon(this,canvas,item);
+    this.lootBox=createLootBox(this.ui,()=>{if(this.wardrobeOpen)this.setWardrobeOpen(false);this.held=false;this.movement.clear();this.lobbyPlayer.charging=false;this.lobbyPlayer.charge01=0;},()=>this.renderPurchase(),(canvas,item,frame)=>{
+      drawLootIcon(this,canvas,item,frame);
     },()=>this.goldStore!.dispatchEvent(new Event('gold-store-open')));
     this.ui.querySelector('.gold-add')!.addEventListener('click',()=>this.goldStore!.dispatchEvent(new Event('gold-store-open')));
     this.form = this.ui.querySelector("form")!;
@@ -191,7 +193,7 @@ export class MenuScene extends Phaser.Scene {
     this.ui.querySelector(".wardrobe-toggle")!.addEventListener("click",()=>this.setWardrobeOpen(true));
     this.ui.querySelector(".wardrobe-close")!.addEventListener("click",()=>this.setWardrobeOpen(false));
     const overlay=this.ui.querySelector(".wardrobe-overlay")!;
-    overlay.addEventListener("click",event=>{if(event.target===overlay)this.setWardrobeOpen(false);});
+    overlay.addEventListener("click",event=>{if(!(event.target as Element).closest('.wardrobe-panel'))this.setWardrobeOpen(false);});
     this.ui.querySelectorAll<HTMLButtonElement>(".wardrobe-overlay [role=tab]").forEach(tab=>{
       tab.addEventListener("click",()=>this.selectSlot(tab.dataset.slot as CosmeticSlot));
 
@@ -291,7 +293,7 @@ export class MenuScene extends Phaser.Scene {
     this.updateTabs();this.renderPurchase();
     if(!outfitSlots(this.outfit).includes(this.activeSlot)) {this.selectSlot('character');return;}
     grid.tabIndex=0;
-    grid.innerHTML=equipmentOptions(this.activeSlot,this.outfit).map(piece=>`<button type="button" class="equipment-card" data-owned="${owns(this.shopSlot(piece.id),this.shopId(piece.id))}" data-piece="${piece.id}" aria-label="${cosmeticName(this.activeSlot,piece.id,this.outfit)}" aria-description="${owns(this.shopSlot(piece.id),this.shopId(piece.id))?'Owned':price(this.shopSlot(piece.id),this.shopId(piece.id))+' gold'}" aria-pressed="${selectedPiece(this.activeSlot,this.outfit)===piece.id}"><canvas width="64" height="64" aria-hidden="true"></canvas><span class="equipment-name">${cosmeticName(this.activeSlot,piece.id,this.outfit)}</span><span class="equipment-price">${owns(this.shopSlot(piece.id),this.shopId(piece.id))?(selectedPiece(this.activeSlot,this.outfit)===piece.id?'Equipped':'Equip'):`<img src="${import.meta.env.BASE_URL}assets/menu/gold-bars.png" alt="Gold"> <b>${price(this.shopSlot(piece.id),this.shopId(piece.id))}</b><small>Buy</small>`}</span></button>`).join("");
+    grid.innerHTML=[...equipmentOptions(this.activeSlot,this.outfit)].sort((a,b)=>itemRarity(this.shopSlot(a.id),this.shopId(a.id))-itemRarity(this.shopSlot(b.id),this.shopId(b.id))).map(piece=>`<button type="button" class="equipment-card" data-owned="${owns(this.shopSlot(piece.id),this.shopId(piece.id))}" data-piece="${piece.id}" aria-label="${cosmeticName(this.activeSlot,piece.id,this.outfit)}" aria-description="${owns(this.shopSlot(piece.id),this.shopId(piece.id))?'Owned':price(this.shopSlot(piece.id),this.shopId(piece.id))+' gold'}" aria-pressed="${selectedPiece(this.activeSlot,this.outfit)===piece.id}"><canvas width="64" height="64" aria-hidden="true"></canvas><span class="equipment-name">${cosmeticName(this.activeSlot,piece.id,this.outfit)}</span><span class="equipment-price">${owns(this.shopSlot(piece.id),this.shopId(piece.id))?(selectedPiece(this.activeSlot,this.outfit)===piece.id?'Equipped':'Equip'):`<img src="${import.meta.env.BASE_URL}assets/menu/gold-bars.png" alt="Gold"> <b>${price(this.shopSlot(piece.id),this.shopId(piece.id))}</b><small>Buy</small>`}</span></button>`).join("");
     grid.querySelectorAll<HTMLButtonElement>("button").forEach(button=>{
       const id=button.dataset.piece!;
       this.drawEquipmentIcon(button.querySelector("canvas")!,this.activeSlot,id);

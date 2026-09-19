@@ -11,3 +11,16 @@
 .loot-help-toggle{cursor:pointer;border:7px solid transparent;border-image:url('/assets/menu/forged-command/frame.png') 12% fill / 7px / 0 stretch;background:none;color:#f9e8c7;padding:7px 12px;font:14px Georgia,serif;min-height:44px}
 #loot-free-help{position:absolute;z-index:5;right:0;bottom:100%;margin:0 0 6px;width:min(290px,calc(100vw - 110px));padding:16px;border:10px solid transparent;border-image:url('/assets/menu/forged-command/frame.png') 12% fill / 10px / 0 stretch;background:#101316;color:#f9e8c7;font:14px/1.6 Georgia,serif;box-shadow:0 8px 20px #0009}
 #loot-free-help[hidden]{display:none}
+.loot-reveal{pointer-events:auto;box-sizing:border-box;width:min(520px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;padding:30px;text-align:center;color:#f8edd8;background:radial-gradient(ellipse at 50% 25%,#303844,#0e1118 80%);border:2px solid var(--rarity);box-shadow:0 20px 90px #000d;font-family:Georgia,serif;cursor:pointer}
+.loot-reveal::backdrop{background:#05080edb;backdrop-filter:blur(6px)}
+.reward-rarity{color:var(--rarity);text-transform:uppercase;letter-spacing:.2em;font:13px Consolas,monospace;margin:0 0 12px}
+.reward-stage{height:245px;display:flex;justify-content:center;align-items:flex-end;padding-bottom:8px;box-sizing:border-box}
+.reward-stage canvas{width:168px;height:168px;image-rendering:pixelated}
+.loot-reveal h2{font-size:28px;margin:16px 0 8px;color:var(--rarity)}
+.reward-duplicate{font:14px/1.5 Consolas,monospace;color:#e9ddc6}
+.loot-reveal button{cursor:pointer;background:transparent;color:#c5b899;border:0;padding:16px;font:14px Georgia,serif}
+.reward-confetti{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.reward-confetti i{position:absolute;left:var(--x);top:-15px;width:7px;height:12px;animation:reward-confetti 2.6s var(--delay) ease-in infinite}
+@keyframes reward-confetti{to{transform:translateY(620px) rotate(var(--turn))}}
+@media(prefers-reduced-motion:reduce){.reward-confetti i{animation:none;top:calc(var(--x)*.8);opacity:.7}}
+@media(max-height:550px){.reward-stage{height:150px}.reward-stage canvas{width:110px;height:110px}.loot-reveal{padding:16px}.loot-reveal h2{font-size:22px;margin:8px}}

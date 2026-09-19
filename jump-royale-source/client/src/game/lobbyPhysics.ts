@@ -19,8 +19,12 @@ export function resizeLobbyPlayer(player:PlayerState,width:number,height:number,
   player.y=Math.max(bounds.top,Math.min(lobbyFloor(height)-PLAYER_HEIGHT,player.y+height-previousHeight));
   if(player.grounded)player.y=lobbyFloor(height)-PLAYER_HEIGHT;
 }
-export function stepLobbyPlayer(player: PlayerState, dt: number,width=896,height=540, surfaces:Platform[]=[]): void {
-  const floor:Platform[]=[{id:'lobby',x:0,y:lobbyFloor(height),w:width,h:32,type:'stone'}];
+export function stepLobbyPlayer(player: PlayerState, dt: number,width=896,height=540, surfaces:Platform[]=[],drop=false): void {
+  const floor:Platform[]=drop?[]:[{id:'lobby',x:0,y:lobbyFloor(height),w:width,h:32,type:'stone'}];
+  if(drop&&player.y>height+100){
+    const platform=surfaces.find(p=>p.id==='forged-pedestal');
+    Object.assign(player,{x:(platform?platform.x+platform.w/2:width*.2)-PLAYER_WIDTH/2,y:-100,vx:0,vy:80,grounded:false,groundedPlatformId:undefined,charging:false,charge01:0,chargeDirection:0});
+  }
   // Menu platforms spread with the viewport; keep them reachable in portrait too.
   stepPlayer(player,[...floor,...surfaces],dt,{...lobbyBounds(width),jumpSpeedScale:1.35*Math.sqrt(Math.max(560,height)/560)});
 }
