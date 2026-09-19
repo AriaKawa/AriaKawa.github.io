@@ -9,7 +9,7 @@ const memory=new Map<string,string>();Object.assign(globalThis,{localStorage:{ge
 for(const p of [0,16,24,-1,NaN,1.5])assert.equal(rewardSpinPoint('bad-'+p,p),false);
 for(const p of [1,8,15]){assert(rewardSpinPoint('good-'+p,p));assert(!rewardSpinPoint('good-'+p,p));}
 assert.equal(wallet().freeSpins,1);assert.equal(wallet().spinPoints,0);
-const level=generateForest(),route=level.filter(p=>!p.id.includes('branch'));
+const level=generateForest(),route=level.filter(p=>!p.id.includes('branch')&&!p.bucket);
 const player=(p:Platform,x:number):PlayerState=>({id:'test',name:'Test',x,y:p.y-20,vx:0,vy:0,alive:true,grounded:true,groundedPlatformId:p.id,charging:false,charge01:0,chargeDirection:0,facing:0,isBot:false,colorIndex:0,maxHeight:0,input:{left:false,right:false,jumpHeld:false,seq:0}});
 function solutions(a:Platform,b:Platform){let count=0;const nearby=level.filter(p=>p.id==='spawn'||(p.y>a.y-240&&p.y<a.y+80&&p.x<a.x+a.w+350&&p.x+p.w>a.x-350));
  for(let x=a.x+8;x<a.x+a.w-22;x+=4)for(const dir of [-1,0,1])for(let hold=6;hold<=24;hold++){

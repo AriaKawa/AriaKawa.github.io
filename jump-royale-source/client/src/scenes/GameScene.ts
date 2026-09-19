@@ -128,7 +128,7 @@ export class GameScene extends Phaser.Scene {
     this.uiCamera=this.cameras.add(0,0,GAME_WIDTH,GAME_HEIGHT,false,'hud');
     this.cameras.main.setBounds(this.wideWorld?0:-(GAME_WIDTH-WORLD_WIDTH)/2, 0, this.wideWorld?this.world.width:GAME_WIDTH, this.worldHeight);
     this.cameras.main.scrollX = -(GAME_WIDTH-WORLD_WIDTH)/2;
-    this.terrainNotice?.destroy();this.terrainNotice=createSolidTerrainNotice(this,this.mapId==='snow'?'snow-ice':this.mapId==='magical'?'magical-ai-ribbon-palace':'forest-ai-moss-slate',this.mapId==='snow'?'ice':'solid');
+    this.terrainNotice?.destroy();this.terrainNotice=createSolidTerrainNotice(this,this.mapId==='snow'?'snow-ice':this.mapId==='mountain'?'ascent-ai-props/slope':this.mapId==='magical'?'magical-ai-ribbon-palace':'forest-ai-moss-slate',this.mapId==='snow'?'ice':this.mapId==='mountain'?'slope':'solid');
     this.drawWorldBackdrop();
     this.createHazard();
     if(!this.textures.exists('forged-hud-frame')){const t=this.textures.createCanvas('forged-hud-frame',100,100)!;t.context.drawImage(this.textures.get('forged-frame').getSourceImage() as HTMLImageElement,0,0,100,100);t.refresh();}
@@ -180,7 +180,7 @@ export class GameScene extends Phaser.Scene {
     }
     this.updateLava(time, delta);
     this.updateHud();
-    this.terrainNotice?.sync(this.snapshot?.phase??"waiting",this.mapId==='snow'||this.minimapPlatforms.some(p=>p.solid&&p.id!=="spawn"),time);
+    this.terrainNotice?.sync(this.snapshot?.phase??"waiting",(this.mapId==='snow'||this.mapId==='mountain')||this.minimapPlatforms.some(p=>p.solid&&p.id!=="spawn"),time);
     this.syncCameraLayers();
     this.nativeText?.sync();
   }
@@ -233,7 +233,6 @@ export class GameScene extends Phaser.Scene {
     // These bright inner seams are the exact collision boundaries.
     this.add.rectangle(SHAFT_LEFT - 2, 0, 3, this.worldHeight, 0xd7a66d, 0.9).setOrigin(0).setDepth(-3);
     this.add.rectangle(SHAFT_RIGHT - 1, 0, 3, this.worldHeight, 0xd7a66d, 0.9).setOrigin(0).setDepth(-3);
-    this.add.text(WORLD_WIDTH / 2, 32, "THE CROWN FORGE", { fontFamily: "Impact, sans-serif", fontSize: "22px", color: "#f6cf70", stroke: "#341819", strokeThickness: 5 }).setOrigin(0.5).setDepth(-3);
   }
 
   private drawJungle(): void {
@@ -244,7 +243,6 @@ export class GameScene extends Phaser.Scene {
     // A subtle atmospheric veil keeps detailed scenery behind readable terrain.
     this.add.rectangle(0,0,4000,4000,this.mapId==='snow'?0x122a4f:0x082a26,.12).setOrigin(0).setScrollFactor(0).setDepth(-29);
 
-    this.add.text(320,42,this.mapId==='snow'?'◆  FROSTPEAK SUMMIT  ◆':'◆  THE CANOPY CROWN  ◆',{fontFamily:'monospace',fontSize:'16px',color:'#f3df93',stroke:'#163422',strokeThickness:4}).setOrigin(.5);
   }
 
   private drawLevel(level: LevelMessage): void {
@@ -278,7 +276,6 @@ export class GameScene extends Phaser.Scene {
     }
     // The thin landing edge exactly matches the physical surface.
     container.add(this.add.rectangle(0, 0, platform.w, 2, frame === 5 ? 0xbad4df : platform.type === "moving" ? 0x78f1dd : 0xd9dfce).setOrigin(0));
-    if (platform.type === "moving") container.add(this.add.text(platform.w / 2, -9, "<  >", {fontFamily:"monospace",fontSize:"10px",color:"#78f1dd"}).setOrigin(0.5,1));
     if (/route-\d-9/.test(platform.id)) container.add(this.add.image(platform.w / 2, -3, ASSETS.anvils.key).setOrigin(0.5,1).setScale(0.6));
   }
 

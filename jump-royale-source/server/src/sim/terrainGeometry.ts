@@ -18,6 +18,7 @@ const EMPTY: CollisionBox[]=[];
 const cached=new WeakMap<Platform,{signature:string;boxes:CollisionBox[]}>();
 export function solidBoxes(p: Platform): CollisionBox[] {
   if(!p.solid)return EMPTY;
+  if(p.bucket){const {left,right,depth}=p.bucket;return [{x:p.x,y:p.y,w:p.w*left,h:p.h},{x:p.x+p.w*right,y:p.y,w:p.w*(1-right),h:p.h},{x:p.x+p.w*left,y:p.y+depth,w:p.w*(right-left),h:p.h-depth}];}
   const signature=[p.x,p.y,p.w,p.h,p.terrain].join(':');
   const previous=cached.get(p);if(previous?.signature===signature)return previous.boxes;
   const scale=terrainArtScale(p);

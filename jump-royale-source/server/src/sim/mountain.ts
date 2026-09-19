@@ -107,5 +107,11 @@ export function generateMountain():Platform[]{
  // Offset below transitions, so they never intercept a successful upward jump.
  for(const r of [2,4,6,8])out.push({id:'catch-'+r,x:54,y:REGION_FLOORS[r]+55,w:MOUNTAIN_WIDTH-108,h:120,type:'stone',mountain:true,region:r,structure:r===2?'arch':r===4?'roof':'garden'});
  out.push({id:'crown',x:1130,y:72,w:140,h:80,type:'stone',mountain:true,region:9,structure:'temple',route:true});
- return sizePlatforms(out,'mountain');
+ const sized=sizePlatforms(out,'mountain');
+ // A new optional foothills branch: low entry, persistent-slide wedge, then a rejoin ledge.
+ const entry=sized.find(p=>p.id==='foothills-4')!;
+ sized.push({id:'slope-branch-entry',x:entry.x+130,y:entry.y-45,w:130,h:32,type:'stone',mountain:true,region:0,structure:'rock'});
+ sized.push({id:'slope-branch-hill',x:entry.x+235,y:entry.y-130,w:240,h:72,type:'stone',mountain:true,region:0,structure:'slope',slope:true});
+ sized.push({id:'slope-branch-exit',x:entry.x+500,y:entry.y-220,w:126,h:32,type:'stone',mountain:true,region:0,structure:'rock'});
+ return sized;
 }

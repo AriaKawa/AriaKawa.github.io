@@ -1,7 +1,7 @@
 import {wallet,openLoot,lootChance,type LootEntry} from './economy';
 import {LOOT_POOL,RARITIES} from './lootCatalog';
 import './lootBox.css';
-import {buildLootReel,SPIN_DURATION} from './lootReel';
+import {buildLootReel,spinDuration} from './lootReel';
 
 const chest=()=>`<img class="loot-chest" src="${import.meta.env.BASE_URL}assets/menu/forged-command/chest.png" alt="">`;
 export function createLootBox(root:HTMLElement,onOpen:()=>void,onChange:()=>void,draw:(canvas:HTMLCanvasElement,item:LootEntry,frame?:number)=>void,onGold:()=>void) {
@@ -32,10 +32,14 @@ export function createLootBox(root:HTMLElement,onOpen:()=>void,onChange:()=>void
   };
   reveal.showModal();animate(start);
  };
- let busy=false,animation:Animation|undefined;
+ let busy=false,animation:Animation|undefined,gridDirty=true;
+ const iconCache=new Map<string,HTMLCanvasElement>();
+ const contents=dialog.querySelector<HTMLDetailsElement>('.loot-contents')!;
+ const refreshGrid=()=>{if(!contents.open||!gridDirty)return;dialog.querySelector('.loot-grid')!.replaceChildren(...LOOT_POOL.map(item=>card(item,true)));gridDirty=false;};
+ contents.addEventListener('toggle',refreshGrid);
  const reel=dialog.querySelector<HTMLElement>('.loot-reel')!,status=dialog.querySelector<HTMLElement>('.loot-result')!,buy=dialog.querySelector<HTMLButtonElement>('.loot-buy')!,free=dialog.querySelector<HTMLButtonElement>('.loot-free')!;
  const refresh=()=>{
-  dialog.querySelector('.loot-grid')!.replaceChildren(...LOOT_POOL.map(item=>card(item,true)));
+  gridDirty=true;refreshGrid();
   const w=wallet();toggle.dataset.freeSpins=String(w.freeSpins);toggle.innerHTML=chest()+`<span>Loot box</span>${w.freeSpins?`<b class="loot-badge">${w.freeSpins}</b>`:''}`;
   toggle.setAttribute('aria-label',`Open loot box${w.freeSpins?`, ${w.freeSpins} free spins`:''}`);
   dialog.querySelector('.loot-gold-amount')!.textContent=String(w.gold);
@@ -47,19 +51,21 @@ export function createLootBox(root:HTMLElement,onOpen:()=>void,onChange:()=>void
   const el=document.createElement('article');el.className='loot-card';el.dataset.item=item.slot+':'+item.id;el.dataset.rarity=String(item.rarity);el.style.setProperty('--rarity',RARITIES[item.rarity].color);
   const chance=lootChance(item,LOOT_POOL);
   el.innerHTML=`<canvas width="64" height="64" aria-hidden="true"></canvas><strong>${item.name}</strong>${odds?`<span>${Number(chance.toFixed(2))}%</span>`:''}`;
-  draw(el.querySelector('canvas')!,item);return el;
+  const key=item.slot+':'+item.id;let icon=iconCache.get(key);if(!icon){icon=document.createElement('canvas');icon.width=64;icon.height=64;draw(icon,item);iconCache.set(key,icon);}
+  el.querySelector('canvas')!.getContext('2d')!.drawImage(icon,0,0);return el;
  };
  const populate=(items:LootEntry[])=>{reel.replaceChildren(...items.map(item=>card(item)));};
- const preview=()=>{animation?.cancel();reel.style.transform='translateX(-696px)';populate(buildLootReel(LOOT_POOL,12));};
+ const preview=()=>{animation?.cancel();reel.style.transform='translate3d(-696px,0,0)';populate(buildLootReel(LOOT_POOL,12));};
  const spin=async(useFree:boolean)=>{
   if(busy)return;busy=true;refresh();
   const result=openLoot(LOOT_POOL,useFree);
   if(!result){busy=false;status.textContent='Unable to save spin.';refresh();return;}
   onChange();refresh();status.textContent='';dialog.classList.remove('loot-won');
-  animation?.cancel();reel.style.transform='translateX(-696px)';
+  animation?.cancel();reel.style.transform='translate3d(-696px,0,0)';
   const items=buildLootReel(LOOT_POOL,48,result.item);populate(items);
   const distance=40*156+72;
-  animation=reel.animate([{transform:'translateX(-696px)'},{transform:`translateX(-${distance}px)`}],{duration:matchMedia('(prefers-reduced-motion: reduce)').matches?180:SPIN_DURATION,easing:'cubic-bezier(.16,.65,.2,1)',fill:'forwards'});
+  await new Promise<void>(resolve=>requestAnimationFrame(()=>resolve()));
+  animation=reel.animate([{transform:'translate3d(-696px,0,0)'},{transform:`translate3d(-${distance}px,0,0)`}],{duration:matchMedia('(prefers-reduced-motion: reduce)').matches?180:spinDuration(items),easing:'cubic-bezier(.12,.64,.18,1)',fill:'forwards'});
   try{await animation.finished;}catch{return;}
   busy=false;dialog.classList.add('loot-won');
   status.textContent=result.item.name+(result.duplicate?' · Duplicate':'');
@@ -79,6 +85,6 @@ export function createLootBox(root:HTMLElement,onOpen:()=>void,onChange:()=>void
  dialog.addEventListener('close',()=>{toggle.focus();});
  dialog.addEventListener('keydown',e=>e.stopPropagation());dialog.addEventListener('keyup',e=>e.stopPropagation());
  toggle.onclick=()=>{onOpen();refresh();if(!busy&&!dialog.classList.contains('loot-won'))preview();dialog.showModal();if(pending)showReveal(pending);};
- dialog.querySelector('.loot-grid')!.replaceChildren(...LOOT_POOL.map(item=>card(item,true)));refresh();
+ refresh();
  return {open:()=>dialog.open,refresh,destroy:()=>{document.removeEventListener('click',outsideHelp);animation?.cancel();stopReveal();reveal.remove();dialog.remove();toggle.remove();}};
 }

@@ -26,5 +26,7 @@ export function generateForest():Platform[]{
   index++;
  }
  out.push({id:'crown',x:x+direction*175-110,y:72,w:220,h:28,type:'anvil',forest:true,solid:true});
+ // Optional pit beside the first climb, clear of every required launch arc.
+ out.push({id:'forest-pit-0',x:760,y:FOREST_SPAWN-18,w:400,h:96,type:'stone',forest:true,solid:true,bucket:{left:.37,right:.63,depth:61}});
  return out;
 }

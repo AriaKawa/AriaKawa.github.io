@@ -1,6 +1,8 @@
 export type RoundPhase = "waiting" | "countdown" | "playing" | "surge" | "victory" | "finished";
 export type PlatformType = "stone" | "wood" | "anvil" | "ice" | "cracked" | "moving";
 export interface Platform {
+  slope?:boolean;
+  bucket?:{left:number;right:number;depth:number};
   region?: number; structure?: string; route?: boolean; secret?: boolean;
   magical?: boolean;
   forest?: boolean;

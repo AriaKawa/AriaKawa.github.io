@@ -1,6 +1,6 @@
 import {rollLoot,type LootEntry} from './economy';
 
-export const SPIN_DURATION=6750;
+export const SPIN_DURATION=8437.5;
 const identity=(item:LootEntry)=>item.slot+':'+item.id;
 /** Visual filler only. Payment, odds and the awarded item remain in openLoot. */
 export function buildLootReel(pool:readonly LootEntry[],count:number,winner?:LootEntry,winningIndex=40):LootEntry[] {
@@ -17,4 +17,10 @@ export function buildLootReel(pool:readonly LootEntry[],count:number,winner?:Loo
   items.push(item);
  }
  return items;
+}
+
+/** Vary presentation timing only; naturally adjacent high rarities get longer suspense. */
+export function spinDuration(items:readonly LootEntry[],winningIndex=40,random=Math.random):number {
+ const high=items.slice(winningIndex-1,winningIndex+2).some(item=>item.rarity>=3),roll=random();
+ return SPIN_DURATION*(roll<.15?.85:roll<.15+(high?.7:.2)?1.3:1);
 }

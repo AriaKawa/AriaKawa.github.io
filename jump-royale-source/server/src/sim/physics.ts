@@ -1,3 +1,4 @@
+import {platformSurfaceY} from './platformSurface.js';
 import {worldForMap} from './world.js';
 import {mountainWind} from './mountain.js';
 import {
@@ -29,6 +30,7 @@ export function stepPlayer(player: PlayerState, platforms: Platform[], dt: numbe
     player.grounded = false; player.groundedPlatformId = undefined;
     player.charging = false; player.charge01 = 0; player.chargeDirection = 0;
   }
+  const groundedSupport=player.grounded?platforms.find(p=>p.id===player.groundedPlatformId):undefined;
   const input = player.input;
   const direction = input.left === input.right ? 0 : input.left ? -1 : 1;
   if (player.grounded) {
@@ -67,6 +69,9 @@ export function stepPlayer(player: PlayerState, platforms: Platform[], dt: numbe
   } else if (direction) {
     player.vx += direction * HORIZONTAL_JUMP_SPEED * AIR_CONTROL * dt;
   }
+
+  // Slopes always drift downhill, including while charging; uphill walking only inches forward.
+  if(player.grounded&&groundedSupport?.slope)player.vx=direction*52-26;
 
   if (!player.grounded && platforms[0]?.mountain) player.vx += mountainWind(player.x,player.y,bounds.time ?? 0)*dt;
   const oldY = player.y;
@@ -113,15 +118,20 @@ export function stepPlayer(player: PlayerState, platforms: Platform[], dt: numbe
     if (player.vy < 0) player.vy = 80;
   }
 
+  // Follow an incline continuously instead of hovering over its changing height.
+  if(player.grounded&&groundedSupport?.slope&&player.x+PLAYER_WIDTH>groundedSupport.x&&player.x<groundedSupport.x+groundedSupport.w){
+    player.y=platformSurfaceY(groundedSupport,player.x)-PLAYER_HEIGHT;player.vy=0;
+  }
   let landed = false;
   if (player.vy >= 0) {
     const oldBottom = oldY + PLAYER_HEIGHT;
     const newBottom = player.y + PLAYER_HEIGHT;
     for (const platform of [...platforms].sort((a, b) => a.y - b.y)) {
-      if (oldBottom <= platform.y + 3 && newBottom >= platform.y &&
+      const surface=platformSurfaceY(platform,player.x),oldSurface=platformSurfaceY(platform,oldX);
+      if (oldBottom <= oldSurface + 3 && newBottom >= surface &&
           player.x + PLAYER_WIDTH > platform.x + 2 && player.x < platform.x + platform.w - 2) {
-        player.y = platform.y - PLAYER_HEIGHT;
-        if (!platform.slippery) player.vx = 0;
+        player.y = surface - PLAYER_HEIGHT;
+        if (!platform.slippery&&!platform.slope) player.vx = 0;
         player.vy = 0;
         player.grounded = true;
         player.groundedPlatformId = platform.id;
@@ -134,7 +144,7 @@ export function stepPlayer(player: PlayerState, platforms: Platform[], dt: numbe
 
   if (!landed && player.grounded) {
     const feet = player.y + PLAYER_HEIGHT + 2;
-    const supported = platforms.find((p) => feet >= p.y && feet <= p.y + 5 &&
+    const supported = platforms.find((p) => feet >= platformSurfaceY(p,player.x) && feet <= platformSurfaceY(p,player.x) + 5 &&
       player.x + PLAYER_WIDTH > p.x + 2 && player.x < p.x + p.w - 2);
     if (supported) player.groundedPlatformId = supported.id;
     else {

@@ -1,6 +1,5 @@
 import type Phaser from 'phaser';
 import type { Platform } from './types';
-import { GAME_WIDTH, WORLD_HEIGHT } from './constants';
 
 export const SNOW_ASSETS=['blizzard-wall','background','ground','soil','ledge','ice','log','ruin','pine','storm','storm-edge'] as const;
 export function queueSnowAssets(scene:Phaser.Scene):void {
@@ -8,12 +7,10 @@ export function queueSnowAssets(scene:Phaser.Scene):void {
 }
 export function renderSnowTerrain(scene:Phaser.Scene,p:Platform,container:Phaser.GameObjects.Container):void {
   if(p.id==='spawn') {
-    const width=Math.max(GAME_WIDTH+80,1000),left=320-width/2-p.x;
-    container.add(scene.add.tileSprite(left,24,width,WORLD_HEIGHT-p.y+200,'snow-soil').setOrigin(0));
-    container.add(scene.add.tileSprite(left,0,width,110,'snow-ground').setOrigin(0));
-    for(const x of [75,515]) container.add(scene.add.image(x-p.x,0,'snow-pine').setOrigin(.5,1).setDisplaySize(85,118));
-    container.add(scene.add.text(p.w/2,-50,'CYAN ICE SLIDES · HOLD SPACE TO GRIP',{fontFamily:'monospace',fontSize:'12px',color:'#e2f7ff',stroke:'#152844',strokeThickness:4}).setOrigin(.5));
-    container.add(scene.add.text(p.w/2,-32,'CRACKED ICE BREAKS ONLY FOR YOU',{fontFamily:'monospace',fontSize:'11px',color:'#ffd7aa',stroke:'#152844',strokeThickness:4}).setOrigin(.5));
+    // Keep the smaller starting shelf's visible edges on its physical bounds.
+    container.add(scene.add.tileSprite(0,22,p.w,p.h-22,'snow-soil').setOrigin(0));
+    container.add(scene.add.tileSprite(0,0,p.w,99,'snow-ground').setOrigin(0));
+    for(const x of [25,p.w-25]) container.add(scene.add.image(x,0,'snow-pine').setOrigin(.5,1).setDisplaySize(85,118));
     return;
   }
   const key=p.slippery?'ice':p.terrain==='log'?'log':p.terrain==='ruin'?'ruin':'ledge';
@@ -24,10 +21,8 @@ export function renderSnowTerrain(scene:Phaser.Scene,p:Platform,container:Phaser
     const cracks=scene.add.graphics().lineStyle(2,0x233d61,1);
     for(const x of [p.w*.25,p.w*.55,p.w*.8]) cracks.beginPath().moveTo(x,1).lineTo(x-8,10).lineTo(x+4,18).lineTo(x-5,p.h-2).strokePath();
     container.add(cracks);
-    container.add(scene.add.text(p.w/2,7,'FRAGILE',{fontFamily:'monospace',fontSize:'10px',color:'#ffe0b8',stroke:'#233d61',strokeThickness:3}).setOrigin(.5,0));
   }
   if(!p.slippery && p.terrain==='ruin' && p.id!=='crown')container.add(scene.add.image(16,0,'snow-pine').setOrigin(.5,1).setDisplaySize(28,42));
-  if(p.id==='crown')container.add(scene.add.text(p.w/2,-18,'◆',{fontFamily:'monospace',fontSize:'22px',color:'#ffe39a'}).setOrigin(.5,1));
 }
 export function drawSnowPreview(scene:Phaser.Scene,c:CanvasRenderingContext2D):void {
   const source=(name:string)=>scene.textures.get('snow-'+name).getSourceImage() as HTMLImageElement;

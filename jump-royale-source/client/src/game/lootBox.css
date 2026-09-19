@@ -24,3 +24,6 @@
 @keyframes reward-confetti{to{transform:translateY(620px) rotate(var(--turn))}}
 @media(prefers-reduced-motion:reduce){.reward-confetti i{animation:none;top:calc(var(--x)*.8);opacity:.7}}
 @media(max-height:550px){.reward-stage{height:150px}.reward-stage canvas{width:110px;height:110px}.loot-reveal{padding:16px}.loot-reveal h2{font-size:22px;margin:8px}}
+
+.loot-reveal{position:fixed;border:16px solid transparent;border-image:url('/assets/menu/forged-command/frame.png') 12% fill / 16px / 0 stretch;background:#101316;isolation:isolate;box-shadow:0 18px 90px #000d,0 0 35px color-mix(in srgb,var(--rarity) 25%,transparent)}.loot-reveal::before{content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(ellipse at 50% 35%,color-mix(in srgb,var(--rarity) 24%,transparent),transparent 75%)}
+.loot-reel{backface-visibility:hidden;transform:translate3d(-696px,0,0);contain:layout style}.loot-reel .loot-card canvas{filter:none}.loot-window{contain:layout paint}.loot-grid{content-visibility:auto;contain-intrinsic-size:auto 600px}

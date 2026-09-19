@@ -2,7 +2,7 @@ import type Phaser from 'phaser';
 import type {Platform,Snapshot} from './types';
 import {GAME_WIDTH,GAME_HEIGHT} from './constants';
 import {REGIONS,REGION_FLOORS,MOUNTAIN_WIDTH,mountainSection,mountainWind,generateMountain} from '../../../server/src/sim/mountain';
-export const MOUNTAIN_ASSETS=REGIONS.flatMap(r=>[r.key+'/background',...Array.from({length:4},(_,i)=>r.key+'/platform-'+i)]).concat(['props/bell','props/sigil','props/rotor','props/wind','props/cloud','props/water']);
+export const MOUNTAIN_ASSETS=REGIONS.flatMap(r=>[r.key+'/background',...Array.from({length:4},(_,i)=>r.key+'/platform-'+i)]).concat(['props/slope','props/bell','props/sigil','props/rotor','props/wind','props/cloud','props/water']);
 const key=(name:string)=>'ascent-ai-'+name;
 export function queueMountainAssets(scene:Phaser.Scene):void{
  for(const name of MOUNTAIN_ASSETS)scene.load.image(key(name),import.meta.env.BASE_URL+'assets/jump-royale-ai/'+name+'.webp?caps=2');
@@ -46,6 +46,7 @@ export function drawMountain(scene:Phaser.Scene):void{
 }
 interface Cap {width:number;height:number;capLeft:number;capY:number;capWidth:number}
 export function renderMountainTerrain(scene:Phaser.Scene,p:Platform,c:Phaser.GameObjects.Container):void{
+ if(p.slope){c.add(scene.add.image(0,0,key('props/slope')).setOrigin(0).setDisplaySize(p.w,p.h));return;}
  const region=p.region??mountainSection(p.y),name=REGIONS[region].key;
  const index=Number(p.id.split('-').at(-1))||0;
  const variant=p.slippery?1:p.type==='moving'?(region===3?1:region===5?3:2):p.secret?2:index%4;
@@ -59,5 +60,4 @@ export function renderMountainTerrain(scene:Phaser.Scene,p:Platform,c:Phaser.Gam
   c.add(scene.add.image(i*bay-(valid?m.capLeft:0)*scale,-m.capY*scale,key(asset)).setOrigin(0).setDisplaySize(m.width*scale,m.height*scale));
  }
  if(p.id==='crown')c.add(scene.add.image(p.w/2,0,key('props/bell')).setOrigin(.5,1).setDisplaySize(118,118));
- if(new URLSearchParams(location.search).has('debugWorld'))c.add(scene.add.text(0,-8,p.id,{fontSize:'8px',color:'#fff1a0'}).setOrigin(0,1));
 }

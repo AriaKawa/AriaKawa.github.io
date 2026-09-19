@@ -110,7 +110,9 @@ export function outfitTexture(scene: Phaser.Scene, requested: Outfit): string {
 }
 
 export function botOutfit(id:string):Outfit {
-  let hash=0; for(const char of id) hash=(hash*31+char.charCodeAt(0))>>>0;
-  const themes=["original","steel","copper","tropical","maid"];
-  return {character:'original',...costumeFields(themes[hash%5])};
+  let hash=2166136261;for(const char of id)hash=Math.imul(hash^char.charCodeAt(0),16777619);
+  hash^=hash>>>16;hash=Math.imul(hash,0x7feb352d);hash^=hash>>>15;hash>>>=0;
+  if(hash%100<8){const special=['aria','magical-girl','cerberus','pogo','demon'];return sanitizeOutfit({character:special[(hash>>>8)%special.length]});}
+  const themes=['classic','original','steel','copper'];
+  return {character:'original',...costumeFields(themes[(hash>>>8)%themes.length])};
 }

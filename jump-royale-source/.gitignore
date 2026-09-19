@@ -105,3 +105,7 @@
 !/scripts/browser-animal-coffee.mjs
 
 !/scripts/browser-zoom-opacity.mjs
+!/scripts/test-terrain-refresh.ts
+!/scripts/browser-terrain-refresh.mjs
+!/scripts/browser-terrain-live.mjs
+!/docs/terrain-refresh.md

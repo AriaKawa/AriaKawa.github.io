@@ -16,9 +16,9 @@ try {
  }
  await p.setViewportSize({width:1440,height:900});await p.getByRole('button',{name:'Open settings',exact:true}).click();
  assert.equal(await p.getByRole('slider',{name:'Enemy opacity',exact:true}).inputValue(),'25');
- await p.getByRole('slider',{name:'Enemy opacity',exact:true}).fill('0');await p.keyboard.press('Escape');
+ await p.getByRole('slider',{name:'Enemy opacity',exact:true}).fill('10');await p.keyboard.press('Escape');
  await p.reload();await p.waitForFunction(()=>window.__FORGE_DEV__?.scene.isActive('Menu'));
- await p.getByRole('button',{name:'Open settings',exact:true}).click();assert.equal(await p.getByRole('slider',{name:'Enemy opacity',exact:true}).inputValue(),'0');await p.keyboard.press('Escape');
+ await p.getByRole('button',{name:'Open settings',exact:true}).click();assert.equal(await p.getByRole('slider',{name:'Enemy opacity',exact:true}).inputValue(),'10');await p.keyboard.press('Escape');
  for(const map of ['magical','forest','mountain','forge','jungle','snow']){
   await p.reload();await p.waitForFunction(()=>window.__FORGE_DEV__?.scene.isActive('Menu'));
   await p.evaluate(map=>window.__FORGE_DEV__.scene.getScene('Menu').scene.start('Game',{name:'Contact test',mapId:map}),map);
@@ -41,10 +41,10 @@ try {
    }
    const enemy=[...s.playerEntities].find(([id])=>id!==s.localId)[1];
    return {poses,enemyAlpha:enemy.sprite.alpha,localAlpha:entity.sprite.alpha,zoom:s.cameras.main.zoom,hudZoom:s.uiCamera.zoom};
-  });assert.equal(audit.enemyAlpha,0);assert.equal(audit.localAlpha,1);console.log(map,audit);
+  });assert.equal(audit.enemyAlpha,.1);assert.equal(audit.localAlpha,1);console.log(map,audit);
   await p.getByRole('button',{name:'Open settings',exact:true}).click();const slider=p.getByRole('slider',{name:'Enemy opacity',exact:true});await slider.fill('100');
   await p.waitForFunction(()=>{const s=window.__FORGE_DEV__.scene.getScene('Game');return [...s.playerEntities].filter(([id])=>id!==s.localId).every(([,e])=>e.sprite.alpha===1&&e.name.alpha===1)});
-  await slider.fill('0');await p.keyboard.press('Escape');
+  await slider.fill('10');await p.keyboard.press('Escape');
  }
- assert.deepEqual(errors,[]);console.log('PASS equal utility boxes, 25% opacity default and persistence, live 0–100% enemy alpha, 15% animal growth, 1.25 world/1 HUD zoom and grounded poses on all six maps');
+ assert.deepEqual(errors,[]);console.log('PASS equal utility boxes, 25% opacity default and persistence, live 10–100% enemy alpha, 15% animal growth, 1.25 world/1 HUD zoom and grounded poses on all six maps');
 } finally {await b.close()}

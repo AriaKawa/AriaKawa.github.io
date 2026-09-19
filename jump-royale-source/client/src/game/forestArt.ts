@@ -2,15 +2,11 @@ import artMetrics from './forestArtMetrics.json';
 import type Phaser from 'phaser';
 import type {Platform} from './types';
 import {GAME_WIDTH,GAME_HEIGHT} from './constants';
-import {FOREST_CHAPTERS,forestSection,generateForest} from '../../../server/src/sim/forest';
+import {forestSection} from '../../../server/src/sim/forest';
 
 const random=(seed:number)=>()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
 export function drawForest(scene:Phaser.Scene):void{
  const sky=scene.add.image(0,0,'forest-ai-background').setOrigin(0).setScrollFactor(0).setDepth(-40);
- const level=generateForest();
- for(const p of level.filter(p=>p.id.startsWith('forest-')&&!p.id.includes('branch')&&Number(p.id.split('-')[1])%8===7)){
-  const section=forestSection(p.y);scene.add.text(p.x+p.w/2,p.y-65,FOREST_CHAPTERS[section],{fontFamily:'monospace',fontSize:'10px',color:'#bbd7b0',stroke:'#09242e',strokeThickness:4}).setOrigin(.5).setDepth(-1);
- }
  const motes=scene.add.graphics().setScrollFactor(0).setDepth(-2);
  const update=(time:number)=>{
   const skyWidth=Math.max(GAME_WIDTH*1.12,(GAME_HEIGHT+80)*1.5);sky.setDisplaySize(skyWidth,skyWidth/1.5);sky.x=-scene.cameras.main.scrollX*.025;sky.y=-Math.min(60,scene.cameras.main.scrollY*.004);
@@ -20,6 +16,7 @@ export function drawForest(scene:Phaser.Scene):void{
  update(0);scene.events.on('update',update);scene.events.once('shutdown',()=>scene.events.off('update',update));
 }
 export function renderForestTerrain(scene:Phaser.Scene,p:Platform,container:Phaser.GameObjects.Container):void{
+ if(p.bucket){container.add(scene.add.image(0,0,'forest-ai-bucket').setOrigin(0).setDisplaySize(p.w,p.h));return;}
  const variants=['moss-slate','root-slate','moon-ruin'] as const;
  const index=p.id==='crown'?2:p.type==='wood'?1:(Math.floor(p.y/100)+forestSection(p.y))%3;
  const variant=variants[index],m=artMetrics[variant],scaleX=p.w/m.capWidth;
@@ -34,7 +31,7 @@ export function renderForestTerrain(scene:Phaser.Scene,p:Platform,container:Phas
   if(i%2===0){deco.fillStyle(0x669ba2).fillRect(x+9,-6,2,6);deco.fillStyle(0x9ae1ce).fillRect(x+6,-8,8,3);deco.fillStyle(0xe2f9c0).fillRect(x+8,-9,3,1);}
  }
  if(p.w>=290 || p.id==='crown'){
-  const x=p.w-25;deco.fillStyle(0x182d34).fillRect(x,-32,3,32);deco.fillStyle(0x629077).fillRect(x-5,-35,13,3);deco.fillStyle(0xeec987).fillRect(x-3,-31,9,10);deco.fillStyle(0xffffc3).fillRect(x,-29,3,5);
+  container.add(scene.add.image(p.w-25,0,'forest-ai-lantern').setOrigin(.5,1).setDisplaySize(24,78));
  }
  if(p.id==='crown'){
   const x=p.w/2;deco.fillStyle(0x3e636c).fillRect(x-24,-44,48,44);deco.fillStyle(0x1b3644).fillRect(x-16,-37,32,37);deco.fillStyle(0x7daba5).fillRect(x-29,-47,58,5);deco.lineStyle(3,0xd6e7ae).strokeCircle(x,-62,13);deco.fillStyle(0xece4a5).fillTriangle(x-7,-23,x,-33,x+7,-23);
@@ -45,5 +42,5 @@ export function renderForestTerrain(scene:Phaser.Scene,p:Platform,container:Phas
 export function forestWater(_scene:Phaser.Scene):string{return 'forest-ai-water';}
 
 export function queueForestAssets(scene:Phaser.Scene):void {
- for(const name of ['moss-slate','root-slate','moon-ruin','water','background'])scene.load.image('forest-ai-'+name,import.meta.env.BASE_URL+'assets/forest-ai/'+name+'.webp');
+ for(const name of ['moss-slate','root-slate','moon-ruin','water','background','lantern','bucket'])scene.load.image('forest-ai-'+name,import.meta.env.BASE_URL+'assets/forest-ai/'+name+'.webp');
 }

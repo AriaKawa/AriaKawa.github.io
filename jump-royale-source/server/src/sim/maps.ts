@@ -13,7 +13,7 @@ export const MAPS = [
   {id:'mountain',name:'The Long Mountain',subtitle:'Ten regions · One enormous ascent',description:'Cross abandoned roofs, climb the bell tower, and reach the stars. Committed jumps, moving lifts, secrets and long falls. Flood rises after two minutes.'},
   { id: 'forge', name: 'The Crown Forge', subtitle: 'Embers · Steel · Precision', description: 'The original six-chapter ascent.' },
   { id: 'jungle', name: 'Verdant Canopy', subtitle: 'Cliffs · Canopy · Rising flood', description: 'Climb the wild terrain. Outrun the flood.' },
-  { id: 'snow', name: 'Frostpeak Summit', subtitle: 'Ice · Long jumps · Crumbling ledges', description: 'Cross the chasm. Ice slides; Space grips. Cracked ice breaks only for you.' }
+  { id: 'snow', name: 'Frostpeak Summit', subtitle: 'Snow · Precision ledges · Occasional ice', description: 'Cross varied snow ledges. Occasional cyan ice slides; Space grips.' }
 ] as const;
 
 /** Authored terrain phrases: side-attached cliffs, small stones, logs and ruins. */
@@ -50,14 +50,18 @@ export function generateSnow(): Platform[] {
   for(let i=0;y>180;i++) {
     y-=Math.min([86,94,82,102,90,96,84,100][i%8],y-180);
     const rest=i%8===7;
-    const fragile=i%8===2||i%8===5;
-    const w=rest?230:fragile?190:200;
+    const icy=!rest&&i%5===3;
+    const w=rest?230:(i%8===2||i%8===5)?190:200;
     // Alternate banks: crossing requires walking/sliding to the lip and a strong charge.
     result.push({id:'snow-'+i,x:i%2===0?586-w:54,y,w,h:rest?48:35,
-      type:rest?'anvil':fragile?'cracked':'ice',slippery:!rest,
-      crumbleSeconds:fragile?3.2:undefined,terrain:rest?'ruin':'island'});
+      type:rest?'anvil':icy?'ice':'stone',slippery:icy,terrain:rest?'ruin':'island'});
   }
   result.push({id:'crown',x:224,y:72,w:192,h:56,type:'anvil',terrain:'ruin'});
-  return sizePlatforms(result,'snow');
+  return sizePlatforms(result,'snow').map((p,i)=>{
+    const factor=.9*(p.id==='spawn'||p.id==='crown'?1:[1,.86,.72,.6,.92,.78,.66][i%7]);
+    const w=Math.max(28,Math.round(p.w*factor)),h=Math.max(8,Math.round(p.h*.9));
+    const x=p.id.startsWith('snow-')?(Number(p.id.slice(5))%2===0?p.x:p.x+p.w-w):p.x+(p.w-w)/2;
+    return {...p,x,w,h};
+  });
 }
 export const levelForMap = (map: MapId): Platform[] => map === 'magical' ? generateMagical() : map === 'forest' ? generateForest() : map === 'mountain' ? generateMountain() : map === 'snow' ? generateSnow() : map === 'jungle' ? generateJungle() : generateLevel();
