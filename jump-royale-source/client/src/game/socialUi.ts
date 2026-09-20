@@ -1,3 +1,4 @@
+import {readPreference,savePreference} from './sessionStorage';
 import {spriteScale} from './spriteSizing';
 import {footOrigin} from './spriteFeet';
 import {GAME_WIDTH,GAME_HEIGHT} from './constants';
@@ -18,7 +19,7 @@ export function createPartyUi(scene:Phaser.Scene,root:HTMLElement,form:HTMLFormE
  const d=dialog(root,'Party and profile'),body=document.createElement('div'),notice=document.createElement('p');notice.className='party-readiness';notice.setAttribute('aria-live','polite');form.append(notice);d.classList.add('party-dialog');d.append(body);
  let busy=false,started=party.data?.round??'',lastPresence=0,lastProfile=0,positioned=false;
  const sprites=new Map<string,{sprite:Phaser.GameObjects.Sprite;label:Phaser.GameObjects.Text;wallpaper:Phaser.GameObjects.Image}>();
- const icon=()=>portraitId(localStorage.getItem('jump-profile-icon')??'finn');
+ const icon=()=>portraitId(readPreference('jump-profile-icon')??'finn');
  const member=():Member=>({id:playerId,name:safePlayerName(form.querySelector('input')!.value),outfit:loadOutfit(),icon:icon(),wallpaper:equippedWallpaper(),ready:false,x:400,y:400,updated:Date.now()});
  const run=async(fn:()=>Promise<unknown>)=>{if(busy)return;busy=true;try{await fn();party.error='';}catch(e){party.error=e instanceof Error?e.message:'Unable to connect';}finally{busy=false;render();}};
  const render=()=>{
@@ -34,7 +35,7 @@ export function createPartyUi(scene:Phaser.Scene,root:HTMLElement,form:HTMLFormE
   const profile=document.createElement('button');profile.className='profile-button';profile.append(portraitImage(icon()),document.createTextNode('Your profile · change icon'));body.append(profile);
   const choices=document.createElement('div');choices.className='profile-icons';choices.hidden=true;body.append(choices);
   profile.setAttribute('aria-expanded','false');profile.onclick=()=>{choices.hidden=!choices.hidden;profile.setAttribute('aria-expanded',String(!choices.hidden));};
-  for(const c of PORTRAITS){const b=document.createElement('button');b.title=c.name;b.setAttribute('aria-pressed',String(icon()===c.id));b.setAttribute('aria-label',c.name+' icon');b.append(portraitImage(c.id));b.onclick=()=>{localStorage.setItem('jump-profile-icon',c.id);void run(()=>updateMember({icon:c.id}));};choices.append(b);}
+  for(const c of PORTRAITS){const b=document.createElement('button');b.title=c.name;b.setAttribute('aria-pressed',String(icon()===c.id));b.setAttribute('aria-label',c.name+' icon');b.append(portraitImage(c.id));b.onclick=()=>{savePreference('jump-profile-icon',c.id);void run(()=>updateMember({icon:c.id}));};choices.append(b);}
   const info=document.createElement('p');info.textContent=party.code?`Party code: ${party.code} · ${members.length}/8 players`:'Host a party or enter a friend’s code.';body.append(info);
   if(party.code){
    const copy=document.createElement('button');copy.textContent='Copy code';copy.onclick=()=>void run(()=>navigator.clipboard.writeText(party.code));body.append(copy);

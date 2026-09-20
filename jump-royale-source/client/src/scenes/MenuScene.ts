@@ -104,6 +104,7 @@ export class MenuScene extends Phaser.Scene {
     this.mapIndex = Math.max(0,MAPS.findIndex(map=>map.id===this.registry.get("mapId")));
     this.createMenuUi(); this.createMapSelector(); this.createScores(); this.composeForgedUi(); this.installPreviewControls(); this.refreshSurfaces();
     this.placeOnPedestal();
+    window.dispatchEvent(new Event("jump-ready"));
     this.events.once(Phaser.Scenes.Events.SHUTDOWN,()=>this.cleanup());
   }
 

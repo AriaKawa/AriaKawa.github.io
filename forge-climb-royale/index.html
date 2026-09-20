@@ -7,10 +7,41 @@
     <meta name="description" content="Climb ten connected regions in Jump Royale: charged jumps, rooftop crossings, moving windmills, secrets and a towering summit." />
     <link rel="icon" href="data:,">
     <title>Jump Royale</title>
-    <script type="module" crossorigin src="/forge-climb-royale/assets/index-DV8ReHmG.js"></script>
+    <script type="module" crossorigin src="/forge-climb-royale/assets/index-Boa2lT7d.js"></script>
     <link rel="stylesheet" crossorigin href="/forge-climb-royale/assets/index-CoZE3LTx.css">
   </head>
   <body>
+    <section id="startup" role="status" style="position:fixed;inset:0;z-index:10000;display:grid;place-content:center;text-align:center;padding:24px;background:#0b0b12;color:#f5eee0;font:16px system-ui">
+      <h1 style="font-size:26px">Jump Royale</h1>
+      <p id="startup-message">Loading the climb…</p>
+      <button id="startup-retry" type="button" hidden style="padding:12px 20px;font:inherit;cursor:pointer">Retry loading</button>
+    </section>
+    <script>
+      (() => {
+        const panel = document.getElementById("startup");
+        const message = document.getElementById("startup-message");
+        const retry = document.getElementById("startup-retry");
+        let ready = false;
+        const fail = () => {
+          if (ready) return;
+          message.textContent = "The game could not finish loading. Please retry. If it keeps happening, try Ctrl+Shift+R.";
+          retry.hidden = false;
+        };
+        const timer = setTimeout(() => {
+          if (ready) return;
+          message.textContent = "Loading is taking longer than usual. You can keep waiting or retry.";
+          retry.hidden = false;
+        }, 30000);
+        retry.onclick = () => location.reload();
+        window.addEventListener("error", fail, true);
+        window.addEventListener("unhandledrejection", fail);
+        window.addEventListener("jump-ready", () => {
+          ready = true; clearTimeout(timer); panel.remove();
+          window.removeEventListener("error", fail, true);
+          window.removeEventListener("unhandledrejection", fail);
+        }, { once: true });
+      })();
+    </script>
     <div id="game" aria-label="Jump Royale game canvas"></div>
     <script src="/forge-climb-royale/vendor/colyseus.js"></script>
   </body>
