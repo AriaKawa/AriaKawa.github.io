@@ -10,9 +10,16 @@ export const EXPEDITION_ANIMATIONS={
  walk:{frames:[16,17,18,19,20,21],rate:10,repeat:-1},
  victory:{frames:[12,13,14,13],rate:6,repeat:-1},
 };
+// Mochi's sheet includes a matched blink pair and six authored alternating strides.
+export const AXOLOTL_ANIMATIONS={
+ ...EXPEDITION_ANIMATIONS,
+ idle:{frames:[0,0,0,0,0,0,15,0],rate:5,repeat:-1},
+ walk:{frames:[16,17,18,19,20,21],rate:10,repeat:-1},
+};
 export function expeditionTexture(scene:Phaser.Scene,id:string):string {
  const key='expedition-'+id;
  scene.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST);
- for(const [name,animation] of Object.entries(EXPEDITION_ANIMATIONS))if(!scene.anims.exists(key+'-'+name))scene.anims.create({key:key+'-'+name,frames:animation.frames.map(frame=>({key,frame})),frameRate:animation.rate,repeat:animation.repeat});
+ const animations=id==='axolotl'?AXOLOTL_ANIMATIONS:EXPEDITION_ANIMATIONS;
+ for(const [name,animation] of Object.entries(animations))if(!scene.anims.exists(key+'-'+name))scene.anims.create({key:key+'-'+name,frames:animation.frames.map(frame=>({key,frame})),frameRate:animation.rate,repeat:animation.repeat});
  return key;
 }

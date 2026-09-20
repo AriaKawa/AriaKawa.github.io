@@ -122,6 +122,10 @@
 !/scripts/browser-expedition-live.mjs
 !/docs/expedition-content/
 /docs/expedition-content/qa/
+!/scripts/compile-axolotl.cjs
+!/scripts/browser-axolotl.mjs
+!/docs/axolotl-animation/
+/docs/axolotl-animation/qa/
 !/scripts/compile-crown-forge-art.mjs
 !/scripts/test-crown-forge.ts
 !/scripts/browser-crown-forge.mjs
