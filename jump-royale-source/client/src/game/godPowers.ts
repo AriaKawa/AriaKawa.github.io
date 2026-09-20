@@ -24,14 +24,14 @@ export function landPlayer(player: PlayerState, platforms: Platform[]): void {
   }
 }
 
-export function stepFlight(player: PlayerState, dt: number, bounds={left:SHAFT_LEFT,right:SHAFT_RIGHT,height:WORLD_HEIGHT,spawnY:SPAWN_Y}): void {
+export function stepFlight(player: PlayerState, dt: number, bounds:{left:number;right:number;height:number;spawnY:number;top?:number}={left:SHAFT_LEFT,right:SHAFT_RIGHT,height:WORLD_HEIGHT,spawnY:SPAWN_Y}): void {
   player.vineId=undefined;player.vineRadius=undefined;
   const dx = Number(player.input.right)-Number(player.input.left);
   const dy = Number(!!player.input.down)-Number(!!player.input.up);
   const speed = 440 / Math.max(1, Math.hypot(dx,dy));
   player.vx=dx*speed; player.vy=dy*speed;
   player.x=Math.max(bounds.left,Math.min(bounds.right-PLAYER_WIDTH,player.x+player.vx*dt));
-  player.y=Math.max(0,Math.min(bounds.height-PLAYER_HEIGHT,player.y+player.vy*dt));
+  player.y=Math.max(bounds.top??0,Math.min(bounds.height-PLAYER_HEIGHT,player.y+player.vy*dt));
   player.grounded=false; player.groundedPlatformId=undefined; player.charging=false; player.charge01=0;
   if(dx) player.facing=dx<0?-1:1;
   player.maxHeight=Math.max(player.maxHeight,bounds.spawnY-player.y);

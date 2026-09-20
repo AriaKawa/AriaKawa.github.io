@@ -130,7 +130,11 @@ export class MenuScene extends Phaser.Scene {
     const wardrobe=ui.querySelector('.wardrobe-toggle:not(.w2-toggle)')!;
     wardrobe.querySelector('.wardrobe-art')!.innerHTML=`<img class="forge-helmet" src="${import.meta.env.BASE_URL}assets/menu/forged-command/helmet.png" alt="" draggable="false">`;
     wardrobe.insertAdjacentHTML('beforeend','<span class="forge-nav-label">Wardrobe</span>');
-    rail.append(brand,wardrobe,ui.querySelector('.personal-scores')!,ui.querySelector('.ranked-splash')!);
+    const workshop=document.createElement('button');workshop.type='button';workshop.className='editor-launch';workshop.setAttribute('aria-label','Map Workshop');
+    workshop.innerHTML=`<img class="forge-workshop-icon" src="${import.meta.env.BASE_URL}assets/menu/forged-command/platform.png" alt="" draggable="false"><span class="forge-nav-label">Map Workshop</span>`;
+    workshop.addEventListener('click',()=>this.scene.start('Editor',{mapId:MAPS[this.mapIndex]?.id??'forest'}));
+    const navigation=document.createElement('div');navigation.className='forge-main-buttons';navigation.append(wardrobe,ui.querySelector('.personal-scores')!,workshop);
+    rail.append(brand,navigation,ui.querySelector('.ranked-splash')!);
     rail.querySelector('.ranked-splash')!.innerHTML='<span aria-hidden="true">♛</span><span>RANKED<small>Coming soon</small></span>';
     rail.querySelector('.scores-toggle')!.innerHTML=`<img class="forge-score-icon" src="${import.meta.env.BASE_URL}assets/menu/forged-command/scores.png" alt="" draggable="false">Leaderboards`;
     rail.querySelector('.scores-toggle')!.setAttribute('aria-label','Leaderboards');

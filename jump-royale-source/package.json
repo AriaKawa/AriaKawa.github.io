@@ -8,6 +8,7 @@
     "server"
   ],
   "scripts": {
+    "test:editor": "tsx scripts/test-editor.ts && tsx scripts/test-editor-random.ts && tsx scripts/test-editor-rotation.ts && tsx scripts/test-editor-agents.ts",
     "postinstall": "node scripts/restore-public.mjs",
     "dev": "concurrently -n server,client -c yellow,cyan \"npm run dev -w server\" \"npm run dev -w client\"",
     "dev:server": "npm run dev -w server",

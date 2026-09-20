@@ -3,6 +3,8 @@ export type Skill = "bad" | "average" | "good" | "cracked";
 export type RoundPhase = "waiting" | "countdown" | "playing" | "surge" | "victory" | "finished";
 
 export interface Platform {
+  rotation?: number;
+  artVariant?: number;
   slope?:boolean;
   bucket?:{left:number;right:number;depth:number};
   region?: number; structure?: string; route?: boolean; secret?: boolean;

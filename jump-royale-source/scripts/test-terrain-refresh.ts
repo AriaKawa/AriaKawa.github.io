@@ -15,7 +15,8 @@ for(const hold of [false,true]){
  const p=player(slope,slope.x+120),x=p.x;
  p.input.jumpHeld=hold;
  for(let i=0;i<15;i++)stepPlayer(p,[slope],1/30,bounds);
- assert(p.grounded&&p.x<x-12,'Idle and charging both drift downhill');
+ assert(p.grounded,'Slope retains support');
+ if(hold)assert.equal(p.x,x,'Crouching grips a slope while charging');else assert(p.x<x-12,'Idle drifts downhill');
  assert(Math.abs(p.y+PLAYER_HEIGHT-platformSurfaceY(slope,p.x))<.001,'Feet follow the slant');
  if(hold){p.input.jumpHeld=false;stepPlayer(p,[slope],1/30,bounds);assert(!p.grounded&&p.vy<0,'Charging on a slope can launch');}
 }

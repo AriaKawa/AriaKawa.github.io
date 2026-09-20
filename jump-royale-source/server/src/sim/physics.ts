@@ -9,21 +9,22 @@ import {
 import type { Platform, PlayerState } from "./types.js";
 
 import { solidBoxes } from "./terrainGeometry.js";
+import {canStand,moveBody,supportAt} from './platformGeometry.js';
 export { solidBoxes } from "./terrainGeometry.js";
 
 const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
 
-export interface WorldBounds { left:number; right:number; top:number; bounce?:number; jumpSpeedScale?:number; time?:number }
+export interface WorldBounds { left:number; right:number; top:number; bounce?:number; jumpSpeedScale?:number; time?:number; unbounded?:boolean }
 const SHAFT_BOUNDS:WorldBounds={left:SHAFT_LEFT,right:SHAFT_RIGHT,top:0};
 export function stepPlayer(player: PlayerState, platforms: Platform[], dt: number, bounds:WorldBounds=SHAFT_BOUNDS): void {
   if (!player.alive) return;
   if(platforms.some(p=>p.id==='jungle-0')&&stepVine(player,platforms,dt,bounds.time??0))return;
   const magical=!!platforms[0]?.magical;
-  if(magical)bounds={...worldForMap('magical'),...bounds,left:54,right:worldForMap('magical').right};
+  if(magical)bounds={...worldForMap('magical'),...bounds,left:bounds.unbounded?bounds.left:54,right:bounds.unbounded?bounds.right:worldForMap('magical').right};
   const forest=!!platforms[0]?.forest;
-  if(forest)bounds={...worldForMap('forest'),...bounds,left:54,right:worldForMap('forest').right};
+  if(forest)bounds={...worldForMap('forest'),...bounds,left:bounds.unbounded?bounds.left:54,right:bounds.unbounded?bounds.right:worldForMap('forest').right};
   const mountain=!!platforms[0]?.mountain;
-  if(mountain)bounds={...worldForMap('mountain'),...bounds,left:54,right:worldForMap('mountain').right};
+  if(mountain)bounds={...worldForMap('mountain'),...bounds,left:bounds.unbounded?bounds.left:54,right:bounds.unbounded?bounds.right:worldForMap('mountain').right};
   // Each climber owns their collapse timers; never mutate the shared level.
   const collapse = player.crumblingPlatforms ??= {};
   for (const id of Object.keys(collapse)) collapse[id] = Math.max(0, collapse[id] - dt);
@@ -33,6 +34,10 @@ export function stepPlayer(player: PlayerState, platforms: Platform[], dt: numbe
     player.charging = false; player.charge01 = 0; player.chargeDirection = 0;
   }
   const groundedSupport=player.grounded?platforms.find(p=>p.id===player.groundedPlatformId):undefined;
+  const rotatedGeometry=platforms.some(p=>p.rotation!==undefined);
+  const contact=rotatedGeometry&&player.grounded?supportAt(player.x,player.y,platforms):undefined;
+  const steep=contact&&!canStand(contact.normal)?contact:undefined;
+  const previousVx=player.vx,previousVy=player.vy;
   const input = player.input;
   const direction = input.left === input.right ? 0 : input.left ? -1 : 1;
   if (player.grounded) {
@@ -72,10 +77,43 @@ export function stepPlayer(player: PlayerState, platforms: Platform[], dt: numbe
     player.vx += direction * HORIZONTAL_JUMP_SPEED * AIR_CONTROL * dt;
   }
 
-  // Slopes always drift downhill, including while charging; uphill walking only inches forward.
-  if(player.grounded&&groundedSupport?.slope)player.vx=direction*52-26;
+  // Preserve the original mountain's authored drift; workshop geometry uses the angle cutoff below.
+  if(!rotatedGeometry&&player.grounded&&groundedSupport?.slope)player.vx=player.charging?0:direction*52-26;
+
+  if(steep&&player.grounded){
+    const n=steep.normal,sign=Math.sign(n.x),tx=-n.y*sign,ty=Math.abs(n.x);
+    const speed=Math.min(150,Math.max(0,previousVx*tx+previousVy*ty)+180*ty*dt);
+    player.vx=player.charging?0:tx*speed;player.vy=player.charging?0:ty*speed;
+  }
 
   if (!player.grounded && platforms[0]?.mountain) player.vx += mountainWind(player.x,player.y,bounds.time ?? 0)*dt;
+  if(rotatedGeometry){
+    if(!player.grounded)player.vy+=GRAVITY*dt;
+    const wasGrounded=player.grounded,startY=player.y,dx=player.vx*dt,dy=player.vy*dt;
+    const moved=moveBody(player.x,player.y,dx,dy,platforms);
+    const wall=moved.contacts.find(c=>Math.abs(c.normal.y)<1e-7);
+    if(wall&&player.vx*wall.normal.x<0)player.vx=wasGrounded?0:-player.vx*(bounds.bounce??1);
+    player.x=Math.max(bounds.left,Math.min(bounds.right-PLAYER_WIDTH,moved.x));player.y=Math.max(bounds.top,moved.y);
+    if(player.x!==moved.x)player.vx=wasGrounded?0:-player.vx*(bounds.bounce??1);
+    if(moved.y<bounds.top&&player.vy<0)player.vy=80;
+    let floor=moved.floor;
+    if(!floor&&player.vy>=0){
+      const distance=wasGrounded?Math.abs(dx)+3:1e-4;
+      const probe=supportAt(player.x,player.y,platforms,distance);
+      if(probe){floor=probe;player.y+=distance*probe.time;}
+    }
+    player.grounded=!!floor;player.groundedPlatformId=floor?.platform.id;
+    if(floor){
+      if(canStand(floor.normal)){player.vy=0;if(!wasGrounded&&!floor.platform.slippery)player.vx=0;}
+      else{const dot=player.vx*floor.normal.x+player.vy*floor.normal.y;if(dot<0){player.vx-=dot*floor.normal.x;player.vy-=dot*floor.normal.y;}}
+      if(floor.platform.crumbleSeconds&&collapse[floor.platform.id]===undefined)collapse[floor.platform.id]=floor.platform.crumbleSeconds;
+    }else if(dy<0&&moved.y>startY+dy+.001){
+      // Ceiling contact removes upward velocity; the next tick resumes gravity.
+      player.vy=0;
+    }
+    player.maxHeight=Math.max(player.maxHeight,Math.max(0,(magical?worldForMap('magical').spawnY:forest?worldForMap('forest').spawnY:mountain?worldForMap('mountain').spawnY:SPAWN_Y)-player.y));
+    return;
+  }
   const oldY = player.y;
   const oldX = player.x;
   if (!player.grounded) player.vy += GRAVITY * dt;

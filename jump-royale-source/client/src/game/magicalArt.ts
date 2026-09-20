@@ -71,7 +71,7 @@ function drawMagicalFlybys(scene:Phaser.Scene):void{
 }
 export function renderMagicalTerrain(scene:Phaser.Scene,p:Platform,c:Phaser.GameObjects.Container):void{
  const variants=['ribbon-palace','rose-garden','star-crystal'] as const;
- const variant=variants[p.id==='crown'?2:p.type==='wood'?1:(Math.floor(p.y/100)+magicalSection(p.y))%3];
+ const variant=variants[p.artVariant??(p.id==='crown'?2:p.type==='wood'?1:(Math.floor(p.y/100)+magicalSection(p.y))%3)];
  const m=metrics[variant],sx=p.w/m.capWidth,artHeight=Math.max(p.h+12,Math.min(64,p.w*m.height/m.capWidth));
  c.setData('width',p.w);c.add(scene.add.image(-m.capLeft*sx,0,'magical-ai-'+variant).setOrigin(0).setDisplaySize(m.width*sx,artHeight));
  if(p.id==='crown'){

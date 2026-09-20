@@ -8,6 +8,7 @@ import { BootScene } from "./scenes/BootScene";
 import { GameScene } from "./scenes/GameScene";
 import { MenuScene } from "./scenes/MenuScene";
 import { ResultsScene } from "./scenes/ResultsScene";
+import { EditorScene } from './scenes/EditorScene';
 import {claimGoldGift} from './game/economy';
 import {handleWardrobeReset} from './game/wardrobeReset';
 import {unlockCollection} from './game/wardrobeUnlock';
@@ -31,7 +32,7 @@ const game = new Phaser.Game({
   roundPixels: true,
   scale: { mode: Phaser.Scale.NONE, autoCenter: Phaser.Scale.CENTER_BOTH },
   render: { pixelArt: true, antialias: false, antialiasGL: false, roundPixels: true },
-  scene: [BootScene, MenuScene, GameScene, ResultsScene]
+  scene: [BootScene, MenuScene, GameScene, ResultsScene, EditorScene]
 });
 
 window.addEventListener("resize", () => { updateViewport(); game.scale.resize(GAME_WIDTH, GAME_HEIGHT); });

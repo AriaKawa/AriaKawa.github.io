@@ -1,4 +1,5 @@
 import {forgeLavaPools,touchesForgeLava} from '../sim/level.js';
+import {defaultSpawn,spawnLocations} from '../sim/spawn.js';
 import {worldForMap,floodForMap} from '../sim/world.js';
 import {safePlayerName} from '../sim/names.js';
 import {levelForMap, MAPS, type MapId} from '../sim/maps.js';
@@ -95,11 +96,10 @@ export class ClimbRoom extends Room {
   }
 
   private createPlayer(id: string, name: string, isBot: boolean, slot: number): PlayerState {
-    const col = slot % 6;
-    const row = Math.floor(slot / 6);
+    const start=spawnLocations(this.platforms,defaultSpawn(this.platforms,this.world.spawnY),MIN_COMPETITORS)[slot%MIN_COMPETITORS];
     return {
-      id, name, x: this.mapId==='jungle' ? 472+(slot%6)*15 : isBot ? 174 + col * 48 + (row % 2) * 20 : 313, y: this.world.spawnY + 12, vx: 0, vy: 0,
-      alive: true, grounded: true, charging: false, charge01: 0, chargeDirection: 0, groundedPlatformId: "spawn", facing: 0, isBot,
+      id,name,x:start.x,y:start.y,vx:0,vy:0,
+      alive: true, grounded: true, charging: false, charge01: 0, chargeDirection: 0, groundedPlatformId: start.platformId, facing: 0, isBot,
       colorIndex: slot % 8, maxHeight: 0, heightReachedMs:0, eliminatedAt:undefined, crumblingPlatforms:undefined, skill: isBot ? SKILLS[slot % SKILLS.length] : undefined,
       input: { left: false, right: false, jumpHeld: false, seq: 0 },
       bot: isBot ? { holdUntil: 0, cooldownUntil: 0, pattern: slot % 8, jumpCount: 0, initialized: false } : undefined

@@ -1,5 +1,9 @@
 # Jump Royale — The Long Mountain
 
+## Map Workshop
+
+The menu's **Map Workshop** opens the in-browser map editor: drag textured parts into remixed or empty maps, select/move/erase groups, generate a physics-verified random route, test with normal physics, fly and teleport, set retry points, and save/export/import custom maps. See [the workshop guide](docs/map-workshop.md) for controls, save-file handoff, and local preview instructions.
+
 Playable website: https://ariakawa.github.io/forge-climb-royale/
 
 The map carousel defaults to **The Long Mountain**. The original forge, jungle and snow maps, wardrobe, local rewards, spectator mode and round finale remain available. The public build supports solo practice with 23 bots and up to eight human players in code parties, with bots filling the remaining slots. Parties use Firebase anonymous sign-in and a host-run shared simulation; the host must keep the game open. The Colyseus server remains available for separately hosted/local sessions. See [the social release notes](docs/social-release.md) for leaderboards, missions, loot odds, and validation.

@@ -18,7 +18,7 @@ export function drawForest(scene:Phaser.Scene):void{
 export function renderForestTerrain(scene:Phaser.Scene,p:Platform,container:Phaser.GameObjects.Container):void{
  if(p.bucket){container.add(scene.add.image(0,0,'forest-ai-bucket').setOrigin(0).setDisplaySize(p.w,p.h));return;}
  const variants=['moss-slate','root-slate','moon-ruin'] as const;
- const index=p.id==='crown'?2:p.type==='wood'?1:(Math.floor(p.y/100)+forestSection(p.y))%3;
+ const index=p.artVariant??(p.id==='crown'?2:p.type==='wood'?1:(Math.floor(p.y/100)+forestSection(p.y))%3);
  const variant=variants[index],m=artMetrics[variant],scaleX=p.w/m.capWidth;
  if(p.ceiling){
   // Rotate around the authored landing edge: its moss cap now faces down.

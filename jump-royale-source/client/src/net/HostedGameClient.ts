@@ -11,6 +11,7 @@ import { levelForMap, type MapId } from "../../../server/src/sim/maps";
 import { stepPlayer } from "../../../server/src/sim/physics";
 import { updateBot } from "../../../server/src/sim/bots";
 import { updateMovingPlatforms } from "../../../server/src/sim/platforms";
+import {defaultSpawn,spawnLocations} from '../../../server/src/sim/spawn';
 import { rankPlayers, selectWinner } from "../../../server/src/sim/round";
 import { PLAYER_HEIGHT, HAZARD_START_Y } from "../../../server/src/sim/constants";
 import { landPlayer, stepFlight } from "../game/godPowers";
@@ -92,14 +93,15 @@ export class HostedGameClient {
     this.completed=false;this.completionMs=0;this.winnerId = undefined; this.placements=undefined; this.assisted=this.godPowers; this.platforms = levelForMap(this.mapId); this.players.clear();
     const names = ["MoonMoth", "RivetRush", "CloudNine", "EmberFox", "OopsIGlided", "minty", "PixelPeach", "Skybound", "QuietQuokka", "JadeJumper", "CopperCat", "tinychaos", "Starlit", "Hopscotch", "Mochi", "CinderWolf", "LuckyBoots", "Nova", "FernFable", "Bramble", "AlmostThere", "PuddleDuck", "LedgeLeap"];
     const skills: Skill[] = ["bad", "average", "good", "cracked"];
+    const starts=spawnLocations(this.platforms,defaultSpawn(this.platforms,this.world.spawnY),24);
     for (let i = 0; i < 24; i++) {
       const members=this.onlineHost?partyMembers().sort((a,b)=>a.id===this.localId?-1:b.id===this.localId?1:a.id.localeCompare(b.id)):[];
       const member=members[i];
       const id = member?.id??(i ? `bot-${i}` : this.localId);
       const player: PlayerState = { id, name: member?.name??(i ? names[i-1] : this.name),
-        x: this.mapId==='jungle' ? 472+(i%6)*15 : i ? 174 + (i % 6) * 48 : 313, y: this.world.spawnY + 12, vx: 0, vy: 0,
+        x:starts[i].x,y:starts[i].y,vx:0,vy:0,
         alive: true, grounded: true, charging: false, charge01: 0, chargeDirection: 0,
-        groundedPlatformId: "spawn", facing: 0, isBot: i > 0 && !member, colorIndex: i % 8, maxHeight: 0,
+        groundedPlatformId: starts[i].platformId, facing: 0, isBot: i > 0 && !member, colorIndex: i % 8, maxHeight: 0,
         skill: skills[i % 4], input: { left: false, right: false, jumpHeld: false, seq: 0 },
         bot: i && !member ? { holdUntil: 0, cooldownUntil: 0, pattern: Math.floor(Math.random()*32), jumpCount: 0, initialized: false } : undefined };
       if(i&&!member)this.pendingPlayers.push(player);else this.players.set(id,player);

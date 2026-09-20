@@ -19,6 +19,11 @@
 !/server/package.json
 !/server/tsconfig.json
 /scripts/*
+!/scripts/test-editor.ts
+!/scripts/test-editor-random.ts
+!/scripts/test-editor-rotation.ts
+!/scripts/test-editor-agents.ts
+!/scripts/preview-editor.mjs
 !/scripts/restore-public.mjs
 !/scripts/generate-vertical-art.mjs
 !/scripts/generate-vertical-facades.mjs
@@ -35,6 +40,7 @@
 !/scripts/test-settings-names.ts
 !/scripts/validate-assets.ts
 /docs/*
+!/docs/map-workshop.md
 !/docs/vertical-world.md
 !/docs/vertical-route.json
 !/docs/vertical-validation.json

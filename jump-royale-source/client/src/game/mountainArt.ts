@@ -49,7 +49,7 @@ export function renderMountainTerrain(scene:Phaser.Scene,p:Platform,c:Phaser.Gam
  if(p.slope){c.add(scene.add.image(0,0,key('props/slope')).setOrigin(0).setDisplaySize(p.w,p.h));return;}
  const region=p.region??mountainSection(p.y),name=REGIONS[region].key;
  const index=Number(p.id.split('-').at(-1))||0;
- const variant=p.slippery?1:p.type==='moving'?(region===3?1:region===5?3:2):p.secret?2:index%4;
+ const variant=p.artVariant??(p.slippery?1:p.type==='moving'?(region===3?1:region===5?3:2):p.secret?2:index%4);
  const metrics=scene.cache.json.get('ai-platform-metrics') as Record<string,Cap>;
  const bays=p.w>280?Math.ceil(p.w/210):1,bay=p.w/bays;
  for(let i=0;i<bays;i++){
