@@ -82,6 +82,12 @@ export class MenuScene extends Phaser.Scene {
   constructor() { super("Menu"); }
 
   preload(): void {
+    const report = (value: number) => window.dispatchEvent(new CustomEvent('jump-loading', {
+      detail: { percent: 90 + value * 9, label: 'Preparing the lobby' }
+    }));
+    report(0);
+    this.load.on(Phaser.Loader.Events.PROGRESS, report);
+    this.load.once(Phaser.Loader.Events.COMPLETE, () => this.load.off(Phaser.Loader.Events.PROGRESS, report));
     for(const w of WALLPAPERS)if(!this.textures.exists(w.id))this.load.image(w.id,import.meta.env.BASE_URL+'assets/menu/'+w.image);
     if (!this.textures.exists('forged-command')) this.load.image('forged-command',import.meta.env.BASE_URL+'assets/menu/forged-command/background.png');
   }

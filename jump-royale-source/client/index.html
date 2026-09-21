@@ -9,35 +9,39 @@
     <title>Jump Royale</title>
   </head>
   <body>
-    <section id="startup" role="status" style="position:fixed;inset:0;z-index:10000;display:grid;place-content:center;text-align:center;padding:24px;background:#0b0b12;color:#f5eee0;font:16px system-ui">
-      <h1 style="font-size:26px">Jump Royale</h1>
-      <p id="startup-message">Loading the climb…</p>
-      <button id="startup-retry" type="button" hidden style="padding:12px 20px;font:inherit;cursor:pointer">Retry loading</button>
+    <style>
+      #startup { position:fixed; inset:0; z-index:10000; display:grid; place-items:center; padding:24px; background:#0b0b12; color:#f5eee0; font:16px system-ui; }
+      #startup .loading-card { width:min(380px,100%); text-align:center; }
+      #startup h1 { margin:0 0 28px; font-size:32px; }
+      #startup progress { display:block; width:100%; height:18px; appearance:none; border:1px solid #67597d; border-radius:20px; overflow:hidden; background:#211b30; accent-color:#c5a0ff; }
+      #startup progress::-webkit-progress-bar { background:#211b30; }
+      #startup progress::-webkit-progress-value { background:linear-gradient(90deg,#9263df,#e1c4ff); border-radius:20px; transition:width .15s; }
+      #startup progress::-moz-progress-bar { background:#c5a0ff; }
+      #startup-message { min-height:24px; color:#c5b9d5; font-size:14px; }
+    </style>
+    <section id="startup" aria-label="Loading Jump Royale">
+      <div class="loading-card">
+        <h1>Jump Royale</h1>
+        <progress id="startup-progress" max="100" aria-label="Game loading progress"></progress>
+        <p id="startup-message" role="status">Starting the game…</p>
+      </div>
     </section>
     <script>
       (() => {
         const panel = document.getElementById("startup");
+        const bar = document.getElementById("startup-progress");
         const message = document.getElementById("startup-message");
-        const retry = document.getElementById("startup-retry");
-        let ready = false;
-        const fail = (event) => {
-          // Images, audio, and optional services may fail while startup continues.
-          // Only a failed executable script download proves the game cannot start.
-          if (!(event.target instanceof HTMLScriptElement)) return;
-          if (ready) return;
-          message.textContent = "The game could not finish loading. Please retry. If it keeps happening, try Ctrl+Shift+R.";
-          retry.hidden = false;
+        let progress = 0;
+        const update = (event) => {
+          progress = Math.max(progress, Math.min(99, Math.floor(event.detail.percent)));
+          bar.value = progress;
+          message.textContent = event.detail.label + " · " + progress + "%";
         };
-        const timer = setTimeout(() => {
-          if (ready) return;
-          message.textContent = "Loading is taking longer than usual. You can keep waiting or retry.";
-          retry.hidden = false;
-        }, 30000);
-        retry.onclick = () => location.reload();
-        window.addEventListener("error", fail, true);
+        window.addEventListener("jump-loading", update);
         window.addEventListener("jump-ready", () => {
-          ready = true; clearTimeout(timer); panel.remove();
-          window.removeEventListener("error", fail, true);
+          bar.value = 100;
+          window.removeEventListener("jump-loading", update);
+          panel.remove();
         }, { once: true });
       })();
     </script>

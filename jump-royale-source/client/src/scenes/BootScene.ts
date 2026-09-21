@@ -13,6 +13,12 @@ export class BootScene extends Phaser.Scene {
   constructor() { super("Boot"); }
 
   async create(): Promise<void> {
+    const report = (value: number) => window.dispatchEvent(new CustomEvent('jump-loading', {
+      detail: { percent: value * 90, label: 'Loading characters and worlds' }
+    }));
+    report(0);
+    this.load.on(Phaser.Loader.Events.PROGRESS, report);
+    this.load.once(Phaser.Loader.Events.COMPLETE, () => this.load.off(Phaser.Loader.Events.PROGRESS, report));
     const { paths, v2 } = await resolveArtAssets();
     this.registry.set("artV2", v2);
     queueResolvedAssets(this, paths, v2);
