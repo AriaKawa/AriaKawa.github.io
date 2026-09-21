@@ -1,53 +1,12 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#100d14" />
-    <meta name="description" content="Climb ten connected regions in Jump Royale: charged jumps, rooftop crossings, moving windmills, secrets and a towering summit." />
-    <link rel="icon" href="data:,">
-    <title>Jump Royale</title>
-    <script type="module" crossorigin src="/forge-climb-royale/assets/index-eiZIKC84.js"></script>
-    <link rel="stylesheet" crossorigin href="/forge-climb-royale/assets/index-CoZE3LTx.css">
-  </head>
-  <body>
-    <style>
-      #startup { position:fixed; inset:0; z-index:10000; display:grid; place-items:center; padding:24px; background:#0b0b12; color:#f5eee0; font:16px system-ui; }
-      #startup .loading-card { width:min(380px,100%); text-align:center; }
-      #startup h1 { margin:0 0 28px; font-size:32px; }
-      #startup progress { display:block; width:100%; height:18px; appearance:none; border:1px solid #67597d; border-radius:20px; overflow:hidden; background:#211b30; accent-color:#c5a0ff; }
-      #startup progress::-webkit-progress-bar { background:#211b30; }
-      #startup progress::-webkit-progress-value { background:linear-gradient(90deg,#9263df,#e1c4ff); border-radius:20px; transition:width .15s; }
-      #startup progress::-moz-progress-bar { background:#c5a0ff; }
-      #startup-message { min-height:24px; color:#c5b9d5; font-size:14px; }
-    </style>
-    <section id="startup" aria-label="Loading Jump Royale">
-      <div class="loading-card">
-        <h1>Jump Royale</h1>
-        <progress id="startup-progress" max="100" aria-label="Game loading progress"></progress>
-        <p id="startup-message" role="status">Starting the game…</p>
-      </div>
-    </section>
-    <script>
-      (() => {
-        const panel = document.getElementById("startup");
-        const bar = document.getElementById("startup-progress");
-        const message = document.getElementById("startup-message");
-        let progress = 0;
-        const update = (event) => {
-          progress = Math.max(progress, Math.min(99, Math.floor(event.detail.percent)));
-          bar.value = progress;
-          message.textContent = event.detail.label + " · " + progress + "%";
-        };
-        window.addEventListener("jump-loading", update);
-        window.addEventListener("jump-ready", () => {
-          bar.value = 100;
-          window.removeEventListener("jump-loading", update);
-          panel.remove();
-        }, { once: true });
-      })();
-    </script>
-    <div id="game" aria-label="Jump Royale game canvas"></div>
-    <script src="/forge-climb-royale/vendor/colyseus.js"></script>
-  </body>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Jump Royale has moved</title>
+  <link rel="canonical" href="https://jumproyale.com/">
+  <meta http-equiv="refresh" content="0;url=https://jumproyale.com/">
+  <script>location.replace('https://jumproyale.com/' + location.search + location.hash);</script>
+</head>
+<body><p>Jump Royale has moved to <a href="https://jumproyale.com/">jumproyale.com</a>.</p></body>
 </html>

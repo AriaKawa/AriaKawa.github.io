@@ -1,4 +1,0 @@
-.expedition-hotspot{position:absolute;pointer-events:auto;cursor:pointer;z-index:2;background:transparent;left:10%;top:40%;width:38%;height:43%;clip-path:polygon(4% 59%,94% 0,100% 23%,88% 45%,90% 94%,6% 100%)}
-.expedition-hotspot[data-world="tidal-sanctuary"],.expedition-hotspot[data-world="cloud-garden"]{left:15%;top:43%;width:28%;height:24%;clip-path:none}
-.expedition-hotspot:focus-visible{outline:3px solid #ffe4a2;outline-offset:-4px;clip-path:none}
-.expedition-hotspot[hidden],.forge-wardrobe-open .expedition-hotspot,.wallpaper-open .expedition-hotspot,.expedition-wallpaper .forge-controls{display:none}

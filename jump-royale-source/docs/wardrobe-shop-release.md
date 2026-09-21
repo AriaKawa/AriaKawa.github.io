@@ -1,9 +1,0 @@
-# Wardrobe shop and two new characters
-
-Kenji · NEET and Roo · Kangaroo join the character wardrobe and Covert mystery-box pool. Each uses a transparent 384×32 sprite strip with 12 poses: idle pair, two charge poses, jump, fall, landing, elimination, and four locomotion frames. The kangaroo has a hopping locomotion cycle. Artwork was generated with built-in image_gen; prompts and original sources are saved alongside this document. Runtime assets: `forge-climb-royale/assets/reforged/cosmetics/neet.png` and `kangaroo.png` in the site repository. No physics changes.
-
-Locked wardrobe items show their name, silhouette, gold-bar price, and Buy label. Clicking buys and equips the item; owned items equip without charging again. The wardrobe shows the current gold balance. A fixed header and category tabs sit above an independently scrolling grid with a styled right scrollbar, mouse-wheel, touch and keyboard support. Mobile uses two columns.
-
-The game has browser-local saves, not account-based ownership. An explicit one-time `#lock=wardrobe-20260916-8d43` link clears only that browser's cosmetic ownership. Ordinary visits never reset unlocks. Starter items, gold, spins, match receipts and scores remain intact. A local backup supports the Undo button or `#restore=wardrobe-20260916-8d43`; restoring merges old unlocks with new purchases without refunding spending. Reopening the reset link cannot clear purchases made afterward.
-
-Validation: type checking, production build, existing costume-purchase tests, `test-wardrobe-reset.ts`, `test-wardrobe-shop.mjs`, and `verify-fantasy-release.mjs`. Browser coverage includes reset preservation, prices and purchase deductions, no double charge, insufficient funds, scrollbar dragging and wheel movement, desktop/mobile layout, 24 distinct new poses, actual lobby walking/hopping and charge/jump playback, both new skins in gameplay, mystery-box entries and paid spin. No browser errors.
