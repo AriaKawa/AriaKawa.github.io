@@ -73,16 +73,63 @@ test("jump height clears the same laser, with cooldown and landing", () => {
   step(a, 280);
   assert(a.jump(a.player));
 });
-test("own trail is safe and boundary remains lethal while jumping", () => {
+test("a rider looping into their own trail dies without earning an elimination", () => {
   const a = clean();
-  a.player.trail = [
-    { x: 2, z: 120 },
-    { x: 2, z: 123 },
-    { x: 2, z: 126 },
-    { x: 2, z: 129 },
-  ];
-  step(a, 10);
+  a.player.length = 140;
+  let death;
+  for (let i = 0; i < 240 && a.player.alive; i++)
+    death =
+      a.step(1 / 60, { angle: i * 0.05 }).find((e) => e.type === "death") ||
+      death;
+  assert.equal(a.player.alive, false);
+  assert.equal(death.reason, "self");
+  assert.equal(death.killer, a.player);
+  assert.equal(a.player.kills, 0);
+  assert(a.food.length > 0);
+});
+test("the newly emitted attachment never kills a rider travelling forward", () => {
+  const a = clean();
+  step(a, 600);
   assert(a.player.alive);
+  assert(a.player.x > 280);
+});
+function selfCrossing(a) {
+  const corners = [
+      { x: 8, z: 119 },
+      { x: 8, z: 133 },
+      { x: -8, z: 133 },
+      { x: -8, z: 125 },
+      { x: 0, z: 125 },
+    ],
+    points = [];
+  for (let i = 1; i < corners.length; i++) {
+    const start = corners[i - 1],
+      end = corners[i],
+      n = Math.ceil(Math.hypot(end.x - start.x, end.z - start.z) / 2);
+    for (let j = 0; j < n; j++)
+      points.push({
+        x: start.x + ((end.x - start.x) * j) / n,
+        z: start.z + ((end.z - start.z) * j) / n,
+      });
+  }
+  points.push(corners.at(-1));
+  a.player.trail = points;
+  a.player.length = 100;
+}
+test("jump clears your own wall, while the same grounded crossing kills", () => {
+  const grounded = clean();
+  selfCrossing(grounded);
+  step(grounded, 20);
+  assert(!grounded.player.alive);
+  const airborne = clean();
+  selfCrossing(airborne);
+  airborne.jump(airborne.player);
+  step(airborne, 20);
+  assert(airborne.player.alive);
+  assert(jumpHeight(airborne.player) > 3.1);
+});
+test("boundary remains lethal while jumping", () => {
+  const a = clean();
   a.player.x = HALF - 1;
   a.player.jump = JUMP_DURATION / 2;
   step(a, 1);

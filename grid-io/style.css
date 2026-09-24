@@ -1146,3 +1146,311 @@ kbd {
     opacity: 0.15;
   }
 }
+
+/* Modular 3D garage */
+.garage-teaser .bike-teaser {
+  display: block;
+  width: 142px;
+  height: 126px;
+  flex: none;
+  transition: transform 0.25s;
+}
+.bike-teaser canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.garage-teaser:hover .bike-teaser {
+  transform: translateY(-4px);
+}
+.garage-modal {
+  width: min(960px, calc(100vw - 36px));
+  padding: 30px;
+  text-align: left;
+  max-height: 94dvh;
+}
+.garage-heading h2 {
+  margin: 8px 0 24px;
+  font-size: 32px;
+}
+.garage-heading .eyebrow {
+  margin: 0;
+}
+.garage-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(280px, 1fr);
+  gap: 30px;
+  align-items: start;
+}
+.garage-preview {
+  position: relative;
+  min-width: 0;
+  background: radial-gradient(ellipse at 50% 40%, #24445177, #08121e77 72%);
+  border: 1px solid #8bd9cd26;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.preview-tag {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 20px 20px 0;
+  font-size: 7px;
+  letter-spacing: 1.6px;
+  color: #7e9ca8;
+}
+.preview-tag span:first-child {
+  color: var(--mint);
+}
+#garage-stage {
+  height: 328px;
+  position: relative;
+  touch-action: none;
+  cursor: grab;
+}
+#garage-stage:active {
+  cursor: grabbing;
+}
+#garage-stage canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+}
+#garage-stage[data-error]:after {
+  content: attr(data-error);
+  position: absolute;
+  inset: 40% 20px auto;
+  color: #b9ccc9;
+  font-size: 12px;
+  text-align: center;
+  line-height: 1.7;
+}
+.preview-caption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 20px;
+}
+.garage-modal .preview-caption h3 {
+  font-size: 19px;
+  margin: 0 0 5px;
+}
+.garage-modal .preview-caption p {
+  margin: 0;
+  font-size: 10px;
+}
+.preview-caption .text-button {
+  white-space: nowrap;
+  font-size: 8px;
+  letter-spacing: 0.5px;
+}
+.garage-modal .rotate-hint {
+  font-size: 7px;
+  letter-spacing: 1.4px;
+  text-align: center;
+  color: #66848f;
+  margin: 22px 8px 16px;
+}
+.garage-options {
+  display: grid;
+  gap: 20px;
+  padding: 0;
+}
+.part-group > h3 {
+  font-size: 9px;
+  letter-spacing: 1.7px;
+  font-weight: 500;
+  margin: 0 0 11px;
+  color: #c2dad9;
+}
+.part-group > h3 > span {
+  color: #5c7d88;
+  font-size: 8px;
+  margin-right: 9px;
+  letter-spacing: 1px;
+}
+.part-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.part-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  height: 73px;
+  background: #0d1f2a;
+  border: 1px solid #83c8c228;
+  border-radius: 7px;
+  padding: 8px;
+  color: #92aeb4;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+.part-choice:hover {
+  border-color: #9bedcf88;
+  background: #15303a;
+}
+.part-choice[aria-pressed="true"] {
+  background: linear-gradient(145deg, #1d4144, #112c34);
+  border-color: #8cf9d7;
+  color: #d9fff0;
+  box-shadow: inset 0 0 14px #84ffc509;
+}
+.part-choice strong {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+}
+.part-symbol {
+  display: block;
+  font-size: 26px;
+  height: 25px;
+  line-height: 1;
+  font-family: system-ui, sans-serif;
+  color: inherit;
+}
+.part-symbol.phantom {
+  font-size: 39px;
+  line-height: 0.6;
+  transform: rotate(-10deg);
+}
+.part-symbol.vector {
+  font-size: 33px;
+  line-height: 0.7;
+}
+.part-symbol.bulwark {
+  font-size: 28px;
+  line-height: 0.8;
+}
+.garage-modal .part-group > p {
+  font-size: 9px;
+  margin: 7px 0 0;
+  min-height: 14px;
+  color: #6f9099;
+}
+.rider-options {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.rider-options .part-choice {
+  height: 43px;
+  flex-direction: row;
+  gap: 10px;
+}
+.rider-options .part-symbol {
+  font-size: 21px;
+  height: auto;
+}
+.garage-options .swatches {
+  justify-content: space-between;
+  gap: 10px;
+  padding: 3px;
+}
+.garage-options .swatch {
+  width: 26px;
+  height: 26px;
+}
+.garage-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-top: 25px;
+  border-top: 1px solid var(--line);
+  padding-top: 20px;
+}
+.garage-footer > p {
+  font-size: 10px;
+  margin: 0;
+  color: #819fa8;
+}
+.garage-footer .primary {
+  width: 220px;
+  flex: none;
+  margin: 0;
+}
+@media (max-width: 700px) {
+  .garage-teaser .bike-teaser {
+    width: 100px;
+    height: 100px;
+  }
+  .garage-modal {
+    padding: 24px 18px 18px;
+    width: calc(100vw - 20px);
+    max-height: 94dvh;
+  }
+  .garage-heading h2 {
+    font-size: 26px;
+    margin: 7px 0 18px;
+  }
+  .garage-heading .eyebrow {
+    font-size: 7px;
+    letter-spacing: 2px;
+  }
+  .garage-layout {
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+  #garage-stage {
+    height: 210px;
+  }
+  .preview-tag {
+    padding: 14px 15px 0;
+    font-size: 6px;
+  }
+  .preview-caption {
+    padding: 0 15px;
+  }
+  .garage-modal .preview-caption h3 {
+    font-size: 17px;
+  }
+  .garage-modal .rotate-hint {
+    margin: 13px 0 12px;
+    font-size: 6px;
+  }
+  .garage-options {
+    gap: 16px;
+  }
+  .part-choice {
+    height: 66px;
+  }
+  .garage-footer {
+    flex-direction: column;
+    gap: 13px;
+    margin-top: 18px;
+    padding-top: 15px;
+  }
+  .garage-footer .primary {
+    width: 100%;
+  }
+  .garage-options .swatches {
+    justify-content: flex-start;
+    gap: 18px;
+  }
+}
+@media (max-height: 540px) and (min-width: 701px) {
+  .garage-modal {
+    padding: 22px;
+    max-height: 94dvh;
+  }
+  #garage-stage {
+    height: 245px;
+  }
+  .garage-heading h2 {
+    font-size: 26px;
+    margin: 5px 0 16px;
+  }
+  .garage-options {
+    gap: 12px;
+  }
+  .part-choice {
+    height: 59px;
+    gap: 6px;
+  }
+}

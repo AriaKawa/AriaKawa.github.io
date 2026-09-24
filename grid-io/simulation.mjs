@@ -1,8 +1,18 @@
+import {
+  normalizeLoadout,
+  BODIES,
+  WHEELS,
+  RIDERS,
+} from "./customization.mjs?v=garage-1";
+
 export const WORLD_SIZE = 2400;
 export const HALF = WORLD_SIZE / 2;
 export const BASE_LENGTH = 48;
 export const JUMP_DURATION = 1.05;
 export const JUMP_COOLDOWN = 5.5;
+// Only the fresh attachment immediately behind a bike is excluded from
+// self-collision. The rest of its wall is as lethal as another rider's.
+export const SELF_CLEARANCE = 8;
 export const COLORS = [
   "#86f9d4",
   "#bb8eff",
@@ -188,6 +198,7 @@ export class Arena {
     food = 6400,
     name = "Rider",
     skin = 0,
+    loadout = {},
   } = {}) {
     this.random = seeded(seed);
     this.time = 0;
@@ -200,6 +211,7 @@ export class Arena {
     this.foodRevision = 0;
     this.stepCount = 0;
     this.player = this.makeRider(name, skin, true, { x: -45, z: 85 });
+    this.player.loadout = normalizeLoadout(loadout);
     for (let i = 0; i < bots; i++) {
       const a = this.random() * Math.PI * 2,
         r = 90 + this.random() * 230;
@@ -208,6 +220,11 @@ export class Arena {
           ? this.safePosition(Math.cos(a) * r, 125 + Math.sin(a) * r)
           : this.randomPosition();
       const b = this.makeRider(NAMES[i % NAMES.length], (i + 1) % 6, false, p);
+      b.loadout = {
+        body: BODIES[i % 3].id,
+        wheels: WHEELS[Math.floor(i / 3) % 3].id,
+        rider: RIDERS[i % 2].id,
+      };
       b.length = 65 + this.random() * 180;
       b.peak = b.length;
       b.angle = this.random() * Math.PI * 2;
@@ -267,6 +284,7 @@ export class Arena {
       id: this.nextId++,
       name,
       skin,
+      loadout: normalizeLoadout(),
       player,
       ...pos,
       angle: 0,
@@ -309,18 +327,25 @@ export class Arena {
     this.trailHash.clear();
     for (const rider of this.riders) {
       if (!rider.alive) continue;
-      for (let i = 1; i < rider.trail.length; i++) {
+      const last = rider.trail.at(-1);
+      let distanceFromHead = last
+        ? Math.hypot(rider.x - last.x, rider.z - last.z)
+        : 0;
+      for (let i = rider.trail.length - 1; i > 0; i--) {
         const a = rider.trail[i - 1],
           b = rider.trail[i];
-        if (Math.hypot(a.x - b.x, a.z - b.z) > 6) continue;
-        const segment = { a, b, rider };
+        const length = Math.hypot(a.x - b.x, a.z - b.z);
+        const segment = { a, b, rider, distanceFromHead };
+        distanceFromHead += length;
+        if (length > 6) continue;
         this.trailHash.insert(segment, (a.x + b.x) / 2, (a.z + b.z) / 2);
       }
     }
   }
   trailAt(r, x, z, radius = 2.3) {
     for (const s of this.trailHash.query(x, z, radius + 3)) {
-      if (s.rider === r || !s.rider.alive || s.rider.grace > 0) continue;
+      if (!s.rider.alive || s.rider.grace > 0) continue;
+      if (s.rider === r && s.distanceFromHead < SELF_CLEARANCE) continue;
       if (pointSegmentDistanceSq(x, z, s.a, s.b) < radius * radius)
         return s.rider;
     }
@@ -515,7 +540,7 @@ export class Arena {
         if (jumpHeight(r) < 3.1) {
           const killer = this.trailAt(r, r.x, r.z);
           if (killer) {
-            this.kill(r, killer);
+            this.kill(r, killer, killer === r ? "self" : "trail");
             continue;
           }
         }

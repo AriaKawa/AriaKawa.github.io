@@ -14,7 +14,7 @@
     <title>Grid.io — Leave your mark</title>
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
     <link rel="preload" href="assets/expanse.webp" as="image" />
-    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="style.css?v=garage-1" />
   </head>
   <body>
     <canvas id="world" aria-label="Grid.io 3D laser bike arena"></canvas>
@@ -95,12 +95,10 @@
       </main>
       <footer class="menu-footer">
         <button id="garage" class="garage-teaser">
-          <img
-            src="assets/phantom.webp"
-            alt="Pearl and mint Phantom laser bike"
-          /><span
+          <span id="bike-teaser" class="bike-teaser" aria-hidden="true"></span
+          ><span
             ><small>YOUR RIDE</small><strong id="ride-name">Mint Phantom</strong
-            ><em>Change color <span>↗</span></em></span
+            ><em>Customize bike <span>↗</span></em></span
           >
         </button>
         <div class="world-label">
@@ -163,25 +161,84 @@
       </div>
       <div id="joystick" aria-label="Touch steering pad"><i></i></div>
       <div id="pointer-hint">
-        Move your mouse to steer · your own trail is safe
+        Every trail is lethal · Space jumps over lasers
       </div>
     </div>
     <dialog id="garage-dialog" class="modal garage-modal">
       <button class="close-modal" aria-label="Close garage">×</button>
-      <p class="eyebrow">MAKE IT YOURS</p>
-      <h2>Pick your signature.</h2>
-      <img id="garage-art" src="assets/phantom.webp" alt="Phantom bike" />
-      <h3 id="garage-name">Mint Phantom</h3>
-      <div
-        id="swatches"
-        class="swatches"
-        role="group"
-        aria-label="Bike color"
-      ></div>
-      <p>One chassis. Six signatures. Equal on the grid.</p>
-      <button class="primary close-action">
-        Ready to ride <span>↗</span>
-      </button>
+      <header class="garage-heading">
+        <p class="eyebrow">THE GARAGE / YOUR SIGNATURE</p>
+        <h2>Build your ride.</h2>
+      </header>
+      <div class="garage-layout">
+        <div class="garage-preview">
+          <div class="preview-tag">
+            <span>LIVE 3D</span><span>PHANTOM / VECTOR / BULWARK</span>
+          </div>
+          <div
+            id="garage-stage"
+            tabindex="0"
+            role="group"
+            aria-label="3D bike preview. Drag or use arrow keys to rotate."
+          ></div>
+          <div class="preview-caption">
+            <div>
+              <h3 id="garage-name">Mint Phantom</h3>
+              <p id="loadout-summary" aria-live="polite">
+                Turbine wheels · Male rider
+              </p>
+            </div>
+            <button id="reset-view" class="text-button">Reset view ↺</button>
+          </div>
+          <p class="rotate-hint">DRAG TO ROTATE · ARROW KEYS WORK TOO</p>
+        </div>
+        <div class="garage-options">
+          <section class="part-group">
+            <h3><span>01</span> BODY</h3>
+            <div
+              id="body-options"
+              class="part-options"
+              role="group"
+              aria-label="Bike body"
+            ></div>
+            <p id="body-description"></p>
+          </section>
+          <section class="part-group">
+            <h3><span>02</span> WHEELS</h3>
+            <div
+              id="wheel-options"
+              class="part-options"
+              role="group"
+              aria-label="Bike wheels"
+            ></div>
+            <p id="wheel-description"></p>
+          </section>
+          <section class="part-group">
+            <h3><span>03</span> RIDER</h3>
+            <div
+              id="rider-options"
+              class="part-options rider-options"
+              role="group"
+              aria-label="Rider"
+            ></div>
+          </section>
+          <section class="part-group color-group">
+            <h3><span>04</span> LIGHT COLOR</h3>
+            <div
+              id="swatches"
+              class="swatches"
+              role="group"
+              aria-label="Bike color"
+            ></div>
+          </section>
+        </div>
+      </div>
+      <footer class="garage-footer">
+        <p>Saved automatically. All parts have equal performance.</p>
+        <button class="primary close-action">
+          Ready to ride <span>↗</span>
+        </button>
+      </footer>
     </dialog>
     <dialog id="help-dialog" class="modal">
       <button class="close-modal" aria-label="Close instructions">×</button>
@@ -199,8 +256,8 @@
           <b>02</b
           ><span
             ><strong>Cut them off.</strong>Rivals crash into your trail. Avoid
-            their trails, reactor platforms, and the arena boundary. Your own
-            trail is safe.</span
+            every laser wall, including your own, reactor platforms, and the
+            arena boundary.</span
           >
         </p>
         <p>
@@ -261,6 +318,6 @@
     <script type="importmap">
       { "imports": { "three": "./vendor/three.module.min.js" } }
     </script>
-    <script type="module" src="game.js"></script>
+    <script type="module" src="game.js?v=garage-1"></script>
   </body>
 </html>

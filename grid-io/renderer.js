@@ -1,4 +1,6 @@
 import * as THREE from "./vendor/three.module.min.js";
+import { createBike, animateWheels } from "./bike-model.js?v=garage-1";
+import { LaserWalls } from "./laser-walls.js?v=garage-1";
 import { EffectComposer } from "./vendor/postprocessing/EffectComposer.js";
 import { RenderPass } from "./vendor/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "./vendor/postprocessing/UnrealBloomPass.js";
@@ -9,7 +11,7 @@ import {
   COLORS,
   LANDMARKS,
   jumpHeight,
-} from "./simulation.mjs";
+} from "./simulation.mjs?v=garage-1";
 
 const palette = COLORS.map((c) => new THREE.Color(c));
 const shardPalette = [
@@ -23,15 +25,11 @@ const shardPalette = [
 const dummy = new THREE.Object3D();
 const white = new THREE.Color("#effff7");
 const UP = new THREE.Vector3(0, 1, 0);
-const v = new THREE.Vector3();
 const boxGeo = new THREE.BoxGeometry(1, 1, 1);
-const bikeCache = new Map();
 const standard = (color, metalness = 0.45, roughness = 0.38) =>
   new THREE.MeshStandardMaterial({ color, metalness, roughness });
 const dark = standard(0x172531, 0.65, 0.38),
-  rubber = standard(0x0b1420, 0.1, 0.8),
-  pearl = standard(0xc7dedf, 0.52, 0.27),
-  glass = standard(0x163944, 0.7, 0.18);
+  pearl = standard(0xc7dedf, 0.52, 0.27);
 function mesh(geo, mat, x = 0, y = 0, z = 0, parent) {
   const m = new THREE.Mesh(geo, mat);
   m.position.set(x, y, z);
@@ -51,93 +49,6 @@ function glow(color, opacity = 1) {
     depthWrite: opacity === 1,
     toneMapped: false,
   });
-}
-function beveledHull() {
-  const shape = new THREE.Shape();
-  shape.moveTo(-3.6, -0.9);
-  shape.lineTo(2.3, -1.1);
-  shape.lineTo(4.1, -0.5);
-  shape.lineTo(4.6, 0);
-  shape.lineTo(4.1, 0.5);
-  shape.lineTo(2.3, 1.1);
-  shape.lineTo(-3.6, 0.9);
-  shape.closePath();
-  const g = new THREE.ExtrudeGeometry(shape, {
-    depth: 0.7,
-    bevelEnabled: true,
-    bevelSegments: 2,
-    steps: 1,
-    bevelSize: 0.25,
-    bevelThickness: 0.25,
-  });
-  g.rotateX(-Math.PI / 2);
-  return g;
-}
-const hullGeometry = beveledHull();
-function bikeTemplate(skin) {
-  if (bikeCache.has(skin)) return bikeCache.get(skin);
-  const g = new THREE.Group(),
-    accent = glow(COLORS[skin]),
-    body = skin === 5 ? pearl : standard(0xb8d1d8, 0.45, 0.32);
-  const hull = mesh(hullGeometry, body, 0, 1.65, 0, g);
-  hull.scale.set(0.85, 1, 0.88);
-  box(g, dark, -0.3, 1.35, 0, 6.9, 1, 1.15);
-  const wheelGeo = new THREE.CylinderGeometry(1.35, 1.35, 0.85, 16);
-  wheelGeo.rotateX(Math.PI / 2);
-  const hubGeo = new THREE.CylinderGeometry(0.68, 0.68, 0.89, 12);
-  hubGeo.rotateX(Math.PI / 2);
-  for (const x of [-2.65, 2.6]) {
-    mesh(wheelGeo, rubber, x, 1.35, 0, g);
-    mesh(hubGeo, pearl, x, 1.35, 0, g);
-    for (const z of [-0.46, 0.46]) {
-      box(g, accent, x, 1.38, z, 0.85, 0.24, 0.06);
-    }
-  }
-  for (const z of [-0.88, 0.88]) {
-    box(g, accent, 0.45, 1.9, z, 4.3, 0.17, 0.12);
-    const wing = box(g, body, -2.25, 2.05, z * 1.3, 2, 0.35, 0.45);
-    wing.rotation.z = -0.15;
-    box(g, accent, -3.3, 1.7, z, 0.3, 0.45, 0.48);
-  }
-  const cowl = box(g, glass, 1.5, 2.4, 0, 1.8, 0.7, 1.3);
-  cowl.rotation.z = -0.17;
-  const seat = box(g, rubber, -1, 2.25, 0, 2.1, 0.45, 1.05);
-  seat.rotation.z = 0.13;
-  const torso = mesh(
-    new THREE.CapsuleGeometry(0.57, 0.9, 3, 8),
-    dark,
-    -0.45,
-    3.03,
-    0,
-    g,
-  );
-  torso.rotation.z = -0.77;
-  const helmet = mesh(
-    new THREE.SphereGeometry(0.69, 12, 8),
-    body,
-    0.45,
-    3.55,
-    0,
-    g,
-  );
-  helmet.scale.set(1, 0.85, 0.87);
-  box(g, accent, 0.99, 3.6, 0, 0.18, 0.2, 0.95);
-  for (const z of [-0.7, 0.7]) {
-    const arm = box(g, dark, 0.55, 2.96, z, 0.95, 0.3, 0.28);
-    arm.rotation.z = -0.48;
-    const leg = box(g, dark, -1.12, 2.1, z, 1.1, 0.45, 0.4);
-    leg.rotation.z = 0.65;
-    box(g, pearl, -1.27, 1.65, z, 0.75, 0.3, 0.45);
-  }
-  box(g, accent, 3.4, 1.7, 0, 0.24, 0.25, 0.86);
-  g.traverse((o) => {
-    if (o.isMesh) {
-      o.castShadow = true;
-      o.receiveShadow = true;
-    }
-  });
-  bikeCache.set(skin, g);
-  return g;
 }
 function canvasGlow() {
   const c = document.createElement("canvas");
@@ -229,38 +140,17 @@ export class GridRenderer {
     );
     this.crystalGlows.frustumCulled = false;
     this.scene.add(this.crystalGlows);
-    this.walls = new THREE.InstancedMesh(
-      new THREE.PlaneGeometry(1, 1),
-      new THREE.MeshBasicMaterial({
-        transparent: true,
-        opacity: 0.48,
-        depthWrite: false,
-        toneMapped: false,
-        side: THREE.DoubleSide,
-      }),
-      12000,
-    );
+    this.walls = new LaserWalls();
+    this.scene.add(this.walls);
     this.cores = new THREE.InstancedMesh(
       boxGeo,
       new THREE.MeshBasicMaterial({ toneMapped: false }),
       12000,
     );
-    this.trailGlow = new THREE.InstancedMesh(
-      boxGeo,
-      new THREE.MeshBasicMaterial({
-        transparent: true,
-        opacity: 0.12,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-        toneMapped: false,
-      }),
-      12000,
-    );
-    for (const m of [this.walls, this.cores, this.trailGlow]) {
-      m.frustumCulled = false;
-      m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-      this.scene.add(m);
-    }
+    this.cores.name = "laser-edges";
+    this.cores.frustumCulled = false;
+    this.cores.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    this.scene.add(this.cores);
     this.sparks = new THREE.InstancedMesh(
       new THREE.OctahedronGeometry(0.5),
       new THREE.MeshBasicMaterial({ toneMapped: false }),
@@ -542,7 +432,7 @@ export class GridRenderer {
   }
   getBike(r) {
     if (this.bikes.has(r.id)) return this.bikes.get(r.id);
-    const group = bikeTemplate(r.skin).clone();
+    const group = createBike(r.skin, r.loadout);
     this.scene.add(group);
     const shadow = mesh(
       new THREE.PlaneGeometry(11, 6),
@@ -654,6 +544,7 @@ export class GridRenderer {
         Math.sin(r.jump > 0 ? (1 - r.jump / 1.05) * Math.PI * 2 : 0) * 0.14,
       );
       b.group.scale.setScalar(r.player ? 1.35 : 1.17);
+      animateWheels(b.group, r.speed * dt);
       b.shadow.position.set(r.x, 0.09, r.z);
       b.shadow.rotation.z = -r.angle;
       b.shadow.scale.setScalar(1 + altitude * 0.04);
@@ -712,27 +603,28 @@ export class GridRenderer {
         dummy.rotation.set(0, -Math.atan2(b.z - a.z, b.x - a.x), 0);
         dummy.scale.set(len, height, 0.6);
         dummy.updateMatrix();
-        this.walls.setMatrixAt(ti, dummy.matrix);
-        this.walls.setColorAt(ti, palette[r.skin]);
+        this.walls.segment(
+          ti,
+          a,
+          b,
+          palette[r.skin],
+          3 * Math.min(1, (i + 1) / 7),
+          3 * Math.min(1, (i + 2) / 7),
+        );
         dummy.position.y = height + 0.08;
         dummy.scale.set(len + 0.19, 0.26, 0.38);
         dummy.updateMatrix();
         this.cores.setMatrixAt(ti, dummy.matrix);
         this.cores.setColorAt(ti, palette[r.skin].clone().lerp(white, 0.32));
-        dummy.position.y = 0.11;
-        dummy.scale.set(len + 0.4, 0.1, 5 * tailFade);
-        dummy.updateMatrix();
-        this.trailGlow.setMatrixAt(ti, dummy.matrix);
-        this.trailGlow.setColorAt(ti, palette[r.skin]);
         ti++;
       }
     }
-    for (const m of [this.walls, this.cores, this.trailGlow]) {
+    this.walls.finish(ti);
+    for (const m of [this.cores]) {
       m.count = ti;
       m.instanceMatrix.needsUpdate = true;
       if (m.instanceColor) m.instanceColor.needsUpdate = true;
     }
-    this.trailGlow.visible = this.quality;
     let si = 0;
     for (let i = this.particles.length - 1; i >= 0; i--) {
       const s = this.particles[i];

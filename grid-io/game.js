@@ -7,8 +7,15 @@ import {
   LANDMARKS,
   JUMP_COOLDOWN,
   jumpHeight,
-} from "./simulation.mjs";
-import { GridRenderer } from "./renderer.js";
+} from "./simulation.mjs?v=garage-1";
+import { GridRenderer } from "./renderer.js?v=garage-1";
+import { BikeGarage } from "./garage.js?v=garage-1";
+import {
+  BODIES,
+  WHEELS,
+  RIDERS,
+  normalizeLoadout,
+} from "./customization.mjs?v=garage-1";
 
 const $ = (id) => document.getElementById(id);
 const read = (key, fallback) => {
@@ -27,6 +34,13 @@ const save = (key, value) => {
 };
 let skin = Math.max(0, Math.min(5, Number(read("skin", "0")) || 0)),
   best = Number(read("best", "0")) || 0;
+let loadout;
+try {
+  loadout = normalizeLoadout(JSON.parse(read("loadout", "{}")));
+} catch {
+  loadout = normalizeLoadout();
+}
+let garagePreview = null;
 let state = "menu",
   arena = null,
   graphics = null,
@@ -120,13 +134,57 @@ $("sound").addEventListener("click", () => {
 
 function updateSkin() {
   save("skin", skin);
-  $("ride-name").textContent = $("garage-name").textContent = SKINS[skin];
-  const hue = [0, 95, 175, 255, 35, 0][skin];
-  $("garage-art").style.filter =
-    skin === 5 ? "saturate(0)" : `hue-rotate(${hue}deg)`;
-  $("garage").querySelector("img").style.filter = $("garage-art").style.filter;
+  save("loadout", JSON.stringify(loadout));
+  const body = BODIES.find((p) => p.id === loadout.body),
+    wheels = WHEELS.find((p) => p.id === loadout.wheels),
+    rider = RIDERS.find((p) => p.id === loadout.rider);
+  $("ride-name").textContent = $("garage-name").textContent =
+    `${SKINS[skin].split(" ")[0]} ${body.name}`;
+  $("loadout-summary").textContent =
+    `${wheels.name} wheels · ${rider.name} rider`;
+  $("body-description").textContent = body.description;
+  $("wheel-description").textContent = wheels.description;
+  for (const button of document.querySelectorAll("[data-part]"))
+    button.setAttribute(
+      "aria-pressed",
+      loadout[button.dataset.part] === button.dataset.choice,
+    );
+  garagePreview?.setLoadout(skin, loadout);
   for (const b of $("swatches").children)
     b.setAttribute("aria-pressed", Number(b.dataset.skin) === skin);
+}
+for (const [key, id, choices] of [
+  ["body", "body-options", BODIES],
+  ["wheels", "wheel-options", WHEELS],
+  ["rider", "rider-options", RIDERS],
+]) {
+  for (const [index, choice] of choices.entries()) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "part-choice";
+    button.dataset.part = key;
+    button.dataset.choice = choice.id;
+    button.setAttribute("aria-label", choice.name);
+    const icon = document.createElement("span");
+    icon.className = `part-symbol ${choice.id}`;
+    icon.setAttribute("aria-hidden", "true");
+    icon.textContent =
+      key === "wheels"
+        ? ["◉", "✳", "⬡"][index]
+        : key === "body"
+          ? ["⌁", "⋈", "▰"][index]
+          : index
+            ? "♀"
+            : "♂";
+    const label = document.createElement("strong");
+    label.textContent = choice.name;
+    button.append(icon, label);
+    button.addEventListener("click", () => {
+      loadout = { ...loadout, [key]: choice.id };
+      updateSkin();
+    });
+    $(id).append(button);
+  }
 }
 for (let i = 0; i < COLORS.length; i++) {
   const b = document.createElement("button");
@@ -141,7 +199,12 @@ for (let i = 0; i < COLORS.length; i++) {
   $("swatches").append(b);
 }
 updateSkin();
-$("garage").addEventListener("click", () => $("garage-dialog").showModal());
+$("garage").addEventListener("click", () => {
+  $("garage-dialog").showModal();
+  garagePreview?.open();
+});
+$("garage-dialog").addEventListener("close", () => garagePreview?.close());
+$("reset-view").addEventListener("click", () => garagePreview?.resetView());
 $("help").addEventListener("click", () => $("help-dialog").showModal());
 for (const d of document.querySelectorAll("dialog")) {
   for (const b of d.querySelectorAll(".close-modal,.close-action"))
@@ -178,7 +241,7 @@ function start() {
   document.querySelectorAll("dialog[open]").forEach((d) => d.close());
   const name = $("nickname").value.trim().slice(0, 18) || "Rider";
   save("name", name);
-  arena = new Arena({ name, skin });
+  arena = new Arena({ name, skin, loadout });
   graphics.reset(arena);
   state = "playing";
   $("menu").hidden = true;
@@ -192,7 +255,7 @@ function start() {
   toast("Collect energy. Grow your trail. Own the grid.", 4000);
   $("pointer-hint").textContent = isTouch
     ? "Left thumb to steer · tap ↥ to jump"
-    : "Move your mouse to steer · your own trail is safe";
+    : "Every trail is lethal · Space jumps over lasers";
   $("pointer-hint").hidden = false;
 }
 function pause() {
@@ -218,6 +281,7 @@ function menu() {
   clearInput();
   $("menu").hidden = false;
   $("hud").hidden = true;
+  garagePreview?.resize();
 }
 function end(event) {
   best = Math.max(best, Math.floor(arena.player.peak));
@@ -232,7 +296,9 @@ function end(event) {
       ? "You reached the edge of the expanse."
       : event.reason === "reactor"
         ? "You collided with a reactor platform."
-        : `${event.killer?.name ?? "A rival"} crossed your circuit.`;
+        : event.reason === "self"
+          ? "You crossed your own laser trail."
+          : `${event.killer?.name ?? "A rival"} crossed your circuit.`;
   setTimeout(() => {
     if (state === "dead") $("death-dialog").showModal();
   }, 650);
@@ -518,6 +584,7 @@ function frame(now) {
   }
   if (state === "menu") {
     animateLogo(now);
+    garagePreview?.draw(dt, now);
     if (engineGain) engineGain.gain.setTargetAtTime(0, audio.currentTime, 0.08);
     return;
   }
@@ -594,6 +661,18 @@ try {
   $("load-status").classList.add("error");
   $("play").disabled = true;
 }
+try {
+  garagePreview = new BikeGarage(
+    $("bike-teaser"),
+    $("garage-stage"),
+    reducedMotion,
+  );
+  garagePreview.setLoadout(skin, loadout);
+} catch (error) {
+  console.warn("Garage preview could not initialize:", error);
+  $("garage-stage").dataset.error =
+    "3D preview unavailable. Your chosen parts will still be saved.";
+}
 $("world").addEventListener("webglcontextlost", (e) => {
   e.preventDefault();
   state = "interrupted";
@@ -617,6 +696,12 @@ if (new URLSearchParams(location.search).has("test"))
     get state() {
       return state;
     },
+    get garage() {
+      return garagePreview;
+    },
+    get loadout() {
+      return { ...loadout };
+    },
     snapshot() {
       return arena
         ? {
@@ -629,6 +714,7 @@ if (new URLSearchParams(location.search).has("test"))
             height: jumpHeight(arena.player),
             cooldown: arena.player.cooldown,
             alive: arena.player.alive,
+            loadout: { ...arena.player.loadout },
             bots: arena.riders.length - 1,
             food: arena.food.length,
             drawCalls: graphics.renderer.info.render.calls,
