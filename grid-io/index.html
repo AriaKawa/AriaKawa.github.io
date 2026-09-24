@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#070f19" />
+    <meta
+      name="description"
+      content="Leave your mark. Ride the expanse, collect energy, grow your laser trail, and jump your rivals in Grid.io."
+    />
+    <title>Grid.io — Leave your mark</title>
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="preload" href="assets/expanse.webp" as="image" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <canvas id="world" aria-label="Grid.io 3D laser bike arena"></canvas>
+    <div class="vignette" aria-hidden="true"></div>
+    <section id="menu" class="menu">
+      <header class="menu-header">
+        <a href="../games.html" class="back-link"
+          ><span>↖</span> ARIAKAWA <span class="divider">/</span> GAMES</a
+        >
+        <div class="top-actions">
+          <button id="sound" class="text-button" aria-pressed="false">
+            SOUND OFF</button
+          ><button id="help" class="round-button" aria-label="How to play">
+            ?
+          </button>
+        </div>
+      </header>
+      <main class="menu-center">
+        <p class="eyebrow">AN OPEN CIRCUIT. NO FINISH LINE.</p>
+        <h1 class="wordmark" aria-label="Grid.io">
+          <svg id="logo" viewBox="0 0 660 170" aria-hidden="true">
+            <defs>
+              <linearGradient id="laser" x1="0" y1="0" x2="1" y2=".4">
+                <stop stop-color="#c4ffec" />
+                <stop offset=".63" stop-color="#5fecc9" />
+                <stop offset="1" stop-color="#b79aff" />
+              </linearGradient>
+              <filter id="bloom"><feGaussianBlur stdDeviation="5" /></filter>
+            </defs>
+            <path
+              class="logo-halo"
+              d="M139 38H72Q36 38 36 77V100Q36 138 72 138H139V91H99 M180 138V38H226Q261 38 261 66Q261 92 226 92H182 M226 92L268 138 M307 38V138 M354 138V38H394Q443 38 443 88Q443 138 394 138H354 M477 135V136 M511 77V138 M511 42V43 M552 104Q552 74 582 74Q614 74 614 105Q614 138 582 138Q552 138 552 104"
+            />
+            <path
+              id="logo-path"
+              d="M139 38H72Q36 38 36 77V100Q36 138 72 138H139V91H99 M180 138V38H226Q261 38 261 66Q261 92 226 92H182 M226 92L268 138 M307 38V138 M354 138V38H394Q443 38 443 88Q443 138 394 138H354 M477 135V136 M511 77V138 M511 42V43 M552 104Q552 74 582 74Q614 74 614 105Q614 138 582 138Q552 138 552 104"
+            />
+            <g id="logo-bike">
+              <rect
+                x="-11"
+                y="-5"
+                width="23"
+                height="10"
+                rx="4"
+                fill="#effffb"
+              />
+              <rect x="-5" y="-3" width="10" height="6" rx="2" fill="#183835" />
+              <path
+                d="M-8 -6h5m-5 12h5m9-12h5m-5 12h5"
+                stroke="#60ffda"
+                stroke-width="3"
+              />
+            </g>
+          </svg>
+        </h1>
+        <p class="tagline">Leave your mark.</p>
+        <form id="play-form" autocomplete="off">
+          <label class="sr-only" for="nickname">Rider name</label>
+          <input
+            id="nickname"
+            name="nickname"
+            maxlength="18"
+            placeholder="Your rider name"
+            spellcheck="false"
+          />
+          <button id="play" class="primary" type="submit">
+            <span>Enter the grid</span><span aria-hidden="true">↗</span>
+          </button>
+        </form>
+        <p class="arena-mode"><i></i> SOLO ARENA <span>·</span> 40 AI RIDERS</p>
+        <div class="quick-controls">
+          <span><kbd>↖</kbd> Steer</span><span><kbd>SHIFT</kbd> Boost</span
+          ><span><kbd>SPACE</kbd> Jump</span>
+        </div>
+        <p id="load-status" role="status" class="load-status">
+          Preparing the expanse…
+        </p>
+      </main>
+      <footer class="menu-footer">
+        <button id="garage" class="garage-teaser">
+          <img
+            src="assets/phantom.webp"
+            alt="Pearl and mint Phantom laser bike"
+          /><span
+            ><small>YOUR RIDE</small><strong id="ride-name">Mint Phantom</strong
+            ><em>Change color <span>↗</span></em></span
+          >
+        </button>
+        <div class="world-label">
+          <span class="coordinate">SECTOR 00 / THE EXPANSE</span
+          ><strong>2.4 × 2.4 km</strong
+          ><span>One grid. Endless possibilities.</span>
+        </div>
+      </footer>
+    </section>
+    <div id="hud" hidden>
+      <div class="hud-top">
+        <div class="identity">
+          <span class="mini-logo">GRID<span>.io</span></span
+          ><span id="sector">THE CONFLUENCE</span>
+        </div>
+        <div class="score-box">
+          <small>TRAIL LENGTH</small
+          ><strong><span id="length">40</span><em>m</em></strong
+          ><span id="personal-best">BEST 40 m</span>
+        </div>
+        <button id="pause-button" class="round-button" aria-label="Pause game">
+          Ⅱ
+        </button>
+      </div>
+      <aside class="leaderboard">
+        <div class="board-heading">TOP RIDERS <small>AI ARENA</small></div>
+        <ol id="leaders"></ol>
+        <div class="your-rank" id="your-rank"></div>
+      </aside>
+      <div id="toast" role="status"></div>
+      <div class="hud-bottom">
+        <div class="map-wrap">
+          <canvas
+            id="minimap"
+            width="180"
+            height="180"
+            aria-label="Arena minimap"
+          ></canvas
+          ><span id="coordinates">0 : 0</span>
+        </div>
+        <div class="abilities">
+          <button id="boost-button" class="ability">
+            <span class="ability-icon">ϟ</span
+            ><span
+              ><strong>OVERDRIVE</strong
+              ><small id="boost-label">Hold Shift · spends length</small></span
+            ><kbd>SHIFT</kbd></button
+          ><button id="jump-button" class="ability">
+            <span class="ability-icon">↥</span
+            ><span
+              ><strong>PHASE JUMP</strong
+              ><small id="jump-label">Ready to clear a trail</small></span
+            ><kbd>SPACE</kbd><i id="jump-meter"></i>
+          </button>
+        </div>
+        <div class="run-info">
+          <strong id="eliminations">0</strong><span>ELIMINATIONS</span
+          ><small id="run-time">00:00</small>
+        </div>
+      </div>
+      <div id="joystick" aria-label="Touch steering pad"><i></i></div>
+      <div id="pointer-hint">
+        Move your mouse to steer · your own trail is safe
+      </div>
+    </div>
+    <dialog id="garage-dialog" class="modal garage-modal">
+      <button class="close-modal" aria-label="Close garage">×</button>
+      <p class="eyebrow">MAKE IT YOURS</p>
+      <h2>Pick your signature.</h2>
+      <img id="garage-art" src="assets/phantom.webp" alt="Phantom bike" />
+      <h3 id="garage-name">Mint Phantom</h3>
+      <div
+        id="swatches"
+        class="swatches"
+        role="group"
+        aria-label="Bike color"
+      ></div>
+      <p>One chassis. Six signatures. Equal on the grid.</p>
+      <button class="primary close-action">
+        Ready to ride <span>↗</span>
+      </button>
+    </dialog>
+    <dialog id="help-dialog" class="modal">
+      <button class="close-modal" aria-label="Close instructions">×</button>
+      <p class="eyebrow">THE RULES OF THE ROAD</p>
+      <h2>Small bike. Long shadow.</h2>
+      <div class="help-steps">
+        <p>
+          <b>01</b
+          ><span
+            ><strong>Collect the light.</strong>Energy shards lengthen your
+            laser trail. Defeated riders leave a rich field of energy.</span
+          >
+        </p>
+        <p>
+          <b>02</b
+          ><span
+            ><strong>Cut them off.</strong>Rivals crash into your trail. Avoid
+            their trails, reactor platforms, and the arena boundary. Your own
+            trail is safe.</span
+          >
+        </p>
+        <p>
+          <b>03</b
+          ><span
+            ><strong>Take the high road.</strong>Space jumps over laser walls.
+            Shift or hold click to boost, spending a little trail length.</span
+          >
+        </p>
+      </div>
+      <div class="controls-table">
+        <span>Steer</span><b>Mouse / WASD / arrows</b><span>Boost</span
+        ><b>Hold Shift / left click</b><span>Jump</span
+        ><b>Space / right click</b><span>Pause</span><b>Esc / P</b>
+      </div>
+      <p>
+        On touch screens, steer with the left thumb pad and use the ability
+        buttons. This is a solo arena with computer riders.
+      </p>
+      <button class="primary close-action">Got it <span>↗</span></button>
+    </dialog>
+    <dialog id="pause-dialog" class="modal compact">
+      <p class="eyebrow">TAKE A BREATHER</p>
+      <h2>Circuit paused.</h2>
+      <button id="resume" class="primary">
+        Back to the grid <span>↗</span></button
+      ><button id="quality" class="secondary">Graphics: High</button
+      ><button id="quit" class="text-button">Return to menu</button>
+    </dialog>
+    <dialog id="death-dialog" class="modal compact">
+      <p class="eyebrow">SIGNAL LOST</p>
+      <h2>You left a mark.</h2>
+      <p id="death-reason">Your circuit ends here.</p>
+      <div class="result-stats">
+        <div><strong id="result-length">0</strong><span>PEAK LENGTH</span></div>
+        <div><strong id="result-kills">0</strong><span>ELIMINATIONS</span></div>
+        <div><strong id="result-time">0</strong><span>SECONDS</span></div>
+      </div>
+      <button id="retry" class="primary">Ride again <span>↗</span></button
+      ><button id="death-menu" class="text-button">Return to menu</button>
+    </dialog>
+    <dialog id="graphics-dialog" class="modal compact">
+      <p class="eyebrow">CIRCUIT INTERRUPTED</p>
+      <h2>Let's reconnect.</h2>
+      <p>
+        The graphics connection was interrupted. Reload the game to reconnect to
+        the arena.
+      </p>
+      <button id="reload" class="primary">Reload Grid.io <span>↗</span></button
+      ><a href="../games.html" class="text-button">Back to Games</a>
+    </dialog>
+    <noscript
+      ><div class="no-script">
+        Grid.io needs JavaScript to run. Enable it and reload to enter the
+        arena.
+      </div></noscript
+    >
+    <script type="importmap">
+      { "imports": { "three": "./vendor/three.module.min.js" } }
+    </script>
+    <script type="module" src="game.js"></script>
+  </body>
+</html>
