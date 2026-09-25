@@ -1,20 +1,20 @@
 import * as THREE from "./vendor/three.module.min.js";
 import { mergeGeometries } from "./vendor/utils/BufferGeometryUtils.js";
-import { COLORS } from "./simulation.mjs?v=garage-1";
-import { normalizeLoadout, loadoutKey } from "./customization.mjs?v=garage-1";
+import { COLORS } from "./simulation.mjs?v=red-1";
+import { normalizeLoadout, loadoutKey } from "./customization.mjs?v=red-1";
 
 const templates = new Map();
 const unitBox = new THREE.BoxGeometry(1, 1, 1);
 const metal = (color, roughness = 0.34, metalness = 0.6) =>
   new THREE.MeshStandardMaterial({ color, roughness, metalness });
 const materials = {
-  dark: metal(0x17212e),
-  frame: metal(0x536479, 0.25, 0.85),
-  alloy: metal(0xa6c1cf, 0.24, 0.8),
-  pearl: metal(0xd5e4e4, 0.28, 0.48),
-  rubber: metal(0x101722, 0.88, 0.03),
-  suit: metal(0x233141, 0.75, 0.08),
-  glass: metal(0x123245, 0.14, 0.7),
+  dark: metal(0x131315),
+  frame: metal(0x494447, 0.25, 0.85),
+  alloy: metal(0x9a9695, 0.24, 0.8),
+  pearl: metal(0x292629, 0.22, 0.65),
+  rubber: metal(0x0c0c0d, 0.88, 0.03),
+  suit: metal(0x171619, 0.75, 0.08),
+  glass: metal(0x170d11, 0.14, 0.7),
 };
 const palettes = COLORS.map((color) => ({
   ...materials,

@@ -1,6 +1,6 @@
 import * as THREE from "./vendor/three.module.min.js";
-import { createBike, animateWheels } from "./bike-model.js?v=garage-1";
-import { LaserWalls } from "./laser-walls.js?v=garage-1";
+import { createBike, animateWheels } from "./bike-model.js?v=red-1";
+import { LaserWalls } from "./laser-walls.js?v=red-1";
 import { EffectComposer } from "./vendor/postprocessing/EffectComposer.js";
 import { RenderPass } from "./vendor/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "./vendor/postprocessing/UnrealBloomPass.js";
@@ -11,25 +11,25 @@ import {
   COLORS,
   LANDMARKS,
   jumpHeight,
-} from "./simulation.mjs?v=garage-1";
+} from "./simulation.mjs?v=red-1";
 
 const palette = COLORS.map((c) => new THREE.Color(c));
 const shardPalette = [
-  "#24fbb7",
-  "#9b50ff",
-  "#ff496c",
-  "#ffb524",
-  "#39aeff",
-  "#cedcfa",
+  "#ff322a",
+  "#ff6652",
+  "#ff8a66",
+  "#ffb777",
+  "#ff4964",
+  "#fff0e8",
 ].map((c) => new THREE.Color(c));
 const dummy = new THREE.Object3D();
-const white = new THREE.Color("#effff7");
+const white = new THREE.Color("#fff5f0");
 const UP = new THREE.Vector3(0, 1, 0);
 const boxGeo = new THREE.BoxGeometry(1, 1, 1);
 const standard = (color, metalness = 0.45, roughness = 0.38) =>
   new THREE.MeshStandardMaterial({ color, metalness, roughness });
-const dark = standard(0x172531, 0.65, 0.38),
-  pearl = standard(0xc7dedf, 0.52, 0.27);
+const dark = standard(0x171719, 0.65, 0.38),
+  pearl = standard(0x6f6868, 0.52, 0.27);
 function mesh(geo, mat, x = 0, y = 0, z = 0, parent) {
   const m = new THREE.Mesh(geo, mat);
   m.position.set(x, y, z);
@@ -79,8 +79,8 @@ export class GridRenderer {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x07131f);
-    this.scene.fog = new THREE.FogExp2(0x0b1e30, 0.0012);
+    this.scene.background = new THREE.Color(0x09090a);
+    this.scene.fog = new THREE.FogExp2(0x160b0e, 0.0012);
     this.camera = new THREE.OrthographicCamera(-150, 150, 100, -100, 0.1, 1600);
     this.camera.position.set(0, 210, 140);
     this.camera.lookAt(0, 0, 0);
@@ -88,8 +88,8 @@ export class GridRenderer {
     this.cameraTarget = new THREE.Vector3(0, 0, 125);
     this.viewHeight = 170;
     this.quality = true;
-    this.scene.add(new THREE.HemisphereLight(0xc4e5ff, 0x2c3646, 2.3));
-    this.sun = new THREE.DirectionalLight(0xd5f7ff, 3.6);
+    this.scene.add(new THREE.HemisphereLight(0xffeee6, 0x241a1b, 2.3));
+    this.sun = new THREE.DirectionalLight(0xffebe4, 3.6);
     this.sun.position.set(-80, 160, -70);
     this.sun.castShadow = true;
     this.sun.shadow.mapSize.set(2048, 2048);
@@ -104,7 +104,7 @@ export class GridRenderer {
     this.sun.shadow.bias = -0.001;
     this.sun.shadow.normalBias = 0.4;
     this.scene.add(this.sun, this.sun.target);
-    const rim = new THREE.DirectionalLight(0x836ce5, 1.5);
+    const rim = new THREE.DirectionalLight(0xff2420, 1.5);
     rim.position.set(80, 50, 100);
     this.scene.add(rim);
     this.textureLoader = new THREE.TextureLoader();
@@ -119,7 +119,7 @@ export class GridRenderer {
         color: 0xffffff,
         metalness: 0.15,
         roughness: 0.28,
-        emissive: 0x122127,
+        emissive: 0x291010,
         emissiveIntensity: 0.12,
       }),
       2000,
@@ -175,7 +175,7 @@ export class GridRenderer {
     this.resize();
   }
   buildWorld() {
-    const texture = this.textureLoader.load("assets/alloy.webp");
+    const texture = this.textureLoader.load("assets/red-alloy.webp");
     texture.colorSpace = THREE.SRGBColorSpace;
     texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
     texture.repeat.set(50, 50);
@@ -187,7 +187,7 @@ export class GridRenderer {
       new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE),
       new THREE.MeshStandardMaterial({
         map: texture,
-        color: 0x698293,
+        color: 0x777070,
         metalness: 0.35,
         roughness: 0.64,
       }),
@@ -198,18 +198,18 @@ export class GridRenderer {
     );
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
-    const grid = new THREE.GridHelper(WORLD_SIZE, 200, 0x497e87, 0x244b5c);
+    const grid = new THREE.GridHelper(WORLD_SIZE, 200, 0x743a3b, 0x472427);
     grid.position.y = 0.02;
     grid.material.transparent = true;
     grid.material.opacity = 0.23;
     this.scene.add(grid);
-    const major = new THREE.GridHelper(WORLD_SIZE, 50, 0x4dddb8, 0x387d86);
+    const major = new THREE.GridHelper(WORLD_SIZE, 50, 0xc53835, 0x7d2e31);
     major.position.y = 0.03;
     major.material.transparent = true;
     major.material.opacity = 0.35;
     this.scene.add(major);
-    const wall = glow(0x83cff1, 0.25),
-      edge = glow(0x82deff);
+    const wall = glow(0xff302a, 0.25),
+      edge = glow(0xff7163);
     for (const x of [-HALF, HALF]) {
       box(this.scene, wall, x, 9, 0, 1, 18, WORLD_SIZE);
       box(this.scene, edge, x, 1, 0, 1.7, 1, WORLD_SIZE);
@@ -220,14 +220,14 @@ export class GridRenderer {
       box(this.scene, edge, 0, 1, z, WORLD_SIZE, 1, 1.7);
       box(this.scene, edge, 0, 18, z, WORLD_SIZE, 0.3, 0.7);
     }
-    this.archTexture = this.textureLoader.load("assets/reactor.webp");
+    this.archTexture = this.textureLoader.load("assets/red-alloy.webp");
     this.archTexture.colorSpace = THREE.SRGBColorSpace;
     this.archTexture.anisotropy = 4;
     this.landmarkGroups = [];
     this.rotors = [];
     for (const o of LANDMARKS) this.buildLandmark(o);
     // Perimeter architecture is outside the playable boundary.
-    const distantMat = standard(0x152c40, 0.5, 0.7);
+    const distantMat = standard(0x1b1718, 0.5, 0.7);
     for (let i = 0; i < 64; i++) {
       const a = (i / 64) * Math.PI * 2,
         r = 1750 + (i % 3) * 80,
@@ -237,7 +237,7 @@ export class GridRenderer {
       box(this.scene, distantMat, x, h / 2, z, 40, h, 50);
       box(
         this.scene,
-        glow(i % 2 ? 0x765be0 : 0x478fab, 0.5),
+        glow(i % 2 ? 0xe52e29 : 0xab262d, 0.5),
         x,
         h / 2,
         z + 25.1,
@@ -246,37 +246,6 @@ export class GridRenderer {
         0.5,
       );
     }
-    this.addDistrictName("THE CONFLUENCE", 0, 75, 0x87cbbd);
-    this.addDistrictName("VIOLET FOUNDRY", -430, -365, 0xa790da);
-    this.addDistrictName("PRISM GARDENS", 470, -355, 0x87bdce);
-    this.addDistrictName("SOLAR RELAY", -470, 530, 0xc7ac83);
-    this.addDistrictName("THE ARCHIVES", 460, 555, 0xbc95b6);
-  }
-  addDistrictName(text, x, z, color) {
-    const canvas = document.createElement("canvas");
-    canvas.width = 1024;
-    canvas.height = 128;
-    const c = canvas.getContext("2d");
-    c.fillStyle = `#${color.toString(16).padStart(6, "0")}`;
-    c.textAlign = "center";
-    c.font = "500 36px sans-serif";
-    c.fillText(text.split("").join(" "), 512, 73);
-    const tex = new THREE.CanvasTexture(canvas),
-      mat = new THREE.MeshBasicMaterial({
-        map: tex,
-        transparent: true,
-        opacity: 0.48,
-        depthWrite: false,
-      });
-    const m = mesh(
-      new THREE.PlaneGeometry(105, 13),
-      mat,
-      x,
-      0.08,
-      z,
-      this.scene,
-    );
-    m.rotation.x = -Math.PI / 2;
   }
   buildLandmark(o) {
     const g = new THREE.Group();
@@ -287,7 +256,7 @@ export class GridRenderer {
       subtle = glow(o.color, 0.16),
       alloy = new THREE.MeshStandardMaterial({
         map: this.archTexture,
-        color: 0x94b4d2,
+        color: 0xaaa0a0,
         metalness: 0.55,
         roughness: 0.38,
       });

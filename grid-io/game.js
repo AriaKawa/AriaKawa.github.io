@@ -7,15 +7,15 @@ import {
   LANDMARKS,
   JUMP_COOLDOWN,
   jumpHeight,
-} from "./simulation.mjs?v=garage-1";
-import { GridRenderer } from "./renderer.js?v=garage-1";
-import { BikeGarage } from "./garage.js?v=garage-1";
+} from "./simulation.mjs?v=red-1";
+import { GridRenderer } from "./renderer.js?v=red-1";
+import { BikeGarage } from "./garage.js?v=red-1";
 import {
   BODIES,
   WHEELS,
   RIDERS,
   normalizeLoadout,
-} from "./customization.mjs?v=garage-1";
+} from "./customization.mjs?v=red-1";
 
 const $ = (id) => document.getElementById(id);
 const read = (key, fallback) => {
@@ -65,7 +65,7 @@ $("nickname").value = read("name", "");
 $("play").disabled = true;
 
 function updateSoundButton() {
-  $("sound").textContent = `SOUND ${soundOn ? "ON" : "OFF"}`;
+  $("sound").textContent = `Sound ${soundOn ? "on" : "off"}`;
   $("sound").setAttribute("aria-pressed", soundOn);
 }
 function ensureAudio() {
@@ -138,12 +138,9 @@ function updateSkin() {
   const body = BODIES.find((p) => p.id === loadout.body),
     wheels = WHEELS.find((p) => p.id === loadout.wheels),
     rider = RIDERS.find((p) => p.id === loadout.rider);
-  $("ride-name").textContent = $("garage-name").textContent =
-    `${SKINS[skin].split(" ")[0]} ${body.name}`;
+  $("garage-name").textContent = body.name;
   $("loadout-summary").textContent =
     `${wheels.name} wheels · ${rider.name} rider`;
-  $("body-description").textContent = body.description;
-  $("wheel-description").textContent = wheels.description;
   for (const button of document.querySelectorAll("[data-part]"))
     button.setAttribute(
       "aria-pressed",
@@ -250,9 +247,10 @@ function start() {
   pointer.active = false;
   accumulator = 0;
   uiTimer = 0;
+  toastUntil = 0;
+  $("toast").classList.remove("visible");
   ensureAudio();
   updateHUD();
-  toast("Collect energy. Grow your trail. Own the grid.", 4000);
   $("pointer-hint").textContent = isTouch
     ? "Left thumb to steer · tap ↥ to jump"
     : "Every trail is lethal · Space jumps over lasers";
@@ -293,12 +291,12 @@ function end(event) {
   $("result-time").textContent = Math.floor(arena.time);
   $("death-reason").textContent =
     event.reason === "boundary"
-      ? "You reached the edge of the expanse."
+      ? "You hit the arena boundary."
       : event.reason === "reactor"
         ? "You collided with a reactor platform."
         : event.reason === "self"
           ? "You crossed your own laser trail."
-          : `${event.killer?.name ?? "A rival"} crossed your circuit.`;
+          : `You hit ${event.killer?.name ?? "a rival"}'s laser trail.`;
   setTimeout(() => {
     if (state === "dead") $("death-dialog").showModal();
   }, 650);
@@ -460,13 +458,11 @@ function updateHUD() {
   const p = arena.player;
   $("length").textContent = Math.floor(p.length);
   $("personal-best").textContent =
-    `BEST ${Math.max(best, Math.floor(p.peak))} m`;
-  $("sector").textContent = arena.sector().toUpperCase();
+    `Best ${Math.max(best, Math.floor(p.peak))} m`;
   $("eliminations").textContent = p.kills;
   const secs = Math.floor(arena.time);
   $("run-time").textContent =
     `${String(Math.floor(secs / 60)).padStart(2, "0")}:${String(secs % 60).padStart(2, "0")}`;
-  $("coordinates").textContent = `${Math.round(p.x)} : ${Math.round(p.z)}`;
   const ranking = arena.ranking();
   $("leaders").replaceChildren();
   ranking.slice(0, 5).forEach((r, index) => {
@@ -484,7 +480,7 @@ function updateHUD() {
   const rank = ranking.indexOf(p) + 1;
   $("your-rank").textContent = rank
     ? `#${rank}  ${p.name} · ${Math.floor(p.length)} m`
-    : "SIGNAL LOST";
+    : "Crashed";
   drawMap();
 }
 function drawMap() {
@@ -493,9 +489,9 @@ function drawMap() {
     scale = s / WORLD_SIZE,
     p = arena.player;
   c.clearRect(0, 0, s, s);
-  c.fillStyle = "#091827";
+  c.fillStyle = "#100d0e";
   c.fillRect(0, 0, s, s);
-  c.strokeStyle = "#294657";
+  c.strokeStyle = "#392326";
   c.lineWidth = 0.5;
   for (let i = 0; i <= s; i += s / 8) {
     c.beginPath();
@@ -533,16 +529,16 @@ function drawMap() {
     }
   }
   c.globalAlpha = 1;
-  c.strokeStyle = "#c9ffee";
+  c.strokeStyle = "#ffffff";
   c.lineWidth = 1;
   c.beginPath();
   c.arc(map(p.x), map(p.z), 5, 0, Math.PI * 2);
   c.stroke();
-  c.fillStyle = "#e6fff4";
+  c.fillStyle = "#fff0ed";
   c.beginPath();
   c.arc(map(p.x), map(p.z), 2, 0, Math.PI * 2);
   c.fill();
-  c.strokeStyle = "#738f9b";
+  c.strokeStyle = "#866167";
   c.strokeRect(0.5, 0.5, s - 1, s - 1);
 }
 
@@ -606,25 +602,23 @@ function frame(now) {
           }
         }
         if (e.type === "elimination") {
-          toast(`${e.victim.name} cut off · collect their energy`);
+          toast(`Eliminated ${e.victim.name}`);
           soundEvent(e);
         }
       }
     }
     const p = arena.player;
     $("jump-label").textContent =
-      p.cooldown > 0
-        ? `Recharging · ${p.cooldown.toFixed(1)}s`
-        : "Ready to clear a trail";
+      p.cooldown > 0 ? `${p.cooldown.toFixed(1)}s` : "Ready";
     $("jump-meter").style.transform =
       `scaleX(${1 - p.cooldown / JUMP_COOLDOWN})`;
     $("jump-button").classList.toggle("cooldown", p.cooldown > 0);
     $("boost-label").textContent = p.boost
-      ? "Overdrive engaged"
+      ? "Boosting"
       : p.length < 50
         ? "Collect energy to boost"
         : "Hold Shift · spends length";
-    $("boost-button").style.borderColor = p.boost ? "#a3ffdc" : "";
+    $("boost-button").style.borderColor = p.boost ? "#ff4941" : "";
     if (arena.time > 9) $("pointer-hint").hidden = true;
     if (performance.now() > toastUntil) $("toast").classList.remove("visible");
     if (Math.abs(p.x) > HALF - 90 || Math.abs(p.z) > HALF - 90)

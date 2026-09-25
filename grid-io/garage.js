@@ -1,5 +1,5 @@
 import * as THREE from "./vendor/three.module.min.js";
-import { createBike } from "./bike-model.js?v=garage-1";
+import { createBike } from "./bike-model.js?v=red-1";
 
 export class BikeGarage {
   constructor(teaser, stage, reducedMotion = false) {
@@ -26,8 +26,8 @@ export class BikeGarage {
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(35, 1, 0.1, 100);
-    this.scene.add(new THREE.HemisphereLight(0xd9edff, 0x1d2636, 2.2));
-    const key = new THREE.DirectionalLight(0xe1f3ff, 4.5);
+    this.scene.add(new THREE.HemisphereLight(0xfff1ed, 0x241819, 2.2));
+    const key = new THREE.DirectionalLight(0xfff4ef, 4.5);
     key.position.set(5, 12, 9);
     key.castShadow = true;
     key.shadow.mapSize.set(1024, 1024);
@@ -41,10 +41,10 @@ export class BikeGarage {
     });
     key.shadow.normalBias = 0.06;
     this.scene.add(key);
-    const rim = new THREE.DirectionalLight(0x9a87ff, 3);
+    const rim = new THREE.DirectionalLight(0xff302a, 3);
     rim.position.set(-8, 6, -8);
     this.scene.add(rim);
-    const fill = new THREE.DirectionalLight(0x92efd9, 1.3);
+    const fill = new THREE.DirectionalLight(0xffbbaa, 1.3);
     fill.position.set(5, 3, -5);
     this.scene.add(fill);
     this.pivot = new THREE.Group();
@@ -54,7 +54,7 @@ export class BikeGarage {
     const disk = new THREE.Mesh(
       new THREE.CylinderGeometry(4.8, 4.95, 0.24, 64),
       new THREE.MeshStandardMaterial({
-        color: 0x081217,
+        color: 0x111011,
         roughness: 0.92,
         metalness: 0.02,
       }),
@@ -65,7 +65,7 @@ export class BikeGarage {
     const ring = new THREE.Mesh(
       new THREE.TorusGeometry(4.84, 0.027, 8, 96),
       new THREE.MeshBasicMaterial({
-        color: 0x77c9c1,
+        color: 0xff3930,
         transparent: true,
         opacity: 0.65,
       }),

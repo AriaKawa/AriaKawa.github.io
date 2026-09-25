@@ -6,41 +6,37 @@
       name="viewport"
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
-    <meta name="theme-color" content="#070f19" />
+    <meta name="theme-color" content="#090909" />
     <meta
       name="description"
-      content="Leave your mark. Ride the expanse, collect energy, grow your laser trail, and jump your rivals in Grid.io."
+      content="Ride, collect energy, and grow your laser trail. Customize your bike and play Grid.io."
     />
-    <title>Grid.io — Leave your mark</title>
-    <link rel="icon" href="icon.svg" type="image/svg+xml" />
-    <link rel="preload" href="assets/expanse.webp" as="image" />
-    <link rel="stylesheet" href="style.css?v=garage-1" />
+    <title>Grid.io</title>
+    <link rel="icon" href="icon.svg?v=red-1" type="image/svg+xml" />
+    <link rel="preload" href="assets/red-arena.webp" as="image" />
+    <link rel="stylesheet" href="style.css?v=red-1" />
   </head>
   <body>
     <canvas id="world" aria-label="Grid.io 3D laser bike arena"></canvas>
     <div class="vignette" aria-hidden="true"></div>
     <section id="menu" class="menu">
       <header class="menu-header">
-        <a href="../games.html" class="back-link"
-          ><span>↖</span> ARIAKAWA <span class="divider">/</span> GAMES</a
-        >
         <div class="top-actions">
           <button id="sound" class="text-button" aria-pressed="false">
-            SOUND OFF</button
+            Sound off</button
           ><button id="help" class="round-button" aria-label="How to play">
             ?
           </button>
         </div>
       </header>
       <main class="menu-center">
-        <p class="eyebrow">AN OPEN CIRCUIT. NO FINISH LINE.</p>
         <h1 class="wordmark" aria-label="Grid.io">
           <svg id="logo" viewBox="0 0 660 170" aria-hidden="true">
             <defs>
               <linearGradient id="laser" x1="0" y1="0" x2="1" y2=".4">
-                <stop stop-color="#c4ffec" />
-                <stop offset=".63" stop-color="#5fecc9" />
-                <stop offset="1" stop-color="#b79aff" />
+                <stop stop-color="#fff1ea" />
+                <stop offset=".63" stop-color="#ff3b36" />
+                <stop offset="1" stop-color="#be101c" />
               </linearGradient>
               <filter id="bloom"><feGaussianBlur stdDeviation="5" /></filter>
             </defs>
@@ -59,72 +55,58 @@
                 width="23"
                 height="10"
                 rx="4"
-                fill="#effffb"
+                fill="#fff4ef"
               />
-              <rect x="-5" y="-3" width="10" height="6" rx="2" fill="#183835" />
+              <rect x="-5" y="-3" width="10" height="6" rx="2" fill="#281014" />
               <path
                 d="M-8 -6h5m-5 12h5m9-12h5m-5 12h5"
-                stroke="#60ffda"
+                stroke="#ff302a"
                 stroke-width="3"
               />
             </g>
           </svg>
         </h1>
-        <p class="tagline">Leave your mark.</p>
         <form id="play-form" autocomplete="off">
           <label class="sr-only" for="nickname">Rider name</label>
           <input
             id="nickname"
             name="nickname"
             maxlength="18"
-            placeholder="Your rider name"
+            placeholder="Name"
             spellcheck="false"
           />
-          <button id="play" class="primary" type="submit">
-            <span>Enter the grid</span><span aria-hidden="true">↗</span>
-          </button>
+          <button id="play" class="primary" type="submit">Play</button>
         </form>
-        <p class="arena-mode"><i></i> SOLO ARENA <span>·</span> 40 AI RIDERS</p>
+        <p class="arena-mode">40 AI riders</p>
         <div class="quick-controls">
           <span><kbd>↖</kbd> Steer</span><span><kbd>SHIFT</kbd> Boost</span
           ><span><kbd>SPACE</kbd> Jump</span>
         </div>
-        <p id="load-status" role="status" class="load-status">
-          Preparing the expanse…
-        </p>
+        <p id="load-status" role="status" class="load-status">Loading…</p>
       </main>
       <footer class="menu-footer">
-        <button id="garage" class="garage-teaser">
+        <button id="garage" class="garage-teaser" aria-label="Customize bike">
           <span id="bike-teaser" class="bike-teaser" aria-hidden="true"></span
-          ><span
-            ><small>YOUR RIDE</small><strong id="ride-name">Mint Phantom</strong
-            ><em>Customize bike <span>↗</span></em></span
-          >
+          ><span>Customize</span>
         </button>
-        <div class="world-label">
-          <span class="coordinate">SECTOR 00 / THE EXPANSE</span
-          ><strong>2.4 × 2.4 km</strong
-          ><span>One grid. Endless possibilities.</span>
-        </div>
       </footer>
     </section>
     <div id="hud" hidden>
       <div class="hud-top">
         <div class="identity">
-          <span class="mini-logo">GRID<span>.io</span></span
-          ><span id="sector">THE CONFLUENCE</span>
+          <span class="mini-logo">GRID<span>.io</span></span>
         </div>
         <div class="score-box">
-          <small>TRAIL LENGTH</small
+          <small>Length</small
           ><strong><span id="length">40</span><em>m</em></strong
-          ><span id="personal-best">BEST 40 m</span>
+          ><span id="personal-best">Best 40 m</span>
         </div>
         <button id="pause-button" class="round-button" aria-label="Pause game">
           Ⅱ
         </button>
       </div>
       <aside class="leaderboard">
-        <div class="board-heading">TOP RIDERS <small>AI ARENA</small></div>
+        <div class="board-heading">Leaderboard</div>
         <ol id="leaders"></ol>
         <div class="your-rank" id="your-rank"></div>
       </aside>
@@ -136,26 +118,24 @@
             width="180"
             height="180"
             aria-label="Arena minimap"
-          ></canvas
-          ><span id="coordinates">0 : 0</span>
+          ></canvas>
         </div>
         <div class="abilities">
           <button id="boost-button" class="ability">
             <span class="ability-icon">ϟ</span
             ><span
-              ><strong>OVERDRIVE</strong
+              ><strong>Boost</strong
               ><small id="boost-label">Hold Shift · spends length</small></span
             ><kbd>SHIFT</kbd></button
           ><button id="jump-button" class="ability">
             <span class="ability-icon">↥</span
             ><span
-              ><strong>PHASE JUMP</strong
-              ><small id="jump-label">Ready to clear a trail</small></span
+              ><strong>Jump</strong><small id="jump-label">Ready</small></span
             ><kbd>SPACE</kbd><i id="jump-meter"></i>
           </button>
         </div>
         <div class="run-info">
-          <strong id="eliminations">0</strong><span>ELIMINATIONS</span
+          <strong id="eliminations">0</strong><span>Eliminations</span
           ><small id="run-time">00:00</small>
         </div>
       </div>
@@ -167,14 +147,10 @@
     <dialog id="garage-dialog" class="modal garage-modal">
       <button class="close-modal" aria-label="Close garage">×</button>
       <header class="garage-heading">
-        <p class="eyebrow">THE GARAGE / YOUR SIGNATURE</p>
-        <h2>Build your ride.</h2>
+        <h2>Customize</h2>
       </header>
       <div class="garage-layout">
         <div class="garage-preview">
-          <div class="preview-tag">
-            <span>LIVE 3D</span><span>PHANTOM / VECTOR / BULWARK</span>
-          </div>
           <div
             id="garage-stage"
             tabindex="0"
@@ -183,38 +159,36 @@
           ></div>
           <div class="preview-caption">
             <div>
-              <h3 id="garage-name">Mint Phantom</h3>
+              <h3 id="garage-name">Phantom</h3>
               <p id="loadout-summary" aria-live="polite">
                 Turbine wheels · Male rider
               </p>
             </div>
-            <button id="reset-view" class="text-button">Reset view ↺</button>
+            <button id="reset-view" class="text-button">Reset view</button>
           </div>
-          <p class="rotate-hint">DRAG TO ROTATE · ARROW KEYS WORK TOO</p>
+          <p class="rotate-hint">Drag to rotate</p>
         </div>
         <div class="garage-options">
           <section class="part-group">
-            <h3><span>01</span> BODY</h3>
+            <h3>Body</h3>
             <div
               id="body-options"
               class="part-options"
               role="group"
               aria-label="Bike body"
             ></div>
-            <p id="body-description"></p>
           </section>
           <section class="part-group">
-            <h3><span>02</span> WHEELS</h3>
+            <h3>Wheels</h3>
             <div
               id="wheel-options"
               class="part-options"
               role="group"
               aria-label="Bike wheels"
             ></div>
-            <p id="wheel-description"></p>
           </section>
           <section class="part-group">
-            <h3><span>03</span> RIDER</h3>
+            <h3>Rider</h3>
             <div
               id="rider-options"
               class="part-options rider-options"
@@ -223,7 +197,7 @@
             ></div>
           </section>
           <section class="part-group color-group">
-            <h3><span>04</span> LIGHT COLOR</h3>
+            <h3>Color</h3>
             <div
               id="swatches"
               class="swatches"
@@ -234,39 +208,20 @@
         </div>
       </div>
       <footer class="garage-footer">
-        <p>Saved automatically. All parts have equal performance.</p>
-        <button class="primary close-action">
-          Ready to ride <span>↗</span>
-        </button>
+        <p>Saved automatically</p>
+        <button class="primary close-action">Done</button>
       </footer>
     </dialog>
     <dialog id="help-dialog" class="modal">
       <button class="close-modal" aria-label="Close instructions">×</button>
-      <p class="eyebrow">THE RULES OF THE ROAD</p>
-      <h2>Small bike. Long shadow.</h2>
+      <h2>How to play</h2>
       <div class="help-steps">
+        <p>Collect energy to grow your laser trail.</p>
         <p>
-          <b>01</b
-          ><span
-            ><strong>Collect the light.</strong>Energy shards lengthen your
-            laser trail. Defeated riders leave a rich field of energy.</span
-          >
+          Hitting any trail, including your own, crashes your bike. Avoid
+          platforms and the arena boundary.
         </p>
-        <p>
-          <b>02</b
-          ><span
-            ><strong>Cut them off.</strong>Rivals crash into your trail. Avoid
-            every laser wall, including your own, reactor platforms, and the
-            arena boundary.</span
-          >
-        </p>
-        <p>
-          <b>03</b
-          ><span
-            ><strong>Take the high road.</strong>Space jumps over laser walls.
-            Shift or hold click to boost, spending a little trail length.</span
-          >
-        </p>
+        <p>Jump over laser walls. Boost to go faster, spending trail length.</p>
       </div>
       <div class="controls-table">
         <span>Steer</span><b>Mouse / WASD / arrows</b><span>Boost</span
@@ -277,37 +232,32 @@
         On touch screens, steer with the left thumb pad and use the ability
         buttons. This is a solo arena with computer riders.
       </p>
-      <button class="primary close-action">Got it <span>↗</span></button>
+      <button class="primary close-action">Done</button>
     </dialog>
     <dialog id="pause-dialog" class="modal compact">
-      <p class="eyebrow">TAKE A BREATHER</p>
-      <h2>Circuit paused.</h2>
-      <button id="resume" class="primary">
-        Back to the grid <span>↗</span></button
+      <h2>Paused</h2>
+      <button id="resume" class="primary">Resume</button
       ><button id="quality" class="secondary">Graphics: High</button
-      ><button id="quit" class="text-button">Return to menu</button>
+      ><button id="quit" class="text-button">Menu</button>
     </dialog>
     <dialog id="death-dialog" class="modal compact">
-      <p class="eyebrow">SIGNAL LOST</p>
-      <h2>You left a mark.</h2>
-      <p id="death-reason">Your circuit ends here.</p>
+      <h2>Crashed</h2>
+      <p id="death-reason">You hit a laser trail.</p>
       <div class="result-stats">
-        <div><strong id="result-length">0</strong><span>PEAK LENGTH</span></div>
+        <div><strong id="result-length">0</strong><span>Length</span></div>
         <div><strong id="result-kills">0</strong><span>ELIMINATIONS</span></div>
-        <div><strong id="result-time">0</strong><span>SECONDS</span></div>
+        <div><strong id="result-time">0</strong><span>Seconds</span></div>
       </div>
-      <button id="retry" class="primary">Ride again <span>↗</span></button
-      ><button id="death-menu" class="text-button">Return to menu</button>
+      <button id="retry" class="primary">Play again</button
+      ><button id="death-menu" class="text-button">Menu</button>
     </dialog>
     <dialog id="graphics-dialog" class="modal compact">
-      <p class="eyebrow">CIRCUIT INTERRUPTED</p>
-      <h2>Let's reconnect.</h2>
+      <h2>Graphics interrupted</h2>
       <p>
         The graphics connection was interrupted. Reload the game to reconnect to
         the arena.
       </p>
-      <button id="reload" class="primary">Reload Grid.io <span>↗</span></button
-      ><a href="../games.html" class="text-button">Back to Games</a>
+      <button id="reload" class="primary">Reload</button>
     </dialog>
     <noscript
       ><div class="no-script">
@@ -318,6 +268,6 @@
     <script type="importmap">
       { "imports": { "three": "./vendor/three.module.min.js" } }
     </script>
-    <script type="module" src="game.js?v=garage-1"></script>
+    <script type="module" src="game.js?v=red-1"></script>
   </body>
 </html>

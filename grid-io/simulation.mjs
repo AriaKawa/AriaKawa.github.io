@@ -3,7 +3,7 @@ import {
   BODIES,
   WHEELS,
   RIDERS,
-} from "./customization.mjs?v=garage-1";
+} from "./customization.mjs?v=red-1";
 
 export const WORLD_SIZE = 2400;
 export const HALF = WORLD_SIZE / 2;
@@ -14,21 +14,14 @@ export const JUMP_COOLDOWN = 5.5;
 // self-collision. The rest of its wall is as lethal as another rider's.
 export const SELF_CLEARANCE = 8;
 export const COLORS = [
-  "#86f9d4",
-  "#bb8eff",
-  "#ff8d94",
-  "#ffc875",
-  "#76cfff",
-  "#f2f4ff",
+  "#ff302a",
+  "#ff7160",
+  "#ffae6a",
+  "#f4eee8",
+  "#ff5878",
+  "#be243a",
 ];
-export const SKINS = [
-  "Mint Phantom",
-  "Violet Specter",
-  "Coral Comet",
-  "Solar Flare",
-  "Arctic Pulse",
-  "Pearl Ghost",
-];
+export const SKINS = ["Red", "Coral", "Amber", "White", "Rose", "Crimson"];
 export const LANDMARKS = [
   {
     x: 0,
@@ -36,7 +29,7 @@ export const LANDMARKS = [
     r: 26,
     name: "The Confluence",
     kind: "reactor",
-    color: 0x8ef9d6,
+    color: 0xff302a,
   },
   {
     x: -430,
@@ -44,7 +37,7 @@ export const LANDMARKS = [
     r: 36,
     name: "Violet Foundry",
     kind: "spire",
-    color: 0xb78aff,
+    color: 0xff5145,
   },
   {
     x: 470,
@@ -52,7 +45,7 @@ export const LANDMARKS = [
     r: 32,
     name: "Prism Gardens",
     kind: "garden",
-    color: 0x70caff,
+    color: 0xff7860,
   },
   {
     x: -470,
@@ -60,7 +53,7 @@ export const LANDMARKS = [
     r: 35,
     name: "Solar Relay",
     kind: "relay",
-    color: 0xffc775,
+    color: 0xffa06a,
   },
   {
     x: 460,
@@ -68,7 +61,7 @@ export const LANDMARKS = [
     r: 37,
     name: "The Archives",
     kind: "spire",
-    color: 0xff8eaf,
+    color: 0xee3040,
   },
   {
     x: 0,
@@ -76,17 +69,17 @@ export const LANDMARKS = [
     r: 23,
     name: "North Uplink",
     kind: "relay",
-    color: 0x8ef9d6,
+    color: 0xff302a,
   },
-  { x: 850, z: 0, r: 24, name: "East Uplink", kind: "garden", color: 0x76cfff },
-  { x: 0, z: 840, r: 24, name: "South Uplink", kind: "relay", color: 0xb78aff },
+  { x: 850, z: 0, r: 24, name: "East Uplink", kind: "garden", color: 0xff5540 },
+  { x: 0, z: 840, r: 24, name: "South Uplink", kind: "relay", color: 0xff5145 },
   {
     x: -850,
     z: 0,
     r: 24,
     name: "West Uplink",
     kind: "garden",
-    color: 0xffc875,
+    color: 0xffa06a,
   },
 ];
 const NAMES = [
