@@ -7,15 +7,16 @@ import {
   LANDMARKS,
   JUMP_COOLDOWN,
   jumpHeight,
-} from "./simulation.mjs?v=modes-1";
-import { GridRenderer } from "./renderer.js?v=modes-1";
-import { BikeGarage } from "./garage.js?v=modes-1";
+  normalizeSpeed,
+} from "./simulation.mjs?v=speed-1";
+import { GridRenderer } from "./renderer.js?v=speed-1";
+import { BikeGarage } from "./garage.js?v=speed-1";
 import {
   BODIES,
   WHEELS,
   RIDERS,
   normalizeLoadout,
-} from "./customization.mjs?v=modes-1";
+} from "./customization.mjs?v=speed-1";
 
 const $ = (id) => document.getElementById(id);
 const read = (key, fallback) => {
@@ -33,6 +34,7 @@ const save = (key, value) => {
   }
 };
 let mode = read("mode", "360") === "90" ? "90" : "360";
+let speedPercent = normalizeSpeed(read("speed", "100"));
 const bestKey = () => (mode === "90" ? "best-90" : "best");
 let skin = Math.max(0, Math.min(5, Number(read("skin", "0")) || 0)),
   best = Number(read(bestKey(), "0")) || 0;
@@ -79,6 +81,18 @@ for (const button of document.querySelectorAll("[data-mode]"))
     updateMode();
   });
 updateMode();
+function updateSpeed() {
+  $("speed").value = speedPercent;
+  $("speed-value").value = `${speedPercent}%`;
+  $("speed").setAttribute("aria-valuetext", `${speedPercent}%`);
+  $("speed").style.setProperty("--speed-fill", `${speedPercent / 3}%`);
+  save("speed", speedPercent);
+}
+$("speed").addEventListener("input", () => {
+  speedPercent = normalizeSpeed($("speed").value);
+  updateSpeed();
+});
+updateSpeed();
 
 function updateSoundButton() {
   $("sound").textContent = `Sound ${soundOn ? "on" : "off"}`;
@@ -255,7 +269,7 @@ function start() {
   document.querySelectorAll("dialog[open]").forEach((d) => d.close());
   const name = $("nickname").value.trim().slice(0, 18) || "Rider";
   save("name", name);
-  arena = new Arena({ name, skin, loadout, mode });
+  arena = new Arena({ name, skin, loadout, mode, speedPercent });
   graphics.reset(arena);
   state = "playing";
   $("menu").hidden = true;
@@ -735,6 +749,7 @@ if (new URLSearchParams(location.search).has("test"))
         ? {
             state,
             mode: arena.mode,
+            speedPercent: arena.speedPercent,
             time: arena.time,
             length: arena.player.length,
             peak: arena.player.peak,
@@ -748,6 +763,6 @@ if (new URLSearchParams(location.search).has("test"))
             food: arena.food.length,
             drawCalls: graphics.renderer.info.render.calls,
           }
-        : { state, mode };
+        : { state, mode, speedPercent };
     },
   };

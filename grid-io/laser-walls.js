@@ -1,5 +1,5 @@
 import * as THREE from "./vendor/three.module.min.js";
-import { WALL_BOTTOM, WALL_HEIGHT } from "./simulation.mjs?v=modes-1";
+import { WALL_BOTTOM, WALL_HEIGHT } from "./simulation.mjs?v=speed-1";
 
 // A continuous vertical sheet of light. There is no floor ribbon, platform,
 // underlay, or structural geometry beneath the laser.

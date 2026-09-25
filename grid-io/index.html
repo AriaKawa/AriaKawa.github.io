@@ -12,9 +12,9 @@
       content="Ride, collect energy, and grow your laser trail. Customize your bike and play Grid.io."
     />
     <title>Grid.io</title>
-    <link rel="icon" href="icon.svg?v=modes-1" type="image/svg+xml" />
+    <link rel="icon" href="icon.svg?v=speed-1" type="image/svg+xml" />
     <link rel="preload" href="assets/red-arena.webp" as="image" />
-    <link rel="stylesheet" href="style.css?v=modes-1" />
+    <link rel="stylesheet" href="style.css?v=speed-1" />
   </head>
   <body>
     <canvas id="world" aria-label="Grid.io 3D laser bike arena"></canvas>
@@ -92,6 +92,24 @@
             >
               360°
             </button>
+          </div>
+          <div class="speed-control">
+            <div class="speed-heading">
+              <label for="speed">Speed</label
+              ><output id="speed-value" for="speed">100%</output>
+            </div>
+            <input
+              id="speed"
+              type="range"
+              min="0"
+              max="300"
+              step="1"
+              value="100"
+              aria-valuetext="100%"
+            />
+            <div class="speed-limits" aria-hidden="true">
+              <span>0%</span><span>300%</span>
+            </div>
           </div>
           <button id="play" class="primary" type="submit">Play</button>
         </form>
@@ -293,6 +311,6 @@
     <script type="importmap">
       { "imports": { "three": "./vendor/three.module.min.js" } }
     </script>
-    <script type="module" src="game.js?v=modes-1"></script>
+    <script type="module" src="game.js?v=speed-1"></script>
   </body>
 </html>

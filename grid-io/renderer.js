@@ -1,6 +1,6 @@
 import * as THREE from "./vendor/three.module.min.js";
-import { createBike, animateWheels } from "./bike-model.js?v=modes-1";
-import { LaserWalls } from "./laser-walls.js?v=modes-1";
+import { createBike, animateWheels } from "./bike-model.js?v=speed-1";
+import { LaserWalls } from "./laser-walls.js?v=speed-1";
 import { EffectComposer } from "./vendor/postprocessing/EffectComposer.js";
 import { RenderPass } from "./vendor/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "./vendor/postprocessing/UnrealBloomPass.js";
@@ -12,7 +12,7 @@ import {
   LANDMARKS,
   jumpHeight,
   WALL_HEIGHT,
-} from "./simulation.mjs?v=modes-1";
+} from "./simulation.mjs?v=speed-1";
 
 const palette = COLORS.map((c) => new THREE.Color(c));
 const shardPalette = [

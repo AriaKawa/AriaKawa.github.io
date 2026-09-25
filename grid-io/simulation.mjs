@@ -3,7 +3,7 @@ import {
   BODIES,
   WHEELS,
   RIDERS,
-} from "./customization.mjs?v=modes-1";
+} from "./customization.mjs?v=speed-1";
 
 export const WORLD_SIZE = 2400;
 export const HALF = WORLD_SIZE / 2;
@@ -13,6 +13,10 @@ export const JUMP_COOLDOWN = 5.5;
 export const WALL_HEIGHT = 3;
 export const WALL_BOTTOM = 0.12;
 export const RIDER_HEIGHT = 3.2;
+export function normalizeSpeed(value = 100) {
+  const number = Number(value);
+  return Number.isFinite(number) ? clamp(Math.round(number), 0, 300) : 100;
+}
 export const cardinalAngle = (angle) =>
   Math.round(angle / (Math.PI / 2)) * (Math.PI / 2);
 export const trailDistance = (a, b) =>
@@ -192,8 +196,11 @@ export class Arena {
     skin = 0,
     loadout = {},
     mode = "360",
+    speedPercent = 100,
   } = {}) {
     this.mode = String(mode) === "90" ? "90" : "360";
+    this.speedPercent = normalizeSpeed(speedPercent);
+    this.speedMultiplier = this.speedPercent / 100;
     this.random = seeded(seed);
     this.time = 0;
     this.events = [];
@@ -296,7 +303,7 @@ export class Arena {
       alive: true,
       grace: 3.5,
       boost: false,
-      speed: 29,
+      speed: 29 * this.speedMultiplier,
       think: 0,
       target: null,
       drop: 0,
@@ -369,7 +376,7 @@ export class Arena {
     return null;
   }
   jump(r) {
-    if (r.alive && r.cooldown <= 0) {
+    if (this.speedMultiplier > 0 && r.alive && r.cooldown <= 0) {
       this.recordTrail(r);
       r.jump = JUMP_DURATION;
       r.cooldown = JUMP_COOLDOWN;
@@ -480,15 +487,17 @@ export class Arena {
       boost: false,
       target: null,
       think: 0,
+      speed: 29 * this.speedMultiplier,
     });
     if (this.mode === "90") r.angle = cardinalAngle(r.angle);
     r.trail = this.initialTrail(r);
   }
   step(dt, input = {}) {
+    this.events = [];
+    if (this.speedMultiplier === 0) return this.events;
     dt = clamp(dt, 0, 1 / 30);
     this.time += dt;
     this.stepCount++;
-    this.events = [];
     let foodChanged = false;
     this.rebuildTrails();
     for (const r of this.riders) {
@@ -502,7 +511,8 @@ export class Arena {
       r.grace = Math.max(0, r.grace - dt);
       r.cooldown = Math.max(0, r.cooldown - dt);
       const previousHeight = jumpHeight(r),
-        wasJumping = r.jump > 0;
+        previousJump = r.jump,
+        wasJumping = previousJump > 0;
       r.jump = Math.max(0, r.jump - dt);
       const control = r.player ? input : this.botControl(r, dt);
       if (control.jump) this.jump(r);
@@ -519,7 +529,11 @@ export class Arena {
         r.angle += clamp(angleDifference(target, r.angle), -2.9 * dt, 2.9 * dt);
       }
       r.boost = !!control.boost && r.length > BASE_LENGTH + 1;
-      r.speed = 29 * (r.boost ? 1.72 : 1) * (r.jump > 0 ? 1.08 : 1);
+      r.speed =
+        29 *
+        this.speedMultiplier *
+        (r.boost ? 1.72 : 1) *
+        (r.jump > 0 ? 1.08 : 1);
       if (r.boost) {
         r.length = Math.max(BASE_LENGTH, r.length - 7 * dt);
         r.drop += dt;
@@ -534,18 +548,18 @@ export class Arena {
       }
       r.x += Math.cos(r.angle) * r.speed * dt;
       r.z += Math.sin(r.angle) * r.speed * dt;
-      const last = r.trail[r.trail.length - 1];
+      const last = r.trail[r.trail.length - 1],
+        head = { x: r.x, y: jumpHeight(r), z: r.z };
       if (
         !last ||
-        Math.hypot(r.x - last.x, r.z - last.z) >= 2.8 ||
+        trailDistance(last, head) >= 2.8 ||
+        (previousJump > JUMP_DURATION / 2 &&
+          r.jump <= JUMP_DURATION / 2 &&
+          r.jump > 0) ||
         (wasJumping && r.jump === 0)
       )
         this.recordTrail(r);
-      let total = trailDistance(r.trail.at(-1), {
-          x: r.x,
-          y: jumpHeight(r),
-          z: r.z,
-        }),
+      let total = trailDistance(r.trail.at(-1), head),
         cut = 0;
       for (let i = r.trail.length - 1; i > 0; i--) {
         total += trailDistance(r.trail[i - 1], r.trail[i]);

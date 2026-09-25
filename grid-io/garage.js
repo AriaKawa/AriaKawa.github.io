@@ -1,5 +1,5 @@
 import * as THREE from "./vendor/three.module.min.js";
-import { createBike } from "./bike-model.js?v=modes-1";
+import { createBike } from "./bike-model.js?v=speed-1";
 
 export class BikeGarage {
   constructor(teaser, stage, reducedMotion = false) {

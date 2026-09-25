@@ -228,6 +228,81 @@ button:disabled {
     filter 0.15s,
     border-color 0.15s;
 }
+.speed-control {
+  padding: 10px 13px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background-image: var(--metal);
+  background-size: auto, 420px;
+}
+.speed-heading,
+.speed-limits {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.speed-heading {
+  font-size: 12px;
+}
+.speed-heading label {
+  color: #c7bcbc;
+}
+#speed-value {
+  font-variant-numeric: tabular-nums;
+}
+.speed-limits {
+  font-size: 9px;
+  color: var(--muted);
+}
+#speed {
+  --speed-fill: 33.333%;
+  display: block;
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  height: 24px;
+  margin: 4px 0 0;
+  cursor: pointer;
+  background: transparent;
+  accent-color: var(--red);
+}
+#speed::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 3px;
+  background: linear-gradient(
+    to right,
+    var(--red) var(--speed-fill),
+    #4a3438 var(--speed-fill)
+  );
+}
+#speed::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 15px;
+  height: 15px;
+  margin-top: -5.5px;
+  border: 2px solid #ffb5a6;
+  border-radius: 50%;
+  background: #ff4039;
+  box-shadow: 0 0 9px #ff40394d;
+}
+#speed::-moz-range-track {
+  height: 4px;
+  border-radius: 3px;
+  background: #4a3438;
+}
+#speed::-moz-range-progress {
+  height: 4px;
+  border-radius: 3px;
+  background: var(--red);
+}
+#speed::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 2px solid #ffb5a6;
+  border-radius: 50%;
+  background: #ff4039;
+}
 .primary:hover {
   filter: brightness(1.2);
   border-color: #ff9c8a;
@@ -1138,6 +1213,48 @@ kbd {
   .bike-teaser {
     width: 70px;
     height: 54px;
+  }
+}
+@media (max-height: 450px) {
+  .menu-center {
+    top: 16px;
+    width: min(320px, 90vw);
+  }
+  .wordmark {
+    width: 220px;
+    max-width: 100%;
+    margin: 0 auto 10px;
+  }
+  #play-form {
+    width: min(284px, 100%);
+    gap: 6px;
+  }
+  #nickname,
+  #play {
+    height: 36px;
+    min-height: 36px;
+    padding: 7px 14px;
+  }
+  .mode-options button {
+    height: 24px;
+  }
+  .speed-control {
+    padding: 7px 13px 6px;
+  }
+  #speed {
+    height: 21px;
+    margin-top: 2px;
+  }
+  .quick-controls {
+    display: none;
+  }
+  .menu-footer {
+    left: 14px;
+    bottom: 12px;
+  }
+  .bike-teaser {
+    width: 64px;
+    height: 48px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
