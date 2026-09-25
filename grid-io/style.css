@@ -181,6 +181,34 @@ button:disabled {
 #nickname:focus {
   border-color: #e85751;
 }
+.mode-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background-image: var(--metal);
+  background-size: auto, 420px;
+}
+.mode-options button {
+  height: 32px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  color: var(--muted);
+  background: transparent;
+  font-size: 13px;
+}
+.mode-options button:hover {
+  color: white;
+}
+.mode-options button[aria-pressed="true"] {
+  color: white;
+  background-image:
+    linear-gradient(#4c12177a, #26090da8), url("assets/red-metal.webp");
+  background-size: auto, 320px;
+  border-color: #da4c4659;
+}
 .primary {
   min-height: 50px;
   border: 1px solid #ff847470;

@@ -1,4 +1,5 @@
 import * as THREE from "./vendor/three.module.min.js";
+import { WALL_BOTTOM, WALL_HEIGHT } from "./simulation.mjs?v=modes-1";
 
 // A continuous vertical sheet of light. There is no floor ribbon, platform,
 // underlay, or structural geometry beneath the laser.
@@ -39,9 +40,24 @@ export class LaserWalls extends THREE.Mesh {
     this.positions = positions;
     this.colors = colors;
   }
-  segment(i, a, b, color, heightA, heightB) {
+  segment(i, a, b, color) {
+    const ya = a.y ?? 0,
+      yb = b.y ?? 0;
     this.positions.set(
-      [a.x, 0.12, a.z, a.x, heightA, a.z, b.x, 0.12, b.z, b.x, heightB, b.z],
+      [
+        a.x,
+        ya + WALL_BOTTOM,
+        a.z,
+        a.x,
+        ya + WALL_HEIGHT,
+        a.z,
+        b.x,
+        yb + WALL_BOTTOM,
+        b.z,
+        b.x,
+        yb + WALL_HEIGHT,
+        b.z,
+      ],
       i * 12,
     );
     for (let vertex = 0; vertex < 4; vertex++)

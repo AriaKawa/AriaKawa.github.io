@@ -12,9 +12,9 @@
       content="Ride, collect energy, and grow your laser trail. Customize your bike and play Grid.io."
     />
     <title>Grid.io</title>
-    <link rel="icon" href="icon.svg?v=red-1" type="image/svg+xml" />
+    <link rel="icon" href="icon.svg?v=modes-1" type="image/svg+xml" />
     <link rel="preload" href="assets/red-arena.webp" as="image" />
-    <link rel="stylesheet" href="style.css?v=red-1" />
+    <link rel="stylesheet" href="style.css?v=modes-1" />
   </head>
   <body>
     <canvas id="world" aria-label="Grid.io 3D laser bike arena"></canvas>
@@ -75,12 +75,30 @@
             placeholder="Name"
             spellcheck="false"
           />
+          <div class="mode-options" role="group" aria-label="Game mode">
+            <button
+              type="button"
+              data-mode="90"
+              aria-pressed="false"
+              title="Right-angle turns"
+            >
+              90°
+            </button>
+            <button
+              type="button"
+              data-mode="360"
+              aria-pressed="true"
+              title="Free steering"
+            >
+              360°
+            </button>
+          </div>
           <button id="play" class="primary" type="submit">Play</button>
         </form>
         <p class="arena-mode">40 AI riders</p>
         <div class="quick-controls">
-          <span><kbd>↖</kbd> Steer</span><span><kbd>SHIFT</kbd> Boost</span
-          ><span><kbd>SPACE</kbd> Jump</span>
+          <span><kbd id="steer-key">↖</kbd> Steer</span
+          ><span><kbd>SHIFT</kbd> Boost</span><span><kbd>SPACE</kbd> Jump</span>
         </div>
         <p id="load-status" role="status" class="load-status">Loading…</p>
       </main>
@@ -221,7 +239,14 @@
           Hitting any trail, including your own, crashes your bike. Avoid
           platforms and the arena boundary.
         </p>
-        <p>Jump over laser walls. Boost to go faster, spending trail length.</p>
+        <p>
+          Jump lifts your bike and laser trail, leaving an arch riders can pass
+          underneath. The arch stays until that section of trail expires.
+        </p>
+        <p>
+          90° uses instant right-angle turns with no reversing. 360° allows free
+          steering. Boost spends trail length.
+        </p>
       </div>
       <div class="controls-table">
         <span>Steer</span><b>Mouse / WASD / arrows</b><span>Boost</span
@@ -268,6 +293,6 @@
     <script type="importmap">
       { "imports": { "three": "./vendor/three.module.min.js" } }
     </script>
-    <script type="module" src="game.js?v=red-1"></script>
+    <script type="module" src="game.js?v=modes-1"></script>
   </body>
 </html>

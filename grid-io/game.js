@@ -7,15 +7,15 @@ import {
   LANDMARKS,
   JUMP_COOLDOWN,
   jumpHeight,
-} from "./simulation.mjs?v=red-1";
-import { GridRenderer } from "./renderer.js?v=red-1";
-import { BikeGarage } from "./garage.js?v=red-1";
+} from "./simulation.mjs?v=modes-1";
+import { GridRenderer } from "./renderer.js?v=modes-1";
+import { BikeGarage } from "./garage.js?v=modes-1";
 import {
   BODIES,
   WHEELS,
   RIDERS,
   normalizeLoadout,
-} from "./customization.mjs?v=red-1";
+} from "./customization.mjs?v=modes-1";
 
 const $ = (id) => document.getElementById(id);
 const read = (key, fallback) => {
@@ -32,8 +32,11 @@ const save = (key, value) => {
     /* Private browsing can disable storage; riding still works. */
   }
 };
+let mode = read("mode", "360") === "90" ? "90" : "360";
+const bestKey = () => (mode === "90" ? "best-90" : "best");
 let skin = Math.max(0, Math.min(5, Number(read("skin", "0")) || 0)),
-  best = Number(read("best", "0")) || 0;
+  best = Number(read(bestKey(), "0")) || 0;
+const turns = [];
 let loadout;
 try {
   loadout = normalizeLoadout(JSON.parse(read("loadout", "{}")));
@@ -63,6 +66,19 @@ const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const isTouch = matchMedia("(pointer:coarse)").matches;
 $("nickname").value = read("name", "");
 $("play").disabled = true;
+function updateMode() {
+  save("mode", mode);
+  best = Number(read(bestKey(), "0")) || 0;
+  for (const button of document.querySelectorAll("[data-mode]"))
+    button.setAttribute("aria-pressed", button.dataset.mode === mode);
+  $("steer-key").textContent = mode === "90" ? "WASD" : "↖";
+}
+for (const button of document.querySelectorAll("[data-mode]"))
+  button.addEventListener("click", () => {
+    mode = button.dataset.mode;
+    updateMode();
+  });
+updateMode();
 
 function updateSoundButton() {
   $("sound").textContent = `Sound ${soundOn ? "on" : "off"}`;
@@ -224,6 +240,7 @@ for (const d of document.querySelectorAll("dialog")) {
 
 function clearInput() {
   keys.clear();
+  turns.length = 0;
   mouseBoost = touchBoost = false;
   joystickAngle = null;
   $("joystick").querySelector("i").style.transform = "";
@@ -238,7 +255,7 @@ function start() {
   document.querySelectorAll("dialog[open]").forEach((d) => d.close());
   const name = $("nickname").value.trim().slice(0, 18) || "Rider";
   save("name", name);
-  arena = new Arena({ name, skin, loadout });
+  arena = new Arena({ name, skin, loadout, mode });
   graphics.reset(arena);
   state = "playing";
   $("menu").hidden = true;
@@ -253,7 +270,9 @@ function start() {
   updateHUD();
   $("pointer-hint").textContent = isTouch
     ? "Left thumb to steer · tap ↥ to jump"
-    : "Every trail is lethal · Space jumps over lasers";
+    : mode === "90"
+      ? "Arrows / WASD · 90° turns · Space jumps"
+      : "Steer with mouse · Space jumps";
   $("pointer-hint").hidden = false;
 }
 function pause() {
@@ -273,7 +292,7 @@ function menu() {
   document.querySelectorAll("dialog[open]").forEach((d) => d.close());
   if (arena) {
     best = Math.max(best, Math.floor(arena.player.peak));
-    save("best", best);
+    save(bestKey(), best);
   }
   state = "menu";
   clearInput();
@@ -283,7 +302,7 @@ function menu() {
 }
 function end(event) {
   best = Math.max(best, Math.floor(arena.player.peak));
-  save("best", best);
+  save(bestKey(), best);
   state = "dead";
   clearInput();
   $("result-length").textContent = Math.floor(arena.player.peak);
@@ -350,6 +369,16 @@ const gameKeys = new Set([
   "Escape",
   "KeyP",
 ]);
+const turnKeys = {
+  ArrowRight: 0,
+  KeyD: 0,
+  ArrowDown: Math.PI / 2,
+  KeyS: Math.PI / 2,
+  ArrowLeft: Math.PI,
+  KeyA: Math.PI,
+  ArrowUp: -Math.PI / 2,
+  KeyW: -Math.PI / 2,
+};
 window.addEventListener("keydown", (e) => {
   if (e.target instanceof HTMLInputElement) return;
   if (!gameKeys.has(e.code)) return;
@@ -360,6 +389,10 @@ window.addEventListener("keydown", (e) => {
     return;
   }
   if (state !== "playing") return;
+  if (mode === "90" && e.code in turnKeys && !e.repeat) {
+    pointer.active = false;
+    if (turns.length < 2) turns.push(turnKeys[e.code]);
+  }
   keys.add(e.code);
   if (e.code === "Space" && !e.repeat) doJump();
 });
@@ -441,8 +474,9 @@ function input() {
     z =
       (keys.has("KeyS") || keys.has("ArrowDown") ? 1 : 0) -
       (keys.has("KeyW") || keys.has("ArrowUp") ? 1 : 0);
-  if (x || z) angle = Math.atan2(z / 0.832, x);
+  if (mode === "360" && (x || z)) angle = Math.atan2(z / 0.832, x);
   if (joystickAngle !== null) angle = joystickAngle;
+  if (mode === "90" && turns.length) angle = turns.shift();
   return {
     angle,
     boost:
@@ -700,6 +734,7 @@ if (new URLSearchParams(location.search).has("test"))
       return arena
         ? {
             state,
+            mode: arena.mode,
             time: arena.time,
             length: arena.player.length,
             peak: arena.player.peak,
@@ -713,6 +748,6 @@ if (new URLSearchParams(location.search).has("test"))
             food: arena.food.length,
             drawCalls: graphics.renderer.info.render.calls,
           }
-        : { state };
+        : { state, mode };
     },
   };

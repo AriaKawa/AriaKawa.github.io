@@ -1,7 +1,7 @@
 import * as THREE from "./vendor/three.module.min.js";
 import { mergeGeometries } from "./vendor/utils/BufferGeometryUtils.js";
-import { COLORS } from "./simulation.mjs?v=red-1";
-import { normalizeLoadout, loadoutKey } from "./customization.mjs?v=red-1";
+import { COLORS } from "./simulation.mjs?v=modes-1";
+import { normalizeLoadout, loadoutKey } from "./customization.mjs?v=modes-1";
 
 const templates = new Map();
 const unitBox = new THREE.BoxGeometry(1, 1, 1);

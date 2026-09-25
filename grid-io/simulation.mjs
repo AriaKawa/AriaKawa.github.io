@@ -3,13 +3,20 @@ import {
   BODIES,
   WHEELS,
   RIDERS,
-} from "./customization.mjs?v=red-1";
+} from "./customization.mjs?v=modes-1";
 
 export const WORLD_SIZE = 2400;
 export const HALF = WORLD_SIZE / 2;
 export const BASE_LENGTH = 48;
 export const JUMP_DURATION = 1.05;
 export const JUMP_COOLDOWN = 5.5;
+export const WALL_HEIGHT = 3;
+export const WALL_BOTTOM = 0.12;
+export const RIDER_HEIGHT = 3.2;
+export const cardinalAngle = (angle) =>
+  Math.round(angle / (Math.PI / 2)) * (Math.PI / 2);
+export const trailDistance = (a, b) =>
+  Math.hypot(b.x - a.x, b.z - a.z, (b.y ?? 0) - (a.y ?? 0));
 // Only the fresh attachment immediately behind a bike is excluded from
 // self-collision. The rest of its wall is as lethal as another rider's.
 export const SELF_CLEARANCE = 8;
@@ -23,14 +30,6 @@ export const COLORS = [
 ];
 export const SKINS = ["Red", "Coral", "Amber", "White", "Rose", "Crimson"];
 export const LANDMARKS = [
-  {
-    x: 0,
-    z: 0,
-    r: 26,
-    name: "The Confluence",
-    kind: "reactor",
-    color: 0xff302a,
-  },
   {
     x: -430,
     z: -440,
@@ -192,7 +191,9 @@ export class Arena {
     name = "Rider",
     skin = 0,
     loadout = {},
+    mode = "360",
   } = {}) {
+    this.mode = String(mode) === "90" ? "90" : "360";
     this.random = seeded(seed);
     this.time = 0;
     this.events = [];
@@ -221,6 +222,7 @@ export class Arena {
       b.length = 65 + this.random() * 180;
       b.peak = b.length;
       b.angle = this.random() * Math.PI * 2;
+      if (this.mode === "90") b.angle = cardinalAngle(b.angle);
       b.trail = this.initialTrail(b);
     }
     for (let i = 0; i < food; i++) {
@@ -267,10 +269,15 @@ export class Arena {
     for (let d = r.length; d >= 0; d -= 2.8) {
       const x = r.x - Math.cos(r.angle) * d,
         z = r.z - Math.sin(r.angle) * d;
-      if (!this.blocked(x, z, 2)) pts.push({ x, z });
+      if (!this.blocked(x, z, 2)) pts.push({ x, y: 0, z });
     }
-    pts.push({ x: r.x, z: r.z });
+    pts.push({ x: r.x, y: 0, z: r.z });
     return pts;
+  }
+  recordTrail(r, height = jumpHeight(r)) {
+    const point = { x: r.x, y: height, z: r.z };
+    if (!r.trail.length || trailDistance(r.trail.at(-1), point) > 0.00001)
+      r.trail.push(point);
   }
   makeRider(name, skin, player, pos) {
     const r = {
@@ -320,32 +327,50 @@ export class Arena {
     this.trailHash.clear();
     for (const rider of this.riders) {
       if (!rider.alive) continue;
-      const last = rider.trail.at(-1);
-      let distanceFromHead = last
-        ? Math.hypot(rider.x - last.x, rider.z - last.z)
-        : 0;
-      for (let i = rider.trail.length - 1; i > 0; i--) {
+      const head = { x: rider.x, y: jumpHeight(rider), z: rider.z };
+      let distanceFromHead = 0;
+      for (let i = rider.trail.length; i > 0; i--) {
         const a = rider.trail[i - 1],
-          b = rider.trail[i];
-        const length = Math.hypot(a.x - b.x, a.z - b.z);
+          b = i === rider.trail.length ? head : rider.trail[i];
+        const length = trailDistance(a, b);
         const segment = { a, b, rider, distanceFromHead };
         distanceFromHead += length;
-        if (length > 6) continue;
+        if (length < 0.00001 || Math.hypot(a.x - b.x, a.z - b.z) > 6) continue;
         this.trailHash.insert(segment, (a.x + b.x) / 2, (a.z + b.z) / 2);
       }
     }
   }
-  trailAt(r, x, z, radius = 2.3) {
+  trailAt(r, x, z, radius = 2.3, altitude = jumpHeight(r)) {
     for (const s of this.trailHash.query(x, z, radius + 3)) {
       if (!s.rider.alive || s.rider.grace > 0) continue;
       if (s.rider === r && s.distanceFromHead < SELF_CLEARANCE) continue;
-      if (pointSegmentDistanceSq(x, z, s.a, s.b) < radius * radius)
+      if (pointSegmentDistanceSq(x, z, s.a, s.b) >= radius * radius) continue;
+      // Test the whole span inside the bike's horizontal footprint, including
+      // sloping takeoff/landing sections, against its vertical body interval.
+      const dx = s.b.x - s.a.x,
+        dz = s.b.z - s.a.z;
+      const lengthSq = dx * dx + dz * dz;
+      const t = lengthSq ? ((x - s.a.x) * dx + (z - s.a.z) * dz) / lengthSq : 0;
+      const perpendicularSq =
+        (x - s.a.x - t * dx) ** 2 + (z - s.a.z - t * dz) ** 2;
+      const reach = lengthSq
+        ? Math.sqrt(Math.max(0, radius * radius - perpendicularSq) / lengthSq)
+        : 1;
+      const ya = s.a.y ?? 0,
+        dy = (s.b.y ?? 0) - ya;
+      const y0 = ya + dy * clamp(t - reach, 0, 1),
+        y1 = ya + dy * clamp(t + reach, 0, 1);
+      if (
+        altitude < Math.max(y0, y1) + WALL_HEIGHT + 0.1 &&
+        altitude + RIDER_HEIGHT > Math.min(y0, y1) + WALL_BOTTOM - 0.1
+      )
         return s.rider;
     }
     return null;
   }
   jump(r) {
     if (r.alive && r.cooldown <= 0) {
+      this.recordTrail(r);
       r.jump = JUMP_DURATION;
       r.cooldown = JUMP_COOLDOWN;
       this.events.push({ type: "jump", rider: r });
@@ -372,18 +397,11 @@ export class Arena {
       let want = Math.atan2(r.target.z - r.z, r.target.x - r.x),
         choice = r.angle,
         bestCost = Infinity;
-      for (const offset of [
-        0,
-        0.45,
-        -0.45,
-        0.9,
-        -0.9,
-        1.5,
-        -1.5,
-        2.3,
-        -2.3,
-        Math.PI,
-      ]) {
+      const offsets =
+        this.mode === "90"
+          ? [0, Math.PI / 2, -Math.PI / 2]
+          : [0, 0.45, -0.45, 0.9, -0.9, 1.5, -1.5, 2.3, -2.3, Math.PI];
+      for (const offset of offsets) {
         const a = r.angle + offset;
         let cost =
           Math.abs(angleDifference(want, a)) * 10 + Math.abs(offset) * 2;
@@ -448,7 +466,7 @@ export class Arena {
       p = this.randomPosition();
       if (
         Math.hypot(p.x - this.player.x, p.z - this.player.z) > 140 &&
-        !this.trailAt(r, p.x, p.z, 30)
+        !this.trailAt(r, p.x, p.z, 30, 0)
       )
         break;
     }
@@ -463,6 +481,7 @@ export class Arena {
       target: null,
       think: 0,
     });
+    if (this.mode === "90") r.angle = cardinalAngle(r.angle);
     r.trail = this.initialTrail(r);
   }
   step(dt, input = {}) {
@@ -482,11 +501,23 @@ export class Arena {
       }
       r.grace = Math.max(0, r.grace - dt);
       r.cooldown = Math.max(0, r.cooldown - dt);
+      const previousHeight = jumpHeight(r),
+        wasJumping = r.jump > 0;
       r.jump = Math.max(0, r.jump - dt);
       const control = r.player ? input : this.botControl(r, dt);
       if (control.jump) this.jump(r);
       const target = Number.isFinite(control.angle) ? control.angle : r.angle;
-      r.angle += clamp(angleDifference(target, r.angle), -2.9 * dt, 2.9 * dt);
+      if (this.mode === "90") {
+        const direction = cardinalAngle(target);
+        const turn = Math.abs(angleDifference(direction, r.angle));
+        // Opposite inputs are ignored: a reversal would drive into the neck.
+        if (turn > 0.01 && turn < Math.PI - 0.01) {
+          this.recordTrail(r, previousHeight);
+          r.angle = direction;
+        }
+      } else {
+        r.angle += clamp(angleDifference(target, r.angle), -2.9 * dt, 2.9 * dt);
+      }
       r.boost = !!control.boost && r.length > BASE_LENGTH + 1;
       r.speed = 29 * (r.boost ? 1.72 : 1) * (r.jump > 0 ? 1.08 : 1);
       if (r.boost) {
@@ -504,15 +535,20 @@ export class Arena {
       r.x += Math.cos(r.angle) * r.speed * dt;
       r.z += Math.sin(r.angle) * r.speed * dt;
       const last = r.trail[r.trail.length - 1];
-      if (!last || Math.hypot(r.x - last.x, r.z - last.z) >= 2.8)
-        r.trail.push({ x: r.x, z: r.z });
-      let total = 0,
+      if (
+        !last ||
+        Math.hypot(r.x - last.x, r.z - last.z) >= 2.8 ||
+        (wasJumping && r.jump === 0)
+      )
+        this.recordTrail(r);
+      let total = trailDistance(r.trail.at(-1), {
+          x: r.x,
+          y: jumpHeight(r),
+          z: r.z,
+        }),
         cut = 0;
       for (let i = r.trail.length - 1; i > 0; i--) {
-        total += Math.hypot(
-          r.trail[i].x - r.trail[i - 1].x,
-          r.trail[i].z - r.trail[i - 1].z,
-        );
+        total += trailDistance(r.trail[i - 1], r.trail[i]);
         if (total > r.length) {
           cut = i;
           break;
@@ -530,12 +566,10 @@ export class Arena {
           );
           continue;
         }
-        if (jumpHeight(r) < 3.1) {
-          const killer = this.trailAt(r, r.x, r.z);
-          if (killer) {
-            this.kill(r, killer, killer === r ? "self" : "trail");
-            continue;
-          }
+        const killer = this.trailAt(r, r.x, r.z);
+        if (killer) {
+          this.kill(r, killer, killer === r ? "self" : "trail");
+          continue;
         }
       }
       for (const f of this.foodHash.query(r.x, r.z, 5.8)) {

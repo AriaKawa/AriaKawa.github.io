@@ -1,6 +1,6 @@
 import * as THREE from "./vendor/three.module.min.js";
-import { createBike, animateWheels } from "./bike-model.js?v=red-1";
-import { LaserWalls } from "./laser-walls.js?v=red-1";
+import { createBike, animateWheels } from "./bike-model.js?v=modes-1";
+import { LaserWalls } from "./laser-walls.js?v=modes-1";
 import { EffectComposer } from "./vendor/postprocessing/EffectComposer.js";
 import { RenderPass } from "./vendor/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "./vendor/postprocessing/UnrealBloomPass.js";
@@ -11,7 +11,8 @@ import {
   COLORS,
   LANDMARKS,
   jumpHeight,
-} from "./simulation.mjs?v=red-1";
+  WALL_HEIGHT,
+} from "./simulation.mjs?v=modes-1";
 
 const palette = COLORS.map((c) => new THREE.Color(c));
 const shardPalette = [
@@ -25,6 +26,8 @@ const shardPalette = [
 const dummy = new THREE.Object3D();
 const white = new THREE.Color("#fff5f0");
 const UP = new THREE.Vector3(0, 1, 0);
+const ALONG = new THREE.Vector3(1, 0, 0);
+const edgeDirection = new THREE.Vector3();
 const boxGeo = new THREE.BoxGeometry(1, 1, 1);
 const standard = (color, metalness = 0.45, roughness = 0.38) =>
   new THREE.MeshStandardMaterial({ color, metalness, roughness });
@@ -560,28 +563,21 @@ export class GridRenderer {
     for (const r of arena.riders) {
       if (!r.alive) continue;
       const points = r.trail;
+      const head = { x: r.x, y: jumpHeight(r), z: r.z };
       for (let i = 0; i < points.length; i++) {
         const a = points[i],
-          b = i === points.length - 1 ? r : points[i + 1];
+          b = i === points.length - 1 ? head : points[i + 1];
         if ((a.x - p.x) ** 2 + (a.z - p.z) ** 2 > rangeSq) continue;
         const len = Math.hypot(b.x - a.x, b.z - a.z);
         if (len < 0.01 || len > 6 || ti >= 12000) continue;
-        const tailFade = Math.min(1, (i + 1) / 7),
-          height = 3 * tailFade;
-        dummy.position.set((a.x + b.x) / 2, height / 2, (a.z + b.z) / 2);
-        dummy.rotation.set(0, -Math.atan2(b.z - a.z, b.x - a.x), 0);
-        dummy.scale.set(len, height, 0.6);
-        dummy.updateMatrix();
-        this.walls.segment(
-          ti,
-          a,
-          b,
-          palette[r.skin],
-          3 * Math.min(1, (i + 1) / 7),
-          3 * Math.min(1, (i + 2) / 7),
-        );
-        dummy.position.y = height + 0.08;
-        dummy.scale.set(len + 0.19, 0.26, 0.38);
+        this.walls.segment(ti, a, b, palette[r.skin]);
+        const ya = (a.y ?? 0) + WALL_HEIGHT + 0.08,
+          yb = (b.y ?? 0) + WALL_HEIGHT + 0.08;
+        edgeDirection.set(b.x - a.x, yb - ya, b.z - a.z);
+        const edgeLength = edgeDirection.length();
+        dummy.position.set((a.x + b.x) / 2, (ya + yb) / 2, (a.z + b.z) / 2);
+        dummy.quaternion.setFromUnitVectors(ALONG, edgeDirection.normalize());
+        dummy.scale.set(edgeLength + 0.19, 0.26, 0.38);
         dummy.updateMatrix();
         this.cores.setMatrixAt(ti, dummy.matrix);
         this.cores.setColorAt(ti, palette[r.skin].clone().lerp(white, 0.32));
