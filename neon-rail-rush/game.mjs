@@ -1,4 +1,5 @@
 import {Run,BASE_SPEED,DISTRICTS,TRAIN_CAR_LENGTH} from './model.mjs?v=20260926-trains';
+import {solidBox,CAMERA_Z,NEAR_Z,FAR_Z} from './geometry.mjs?v=20260926-solids';
 
 const $ = id => document.getElementById(id);
 const canvas = $('game'), ctx = canvas.getContext('2d',{alpha:false});
@@ -57,7 +58,7 @@ function resize(){
 new ResizeObserver(resize).observe($('stage')); resize();
 const palettes=[{road:'#29203d',road2:'#30233f',edge:'#17203b',rail:'#937a9f',glow:'#58efde',wall:'#211833'}, {road:'#142d3b',road2:'#173440',edge:'#101d34',rail:'#658ba0',glow:'#5eeed7',wall:'#152235'}, {road:'#292043',road2:'#34254c',edge:'#181c39',rail:'#8a799f',glow:'#ff85cb',wall:'#1b1631'}];
 function projection(lane,z,height=0){
-  const s=24/(Math.max(-12,z)+24), horizon=H*.34, ground=H*.855, laneWidth=W*(W<500?.267:.211);
+  const s=24/(Math.max(NEAR_Z,z)+24), horizon=H*.34, ground=H*.855, laneWidth=W*(W<500?.267:.211);
   const curve=Math.sin((run.distance+Math.max(z,0))/240)*W*.035*(1-s);
   return {x:W/2+lane*laneWidth*s+curve-run.x*W*.013*(1-s),y:horizon+(ground-horizon)*s-height*H*.076*s,s,laneWidth};
 }
@@ -72,8 +73,14 @@ function trainDimensions(){
   return {width,height:width/ratio,half:width/laneWidth/2};
 }
 function trainPoint(lane,z,height=0){const p=projection(lane,z);return [p.x,p.y-height*p.s];}
-function textureQuad(img,sx,sw,points){
-  const [a,b,c,d]=points,h=img.height;
+function camera(){
+  const laneWidth=projection(0,0).laneWidth;
+  return {x:(Math.sin(run.distance/240)*W*.035-run.x*W*.013)/laneWidth,y:H*(.855-.34),z:CAMERA_Z};
+}
+function projectFace(face){return face.points.map(([x,y,z])=>trainPoint(x,z,y));}
+function textureQuad(img,sx,sw,points,sy=0,sh=img.height){
+  const [a,b,c,d]=points,h=sh;
+  if(sw<=0||h<=0)return;
   // Small affine strips preserve the pixel texture on a receding carriage side.
   for(const second of [false,true]){
     ctx.save();ctx.beginPath();const tri=second?[b,c,d]:[a,b,d];
@@ -81,43 +88,81 @@ function textureQuad(img,sx,sw,points){
     const ax=(second?c[0]-d[0]:b[0]-a[0])/sw,ay=(second?c[1]-d[1]:b[1]-a[1])/sw;
     const bx=(second?c[0]-b[0]:d[0]-a[0])/h,by=(second?c[1]-b[1]:d[1]-a[1])/h;
     const tx=second?c[0]-ax*sw-bx*h:a[0],ty=second?c[1]-ay*sw-by*h:a[1];
-    ctx.transform(ax,ay,bx,by,tx,ty);ctx.drawImage(img,sx,0,sw,h,0,0,sw,h);ctx.restore();
+    ctx.transform(ax,ay,bx,by,tx,ty);ctx.drawImage(img,sx,sy,sw,h,0,0,sw,h);ctx.restore();
   }
 }
 function drawTrainCar(e,car){
   const start=e.at-run.distance+car*TRAIN_CAR_LENGTH,end=start+TRAIN_CAR_LENGTH-0.8;
-  if(end<-11||start>240)return;
-  const near=Math.max(-11,start),far=Math.min(240,end),dim=trainDimensions(),roof=dim.height*.9;
+  const dim=trainDimensions(),roof=dim.height*.9;
+  const box=solidBox({x0:e.lane-dim.half,x1:e.lane+dim.half,z0:start,z1:end,top:roof},camera());
+  if(!box)return;
+  const {near,far}=box;
   const point=(side,z,h)=>trainPoint(e.lane+side*dim.half,z,h);
-  // Textured sides, continuous roof, ventilation units and carriage couplers.
-  for(const side of [-1,1]){
-    const image=images.carriage,step=(end-start)/8;
-    for(let at=end;at>near;at-=step){
-      const z1=Math.max(near,at-step),z2=Math.min(far,at);if(z2<=z1)continue;
-      const sx=(z1-start)/(end-start)*image.width,sw=(z2-z1)/(end-start)*image.width;
-      textureQuad(image,sx,sw,[point(side,z1,roof),point(side,z2,roof),point(side,z2,0),point(side,z1,0)]);
+  for(const face of box.faces){
+    if(!face.visible)continue;
+    const points=projectFace(face);
+    // Every exterior face is opaque beneath the decorative alpha sprites.
+    poly(points,face.name==='roof'?'#296877':face.name==='front'?'#174858':'#085266');
+    if(face.name==='left'||face.name==='right'){
+      const side=face.name==='left'?-1:1,image=images.carriage,step=(end-start)/8;
+      for(let at=end;at>near;at-=step){
+        const z1=Math.max(near,at-step),z2=Math.min(far,at);if(z2<=z1)continue;
+        const sx=(z1-start)/(end-start)*image.width,sw=(z2-z1)/(end-start)*image.width;
+        textureQuad(image,sx,sw,[point(side,z1,roof),point(side,z2,roof),point(side,z2,0),point(side,z1,0)]);
+      }
+    }else if(face.name==='roof'){
+      for(const side of [-1,1])poly([point(side,near,roof),point(side,far,roof),trainPoint(e.lane+side*dim.half*.9,far,roof),trainPoint(e.lane+side*dim.half*.9,near,roof)],'#58a0a5');
+      for(let z=start+2;z<end;z+=4){
+        if(z<near||z+1.4>far)continue;
+        poly([trainPoint(e.lane-dim.half*.5,z,roof),trainPoint(e.lane-dim.half*.5,z+1.4,roof),trainPoint(e.lane+dim.half*.5,z+1.4,roof),trainPoint(e.lane+dim.half*.5,z,roof)],'#152c46');
+        const a=trainPoint(e.lane-dim.half*.35,z+.5,roof),b=trainPoint(e.lane+dim.half*.35,z+.5,roof);rect(a[0],a[1],b[0]-a[0],1,'#58929e');
+      }
+    }else if(face.name==='front'){
+      if(car===0&&!box.nearClipped)drawTrainNose(e);
+      else {
+        const panel=(left,right,bottom,top,color)=>poly([trainPoint(e.lane+left*dim.half,near,top*roof),trainPoint(e.lane+right*dim.half,near,top*roof),trainPoint(e.lane+right*dim.half,near,bottom*roof),trainPoint(e.lane+left*dim.half,near,bottom*roof)],color);
+        panel(-.85,.85,.12,.18,'#eb288c');panel(-.3,.3,.1,.85,'#102d40');panel(-.23,.23,.5,.76,'#69d7df');
+        panel(-.94,-.79,.23,.31,'#ff647e');panel(.79,.94,.23,.31,'#ff647e');
+      }
     }
-  }
-  poly([point(-1,near,roof),point(-1,far,roof),point(1,far,roof),point(1,near,roof)],'#296877');
-  for(const side of [-1,1]){
-    poly([point(side,near,roof),point(side,far,roof),trainPoint(e.lane+side*dim.half*.9,far,roof+2),trainPoint(e.lane+side*dim.half*.9,near,roof+2)],'#58a0a5');
-  }
-  for(let z=start+2;z<end;z+=4){
-    if(z<near||z+1.4>far)continue;
-    poly([trainPoint(e.lane-dim.half*.5,z,roof+2),trainPoint(e.lane-dim.half*.5,z+1.4,roof+2),trainPoint(e.lane+dim.half*.5,z+1.4,roof+2),trainPoint(e.lane+dim.half*.5,z,roof+2)],'#152c46');
-    const a=trainPoint(e.lane-dim.half*.35,z+.5,roof+3),b=trainPoint(e.lane+dim.half*.35,z+.5,roof+3);
-    rect(a[0],a[1],b[0]-a[0],1,'#58929e');
-  }
-  if(car>0&&start>-11){
-    const p=projection(e.lane,start);rect(p.x-dim.width*.12*p.s,p.y-dim.height*.32*p.s,dim.width*.24*p.s,dim.height*.22*p.s,'#10192c');
   }
 }
 function drawTrainNose(e){
-  const z=e.at-run.distance;if(z>240||z<-11)return;
+  const z=e.at-run.distance;if(z>FAR_Z||z<NEAR_Z)return;
   const p=projection(e.lane,z),dim=trainDimensions();sprite('train',p.x,p.y,dim.width*p.s,dim.height*p.s);
   if(mode==='playing'&&!reducedMotion){
     const flicker=Math.sin(run.time*18+e.id)>.2?'#fff5c6':'#ffc961';
     for(const side of [-1,1])rect(p.x+side*dim.width*.26*p.s-1,p.y-dim.height*.32*p.s,2*p.s,2*p.s,flicker);
+  }
+}
+function drawBuilding(side,z,n){
+  const name=`building${(n+(side>0?2:0))%4}`,image=images[name],height=145+n%4*22;
+  const laneWidth=projection(0,0).laneWidth,width=height*(image.width/image.height)/laneWidth;
+  const inner=side*1.94,outer=inner+side*width,depth=16+n%3;
+  const bounds={x0:Math.min(inner,outer),x1:Math.max(inner,outer),z0:z,z1:z+depth,top:height};
+  const box=solidBox(bounds,camera());if(!box)return;
+  for(const face of box.faces){
+    if(!face.visible)continue;
+    const points=projectFace(face),wall=face.name==='left'||face.name==='right';
+    poly(points,face.name==='roof'?'#304356':wall?'#13283a':'#202a40');
+    if(wall){
+      const x=face.name==='left'?bounds.x0:bounds.x1;
+      for(let at=box.far;at>box.near;at-=3){
+        const z0=Math.max(box.near,at-3),z1=at;
+        textureQuad(image,(z0-z)/depth*image.width,(z1-z0)/depth*image.width,[trainPoint(x,z0,height),trainPoint(x,z1,height),trainPoint(x,z1,0),trainPoint(x,z0,0)],image.height*.22,image.height*.78);
+      }
+      poly(points,'#08172f66');
+    }else if(face.name==='front'){
+      textureQuad(image,0,image.width,points,image.height*.22,image.height*.78);
+      // Solid foundation and roof trim anchor the textured facade to the volume.
+      poly([trainPoint(bounds.x0,box.near,0),trainPoint(bounds.x1,box.near,0),trainPoint(bounds.x1,box.near,4),trainPoint(bounds.x0,box.near,4)],'#26394c');
+    }else if(face.name==='roof'){
+      ctx.strokeStyle='#52637b';ctx.lineWidth=1;ctx.beginPath();points.forEach(([x,y],i)=>i?ctx.lineTo(Math.round(x),Math.round(y)):ctx.moveTo(Math.round(x),Math.round(y)));ctx.closePath();ctx.stroke();
+      for(const offset of [4,10]){
+        const vent=solidBox({x0:bounds.x0+width*.27,x1:bounds.x1-width*.27,z0:z+offset,z1:z+offset+2.8,bottom:height,top:height+7},camera());
+        if(vent)for(const surface of vent.faces)if(surface.visible)poly(projectFace(surface),surface.name==='roof'?'#6a7786':surface.name==='front'?'#354055':'#202e41');
+      }
+    }
   }
 }
 function drawScenery(){
@@ -143,15 +188,15 @@ function drawScenery(){
   }
   // Platforms, passing shop fronts, signal posts and overhead power lines.
   const landmarks=[];
-  const first=Math.floor((run.distance-15)/23)*23;
+  const first=Math.floor((run.distance-45)/23)*23;
   for(let at=first;at<run.distance+240;at+=23)landmarks.push(at);
   landmarks.reverse().forEach(at=>{
-    const z=at-run.distance;if(z<-10)return;
+    const z=at-run.distance;if(z+18<NEAR_Z)return;
     const n=Math.abs(Math.floor(at/23));
     for(const side of [-1,1]){
+      drawBuilding(side,z,n);
+      if(z<-11)continue;
       const p=projection(side*2.02,z),s=p.s;
-      const building=images[`building${(n+(side>0?2:0))%4}`],bh=(185+n%4*22)*s,bw=bh*(building?building.width/building.height:.67);
-      sprite(`building${(n+(side>0?2:0))%4}`,p.x+side*bw*.45,p.y,bw,bh);
       const post=projection(side*1.74,z),height=H*.43*s;
       rect(post.x-1*s,post.y-height,2*s,height,'#0e142a');
       rect(post.x-(side>0?12*s:0),post.y-height,12*s,2*s,'#343355');
@@ -165,7 +210,7 @@ function drawScenery(){
         if(s>.12)text(n%2?'RUSH':'24 / 7',sign.x,sign.y+1*s,'#faf0d6',Math.max(3,6*s));
       }
     }
-    if(n%3===0){
+    if(n%3===0&&z>-11){
       const a=projection(-1.75,z),b=projection(1.75,z),height=H*.5*a.s;
       rect(a.x,a.y-height,b.x-a.x,3*a.s,'#13162c');
       for(let t=0;t<8;t++){const x=a.x+(b.x-a.x)*t/8;poly([[x,a.y-height],[x+8*a.s,a.y-height+5*a.s],[x+16*a.s,a.y-height]],'#34304a');}
@@ -223,13 +268,12 @@ function draw(dt){
     if(e.kind==='train'){
       for(let car=0;car<e.length/TRAIN_CAR_LENGTH;car++){
         const carZ=z+car*TRAIN_CAR_LENGTH;
-        if(carZ+TRAIN_CAR_LENGTH>-11&&carZ<240)list.push({z:Math.max(-11,carZ),e,car});
+        if(carZ+TRAIN_CAR_LENGTH>NEAR_Z&&carZ<FAR_Z)list.push({z:Math.max(NEAR_Z,carZ),e,car});
       }
-      if(z>-11&&z<240)list.push({z:z-.001,e,nose:true});
     }else if(z>-11&&z<240&&(!e.done||!['coin','shield','magnet'].includes(e.kind)))list.push({z,e});
   }
   list.push({z:0,player:true});list.sort((a,b)=>b.z-a.z);
-  list.forEach(item=>item.player?drawPlayer():item.nose?drawTrainNose(item.e):item.car!==undefined?drawTrainCar(item.e,item.car):drawEntity(item.e));
+  list.forEach(item=>item.player?drawPlayer():item.car!==undefined?drawTrainCar(item.e,item.car):drawEntity(item.e));
   if(!reducedMotion&&run.speed>35&&mode==='playing'){
     for(let i=0;i<9;i++){const f=(ambient*.8+i*.13)%1,side=i%2?1:-1;const x=W/2+side*(W*.45+f*W*.1),y=H*.4+f*H*.7;rect(x,y,1,8+f*30,'#cc99c038');}
   }
