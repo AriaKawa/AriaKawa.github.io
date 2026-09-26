@@ -1,5 +1,16 @@
-export const BASE_SPEED = 24;
+export const BASE_SPEED = 32.4;
 export const MAX_SPEED = 56;
+export const TRAIN_CARS = 3;
+export const TRAIN_CAR_LENGTH = 18;
+export const TRAIN_LENGTH = TRAIN_CARS * TRAIN_CAR_LENGTH;
+// Integrate the speed curve so moving trains meet their intended obstacle row.
+export function travelTime(from, to) {
+  if (to <= from) return 0;
+  const capAt = (MAX_SPEED - BASE_SPEED) * 120;
+  const rampEnd = Math.min(to, capAt);
+  const ramp = from < rampEnd ? 120 * Math.log((BASE_SPEED * 120 + rampEnd) / (BASE_SPEED * 120 + from)) : 0;
+  return ramp + Math.max(0, to - Math.max(from, capAt)) / MAX_SPEED;
+}
 export const DISTRICTS = ['SUNSET TERMINAL', 'ELECTRIC AVENUE', 'MIDNIGHT EXPRESS'];
 export function randomGenerator(seed) {
   let n = seed >>> 0;
@@ -32,7 +43,8 @@ export class Run {
     return false;
   }
   add(kind, lane, at, extra = {}) {
-    const item = {id:++this.id, kind, lane, at, done:false, ...extra};
+    const motion = kind === 'train' ? {speed:18, length:TRAIN_LENGTH} : {};
+    const item = {id:++this.id, kind, lane, at, done:false, ...motion, ...extra};
     this.entities.push(item); return item;
   }
   generate() {
@@ -44,16 +56,23 @@ export class Run {
       const other = [-1,0,1].filter(lane => lane !== this.safeLane);
       const count = this.rows > 3 && this.random() > 0.3 ? 2 : 1;
       if (this.random() > 0.5) other.reverse();
+      const predictedSpeed = Math.min(MAX_SPEED,BASE_SPEED + at / 120);
+      let occupiedSeconds = 0;
       for (const lane of other.slice(0,count)) {
         const kinds = this.rows < 2 ? ['barrier'] : this.rows < 4 ? ['train','barrier'] : ['train','barrier','gate'];
         const kind = kinds[Math.floor(this.random() * kinds.length)];
-        this.add(kind,lane,at,{row:this.rows,safeLane:this.safeLane});
+        const meta = {row:this.rows,safeLane:this.safeLane,encounterAt:at};
+        if (kind === 'train') {
+          const speed = 14 + this.random() * 8;
+          this.add(kind,lane,at + speed * travelTime(this.distance,at),{...meta,speed});
+          occupiedSeconds = Math.max(occupiedSeconds,TRAIN_LENGTH / (predictedSpeed + speed));
+        } else this.add(kind,lane,at,meta);
         if (kind === 'barrier' && this.rows > 3) this.add('coin',lane,at,{height:1.35});
       }
       for (let n=0;n<5;n++) this.add('coin',this.safeLane,at - 20 + n * 4);
       if (this.rows > 2 && this.rows % 6 === 3) this.add(this.rows % 12 === 3 ? 'shield' : 'magnet',this.safeLane,at + 12);
-      const predictedSpeed = Math.min(MAX_SPEED,BASE_SPEED + at / 120);
-      this.nextRow += predictedSpeed * (1.42 + this.random() * 0.24);
+      // Leave space after the entire train, including time to enter the next coin lane.
+      this.nextRow += predictedSpeed * (1.42 + this.random() * 0.24 + occupiedSeconds);
       this.rows++;
     }
   }
@@ -71,9 +90,11 @@ export class Run {
       if (this.y === 0) this.vy = 0;
     }
     for (const e of this.entities) {
+      const oldAhead = e.at-before;
+      if (e.kind === 'train') e.at -= e.speed * dt;
       if (e.done) continue;
-      const ahead = e.at-this.distance, oldAhead = e.at-before;
-      const aligned = Math.abs(e.lane-this.x) < 0.56;
+      const ahead = e.at-this.distance, length = e.kind === 'train' ? e.length : 0;
+      const aligned = Math.abs(e.lane-this.x) < (e.kind === 'train' ? 0.68 : 0.56);
       if (e.kind === 'coin' && ((aligned && Math.abs(this.y-(e.height||0)) < 1.1) || this.magnet > 0) && ahead <= (this.magnet > 0 ? 14 : 2.8) && oldAhead >= -2) {
         e.done = true; this.coins++; this.events.push({type:'coin',lane:e.lane}); continue;
       }
@@ -82,17 +103,17 @@ export class Run {
         this.events.push({type:e.kind}); continue;
       }
       if (!['train','barrier','gate'].includes(e.kind)) continue;
-      if (ahead <= 1.8 && oldAhead >= -1.8 && aligned) {
+      if (ahead <= 1.8 && oldAhead + length >= -1.8 && aligned && !e.collisionIgnored) {
         const avoided = (e.kind === 'barrier' && this.y > 0.72) || (e.kind === 'gate' && this.slide > 0 && this.y < 0.2);
         if (!avoided && this.invincible <= 0) {
-          e.done = true;
-          if (this.shield) { this.shield = false; this.invincible = 1.5; this.events.push({type:'save'}); }
+          if (e.kind !== 'train') e.done = true;
+          if (this.shield) { this.shield = false; this.invincible = 1.5; e.collisionIgnored = true; this.events.push({type:'save'}); }
           else { this.dead = true; this.reason = {train:'Dodge trains by changing lanes.',barrier:'Jump over orange barricades.',gate:'Slide under pink gates.'}[e.kind]; this.events.push({type:'crash'}); break; }
         }
       }
-      if (ahead < -2) e.done = true;
+      if (ahead + length < -2) e.done = true;
     }
-    this.entities = this.entities.filter(e => e.at-this.distance > -18 && (!e.done || e.kind !== 'coin'));
+    this.entities = this.entities.filter(e => e.at + (e.length || 0) - this.distance > -18 && (!e.done || e.kind !== 'coin'));
     this.generate();
   }
 }

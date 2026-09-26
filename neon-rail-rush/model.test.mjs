@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {Run,BASE_SPEED,MAX_SPEED} from './model.mjs';
+import {Run,BASE_SPEED,MAX_SPEED,TRAIN_LENGTH,travelTime} from './model.mjs';
 
 test('seeded generation is deterministic, bounded, and leaves adjacent safe routes',()=>{
   for(let seed=0;seed<120;seed++){
@@ -32,11 +32,47 @@ test('distance ramps speed up to a bounded maximum and death freezes the run',()
   const r=new Run(4);r.entities=[];r.distance=2400;r.update(.01);assert(r.speed>BASE_SPEED);r.distance=10000;r.update(.01);assert.equal(r.speed,MAX_SPEED);
   r.dead=true;const at=r.distance;r.update(.05);assert.equal(r.distance,at);
 });
-test('following the generated safe route survives sustained runs at the speed cap',()=>{
-  for(let seed=0;seed<20;seed++){
-    const r=new Run(seed);r.distance=10000;r.entities=[];r.nextRow=10075;r.generate();
+test('starting speed is 35 percent faster and trains move in world space',()=>{
+  const r=new Run(10);assert(Math.abs(BASE_SPEED-24*1.35)<1e-10);assert.equal(r.speed,32.4);
+  r.entities=[];const train=r.add('train',1,120,{speed:20});
+  for(let frame=0;frame<60;frame++)r.update(1/60);
+  assert(Math.abs(train.at-100)<1e-8);assert(r.distance>32.4);
+  assert.equal(train.length,54);assert(train.at-r.distance<68);
+});
+test('the middle and tail of a passing train remain solid and visible until clear',()=>{
+  const r=new Run(11);r.entities=[];
+  const train=r.add('train',0,-20);r.update(1/60);
+  assert(r.dead,'entering the side of a train must collide after its nose passes');
+  assert(!train.done);assert(r.entities.includes(train));
+  const clear=new Run(12);clear.entities=[];clear.add('train',0,-TRAIN_LENGTH-3);clear.update(1/60);assert(!clear.dead);
+  const passing=new Run(13);passing.entities=[];const t=passing.add('train',1,-20);
+  passing.update(1/60);assert(passing.entities.includes(t));
+  for(let i=0;i<120;i++)passing.update(1/60);assert(!passing.entities.includes(t));
+});
+test('train motion is frame-rate independent and shield protection covers its full body',()=>{
+  function advance(dt){const r=new Run(44);r.entities=[];const t=r.add('train',1,200);for(let i=0;i<Math.round(2/dt);i++)r.update(dt);return t.at;}
+  assert(Math.abs(advance(1/30)-advance(1/120))<1e-8);
+  const r=new Run(15);r.entities=[];r.shield=true;r.add('train',0,1,{length:150});
+  for(let i=0;i<120;i++)r.update(1/60);
+  assert(!r.dead);assert(!r.shield);assert.equal(r.events.filter(e=>e.type==='save').length,1);
+});
+test('moving train noses arrive at the intended row and the next row waits for the tail',()=>{
+  for(const start of [0,2300,10000]){
+    const r=new Run(33);r.distance=start;r.entities=[];r.nextRow=start+100;r.rows=8;r.generate();
+    const train=r.entities.find(e=>e.kind==='train');assert(train);
+    const encounter=train.encounterAt;
+    assert(travelTime(start,encounter)>0);
+    const expected=train.at-train.speed*travelTime(start,encounter);assert(Math.abs(expected-encounter)<1e-8);
+    const next=r.entities.find(e=>e.row===train.row+1);
+    if(next){const elapsed=travelTime(start,next.encounterAt-20);const tail=train.at+train.length-train.speed*elapsed;
+      assert(tail<next.encounterAt-20,'tail must clear before switching toward next row coins');}
+  }
+});
+test('following the generated safe route survives the speed ramp and speed cap',()=>{
+  for(const start of [0,10000])for(let seed=0;seed<20;seed++){
+    const r=new Run(seed);if(start){r.distance=start;r.entities=[];r.nextRow=start+75;r.generate();}
     for(let frame=0;frame<60*180;frame++){
-      const row=r.entities.find(e=>['train','barrier','gate'].includes(e.kind)&&e.at-r.distance>=0);
+      const row=r.entities.find(e=>['train','barrier','gate'].includes(e.kind)&&!e.done&&e.at+(e.length||0)-r.distance>=-2);
       if(row&&row.at-r.distance<50)r.lane=row.safeLane;
       r.update(1/60);assert(!r.dead,`seed ${seed}, frame ${frame}`);
     }

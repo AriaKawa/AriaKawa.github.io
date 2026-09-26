@@ -22,4 +22,6 @@ async function boundedCrop(source,box,name,height){
   const actions=path.join(dir,'actions-source.png'),am=await sharp(actions).metadata(),aw=Math.floor(am.width/2);
   await boundedCrop(actions,{left:0,top:0,width:aw,height:am.height},'jump',64);
   await boundedCrop(actions,{left:aw,top:0,width:aw,height:am.height},'slide',38);
+  const carriage=path.join(dir,'carriage-source.png'),cm=await sharp(carriage).metadata();
+  await boundedCrop(carriage,{left:0,top:0,width:cm.width,height:cm.height},'carriage',80);
 })();

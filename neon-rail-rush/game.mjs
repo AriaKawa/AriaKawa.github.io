@@ -1,4 +1,4 @@
-import {Run,BASE_SPEED,DISTRICTS} from './model.mjs';
+import {Run,BASE_SPEED,DISTRICTS,TRAIN_CAR_LENGTH} from './model.mjs?v=20260926-trains';
 
 const $ = id => document.getElementById(id);
 const canvas = $('game'), ctx = canvas.getContext('2d',{alpha:false});
@@ -66,6 +66,60 @@ function poly(points,color){ctx.fillStyle=color;ctx.beginPath();points.forEach((
 function quad(l1,l2,z1,z2,color){const a=projection(l1,z1),b=projection(l2,z1),c=projection(l2,z2),d=projection(l1,z2);poly([[a.x,a.y],[b.x,b.y],[c.x,c.y],[d.x,d.y]],color);}
 function sprite(name,x,y,w,h){const img=images[name];if(img)ctx.drawImage(img,Math.round(x-w/2),Math.round(y-h),Math.round(w),Math.round(h));}
 function text(str,x,y,color='#d9deff',size=5){ctx.fillStyle=color;ctx.font=`bold ${size}px monospace`;ctx.textAlign='center';ctx.fillText(str,Math.round(x),Math.round(y));}
+function trainDimensions(){
+  const laneWidth=projection(0,0).laneWidth,unit=Math.min(H*.205,laneWidth*.75),ratio=images.train.width/images.train.height;
+  const width=Math.min(laneWidth*1.1,unit*2.2*ratio);
+  return {width,height:width/ratio,half:width/laneWidth/2};
+}
+function trainPoint(lane,z,height=0){const p=projection(lane,z);return [p.x,p.y-height*p.s];}
+function textureQuad(img,sx,sw,points){
+  const [a,b,c,d]=points,h=img.height;
+  // Small affine strips preserve the pixel texture on a receding carriage side.
+  for(const second of [false,true]){
+    ctx.save();ctx.beginPath();const tri=second?[b,c,d]:[a,b,d];
+    tri.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();ctx.clip();
+    const ax=(second?c[0]-d[0]:b[0]-a[0])/sw,ay=(second?c[1]-d[1]:b[1]-a[1])/sw;
+    const bx=(second?c[0]-b[0]:d[0]-a[0])/h,by=(second?c[1]-b[1]:d[1]-a[1])/h;
+    const tx=second?c[0]-ax*sw-bx*h:a[0],ty=second?c[1]-ay*sw-by*h:a[1];
+    ctx.transform(ax,ay,bx,by,tx,ty);ctx.drawImage(img,sx,0,sw,h,0,0,sw,h);ctx.restore();
+  }
+}
+function drawTrainCar(e,car){
+  const start=e.at-run.distance+car*TRAIN_CAR_LENGTH,end=start+TRAIN_CAR_LENGTH-0.8;
+  if(end<-11||start>240)return;
+  const near=Math.max(-11,start),far=Math.min(240,end),dim=trainDimensions(),roof=dim.height*.9;
+  const point=(side,z,h)=>trainPoint(e.lane+side*dim.half,z,h);
+  // Textured sides, continuous roof, ventilation units and carriage couplers.
+  for(const side of [-1,1]){
+    const image=images.carriage,step=(end-start)/8;
+    for(let at=end;at>near;at-=step){
+      const z1=Math.max(near,at-step),z2=Math.min(far,at);if(z2<=z1)continue;
+      const sx=(z1-start)/(end-start)*image.width,sw=(z2-z1)/(end-start)*image.width;
+      textureQuad(image,sx,sw,[point(side,z1,roof),point(side,z2,roof),point(side,z2,0),point(side,z1,0)]);
+    }
+  }
+  poly([point(-1,near,roof),point(-1,far,roof),point(1,far,roof),point(1,near,roof)],'#296877');
+  for(const side of [-1,1]){
+    poly([point(side,near,roof),point(side,far,roof),trainPoint(e.lane+side*dim.half*.9,far,roof+2),trainPoint(e.lane+side*dim.half*.9,near,roof+2)],'#58a0a5');
+  }
+  for(let z=start+2;z<end;z+=4){
+    if(z<near||z+1.4>far)continue;
+    poly([trainPoint(e.lane-dim.half*.5,z,roof+2),trainPoint(e.lane-dim.half*.5,z+1.4,roof+2),trainPoint(e.lane+dim.half*.5,z+1.4,roof+2),trainPoint(e.lane+dim.half*.5,z,roof+2)],'#152c46');
+    const a=trainPoint(e.lane-dim.half*.35,z+.5,roof+3),b=trainPoint(e.lane+dim.half*.35,z+.5,roof+3);
+    rect(a[0],a[1],b[0]-a[0],1,'#58929e');
+  }
+  if(car>0&&start>-11){
+    const p=projection(e.lane,start);rect(p.x-dim.width*.12*p.s,p.y-dim.height*.32*p.s,dim.width*.24*p.s,dim.height*.22*p.s,'#10192c');
+  }
+}
+function drawTrainNose(e){
+  const z=e.at-run.distance;if(z>240||z<-11)return;
+  const p=projection(e.lane,z),dim=trainDimensions();sprite('train',p.x,p.y,dim.width*p.s,dim.height*p.s);
+  if(mode==='playing'&&!reducedMotion){
+    const flicker=Math.sin(run.time*18+e.id)>.2?'#fff5c6':'#ffc961';
+    for(const side of [-1,1])rect(p.x+side*dim.width*.26*p.s-1,p.y-dim.height*.32*p.s,2*p.s,2*p.s,flicker);
+  }
+}
 function drawScenery(){
   const pal=palettes[run.district];
   rect(0,0,W,H,'#171329');
@@ -139,11 +193,6 @@ function drawEntity(e){
   const unit=Math.min(H*.205,laneW*.75);
   const heights={train:unit*1.85,barrier:unit*.6,gate:unit*1.15};
   const widths=Object.fromEntries(['train','barrier','gate'].map(kind=>[kind,heights[kind]*(images[kind].width/images[kind].height)]));
-  if(e.kind==='train'){
-    // A receding carriage adds depth to the generated front-facing train sprite.
-    const rear=projection(e.lane,z+14),w=widths.train*s,h=heights.train*s,rw=widths.train*rear.s,rh=heights.train*rear.s;
-    poly([[p.x-w*.44,p.y-h*.87],[rear.x-rw*.44,rear.y-rh*.87],[rear.x+rw*.44,rear.y-rh*.87],[p.x+w*.44,p.y-h*.87]],'#306176');
-  }
   sprite(e.kind,p.x,p.y,widths[e.kind]*s,heights[e.kind]*s);
 }
 function drawPlayer(){
@@ -168,9 +217,19 @@ function burst(lane,color,count=10){const p=projection(lane,0,.5);for(let i=0;i<
 function draw(dt){
   ctx.save();if(shake>0&&!reducedMotion)ctx.translate(Math.round((Math.random()-.5)*shake*9),Math.round((Math.random()-.5)*shake*6));
   drawScenery();
-  const list=run.entities.filter(e=>e.at-run.distance>-11&&e.at-run.distance<240&&(!e.done||!['coin','shield','magnet'].includes(e.kind))).map(e=>({z:e.at-run.distance,e}));
+  const list=[];
+  for(const e of run.entities){
+    const z=e.at-run.distance;
+    if(e.kind==='train'){
+      for(let car=0;car<e.length/TRAIN_CAR_LENGTH;car++){
+        const carZ=z+car*TRAIN_CAR_LENGTH;
+        if(carZ+TRAIN_CAR_LENGTH>-11&&carZ<240)list.push({z:Math.max(-11,carZ),e,car});
+      }
+      if(z>-11&&z<240)list.push({z:z-.001,e,nose:true});
+    }else if(z>-11&&z<240&&(!e.done||!['coin','shield','magnet'].includes(e.kind)))list.push({z,e});
+  }
   list.push({z:0,player:true});list.sort((a,b)=>b.z-a.z);
-  list.forEach(item=>item.player?drawPlayer():drawEntity(item.e));
+  list.forEach(item=>item.player?drawPlayer():item.nose?drawTrainNose(item.e):item.car!==undefined?drawTrainCar(item.e,item.car):drawEntity(item.e));
   if(!reducedMotion&&run.speed>35&&mode==='playing'){
     for(let i=0;i<9;i++){const f=(ambient*.8+i*.13)%1,side=i%2?1:-1;const x=W/2+side*(W*.45+f*W*.1),y=H*.4+f*H*.7;rect(x,y,1,8+f*30,'#cc99c038');}
   }
@@ -254,7 +313,7 @@ async function loadImage(name,path,cutout=false){
 }
 async function load(){
   try{
-    await Promise.all([loadImage('city','assets/city.webp'),...['train','barrier','gate','coin','jump','slide'].map(n=>loadImage(n,`assets/${n}.png`,true)),...[0,1,2,3].flatMap(n=>[loadImage(`runner${n}`,`assets/runner-${n}.png`,true),loadImage(`building${n}`,`assets/building-${n}.png`,true)])]);
+    await Promise.all([loadImage('city','assets/city.webp'),...['train','carriage','barrier','gate','coin','jump','slide'].map(n=>loadImage(n,`assets/${n}.png`,true)),...[0,1,2,3].flatMap(n=>[loadImage(`runner${n}`,`assets/runner-${n}.png`,true),loadImage(`building${n}`,`assets/building-${n}.png`,true)])]);
     $('start').disabled=false;$('start-label').textContent="LET’S RUN";$('load-status').textContent='PRESS SPACE OR TAP TO START';setMode('menu');
   }catch(error){
     console.error('Could not load runner assets',error);$('start-label').textContent='RETRY LOADING';$('load-status').textContent='An asset could not load. Tap to retry.';$('start').disabled=false;
