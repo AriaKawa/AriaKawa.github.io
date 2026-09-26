@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#101025">
+  <meta name="description" content="Run the neon railway in a beautiful 16-bit arcade runner. Swipe, jump, slide and chase your best through an endless procedural city.">
+  <meta property="og:title" content="Neon Rail Rush — AriaKawa">
+  <meta property="og:image" content="https://ariakawa.github.io/neon-rail-rush/assets/cover.webp">
+  <title>Neon Rail Rush — AriaKawa</title>
+  <link rel="icon" href="assets/coin.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="arcade">
+    <header class="topbar">
+      <a class="back" href="../games.html"><span aria-hidden="true">←</span> <span>AriaKawa<span class="back-small"> / THE ARCADE</span></span></a>
+      <span class="edition"><i></i> 16-BIT. INFINITE POSSIBILITIES.</span>
+      <div class="tools">
+        <button id="sound" class="tool" aria-label="Mute audio" aria-pressed="false" title="Toggle sound">SOUND <span>ON</span></button>
+        <button id="fullscreen" class="tool" aria-label="Enter fullscreen" title="Fullscreen">⛶</button>
+        <button id="pause" class="tool" aria-label="Pause game" title="Pause (P / Escape)" disabled>Ⅱ</button>
+      </div>
+    </header>
+
+    <section id="stage" class="stage" aria-label="Neon Rail Rush game">
+      <canvas id="game" width="640" height="360" tabindex="0" aria-label="Three-lane endless runner. Arrow keys or WASD to move, up or space to jump, down to slide. P pauses."></canvas>
+      <div class="scanlines" aria-hidden="true"></div>
+      <div id="hud" class="hud" hidden>
+        <div class="hud-distance"><span>DISTANCE</span><strong id="distance">0<span> m</span></strong></div>
+        <div class="hud-center"><span id="district">SUNSET TERMINAL</span><div class="district-track"><i id="progress"></i></div><strong id="speed">1.0× SPEED</strong></div>
+        <div class="hud-coins"><span>COINS</span><strong><img src="assets/coin.png" alt="" width="23" height="26"><span id="coins">0</span></strong></div>
+      </div>
+      <div id="powerups" class="powerups" hidden></div>
+      <div id="toast" class="toast" role="status"></div>
+
+      <div id="intro" class="intro overlay">
+        <div class="intro-art" aria-hidden="true"></div>
+        <div class="intro-shade" aria-hidden="true"></div>
+        <div class="intro-content">
+          <span class="eyebrow"><i></i> ARIAKAWA ORIGINAL / VOL. 01</span>
+          <h1><span>NEON</span><span>RAIL RUSH<span class="title-star">✦</span></span></h1>
+          <p class="tagline">The city never stops.<br>Neither do you.</p>
+          <p class="intro-description">Three lanes. Endless possibilities. Chase the sunset through a pixel-perfect railway.</p>
+          <button id="start" class="primary" disabled><span id="start-label">LOADING THE CITY…</span><span aria-hidden="true">↗</span></button>
+          <span id="load-status" class="start-note">Preparing your run</span>
+          <div class="personal"><span><b id="best-intro">0</b> m<span>PERSONAL BEST</span></span><span><b id="bank-intro">0</b><span>TOTAL COINS</span></span><span class="personal-pixel">NO FINISH LINE.<br>JUST ONE MORE RUN.</span></div>
+        </div>
+        <div class="art-label"><span>01 / SUNSET TERMINAL</span><i></i> ALL ABOARD.</div>
+      </div>
+
+      <div id="pause-screen" class="dialog-layer overlay" hidden>
+        <section class="dialog" aria-labelledby="pause-title">
+          <span class="eyebrow">TAKE A BREATHER</span><h2 id="pause-title">CITY ON<br><em>HOLD.</em></h2>
+          <p>Your run is right where you left it.</p>
+          <button id="resume" class="primary">KEEP RUNNING <span>→</span></button>
+          <button id="pause-retry" class="secondary">Start a new run</button>
+          <button id="pause-home" class="quiet">Back to title</button>
+        </section>
+      </div>
+
+      <div id="end-screen" class="dialog-layer overlay" hidden>
+        <section class="dialog" aria-labelledby="end-title">
+          <span id="end-eyebrow" class="eyebrow">NICE RUN, COURIER.</span><h2 id="end-title">ONE MORE<br><em>RUN?</em></h2>
+          <p id="end-tip"></p>
+          <div class="results"><span><b id="end-distance">0</b>METERS</span><span><b id="end-coins">0</b>COINS</span><span><b id="end-best">0</b>BEST</span></div>
+          <button id="retry" class="primary">RUN IT BACK <span>↗</span></button>
+          <button id="end-home" class="secondary">Back to title</button>
+          <span class="save-note">Personal best saved on this device</span>
+        </section>
+      </div>
+      <div id="touch-controls" class="touch-controls" hidden aria-label="Touch game controls">
+        <button data-action="left" aria-label="Move left">←</button>
+        <button data-action="jump" aria-label="Jump"><span>↑</span><small>JUMP</small></button>
+        <button data-action="slide" aria-label="Slide"><span>↓</span><small>SLIDE</small></button>
+        <button data-action="right" aria-label="Move right">→</button>
+      </div>
+    </section>
+
+    <footer class="bottom-bar">
+      <div class="controls"><span><kbd>←</kbd><kbd>→</kbd> <b>SWITCH LANES</b></span><span><kbd>↑</kbd> <b>JUMP</b></span><span><kbd>↓</kbd> <b>SLIDE</b></span><span class="mobile-tip">SWIPE TO MOVE · TAP TO JUMP</span></div>
+      <span class="bottom-note"><i></i> PROCEDURAL TRACKS · INCREASING SPEED</span>
+    </footer>
+    <p class="legend"><span><i class="orange"></i> JUMP BARRICADES</span><span><i class="pink"></i> SLIDE UNDER GATES</span><span><i class="cyan"></i> DODGE TRAINS</span></p>
+  </main>
+  <script type="module" src="game.mjs"></script>
+</body>
+</html>
