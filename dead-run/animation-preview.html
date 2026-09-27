@@ -1,0 +1,21 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Dead Run · Animation preview</title>
+<style>body{margin:24px;background:#171c17;color:#d6ddba;font:15px monospace}button,select{font:inherit;background:#2d382d;color:inherit;border:1px solid #768363;padding:8px;margin:3px}canvas{max-width:100%;image-rendering:pixelated;border:1px solid #768363}output{display:block;margin:12px 0}a{color:#c8d594}</style>
+<h1>Dead Run · Animation preview</h1><p>Isolated animation checks. No records, currency or saved progress.</p>
+<label>Equipment <select id="equipment"><option>carbine</option><option>shotgun</option><option>revolver</option><option>deagle</option><option>glocks</option><option>scorpion</option><option>barrett</option><option>katana</option><option>minigun</option><option>shieldboard</option></select></label><button id="slash">Sword cut</button>
+<button id="play">Pause loop</button><button id="step">Next frame</button><button id="jump">Jump</button><button id="aim">Aim: off</button><button id="stim">Stim: off</button><button id="impact">Shield impact</button><button id="reset">Reset scene</button>
+<output id="status">Loading artwork…</output><canvas id="scene" width="960" height="620"></canvas><p><a href="./">Back to Dead Run</a></p>
+<script type="module">
+import {Run,rng} from './model.mjs';import {createRenderer} from './renderer.mjs';import {ASSETS} from './visuals.mjs';import {crumblePieces,playerAnimation} from './animation.mjs';
+const $=id=>document.getElementById(id),images={},effects=[],debrisRandom=rng(42);let run,playing=true,aim=false,stim=false,last=0;
+document.querySelectorAll('button,select').forEach(e=>e.disabled=true);
+await Promise.all(Object.entries(ASSETS).map(([name,url])=>new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>{images[name]=im;resolve();};im.onerror=reject;im.src=url;})));
+const renderer=createRenderer($('scene'),images);renderer.resize(960,620);
+function reset(){run=new Run(42);run.testRun=true;run.entities=[];run.platforms=[];run.exits=[];run.nextRow=run.nextPowerup=run.nextCrate=run.nextPlatformGroup=Infinity;run.shotTimer=Infinity;run.hp=run.maxHp=100000;effects.length=0;}
+function gear(){const value=$('equipment').value;run.weapon=['minigun','shieldboard'].includes(value)?'carbine':value;run.powers.minigun=value==='minigun'?100:0;run.powers.skateboard=value==='shieldboard'?100:0;run.powers.stim=stim?100:0;}
+function advance(dt){gear();run.update(dt);run.aim=aim?1:0;for(const e of run.events.splice(0))if(e.type==='crush'){const at=run.distance+e.z;effects.push(...crumblePieces({...e,at},debrisRandom),{type:'dust',lane:e.lane,at,elevation:0,life:.6});}for(const e of effects){e.life-=dt;if(e.type==='crumble'){e.dx+=e.vx*dt;e.dy+=e.vy*dt;e.vy-=160*dt;e.angle+=e.spin*dt;}}for(let i=effects.length-1;i>=0;i--)if(effects[i].life<=0)effects.splice(i,1);}
+function draw(){gear();run.aim=aim?1:0;renderer.render(run,{mode:'playing',effects,shake:0,flash:0});const a=playerAnimation(run);$('status').textContent=`${a.pose} · frame ${a.frame+1}/${a.asset.startsWith('v7-')?4:8} · height ${run.elevation.toFixed(2)} · velocity ${run.vy.toFixed(2)} · fragments ${renderer.stats.fragments} · loaded ${Object.keys(images).length}/${Object.keys(ASSETS).length}`;}
+$('play').onclick=()=>{playing=!playing;$('play').textContent=playing?'Pause loop':'Play loop';};$('step').onclick=()=>{playing=false;$('play').textContent='Play loop';advance(1/14.4);draw();};$('jump').onclick=()=>run.action('jump');$('aim').onclick=()=>{aim=!aim;$('aim').textContent='Aim: '+(aim?'on':'off');};$('stim').onclick=()=>{stim=!stim;$('stim').textContent='Stim: '+(stim?'on':'off');};$('reset').onclick=reset;
+$('impact').onclick=()=>{reset();$('equipment').value='shieldboard';run.add('barrier',run.lane,9);run.platforms=[{id:'qa-bus',kind:'bus',lane:run.lane,at:24,end:56,height:3,ramp:0}];playing=true;$('play').textContent='Pause loop';};
+reset();document.querySelectorAll('button,select').forEach(e=>e.disabled=false);function frame(time){const dt=Math.min(.04,(time-last)/1000||0);last=time;if(playing)advance(dt);draw();requestAnimationFrame(frame);}requestAnimationFrame(frame);
+$('slash').onclick=()=>{$('equipment').value='katana';run.slashTimer=.28;playing=true;$('play').textContent='Pause loop';};
+</script></html>

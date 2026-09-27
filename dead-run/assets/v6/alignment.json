@@ -1,0 +1,1174 @@
+{
+  "carbine": [
+    {
+      "name": "v6-carbine-run-0",
+      "sourceFrame": 0,
+      "left": 28,
+      "top": 11,
+      "width": 49,
+      "height": 97
+    },
+    {
+      "name": "v6-carbine-run-1",
+      "sourceFrame": 1,
+      "left": 27,
+      "top": 17,
+      "width": 49,
+      "height": 91
+    },
+    {
+      "name": "v6-carbine-run-2",
+      "sourceFrame": 2,
+      "left": 28,
+      "top": 11,
+      "width": 50,
+      "height": 97
+    },
+    {
+      "name": "v6-carbine-run-3",
+      "sourceFrame": 3,
+      "left": 28,
+      "top": 11,
+      "width": 48,
+      "height": 97
+    },
+    {
+      "name": "v6-carbine-run-4",
+      "sourceFrame": 4,
+      "left": 27,
+      "top": 9,
+      "width": 50,
+      "height": 99
+    },
+    {
+      "name": "v6-carbine-run-5",
+      "sourceFrame": 5,
+      "left": 27,
+      "top": 10,
+      "width": 51,
+      "height": 98
+    },
+    {
+      "name": "v6-carbine-run-6",
+      "sourceFrame": 6,
+      "left": 27,
+      "top": 10,
+      "width": 51,
+      "height": 98
+    },
+    {
+      "name": "v6-carbine-run-7",
+      "sourceFrame": 7,
+      "left": 27,
+      "top": 10,
+      "width": 50,
+      "height": 98
+    },
+    {
+      "name": "v6-carbine-aim-0",
+      "sourceFrame": 8,
+      "left": 29,
+      "top": 8,
+      "width": 39,
+      "height": 100
+    },
+    {
+      "name": "v6-carbine-aim-1",
+      "sourceFrame": 9,
+      "left": 29,
+      "top": 13,
+      "width": 38,
+      "height": 95
+    },
+    {
+      "name": "v6-carbine-aim-2",
+      "sourceFrame": 10,
+      "left": 28,
+      "top": 10,
+      "width": 40,
+      "height": 98
+    },
+    {
+      "name": "v6-carbine-aim-3",
+      "sourceFrame": 11,
+      "left": 29,
+      "top": 15,
+      "width": 38,
+      "height": 93
+    },
+    {
+      "name": "v6-carbine-aim-4",
+      "sourceFrame": 12,
+      "left": 27,
+      "top": 9,
+      "width": 41,
+      "height": 99
+    },
+    {
+      "name": "v6-carbine-aim-5",
+      "sourceFrame": 13,
+      "left": 27,
+      "top": 9,
+      "width": 40,
+      "height": 99
+    },
+    {
+      "name": "v6-carbine-aim-6",
+      "sourceFrame": 14,
+      "left": 28,
+      "top": 12,
+      "width": 41,
+      "height": 96
+    },
+    {
+      "name": "v6-carbine-aim-7",
+      "sourceFrame": 15,
+      "left": 26,
+      "top": 10,
+      "width": 42,
+      "height": 98
+    },
+    {
+      "name": "v6-carbine-jump-0",
+      "sourceFrame": 16,
+      "left": 27,
+      "top": 37,
+      "width": 41,
+      "height": 71
+    },
+    {
+      "name": "v6-carbine-jump-1",
+      "sourceFrame": 17,
+      "left": 29,
+      "top": 8,
+      "width": 38,
+      "height": 96
+    },
+    {
+      "name": "v6-carbine-jump-2",
+      "sourceFrame": 18,
+      "left": 29,
+      "top": 8,
+      "width": 38,
+      "height": 84
+    },
+    {
+      "name": "v6-carbine-jump-3",
+      "sourceFrame": 19,
+      "left": 28,
+      "top": 8,
+      "width": 40,
+      "height": 72
+    },
+    {
+      "name": "v6-carbine-jump-4",
+      "sourceFrame": 19,
+      "left": 28,
+      "top": 8,
+      "width": 40,
+      "height": 72
+    },
+    {
+      "name": "v6-carbine-jump-5",
+      "sourceFrame": 21,
+      "left": 29,
+      "top": 8,
+      "width": 40,
+      "height": 94
+    },
+    {
+      "name": "v6-carbine-jump-6",
+      "sourceFrame": 22,
+      "left": 29,
+      "top": 8,
+      "width": 39,
+      "height": 95
+    },
+    {
+      "name": "v6-carbine-jump-7",
+      "sourceFrame": 23,
+      "left": 27,
+      "top": 34,
+      "width": 42,
+      "height": 74
+    }
+  ],
+  "shotgun": [
+    {
+      "name": "v6-shotgun-run-0",
+      "sourceFrame": 0,
+      "left": 26,
+      "top": 9,
+      "width": 51,
+      "height": 99
+    },
+    {
+      "name": "v6-shotgun-run-1",
+      "sourceFrame": 1,
+      "left": 26,
+      "top": 9,
+      "width": 52,
+      "height": 99
+    },
+    {
+      "name": "v6-shotgun-run-2",
+      "sourceFrame": 2,
+      "left": 26,
+      "top": 8,
+      "width": 52,
+      "height": 100
+    },
+    {
+      "name": "v6-shotgun-run-3",
+      "sourceFrame": 3,
+      "left": 27,
+      "top": 8,
+      "width": 52,
+      "height": 100
+    },
+    {
+      "name": "v6-shotgun-run-4",
+      "sourceFrame": 4,
+      "left": 26,
+      "top": 9,
+      "width": 53,
+      "height": 99
+    },
+    {
+      "name": "v6-shotgun-run-5",
+      "sourceFrame": 5,
+      "left": 26,
+      "top": 9,
+      "width": 54,
+      "height": 99
+    },
+    {
+      "name": "v6-shotgun-run-6",
+      "sourceFrame": 6,
+      "left": 26,
+      "top": 10,
+      "width": 54,
+      "height": 98
+    },
+    {
+      "name": "v6-shotgun-run-7",
+      "sourceFrame": 7,
+      "left": 25,
+      "top": 9,
+      "width": 54,
+      "height": 99
+    },
+    {
+      "name": "v6-shotgun-aim-0",
+      "sourceFrame": 8,
+      "left": 29,
+      "top": 10,
+      "width": 38,
+      "height": 98
+    },
+    {
+      "name": "v6-shotgun-aim-1",
+      "sourceFrame": 9,
+      "left": 29,
+      "top": 8,
+      "width": 37,
+      "height": 100
+    },
+    {
+      "name": "v6-shotgun-aim-2",
+      "sourceFrame": 10,
+      "left": 29,
+      "top": 9,
+      "width": 37,
+      "height": 99
+    },
+    {
+      "name": "v6-shotgun-aim-3",
+      "sourceFrame": 11,
+      "left": 29,
+      "top": 8,
+      "width": 37,
+      "height": 100
+    },
+    {
+      "name": "v6-shotgun-aim-4",
+      "sourceFrame": 12,
+      "left": 27,
+      "top": 9,
+      "width": 42,
+      "height": 99
+    },
+    {
+      "name": "v6-shotgun-aim-5",
+      "sourceFrame": 13,
+      "left": 29,
+      "top": 9,
+      "width": 41,
+      "height": 99
+    },
+    {
+      "name": "v6-shotgun-aim-6",
+      "sourceFrame": 14,
+      "left": 26,
+      "top": 11,
+      "width": 42,
+      "height": 97
+    },
+    {
+      "name": "v6-shotgun-aim-7",
+      "sourceFrame": 15,
+      "left": 28,
+      "top": 10,
+      "width": 39,
+      "height": 98
+    },
+    {
+      "name": "v6-shotgun-jump-0",
+      "sourceFrame": 16,
+      "left": 27,
+      "top": 29,
+      "width": 43,
+      "height": 79
+    },
+    {
+      "name": "v6-shotgun-jump-1",
+      "sourceFrame": 17,
+      "left": 29,
+      "top": 8,
+      "width": 38,
+      "height": 95
+    },
+    {
+      "name": "v6-shotgun-jump-2",
+      "sourceFrame": 18,
+      "left": 26,
+      "top": 8,
+      "width": 42,
+      "height": 76
+    },
+    {
+      "name": "v6-shotgun-jump-3",
+      "sourceFrame": 19,
+      "left": 25,
+      "top": 8,
+      "width": 45,
+      "height": 73
+    },
+    {
+      "name": "v6-shotgun-jump-4",
+      "sourceFrame": 19,
+      "left": 25,
+      "top": 8,
+      "width": 45,
+      "height": 73
+    },
+    {
+      "name": "v6-shotgun-jump-5",
+      "sourceFrame": 21,
+      "left": 29,
+      "top": 8,
+      "width": 40,
+      "height": 98
+    },
+    {
+      "name": "v6-shotgun-jump-6",
+      "sourceFrame": 22,
+      "left": 28,
+      "top": 8,
+      "width": 43,
+      "height": 99
+    },
+    {
+      "name": "v6-shotgun-jump-7",
+      "sourceFrame": 23,
+      "left": 27,
+      "top": 33,
+      "width": 44,
+      "height": 75
+    }
+  ],
+  "revolver": [
+    {
+      "name": "v6-revolver-run-0",
+      "sourceFrame": 0,
+      "left": 22,
+      "top": 10,
+      "width": 51,
+      "height": 98
+    },
+    {
+      "name": "v6-revolver-run-1",
+      "sourceFrame": 1,
+      "left": 24,
+      "top": 11,
+      "width": 49,
+      "height": 97
+    },
+    {
+      "name": "v6-revolver-run-2",
+      "sourceFrame": 2,
+      "left": 23,
+      "top": 10,
+      "width": 54,
+      "height": 98
+    },
+    {
+      "name": "v6-revolver-run-3",
+      "sourceFrame": 3,
+      "left": 25,
+      "top": 11,
+      "width": 48,
+      "height": 97
+    },
+    {
+      "name": "v6-revolver-run-4",
+      "sourceFrame": 4,
+      "left": 25,
+      "top": 10,
+      "width": 49,
+      "height": 98
+    },
+    {
+      "name": "v6-revolver-run-5",
+      "sourceFrame": 5,
+      "left": 24,
+      "top": 10,
+      "width": 53,
+      "height": 98
+    },
+    {
+      "name": "v6-revolver-run-6",
+      "sourceFrame": 6,
+      "left": 24,
+      "top": 10,
+      "width": 50,
+      "height": 98
+    },
+    {
+      "name": "v6-revolver-run-7",
+      "sourceFrame": 7,
+      "left": 25,
+      "top": 10,
+      "width": 48,
+      "height": 98
+    },
+    {
+      "name": "v6-revolver-aim-0",
+      "sourceFrame": 8,
+      "left": 25,
+      "top": 10,
+      "width": 42,
+      "height": 98
+    },
+    {
+      "name": "v6-revolver-aim-1",
+      "sourceFrame": 9,
+      "left": 25,
+      "top": 9,
+      "width": 43,
+      "height": 99
+    },
+    {
+      "name": "v6-revolver-aim-2",
+      "sourceFrame": 10,
+      "left": 27,
+      "top": 11,
+      "width": 41,
+      "height": 97
+    },
+    {
+      "name": "v6-revolver-aim-3",
+      "sourceFrame": 11,
+      "left": 27,
+      "top": 9,
+      "width": 40,
+      "height": 99
+    },
+    {
+      "name": "v6-revolver-aim-4",
+      "sourceFrame": 12,
+      "left": 26,
+      "top": 8,
+      "width": 42,
+      "height": 100
+    },
+    {
+      "name": "v6-revolver-aim-5",
+      "sourceFrame": 13,
+      "left": 25,
+      "top": 8,
+      "width": 43,
+      "height": 100
+    },
+    {
+      "name": "v6-revolver-aim-6",
+      "sourceFrame": 14,
+      "left": 25,
+      "top": 8,
+      "width": 44,
+      "height": 100
+    },
+    {
+      "name": "v6-revolver-aim-7",
+      "sourceFrame": 15,
+      "left": 24,
+      "top": 8,
+      "width": 44,
+      "height": 100
+    },
+    {
+      "name": "v6-revolver-jump-0",
+      "sourceFrame": 16,
+      "left": 23,
+      "top": 36,
+      "width": 44,
+      "height": 72
+    },
+    {
+      "name": "v6-revolver-jump-1",
+      "sourceFrame": 17,
+      "left": 24,
+      "top": 8,
+      "width": 41,
+      "height": 94
+    },
+    {
+      "name": "v6-revolver-jump-2",
+      "sourceFrame": 18,
+      "left": 25,
+      "top": 8,
+      "width": 41,
+      "height": 83
+    },
+    {
+      "name": "v6-revolver-jump-3",
+      "sourceFrame": 19,
+      "left": 25,
+      "top": 8,
+      "width": 42,
+      "height": 78
+    },
+    {
+      "name": "v6-revolver-jump-4",
+      "sourceFrame": 19,
+      "left": 25,
+      "top": 8,
+      "width": 42,
+      "height": 78
+    },
+    {
+      "name": "v6-revolver-jump-5",
+      "sourceFrame": 21,
+      "left": 26,
+      "top": 8,
+      "width": 42,
+      "height": 90
+    },
+    {
+      "name": "v6-revolver-jump-6",
+      "sourceFrame": 22,
+      "left": 26,
+      "top": 8,
+      "width": 42,
+      "height": 92
+    },
+    {
+      "name": "v6-revolver-jump-7",
+      "sourceFrame": 23,
+      "left": 24,
+      "top": 35,
+      "width": 43,
+      "height": 73
+    }
+  ],
+  "minigun": [
+    {
+      "name": "v6-minigun-aim-0",
+      "sourceFrame": 0,
+      "left": 23,
+      "top": 12,
+      "width": 44,
+      "height": 96
+    },
+    {
+      "name": "v6-minigun-aim-1",
+      "sourceFrame": 1,
+      "left": 22,
+      "top": 12,
+      "width": 45,
+      "height": 96
+    },
+    {
+      "name": "v6-minigun-aim-2",
+      "sourceFrame": 2,
+      "left": 22,
+      "top": 12,
+      "width": 45,
+      "height": 96
+    },
+    {
+      "name": "v6-minigun-aim-3",
+      "sourceFrame": 3,
+      "left": 23,
+      "top": 15,
+      "width": 45,
+      "height": 93
+    },
+    {
+      "name": "v6-minigun-aim-4",
+      "sourceFrame": 4,
+      "left": 22,
+      "top": 8,
+      "width": 45,
+      "height": 100
+    },
+    {
+      "name": "v6-minigun-aim-5",
+      "sourceFrame": 5,
+      "left": 22,
+      "top": 8,
+      "width": 45,
+      "height": 100
+    },
+    {
+      "name": "v6-minigun-aim-6",
+      "sourceFrame": 6,
+      "left": 22,
+      "top": 12,
+      "width": 45,
+      "height": 96
+    },
+    {
+      "name": "v6-minigun-aim-7",
+      "sourceFrame": 7,
+      "left": 23,
+      "top": 11,
+      "width": 44,
+      "height": 97
+    },
+    {
+      "name": "v6-minigun-jump-0",
+      "sourceFrame": 8,
+      "left": 21,
+      "top": 27,
+      "width": 46,
+      "height": 81
+    },
+    {
+      "name": "v6-minigun-jump-1",
+      "sourceFrame": 9,
+      "left": 21,
+      "top": 8,
+      "width": 45,
+      "height": 90
+    },
+    {
+      "name": "v6-minigun-jump-2",
+      "sourceFrame": 10,
+      "left": 23,
+      "top": 8,
+      "width": 44,
+      "height": 87
+    },
+    {
+      "name": "v6-minigun-jump-3",
+      "sourceFrame": 11,
+      "left": 19,
+      "top": 8,
+      "width": 47,
+      "height": 71
+    },
+    {
+      "name": "v6-minigun-jump-4",
+      "sourceFrame": 11,
+      "left": 19,
+      "top": 8,
+      "width": 47,
+      "height": 71
+    },
+    {
+      "name": "v6-minigun-jump-5",
+      "sourceFrame": 13,
+      "left": 21,
+      "top": 8,
+      "width": 47,
+      "height": 91
+    },
+    {
+      "name": "v6-minigun-jump-6",
+      "sourceFrame": 14,
+      "left": 21,
+      "top": 8,
+      "width": 46,
+      "height": 90
+    },
+    {
+      "name": "v6-minigun-jump-7",
+      "sourceFrame": 15,
+      "left": 20,
+      "top": 27,
+      "width": 46,
+      "height": 81
+    }
+  ],
+  "shieldboard": [
+    {
+      "name": "v6-shieldboard-ride-0",
+      "sourceFrame": 0,
+      "left": 22,
+      "top": 9,
+      "width": 51,
+      "height": 99
+    },
+    {
+      "name": "v6-shieldboard-ride-1",
+      "sourceFrame": 1,
+      "left": 23,
+      "top": 8,
+      "width": 51,
+      "height": 100
+    },
+    {
+      "name": "v6-shieldboard-ride-2",
+      "sourceFrame": 2,
+      "left": 23,
+      "top": 8,
+      "width": 50,
+      "height": 100
+    },
+    {
+      "name": "v6-shieldboard-ride-3",
+      "sourceFrame": 3,
+      "left": 23,
+      "top": 8,
+      "width": 50,
+      "height": 100
+    },
+    {
+      "name": "v6-shieldboard-ride-4",
+      "sourceFrame": 4,
+      "left": 22,
+      "top": 8,
+      "width": 51,
+      "height": 100
+    },
+    {
+      "name": "v6-shieldboard-ride-5",
+      "sourceFrame": 5,
+      "left": 23,
+      "top": 9,
+      "width": 51,
+      "height": 99
+    },
+    {
+      "name": "v6-shieldboard-ride-6",
+      "sourceFrame": 6,
+      "left": 22,
+      "top": 9,
+      "width": 51,
+      "height": 99
+    },
+    {
+      "name": "v6-shieldboard-ride-7",
+      "sourceFrame": 7,
+      "left": 22,
+      "top": 9,
+      "width": 52,
+      "height": 99
+    },
+    {
+      "name": "v6-shieldboard-jump-0",
+      "sourceFrame": 8,
+      "left": 22,
+      "top": 30,
+      "width": 52,
+      "height": 78
+    },
+    {
+      "name": "v6-shieldboard-jump-1",
+      "sourceFrame": 9,
+      "left": 21,
+      "top": 8,
+      "width": 53,
+      "height": 84
+    },
+    {
+      "name": "v6-shieldboard-jump-2",
+      "sourceFrame": 10,
+      "left": 21,
+      "top": 8,
+      "width": 52,
+      "height": 87
+    },
+    {
+      "name": "v6-shieldboard-jump-3",
+      "sourceFrame": 11,
+      "left": 22,
+      "top": 8,
+      "width": 52,
+      "height": 82
+    },
+    {
+      "name": "v6-shieldboard-jump-4",
+      "sourceFrame": 11,
+      "left": 22,
+      "top": 8,
+      "width": 52,
+      "height": 82
+    },
+    {
+      "name": "v6-shieldboard-jump-5",
+      "sourceFrame": 13,
+      "left": 22,
+      "top": 8,
+      "width": 52,
+      "height": 82
+    },
+    {
+      "name": "v6-shieldboard-jump-6",
+      "sourceFrame": 14,
+      "left": 22,
+      "top": 8,
+      "width": 51,
+      "height": 92
+    },
+    {
+      "name": "v6-shieldboard-jump-7",
+      "sourceFrame": 15,
+      "left": 22,
+      "top": 17,
+      "width": 52,
+      "height": 91
+    }
+  ],
+  "walker": [
+    {
+      "name": "v6-walker-0",
+      "sourceFrame": 0,
+      "left": 17,
+      "top": 9,
+      "width": 61,
+      "height": 99
+    },
+    {
+      "name": "v6-walker-1",
+      "sourceFrame": 1,
+      "left": 21,
+      "top": 9,
+      "width": 60,
+      "height": 99
+    },
+    {
+      "name": "v6-walker-2",
+      "sourceFrame": 2,
+      "left": 20,
+      "top": 10,
+      "width": 61,
+      "height": 98
+    },
+    {
+      "name": "v6-walker-3",
+      "sourceFrame": 3,
+      "left": 18,
+      "top": 9,
+      "width": 61,
+      "height": 99
+    },
+    {
+      "name": "v6-walker-4",
+      "sourceFrame": 4,
+      "left": 17,
+      "top": 9,
+      "width": 61,
+      "height": 99
+    },
+    {
+      "name": "v6-walker-5",
+      "sourceFrame": 5,
+      "left": 20,
+      "top": 8,
+      "width": 61,
+      "height": 100
+    },
+    {
+      "name": "v6-walker-6",
+      "sourceFrame": 6,
+      "left": 16,
+      "top": 11,
+      "width": 61,
+      "height": 97
+    },
+    {
+      "name": "v6-walker-7",
+      "sourceFrame": 7,
+      "left": 18,
+      "top": 9,
+      "width": 61,
+      "height": 99
+    }
+  ],
+  "runner": [
+    {
+      "name": "v6-runner-0",
+      "sourceFrame": 0,
+      "left": 13,
+      "top": 8,
+      "width": 67,
+      "height": 100
+    },
+    {
+      "name": "v6-runner-1",
+      "sourceFrame": 1,
+      "left": 21,
+      "top": 9,
+      "width": 58,
+      "height": 99
+    },
+    {
+      "name": "v6-runner-2",
+      "sourceFrame": 2,
+      "left": 21,
+      "top": 12,
+      "width": 55,
+      "height": 96
+    },
+    {
+      "name": "v6-runner-3",
+      "sourceFrame": 3,
+      "left": 15,
+      "top": 9,
+      "width": 59,
+      "height": 99
+    },
+    {
+      "name": "v6-runner-4",
+      "sourceFrame": 4,
+      "left": 14,
+      "top": 8,
+      "width": 65,
+      "height": 100
+    },
+    {
+      "name": "v6-runner-5",
+      "sourceFrame": 5,
+      "left": 21,
+      "top": 9,
+      "width": 57,
+      "height": 99
+    },
+    {
+      "name": "v6-runner-6",
+      "sourceFrame": 6,
+      "left": 20,
+      "top": 11,
+      "width": 60,
+      "height": 97
+    },
+    {
+      "name": "v6-runner-7",
+      "sourceFrame": 7,
+      "left": 15,
+      "top": 8,
+      "width": 66,
+      "height": 100
+    }
+  ],
+  "brute": [
+    {
+      "name": "v6-brute-0",
+      "sourceFrame": 0,
+      "left": 14,
+      "top": 10,
+      "width": 74,
+      "height": 98
+    },
+    {
+      "name": "v6-brute-1",
+      "sourceFrame": 1,
+      "left": 14,
+      "top": 9,
+      "width": 74,
+      "height": 99
+    },
+    {
+      "name": "v6-brute-2",
+      "sourceFrame": 2,
+      "left": 14,
+      "top": 13,
+      "width": 75,
+      "height": 95
+    },
+    {
+      "name": "v6-brute-3",
+      "sourceFrame": 3,
+      "left": 14,
+      "top": 8,
+      "width": 73,
+      "height": 100
+    },
+    {
+      "name": "v6-brute-4",
+      "sourceFrame": 4,
+      "left": 14,
+      "top": 8,
+      "width": 74,
+      "height": 100
+    },
+    {
+      "name": "v6-brute-5",
+      "sourceFrame": 5,
+      "left": 13,
+      "top": 8,
+      "width": 74,
+      "height": 100
+    },
+    {
+      "name": "v6-brute-6",
+      "sourceFrame": 6,
+      "left": 13,
+      "top": 16,
+      "width": 76,
+      "height": 92
+    },
+    {
+      "name": "v6-brute-7",
+      "sourceFrame": 7,
+      "left": 14,
+      "top": 8,
+      "width": 73,
+      "height": 100
+    }
+  ],
+  "horde": [
+    {
+      "name": "v6-horde-0",
+      "sourceFrame": 0,
+      "left": 20,
+      "top": 9,
+      "width": 52,
+      "height": 99
+    },
+    {
+      "name": "v6-horde-1",
+      "sourceFrame": 1,
+      "left": 18,
+      "top": 10,
+      "width": 55,
+      "height": 98
+    },
+    {
+      "name": "v6-horde-2",
+      "sourceFrame": 2,
+      "left": 17,
+      "top": 9,
+      "width": 54,
+      "height": 99
+    },
+    {
+      "name": "v6-horde-3",
+      "sourceFrame": 3,
+      "left": 14,
+      "top": 10,
+      "width": 57,
+      "height": 98
+    },
+    {
+      "name": "v6-horde-4",
+      "sourceFrame": 4,
+      "left": 23,
+      "top": 8,
+      "width": 53,
+      "height": 100
+    },
+    {
+      "name": "v6-horde-5",
+      "sourceFrame": 5,
+      "left": 22,
+      "top": 8,
+      "width": 55,
+      "height": 100
+    },
+    {
+      "name": "v6-horde-6",
+      "sourceFrame": 6,
+      "left": 20,
+      "top": 8,
+      "width": 58,
+      "height": 100
+    },
+    {
+      "name": "v6-horde-7",
+      "sourceFrame": 7,
+      "left": 21,
+      "top": 8,
+      "width": 51,
+      "height": 100
+    }
+  ],
+  "gait": [
+    {
+      "name": "v6-gait-0",
+      "sourceFrame": 0,
+      "left": 25,
+      "top": 8,
+      "width": 53,
+      "height": 100
+    },
+    {
+      "name": "v6-gait-1",
+      "sourceFrame": 1,
+      "left": 25,
+      "top": 8,
+      "width": 53,
+      "height": 100
+    },
+    {
+      "name": "v6-gait-2",
+      "sourceFrame": 2,
+      "left": 25,
+      "top": 8,
+      "width": 54,
+      "height": 100
+    },
+    {
+      "name": "v6-gait-3",
+      "sourceFrame": 3,
+      "left": 26,
+      "top": 8,
+      "width": 53,
+      "height": 100
+    },
+    {
+      "name": "v6-gait-4",
+      "sourceFrame": 4,
+      "left": 24,
+      "top": 9,
+      "width": 54,
+      "height": 99
+    },
+    {
+      "name": "v6-gait-5",
+      "sourceFrame": 5,
+      "left": 25,
+      "top": 9,
+      "width": 54,
+      "height": 99
+    },
+    {
+      "name": "v6-gait-6",
+      "sourceFrame": 6,
+      "left": 24,
+      "top": 9,
+      "width": 55,
+      "height": 99
+    },
+    {
+      "name": "v6-gait-7",
+      "sourceFrame": 7,
+      "left": 24,
+      "top": 9,
+      "width": 54,
+      "height": 99
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+.card[data-build="fire"],.build [data-build="fire"]{--build-color:#f39b55}
+.card[data-build="thorns"],.build [data-build="thorns"]{--build-color:#aace84}
+.card[data-build="ice"],.build [data-build="ice"]{--build-color:#a3dfee}
+.card[data-build="air"],.build [data-build="air"]{--build-color:#d3c1fa}
+.card[data-build="critical"],.build [data-build="critical"]{--build-color:#edc675}
+.card[data-build] .card-top{color:var(--build-color,#c5c9ad)}
+.card[data-build] .card-name{color:var(--build-color,var(--bone))}
+.build [data-build]{box-shadow:inset 0 -2px var(--build-color,transparent)}
+.modal{overflow-y:auto;overscroll-behavior:contain}.draft-panel{max-height:100%;overflow-y:auto;overscroll-behavior:contain}
+.crate-panel{width:960px}.crate-panel h2{margin-bottom:12px}.crate-panel>p{margin:6px 0}.crate-note{color:#d1c5a0!important}
+.weapon-offer{min-width:0;min-height:290px}.weapon-art{width:100%;height:84px;object-fit:contain;image-rendering:pixelated;margin:18px 0}
+.weapon-stats{font-size:10px;line-height:1.8;color:#d1bc82;margin-top:12px}.crate-hint{font-size:8px!important;color:#aaa58b!important;padding-top:8px}
+#keep-weapon{min-height:44px;width:100%;border-color:#9ba67a}.crate-panel .deck-summary{max-height:65px;overflow:auto}
+@media(max-width:600px){.crate-panel{padding:12px 10px}.crate-panel h2{font-size:24px;margin:6px 0}.crate-panel>p{font-size:8px}.crate-panel .cards{margin:12px 0;gap:7px}.weapon-offer{min-height:120px;padding:8px 7px 8px 86px}.weapon-art{position:absolute;left:5px;top:33px;width:74px;height:44px;margin:0}.weapon-stats{font-size:7px;line-height:1.6;margin-top:5px}.weapon-offer .card-name{margin:5px 0;font-size:15px}.weapon-offer .card-desc{font-size:8px}.weapon-offer .card-bottom{padding-top:5px}.crate-panel .deck-summary{max-height:36px}.crate-panel .crate-hint{font-size:7px!important}.draft-panel .card-desc{font-size:9px}.draft-panel .card-name{line-height:1.2}}
