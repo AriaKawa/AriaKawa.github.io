@@ -1,4 +1,4 @@
-import {ROLL_DURATION,SWAP_DURATION} from './model.mjs?v=slots-v8';
+import {ROLL_DURATION,SWAP_DURATION} from './model.mjs?v=events-v9';
 export const GAIT_FRAMES=8;
 export function jumpFrame(run){
  if(run.grounded)return 7;

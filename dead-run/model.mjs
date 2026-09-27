@@ -1,14 +1,15 @@
-import {difficultyAt,POWERUPS,ZOMBIE_PRESSURE} from './endless.mjs?v=slots-v8';
-import {applyProfile} from './progression.mjs?v=slots-v8';
+import {difficultyAt,POWERUPS,ZOMBIE_PRESSURE} from './endless.mjs?v=events-v9';
+import {applyProfile} from './progression.mjs?v=events-v9';
 export const SECTOR_LENGTH=450, FINISH=Infinity;
 export const LANES=[-1.5,-.5,.5,1.5],ROLL_DURATION=.72;
 export const MAPS=[{id:'dead-city',name:'Dead City',distance:FINISH}];
 export const xpRequired=level=>60+(level-1)*35;
 export const nearestLane=x=>LANES.reduce((a,b)=>Math.abs(b-x)<Math.abs(a-x)?b:a);
 export const DISTRICTS=['THE QUARANTINE','BURNT QUARTER','DEAD INDUSTRY','HOSPITAL MILE','THE OUTSKIRTS','LAST EXIT'];
-import {WEAPONS,replacementStats} from './arsenal.mjs?v=slots-v8';
-import {CARDS} from './cards.mjs?v=slots-v8';
+import {WEAPONS,replacementStats} from './arsenal.mjs?v=events-v9';
+import {CARDS} from './cards.mjs?v=events-v9';
 export {WEAPONS,CARDS};
+import {initEvents,tickEvents,fillHorde,addBonusSupply} from './random-events.mjs?v=events-v9';
 export const XP_GAIN=.5;
 export const SWAP_DURATION=.42;
 export function rng(seed){let n=seed>>>0;return()=>{n+=0x6D2B79F5;let t=n;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296;};}
@@ -36,16 +37,16 @@ export class Run{
   this.platforms=convoy(seed);this.killLanes=killLaneSchedule(seed);this.exits=this.platforms.filter(p=>p.exitRamp).map(p=>({lane:p.lane,start:p.end-p.exitRamp,end:p.end+65}));
   Object.assign(this,{nextPlatformGroup:4,nextKillAt:3150,nextPowerup:230+this.random()*100,powers:{minigun:0,stim:0,skateboard:0},powerDuration:1,scrapBonus:1,testRun:false,lastSurge:false});
   Object.assign(this,{stride:0,airTime:0,jumping:false,landing:0});
-  Object.assign(this,{critDamage:2,chill:0,jumpPower:9,fireBonus:0,burnDuration:2.4,wildfire:0,fireGrenades:false,fireLeech:0,thorns:0,thornScaling:0,retribution:false,regen:0,choosingWeapon:false,weaponChoices:[],nextCrate:180,shotHand:0,slashTimer:0});
+  Object.assign(this,{critDamage:2,chill:0,jumpPower:9,fireBonus:0,burnDuration:2.4,wildfire:0,fireGrenades:false,fireLeech:0,thorns:0,thornScaling:0,retribution:false,regen:0,choosingWeapon:false,weaponChoices:[],nextCrate:350,shotHand:0,slashTimer:0});
   applyProfile(this,profile);
   this.weaponSlots=[this.weapon,null];this.activeSlot=0;this.slotCooldowns=[0,0];this.swapTimer=0;this.swapFrom=this.weapon;
-  this.entities=[];this.events=[];this.deck={};this.choices=[];this.generate();
+  this.entities=[];this.events=[];this.deck={};this.choices=[];initEvents(this,rng(seed^0x7e91ba));this.generate();
  }
  add(kind,lane,at,extra={}){const e={id:++this.id,kind,lane,at,done:false,...extra};this.entities.push(e);return e;}
  platformAt(lane,at){return this.platforms.find(p=>Math.abs(p.lane-lane)<.46&&at>=p.at&&at<p.end);}
  clearExit(lane,at){return this.exits.some(e=>e.lane===lane&&at>=e.start&&at<e.end);}
  killLaneAt(at=this.distance){return (this.killLanes.find(k=>at>=k.at&&at<k.end)||this.killLanes.at(-1)).lane;}
- zombie(kind,lane,at){const d=difficultyAt(this.time+Math.max(0,at-this.distance)/Math.max(27,this.speed)),elite=this.random()<d.eliteChance,hp=({walker:38,runner:28,brute:135}[kind]||38)*.75*d.health*(elite?1.8:1),p=this.platformAt(lane,at);return this.add(kind,lane,at,{hp,maxHp:hp,elite,elevation:p?platformHeight(p,at):0,speed:kind==='runner'?d.runnerSpeed:0,damage:(kind==='brute'?32:22)*.75*d.damage*(elite?1.35:1),burning:0,hit:0});}
+ zombie(kind,lane,at){const d=difficultyAt(this.time+Math.max(0,at-this.distance)/Math.max(27,this.speed)),elite=this.activeEvent?.id!=='horde'&&this.random()<d.eliteChance,hp=({walker:38,runner:28,brute:135}[kind]||38)*.75*d.health*(elite?1.8:1),p=this.platformAt(lane,at);return this.add(kind,lane,at,{hp,maxHp:hp,elite,elevation:p?platformHeight(p,at):0,speed:kind==='runner'?d.runnerSpeed:0,damage:(kind==='brute'?32:22)*.75*d.damage*(elite?1.35:1),burning:0,hit:0});}
  ensureWorld(){
   while(150+this.nextPlatformGroup*625<this.distance+600){const vehicles=convoy(this.seed,this.nextPlatformGroup++,1);this.platforms.push(...vehicles);const p=vehicles.at(-1);this.exits.push({lane:p.lane,start:p.end-p.exitRamp,end:p.end+65});}
   while(this.nextKillAt<this.distance+600){const choices=LANES.filter(l=>l!==this.killLanes.at(-1).lane),random=rng(this.seed^Math.imul(this.nextKillAt,8191)),lane=choices[Math.floor(random()*choices.length)];this.killLanes.push({at:this.nextKillAt,end:this.nextKillAt+210,lane});this.nextKillAt+=210;}
@@ -89,7 +90,7 @@ export class Run{
  get activeMinigun(){return this.powers.minigun>0;}
  get activeBoard(){return this.powers.skateboard>0;}
  generate(){
-  this.ensureWorld();
+  this.ensureWorld();fillHorde(this,LANES);
   // Skip obsolete rows after a debug seek and retain a bounded live window.
   this.nextRow=Math.max(this.nextRow,this.distance-10);
   while(this.nextRow<this.distance+220){
@@ -97,12 +98,12 @@ export class Run{
    if(!nearCheckpoint){
     const killLane=this.killLaneAt(at),quiet=LANES.filter(l=>l!==killLane);this.safeLane=quiet[(this.rows+Math.floor(at/210))%quiet.length];
     this.spawnBudget+=d.pack;const count=Math.floor(this.spawnBudget);this.spawnBudget-=count;
-    for(let i=0;i<count;i++){
+    for(let i=0;i<count&&!['clear','horde'].includes(this.activeEvent?.id);i++){
      const pos=at+i*4,available=LANES.filter(l=>!this.clearExit(l,pos)&&!((p=>p&&pos<p.at+p.ramp+3)(this.platformAt(l,pos))));
      const roll=this.random(),preferred=i===0?LANES[this.rows%4]:this.random()<.72?killLane:LANES[Math.floor(this.random()*4)],lane=available.includes(preferred)?preferred:available[Math.floor(this.random()*available.length)];
      if(lane!==undefined)this.zombie(roll<d.bruteChance?'brute':roll<d.bruteChance+d.runnerChance?'runner':'walker',lane,pos);
     }
-    if(this.rows%3===0){const lane=this.safeLane,pos=at+9,p=this.platformAt(lane,pos);this.add('supply',lane,pos,{elevation:p?platformHeight(p,pos):0});}
+    if(this.rows%3===0){const lane=this.safeLane,pos=at+9,p=this.platformAt(lane,pos);const supply=this.add('supply',lane,pos,{elevation:p?platformHeight(p,pos):0});if(this.activeEvent?.id==='supply')addBonusSupply(this,supply);}
     if(this.rows%2===0){
      const available=LANES.filter(l=>l!==this.safeLane&&!this.platformAt(l,at+12)&&!this.clearExit(l,at+12)),lane=available[Math.floor(this.random()*available.length)],types=['car','barrier','gate','spikes','barrels'],kind=types[Math.floor(this.random()*types.length)];
      if(lane!==undefined)this.add(kind,lane,at+12,{elevation:0});
@@ -113,7 +114,7 @@ export class Run{
   }
   if(this.nextCrate<this.distance+200){
    const at=Math.max(this.distance+65,this.nextCrate),available=LANES.filter(l=>!this.platformAt(l,at)&&!this.clearExit(l,at)&&!this.entities.some(e=>e.lane===l&&Math.abs(e.at-at)<12)),lane=available[Math.floor(this.random()*available.length)];
-   if(lane!==undefined){this.add('weaponcrate',lane,at,{elevation:0});this.nextCrate=at+420+this.random()*220;}else this.nextCrate=at+35;
+   if(lane!==undefined){this.add('weaponcrate',lane,at,{elevation:0});this.nextCrate=at+840+this.random()*440;}else this.nextCrate=at+35;
   }
   if(this.nextPowerup<this.distance+200){const at=Math.max(this.distance+75,this.nextPowerup),available=LANES.filter(l=>!this.platformAt(l,at)&&!this.clearExit(l,at)&&!this.entities.some(e=>e.lane===l&&e.kind!=='supply'&&Math.abs(e.at-at)<12)),lane=available[Math.floor(this.random()*available.length)];if(lane!==undefined){const kind=Object.keys(POWERUPS)[Math.floor(this.random()*3)];this.add('powerup',lane,at,{powerup:kind,elevation:0});}this.nextPowerup=at+330+this.random()*270;}
  }
@@ -168,7 +169,7 @@ export class Run{
   for(const lane of lanes){
    const targets=this.targets(lane);
    if(!targets.length&&!split)continue;
-   const critical=this.random()<Math.min(1,this.crit);
+   const critical=this.activeEvent?.id!=='buckets'&&this.random()<Math.min(1,this.crit);
    for(const e of targets){const falloff=this.weapon==='shotgun'&&!this.activeMinigun?1-.35*(e.at-this.distance)/this.range:1;this.ignite(e);if(this.chill)e.chilled=3;this.hit(e,(this.activeMinigun?Math.max(180,this.damage*4):this.damage)*this.damageMultiplier*falloff*(split?.5:1)*(critical?this.critDamage:1));}
    this.events.push({type:this.weapon==='katana'&&!this.activeMinigun?'slash':'shot',lane,z:targets.length?targets[0].at-this.distance:this.range,elevation:targets[0]?.elevation||0,critical,hand:this.shotHand,weapon:this.activeMinigun?'minigun':this.weapon});fired=true;
   }
@@ -194,10 +195,10 @@ export class Run{
  step(dt){
   this.swapTimer=Math.max(0,this.swapTimer-dt);this.slotCooldowns=this.slotCooldowns.map(t=>Math.max(0,t-dt));
   this.slashTimer=Math.max(0,this.slashTimer-dt);if(this.regen&&this.hp<this.maxHp*.5)this.hp=Math.min(this.maxHp*.5,this.hp+this.regen*dt);
-  const before=this.distance;this.time+=dt;const difficulty=difficultyAt(this.time);
+  const before=this.distance;this.time+=dt;tickEvents(this);const difficulty=difficultyAt(this.time);
   for(const kind of Object.keys(this.powers))this.powers[kind]=Math.max(0,this.powers[kind]-dt);
-  this.speed=difficulty.speed*(this.activeBoard?1.35:1);this.distance+=this.speed*dt;
-  if(difficulty.surge&&!this.lastSurge)this.events.push({type:'surge'});this.lastSurge=difficulty.surge;
+  this.speed=difficulty.speed*(this.activeBoard?1.35:1)*(this.activeEvent?.id==='clear'?2:1);this.distance+=this.speed*dt;
+  if(difficulty.surge&&!this.lastSurge&&!this.activeEvent)this.events.push({type:'surge'});this.lastSurge=difficulty.surge;
   this.landing=Math.max(0,this.landing-dt);
   if(this.grounded&&this.roll<=0&&this.landing===0)this.stride=(this.stride+dt*this.speed/15)%1;
   if(!this.grounded)this.airTime+=dt;
@@ -227,7 +228,7 @@ export class Run{
   // Staying underleveled remains playable, but avoidance alone cannot keep
   // the pursuing horde at bay through the later districts.
   const levelGap=Math.max(0,this.sector+1-this.level);
-  this.chase=Math.min(100,Math.max(0,this.chase+dt*(this.activeBoard?-5:(1.6+this.time/150)*(1+levelGap*.45)*this.chaseRate*ZOMBIE_PRESSURE)));
+  this.chase=Math.min(100,Math.max(0,this.chase+dt*(this.activeEvent?.id==='clear'?0:this.activeBoard?-5:(1.6+this.time/150)*(1+levelGap*.45)*this.chaseRate*ZOMBIE_PRESSURE)));
   if(this.chase>=100){this.hurt(20*difficulty.damage,'The horde closed in. Kills, supplies and grenades push it back.');this.chase=78;}
   this.firePose=Math.max(0,this.firePose-dt);this.shotTimer=Math.max(0,this.shotTimer-dt);
   const hasTarget=this.swapTimer<=0&&this.roll<=0&&this.aimLanes().some(l=>this.targets(l).length),wantAim=hasTarget&&(this.shotTimer<.17||this.firePose>0);
@@ -249,7 +250,7 @@ export class Run{
     else if(e.kind==='supply'){if(Math.abs(height)<1){e.done=true;this.supplies++;this.hp=Math.min(this.maxHp,this.hp+8+this.scavenge);this.chase=Math.max(0,this.chase-8);if(this.supplies%5===0)this.grenades=Math.min(9,this.grenades+1);this.events.push({type:'supply'});}}
     else{
      const avoided=height>2||height<-.7||(['barrier','barrels','spikes'].includes(e.kind)&&height>(e.kind==='spikes'?.35:.7))||(e.kind==='gate'&&this.roll>0)||(e.kind==='walker'&&height>1.1)||(e.kind==='runner'&&height>1.1);
-     if(!avoided&&!e.collided){e.collided=true;this.hurt(e.damage||(e.kind==='car'?36:22),{car:'Change lanes to avoid wrecks.',barrier:'Jump barricades.',barrels:'Jump barrel piles or change lanes.',spikes:'Jump spike strips.',gate:'Dodge roll under the wire with ↓.',brute:'Use a grenade or change lanes to avoid brutes.',walker:'Kill zombies to earn XP and upgrades.',runner:'Jump or change lanes to avoid runners.'}[e.kind]);
+     if(!avoided&&!e.collided){e.collided=true;this.hurt((e.damage||(e.kind==='car'?36:22))*(this.activeEvent?.id==='swords'&&e.kind==='runner'?2.5:1),{car:'Change lanes to avoid wrecks.',barrier:'Jump barricades.',barrels:'Jump barrel piles or change lanes.',spikes:'Jump spike strips.',gate:'Dodge roll under the wire with ↓.',brute:'Use a grenade or change lanes to avoid brutes.',walker:'Kill zombies to earn XP and upgrades.',runner:'Jump or change lanes to avoid runners.'}[e.kind]);
       if(e.hp>0&&this.thornsDamage>0){const damage=this.thornsDamage*this.damageMultiplier;this.events.push({type:'thorns',lane:e.lane,z,elevation:e.elevation||0});this.hit(e,damage,'thorns');
        if(this.retribution)for(const other of this.entities)if(other!==e&&!other.done&&other.hp>0&&Math.abs(other.at-e.at)<12&&Math.abs(other.lane-e.lane)<=1&&Math.abs((other.elevation||0)-(e.elevation||0))<1.5)this.hit(other,damage*.5,'thorns');
       }

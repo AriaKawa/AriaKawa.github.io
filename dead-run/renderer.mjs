@@ -1,7 +1,7 @@
-import {solidBox,NEAR_Z,FAR_Z,CAMERA_Z} from './geometry.mjs?v=slots-v8';
-import {platformHeight} from './model.mjs?v=slots-v8';
-import {POWERUPS} from './endless.mjs?v=slots-v8';
-import {playerAnimation,zombieFrame} from './animation.mjs?v=slots-v8';
+import {solidBox,NEAR_Z,FAR_Z,CAMERA_Z} from './geometry.mjs?v=events-v9';
+import {platformHeight} from './model.mjs?v=events-v9';
+import {POWERUPS} from './endless.mjs?v=events-v9';
+import {playerAnimation,zombieFrame} from './animation.mjs?v=events-v9';
 
 // Geometry controls movement and occlusion; all pictured materials, props,
 // characters, weapons, shadows and effects come from the generated art pack.
@@ -104,6 +104,17 @@ export function createRenderer(canvas,images,reduced=false){
   if(e.hp>0)stats.zombies++;
   if(e.hp>0){const name=`v6-${e.kind}-${zombieFrame(e.kind,run.time,e.id)}`,h=base*(e.kind==='brute'?1.32:1)*(e.elite?1.18:1),sway=0;
    if(e.elite){ctx.save();ctx.shadowColor='#e68b39';ctx.shadowBlur=4*p.s;sprite(name,p.x+sway,p.y,h);ctx.restore();sprite('control-skull',p.x,p.y-h-10*p.s,9*p.s);}else sprite(name,p.x+sway,p.y,h);
+   if(run.activeEvent?.id==='buckets'){
+    const x=p.x-base*.04,y=p.y-h*.83,w=base*.33,bh=h*.23;
+    poly([[x-w*.43,y-bh],[x+w*.43,y-bh],[x+w*.55,y],[x-w*.55,y]],'#a7b0ab');
+    rect(x-w*.55,y,w*1.1,bh*.12,'#414d4b');rect(x-w*.25,y-bh*.9,w*.15,bh*.72,'#d7ddd2');rect(x+w*.22,y-bh*.85,w*.18,bh*.78,'#737f7d');
+   }
+   if(run.activeEvent?.id==='swords'&&e.kind==='runner'){
+    const swing=Math.max(0,Math.min(1,1-z/24)),angle=-.9+swing*2.7;
+    ctx.save();ctx.translate(p.x+base*.22,p.y-h*.48);ctx.rotate(angle);
+    rect(-base*.035,-h*.7,base*.07,h*.68,'#dce1d7');rect(base*.005,-h*.7,base*.035,h*.68,'#8eaaa8');rect(-base*.13,-h*.04,base*.26,h*.055,'#d7ac68');rect(-base*.035,0,base*.07,h*.18,'#69452d');ctx.restore();
+    if(swing>0&&swing<1){ctx.save();ctx.strokeStyle='#f2cf9caa';ctx.lineWidth=Math.max(1,base*.04);ctx.beginPath();ctx.arc(p.x+base*.22,p.y-h*.48,h*.62,-2.4,-2.4+swing*2.7);ctx.stroke();ctx.restore();}
+   }
    if(e.hit>0){ctx.globalAlpha=.8;sprite('impact',p.x+sway,p.y-h*.42,h*.33);ctx.globalAlpha=1;}
    if(e.hp<e.maxHp||e.kind==='brute'){const w=base*.58,ratio=Math.max(0,e.hp/e.maxHp);sprite('panel-hud',p.x,p.y-h-3*p.s,5*p.s,w);rect(p.x-w*.43,p.y-h-6.5*p.s,w*.86*ratio,1.4*p.s,e.kind==='brute'?'#c59053':'#a8b379');}
    if(e.chilled>0){ctx.save();ctx.globalAlpha=.6;ctx.strokeStyle='#a6e7f5';ctx.lineWidth=2*p.s;ctx.strokeRect(p.x-base*.26,p.y-h*.75,base*.52,h*.7);ctx.restore();}

@@ -1,6 +1,6 @@
 # Dead Run
 
-A gritty four-lane 16-bit zombie roguelike runner for AriaKawa. Neon Rail Rush remains available. The Games page includes a dedicated Dead Run card. See [the elemental builds update](BUILD-UPDATE.md) and [two weapon slots update](SLOTS-UPDATE.md).
+A gritty four-lane 16-bit zombie roguelike runner for AriaKawa. Neon Rail Rush remains available. The Games page includes a dedicated Dead Run card. See [the elemental builds update](BUILD-UPDATE.md), [two weapon slots update](SLOTS-UPDATE.md), and [random events update](EVENTS-UPDATE.md).
 
 ## Play
 
@@ -14,7 +14,7 @@ Left/right or A/D move and aim. Up/W/Space jumps, down/S dodge rolls, E throws a
 | Sawed-off | 34 m | Your lane and neighbors (up to three), two targets per lane, stronger close up |
 | Iron Six | 90 m | Two-target piercing in one lane |
 
-Twenty-eight draftable upgrades plus a repeatable recovery option for exhausted builds change combat, survival and equipment, with eligibility and stack limits. Each run starts with one reroll and two grenades. There is no extraction or finish line. District themes repeat every six districts while combat continues to scale. Kills grant XP: walkers 5, runners 7, brutes 15 (exactly half the previous XP). Fill the blood bar to level up and choose one of three cards. The first upgrade needs 60 XP, and each subsequent level costs 35 more. Overflow XP is preserved, including multiple levels from a grenade. Travel and pickups grant no XP. Districts still change every 450 meters but no longer grant free cards. Staying underleveled increases late-district horde pressure, so avoiding every fight eventually becomes unsustainable. Personal distance/kill records and audio preferences stay on this device. Builds and equipment reset each run. Switching away pauses play; audio starts after interaction. Reduced-motion settings suppress shake, dust and decorative sway.
+Twenty-eight draftable upgrades plus a repeatable recovery option for exhausted builds change combat, survival and equipment, with eligibility and stack limits. Each run starts with one reroll and two grenades. There is no extraction or finish line. District themes repeat every six districts while combat continues to scale. Kills grant XP: walkers 5, runners 7, brutes 15 (exactly half the previous XP). Fill the blood bar to level up and choose one of three cards. The first upgrade needs 60 XP, and each subsequent level costs 35 more. Overflow XP is preserved, including multiple levels from a grenade. Travel and pickups grant no XP, except the 60 XP survival reward for completing Clear Skies. Districts still change every 450 meters but no longer grant free cards. Staying underleveled increases late-district horde pressure, so avoiding every fight eventually becomes unsustainable. Personal distance/kill records and audio preferences stay on this device. Builds and equipment reset each run. Switching away pauses play; audio starts after interaction. Reduced-motion settings suppress shake, dust and decorative sway.
 
 ## Hordes and roofs
 
