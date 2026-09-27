@@ -1,7 +1,7 @@
-import {solidBox,NEAR_Z,FAR_Z,CAMERA_Z} from './geometry.mjs';
-import {platformHeight} from './model.mjs';
-import {POWERUPS} from './endless.mjs';
-import {playerAnimation,zombieFrame} from './animation.mjs';
+import {solidBox,NEAR_Z,FAR_Z,CAMERA_Z} from './geometry.mjs?v=slots-v8';
+import {platformHeight} from './model.mjs?v=slots-v8';
+import {POWERUPS} from './endless.mjs?v=slots-v8';
+import {playerAnimation,zombieFrame} from './animation.mjs?v=slots-v8';
 
 // Geometry controls movement and occlusion; all pictured materials, props,
 // characters, weapons, shadows and effects come from the generated art pack.
@@ -130,14 +130,11 @@ export function createRenderer(canvas,images,reduced=false){
   stats.playerFrame=animation.frame;stats.playerPose=animation.pose;stats.rollFrame=animation.pose==='roll'?animation.frame:-1;
   // Locomotion owns the legs. Aiming changes the upper-body sheet while
   // retaining its stride phase; flight follows velocity through a real leap.
-  const recoil=reduced||animation.pose==='jump'?0:run.firePose/.12*base*.012;
+  const recoil=reduced||animation.pose==='jump'?0:animation.pose==='swap'?Math.sin(animation.swapPhase*Math.PI)*base*.045:run.firePose/.12*base*.012;
   ctx.save();if(stim){ctx.shadowColor='#81ed59';ctx.shadowBlur=reduced?4:9;}
-  sprite(animation.asset,p.x,p.y-lift+base*.036+recoil,base*(animation.asset.startsWith('v7-')?1.28:1.12),undefined,stim,!animation.asset.startsWith('v7-')&&['run','aim'].includes(animation.pose)?animation.frame:-1);ctx.restore();
+  sprite(animation.asset,p.x,p.y-lift+base*.036+recoil,base*(animation.asset.startsWith('v7-')?1.28:1.12),undefined,stim,!animation.asset.startsWith('v7-')&&['run','aim'].includes(animation.gaitPose||animation.pose)?animation.frame:-1);ctx.restore();
   if(run.activeBoard&&run.grounded&&!reduced){ctx.globalAlpha=.4;sprite('smoke',p.x,p.y-lift+base*.1,base*.27,base*.55);}
   ctx.globalAlpha=1;
-  if(['playing','paused'].includes(state.mode)){
-   const y=H*(.99-run.chase/100*.085);for(let i=0;i<7;i++){const x=W*(.07+i*.145),h=base*(.69+(i%3)*.12);ctx.globalAlpha=.8+run.chase*.002;sprite('v6-horde-'+zombieFrame('horde',run.time,i),x,y+h*.38,h);}ctx.globalAlpha=1;
-  }
  }
  function crumbleEffect(e){
   const z=e.at-run.distance;if(z<-6||z>225)return;const p=point(e.lane,z,(e.elevation||0)*unit());

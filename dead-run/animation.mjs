@@ -1,4 +1,4 @@
-import {ROLL_DURATION} from './model.mjs';
+import {ROLL_DURATION,SWAP_DURATION} from './model.mjs?v=slots-v8';
 export const GAIT_FRAMES=8;
 export function jumpFrame(run){
  if(run.grounded)return 7;
@@ -10,6 +10,11 @@ export function jumpFrame(run){
  return run.vy>-4.5?5:6;
 }
 export function playerAnimation(run){
+ if(run.swapTimer>0&&run.roll<=0&&!run.activeBoard&&!run.activeMinigun){
+  const phase=1-run.swapTimer/SWAP_DURATION,poseRun=Object.create(run);
+  poseRun.weapon=phase<.5?run.swapFrom:run.weapon;poseRun.swapTimer=0;poseRun.slashTimer=0;poseRun.firePose=0;poseRun.aim=phase<.15||phase>.85?1:0;
+  const animation=playerAnimation(poseRun);return {...animation,gaitPose:animation.pose,pose:'swap',swapPhase:phase};
+ }
  if(run.roll>0&&!run.activeBoard){const frame=Math.min(7,Math.floor((1-run.roll/ROLL_DURATION)*8));return {asset:'roll'+frame,pose:'roll',frame};}
  const family=run.activeBoard?'shieldboard':run.activeMinigun?'minigun':run.weapon;
  if(['deagle','glocks','scorpion','barrett','katana'].includes(family)){

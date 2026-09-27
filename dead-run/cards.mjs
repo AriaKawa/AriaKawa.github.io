@@ -2,7 +2,7 @@ export const CARDS=[
  {id:'caliber',name:'Heavy Caliber',kind:'WEAPON',rarity:'common',desc:'+30% weapon damage, including sword cuts.',max:5,apply:r=>r.damage*=1.3},
  {id:'trigger',name:'Hair Trigger',kind:'WEAPON',rarity:'common',desc:'Attack 22% faster, including sword cuts.',max:4,apply:r=>r.interval/=1.22},
  {id:'pierce',name:'Armor Piercer',kind:'WEAPON',rarity:'rare',desc:'Each attack hits one more infected per lane.',max:3,apply:r=>r.pierce++},
- {id:'spread',name:'Crossfire',kind:'WEAPON',rarity:'epic',desc:'Every weapon hits your lane and its neighbors.',max:1,eligible:r=>!r.spread,apply:r=>r.spread=1},
+ {id:'spread',name:'Crossfire',kind:'WEAPON',rarity:'epic',desc:'Both weapons cover neighboring lanes. Scorpion stays at two lanes.',max:1,eligible:r=>!r.deck.spread&&(r.weaponSlots||[r.weapon]).some(id=>id&&!['shotgun','katana','scorpion'].includes(id)),apply:r=>r.spread=1},
  {id:'crit',name:'Headshot',kind:'CRITICAL',rarity:'rare',desc:'+20% critical chance. Critical hits deal double damage.',max:3,apply:r=>r.crit=Math.min(1,r.crit+.2)},
  {id:'headhunter',name:'Headshot Specialist',kind:'CRITICAL',rarity:'rare',desc:'+10% critical chance and +50% critical damage. Works with cuts too.',max:2,apply:r=>{r.crit=Math.min(1,r.crit+.1);r.critDamage+=.5;}},
  {id:'ice',name:'Ice Attunement',kind:'ICE',rarity:'rare',desc:'Weapon hits chill for 3s. Infected approach 40% slower.',max:1,apply:r=>r.chill=.4},

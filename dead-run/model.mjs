@@ -1,15 +1,16 @@
-import {difficultyAt,POWERUPS,ZOMBIE_PRESSURE} from './endless.mjs';
-import {applyProfile} from './progression.mjs';
+import {difficultyAt,POWERUPS,ZOMBIE_PRESSURE} from './endless.mjs?v=slots-v8';
+import {applyProfile} from './progression.mjs?v=slots-v8';
 export const SECTOR_LENGTH=450, FINISH=Infinity;
 export const LANES=[-1.5,-.5,.5,1.5],ROLL_DURATION=.72;
 export const MAPS=[{id:'dead-city',name:'Dead City',distance:FINISH}];
 export const xpRequired=level=>60+(level-1)*35;
 export const nearestLane=x=>LANES.reduce((a,b)=>Math.abs(b-x)<Math.abs(a-x)?b:a);
 export const DISTRICTS=['THE QUARANTINE','BURNT QUARTER','DEAD INDUSTRY','HOSPITAL MILE','THE OUTSKIRTS','LAST EXIT'];
-import {WEAPONS,replacementStats} from './arsenal.mjs';
-import {CARDS} from './cards.mjs';
+import {WEAPONS,replacementStats} from './arsenal.mjs?v=slots-v8';
+import {CARDS} from './cards.mjs?v=slots-v8';
 export {WEAPONS,CARDS};
 export const XP_GAIN=.5;
+export const SWAP_DURATION=.42;
 export function rng(seed){let n=seed>>>0;return()=>{n+=0x6D2B79F5;let t=n;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296;};}
 export const ROOF_HEIGHT=3;
 export function convoy(seed=1,startGroup=0,count=4){
@@ -37,6 +38,7 @@ export class Run{
   Object.assign(this,{stride:0,airTime:0,jumping:false,landing:0});
   Object.assign(this,{critDamage:2,chill:0,jumpPower:9,fireBonus:0,burnDuration:2.4,wildfire:0,fireGrenades:false,fireLeech:0,thorns:0,thornScaling:0,retribution:false,regen:0,choosingWeapon:false,weaponChoices:[],nextCrate:180,shotHand:0,slashTimer:0});
   applyProfile(this,profile);
+  this.weaponSlots=[this.weapon,null];this.activeSlot=0;this.slotCooldowns=[0,0];this.swapTimer=0;this.swapFrom=this.weapon;
   this.entities=[];this.events=[];this.deck={};this.choices=[];this.generate();
  }
  add(kind,lane,at,extra={}){const e={id:++this.id,kind,lane,at,done:false,...extra};this.entities.push(e);return e;}
@@ -59,13 +61,27 @@ export class Run{
  openWeaponCrate(testing=false){
   if(this.dead||this.drafting||this.choosingWeapon)return false;
   if(testing)this.testRun=true;
-  const pool=Object.keys(WEAPONS).filter(id=>id!==this.weapon);this.weaponChoices=[];
+  const pool=Object.keys(WEAPONS).filter(id=>!this.weaponSlots.includes(id));this.weaponChoices=[];
   while(this.weaponChoices.length<3)this.weaponChoices.push(pool.splice(Math.floor(this.random()*pool.length),1)[0]);
   this.choosingWeapon=true;this.events.push({type:'weaponcrate'});return true;
  }
- chooseWeapon(id){
+ equipSlot(slot){
+  const id=this.weaponSlots[slot],previous=this.weapon;
+  this.slotCooldowns[this.activeSlot]=this.shotTimer;
+  Object.assign(this,replacementStats(this,id));this.weapon=id;this.activeSlot=slot;this.name=WEAPONS[id].name;this.description=WEAPONS[id].description;
+  this.shotTimer=this.slotCooldowns[slot];this.slashTimer=0;this.firePose=0;this.shotHand=0;this.aim=0;
+  this.swapFrom=previous;this.swapTimer=SWAP_DURATION;this.events.push({type:'weaponswap',slot,name:WEAPONS[id].name});
+ }
+ swapWeapon(slot){
+  if(this.dead||this.drafting||this.choosingWeapon||this.swapTimer>0||![0,1].includes(slot)||slot===this.activeSlot||!this.weaponSlots[slot])return false;
+  this.equipSlot(slot);return true;
+ }
+ chooseWeapon(id,slot=this.activeSlot){
   if(!this.choosingWeapon||(id!=='keep'&&!this.weaponChoices.includes(id)))return false;
-  if(id!=='keep'){Object.assign(this,replacementStats(this,id));this.weapon=id;this.name=WEAPONS[id].name;this.description=WEAPONS[id].description;this.shotTimer=0;this.slashTimer=0;this.firePose=0;this.shotHand=0;}
+  if(id!=='keep'){
+   if(![0,1].includes(slot))return false;
+   this.weaponSlots[slot]=id;this.equipSlot(slot);this.slotCooldowns[slot]=this.shotTimer=0;
+  }
   this.choosingWeapon=false;this.weaponChoices=[];this.events.push({type:'weaponchange',name:WEAPONS[this.weapon].name});this.checkLevelUp();return true;
  }
  get thornsDamage(){return this.thorns+this.maxHp*this.thornScaling;}
@@ -135,15 +151,26 @@ export class Run{
    return at<e.at&&bulletHeight<platformHeight(p,at)-.05;
   })());
  }).sort((a,b)=>a.at-b.at).slice(0,this.activeMinigun?100:this.pierce);}
- aimLanes(){const lane=nearestLane(this.x);return this.activeMinigun?LANES:this.spread?LANES.filter(l=>Math.abs(l-lane)<=1):[lane];}
+ aimLanes(){
+  const lane=nearestLane(this.x);if(this.activeMinigun)return LANES;
+  if(this.weapon==='scorpion'){
+   const adjacent=LANES.filter(l=>Math.abs(l-lane)===1),fallback=lane<0?lane+1:lane-1;
+   adjacent.sort((a,b)=>(this.targets(a)[0]?.at??Infinity)-(this.targets(b)[0]?.at??Infinity));
+   return [lane,this.targets(adjacent[0]).length?adjacent[0]:fallback];
+  }
+  return this.spread?LANES.filter(l=>Math.abs(l-lane)<=1):[lane];
+ }
  shoot(){
+  if(this.swapTimer>0)return false;
+  const split=this.weapon==='scorpion'&&!this.activeMinigun,lanes=this.aimLanes();
+  if(!lanes.some(l=>this.targets(l).length))return false;
   let fired=false;
-  for(const lane of this.aimLanes()){
+  for(const lane of lanes){
    const targets=this.targets(lane);
-   if(!targets.length)continue;
+   if(!targets.length&&!split)continue;
    const critical=this.random()<Math.min(1,this.crit);
-   for(const e of targets){const falloff=this.weapon==='shotgun'&&!this.activeMinigun?1-.35*(e.at-this.distance)/this.range:1;this.ignite(e);if(this.chill)e.chilled=3;this.hit(e,(this.activeMinigun?Math.max(180,this.damage*4):this.damage)*this.damageMultiplier*falloff*(critical?this.critDamage:1));}
-   this.events.push({type:this.weapon==='katana'&&!this.activeMinigun?'slash':'shot',lane,z:targets[0].at-this.distance,elevation:targets[0].elevation||0,critical,hand:this.shotHand,weapon:this.activeMinigun?'minigun':this.weapon});fired=true;
+   for(const e of targets){const falloff=this.weapon==='shotgun'&&!this.activeMinigun?1-.35*(e.at-this.distance)/this.range:1;this.ignite(e);if(this.chill)e.chilled=3;this.hit(e,(this.activeMinigun?Math.max(180,this.damage*4):this.damage)*this.damageMultiplier*falloff*(split?.5:1)*(critical?this.critDamage:1));}
+   this.events.push({type:this.weapon==='katana'&&!this.activeMinigun?'slash':'shot',lane,z:targets.length?targets[0].at-this.distance:this.range,elevation:targets[0]?.elevation||0,critical,hand:this.shotHand,weapon:this.activeMinigun?'minigun':this.weapon});fired=true;
   }
   if(fired){this.firePose=.12;this.aim=1;this.shotHand=1-this.shotHand;if(this.weapon==='katana'&&!this.activeMinigun)this.slashTimer=.28;}
   return fired;
@@ -165,6 +192,7 @@ export class Run{
   let remaining=Math.min(dt,.25);while(remaining>1e-8&&!this.dead&&!this.won&&!this.drafting&&!this.choosingWeapon){const step=Math.min(remaining,1/60);this.step(step);remaining-=step;}
  }
  step(dt){
+  this.swapTimer=Math.max(0,this.swapTimer-dt);this.slotCooldowns=this.slotCooldowns.map(t=>Math.max(0,t-dt));
   this.slashTimer=Math.max(0,this.slashTimer-dt);if(this.regen&&this.hp<this.maxHp*.5)this.hp=Math.min(this.maxHp*.5,this.hp+this.regen*dt);
   const before=this.distance;this.time+=dt;const difficulty=difficultyAt(this.time);
   for(const kind of Object.keys(this.powers))this.powers[kind]=Math.max(0,this.powers[kind]-dt);
@@ -202,7 +230,7 @@ export class Run{
   this.chase=Math.min(100,Math.max(0,this.chase+dt*(this.activeBoard?-5:(1.6+this.time/150)*(1+levelGap*.45)*this.chaseRate*ZOMBIE_PRESSURE)));
   if(this.chase>=100){this.hurt(20*difficulty.damage,'The horde closed in. Kills, supplies and grenades push it back.');this.chase=78;}
   this.firePose=Math.max(0,this.firePose-dt);this.shotTimer=Math.max(0,this.shotTimer-dt);
-  const hasTarget=this.roll<=0&&this.aimLanes().some(l=>this.targets(l).length),wantAim=hasTarget&&(this.shotTimer<.17||this.firePose>0);
+  const hasTarget=this.swapTimer<=0&&this.roll<=0&&this.aimLanes().some(l=>this.targets(l).length),wantAim=hasTarget&&(this.shotTimer<.17||this.firePose>0);
   this.aim=Math.max(0,Math.min(1,this.aim+(wantAim?8:-7)*dt));
   if(hasTarget&&this.shotTimer<=0&&this.aim>=.85){if(this.shoot())this.shotTimer=this.activeMinigun?.065:this.interval;}
   for(const e of this.entities){

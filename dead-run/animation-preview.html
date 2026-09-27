@@ -5,7 +5,7 @@
 <button id="play">Pause loop</button><button id="step">Next frame</button><button id="jump">Jump</button><button id="aim">Aim: off</button><button id="stim">Stim: off</button><button id="impact">Shield impact</button><button id="reset">Reset scene</button>
 <output id="status">Loading artwork…</output><canvas id="scene" width="960" height="620"></canvas><p><a href="./">Back to Dead Run</a></p>
 <script type="module">
-import {Run,rng} from './model.mjs';import {createRenderer} from './renderer.mjs';import {ASSETS} from './visuals.mjs';import {crumblePieces,playerAnimation} from './animation.mjs';
+import {Run,rng} from './model.mjs?v=slots-v8';import {createRenderer} from './renderer.mjs?v=slots-v8';import {ASSETS} from './visuals.mjs?v=slots-v8';import {crumblePieces,playerAnimation} from './animation.mjs?v=slots-v8';
 const $=id=>document.getElementById(id),images={},effects=[],debrisRandom=rng(42);let run,playing=true,aim=false,stim=false,last=0;
 document.querySelectorAll('button,select').forEach(e=>e.disabled=true);
 await Promise.all(Object.entries(ASSETS).map(([name,url])=>new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>{images[name]=im;resolve();};im.onerror=reject;im.src=url;})));
