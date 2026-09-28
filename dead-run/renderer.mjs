@@ -55,7 +55,15 @@ export function createRenderer(canvas,images,reduced=false){
   }
  }
  function street(){
-  rect(0,0,W,H,'#2d3529');if(images.city)ctx.drawImage(images.city,-W*.08-run.x*3,-H*.21,W*1.16,H*1.13);
+  rect(0,0,W,H,'#2d3529');
+  // Keep the distant horizon at the road's vanishing point. Overscan allows
+  // a slow forward-travel drift without exposing image edges or a loop seam.
+  if(images.horizon){
+   const im=images.horizon,scale=Math.max(W*1.16/im.width,H*.56/im.height),w=im.width*scale,h=im.height*scale;
+   const drift=reduced?0:Math.sin(run.distance/1800)*W*.025;
+   const x=(W-w)/2-run.x*W*.008+drift,y=H*.335-h*.68;
+   ctx.drawImage(im,Math.round(x),Math.round(y),Math.ceil(w),Math.ceil(h));
+  }
   // One uninterrupted asphalt surface. Sparse world-anchored decals carry
   // the wear; there is no repeated square texture under every lane.
   poly([xy(-2.06,FAR_Z),xy(2.06,FAR_Z),xy(2.06,NEAR_Z),xy(-2.06,NEAR_Z)],'#353a32');
@@ -177,7 +185,7 @@ export function createRenderer(canvas,images,reduced=false){
  }
  function render(current,frameState){run=current;state=frameState;stats.buildings=stats.clippedBuildings=stats.buildingFaces=0;ctx.save();if(state.shake>0&&!reduced)ctx.translate((Math.random()-.5)*state.shake,(Math.random()-.5)*state.shake);
   stats.vehicles=stats.zombies=stats.bloodBursts=stats.fragments=0;
-  if(state.mode==='title'||state.mode==='loading'){rect(0,0,W,H,'#1c261c');if(images.city)ctx.drawImage(images.city,0,0,W,H);ctx.restore();return;}
+  if(state.mode==='title'||state.mode==='loading'){rect(0,0,W,H,'#1c261c');if(images.home){const im=images.home,s=Math.max(W/im.width,H/im.height);ctx.drawImage(im,(W-im.width*s)*.7,(H-im.height*s)/2,im.width*s,im.height*s)};ctx.restore();return;}
   street();for(const item of drawables())item.draw();effects();ctx.restore();if(state.flash>0)rect(0,0,W,H,`rgba(153,44,25,${state.flash*.2})`);
  }
  return{resize,render,stats};
