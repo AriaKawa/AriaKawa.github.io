@@ -1,21 +1,22 @@
-import {solidBox,NEAR_Z,FAR_Z,CAMERA_Z} from './geometry.mjs?v=events-v9';
-import {platformHeight} from './model.mjs?v=events-v9';
-import {POWERUPS} from './endless.mjs?v=events-v9';
-import {playerAnimation,zombieFrame} from './animation.mjs?v=events-v9';
+import {BRUTE_PARTS,zombieAsset,makeBruteLayers} from './infected-art.mjs?v=encounters-v11';
+import {solidBox,NEAR_Z,FAR_Z,CAMERA_Z} from './geometry.mjs?v=encounters-v11';
+import {platformHeight} from './model.mjs?v=encounters-v11';
+import {POWERUPS} from './endless.mjs?v=encounters-v11';
+import {playerAnimation,zombieFrame} from './animation.mjs?v=encounters-v11';
 
 // Geometry controls movement and occlusion; all pictured materials, props,
 // characters, weapons, shadows and effects come from the generated art pack.
 export function createRenderer(canvas,images,reduced=false){
  const ctx=canvas.getContext('2d',{alpha:false});let W=720,H=420,run,state;
  const stats={buildings:0,clippedBuildings:0,buildingFaces:0,vehicles:0,zombies:0,playerFrame:0,playerPose:'run',rollFrame:-1,bloodBursts:0,fragments:0};
- const stimSprites=new Map(),gaitSprites=new Map();
+ const stimSprites=new Map(),gaitSprites=new Map(),bruteSprites=new Map();
  function resize(width,height){W=width;H=height;canvas.width=W;canvas.height=H;ctx.imageSmoothingEnabled=false;}
  function rect(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),Math.ceil(w),Math.ceil(h));}
  function poly(points,c){ctx.fillStyle=c;ctx.beginPath();points.forEach(([x,y],i)=>i?ctx.lineTo(Math.round(x),Math.round(y)):ctx.moveTo(Math.round(x),Math.round(y)));ctx.closePath();ctx.fill();}
  function point(l,z,height=0){const s=24/(Math.max(NEAR_Z,z)+24),h=H*.32,g=H*.80,lw=W*(W<500?.22:.18);return{x:W/2+l*lw*s-run.x*W*.012*(1-s),y:h+(g-h)*s-height*s,s,lw};}
  function xy(l,z,height=0){const p=point(l,z,height);return[p.x,p.y];}
  function unit(){return Math.min(H*.075,W*.055);}
- function sprite(name,x,y,h,w,stim=false,gait=-1){let im=images[name];if(!im)return;const key=name+':'+gait;
+ function sprite(name,x,y,h,w,stim=false,gait=-1){let im=typeof name==='string'?images[name]:name;if(!im)return;const key=name+':'+gait;
   // A shared leg layer gives both feet equal airtime and keeps the stride
   // continuous across weapons. Mirroring only the legs preserves handedness.
   if(gait>=0){if(!gaitSprites.has(key)){const pose=document.createElement('canvas');pose.width=96;pose.height=112;const c=pose.getContext('2d');c.imageSmoothingEnabled=false;c.drawImage(im,0,0);c.clearRect(29,62,38,50);c.save();c.beginPath();c.rect(29,62,38,50);c.clip();if(gait>=4){c.translate(96,0);c.scale(-1,1);}c.drawImage(images['v6-gait-'+[3,5,0,5][gait%4]],0,0);c.restore();gaitSprites.set(key,pose);}im=gaitSprites.get(key);}
@@ -70,7 +71,6 @@ export function createRenderer(canvas,images,reduced=false){
   for(let at=Math.floor((run.distance+FAR_Z)/8)*8;at>run.distance+NEAR_Z;at-=8){
    const far=at-run.distance,near=Math.max(NEAR_Z,far-8),n=Math.floor(at/8);
    for(const side of [-1,1])ground(side*2.06,side*2.62,far,near,'sidewalk');
-   const killLane=run.killLaneAt(at-4);poly([xy(killLane-.47,far),xy(killLane+.47,far),xy(killLane+.47,near),xy(killLane-.47,near)],'#812b2224');
    // Road markings and UI meters are functional geometry over generated skins.
    if(n%2===0)for(const lane of [-1,0,1])poly([xy(lane-.013,far),xy(lane+.013,far),xy(lane+.013,Math.max(near,far-4)),xy(lane-.013,Math.max(near,far-4))],'#b6aa777d');
   }
@@ -97,25 +97,41 @@ export function createRenderer(canvas,images,reduced=false){
  }
  function drawables(){
   const draw=run.entities.map(e=>({at:e.at,draw:()=>entity(e)}));
-  for(const p of run.platforms){if(p.end<run.distance+NEAR_Z||p.at>run.distance+FAR_Z)continue;stats.vehicles++;
+  for(const p of [...run.platforms,...run.blockades]){if(p.end<run.distance+NEAR_Z||p.at>run.distance+FAR_Z)continue;stats.vehicles++;
+   if(p.kind==='blockade'){draw.push({at:(Math.max(p.at,run.distance+NEAR_Z)+Math.min(p.end,run.distance+FAR_Z))/2,draw:()=>blockade(p)});continue;}
    const start=Math.max(p.at,run.distance+NEAR_Z),end=Math.min(p.end,run.distance+FAR_Z),cuts=[start,end];
    for(let at=start+3;at<end;at+=3)cuts.push(at);
    for(const at of [p.at+p.ramp,p.end-(p.exitRamp||0),run.distance])if(at>start&&at<end)cuts.push(at);
    cuts.sort((a,b)=>a-b);for(let i=1;i<cuts.length;i++){const a=cuts[i-1],b=cuts[i];if(b-a>.001)draw.push({at:(a+b)/2,draw:()=>vehicleSlice(p,a,b)});}
   }
+  for(const e of state.effects)if(e.type==='limb')draw.push({at:e.at,draw:()=>limbEffect(e)});
   for(const e of state.effects)if(e.type==='burst'||e.type==='stain')draw.push({at:e.at,draw:()=>bloodEffect(e)});
   for(const e of state.effects)if(e.type==='crumble'||e.type==='dust')draw.push({at:e.at,draw:()=>crumbleEffect(e)});
   draw.push({at:run.distance,draw:player});return draw.sort((a,b)=>b.at-a.at);
  }
+ function blockade(p){
+  const height=p.height*unit(),box=solidBox({x0:p.lane-.46,x1:p.lane+.46,z0:p.at-run.distance,z1:p.end-run.distance,top:height},{x:-run.x*W*.012/point(0,0).lw,y:H*.48,z:CAMERA_Z});if(!box)return;
+  for(const face of box.faces){if(!face.visible)continue;const points=face.points.map(([x,y,z])=>xy(x,z,y));
+   const name=face.name==='roof'?'roof':face.name==='front'||face.name==='back'?'back':'side';poly(points,'#593b2c');texture(images['blockade-'+name],points);
+  }
+  // The beacon makes a long lane closure readable before the front wall arrives.
+  const z=p.at-run.distance;if(z>NEAR_Z&&z<FAR_Z){const a=point(p.lane,z,height+3);ctx.globalAlpha=reduced?.9:.55+.45*Math.sin(run.time*7)**2;sprite('muzzle',a.x,a.y,Math.max(3,12*a.s));ctx.globalAlpha=1;}
+ }
+ function bruteImage(frame,lost,part=-1){const key=frame+':'+lost+':'+part;if(!bruteSprites.has(key)){const im=images['v6-brute-'+frame];if(!im)return null;bruteSprites.set(key,makeBruteLayers(im,lost,part));}return bruteSprites.get(key);}
+ function limbEffect(e){
+  const z=e.at-run.distance;if(z<NEAR_Z||z>FAR_Z)return;const part=BRUTE_PARTS[e.part],p=point(e.lane,z,(e.elevation||0)*unit()),im=bruteImage(e.frame,0,e.part);if(!im)return;
+  const h=Math.min(H*.225,W*.15)*p.s*1.32*(e.elite?1.18:1),scale=h/112;
+  const drop=Math.max(e.dy,-(112-part.cy)*h/(112*p.s));
+  ctx.save();ctx.globalAlpha=Math.min(1,e.life*3);ctx.translate(p.x+(part.cx-48)*scale+e.dx*p.s,p.y-(112-part.cy)*scale-drop*p.s);ctx.rotate(e.angle);ctx.drawImage(im,-part.cx*scale,-part.cy*scale,96*scale,112*scale);ctx.restore();stats.fragments++;
+ }
  function entity(e){
   const z=e.at-run.distance;if(z<-6||z>225)return;const p=point(e.lane,z,(e.elevation||0)*unit()),base=Math.min(H*.225,W*.15)*p.s;shadow(p.x,p.y,base*.75);
   if(e.hp>0)stats.zombies++;
-  if(e.hp>0){const name=`v6-${e.kind}-${zombieFrame(e.kind,run.time,e.id)}`,h=base*(e.kind==='brute'?1.32:1)*(e.elite?1.18:1),sway=0;
+  if(e.hp>0){const frame=zombieFrame(e.kind,run.time,e.id),name=e.kind==='brute'&&e.limbsLost?bruteImage(frame,e.limbsLost):zombieAsset(e,frame),h=base*(e.kind==='brute'?1.32:1)*(e.elite?1.18:1),sway=0;
    if(e.elite){ctx.save();ctx.shadowColor='#e68b39';ctx.shadowBlur=4*p.s;sprite(name,p.x+sway,p.y,h);ctx.restore();sprite('control-skull',p.x,p.y-h-10*p.s,9*p.s);}else sprite(name,p.x+sway,p.y,h);
    if(run.activeEvent?.id==='buckets'){
-    const x=p.x-base*.04,y=p.y-h*.83,w=base*.33,bh=h*.23;
-    poly([[x-w*.43,y-bh],[x+w*.43,y-bh],[x+w*.55,y],[x-w*.55,y]],'#a7b0ab');
-    rect(x-w*.55,y,w*1.1,bh*.12,'#414d4b');rect(x-w*.25,y-bh*.9,w*.15,bh*.72,'#d7ddd2');rect(x+w*.22,y-bh*.85,w*.18,bh*.78,'#737f7d');
+    const bob=reduced?0:Math.sin(run.time*(e.kind==='crawler'?4:8)+e.id)*h*.008;
+    sprite('v11-bucket-'+frame,p.x,p.y-h*(e.kind==='crawler'?.37:.79)+bob,h*.55);
    }
    if(run.activeEvent?.id==='swords'&&e.kind==='runner'){
     const swing=Math.max(0,Math.min(1,1-z/24)),angle=-.9+swing*2.7;

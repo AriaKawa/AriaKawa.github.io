@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {Run,LANES} from './model.mjs';
 import {RANDOM_EVENTS,startEvent,tickEvents} from './random-events.mjs';
 import {difficultyAt} from './endless.mjs';
-function empty(seed=42){const r=new Run(seed);r.entities=[];r.platforms=[];r.exits=[];r.nextRow=r.nextPowerup=r.nextCrate=r.nextPlatformGroup=r.nextEventAt=Infinity;return r;}
+function empty(seed=42){const r=new Run(seed);r.entities=[];r.platforms=[];r.blockades=[];r.exits=[];r.nextRow=r.nextPowerup=r.nextCrate=r.nextPlatformGroup=r.nextEventAt=Infinity;return r;}
 function finish(r){r.time=r.activeEvent.endsAt;tickEvents(r);}
 
 test('random event schedule gives warning, never overlaps, and cycles all five without repeats',()=>{
@@ -21,9 +21,10 @@ test('all event timers freeze in card drafts, weapon crates and after death',()=
  for(const flag of ['drafting','choosingWeapon','dead']){const r=empty();startEvent(r,'clear');r[flag]=true;const state=JSON.stringify(r.activeEvent);r.update(.25);assert.equal(r.time,0);assert.equal(JSON.stringify(r.activeEvent),state);assert.equal(r.totalXp,0);}
  const r=empty();r.nextEventAt=3;r.drafting=true;r.update(.25);assert(!r.eventWarning);assert(!r.activeEvent);
 });
-test('horde replaces existing zombies with nonelite walkers across all four lanes and respects exits',()=>{
- const r=empty();r.time=1000;r.zombie('brute',-.5,100);r.add('barrier',.5,120);r.add('supply',1.5,80);startEvent(r,'horde');r.generate();
- const zombies=r.entities.filter(e=>e.hp>0);assert(zombies.length>=40);assert(zombies.every(e=>e.kind==='walker'&&!e.elite));assert.equal(new Set(zombies.map(e=>e.lane)).size,4);assert(zombies.every(e=>e.at>=40));assert(r.entities.some(e=>e.kind==='barrier'));assert(r.entities.some(e=>e.kind==='supply'));
+test('horde preserves living zombies and spawns nonelite walkers behind them across all four lanes',()=>{
+ const r=empty();r.time=1000;const original=r.zombie('brute',-.5,100);original.hp-=9;original.burning=2;const hp=original.hp;r.add('barrier',.5,120);r.add('supply',1.5,80);startEvent(r,'horde');r.generate();
+ assert(r.entities.includes(original));assert.equal(original.hp,hp);assert.equal(original.burning,2);
+ const zombies=r.entities.filter(e=>e.horde);assert(zombies.length>=20);assert(zombies.every(e=>e.kind==='walker'&&!e.elite));assert.equal(new Set(zombies.map(e=>e.lane)).size,4);assert(zombies.every(e=>e.at>=118));assert(r.entities.some(e=>e.kind==='barrier'));assert(r.entities.some(e=>e.kind==='supply'));
  r.distance=240;r.exits=[{lane:-.5,start:240,end:470}];r.generate();assert(!r.entities.some(e=>e.hp>0&&e.lane===-.5&&e.at>=240));
  finish(r);const count=r.entities.length;r.distance+=300;r.generate();assert.equal(r.entities.length,count);
 });

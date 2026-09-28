@@ -4,7 +4,7 @@ The first event starts after 45–65 seconds of active play. Every event gets a 
 
 | Event | Duration | Effect |
 | --- | --- | --- |
-| Horde Incoming | 14 s | Replace zombies ahead with nonelite walkers in all four lanes, every 16 m. Preserve safe vehicle ramps and exits. |
+| Horde Incoming | 14 s | Keep existing zombies and add nonelite walkers behind the farthest survivor in all four lanes, every 16 m. Preserve safe ramps, exits and container clearances. |
 | Sword Fight | 16 s | Runners carry visible swords that swing as they approach. Contact deals 2.5× their usual damage; jumping, shields, armor and thorns still work. |
 | Bucket Heads | 16 s | All zombies wear buckets and ignore headshot critical bonuses. Normal weapon damage, burning and other effects still work. |
 | Clear Skies | 12 s | Remove existing zombies and suppress new zombie spawns. Double current movement speed, preserve obstacles, and pause chase pressure. Completing the event alive grants 60 XP once, using the existing level-up flow. |

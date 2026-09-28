@@ -18,7 +18,7 @@ Twenty-eight draftable upgrades plus a repeatable recovery option for exhausted 
 
 ## Hordes and roofs
 
-The road streams indefinitely with bounded entity, convoy, exit-buffer and kill-lane windows. A seeded kill lane changes every 210 meters, while every lane still gets zombies. Starting zombie health, contact damage, pack density, runner speed and horde pursuit pressure are all 25% higher than the endless v5 baseline. Packs average 3.75 initially and grow to 10 infected per row, with 3.75 extra during 15-second surges every minute starting at 0:45. Fractional packs accumulate across rows. Rows tighten from about 28 to 12 meters. Runners and brutes become more frequent; gold-marked elites begin after 100 seconds. Elite kills give double XP. Health and damage continue growing quadratically with survival time, so powerful builds eventually lose. Speed starts at 27 m/s, reaches about 37.0 at one minute and 41.3 at five minutes, then grows slowly. Draft and pause time do not affect difficulty or power-up duration.
+The road streams indefinitely with bounded enemies, convoys, containers and exit buffers. Uneven enemy density favors one lane per stretch, while every lane still gets zombies. This is an invisible encounter-composition rule with no lane label, colored road or special lane damage. Starting zombie health, contact damage, pack density, runner speed and horde pursuit pressure are all 25% higher than the endless v5 baseline. Packs average 3.75 initially and grow to 10 infected per row, with 3.75 extra during 15-second surges every minute starting at 0:45. Fractional packs accumulate across rows. Rows tighten from about 28 to 12 meters. Runners and brutes become more frequent; gold-marked elites begin after 100 seconds. Elite kills give double XP. Health and damage continue growing quadratically with survival time, so powerful builds eventually lose. Speed starts at 27 m/s, reaches about 37.0 at one minute and 41.3 at five minutes, then grows slowly. Draft and pause time do not affect difficulty or power-up duration.
 
 Six-vehicle rooftop routes keep generating on seeded outer lanes. Entry and exit ramps, rooftop hazards, solid vehicle bodies, and clear 65-meter exit buffers work throughout the endless run. Kills, supplies and grenades relieve horde pressure. Every fifth supply restores a grenade.
 
@@ -38,10 +38,17 @@ Open **Skill Tree** from the title or death screen. Nine permanent upgrades bran
 
 Normal runs bank scrap on death or when leaving/restarting via the pause menu: floor(distance / 100) + floor(kills / 4) + 2 × floor(survival seconds / 30), multiplied by Scrap Hunter. Each run banks once. Records, audio preferences, scrap and ranks share the existing localStorage key, preserving previous records. No account or server is needed; saves belong to this browser/device. Storage failure shows an explicit message. Zero-time restarts and practice runs award no scrap.
 
+## Encounter variety
+
+Walkers use three appearances with identical combat stats. Crawlers have less than half a walker's health, lower contact damage, a slow 1.2 m/s crawl and a low silhouette that a standard jump clears. Brutes shed hands and arms at 80%, 60%, 40% and 20% health from weapon hits; detached pieces tumble away and missing limbs remain absent throughout the walk cycle.
+
+Long ramp-free containers sometimes close one lane between bus convoys. At 2.8 m tall they require Air Attunement to reach from the street. Other lanes remain open; container roofs support high-jumping survivors, low gunfire is blocked, and Spikeboard can smash a container ahead. Bucket Heads uses animated rusted bucket helmets. Horde Incoming preserves existing enemies and queues its walkers behind the farthest survivor.
+
 ## Generated art
 
 All raster art uses the built-in image generation tool. Prompts, references and original source images are preserved:
 
+- [Encounter artwork and prompts](ENCOUNTERS-v11.md): animated buckets, crawler, female and alternate male walkers, container textures, and brute limb effects.
 - [Weapon crate and builds pack](BUILD-UPDATE.md): five new weapon atlases, sword cut and crate sprite.
 - [Original pack](assets/ART-PROMPTS.md): city, survivor and infected.
 - [Matching pack](assets/v2/ART-DIRECTION.md): facades, surfaces, props, weapons, cards, UI, controls, effects and logo.

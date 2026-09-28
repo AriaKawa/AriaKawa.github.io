@@ -5,12 +5,12 @@
 <button id="play">Pause loop</button><button id="step">Next frame</button><button id="jump">Jump</button><button id="aim">Aim: off</button><button id="stim">Stim: off</button><button id="impact">Shield impact</button><button id="reset">Reset scene</button>
 <output id="status">Loading artwork…</output><canvas id="scene" width="960" height="620"></canvas><p><a href="./">Back to Dead Run</a></p>
 <script type="module">
-import {Run,rng} from './model.mjs?v=events-v9';import {createRenderer} from './renderer.mjs?v=events-v9';import {ASSETS} from './visuals.mjs?v=events-v9';import {crumblePieces,playerAnimation} from './animation.mjs?v=events-v9';
+import {Run,rng} from './model.mjs?v=encounters-v11';import {createRenderer} from './renderer.mjs?v=encounters-v11';import {ASSETS} from './visuals.mjs?v=encounters-v11';import {crumblePieces,playerAnimation} from './animation.mjs?v=encounters-v11';
 const $=id=>document.getElementById(id),images={},effects=[],debrisRandom=rng(42);let run,playing=true,aim=false,stim=false,last=0;
 document.querySelectorAll('button,select').forEach(e=>e.disabled=true);
 await Promise.all(Object.entries(ASSETS).map(([name,url])=>new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>{images[name]=im;resolve();};im.onerror=reject;im.src=url;})));
 const renderer=createRenderer($('scene'),images);renderer.resize(960,620);
-function reset(){run=new Run(42);run.testRun=true;run.entities=[];run.platforms=[];run.exits=[];run.nextRow=run.nextPowerup=run.nextCrate=run.nextPlatformGroup=Infinity;run.shotTimer=Infinity;run.hp=run.maxHp=100000;effects.length=0;}
+function reset(){run=new Run(42);run.testRun=true;run.entities=[];run.platforms=[];run.blockades=[];run.exits=[];run.nextRow=run.nextPowerup=run.nextCrate=run.nextPlatformGroup=Infinity;run.shotTimer=Infinity;run.hp=run.maxHp=100000;effects.length=0;}
 function gear(){const value=$('equipment').value;run.weapon=['minigun','shieldboard'].includes(value)?'carbine':value;run.powers.minigun=value==='minigun'?100:0;run.powers.skateboard=value==='shieldboard'?100:0;run.powers.stim=stim?100:0;}
 function advance(dt){gear();run.update(dt);run.aim=aim?1:0;for(const e of run.events.splice(0))if(e.type==='crush'){const at=run.distance+e.z;effects.push(...crumblePieces({...e,at},debrisRandom),{type:'dust',lane:e.lane,at,elevation:0,life:.6});}for(const e of effects){e.life-=dt;if(e.type==='crumble'){e.dx+=e.vx*dt;e.dy+=e.vy*dt;e.vy-=160*dt;e.angle+=e.spin*dt;}}for(let i=effects.length-1;i>=0;i--)if(effects[i].life<=0)effects.splice(i,1);}
 function draw(){gear();run.aim=aim?1:0;renderer.render(run,{mode:'playing',effects,shake:0,flash:0});const a=playerAnimation(run);$('status').textContent=`${a.pose} · frame ${a.frame+1}/${a.asset.startsWith('v7-')?4:8} · height ${run.elevation.toFixed(2)} · velocity ${run.vy.toFixed(2)} · fragments ${renderer.stats.fragments} · loaded ${Object.keys(images).length}/${Object.keys(ASSETS).length}`;}

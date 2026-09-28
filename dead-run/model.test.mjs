@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {Run,CARDS,SECTOR_LENGTH,LANES,ROLL_DURATION,xpRequired,platformHeight,nearestLane} from './model.mjs';
-function empty(weapon='carbine'){const r=new Run(42,weapon);r.entities=[];r.platforms=[];r.exits=[];r.nextRow=Infinity;r.nextPowerup=r.nextCrate=Infinity;r.nextPlatformGroup=Infinity;return r;}
+function empty(weapon='carbine'){const r=new Run(42,weapon);r.entities=[];r.platforms=[];r.blockades=[];r.exits=[];r.nextRow=Infinity;r.nextPowerup=r.nextCrate=Infinity;r.nextPlatformGroup=Infinity;return r;}
 function advance(r,seconds){for(let t=0;t<seconds;t+=1/60)r.update(1/60);}
 function kill(r,kind='walker',lane=r.lane,at=r.distance+70){const e=r.zombie(kind,lane,at);r.hit(e,10000);return e;}
 
@@ -97,8 +97,8 @@ test('endless generation is repeatable, denser later, and remains bounded',()=>{
  for(let seed=0;seed<30;seed++){const r=new Run(seed),b=new Run(seed);assert.deepEqual(r.entities,b.entities);assert.deepEqual(r.platforms,b.platforms);
  const initial=r.entities.filter(e=>e.hp>0).length;r.distance=30000;r.time=800;r.entities=[];r.generate();
  assert(r.entities.filter(e=>e.hp>0).length>initial*2);assert(r.entities.some(e=>e.kind==='brute'));assert(r.entities.some(e=>e.kind==='runner'));assert(r.entities.some(e=>e.elite));
- assert(r.entities.length<240);assert(r.platforms.length<18);assert(r.killLanes.length<8);assert(r.platforms.some(p=>p.at>r.distance));
- for(const lane of LANES)assert(r.entities.some(e=>e.hp>0&&e.lane===lane));for(let i=1;i<r.killLanes.length;i++)assert.notEqual(r.killLanes[i].lane,r.killLanes[i-1].lane);
+ assert(r.entities.length<240);assert(r.platforms.length<18);assert(r.pressureLanes.length<8);assert(r.platforms.some(p=>p.at>r.distance));
+ for(const lane of LANES)assert(r.entities.some(e=>e.hp>0&&e.lane===lane));for(let i=1;i<r.pressureLanes.length;i++)assert.notEqual(r.pressureLanes[i].lane,r.pressureLanes[i-1].lane);
  }
 });
 

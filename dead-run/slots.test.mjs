@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {Run,CARDS,WEAPONS,LANES,SWAP_DURATION} from './model.mjs';
 import {playerAnimation} from './animation.mjs';
-function empty(weapon='carbine'){const r=new Run(77,weapon);r.entities=[];r.platforms=[];r.exits=[];r.nextRow=r.nextPowerup=r.nextCrate=r.nextPlatformGroup=Infinity;return r;}
+function empty(weapon='carbine'){const r=new Run(77,weapon);r.entities=[];r.platforms=[];r.blockades=[];r.exits=[];r.nextRow=r.nextPowerup=r.nextCrate=r.nextPlatformGroup=Infinity;return r;}
 function step(r,t){for(let i=0;i<Math.ceil(t*60);i++)r.update(1/60);}
 function give(r,id,slot){r.choosingWeapon=true;r.weaponChoices=[id];assert(r.chooseWeapon(id,slot));}
 function card(r,id){r.drafting=true;r.choices=[id];assert(r.choose(id));}

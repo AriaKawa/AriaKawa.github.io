@@ -22,9 +22,9 @@ export function tickEvents(run){
 }
 export function startEvent(run,id){
  if(!RANDOM_EVENTS[id]||run.activeEvent||run.dead)return false;
- run.activeEvent={id,endsAt:run.time+RANDOM_EVENTS[id].duration,nextHorde:run.distance+40};run.eventWarning=null;run.lastEvent=id;
- // Existing generated rows must change too: the live window extends 220 m ahead.
- if(id==='clear'||id==='horde')run.entities=run.entities.filter(e=>!(e.hp>0));
+ run.activeEvent={id,endsAt:run.time+RANDOM_EVENTS[id].duration,nextHorde:Math.max(run.distance+55,...run.entities.filter(e=>!e.done&&e.hp>0&&e.at>run.distance).map(e=>e.at+18))};run.eventWarning=null;run.lastEvent=id;
+ // Clear Skies clears the track; a horde queues behind the living front wave.
+ if(id==='clear')run.entities=run.entities.filter(e=>!(e.hp>0));
  if(id==='supply')for(const e of [...run.entities])if(e.kind==='supply'&&!e.done&&e.at>run.distance+15)addBonusSupply(run,e);
  run.events.push({type:'eventstart',id});return true;
 }
@@ -36,7 +36,7 @@ export function addBonusSupply(run,e){
 export function fillHorde(run,lanes){
  if(run.activeEvent?.id!=='horde')return;
  while(run.activeEvent.nextHorde<run.distance+220){const at=run.activeEvent.nextHorde;
-  for(const lane of lanes){const p=run.platformAt(lane,at);if(!run.clearExit(lane,at)&&!(p&&at<p.at+p.ramp+3))run.zombie('walker',lane,at);}
+  for(const lane of lanes){const p=run.platformAt(lane,at);if(!run.clearExit(lane,at)&&!(p&&at<p.at+p.ramp+3)){const zombie=run.zombie('walker',lane,at);zombie.horde=true;}}
   run.activeEvent.nextHorde+=16;
  }
 }

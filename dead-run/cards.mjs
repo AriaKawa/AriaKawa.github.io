@@ -7,7 +7,7 @@ export const CARDS=[
  {id:'headhunter',name:'Headshot Specialist',kind:'CRITICAL',rarity:'rare',desc:'+10% critical chance and +50% critical damage. Works with cuts too.',max:2,apply:r=>{r.crit=Math.min(1,r.crit+.1);r.critDamage+=.5;}},
  {id:'ice',name:'Ice Attunement',kind:'ICE',rarity:'rare',desc:'Weapon hits chill for 3s. Infected approach 40% slower.',max:1,apply:r=>r.chill=.4},
  {id:'fire',name:'Fire Attunement',kind:'FIRE',rarity:'rare',desc:'+50% all fire damage. Every weapon burns for 18 damage/s for 2.4s.',max:1,apply:r=>{r.fireBonus+=.5;r.burn+=18;}},
- {id:'air',name:'Air Attunement',kind:'AIR',rarity:'rare',desc:'Double jump height. Leap over every infected, including brutes.',max:1,apply:r=>r.jumpPower*=Math.SQRT2},
+ {id:'air',name:'Air Attunement',kind:'AIR',rarity:'rare',desc:'Double jump height. Leap over every infected, including brutes. Reach container roofs.',max:1,apply:r=>r.jumpPower*=Math.SQRT2},
  {id:'earth',name:'Earth Attunement',kind:'THORNS',rarity:'rare',desc:'Ram infected for 150 thorns damage. Contact still hurts you.',max:1,apply:r=>r.thorns+=150},
  {id:'burn',name:'Incendiary',kind:'FIRE',rarity:'rare',desc:'Weapon hits burn for +18 damage/s. Starts or strengthens a fire build.',max:3,apply:r=>r.burn+=18},
  {id:'bellows',name:'Fan the Flames',kind:'FIRE',rarity:'rare',desc:'+40% all fire damage and +1.2s burn duration.',max:3,eligible:r=>r.burn>0,apply:r=>{r.fireBonus+=.4;r.burnDuration+=1.2;}},

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {Run,CARDS} from './model.mjs';
 import {difficultyAt,POWERUPS} from './endless.mjs';
 import {normalizeProfile,buySkill,skillState,runReward,SKILLS} from './progression.mjs';
-function empty(profile){const r=new Run(24,'carbine','dead-city',profile);r.entities=[];r.platforms=[];r.exits=[];r.nextRow=r.nextPowerup=r.nextCrate=r.nextPlatformGroup=Infinity;return r;}
+function empty(profile){const r=new Run(24,'carbine','dead-city',profile);r.entities=[];r.platforms=[];r.blockades=[];r.exits=[];r.nextRow=r.nextPowerup=r.nextCrate=r.nextPlatformGroup=Infinity;return r;}
 function step(r,seconds){for(let t=0;t<seconds;t+=1/60){if(r.drafting)r.choose(r.choices[0]);if(r.choosingWeapon)r.chooseWeapon('keep');r.update(1/60);}}
 test('speed increases gently while combat difficulty continues beyond the old six districts',()=>{
  const a=difficultyAt(0),b=difficultyAt(60),c=difficultyAt(600),d=difficultyAt(1200);
@@ -65,5 +65,6 @@ test('a simulated long run keeps spawning every system and retains bounded state
   highestEntities=Math.max(highestEntities,r.entities.length);highestPlatforms=Math.max(highestPlatforms,r.platforms.length);
   if(r.time>600&&r.entities.some(e=>e.kind==='powerup'))seenLatePickups++;
  }
- assert(r.distance>40000);assert(!r.won&&!r.dead);assert(r.sector>70);assert(r.level>10);assert(seenLatePickups>0);assert(highestEntities<260);assert(highestPlatforms<=24);assert(r.killLanes.length<8);
+ // Slower crawlers linger longer than runners; retain a strict live-window bound.
+ assert(r.distance>40000);assert(!r.won&&!r.dead);assert(r.sector>70);assert(r.level>10);assert(seenLatePickups>0);assert(highestEntities<300);assert(highestPlatforms<=24);assert(r.pressureLanes.length<8);assert(r.blockades.length<5);
 });

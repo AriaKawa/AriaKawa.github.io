@@ -17,3 +17,6 @@ for(const family of ['carbine','shotgun','revolver','minigun','shieldboard','wal
  for(const pose of poses)for(let i=0;i<8;i++){const name=`v6-${family}${pose?'-'+pose:''}-${i}`;ASSETS[name]=`assets/v6/${name}.png`;}
 }
 for(const name of [...Array.from({length:8},(_,i)=>'roll'+i),...Array.from({length:4},(_,i)=>'blood'+i),'blood-pool','blood-splatter','blood-fill','blood-drops'])ASSETS[name]=`assets/v4/${name}.png`;
+
+for(const family of ['bucket','crawler','woman','walker2'])for(let i=0;i<8;i++)ASSETS[`v11-${family}-${i}`]=`assets/v11/v11-${family}-${i}.png`;
+for(const face of ['side','back','roof'])ASSETS['blockade-'+face]=`assets/v11/blockade-${face}.png`;

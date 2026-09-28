@@ -1,4 +1,4 @@
-import {ROLL_DURATION,SWAP_DURATION} from './model.mjs?v=events-v9';
+import {ROLL_DURATION,SWAP_DURATION} from './model.mjs?v=encounters-v11';
 export const GAIT_FRAMES=8;
 export function jumpFrame(run){
  if(run.grounded)return 7;
@@ -28,8 +28,8 @@ export function playerAnimation(run){
  const pose=run.activeBoard?'ride':run.activeMinigun||run.aim>.45||run.firePose>0?'aim':'run';
  return {asset:`v6-${family}-${pose}-${frame}`,pose,frame};
 }
-export function zombieFrame(kind,time,id=0){const rate={walker:8,runner:13,brute:6,horde:10}[kind]||8;return Math.floor(time*rate+id*1.618)%8;}
+export function zombieFrame(kind,time,id=0){const rate={walker:8,runner:13,brute:6,horde:10,crawler:4}[kind]||8;return Math.floor(time*rate+id*1.618)%8;}
 export function crumblePieces(event,random=Math.random,reduced=false){
- const large=event.kind==='bus'||event.kind==='truck'||event.kind==='car',count=reduced?4:large?16:10,asset=event.kind==='bus'||event.kind==='truck'?event.kind+'-back':event.kind;
+ const large=event.kind==='blockade'||event.kind==='bus'||event.kind==='truck'||event.kind==='car',count=reduced?4:large?16:10,asset=event.kind==='blockade'||event.kind==='bus'||event.kind==='truck'?event.kind+'-back':event.kind;
  return Array.from({length:count},(_,i)=>({type:'crumble',asset,lane:event.lane,at:event.at,elevation:event.elevation||0,dx:(random()-.5)*(large?110:65),dy:large?20+random()*60:5+random()*30,vx:(random()-.5)*(large?240:150),vy:35+random()*90,angle:random()*6.28,spin:(random()-.5)*10,cell:i%9,size:large?13+random()*12:6+random()*8,life:.75+random()*.35}));
 }

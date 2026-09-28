@@ -5,7 +5,7 @@ import {difficultyAt} from './endless.mjs';
 import {playerAnimation,zombieFrame,crumblePieces} from './animation.mjs';
 import {ASSETS} from './visuals.mjs';
 import {existsSync} from 'node:fs';
-function empty(){const r=new Run(42);r.entities=[];r.platforms=[];r.exits=[];r.nextRow=r.nextPowerup=r.nextPlatformGroup=Infinity;return r;}
+function empty(){const r=new Run(42);r.entities=[];r.platforms=[];r.blockades=[];r.exits=[];r.nextRow=r.nextPowerup=r.nextPlatformGroup=Infinity;return r;}
 function step(r,seconds){for(let t=0;t<seconds;t+=1/60)r.update(1/60);}
 
 test('starting zombies gain exactly 25% health, contact damage, pack size, pursuit speed and pressure',()=>{

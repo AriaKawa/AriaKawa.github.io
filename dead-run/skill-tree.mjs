@@ -1,5 +1,5 @@
-import {SKILLS,skillState,buySkill} from './progression.mjs?v=events-v9';
-import {assetUrl} from './visuals.mjs?v=events-v9';
+import {SKILLS,skillState,buySkill} from './progression.mjs?v=encounters-v11';
+import {assetUrl} from './visuals.mjs?v=encounters-v11';
 export function createSkillTree(getProfile,onPurchase){
  const root=document.getElementById('skill-tree');let branch='SURVIVAL';
  function render(focusId){

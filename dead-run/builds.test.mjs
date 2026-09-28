@@ -5,7 +5,7 @@ import {Run,CARDS,WEAPONS} from './model.mjs';
 import {replacementStats} from './arsenal.mjs';
 import {playerAnimation} from './animation.mjs';
 import {ASSETS,CARD_ART} from './visuals.mjs';
-function empty(weapon='carbine',profile){const r=new Run(38,weapon,'dead-city',profile);r.entities=[];r.platforms=[];r.exits=[];r.nextRow=r.nextCrate=r.nextPowerup=r.nextPlatformGroup=Infinity;return r;}
+function empty(weapon='carbine',profile){const r=new Run(38,weapon,'dead-city',profile);r.entities=[];r.platforms=[];r.blockades=[];r.exits=[];r.nextRow=r.nextCrate=r.nextPowerup=r.nextPlatformGroup=Infinity;return r;}
 function card(r,id){r.drafting=true;r.choices=[id];assert(r.choose(id));}
 function advance(r,t){for(let i=0;i<Math.round(t*60);i++)r.update(1/60);}
 function target(r,kind='brute',lane=r.lane,z=60,hp=10000){const e=r.zombie(kind,lane,r.distance+z);e.hp=e.maxHp=hp;return e;}
