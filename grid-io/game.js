@@ -34,8 +34,19 @@ const save = (key, value) => {
   }
 };
 let mode = read("mode", "360") === "90" ? "90" : "360";
+let ruleset = read("ruleset", "classic") === "arcade" ? "arcade" : "classic";
+let arcadeModule = null, arcadeLoading = null;
+const renderers = new Map();
+const worlds = [$("world"), $("arcade-world")];
+const isArcade = () => ruleset === "arcade";
+function loadArcade() {
+  return arcadeLoading ||= import("./arcade.js?v=arcade-1").then(module => arcadeModule = module).catch(error => {
+    arcadeLoading = null;
+    throw error;
+  });
+}
 let speedPercent = normalizeSpeed(read("speed", "100"));
-const bestKey = () => (mode === "90" ? "best-90" : "best");
+const bestKey = () => isArcade() ? `best-arcade-${mode}` : (mode === "90" ? "best-90" : "best");
 let skin = Math.max(0, Math.min(5, Number(read("skin", "0")) || 0)),
   best = Number(read(bestKey(), "0")) || 0;
 const turns = [];
@@ -57,7 +68,10 @@ let pointer = { x: 0, y: 0, active: false },
   keys = new Set(),
   mouseBoost = false,
   touchBoost = false,
-  joystickAngle = null;
+  joystickAngle = null,
+  joystickSteer = 0,
+  boostPointer = null,
+  wheeliePointer = null;
 let highQuality = read("quality", "high") === "high",
   soundOn = read("sound", "off") === "on";
 let audio = null,
@@ -81,6 +95,25 @@ for (const button of document.querySelectorAll("[data-mode]"))
     updateMode();
   });
 updateMode();
+function updateRuleset() {
+  save("ruleset", ruleset);
+  document.body.classList.toggle("arcade", isArcade());
+  for (const button of document.querySelectorAll("[data-ruleset]"))
+    button.setAttribute("aria-pressed", button.dataset.ruleset === ruleset);
+  for (const item of document.querySelectorAll("[data-arcade]")) item.hidden = !isArcade();
+  $("ruleset-description").textContent = isArcade()
+    ? "Top-down stunts. Skyways, tunnels, a loop, and Ctrl wheelies."
+    : "The original arena. Collect energy and outlast the trails.";
+  updateMode();
+}
+for (const button of document.querySelectorAll("[data-ruleset]"))
+  button.addEventListener("click", () => {
+    if (state !== "menu") return;
+    ruleset = button.dataset.ruleset;
+    updateRuleset();
+    if (isArcade()) loadArcade().catch(() => {});
+  });
+updateRuleset();
 function updateSpeed() {
   $("speed").value = speedPercent;
   $("speed-value").value = `${speedPercent}%`;
@@ -256,7 +289,9 @@ function clearInput() {
   keys.clear();
   turns.length = 0;
   mouseBoost = touchBoost = false;
+  boostPointer = wheeliePointer = stickId = null;
   joystickAngle = null;
+  joystickSteer = 0;
   $("joystick").querySelector("i").style.transform = "";
 }
 function toast(text, duration = 2600) {
@@ -264,12 +299,34 @@ function toast(text, duration = 2600) {
   $("toast").classList.add("visible");
   toastUntil = performance.now() + duration;
 }
-function start() {
-  if (!graphics) return;
+async function start() {
+  if (!graphics || state === "loading") return;
+  if (isArcade() && !renderers.has("arcade")) {
+    state = "loading";
+    $("play").disabled = true;
+    $("load-status").textContent = "Loading Arcade…";
+    try {
+      const module = await loadArcade();
+      renderers.set("arcade", new module.ArcadeRenderer($("arcade-world")));
+    } catch (error) {
+      console.error(error);
+      state = "menu";
+      $("play").disabled = false;
+      $("load-status").textContent = "Arcade could not load. Try again or choose Classic.";
+      return;
+    }
+    $("play").disabled = false;
+    $("load-status").textContent = "";
+  }
+  graphics = renderers.get(ruleset);
+  $("world").hidden = isArcade();
+  $("arcade-world").hidden = !isArcade();
+  updateQuality();
   document.querySelectorAll("dialog[open]").forEach((d) => d.close());
   const name = $("nickname").value.trim().slice(0, 18) || "Rider";
   save("name", name);
-  arena = new Arena({ name, skin, loadout, mode, speedPercent });
+  const Simulation = isArcade() ? arcadeModule.Arena : Arena;
+  arena = new Simulation({ name, skin, loadout, mode, speedPercent });
   graphics.reset(arena);
   state = "playing";
   $("menu").hidden = true;
@@ -287,6 +344,9 @@ function start() {
     : mode === "90"
       ? "Arrows / WASD · 90° turns · Space jumps"
       : "Steer with mouse · Space jumps";
+  if (isArcade()) $("pointer-hint").textContent = isTouch
+    ? "Thumb pad steers · hold ⤴ and steer to pivot"
+    : "Ctrl wheelie · A / D pivot · colored map routes lead to ramps";
   $("pointer-hint").hidden = false;
 }
 function pause() {
@@ -325,6 +385,8 @@ function end(event) {
   $("death-reason").textContent =
     event.reason === "boundary"
       ? "You hit the arena boundary."
+      : event.reason === "barrier"
+        ? "You hit a ramp edge, guardrail, or highway support."
       : event.reason === "reactor"
         ? "You collided with a reactor platform."
         : event.reason === "self"
@@ -365,7 +427,7 @@ $("quality").addEventListener("click", () => {
 function doJump() {
   if (state === "playing" && arena.jump(arena.player)) {
     soundEvent({ type: "jump" });
-    graphics.emit(arena.player.x, arena.player.z, skin, 22, 0.5);
+    graphics.emit(arena.player.x, arena.player.z, skin, 22, 0.5, arena.player.y || 0);
   }
 }
 const gameKeys = new Set([
@@ -379,6 +441,8 @@ const gameKeys = new Set([
   "KeyD",
   "ShiftLeft",
   "ShiftRight",
+  "ControlLeft",
+  "ControlRight",
   "Space",
   "Escape",
   "KeyP",
@@ -403,7 +467,12 @@ window.addEventListener("keydown", (e) => {
     return;
   }
   if (state !== "playing") return;
-  if (mode === "90" && e.code in turnKeys && !e.repeat) {
+  const wheelieHeld = isArcade() && (arena.player.wheelieActive ||
+    (!arena.player.wheelieLocked && arena.player.wheelieCooldown <= 0 &&
+      (e.ctrlKey || wheeliePointer !== null)));
+  if (wheelieHeld) turns.length = 0;
+  if (e.code in turnKeys) pointer.active = false;
+  if (mode === "90" && !wheelieHeld && e.code in turnKeys && !e.repeat) {
     pointer.active = false;
     if (turns.length < 2) turns.push(turnKeys[e.code]);
   }
@@ -419,11 +488,11 @@ document.addEventListener("visibilitychange", () => {
   if (document.hidden) pause();
 });
 window.addEventListener("resize", () => graphics?.resize());
-$("world").addEventListener("pointermove", (e) => {
+for (const world of worlds) world.addEventListener("pointermove", (e) => {
   if (e.pointerType === "mouse" && state === "playing")
     pointer = { x: e.clientX, y: e.clientY, active: true };
 });
-$("world").addEventListener("pointerdown", (e) => {
+for (const world of worlds) world.addEventListener("pointerdown", (e) => {
   if (state !== "playing") return;
   if (e.pointerType === "mouse") {
     pointer = { x: e.clientX, y: e.clientY, active: true };
@@ -431,19 +500,27 @@ $("world").addEventListener("pointerdown", (e) => {
     if (e.button === 2) doJump();
   }
 });
-window.addEventListener("pointerup", () => {
-  mouseBoost = false;
-  touchBoost = false;
+function releaseAbility(e) {
+  if (e.pointerType === "mouse") mouseBoost = false;
+  if (e.pointerId === boostPointer) { boostPointer = null; touchBoost = false; }
+  if (e.pointerId === wheeliePointer) wheeliePointer = null;
+}
+for (const type of ["pointerup", "pointercancel", "lostpointercapture"])
+  window.addEventListener(type, releaseAbility);
+for (const world of worlds) world.addEventListener("contextmenu", (e) => e.preventDefault());
+$("wheelie-button").addEventListener("pointerdown", e => {
+  e.preventDefault();
+  if (state === "playing" && isArcade()) {
+    wheeliePointer = e.pointerId;
+    turns.length = 0;
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }
 });
-window.addEventListener("pointercancel", () => {
-  mouseBoost = false;
-  touchBoost = false;
-});
-$("world").addEventListener("contextmenu", (e) => e.preventDefault());
 $("boost-button").addEventListener("pointerdown", (e) => {
   e.preventDefault();
   if (state === "playing") {
     touchBoost = true;
+    boostPointer = e.pointerId;
     e.currentTarget.setPointerCapture(e.pointerId);
   }
 });
@@ -462,6 +539,7 @@ function moveStick(e) {
   $("joystick").querySelector("i").style.transform =
     `translate(${dx * scale}px,${dy * scale}px)`;
   joystickAngle = d > 7 ? Math.atan2(dy / 0.832, dx) : null;
+  joystickSteer = Math.abs(dx) > 7 ? Math.max(-1, Math.min(1, dx / 35)) : 0;
 }
 $("joystick").addEventListener("pointerdown", (e) => {
   e.preventDefault();
@@ -475,6 +553,7 @@ for (const type of ["pointerup", "pointercancel", "lostpointercapture"])
     if (e.pointerId === stickId) {
       stickId = null;
       joystickAngle = null;
+      joystickSteer = 0;
       $("joystick").querySelector("i").style.transform = "";
     }
   });
@@ -490,9 +569,15 @@ function input() {
       (keys.has("KeyW") || keys.has("ArrowUp") ? 1 : 0);
   if (mode === "360" && (x || z)) angle = Math.atan2(z / 0.832, x);
   if (joystickAngle !== null) angle = joystickAngle;
-  if (mode === "90" && turns.length) angle = turns.shift();
+  const wheelie = isArcade() && (wheeliePointer !== null || keys.has("ControlLeft") || keys.has("ControlRight"));
+  const pivoting = isArcade() && (arena.player.wheelieActive ||
+    (wheelie && !arena.player.wheelieLocked && arena.player.wheelieCooldown <= 0 && arena.player.jump <= 0));
+  if (pivoting) { angle = arena.player.angle; turns.length = 0; }
+  else if (mode === "90" && turns.length) angle = turns.shift();
   return {
     angle,
+    wheelie,
+    steer: joystickAngle !== null ? joystickSteer : x,
     boost:
       mouseBoost ||
       touchBoost ||
@@ -504,6 +589,11 @@ function input() {
 function updateHUD() {
   if (!arena) return;
   const p = arena.player;
+  if (isArcade()) {
+    const road = arcadeModule.roadById(p.road);
+    $("arcade-location").textContent = Number.isFinite(p.loopS) ? "Arcade · Helix Loop"
+      : road ? "Arcade · " + road.name + " · " + Math.round(p.y) + " m" : "Arcade · Ground level";
+  }
   $("length").textContent = Math.floor(p.length);
   $("personal-best").textContent =
     `Best ${Math.max(best, Math.floor(p.peak))} m`;
@@ -550,6 +640,25 @@ function drawMap() {
     c.stroke();
   }
   const map = (x) => (x + HALF) * scale;
+  if (isArcade()) {
+    for (const road of arcadeModule.ROADS) {
+      const a = arcadeModule.roadPoint(road, 0), b = arcadeModule.roadPoint(road, road.end - road.start);
+      c.strokeStyle = road.kind === "tunnel" ? "#bc91ff" : "#" + road.color.toString(16).padStart(6, "0");
+      c.lineWidth = 2.1;
+      c.setLineDash(road.kind === "tunnel" ? [3, 2] : []);
+      c.beginPath(); c.moveTo(map(a.x), map(a.z)); c.lineTo(map(b.x), map(b.z)); c.stroke();
+      c.fillStyle = c.strokeStyle;
+      for (const end of [a, b]) c.fillRect(map(end.x) - 2, map(end.z) - 2, 4, 4);
+    }
+    c.setLineDash([]);
+    const loop = arcadeModule.LOOP;
+    c.strokeStyle = "#ff82e4"; c.lineWidth = 1.5;
+    c.beginPath(); c.arc(map(loop.x + loop.drift / 2), map(loop.z - loop.approach), 4, 0, Math.PI * 2); c.stroke();
+    for (const s of [0, loop.length]) {
+      const entry = arcadeModule.loopPoint(s);
+      c.fillStyle = "#ff82e4"; c.fillRect(map(entry.x) - 1.5, map(entry.z) - 1.5, 3, 3);
+    }
+  }
   for (const o of LANDMARKS) {
     c.fillStyle = `#${o.color.toString(16).padStart(6, "0")}`;
     c.globalAlpha = 0.55;
@@ -626,7 +735,7 @@ function frame(now) {
     if (engineGain) engineGain.gain.setTargetAtTime(0, audio.currentTime, 0.08);
     return;
   }
-  if (state === "menu") {
+  if (state === "menu" || state === "loading") {
     animateLogo(now);
     garagePreview?.draw(dt, now);
     if (engineGain) engineGain.gain.setTargetAtTime(0, audio.currentTime, 0.08);
@@ -639,11 +748,11 @@ function frame(now) {
       accumulator -= 1 / 60;
       for (const e of events) {
         if (e.type === "pickup") {
-          graphics.emit(e.x, e.z, e.skin, 3, 0.3);
+          graphics.emit(e.x, e.z, e.skin, 3, 0.3, e.y || 0, e.kind ?? null);
           soundEvent(e);
         }
         if (e.type === "death") {
-          graphics.emit(e.rider.x, e.rider.z, e.rider.skin, 75, 1.3);
+          graphics.emit(e.rider.x, e.rider.z, e.rider.skin, 75, 1.3, e.rider.y || 0);
           if (e.rider.player) {
             soundEvent(e);
             end(e);
@@ -656,6 +765,13 @@ function frame(now) {
       }
     }
     const p = arena.player;
+    if (isArcade()) {
+      $("wheelie-button").classList.toggle("active", p.wheelieActive);
+      $("wheelie-label").textContent = p.wheelieActive
+        ? p.brakeTime < 2 ? "Braking · A / D to pivot" : "Dropping in " + Math.max(0, 3 - p.wheelieElapsed).toFixed(1) + "s"
+        : p.wheelieLocked ? "Release Ctrl to rearm"
+        : p.wheelieCooldown > 0 ? "Ready in " + p.wheelieCooldown.toFixed(1) + "s" : "Hold Ctrl · A / D to pivot";
+    }
     $("jump-label").textContent =
       p.cooldown > 0 ? `${p.cooldown.toFixed(1)}s` : "Ready";
     $("jump-meter").style.transform =
@@ -677,7 +793,7 @@ function frame(now) {
       uiTimer = 0.2;
     }
   }
-  if (state !== "paused") graphics.draw(arena, dt, arena.time);
+  if (state !== "paused") graphics.draw(arena, dt, arena.time, state === "playing" ? accumulator * 60 : 1);
   if (engineGain) {
     engineGain.gain.setTargetAtTime(
       soundOn && state === "playing" ? 0.014 : 0,
@@ -693,6 +809,7 @@ function frame(now) {
 }
 try {
   graphics = new GridRenderer($("world"));
+  renderers.set("classic", graphics);
   updateQuality();
   $("load-status").textContent = "";
   $("play").disabled = false;
@@ -715,7 +832,7 @@ try {
   $("garage-stage").dataset.error =
     "3D preview unavailable. Your chosen parts will still be saved.";
 }
-$("world").addEventListener("webglcontextlost", (e) => {
+for (const world of worlds) world.addEventListener("webglcontextlost", (e) => {
   e.preventDefault();
   state = "interrupted";
   clearInput();
@@ -749,13 +866,16 @@ if (new URLSearchParams(location.search).has("test"))
         ? {
             state,
             mode: arena.mode,
+            ruleset,
+            wheelie: !!arena.player.wheelieActive,
+            road: arena.player.road || null,
             speedPercent: arena.speedPercent,
             time: arena.time,
             length: arena.player.length,
             peak: arena.player.peak,
             boost: arena.player.boost,
             jump: arena.player.jump,
-            height: jumpHeight(arena.player),
+            height: (arena.player.y || 0) + jumpHeight(arena.player),
             cooldown: arena.player.cooldown,
             alive: arena.player.alive,
             loadout: { ...arena.player.loadout },
@@ -763,6 +883,6 @@ if (new URLSearchParams(location.search).has("test"))
             food: arena.food.length,
             drawCalls: graphics.renderer.info.render.calls,
           }
-        : { state, mode, speedPercent };
+        : { state, mode, ruleset, speedPercent };
     },
   };

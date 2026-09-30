@@ -1,0 +1,40 @@
+#arcade-world { position: fixed; inset: 0; width: 100%; height: 100%; touch-action: none; }
+.ruleset-options { margin-bottom: 8px; }
+.ruleset-options button { font-size: 13px; letter-spacing: .06em; }
+.ruleset-options button[data-ruleset="arcade"][aria-pressed="true"] {
+  color: #d8fcff; border-color: #40d9ff; background: #124453aa;
+  box-shadow: inset 0 0 18px #35ddff12;
+}
+#ruleset-description { margin: 9px 0 12px; color: #b2c6cd; font-size: 10px; line-height: 1.6; text-align: center; min-height: 32px; }
+.quick-controls { flex-wrap: wrap; }
+#arcade-location { display: block; margin-top: 7px; color: #7deaff; font-size: 10px; letter-spacing: .03em; }
+.arcade .ability { min-width: 175px; }
+#wheelie-button { border-color: #35ddff50; }
+#wheelie-button .ability-icon { color: #6ce7ff; }
+#wheelie-button.active { border-color: #7deaff; background: #12323deb; }
+.route-legend { display: flex; justify-content: space-between; gap: 6px; margin: 6px 0 1px; font-size: 8px; color: #7deaff; }
+.route-legend span:nth-child(2) { color: #be95ff; }
+.route-legend span:nth-child(3) { color: #ff82e4; }
+.arcade-help { border-top: 1px solid #35ddff35; padding-top: 12px; }
+.arcade-help strong { color: #7deaff; }
+@media (max-width: 1000px), (pointer: coarse) {
+  .arcade .abilities { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); left: auto; right: 0; transform: none; gap: 6px; }
+  .arcade .ability { min-width: 90px; min-height: 54px; padding: 8px 10px; }
+  .arcade .ability small, .arcade .ability kbd { display: none; }
+  #wheelie-button { grid-column: 1 / -1; justify-content: center; }
+  .arcade .run-info { bottom: 132px; }
+  .arcade #pointer-hint { bottom: 180px; }
+  .route-legend { font-size: 7px; gap: 4px; }
+}
+@media (max-height: 720px) {
+  #ruleset-description { margin: 4px 0 7px; min-height: 0; }
+  .ruleset-options { margin-bottom: 5px; }
+}
+@media (max-height: 500px) and (min-width: 701px) {
+  .arcade .run-info { display: none; }
+  .arcade .leaderboard { top: 68px; width: 165px; padding: 10px; }
+  .arcade .leaderboard li:nth-child(n+4) { display: none; }
+  .arcade .leaderboard li { padding: 4px 0; }
+  .arcade #pointer-hint { bottom: 126px; font-size: 9px; }
+  .arena-mode { margin-top: 6px; font-size: 9px; }
+}

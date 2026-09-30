@@ -15,9 +15,11 @@
     <link rel="icon" href="icon.svg?v=speed-1" type="image/svg+xml" />
     <link rel="preload" href="assets/red-arena.webp" as="image" />
     <link rel="stylesheet" href="style.css?v=speed-1" />
+    <link rel="stylesheet" href="arcade.css?v=arcade-1" />
   </head>
   <body>
-    <canvas id="world" aria-label="Grid.io 3D laser bike arena"></canvas>
+    <canvas id="world" aria-label="Grid.io top-down laser bike arena"></canvas>
+    <canvas id="arcade-world" aria-label="Grid.io top-down Arcade arena" hidden></canvas>
     <div class="vignette" aria-hidden="true"></div>
     <section id="menu" class="menu">
       <header class="menu-header">
@@ -75,7 +77,12 @@
             placeholder="Name"
             spellcheck="false"
           />
-          <div class="mode-options" role="group" aria-label="Game mode">
+          <div class="mode-options ruleset-options" role="group" aria-label="Arena mode">
+            <button type="button" data-ruleset="classic" aria-pressed="true">Classic</button>
+            <button type="button" data-ruleset="arcade" aria-pressed="false">Arcade</button>
+          </div>
+          <p id="ruleset-description">The original arena. Collect energy and outlast the trails.</p>
+          <div class="mode-options" role="group" aria-label="Steering mode">
             <button
               type="button"
               data-mode="90"
@@ -117,6 +124,7 @@
         <div class="quick-controls">
           <span><kbd id="steer-key">↖</kbd> Steer</span
           ><span><kbd>SHIFT</kbd> Boost</span><span><kbd>SPACE</kbd> Jump</span>
+          <span data-arcade hidden><kbd>CTRL</kbd> Wheelie</span>
         </div>
         <p id="load-status" role="status" class="load-status">Loading…</p>
       </main>
@@ -131,6 +139,7 @@
       <div class="hud-top">
         <div class="identity">
           <span class="mini-logo">GRID<span>.io</span></span>
+          <span id="arcade-location" data-arcade hidden>Arcade · Ground level</span>
         </div>
         <div class="score-box">
           <small>Length</small
@@ -155,8 +164,12 @@
             height="180"
             aria-label="Arena minimap"
           ></canvas>
+          <div class="route-legend" data-arcade hidden><span>━ Skyway</span><span>┄ Tunnel</span><span>◎ Loop</span></div>
         </div>
         <div class="abilities">
+          <button id="wheelie-button" class="ability" data-arcade hidden aria-label="Hold to wheelie and brake; steer left or right to pivot">
+            <span class="ability-icon">⤴</span><span><strong>Wheelie</strong><small id="wheelie-label">Hold Ctrl · A / D to pivot</small></span><kbd>CTRL</kbd>
+          </button>
           <button id="boost-button" class="ability">
             <span class="ability-icon">ϟ</span
             ><span
@@ -266,6 +279,10 @@
           steering. Boost spends trail length.
         </p>
       </div>
+      <div class="help-steps arcade-help">
+        <p><strong>Arcade</strong> adds elevated highways, two underground routes, and one magnetic loop in the southeast. Find their colored entrances on the minimap and drive straight onto the ramps. The loop carries you around automatically; left / right adjusts your lane.</p>
+        <p>Hold <strong>Ctrl</strong> to wheelie and brake over two seconds. Use A / D or left / right to pivot on your rear tire. You can stay stopped for one second, then the front wheel drops automatically. Release Ctrl before another wheelie. Your laser stays in place at its current length during the maneuver.</p>
+      </div>
       <div class="controls-table">
         <span>Steer</span><b>Mouse / WASD / arrows</b><span>Boost</span
         ><b>Hold Shift / left click</b><span>Jump</span
@@ -311,6 +328,6 @@
     <script type="importmap">
       { "imports": { "three": "./vendor/three.module.min.js" } }
     </script>
-    <script type="module" src="game.js?v=speed-1"></script>
+    <script type="module" src="game.js?v=arcade-1"></script>
   </body>
 </html>
