@@ -1,0 +1,60 @@
+const { chromium } = require(process.env.PLAYWRIGHT_PATH || 'playwright');
+const assert = require('node:assert/strict');
+const out = require('node:path').join(require('node:os').tmpdir(), 'grid-io-3d-qa');
+require('node:fs').mkdirSync(out, { recursive: true });
+(async () => {
+  const browser = await chromium.launch({ headless: true, channel: 'msedge' });
+  try {
+    const p = await browser.newPage({ viewport: { width: 1365, height: 768 } }), errors = [];
+    p.on('pageerror', e => errors.push(e.message));
+    await p.goto((process.env.GRID3D_BASE_URL || 'http://127.0.0.1:5276') + '/grid-io-3d/?test=1');
+    await p.waitForFunction(() => !document.getElementById('play').disabled);
+    await p.locator('#speed').fill('0'); await p.locator('#play').click();
+    await p.waitForTimeout(300); assert.equal(await p.evaluate(() => window.__GRID_TEST__.arena.time), 0);
+    await p.keyboard.press('Escape'); await p.locator('#quit').click();
+    await p.locator('#speed').fill('300'); await p.locator('[data-mode="90"]').click(); await p.locator('#play').click();
+    await p.evaluate(() => { const a = window.__GRID_TEST__.arena; a.player.grace = 100; a.player.length = 300; });
+    assert.equal(await p.evaluate(() => window.__GRID_TEST__.snapshot().speedPercent), 300);
+    const original = await p.evaluate(() => window.__GRID_TEST__.arena.player.angle);
+    await p.mouse.move(1300, 500); await p.waitForFunction(a => window.__GRID_TEST__.arena.player.angle === a + Math.PI / 2, original);
+    await p.waitForTimeout(300); assert.equal(await p.evaluate(() => window.__GRID_TEST__.arena.player.angle), original + Math.PI / 2);
+    await p.mouse.move(680, 500); await p.waitForTimeout(100); await p.mouse.move(1300, 500);
+    await p.waitForFunction(a => window.__GRID_TEST__.arena.player.angle === a + Math.PI, original);
+    await p.keyboard.press('Escape'); await p.locator('#quit').click();
+    await p.locator('#speed').fill('100'); await p.locator('[data-mode="360"]').click(); await p.locator('#play').click();
+    await p.evaluate(() => { window.__GRID_TEST__.arena.player.grace = 100; });
+    const timing = await p.evaluate(() => new Promise(resolve => {
+      const times = []; let previous = performance.now();
+      function frame(t) { times.push(t - previous); previous = t; if (times.length < 180) requestAnimationFrame(frame); else { times.sort((a,b) => a-b); resolve({ medianMs: times[90], p95Ms: times[171] }); } }
+      requestAnimationFrame(frame);
+    }));
+    console.log('Desktop frame timing', timing);
+    await p.screenshot({ path: out + '/final-gameplay.png' });
+    const m = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    m.on('pageerror', e => errors.push(e.message));
+    await m.goto((process.env.GRID3D_BASE_URL || 'http://127.0.0.1:5276') + '/grid-io-3d/?test=1'); await m.waitForFunction(() => !document.getElementById('play').disabled);
+    await m.locator('[data-mode="90"]').tap(); await m.locator('#play').tap();
+    await m.evaluate(() => { const p = window.__GRID_TEST__.arena.player; p.grace = 100; p.length = 500; });
+    const stick = await m.locator('#joystick').boundingBox(), boost = await m.locator('#boost-button').boundingBox();
+    const cdp = await m.context().newCDPSession(m);
+    const touch1 = { x: stick.x + stick.width - 10, y: stick.y + stick.height / 2, id: 1 };
+    const touch2 = { x: boost.x + boost.width / 2, y: boost.y + boost.height / 2, id: 2 };
+    const angle = await m.evaluate(() => window.__GRID_TEST__.arena.player.angle);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [touch1] });
+    await m.waitForFunction(a => window.__GRID_TEST__.arena.player.angle === a + Math.PI / 2, angle);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [touch1, touch2] });
+    await m.waitForFunction(() => window.__GRID_TEST__.snapshot().boost);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [touch1] });
+    await m.waitForTimeout(150); assert(await m.evaluate(() => window.__GRID_TEST__.snapshot().boost), 'releasing steering must not release the boost finger');
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await m.waitForFunction(() => !window.__GRID_TEST__.snapshot().boost);
+    await m.screenshot({ path: out + '/final-mobile.png' });
+    await m.locator('#pause-button').tap(); await m.setViewportSize({ width: 844, height: 390 });
+    await m.locator('#quit').tap(); await m.waitForTimeout(4300);
+    await m.screenshot({ path: out + '/landscape-menu.png' });
+    assert(await m.locator('#play').isVisible());
+    await m.locator('#play').tap(); assert.equal(await m.evaluate(() => window.__GRID_TEST__.state), 'playing');
+    assert.deepEqual(errors, []);
+    console.log('PASS speed 0/300, mouse 90-degree latch/recenter, touch steering + independent multi-touch boost, portrait/landscape and runtime errors.');
+  } finally { await browser.close(); }
+})().catch(e => { console.error(e); process.exitCode = 1; });

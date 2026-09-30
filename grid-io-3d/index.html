@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#090909" />
+    <meta
+      name="description"
+      content="The same Grid.io arena from behind the handlebars. Ride in third person, grow your laser trail, and outlast 40 AI riders."
+    />
+    <title>Grid.io 3D</title>
+    <link rel="icon" href="../grid-io/icon.svg?v=chase-1" type="image/svg+xml" />
+    <link rel="preload" href="assets/chase-cover.png" as="image" />
+    <link rel="stylesheet" href="style.css?v=chase-1" />
+  </head>
+  <body>
+    <canvas id="world" aria-label="Grid.io 3D 3D laser bike arena"></canvas>
+    <div class="vignette" aria-hidden="true"></div>
+    <section id="menu" class="menu">
+      <header class="menu-header">
+        <a class="back-games text-button" href="../games.html">← Games</a><div class="top-actions">
+          <button id="sound" class="text-button" aria-pressed="false">
+            Sound off</button
+          ><button id="help" class="round-button" aria-label="How to play">
+            ?
+          </button>
+        </div>
+      </header>
+      <main class="menu-center">
+        <h1 class="wordmark" aria-label="Grid.io 3D">
+          <svg id="logo" viewBox="0 0 660 170" aria-hidden="true">
+            <defs>
+              <linearGradient id="laser" x1="0" y1="0" x2="1" y2=".4">
+                <stop stop-color="#fff1ea" />
+                <stop offset=".63" stop-color="#ff3b36" />
+                <stop offset="1" stop-color="#be101c" />
+              </linearGradient>
+              <filter id="bloom"><feGaussianBlur stdDeviation="5" /></filter>
+            </defs>
+            <path
+              class="logo-halo"
+              d="M139 38H72Q36 38 36 77V100Q36 138 72 138H139V91H99 M180 138V38H226Q261 38 261 66Q261 92 226 92H182 M226 92L268 138 M307 38V138 M354 138V38H394Q443 38 443 88Q443 138 394 138H354 M477 135V136 M511 77V138 M511 42V43 M552 104Q552 74 582 74Q614 74 614 105Q614 138 582 138Q552 138 552 104"
+            />
+            <path
+              id="logo-path"
+              d="M139 38H72Q36 38 36 77V100Q36 138 72 138H139V91H99 M180 138V38H226Q261 38 261 66Q261 92 226 92H182 M226 92L268 138 M307 38V138 M354 138V38H394Q443 38 443 88Q443 138 394 138H354 M477 135V136 M511 77V138 M511 42V43 M552 104Q552 74 582 74Q614 74 614 105Q614 138 582 138Q552 138 552 104"
+            />
+            <g id="logo-bike">
+              <rect
+                x="-11"
+                y="-5"
+                width="23"
+                height="10"
+                rx="4"
+                fill="#fff4ef"
+              />
+              <rect x="-5" y="-3" width="10" height="6" rx="2" fill="#281014" />
+              <path
+                d="M-8 -6h5m-5 12h5m9-12h5m-5 12h5"
+                stroke="#ff302a"
+                stroke-width="3"
+              />
+            </g>
+          </svg>
+        </h1>
+        <p class="edition-label">3D <span>THIRD PERSON</span></p>
+        <form id="play-form" autocomplete="off">
+          <label class="sr-only" for="nickname">Rider name</label>
+          <input
+            id="nickname"
+            name="nickname"
+            maxlength="18"
+            placeholder="Name"
+            spellcheck="false"
+          />
+          <div class="mode-options" role="group" aria-label="Game mode">
+            <button
+              type="button"
+              data-mode="90"
+              aria-pressed="false"
+              title="Right-angle turns"
+            >
+              90°
+            </button>
+            <button
+              type="button"
+              data-mode="360"
+              aria-pressed="true"
+              title="Free steering"
+            >
+              360°
+            </button>
+          </div>
+          <div class="speed-control">
+            <div class="speed-heading">
+              <label for="speed">Speed</label
+              ><output id="speed-value" for="speed">100%</output>
+            </div>
+            <input
+              id="speed"
+              type="range"
+              min="0"
+              max="300"
+              step="1"
+              value="100"
+              aria-valuetext="100%"
+            />
+            <div class="speed-limits" aria-hidden="true">
+              <span>0%</span><span>300%</span>
+            </div>
+          </div>
+          <button id="play" class="primary" type="submit">Play</button>
+        </form>
+        <p class="arena-mode">40 AI riders · Same arena. A new perspective.</p>
+        <div class="quick-controls">
+          <span><kbd id="steer-key">A / D</kbd> Steer</span
+          ><span><kbd>SHIFT</kbd> Boost</span><span><kbd>SPACE</kbd> Jump</span>
+        </div>
+        <p id="load-status" role="status" class="load-status">Loading…</p>
+      </main>
+      <footer class="menu-footer">
+        <button id="garage" class="garage-teaser" aria-label="Customize bike">
+          <span id="bike-teaser" class="bike-teaser" aria-hidden="true"></span
+          ><span>Customize</span>
+        </button>
+      </footer>
+    </section>
+    <div id="hud" hidden>
+      <div class="hud-top">
+        <div class="identity">
+          <span class="mini-logo">GRID<span>.io</span><em class="hud-edition">3D</em></span>
+        </div>
+        <div class="score-box">
+          <small>Length</small
+          ><strong><span id="length">40</span><em>m</em></strong
+          ><span id="personal-best">Best 40 m</span>
+        </div>
+        <button id="pause-button" class="round-button" aria-label="Pause game">
+          Ⅱ
+        </button>
+      </div>
+      <aside class="leaderboard">
+        <div class="board-heading">Leaderboard</div>
+        <ol id="leaders"></ol>
+        <div class="your-rank" id="your-rank"></div>
+      </aside>
+      <div class="ride-status"><span id="district">The Grid</span><b><span id="ride-speed">0</span><small> m/s</small></b></div>
+      <button id="rear-button" class="rear-button" aria-label="Hold to look behind">Rear view <kbd>C</kbd></button>
+      <div id="toast" role="status"></div>
+      <div class="hud-bottom">
+        <div class="map-wrap">
+          <canvas
+            id="minimap"
+            width="180"
+            height="180"
+            aria-label="Arena minimap"
+          ></canvas>
+        </div>
+        <div class="abilities">
+          <button id="boost-button" class="ability">
+            <span class="ability-icon">ϟ</span
+            ><span
+              ><strong>Boost</strong
+              ><small id="boost-label">Hold Shift · spends length</small></span
+            ><kbd>SHIFT</kbd></button
+          ><button id="jump-button" class="ability">
+            <span class="ability-icon">↥</span
+            ><span
+              ><strong>Jump</strong><small id="jump-label">Ready</small></span
+            ><kbd>SPACE</kbd><i id="jump-meter"></i>
+          </button>
+        </div>
+        <div class="run-info">
+          <strong id="eliminations">0</strong><span>Eliminations</span
+          ><small id="run-time">00:00</small>
+        </div>
+      </div>
+      <div id="joystick" aria-label="Touch steering pad"><i></i></div>
+      <div id="pointer-hint">
+        Every trail is lethal · Space jumps over lasers
+      </div>
+    </div>
+    <dialog id="garage-dialog" class="modal garage-modal">
+      <button class="close-modal" aria-label="Close garage">×</button>
+      <header class="garage-heading">
+        <h2>Customize</h2>
+      </header>
+      <div class="garage-layout">
+        <div class="garage-preview">
+          <div
+            id="garage-stage"
+            tabindex="0"
+            role="group"
+            aria-label="3D bike preview. Drag or use arrow keys to rotate."
+          ></div>
+          <div class="preview-caption">
+            <div>
+              <h3 id="garage-name">Phantom</h3>
+              <p id="loadout-summary" aria-live="polite">
+                Turbine wheels · Male rider
+              </p>
+            </div>
+            <button id="reset-view" class="text-button">Reset view</button>
+          </div>
+          <p class="rotate-hint">Drag to rotate</p>
+        </div>
+        <div class="garage-options">
+          <section class="part-group">
+            <h3>Body</h3>
+            <div
+              id="body-options"
+              class="part-options"
+              role="group"
+              aria-label="Bike body"
+            ></div>
+          </section>
+          <section class="part-group">
+            <h3>Wheels</h3>
+            <div
+              id="wheel-options"
+              class="part-options"
+              role="group"
+              aria-label="Bike wheels"
+            ></div>
+          </section>
+          <section class="part-group">
+            <h3>Rider</h3>
+            <div
+              id="rider-options"
+              class="part-options rider-options"
+              role="group"
+              aria-label="Rider"
+            ></div>
+          </section>
+          <section class="part-group color-group">
+            <h3>Color</h3>
+            <div
+              id="swatches"
+              class="swatches"
+              role="group"
+              aria-label="Bike color"
+            ></div>
+          </section>
+        </div>
+      </div>
+      <footer class="garage-footer">
+        <p>Saved automatically</p>
+        <button class="primary close-action">Done</button>
+      </footer>
+    </dialog>
+    <dialog id="help-dialog" class="modal">
+      <button class="close-modal" aria-label="Close instructions">×</button>
+      <h2>How to play</h2>
+      <div class="help-steps">
+        <p>Collect energy to grow your laser trail.</p>
+        <p>
+          Hitting any trail, including your own, crashes your bike. Avoid
+          platforms and the arena boundary.
+        </p>
+        <p>
+          Jump lifts your bike and laser trail, leaving an arch riders can pass
+          underneath. The arch stays until that section of trail expires.
+        </p>
+        <p>
+          90° uses instant right-angle turns with no reversing. 360° allows free
+          steering. Boost spends trail length. Your bike always moves forward.
+        </p>
+      </div>
+      <div class="controls-table">
+        <span>Steer</span><b>Mouse left/right · A/D · ←/→</b><span>Boost</span
+        ><b>Hold Shift / left click</b><span>Jump</span
+        ><b>Space / right click</b><span>Pause</span><b>Esc / P</b><span>Look behind</span><b>Hold C / Rear view</b>
+      </div>
+      <p>
+        The camera follows behind your bike. In 90° mode, tap left or right, or move the mouse away from center once per turn. Recenter to turn again. Hold C to look behind. On touch screens, steer with the left thumb pad and use the ability
+        buttons. This is a solo arena with computer riders.
+      </p>
+      <button class="primary close-action">Done</button>
+    </dialog>
+    <dialog id="pause-dialog" class="modal compact">
+      <h2>Paused</h2>
+      <button id="resume" class="primary">Resume</button
+      ><button id="quality" class="secondary">Graphics: High</button
+      ><button id="quit" class="text-button">Menu</button>
+    </dialog>
+    <dialog id="death-dialog" class="modal compact">
+      <h2>Crashed</h2>
+      <p id="death-reason">You hit a laser trail.</p>
+      <div class="result-stats">
+        <div><strong id="result-length">0</strong><span>Length</span></div>
+        <div><strong id="result-kills">0</strong><span>ELIMINATIONS</span></div>
+        <div><strong id="result-time">0</strong><span>Seconds</span></div>
+      </div>
+      <button id="retry" class="primary">Play again</button
+      ><button id="death-menu" class="text-button">Menu</button>
+    </dialog>
+    <dialog id="graphics-dialog" class="modal compact">
+      <h2>Graphics interrupted</h2>
+      <p>
+        The graphics connection was interrupted. Reload the game to reconnect to
+        the arena.
+      </p>
+      <button id="reload" class="primary">Reload</button>
+    </dialog>
+    <noscript
+      ><div class="no-script">
+        Grid.io 3D needs JavaScript to run. Enable it and reload to enter the
+        arena.
+      </div></noscript
+    >
+    <script type="importmap">
+      { "imports": { "three": "../grid-io/vendor/three.module.min.js" } }
+    </script>
+    <script type="module" src="game.js?v=chase-1"></script>
+  </body>
+</html>
