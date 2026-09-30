@@ -1,5 +1,5 @@
 import * as THREE from "../grid-io/vendor/three.module.min.js";
-import { createBike } from "./bike-model.js?v=chase-1";
+import { createBike } from "./bike-model.js?v=wheelie-2";
 
 export class BikeGarage {
   constructor(teaser, stage, reducedMotion = false) {

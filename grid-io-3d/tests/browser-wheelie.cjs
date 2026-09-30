@@ -1,0 +1,43 @@
+const {chromium}=require(process.env.PLAYWRIGHT_PATH||'playwright');
+const assert=require('node:assert/strict');
+const fs=require('node:fs'),path=require('node:path'),os=require('node:os');
+const out=path.join(os.tmpdir(),'grid-io-3d-wheelie');fs.mkdirSync(out,{recursive:true});
+(async()=>{
+ const browser=await chromium.launch({headless:true,channel:'msedge'});
+ try {
+  const p=await browser.newPage({viewport:{width:1440,height:900},deviceScaleFactor:1});const errors=[];
+  p.on('pageerror',e=>errors.push(e.message));p.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
+  await p.goto((process.env.GRID3D_BASE_URL||'http://127.0.0.1:5276')+'/grid-io-3d/?test=1');
+  await p.waitForFunction(()=>!document.getElementById('play').disabled);await p.locator('#play').click();
+  await p.evaluate(()=>{const a=window.__GRID_TEST__.arena; a.player.grace=500; a.player.length=300;});
+  await p.keyboard.down('ControlLeft');
+  await p.waitForFunction(()=>window.__GRID_TEST__.arena.player.brakeTime>0.8);
+  const mid=await p.evaluate(()=>window.__GRID_TEST__.snapshot());assert(mid.speed>8&&mid.speed<20);
+  await p.keyboard.down('KeyD');
+  await p.waitForFunction(()=>window.__GRID_TEST__.snapshot().speed<0.001);
+  const rear=await p.evaluate(()=>{const t=window.__GRID_TEST__,b=t.graphics.getBike(t.arena.player);const w=b.group.getObjectByName('wheel-rear');return w.getWorldPosition(w.position.clone()).toArray();});
+  await p.waitForTimeout(450);
+  const result=await p.evaluate(()=>{const t=window.__GRID_TEST__,b=t.graphics.getBike(t.arena.player);const rw=b.group.getObjectByName('wheel-rear'),fw=b.group.getObjectByName('wheel-front');return {rear:rw.getWorldPosition(rw.position.clone()).toArray(),front:fw.getWorldPosition(fw.position.clone()).toArray(),pitch:b.pivot.rotation.z,snapshot:t.snapshot()};});
+  assert(Math.hypot(result.rear[0]-rear[0],result.rear[2]-rear[2])<0.08);
+  assert(result.front[1]>result.rear[1]+3);assert(result.pitch>0.6);
+  await p.keyboard.up('KeyD'); await p.screenshot({path:path.join(out,'wheelie.png')});
+  await p.keyboard.down('KeyA'); const angle=await p.evaluate(()=>window.__GRID_TEST__.arena.player.angle);
+  await p.waitForFunction(a=>window.__GRID_TEST__.arena.player.angle<a-0.4,angle);
+  await p.keyboard.up('KeyA'); await p.keyboard.up('ControlLeft');
+  await p.waitForFunction(()=>!window.__GRID_TEST__.snapshot().wheelieActive&&window.__GRID_TEST__.snapshot().speed>28);
+  await p.screenshot({path:path.join(out,'neon-gameplay.png')});
+  await p.keyboard.press('Escape'); await p.locator('#quality').click(); await p.locator('#resume').click();
+  await p.waitForTimeout(200);await p.screenshot({path:path.join(out,'performance-glow.png')});
+  const meshes=await p.evaluate(()=>{const g=window.__GRID_TEST__.graphics;return {batches:g.walls.children.length,segments:g.walls.count,calls:g.renderer.info.render.calls};});
+  assert.equal(meshes.batches,3);assert(meshes.segments>0);
+  const m=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+  m.on('pageerror',e=>errors.push(e.message));
+  await m.goto((process.env.GRID3D_BASE_URL||'http://127.0.0.1:5276')+'/grid-io-3d/?test=1');await m.waitForFunction(()=>!document.getElementById('play').disabled);await m.locator('#play').tap();
+  await m.evaluate(()=>{window.__GRID_TEST__.arena.player.grace=500;});
+  const rect=await m.locator('#wheelie-button').boundingBox();await m.mouse.move(rect.x+rect.width/2,rect.y+rect.height/2);await m.mouse.down();
+  await m.waitForFunction(()=>window.__GRID_TEST__.snapshot().wheelieActive);await m.waitForFunction(()=>window.__GRID_TEST__.snapshot().speed<0.001);
+  await m.screenshot({path:path.join(out,'mobile-wheelie.png')});await m.mouse.up();await m.waitForFunction(()=>!window.__GRID_TEST__.snapshot().wheelieActive);
+  assert.equal(await m.evaluate(()=>document.documentElement.scrollWidth),390);assert.deepEqual(errors,[]);
+  console.log('PASS gradual Control braking, stationary rear-axle pivot both ways, front wheel lift, acceleration recovery, neon shader in both quality modes and touch wheelie.',meshes,out);
+ } finally {await browser.close();}
+})().catch(e=>{console.error(e);process.exitCode=1;});

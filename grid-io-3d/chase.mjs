@@ -1,4 +1,4 @@
-import { HALF, LANDMARKS, angleDifference, jumpHeight, clamp } from "../grid-io/simulation.mjs?v=speed-1";
+import { HALF, LANDMARKS, angleDifference, jumpHeight, clamp } from "./simulation.mjs?v=wheelie-2";
 
 // Rider-relative steering needs no pointer lock. Centering the mouse stops a turn.
 export function steeringAxis(value) {

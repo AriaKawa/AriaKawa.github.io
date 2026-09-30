@@ -1,19 +1,18 @@
-import { ChaseCamera } from "./chase.mjs?v=chase-1";
+import { ChaseCamera } from "./chase.mjs?v=wheelie-2";
 import * as THREE from "../grid-io/vendor/three.module.min.js";
-import { createBike, animateWheels } from "./bike-model.js?v=chase-1";
-import { LaserWalls } from "../grid-io/laser-walls.js?v=speed-1";
-import { EffectComposer } from "../grid-io/vendor/postprocessing/EffectComposer.js";
-import { RenderPass } from "../grid-io/vendor/postprocessing/RenderPass.js";
-import { UnrealBloomPass } from "../grid-io/vendor/postprocessing/UnrealBloomPass.js";
-import { OutputPass } from "../grid-io/vendor/postprocessing/OutputPass.js";
+import { createBike, animateWheels } from "./bike-model.js?v=wheelie-2";
+import { NeonTrails } from "./neon-trails.js?v=wheelie-2";
+import { DistantBikes } from "./distant-bikes.js?v=wheelie-2";
+import { mergeGeometries } from "../grid-io/vendor/utils/BufferGeometryUtils.js";
 import {
   HALF,
   WORLD_SIZE,
   COLORS,
   LANDMARKS,
   jumpHeight,
-  WALL_HEIGHT,
-} from "../grid-io/simulation.mjs?v=chase-1";
+  trailHead,
+  angleDifference,
+} from "./simulation.mjs?v=wheelie-2";
 
 const palette = COLORS.map((c) => new THREE.Color(c));
 const shardPalette = [
@@ -25,9 +24,6 @@ const shardPalette = [
   "#fff0e8",
 ].map((c) => new THREE.Color(c));
 const dummy = new THREE.Object3D();
-const white = new THREE.Color("#fff5f0");
-const ALONG = new THREE.Vector3(1, 0, 0);
-const edgeDirection = new THREE.Vector3();
 const boxGeo = new THREE.BoxGeometry(1, 1, 1);
 const standard = (color, metalness = 0.45, roughness = 0.38) =>
   new THREE.MeshStandardMaterial({ color, metalness, roughness });
@@ -75,11 +71,18 @@ export class GridRenderer {
       alpha: false,
       powerPreference: "high-performance",
     });
-    this.renderer.setPixelRatio(Math.min(devicePixelRatio, 1.65));
+    this.renderer.setPixelRatio(Math.min(devicePixelRatio, 1.25));
+    this.renderer.info.autoReset = false;
+    this.renderScale = 1;
+    this.frameAverage = 1 / 60;
+    this.adaptTime = 0;
+    this.visualPlayer = {};
+    this.foodVisible = [];
+    this.foodTimer = 0;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.18;
-    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.enabled = false;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x11101a);
@@ -96,7 +99,7 @@ export class GridRenderer {
     this.scene.add(new THREE.HemisphereLight(0xffeee6, 0x241a1b, 2.3));
     this.sun = new THREE.DirectionalLight(0xffebe4, 3.6);
     this.sun.position.set(-80, 160, -70);
-    this.sun.castShadow = true;
+    this.sun.castShadow = false;
     this.sun.shadow.mapSize.set(2048, 2048);
     Object.assign(this.sun.shadow.camera, {
       left: -145,
@@ -115,7 +118,10 @@ export class GridRenderer {
     this.textureLoader = new THREE.TextureLoader();
     this.glowTexture = canvasGlow();
     this.buildWorld();
+    this.batchArchitecture();
     this.bikes = new Map();
+    this.distantBikes = new DistantBikes();
+    this.scene.add(this.distantBikes);
     this.particles = [];
     this.rings = [];
     this.crystals = new THREE.InstancedMesh(
@@ -145,17 +151,8 @@ export class GridRenderer {
     );
     this.crystalGlows.frustumCulled = false;
     this.scene.add(this.crystalGlows);
-    this.walls = new LaserWalls();
+    this.walls = new NeonTrails();
     this.scene.add(this.walls);
-    this.cores = new THREE.InstancedMesh(
-      boxGeo,
-      new THREE.MeshBasicMaterial({ toneMapped: false }),
-      12000,
-    );
-    this.cores.name = "laser-edges";
-    this.cores.frustumCulled = false;
-    this.cores.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-    this.scene.add(this.cores);
     this.sparks = new THREE.InstancedMesh(
       new THREE.OctahedronGeometry(0.5),
       new THREE.MeshBasicMaterial({ toneMapped: false }),
@@ -163,16 +160,6 @@ export class GridRenderer {
     );
     this.sparks.frustumCulled = false;
     this.scene.add(this.sparks);
-    this.composer = new EffectComposer(this.renderer);
-    this.composer.addPass(new RenderPass(this.scene, this.camera));
-    this.bloom = new UnrealBloomPass(
-      new THREE.Vector2(innerWidth, innerHeight),
-      0.46,
-      0.65,
-      0.72,
-    );
-    this.composer.addPass(this.bloom);
-    this.composer.addPass(new OutputPass());
     this.resize();
   }
   buildWorld() {
@@ -224,6 +211,7 @@ export class GridRenderer {
     this.archTexture = this.textureLoader.load("../grid-io/assets/red-alloy.webp");
     this.archTexture.colorSpace = THREE.SRGBColorSpace;
     this.archTexture.anisotropy = 4;
+    this.archMaterial = new THREE.MeshStandardMaterial({map:this.archTexture,color:0xaaa0a0,metalness:0.55,roughness:0.38});
     this.landmarkGroups = [];
     this.rotors = [];
     for (const o of LANDMARKS) this.buildLandmark(o);
@@ -270,12 +258,7 @@ export class GridRenderer {
     this.landmarkGroups.push(g);
     const accent = glow(o.color),
       subtle = glow(o.color, 0.16),
-      alloy = new THREE.MeshStandardMaterial({
-        map: this.archTexture,
-        color: 0xaaa0a0,
-        metalness: 0.55,
-        roughness: 0.38,
-      });
+      alloy = this.archMaterial;
     const base = mesh(
       new THREE.CylinderGeometry(o.r, o.r + 1.5, 2.4, 8),
       alloy,
@@ -378,14 +361,29 @@ export class GridRenderer {
     );
     beam.material.side = THREE.DoubleSide;
   }
-  resize() {
-    this.width = innerWidth;
-    this.height = innerHeight;
-    this.renderer.setSize(this.width, this.height, false);
-    if (this.composer) {
-      this.composer.setPixelRatio(Math.min(devicePixelRatio, 1.25));
-      this.composer.setSize(this.width, this.height);
+  batchArchitecture() {
+    this.scene.updateMatrixWorld(true);
+    const batches = new Map();
+    for (const group of this.landmarkGroups) for (const child of [...group.children]) {
+      if (!child.isMesh || this.rotors.includes(child)) continue;
+      const clone = child.geometry.clone().applyMatrix4(child.matrixWorld);
+      const geometry = clone.index ? clone.toNonIndexed() : clone;
+      if (geometry !== clone) clone.dispose();
+      if (!batches.has(child.material)) batches.set(child.material, []);
+      batches.get(child.material).push(geometry); group.remove(child);
     }
+    for (const [material, geometries] of batches) {
+      const geometry = mergeGeometries(geometries);
+      geometries.forEach(g => g.dispose());
+      const batch = new THREE.Mesh(geometry, material); batch.name = "batched-reactor-architecture"; this.scene.add(batch);
+    }
+  }
+  resize() {
+    this.width = innerWidth; this.height = innerHeight;
+    const ceiling = this.quality ? 1.25 : 1;
+    const pixels = Math.min(1, Math.sqrt(1920 * 1080 / (this.width * this.height)));
+    this.renderer.setPixelRatio(Math.min(devicePixelRatio, ceiling) * this.renderScale * pixels);
+    this.renderer.setSize(this.width, this.height, false);
     this.updateProjection();
   }
   updateProjection() {
@@ -393,11 +391,28 @@ export class GridRenderer {
     this.camera.updateProjectionMatrix();
   }
   setQuality(high) {
-    this.quality = high;
-    this.renderer.setPixelRatio(Math.min(devicePixelRatio, high ? 1.65 : 1));
-    this.renderer.shadowMap.enabled = high;
-    this.sun.castShadow = high;
-    this.resize();
+    this.quality = high; this.renderScale = 1; this.resize();
+  }
+  adapt(dt) {
+    if (dt <= 0 || dt > 0.1) return;
+    this.frameAverage += (dt - this.frameAverage) * 0.04;
+    this.adaptTime += dt;
+    if (this.adaptTime < 1.5) return;
+    this.adaptTime = 0;
+    const next = this.frameAverage > 0.022 ? Math.max(0.65, this.renderScale - 0.1)
+      : this.frameAverage < 0.0175 ? Math.min(1, this.renderScale + 0.05) : this.renderScale;
+    if (Math.abs(next - this.renderScale) > 0.01) { this.renderScale = next; this.resize(); }
+  }
+  interpolate(r, alpha, target) {
+    Object.assign(target, r);
+    if (Number.isFinite(r.previousX)) {
+      target.x = r.previousX + (r.x - r.previousX) * alpha;
+      target.z = r.previousZ + (r.z - r.previousZ) * alpha;
+      target.angle = r.previousAngle + angleDifference(r.angle, r.previousAngle) * alpha;
+      if (r.previousJump >= r.jump) target.jump = r.previousJump + (r.jump-r.previousJump)*alpha;
+      target.wheelie = (r.previousWheelie || 0) + ((r.wheelie || 0)-(r.previousWheelie || 0))*alpha;
+    }
+    return target;
   }
   reset(arena) {
     for (const entry of this.bikes.values()) {
@@ -409,6 +424,8 @@ export class GridRenderer {
     }
     this.bikes.clear();
     this.particles.length = 0;
+    this.foodTimer = 0;
+    this.foodVisible.length = 0;
     this.chase.reset(arena.player);
     this.lookBack = false;
     this.cameraTarget.set(arena.player.x, 0, arena.player.z);
@@ -416,7 +433,10 @@ export class GridRenderer {
   }
   getBike(r) {
     if (this.bikes.has(r.id)) return this.bikes.get(r.id);
-    const group = createBike(r.skin, r.loadout);
+    const model = createBike(r.skin, r.loadout);
+    const group = new THREE.Group(), pivot = new THREE.Group();
+    pivot.name = "rear-axle-pivot"; pivot.position.set(-2.65, 1.35, 0);
+    model.position.set(2.65, -1.35, 0); pivot.add(model); group.add(pivot);
     this.scene.add(group);
     const shadow = mesh(
       new THREE.PlaneGeometry(11, 6),
@@ -449,7 +469,7 @@ export class GridRenderer {
       this.scene,
     );
     aura.rotation.x = -Math.PI / 2;
-    const result = { group, shadow, aura };
+    const result = { group, pivot, shadow, aura, visual: {} };
     this.bikes.set(r.id, result);
     return result;
   }
@@ -483,43 +503,47 @@ export class GridRenderer {
       });
     }
   }
-  draw(arena, dt, time) {
-    const p = arena.player;
+  draw(arena, dt, time, alpha = 1) {
+    this.renderer.info.reset();
+    this.adapt(dt);
+    const p = this.interpolate(arena.player, alpha, this.visualPlayer);
     this.syncCamera(p, dt);
-    const range = this.quality ? 720 : 500, rangeSq = range * range;
-    for (const r of arena.riders) {
-      const b = this.getBike(r),
-        visible = r.alive && (r.x - p.x) ** 2 + (r.z - p.z) ** 2 < rangeSq;
-      b.group.visible = b.shadow.visible = b.aura.visible = visible;
-      if (!visible) continue;
+    const range = this.quality ? 520 : 380, rangeSq = range * range;
+    this.distantBikes.begin();
+    for (const rider of arena.riders) {
+      const distanceSq = (rider.x-p.x)**2+(rider.z-p.z)**2;
+      const visible = rider.alive && distanceSq < rangeSq;
+      const close = rider.player || distanceSq < (this.quality ? 85 : 55)**2;
+      let b = this.bikes.get(rider.id);
+      if (!visible || !close) {
+        if (b) b.group.visible = b.shadow.visible = b.aura.visible = false;
+        if (visible) this.distantBikes.rider(rider);
+        continue;
+      }
+      b = this.getBike(rider);
+      b.group.visible = b.shadow.visible = b.aura.visible = true;
+      const r = this.interpolate(rider, alpha, b.visual);
       const altitude = jumpHeight(r);
       b.group.position.set(r.x, altitude + 0.06, r.z);
-      b.group.rotation.set(
-        Math.sin(time * 9 + r.id) * 0.018,
-        -r.angle,
-        Math.sin(r.jump > 0 ? (1 - r.jump / 1.05) * Math.PI * 2 : 0) * 0.14,
-      );
+      b.group.rotation.set(0, -r.angle, 0);
       b.group.scale.setScalar(r.player ? 1.35 : 1.17);
+      b.pivot.rotation.z = (r.wheelie || 0) * 0.68;
       animateWheels(b.group, r.speed * dt);
-      b.shadow.position.set(r.x, 0.09, r.z);
-      b.shadow.rotation.z = -r.angle;
-      b.shadow.scale.setScalar(1 + altitude * 0.04);
-      b.shadow.material.opacity = 0.8 - altitude * 0.03;
-      b.aura.position.set(r.x, 0.12, r.z);
-      b.aura.rotation.z = -r.angle;
+      b.shadow.position.set(r.x, 0.09, r.z); b.shadow.rotation.z = -r.angle;
+      b.shadow.scale.setScalar(1 + altitude * 0.04); b.shadow.material.opacity = 0.8 - altitude * 0.03;
+      b.aura.position.set(r.x, 0.12, r.z); b.aura.rotation.z = -r.angle;
       b.aura.material.opacity = r.boost ? 0.5 : 0.24;
-      b.aura.material.opacity = r.grace > 0 ? 0.45 : b.aura.material.opacity;
-      if (r.boost && Math.random() < 0.65)
-        this.emit(
-          r.x - Math.cos(r.angle) * 4,
-          r.z - Math.sin(r.angle) * 4,
-          r.skin,
-          1,
-          0.35,
-        );
+      if (r.boost && Math.random() < Math.min(0.7, dt*24))
+        this.emit(r.x-Math.cos(r.angle)*4,r.z-Math.sin(r.angle)*4,r.skin,1,0.35);
+    }
+    this.distantBikes.finish();
+    this.foodTimer -= dt;
+    if (this.foodTimer <= 0 || arena.foodRevision !== this.foodRevision) {
+      arena.foodHash.query(p.x, p.z, range, this.foodVisible);
+      this.foodRevision = arena.foodRevision; this.foodTimer = 0.15;
     }
     let fi = 0;
-    for (const f of arena.foodHash.query(p.x, p.z, range)) {
+    for (const f of this.foodVisible) {
       if (fi >= 2000) break;
       if ((f.x - p.x) ** 2 + (f.z - p.z) ** 2 > rangeSq) continue;
       const scale = 0.85 + f.value * 0.15;
@@ -543,46 +567,21 @@ export class GridRenderer {
       m.instanceMatrix.needsUpdate = true;
       if (m.instanceColor) m.instanceColor.needsUpdate = true;
     }
-    const segments = [];
-    for (const r of arena.riders) {
-      if (!r.alive) continue;
-      const points = r.trail;
-      const head = { x: r.x, y: jumpHeight(r), z: r.z };
-      for (let i = 0; i < points.length; i++) {
-        const a = points[i],
-          b = i === points.length - 1 ? head : points[i + 1];
-        const distance = (a.x - p.x) ** 2 + (a.z - p.z) ** 2;
-        if (distance > rangeSq) continue;
-        const len = Math.hypot(b.x - a.x, b.z - a.z);
-        if (len < 0.01 || len > 6) continue;
-        segments.push({ a, b, skin: r.skin, distance });
+    this.walls.begin();
+    // Two distance bands retain immediate hazards before distant scenery.
+    for (let band=0;band<2;band++) for (const rider of arena.riders) {
+      if (!rider.alive) continue;
+      const points=rider.trail, head=trailHead(rider.player?p:rider);
+      for(let i=0;i<points.length;i++) {
+        const a=points[i],b=i===points.length-1?head:points[i+1];
+        const distance=(a.x-p.x)**2+(a.z-p.z)**2;
+        if(distance>rangeSq || (band===0 ? distance>150**2 : distance<=150**2))continue;
+        const lengthSq=(b.x-a.x)**2+(b.z-a.z)**2;
+        if(lengthSq<0.0001||lengthSq>36)continue;
+        this.walls.segment(a,b,palette[rider.skin]);
       }
     }
-    // A long match can exceed the instance budget. Always retain the nearest
-    // hazards first instead of dropping a nearby rival's wall by rider order.
-    if (segments.length > 12000) segments.sort((a, b) => a.distance - b.distance);
-    let ti = 0;
-    for (const { a, b, skin } of segments) {
-        if (ti >= 12000) break;
-        this.walls.segment(ti, a, b, palette[skin]);
-        const ya = (a.y ?? 0) + WALL_HEIGHT + 0.08,
-          yb = (b.y ?? 0) + WALL_HEIGHT + 0.08;
-        edgeDirection.set(b.x - a.x, yb - ya, b.z - a.z);
-        const edgeLength = edgeDirection.length();
-        dummy.position.set((a.x + b.x) / 2, (ya + yb) / 2, (a.z + b.z) / 2);
-        dummy.quaternion.setFromUnitVectors(ALONG, edgeDirection.normalize());
-        dummy.scale.set(edgeLength + 0.19, 0.26, 0.38);
-        dummy.updateMatrix();
-        this.cores.setMatrixAt(ti, dummy.matrix);
-        this.cores.setColorAt(ti, palette[skin].clone().lerp(white, 0.32));
-        ti++;
-    }
-    this.walls.finish(ti);
-    for (const m of [this.cores]) {
-      m.count = ti;
-      m.instanceMatrix.needsUpdate = true;
-      if (m.instanceColor) m.instanceColor.needsUpdate = true;
-    }
+    this.walls.finish();
     let si = 0;
     for (let i = this.particles.length - 1; i >= 0; i--) {
       const s = this.particles[i];
@@ -612,7 +611,6 @@ export class GridRenderer {
         r.position.y = 18 + Math.sin(time) * 1.2;
       } else r.rotation.z = time * 0.15;
     }
-    if (this.quality) this.composer.render(dt);
-    else this.renderer.render(this.scene, this.camera);
+    this.renderer.render(this.scene, this.camera);
   }
 }

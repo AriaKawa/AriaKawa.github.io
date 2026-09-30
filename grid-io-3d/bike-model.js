@@ -1,7 +1,7 @@
 import * as THREE from "../grid-io/vendor/three.module.min.js";
 import { mergeGeometries } from "../grid-io/vendor/utils/BufferGeometryUtils.js";
-import { COLORS } from "../grid-io/simulation.mjs?v=chase-1";
-import { normalizeLoadout, loadoutKey } from "../grid-io/customization.mjs?v=chase-1";
+import { COLORS } from "./simulation.mjs?v=wheelie-2";
+import { normalizeLoadout, loadoutKey } from "../grid-io/customization.mjs?v=wheelie-2";
 
 const templates = new Map();
 const unitBox = new THREE.BoxGeometry(1, 1, 1);

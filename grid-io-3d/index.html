@@ -12,9 +12,9 @@
       content="The same Grid.io arena from behind the handlebars. Ride in third person, grow your laser trail, and outlast 40 AI riders."
     />
     <title>Grid.io 3D</title>
-    <link rel="icon" href="../grid-io/icon.svg?v=chase-1" type="image/svg+xml" />
-    <link rel="preload" href="assets/chase-cover.png" as="image" />
-    <link rel="stylesheet" href="style.css?v=chase-1" />
+    <link rel="icon" href="../grid-io/icon.svg?v=wheelie-2" type="image/svg+xml" />
+    <link rel="preload" href="assets/chase-cover.png?v=wheelie-2" as="image" />
+    <link rel="stylesheet" href="style.css?v=wheelie-2" />
   </head>
   <body>
     <canvas id="world" aria-label="Grid.io 3D 3D laser bike arena"></canvas>
@@ -117,7 +117,7 @@
         <p class="arena-mode">40 AI riders · Same arena. A new perspective.</p>
         <div class="quick-controls">
           <span><kbd id="steer-key">A / D</kbd> Steer</span
-          ><span><kbd>SHIFT</kbd> Boost</span><span><kbd>SPACE</kbd> Jump</span>
+          ><span><kbd>SHIFT</kbd> Boost</span><span><kbd>SPACE</kbd> Jump</span><span><kbd>CTRL</kbd> Wheelie</span>
         </div>
         <p id="load-status" role="status" class="load-status">Loading…</p>
       </main>
@@ -160,6 +160,9 @@
           ></canvas>
         </div>
         <div class="abilities">
+          <button id="wheelie-button" class="ability" aria-label="Hold for wheelie brake and pivot">
+            <span class="ability-icon">⤴</span><span><strong>Wheelie</strong><small id="wheelie-label">Hold Ctrl · brake + pivot</small></span><kbd>CTRL</kbd>
+          </button>
           <button id="boost-button" class="ability">
             <span class="ability-icon">ϟ</span
             ><span
@@ -270,12 +273,12 @@
         </p>
       </div>
       <div class="controls-table">
-        <span>Steer</span><b>Mouse left/right · A/D · ←/→</b><span>Boost</span
+        <span>Wheelie brake</span><b>Hold Ctrl + steer left/right</b><span>Steer</span><b>Mouse left/right · A/D · ←/→</b><span>Boost</span
         ><b>Hold Shift / left click</b><span>Jump</span
         ><b>Space / right click</b><span>Pause</span><b>Esc / P</b><span>Look behind</span><b>Hold C / Rear view</b>
       </div>
       <p>
-        The camera follows behind your bike. In 90° mode, tap left or right, or move the mouse away from center once per turn. Recenter to turn again. Hold C to look behind. On touch screens, steer with the left thumb pad and use the ability
+        Hold Control to lift the front wheel and brake smoothly to a stop in about two seconds. Steer left/right to pivot around the back tire, then release Control to accelerate away. Wheelies allow free pivots in both modes; releasing in 90° mode aligns with the nearest grid direction. The camera follows behind your bike. In 90° mode, tap left or right, or move the mouse away from center once per turn. Recenter to turn again. Hold C to look behind. On touch screens, steer with the left thumb pad and use the ability
         buttons. This is a solo arena with computer riders.
       </p>
       <button class="primary close-action">Done</button>
@@ -283,7 +286,7 @@
     <dialog id="pause-dialog" class="modal compact">
       <h2>Paused</h2>
       <button id="resume" class="primary">Resume</button
-      ><button id="quality" class="secondary">Graphics: High</button
+      ><button id="quality" class="secondary">Graphics: Balanced</button
       ><button id="quit" class="text-button">Menu</button>
     </dialog>
     <dialog id="death-dialog" class="modal compact">
@@ -314,6 +317,6 @@
     <script type="importmap">
       { "imports": { "three": "../grid-io/vendor/three.module.min.js" } }
     </script>
-    <script type="module" src="game.js?v=chase-1"></script>
+    <script type="module" src="game.js?v=wheelie-2"></script>
   </body>
 </html>

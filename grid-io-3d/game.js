@@ -1,4 +1,4 @@
-import { steeringAxis, steeringTarget, relativeTurn } from "./chase.mjs?v=chase-1";
+import { steeringAxis, steeringTarget, relativeTurn } from "./chase.mjs?v=wheelie-2";
 import {
   Arena,
   COLORS,
@@ -9,15 +9,15 @@ import {
   JUMP_COOLDOWN,
   jumpHeight,
   normalizeSpeed,
-} from "../grid-io/simulation.mjs?v=chase-1";
-import { GridRenderer } from "./renderer.js?v=chase-1";
-import { BikeGarage } from "./garage.js?v=chase-1";
+} from "./simulation.mjs?v=wheelie-2";
+import { GridRenderer } from "./renderer.js?v=wheelie-2";
+import { BikeGarage } from "./garage.js?v=wheelie-2";
 import {
   BODIES,
   WHEELS,
   RIDERS,
   normalizeLoadout,
-} from "../grid-io/customization.mjs?v=chase-1";
+} from "../grid-io/customization.mjs?v=wheelie-2";
 
 const $ = (id) => document.getElementById(id);
 const read = (key, fallback) => {
@@ -54,7 +54,7 @@ let state = "menu",
   accumulator = 0,
   uiTimer = 0,
   toastUntil = 0;
-let boostPointer = null;
+let boostPointer = null, wheeliePointer = null, touchWheelie = false;
 let rearHeld = false, stickTurnArmed = true, mouseTurnArmed = true;
 let pointer = { x: 0, y: 0, active: false },
   keys = new Set(),
@@ -258,6 +258,7 @@ for (const d of document.querySelectorAll("dialog")) {
 function clearInput() {
   keys.clear();
   boostPointer = null;
+  wheeliePointer = null; touchWheelie = false;
   stickId = null;
   pointer.active = false;
   rearHeld = false;
@@ -292,10 +293,10 @@ function start() {
   ensureAudio();
   updateHUD();
   $("pointer-hint").textContent = isTouch
-    ? "Thumb left/right to steer · tap ↥ to jump"
+    ? "Steer left/right · hold Wheelie to brake and pivot"
     : mode === "90"
-      ? "A / D: 90° turns · Space: jump · C: rear view"
-      : "Mouse or A / D: steer · Space: jump · C: rear view";
+      ? "A / D: 90° turns · Ctrl: wheelie brake · Space: jump"
+      : "Mouse / A / D: steer · Ctrl: wheelie brake · Space: jump";
   $("pointer-hint").hidden = false;
 }
 function pause() {
@@ -362,7 +363,7 @@ $("death-dialog").addEventListener("cancel", (e) => {
 });
 function updateQuality() {
   $("quality").textContent =
-    `Graphics: ${highQuality ? "High" : "Performance"}`;
+    `Graphics: ${highQuality ? "Balanced" : "Performance"}`;
   graphics?.setQuality(highQuality);
 }
 $("quality").addEventListener("click", () => {
@@ -392,6 +393,8 @@ const gameKeys = new Set([
   "Escape",
   "KeyP",
   "KeyC",
+  "ControlLeft",
+  "ControlRight",
 ]);
 const turnKeys = { ArrowRight: 1, KeyD: 1, ArrowLeft: -1, KeyA: -1 };
 window.addEventListener("keydown", (e) => {
@@ -404,7 +407,7 @@ window.addEventListener("keydown", (e) => {
     return;
   }
   if (state !== "playing") return;
-  if (mode === "90" && e.code in turnKeys && !e.repeat) {
+  if (mode === "90" && !touchWheelie && !e.ctrlKey && !arena.player.wheelieActive && e.code in turnKeys && !e.repeat) {
     pointer.active = false;
     if (turns.length < 2) turns.push(turnKeys[e.code]);
   }
@@ -468,7 +471,7 @@ function moveStick(e) {
   $("joystick").querySelector("i").style.transform =
     `translate(${dx * scale}px,${dy * scale}px)`;
   joystickAngle = d > 7 ? Math.max(-1, Math.min(1, dx / 35)) : null;
-  if (mode === "90") {
+  if (mode === "90" && !touchWheelie && !arena.player.wheelieActive) {
     if (joystickAngle === null || Math.abs(joystickAngle) < 0.25) stickTurnArmed = true;
     else if (Math.abs(joystickAngle) > 0.55 && stickTurnArmed) {
       if (turns.length < 2) turns.push(Math.sign(joystickAngle));
@@ -499,8 +502,10 @@ function input() {
     (keys.has("KeyA") || keys.has("ArrowLeft") ? 1 : 0);
   if (keyboard) axis = keyboard;
   if (joystickAngle !== null) axis = steeringAxis(joystickAngle);
+  const wheelie = touchWheelie || keys.has("ControlLeft") || keys.has("ControlRight");
   let angle = p.angle;
-  if (mode === "360") angle = steeringTarget(p.angle, axis, 1 / 60);
+  if (wheelie || p.wheelieActive) { turns.length = 0; }
+  else if (mode === "360") angle = steeringTarget(p.angle, axis, 1 / 60);
   else {
     if (Math.abs(axis) < 0.15) mouseTurnArmed = true;
     if (pointer.active && Math.abs(axis) > 0.5 && mouseTurnArmed) {
@@ -510,8 +515,16 @@ function input() {
     if (turns.length) angle = relativeTurn(p.angle, turns.shift());
   }
   graphics.lookBack = rearHeld || keys.has("KeyC");
-  return { angle, boost: mouseBoost || touchBoost || keys.has("ShiftLeft") || keys.has("ShiftRight") };
+  return { angle, steer: axis, wheelie, boost: mouseBoost || touchBoost || keys.has("ShiftLeft") || keys.has("ShiftRight") };
 }
+$("wheelie-button").addEventListener("pointerdown", e => {
+  e.preventDefault();
+  if (state === "playing") { touchWheelie = true; wheeliePointer = e.pointerId; e.currentTarget.setPointerCapture(e.pointerId); }
+});
+for (const type of ["pointerup", "pointercancel", "lostpointercapture"])
+  $("wheelie-button").addEventListener(type, e => {
+    if (e.pointerId === wheeliePointer) { touchWheelie = false; wheeliePointer = null; }
+  });
 $("rear-button").addEventListener("pointerdown", e => {
   e.preventDefault();
   if (state === "playing") { rearHeld = true; e.currentTarget.setPointerCapture(e.pointerId); }
@@ -524,6 +537,8 @@ function updateHUD() {
   const p = arena.player;
   $("ride-speed").textContent = Math.round(p.speed);
   $("district").textContent = arena.sector();
+  $("wheelie-label").textContent = p.wheelieActive ? (p.speed < 0.1 ? "Stopped · steer to pivot" : "Braking…") : "Hold Ctrl · brake + pivot";
+  $("wheelie-button").classList.toggle("active", p.wheelieActive);
   $("length").textContent = Math.floor(p.length);
   $("personal-best").textContent =
     `Best ${Math.max(best, Math.floor(p.peak))} m`;
@@ -645,6 +660,8 @@ function animateLogo(now) {
 
 function frame(now) {
   requestAnimationFrame(frame);
+  // Rendering above 60 Hz doubled GPU work while physics still ran at 60 Hz.
+  if (now - lastTime < 1000 / 60 - 0.5) return;
   const dt = Math.min(0.08, (now - lastTime) / 1000 || 0.016);
   lastTime = now;
   if (state === "interrupted") {
@@ -702,7 +719,7 @@ function frame(now) {
       uiTimer = 0.2;
     }
   }
-  if (state !== "paused") graphics.draw(arena, dt, arena.time);
+  if (state !== "paused") graphics.draw(arena, dt, arena.time, state === "playing" ? accumulator * 60 : 1);
   if (engineGain) {
     engineGain.gain.setTargetAtTime(
       soundOn && state === "playing" ? 0.014 : 0,
@@ -779,6 +796,10 @@ if (new URLSearchParams(location.search).has("test"))
             length: arena.player.length,
             peak: arena.player.peak,
             boost: arena.player.boost,
+            speed: arena.player.speed,
+            wheelie: arena.player.wheelie,
+            wheelieActive: arena.player.wheelieActive,
+            renderScale: graphics.renderScale,
             jump: arena.player.jump,
             height: jumpHeight(arena.player),
             cooldown: arena.player.cooldown,
