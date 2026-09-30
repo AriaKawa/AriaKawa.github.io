@@ -1,14 +1,21 @@
 import { angleDifference, clamp, jumpHeight, JUMP_DURATION, HALF } from "../grid-io/simulation.mjs?v=speed-1";
+import { ROADS, LOOP, roadById, roadCoordinates, roadPoint, loopPoint, terrainBlocked, updateSurface } from './terrain.mjs?v=neon-city-1';
 
 const OFFSETS = [0, -0.35, 0.35, -0.8, 0.8, -1.45, 1.45];
 const CARDINAL = [0, -Math.PI / 2, Math.PI / 2];
 
 function chooseGoal(arena, r, brain) {
+  const road=roadById(r.road);
+  if(road) {
+    const {s}=roadCoordinates(road,r.x,r.z),dir=(road.axis==='x'?Math.cos(r.angle):Math.sin(r.angle))>=0?1:-1;
+    const p=roadPoint(road,s+dir*140);r.target={x:p.x,z:p.z};brain.intent='route';brain.goalUntil=arena.time+.9;return;
+  }
   // Keep a destination long enough to make progress. Food behind the bike must
   // be worth the detour; otherwise nearest-pellet chasing creates endless loops.
   let target = null, best = -Infinity;
   const range = Math.max(130, r.speed * 2.5);
   for (const f of arena.foodHash.query(r.x, r.z, range, brain.food)) {
+    if(f.availableAt>arena.time||Math.abs((f.y||0)-(r.y||0))>6)continue;
     const dx = f.x - r.x, dz = f.z - r.z, distance = Math.hypot(dx, dz);
     if (distance < 13 || distance > range || arena.blocked(f.x, f.z, 16)) continue;
     const turn = Math.abs(angleDifference(Math.atan2(dz, dx), r.angle));
@@ -39,6 +46,17 @@ function chooseGoal(arena, r, brain) {
     target = {x:r.x+Math.cos(turn)*180,z:r.z+Math.sin(turn)*180};
     brain.intent = "cruise";
   }
+  // Riders use entrances instead of trying to collect an elevated pickup from below.
+  if(r.id%4===0)for(const route of [...ROADS,LOOP]) {
+    const length=route===LOOP?LOOP.length:route.end-route.start;
+    for(const s of [0,length]) {
+      const p=route===LOOP?loopPoint(s):roadPoint(route,s),distance=Math.hypot(p.x-r.x,p.z-r.z);
+      if(distance<140&&distance>8&&Math.cos(Math.atan2(p.z-r.z,p.x-r.x)-r.angle)>.8) {
+        const q=route===LOOP?loopPoint(s===0?18:length-18):roadPoint(route,s===0?18:length-18);
+        target={x:q.x,z:q.z};brain.intent='route';
+      }
+    }
+  }
   r.target = target;
   brain.goalUntil = arena.time + 0.9 + (r.id % 5)*0.12;
 }
@@ -49,12 +67,15 @@ function probe(arena, r, targetAngle, speed, jumping = false) {
   const horizon = 1.45, steps = Math.max(13, Math.ceil(speed * horizon / 5));
   const dt = horizon / steps;
   let x=r.x,z=r.z,angle=r.angle,clear=0;
+  const surface={x,z,y:r.y||0,pitch:r.pitch||0,angle,road:r.road};
   for(let i=0;i<steps;i++) {
     angle = arena.mode === "90" ? targetAngle : angle + clamp(angleDifference(targetAngle,angle),-2.9*dt,2.9*dt);
     x+=Math.cos(angle)*speed*dt; z+=Math.sin(angle)*speed*dt;
     if(arena.blocked(x,z,7)) break;
+    if(terrainBlocked(surface,x,z,4.8))break;
+    Object.assign(surface,{x,z,angle});updateSurface(surface);
     const remaining = jumping ? JUMP_DURATION-(i+1)*dt : Math.max(0,r.jump-(i+1)*dt);
-    const altitude = jumpHeight({jump:Math.max(0,remaining)});
+    const altitude = surface.y+jumpHeight({jump:Math.max(0,remaining)});
     if(arena.trailAt(r,x,z,4.4,altitude)) break;
     // A live rival is a moving source of new laser. Give their nose room.
     let crowded=false;
@@ -62,7 +83,7 @@ function probe(arena, r, targetAngle, speed, jumping = false) {
       const t=(i+1)*dt;
       const ox=other.x+Math.cos(other.angle)*other.speed*t;
       const oz=other.z+Math.sin(other.angle)*other.speed*t;
-      if((x-ox)**2+(z-oz)**2<11**2) { crowded=true; break; }
+      if(Math.abs((other.y||0)-surface.y)<6&&(x-ox)**2+(z-oz)**2<11**2) { crowded=true; break; }
     }
     if(crowded) break;
     clear=(i+1)*dt;
@@ -71,6 +92,7 @@ function probe(arena, r, targetAngle, speed, jumping = false) {
 }
 
 export function botControl(arena, r, dt) {
+  if(Number.isFinite(r.loopS))return {angle:r.angle,boost:false,steer:0};
   r.think -= dt;
   if (!r.brain) r.brain = {food:[],nearby:[],goalUntil:0,intent:"forage",side:0,control:{angle:r.angle,boost:false}};
   const brain=r.brain;

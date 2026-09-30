@@ -12,18 +12,18 @@
       content="The same Grid.io arena from behind the handlebars. Ride in third person, grow your laser trail, and outlast 40 AI riders."
     />
     <title>Grid.io 3D</title>
-    <link rel="icon" href="../grid-io/icon.svg?v=wheelie-2" type="image/svg+xml" />
-    <link rel="preload" href="assets/chase-cover.png?v=wheelie-2" as="image" />
-    <link rel="stylesheet" href="style.css?v=wheelie-2" />
+    <link rel="icon" href="../grid-io/icon.svg?v=neon-city-1" type="image/svg+xml" />
+    <link rel="preload" href="assets/chase-cover.png?v=neon-city-1" as="image" />
+    <link rel="stylesheet" href="style.css?v=neon-city-1" />
   </head>
   <body>
-    <canvas id="world" aria-label="Grid.io 3D 3D laser bike arena"></canvas>
+    <canvas id="world" aria-label="Grid.io 3D neon bike arena with skyways, underpasses and a loop"></canvas>
     <div class="vignette" aria-hidden="true"></div>
     <section id="menu" class="menu">
       <header class="menu-header">
         <a class="back-games text-button" href="../games.html">← Games</a><div class="top-actions">
-          <button id="sound" class="text-button" aria-pressed="false">
-            Sound off</button
+          <button id="sound" class="text-button" aria-pressed="true">
+            Sound on</button
           ><button id="help" class="round-button" aria-label="How to play">
             ?
           </button>
@@ -114,10 +114,10 @@
           </div>
           <button id="play" class="primary" type="submit" disabled>Play</button>
         </form>
-        <p class="arena-mode">40 AI riders · Same arena. A new perspective.</p>
+        <p class="arena-mode">40 riders · Skyways · Underpasses · Helix loop</p>
         <div class="quick-controls">
           <span><kbd id="steer-key">A / D</kbd> Steer</span
-          ><span><kbd>SHIFT</kbd> Boost</span><span><kbd>SPACE</kbd> Jump</span><span><kbd>CTRL</kbd> Wheelie</span>
+          ><span><kbd>SHIFT</kbd> Boost</span><span><kbd>SPACE</kbd> Jump</span><span><kbd>CTRL</kbd> Wheelie</span><span><kbd>MOUSE</kbd> Camera</span>
         </div>
         <p id="load-status" role="status" class="load-status">Loading…</p>
       </main>
@@ -269,24 +269,27 @@
         </p>
         <p>
           90° uses instant right-angle turns with no reversing. 360° allows free
-          steering. Boost spends trail length. Your bike always moves forward.
+          steering. Boost spends trail length. Ride the signed ramps onto the skyways or through the underground passages. The pink Helix route guides your bike through a full loop; steer to shift lanes.
         </p>
       </div>
       <div class="controls-table">
-        <span>Wheelie brake</span><b>Hold Ctrl + steer left/right</b><span>Steer</span><b>Mouse left/right · A/D · ←/→</b><span>Boost</span
-        ><b>Hold Shift / left click</b><span>Jump</span
-        ><b>Space / right click</b><span>Pause</span><b>Esc / P</b><span>Look behind</span><b>Hold C / Rear view</b>
+        <span>Wheelie brake</span><b>Hold Ctrl + A/D or ←/→</b><span>Steer</span><b>A/D · ←/→</b><span>Camera</span><b>Move mouse · left/right/up/down</b><span>Boost</span
+        ><b>Hold Shift</b><span>Jump</span
+        ><b>Space</b><span>Pause</span><b>Esc / P</b><span>Look behind</span><b>Hold C / Rear view</b><span>Engine & sound</span><b>M · sound button</b>
       </div>
       <p>
-        Hold Control to lift the front wheel and brake smoothly to a stop in about two seconds. Steer left/right to pivot around the back tire, then release Control to accelerate away. Wheelies allow free pivots in both modes; releasing in 90° mode aligns with the nearest grid direction. The camera follows behind your bike. In 90° mode, tap left or right, or move the mouse away from center once per turn. Recenter to turn again. Hold C to look behind. On touch screens, steer with the left thumb pad and use the ability
+        Hold Control to lift the front wheel and brake smoothly over two seconds. You have one second stopped to pivot before the bike lowers and accelerates automatically. Release Control to rearm. Your laser stays fixed and keeps its length throughout the wheelie. In 90° mode, the bike aligns to the nearest grid direction afterward. Move the mouse to pan the camera; it never steers or activates an ability. Hold C to look behind. On touch screens, steer with the left thumb pad and use the ability
         buttons. This is a solo arena with computer riders.
       </p>
+      <p class="energy-legend"><span style="color:#37e7ff">● Cyan · charge</span> <span style="color:#bb75ff">● Violet · double</span> <span style="color:#ffbd4b">● Amber · cache</span> <span style="color:#efffff">● White · rare core</span></p>
+      <p>Follow energy lines, sweep clustered caches, or hunt scattered cells. Colored routes on the minimap show skyways, dashed underpasses, and the pink loop. You enter an established arena with veteran riders and long trails.</p>
       <button class="primary close-action">Done</button>
     </dialog>
     <dialog id="pause-dialog" class="modal compact">
       <h2>Paused</h2>
       <button id="resume" class="primary">Resume</button
       ><button id="quality" class="secondary">Graphics: Balanced</button
+      ><button id="sound-pause" class="secondary" aria-pressed="true">Engine & sound: on · M</button
       ><button id="quit" class="text-button">Menu</button>
     </dialog>
     <dialog id="death-dialog" class="modal compact">
@@ -317,6 +320,6 @@
     <script type="importmap">
       { "imports": { "three": "../grid-io/vendor/three.module.min.js" } }
     </script>
-    <script type="module" src="game.js?v=wheelie-2"></script>
+    <script type="module" src="game.js?v=neon-city-1"></script>
   </body>
 </html>

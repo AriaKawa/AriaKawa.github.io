@@ -1,5 +1,6 @@
 import * as THREE from "../grid-io/vendor/three.module.min.js";
-import { createBike } from "./bike-model.js?v=wheelie-2";
+import { createBike } from "./bike-model.js?v=neon-city-1";
+import { reflectionEnvironment } from './textures.js?v=neon-city-1';
 
 export class BikeGarage {
   constructor(teaser, stage, reducedMotion = false) {
@@ -25,6 +26,7 @@ export class BikeGarage {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.scene = new THREE.Scene();
+    this.scene.environment=reflectionEnvironment();this.scene.environmentIntensity=.45;
     this.camera = new THREE.PerspectiveCamera(35, 1, 0.1, 100);
     this.scene.add(new THREE.HemisphereLight(0xfff1ed, 0x241819, 2.2));
     const key = new THREE.DirectionalLight(0xfff4ef, 4.5);

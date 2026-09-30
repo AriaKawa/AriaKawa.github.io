@@ -1,4 +1,4 @@
-import { steeringAxis, steeringTarget, relativeTurn } from "./chase.mjs?v=wheelie-2";
+import { steeringAxis, steeringTarget, relativeTurn } from "./chase.mjs?v=neon-city-1";
 import {
   Arena,
   COLORS,
@@ -8,16 +8,19 @@ import {
   LANDMARKS,
   JUMP_COOLDOWN,
   jumpHeight,
+  riderHeight,
   normalizeSpeed,
-} from "./simulation.mjs?v=wheelie-2";
-import { GridRenderer } from "./renderer.js?v=wheelie-2";
-import { BikeGarage } from "./garage.js?v=wheelie-2";
+} from "./simulation.mjs?v=neon-city-1";
+import { GridRenderer } from "./renderer.js?v=neon-city-1";
+import { BikeGarage } from "./garage.js?v=neon-city-1";
+import { BikeEngine } from './engine-audio.js?v=neon-city-1';
+import { ROADS, LOOP, roadPoint, loopPoint } from './terrain.mjs?v=neon-city-1';
 import {
   BODIES,
   WHEELS,
   RIDERS,
   normalizeLoadout,
-} from "../grid-io/customization.mjs?v=wheelie-2";
+} from "../grid-io/customization.mjs?v=neon-city-1";
 
 const $ = (id) => document.getElementById(id);
 const read = (key, fallback) => {
@@ -55,18 +58,15 @@ let state = "menu",
   uiTimer = 0,
   toastUntil = 0;
 let boostPointer = null, wheeliePointer = null, touchWheelie = false;
-let rearHeld = false, stickTurnArmed = true, mouseTurnArmed = true;
-let pointer = { x: 0, y: 0, active: false },
-  keys = new Set(),
-  mouseBoost = false,
+let rearHeld = false, stickTurnArmed = true;
+let keys = new Set(),
   touchBoost = false,
   joystickAngle = null;
 let highQuality = read("quality", "high") === "high",
-  soundOn = read("sound", "off") === "on";
+  soundOn = read("sound", "on") === "on";
 let audio = null,
   lastPickupSound = 0,
-  engine = null,
-  engineGain = null;
+  engine = null;
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const isTouch = matchMedia("(pointer:coarse)").matches;
 $("nickname").value = read("name", "");
@@ -100,24 +100,15 @@ updateSpeed();
 function updateSoundButton() {
   $("sound").textContent = `Sound ${soundOn ? "on" : "off"}`;
   $("sound").setAttribute("aria-pressed", soundOn);
+  $("sound-pause").textContent=`Engine & sound: ${soundOn?'on':'off'} · M`;
+  $("sound-pause").setAttribute('aria-pressed',soundOn);
 }
 function ensureAudio() {
   if (!soundOn) return;
   try {
     if (!audio) {
       audio = new (window.AudioContext || window.webkitAudioContext)();
-      engine = audio.createOscillator();
-      engineGain = audio.createGain();
-      const filter = audio.createBiquadFilter();
-      filter.type = "lowpass";
-      filter.frequency.value = 280;
-      engine.type = "sawtooth";
-      engine.frequency.value = 55;
-      engineGain.gain.value = 0;
-      engine.connect(filter);
-      filter.connect(engineGain);
-      engineGain.connect(audio.destination);
-      engine.start();
+      engine = new BikeEngine(audio);
     }
     if (audio.state === "suspended") audio.resume();
   } catch {
@@ -158,12 +149,14 @@ function soundEvent(event) {
   } else if (event.type === "death") tone(130, 0.7, "sawtooth", 0.08, 0.15);
 }
 updateSoundButton();
-$("sound").addEventListener("click", () => {
+function toggleSound() {
   soundOn = !soundOn;
   save("sound", soundOn ? "on" : "off");
   ensureAudio();
   updateSoundButton();
-});
+}
+$("sound").addEventListener('click',toggleSound);
+$("sound-pause").addEventListener('click',toggleSound);
 
 function updateSkin() {
   save("skin", skin);
@@ -260,12 +253,11 @@ function clearInput() {
   boostPointer = null;
   wheeliePointer = null; touchWheelie = false;
   stickId = null;
-  pointer.active = false;
   rearHeld = false;
-  mouseTurnArmed = stickTurnArmed = true;
-  if (graphics) graphics.lookBack = false;
+  stickTurnArmed = true;
+  if (graphics) {graphics.lookBack = false;graphics.orbit.x=graphics.orbit.y=0;}
   turns.length = 0;
-  mouseBoost = touchBoost = false;
+  touchBoost = false;
   joystickAngle = null;
   $("joystick").querySelector("i").style.transform = "";
 }
@@ -285,7 +277,6 @@ function start() {
   $("menu").hidden = true;
   $("hud").hidden = false;
   clearInput();
-  pointer.active = false;
   accumulator = 0;
   uiTimer = 0;
   toastUntil = 0;
@@ -296,7 +287,7 @@ function start() {
     ? "Steer left/right · hold Wheelie to brake and pivot"
     : mode === "90"
       ? "A / D: 90° turns · Ctrl: wheelie brake · Space: jump"
-      : "Mouse / A / D: steer · Ctrl: wheelie brake · Space: jump";
+      : "A / D: steer · Mouse: camera · Ctrl: wheelie · Space: jump";
   $("pointer-hint").hidden = false;
 }
 function pause() {
@@ -335,6 +326,7 @@ function end(event) {
   $("death-reason").textContent =
     event.reason === "boundary"
       ? "You hit the arena boundary."
+      : event.reason === 'barrier' ? 'You hit a transit guardrail or support. Enter using the signed ramps.'
       : event.reason === "reactor"
         ? "You collided with a reactor platform."
         : event.reason === "self"
@@ -393,6 +385,7 @@ const gameKeys = new Set([
   "Escape",
   "KeyP",
   "KeyC",
+  "KeyM",
   "ControlLeft",
   "ControlRight",
 ]);
@@ -407,11 +400,10 @@ window.addEventListener("keydown", (e) => {
     return;
   }
   if (state !== "playing") return;
-  if (mode === "90" && !touchWheelie && !e.ctrlKey && !arena.player.wheelieActive && e.code in turnKeys && !e.repeat) {
-    pointer.active = false;
+  if(e.code==='KeyM'&&!e.repeat){toggleSound();return;}
+  if (mode === "90" && (!touchWheelie&&!e.ctrlKey||arena.player.wheelieLocked||arena.player.wheelieCooldown>0) && !arena.player.wheelieActive && e.code in turnKeys && !e.repeat) {
     if (turns.length < 2) turns.push(turnKeys[e.code]);
   }
-  if (e.code in turnKeys || e.code === "KeyW" || e.code === "ArrowUp") pointer.active = false;
   keys.add(e.code);
   if (e.code === "Space" && !e.repeat) doJump();
 });
@@ -428,20 +420,13 @@ window.addEventListener("resize", () => {
   if (graphics && arena && state === "paused") graphics.draw(arena, 0, arena.time);
 });
 $("world").addEventListener("pointermove", (e) => {
-  if (e.pointerType === "mouse" && state === "playing")
-    pointer = { x: e.clientX, y: e.clientY, active: true };
-});
-$("world").addEventListener("pointerdown", (e) => {
-  if (state !== "playing") return;
-  if (e.pointerType === "mouse") {
-    pointer = { x: e.clientX, y: e.clientY, active: true };
-    if (e.button === 0) mouseBoost = true;
-    if (e.button === 2) doJump();
+  if (e.pointerType === "mouse" && state === "playing") {
+    graphics.orbit.x=Math.max(-1,Math.min(1,e.clientX/innerWidth*2-1));
+    graphics.orbit.y=Math.max(-1,Math.min(1,e.clientY/innerHeight*2-1));
   }
 });
 for (const type of ["pointerup", "pointercancel"])
   window.addEventListener(type, e => {
-    if (e.pointerType === "mouse") mouseBoost = false;
     if (e.pointerId === boostPointer) { touchBoost = false; boostPointer = null; }
   });
 $("world").addEventListener("contextmenu", (e) => e.preventDefault());
@@ -471,7 +456,7 @@ function moveStick(e) {
   $("joystick").querySelector("i").style.transform =
     `translate(${dx * scale}px,${dy * scale}px)`;
   joystickAngle = d > 7 ? Math.max(-1, Math.min(1, dx / 35)) : null;
-  if (mode === "90" && !touchWheelie && !arena.player.wheelieActive) {
+  if (mode === "90" && (!touchWheelie||arena.player.wheelieLocked||arena.player.wheelieCooldown>0) && !arena.player.wheelieActive) {
     if (joystickAngle === null || Math.abs(joystickAngle) < 0.25) stickTurnArmed = true;
     else if (Math.abs(joystickAngle) > 0.55 && stickTurnArmed) {
       if (turns.length < 2) turns.push(Math.sign(joystickAngle));
@@ -497,25 +482,20 @@ for (const type of ["pointerup", "pointercancel", "lostpointercapture"])
   });
 function input() {
   const p = arena.player;
-  let axis = pointer.active ? steeringAxis(pointer.x / innerWidth * 2 - 1) : 0;
+  let axis = 0;
   const keyboard = (keys.has("KeyD") || keys.has("ArrowRight") ? 1 : 0) -
     (keys.has("KeyA") || keys.has("ArrowLeft") ? 1 : 0);
   if (keyboard) axis = keyboard;
   if (joystickAngle !== null) axis = steeringAxis(joystickAngle);
   const wheelie = touchWheelie || keys.has("ControlLeft") || keys.has("ControlRight");
   let angle = p.angle;
-  if (wheelie || p.wheelieActive) { turns.length = 0; }
+  if ((wheelie&&!p.wheelieLocked&&p.wheelieCooldown<=0) || p.wheelieActive) { turns.length = 0; }
   else if (mode === "360") angle = steeringTarget(p.angle, axis, 1 / 60);
   else {
-    if (Math.abs(axis) < 0.15) mouseTurnArmed = true;
-    if (pointer.active && Math.abs(axis) > 0.5 && mouseTurnArmed) {
-      if (turns.length < 2) turns.push(Math.sign(axis));
-      mouseTurnArmed = false;
-    }
     if (turns.length) angle = relativeTurn(p.angle, turns.shift());
   }
   graphics.lookBack = rearHeld || keys.has("KeyC");
-  return { angle, steer: axis, wheelie, boost: mouseBoost || touchBoost || keys.has("ShiftLeft") || keys.has("ShiftRight") };
+  return { angle, steer: axis, wheelie, boost: touchBoost || keys.has("ShiftLeft") || keys.has("ShiftRight") };
 }
 $("wheelie-button").addEventListener("pointerdown", e => {
   e.preventDefault();
@@ -537,7 +517,7 @@ function updateHUD() {
   const p = arena.player;
   $("ride-speed").textContent = Math.round(p.speed);
   $("district").textContent = arena.sector();
-  $("wheelie-label").textContent = p.wheelieActive ? (p.speed < 0.1 ? "Stopped · steer to pivot" : "Braking…") : "Hold Ctrl · brake + pivot";
+  $("wheelie-label").textContent = p.wheelieActive ? (p.speed < 0.1 ? `Pivot · ${Math.max(0,3-p.wheelieElapsed).toFixed(1)}s` : "Braking · laser held") : p.wheelieLocked?'Release Ctrl to rearm':p.wheelieCooldown>0?'Recovering…':"Hold Ctrl · brake + pivot";
   $("wheelie-button").classList.toggle("active", p.wheelieActive);
   $("length").textContent = Math.floor(p.length);
   $("personal-best").textContent =
@@ -585,6 +565,8 @@ function drawMap() {
     c.stroke();
   }
   const map = (x) => (x + HALF) * scale;
+  for(const road of ROADS){const a=roadPoint(road,0),b=roadPoint(road,road.end-road.start);c.strokeStyle='#'+road.color.toString(16).padStart(6,'0');c.globalAlpha=.6;c.lineWidth=road.kind==='bridge'?3:2;c.setLineDash(road.kind==='tunnel'?[3,3]:[]);c.beginPath();c.moveTo(map(a.x),map(a.z));c.lineTo(map(b.x),map(b.z));c.stroke();}
+  c.setLineDash([]);c.strokeStyle='#ff64df';c.lineWidth=2;c.beginPath();c.arc(map(LOOP.x),map(LOOP.z-LOOP.approach),4,0,Math.PI*2);c.stroke();
   for (const o of LANDMARKS) {
     c.fillStyle = `#${o.color.toString(16).padStart(6, "0")}`;
     c.globalAlpha = 0.55;
@@ -664,14 +646,13 @@ function frame(now) {
   if (now - lastTime < 1000 / 60 - 0.5) return;
   const dt = Math.min(0.08, (now - lastTime) / 1000 || 0.016);
   lastTime = now;
+  engine?.update(arena?.player,state==='playing',soundOn);
   if (state === "interrupted") {
-    if (engineGain) engineGain.gain.setTargetAtTime(0, audio.currentTime, 0.08);
     return;
   }
   if (state === "menu") {
     animateLogo(now);
     garagePreview?.draw(dt, now);
-    if (engineGain) engineGain.gain.setTargetAtTime(0, audio.currentTime, 0.08);
     return;
   }
   if (state === "playing") {
@@ -681,11 +662,11 @@ function frame(now) {
       accumulator -= 1 / 60;
       for (const e of events) {
         if (e.type === "pickup") {
-          graphics.emit(e.x, e.z, e.skin, 3, 0.3);
+          graphics.emit(e.x, e.z, e.skin, 3, 0.3,e.y,e.kind);
           soundEvent(e);
         }
         if (e.type === "death") {
-          graphics.emit(e.rider.x, e.rider.z, e.rider.skin, 75, 1.3);
+          graphics.emit(e.rider.x, e.rider.z, e.rider.skin, 75, 1.3,riderHeight(e.rider));
           if (e.rider.player) {
             soundEvent(e);
             end(e);
@@ -720,18 +701,6 @@ function frame(now) {
     }
   }
   if (state !== "paused") graphics.draw(arena, dt, arena.time, state === "playing" ? accumulator * 60 : 1);
-  if (engineGain) {
-    engineGain.gain.setTargetAtTime(
-      soundOn && state === "playing" ? 0.014 : 0,
-      audio.currentTime,
-      0.12,
-    );
-    engine.frequency.setTargetAtTime(
-      arena?.player.boost ? 98 : 52,
-      audio.currentTime,
-      0.1,
-    );
-  }
 }
 try {
   graphics = new GridRenderer($("world"));
@@ -774,6 +743,7 @@ if (new URLSearchParams(location.search).has("test"))
     get arena() {
       return arena;
     },
+    get audio(){return {context:audio,engine,soundOn};},
     get graphics() {
       return graphics;
     },
@@ -799,6 +769,10 @@ if (new URLSearchParams(location.search).has("test"))
             speed: arena.player.speed,
             wheelie: arena.player.wheelie,
             wheelieActive: arena.player.wheelieActive,
+            wheelieElapsed:arena.player.wheelieElapsed,
+            elevation:arena.player.y,
+            road:arena.player.road,
+            loop:arena.player.loopS,
             renderScale: graphics.renderScale,
             jump: arena.player.jump,
             height: jumpHeight(arena.player),

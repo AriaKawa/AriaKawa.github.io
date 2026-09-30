@@ -1,4 +1,7 @@
-import { botControl } from "./bots.mjs?v=wheelie-2";
+import { botControl } from "./bots.mjs?v=neon-city-1";
+import { updateSurface, advanceLoop, roadById, terrainBlocked, inGroundCut, surfaceUp, LOOP } from './terrain.mjs?v=neon-city-1';
+import { populateFood, matureTrail, pickupKind } from './population.mjs?v=neon-city-1';
+import { TrailIndex } from './trail-index.mjs?v=neon-city-1';
 import {
   normalizeLoadout,
   BODIES,
@@ -21,16 +24,20 @@ export function normalizeSpeed(value = 100) {
 export const cardinalAngle = (angle) =>
   Math.round(angle / (Math.PI / 2)) * (Math.PI / 2);
 export const trailDistance = (a, b) =>
-  Math.hypot(b.x - a.x, b.z - a.z, (b.y ?? 0) - (a.y ?? 0));
+  Math.sqrt((b.x-a.x)**2+(b.z-a.z)**2+((b.y??0)-(a.y??0))**2);
 // Only the fresh attachment immediately behind a bike is excluded from
 // self-collision. The rest of its wall is as lethal as another rider's.
 export const SELF_CLEARANCE = 8;
 export const WHEELIE_STOP_TIME = 2;
+export const WHEELIE_HOLD_TIME = 1;
 export const rearOffset = r => 2.65 * (r.player ? 1.35 : 1.17);
-export function trailHead(r, height = jumpHeight(r)) {
+export const riderHeight = r => (r.y || 0) + jumpHeight(r);
+export function rearContact(r, height = riderHeight(r)) {
   const offset = rearOffset(r);
-  return { x: r.x - Math.cos(r.angle) * offset, y: height, z: r.z - Math.sin(r.angle) * offset };
+  const pitch=r.pitch||0,up=surfaceUp(r);
+  return { x:r.x-Math.cos(r.angle)*Math.cos(pitch)*offset,y:height-Math.sin(pitch)*offset,z:r.z-Math.sin(r.angle)*Math.cos(pitch)*offset,nx:up.x,ny:up.y,nz:up.z };
 }
+export function trailHead(r, height = riderHeight(r)) {return r.wheelieActive&&r.laserAnchor?r.laserAnchor:rearContact(r,height);}
 export const COLORS = [
   "#ff302a",
   "#ff7160",
@@ -198,6 +205,7 @@ export class Arena {
     loadout = {},
     mode = "360",
     speedPercent = 100,
+    established = true,
   } = {}) {
     this.mode = String(mode) === "90" ? "90" : "360";
     this.speedPercent = normalizeSpeed(speedPercent);
@@ -210,7 +218,7 @@ export class Arena {
     this.foodHash = new SpatialHash(36);
     this.trailHash = new SpatialHash(24);
     this.riders = [];
-    this.segmentPool = [];
+    this.trailIndex = new TrailIndex(this.trailHash,trailHead);
     this.trailCandidates = [];
     this.foodCandidates = [];
     this.foodRevision = 0;
@@ -219,7 +227,7 @@ export class Arena {
     this.player.loadout = normalizeLoadout(loadout);
     for (let i = 0; i < bots; i++) {
       const a = this.random() * Math.PI * 2,
-        r = 90 + this.random() * 230;
+        r = i<6?450+this.random()*350:160+this.random()*230;
       const p =
         i < 14
           ? this.safePosition(Math.cos(a) * r, 125 + Math.sin(a) * r)
@@ -235,29 +243,14 @@ export class Arena {
       b.angle = this.random() * Math.PI * 2;
       if (this.mode === "90") b.angle = cardinalAngle(b.angle);
       b.trail = this.initialTrail(b);
+      if(established)matureTrail(this,b,i);
     }
-    for (let i = 0; i < food; i++) {
-      const p = this.randomPosition();
-      this.addFood(
-        p.x,
-        p.z,
-        1 + Math.floor(this.random() * 2),
-        Math.floor(this.random() * 6),
-      );
-    }
-    // A gentle ribbon of energy welcomes the first ride.
-    for (let i = 0; i < 60; i++)
-      this.addFood(
-        this.player.x + 8 + i * 3.4,
-        this.player.z + Math.sin(i * 0.12) * 12,
-        2,
-        i % 3 === 0 ? 1 : 0,
-      );
+    populateFood(this,food);
     this.rebuildFoodHash();
     this.rebuildTrails();
   }
   safePosition(x, z) {
-    if (this.blocked(x, z, 12)) return this.randomPosition();
+    if (this.blocked(x, z, 12)||inGroundCut(x,z,12)||terrainBlocked({},x,z,4)) return this.randomPosition();
     return { x, z };
   }
   randomPosition() {
@@ -265,7 +258,7 @@ export class Arena {
     do {
       x = (this.random() * 2 - 1) * (HALF - 40);
       z = (this.random() * 2 - 1) * (HALF - 40);
-    } while (this.blocked(x, z, 15));
+    } while (this.blocked(x, z, 15)||inGroundCut(x,z,12)||terrainBlocked({},x,z,4));
     return { x, z };
   }
   blocked(x, z, pad = 0) {
@@ -286,10 +279,15 @@ export class Arena {
     pts.push(origin);
     return pts;
   }
-  recordTrail(r, height = jumpHeight(r)) {
+  recordTrail(r, height = riderHeight(r)) {
     const point = trailHead(r, height);
     if (!r.trail.length || trailDistance(r.trail.at(-1), point) > 0.00001)
-      r.trail.push(point);
+      this.appendTrail(r,point);
+  }
+  appendTrail(r,point) {
+    const last=r.trail.at(-1);
+    point._distance=last?(last._distance||0)+trailDistance(last,point):0;
+    r.trail.push(point);
   }
   makeRider(name, skin, player, pos) {
     const r = {
@@ -299,6 +297,7 @@ export class Arena {
       loadout: normalizeLoadout(),
       player,
       ...pos,
+      y:0, pitch:0, road:null, loopS:null,
       angle: 0,
       length: BASE_LENGTH,
       peak: BASE_LENGTH,
@@ -312,6 +311,7 @@ export class Arena {
       wheelie: 0,
       wheelieActive: false,
       brakeTime: 0,
+      wheelieElapsed:0, wheelieLocked:false, wheelieCooldown:0,
       recovery: false,
       think: this.random() * 0.16,
       target: null,
@@ -323,16 +323,16 @@ export class Arena {
     this.riders.push(r);
     return r;
   }
-  addFood(x, z, value = 1, skin = 0) {
+  addFood(x, z, value = 1, skin = 0, data = {}) {
     let f;
     if (this.food.length < 8200) {
-      f = { x, z, value, skin, index: this.food.length };
+      f = { index: this.food.length };
       this.food.push(f);
     } else {
       f = this.food[Math.floor(this.random() * this.food.length)];
       this.foodHash.remove(f);
-      Object.assign(f, { x, z, value, skin });
     }
+    Object.assign(f,{x,z,y:0,nx:0,ny:1,nz:0,value,skin,kind:pickupKind(value),pattern:'scatter',home:null,route:null,availableAt:0},data);
     this.foodHash.insert(f, f.x, f.z);
     this.foodRevision++;
     return f;
@@ -342,30 +342,21 @@ export class Arena {
     for (const f of this.food) this.foodHash.insert(f, f.x, f.z);
   }
   rebuildTrails() {
-    this.trailHash.clear();
-    let segmentIndex = 0;
-    for (const rider of this.riders) {
-      if (!rider.alive) continue;
-      const head = trailHead(rider);
-      let distanceFromHead = 0;
-      for (let i = rider.trail.length; i > 0; i--) {
-        const a = rider.trail[i - 1],
-          b = i === rider.trail.length ? head : rider.trail[i];
-        const length = trailDistance(a, b);
-        let segment = this.segmentPool[segmentIndex];
-        if (!segment) this.segmentPool[segmentIndex] = segment = {};
-        segmentIndex++;
-        segment.a = a; segment.b = b; segment.rider = rider; segment.distanceFromHead = distanceFromHead;
-        distanceFromHead += length;
-        if (length < 0.00001 || Math.hypot(a.x - b.x, a.z - b.z) > 6) continue;
-        this.trailHash.insert(segment, (a.x + b.x) / 2, (a.z + b.z) / 2);
-      }
-    }
+    this.trailIndex.reset(this.riders);
   }
-  trailAt(r, x, z, radius = 2.3, altitude = jumpHeight(r)) {
+  updateTrails() {this.trailIndex.update(this.riders);}
+  trailAt(r, x, z, radius = 2.3, altitude = riderHeight(r)) {
     for (const s of this.trailHash.query(x, z, radius + 3, this.trailCandidates)) {
       if (!s.rider.alive || s.rider.grace > 0) continue;
-      if (s.rider === r && s.distanceFromHead < SELF_CLEARANCE) continue;
+      if (s.rider === r && r._trailHeadDistance-s.endDistance < SELF_CLEARANCE) continue;
+      if ((s.a.ny??1)<0.9 || (s.b.ny??1)<0.9 || Math.cos(r.pitch||0)<0.9) {
+        const up=surfaceUp(r),ax=s.a.x+(s.a.nx||0)*1.5,ay=(s.a.y||0)+(s.a.ny??1)*1.5,az=s.a.z+(s.a.nz||0)*1.5;
+        const dx=s.b.x+(s.b.nx||0)*1.5-ax,dy=(s.b.y||0)+(s.b.ny??1)*1.5-ay,dz=s.b.z+(s.b.nz||0)*1.5-az;
+        const px=x+up.x*1.6-ax,py=altitude+up.y*1.6-ay,pz=z+up.z*1.6-az;
+        const t=clamp((px*dx+py*dy+pz*dz)/(dx*dx+dy*dy+dz*dz||1),0,1);
+        if((px-dx*t)**2+(py-dy*t)**2+(pz-dz*t)**2<(radius+1.3)**2)return s.rider;
+        continue;
+      }
       if (pointSegmentDistanceSq(x, z, s.a, s.b) >= radius * radius) continue;
       // Test the whole span inside the bike's horizontal footprint, including
       // sloping takeoff/landing sections, against its vertical body interval.
@@ -391,7 +382,7 @@ export class Arena {
     return null;
   }
   jump(r) {
-    if (this.speedMultiplier > 0 && r.alive && r.cooldown <= 0 && !r.wheelieActive) {
+    if (this.speedMultiplier > 0 && r.alive && r.cooldown <= 0 && !r.wheelieActive && !Number.isFinite(r.loopS)) {
       this.recordTrail(r);
       r.jump = JUMP_DURATION;
       r.cooldown = JUMP_COOLDOWN;
@@ -417,7 +408,7 @@ export class Arena {
         p.x + (this.random() - 0.5) * 4,
         p.z + (this.random() - 0.5) * 4,
         3 + this.random() * 2,
-        r.skin,
+        r.skin, {y:p.y||0},
       );
     }
     for (let i = 0; i < 12; i++)
@@ -425,7 +416,7 @@ export class Arena {
         r.x + (this.random() - 0.5) * 12,
         r.z + (this.random() - 0.5) * 12,
         3,
-        r.skin,
+        r.skin, {y:r.y||0},
       );
     this.events.push({ type: "death", rider: r, killer, reason });
   }
@@ -441,6 +432,7 @@ export class Arena {
     }
     Object.assign(r, p, {
       alive: true,
+      y:0,pitch:0,road:null,loopS:null,
       length: 65 + this.random() * 110,
       angle: this.random() * Math.PI * 2,
       jump: 0,
@@ -452,6 +444,7 @@ export class Arena {
       wheelie: 0,
       wheelieActive: false,
       brakeTime: 0,
+      wheelieElapsed:0,wheelieLocked:false,wheelieCooldown:0,laserAnchor:null,wheeliePath:null,
       recovery: false,
       previousX: p.x,
       previousZ: p.z,
@@ -461,6 +454,7 @@ export class Arena {
     if (this.mode === "90") r.angle = cardinalAngle(r.angle);
     r.previousAngle = r.angle;
     r.previousJump = r.previousWheelie = 0;
+    r.previousY=r.previousPitch=0;
     r.trail = this.initialTrail(r);
   }
   step(dt, input = {}) {
@@ -469,7 +463,7 @@ export class Arena {
     dt = clamp(dt, 0, 1 / 30);
     this.time += dt;
     this.stepCount++;
-    this.rebuildTrails();
+    this.updateTrails();
     for (const r of this.riders) {
       if (!r.alive) {
         if (!r.player) {
@@ -482,18 +476,25 @@ export class Arena {
       r.cooldown = Math.max(0, r.cooldown - dt);
       r.previousX = r.x; r.previousZ = r.z; r.previousAngle = r.angle;
       r.previousJump = r.jump; r.previousWheelie = r.wheelie;
-      const previousHeight = jumpHeight(r),
+      r.previousY=r.y||0;r.previousPitch=r.pitch||0;
+      const previousHeight = riderHeight(r),
         previousJump = r.jump,
         wasJumping = previousJump > 0;
       r.jump = Math.max(0, r.jump - dt);
       const control = r.player ? input : this.botControl(r, dt);
       if (control.jump) this.jump(r);
-      const wheelie = !!control.wheelie && r.jump <= 0;
+      r.wheelieCooldown=Math.max(0,(r.wheelieCooldown||0)-dt);
+      if(!control.wheelie)r.wheelieLocked=false;
+      if(r.wheelieActive)r.wheelieElapsed+=dt;
+      if(r.wheelieActive&&r.wheelieElapsed>=WHEELIE_STOP_TIME+WHEELIE_HOLD_TIME-1e-8)r.wheelieLocked=true;
+      const wheelie = !!control.wheelie && !r.wheelieLocked && r.wheelieCooldown<=0 && r.jump <= 0;
       const wasWheelie = r.wheelieActive;
       if (wheelie && !wasWheelie) {
         r.brakeEntrySpeed = r.speed; r.brakeTime = 0;
-        const pivot = trailHead(r); r.pivotX = pivot.x; r.pivotZ = pivot.z;
+        r.wheelieElapsed=dt;
+        const pivot = rearContact(r); r.pivotX = pivot.x; r.pivotZ = pivot.z;
         this.recordTrail(r, previousHeight);
+        r.laserAnchor={...pivot};r.wheeliePath=[];
       }
       r.wheelieActive = wheelie;
       r.wheelie += ((wheelie ? 1 : 0) - r.wheelie) * (1 - Math.exp(-dt * (wheelie ? 9 : 7)));
@@ -506,6 +507,8 @@ export class Arena {
       } else {
         if (wasWheelie) {
           r.recovery = true;
+          r.wheelieCooldown=1.2;
+          for(const point of r.wheeliePath)this.appendTrail(r,point);r.wheeliePath=null;r.laserAnchor=null;
           if (this.mode === "90") {
             r.angle = cardinalAngle(r.angle);
             r.x = r.pivotX + Math.cos(r.angle) * rearOffset(r);
@@ -519,7 +522,7 @@ export class Arena {
             this.recordTrail(r, previousHeight);
             // The axle swings through the bike center during a right-angle
             // turn. Preserve a square corner instead of a diagonal shortcut.
-            r.trail.push({x:r.x,y:previousHeight,z:r.z});
+            this.appendTrail(r,{x:r.x,y:previousHeight,z:r.z});
             r.angle = direction;
             this.recordTrail(r, previousHeight);
           }
@@ -542,7 +545,9 @@ export class Arena {
           }
         }
       }
-      if (wheelie) {
+      if (advanceLoop(r,dt,control.steer||0)) {
+        // The magnetic helix guides the inversion; steering changes lane.
+      } else if (wheelie) {
         r.pivotX += Math.cos(r.angle) * r.speed * dt;
         r.pivotZ += Math.sin(r.angle) * r.speed * dt;
         r.x = r.pivotX + Math.cos(r.angle) * rearOffset(r);
@@ -551,35 +556,36 @@ export class Arena {
         r.x += Math.cos(r.angle) * r.speed * dt;
         r.z += Math.sin(r.angle) * r.speed * dt;
       }
+      updateSurface(r);
+      if(wheelie) {
+        const point=rearContact(r),last=r.wheeliePath.at(-1)||r.laserAnchor;
+        if(trailDistance(last,point)>=2.8)r.wheeliePath.push(point);
+      }
       const last = r.trail[r.trail.length - 1],
         head = trailHead(r);
-      if (
+      if (!wheelie && (
         !last ||
         trailDistance(last, head) >= 2.8 ||
         (previousJump > JUMP_DURATION / 2 &&
           r.jump <= JUMP_DURATION / 2 &&
           r.jump > 0) ||
         (wasJumping && r.jump === 0)
-      )
+      ))
         this.recordTrail(r);
-      let total = trailDistance(r.trail.at(-1), head),
-        cut = 0;
-      for (let i = r.trail.length - 1; i > 0; i--) {
-        total += trailDistance(r.trail[i - 1], r.trail[i]);
-        if (total > r.length) {
-          cut = i;
-          break;
-        }
+      if(!wheelie) {
+        const end=r.trail.at(-1),distanceAtHead=end._distance+trailDistance(end,head);
+        let cut=0;
+        while(cut<r.trail.length-1&&distanceAtHead-r.trail[cut]._distance>r.length)cut++;
+        if(cut)r.trail.splice(0,cut);
       }
-      if (cut > 0) r.trail.splice(0, cut);
       if (r.grace <= 0) {
-        if (this.blocked(r.x, r.z, 2.3)) {
+        if (this.blocked(r.x, r.z, 2.3)||terrainBlocked(r,r.x,r.z,2.3)||r.hitRail) {
           this.kill(
             r,
             null,
             Math.abs(r.x) > HALF - 3 || Math.abs(r.z) > HALF - 3
               ? "boundary"
-              : "reactor",
+              : terrainBlocked(r,r.x,r.z,2.3)||r.hitRail?"barrier":"reactor",
           );
           continue;
         }
@@ -590,20 +596,24 @@ export class Arena {
         }
       }
       for (const f of this.foodHash.query(r.x, r.z, 5.8, this.foodCandidates)) {
-        if ((r.x - f.x) ** 2 + (r.z - f.z) ** 2 < 5.8 ** 2) {
-          r.length = Math.min(1500, r.length + f.value * 1.4);
+        if (f.availableAt<=this.time && Math.abs(riderHeight(r)-(f.y||0))<6 && (r.x - f.x) ** 2 + (r.z - f.z) ** 2 < 5.8 ** 2) {
+          r.length = Math.min(6000, r.length + f.value * 1.4);
           r.peak = Math.max(r.peak, r.length);
           if (r.player)
             this.events.push({
               type: "pickup",
               x: f.x,
               z: f.z,
+              y:f.y||0,kind:f.kind,
               value: f.value,
               skin: f.skin,
             });
-          const p = this.randomPosition();
-          this.foodHash.move(f, p.x, p.z);
-          f.value = 1 + this.random();
+          if(f.home)f.availableAt=this.time+12+this.random()*8;
+          else {
+            const p = this.randomPosition();
+            this.foodHash.move(f, p.x, p.z);f.y=0;
+            f.value = this.random()<.3?2:1;f.kind=pickupKind(f.value);
+          }
           this.foodRevision++;
         }
       }
@@ -617,6 +627,8 @@ export class Arena {
   }
   sector() {
     const p = this.player;
+    if(Number.isFinite(p.loopS))return LOOP.name;
+    if(p.road)return roadById(p.road).name;
     let nearest = LANDMARKS[0],
       dist = Infinity;
     for (const o of LANDMARKS) {

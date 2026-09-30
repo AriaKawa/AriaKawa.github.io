@@ -1,5 +1,5 @@
 import * as THREE from "../grid-io/vendor/three.module.min.js";
-import { COLORS, jumpHeight } from "./simulation.mjs?v=wheelie-2";
+import { COLORS, riderHeight } from "./simulation.mjs?v=neon-city-1";
 
 // Far riders keep a readable bike/rider silhouette without rendering every
 // wheel spoke, armor plate, and suspension piece in dozens of separate draws.
@@ -26,8 +26,8 @@ export class DistantBikes extends THREE.Group {
   }
   begin() { this.count=0; }
   rider(r) {
-    const i=this.count++; this.root.position.set(r.x,jumpHeight(r),r.z);
-    this.root.rotation.set(0,-r.angle,0); this.root.scale.setScalar(1.17); this.root.updateMatrix();
+    const i=this.count++; this.root.position.set(r.x,riderHeight(r),r.z);
+    this.root.rotation.set(0,-r.angle,r.pitch||0,'YXZ'); this.root.scale.setScalar(1.17); this.root.updateMatrix();
     for(const part of this.parts) {
       this.part.position.fromArray(part.pos); this.part.updateMatrix();
       this.matrix.multiplyMatrices(this.root.matrix,this.part.matrix); part.mesh.setMatrixAt(i,this.matrix);

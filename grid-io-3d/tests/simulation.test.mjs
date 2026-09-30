@@ -144,7 +144,7 @@ test("large arena stays populated and simulations remain finite over five minute
   for (const r of a.riders) {
     assert(Number.isFinite(r.x + r.z + r.angle + r.length));
     assert(r.length >= BASE_LENGTH);
-    assert(r.trail.length < 650);
+    assert(r.trail.length < 5000); // Veteran riders can now carry up to 6 km.
   }
   assert(a.time > 299);
 });

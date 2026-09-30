@@ -16,7 +16,7 @@ const out=path.join(os.tmpdir(),'grid-io-3d-wheelie');fs.mkdirSync(out,{recursiv
   await p.keyboard.down('KeyD');
   await p.waitForFunction(()=>window.__GRID_TEST__.snapshot().speed<0.001);
   const rear=await p.evaluate(()=>{const t=window.__GRID_TEST__,b=t.graphics.getBike(t.arena.player);const w=b.group.getObjectByName('wheel-rear');return w.getWorldPosition(w.position.clone()).toArray();});
-  await p.waitForTimeout(450);
+  await p.waitForTimeout(220);
   const result=await p.evaluate(()=>{const t=window.__GRID_TEST__,b=t.graphics.getBike(t.arena.player);const rw=b.group.getObjectByName('wheel-rear'),fw=b.group.getObjectByName('wheel-front');return {rear:rw.getWorldPosition(rw.position.clone()).toArray(),front:fw.getWorldPosition(fw.position.clone()).toArray(),pitch:b.pivot.rotation.z,snapshot:t.snapshot()};});
   assert(Math.hypot(result.rear[0]-rear[0],result.rear[2]-rear[2])<0.08);
   assert(result.front[1]>result.rear[1]+3);assert(result.pitch>0.6);

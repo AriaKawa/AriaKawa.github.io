@@ -1,7 +1,8 @@
 import * as THREE from "../grid-io/vendor/three.module.min.js";
 import { mergeGeometries } from "../grid-io/vendor/utils/BufferGeometryUtils.js";
-import { COLORS } from "./simulation.mjs?v=wheelie-2";
-import { normalizeLoadout, loadoutKey } from "../grid-io/customization.mjs?v=wheelie-2";
+import { COLORS } from "./simulation.mjs?v=neon-city-1";
+import { normalizeLoadout, loadoutKey } from "../grid-io/customization.mjs?v=neon-city-1";
+import { materialTextures } from './textures.js?v=neon-city-1';
 
 const templates = new Map();
 const unitBox = new THREE.BoxGeometry(1, 1, 1);
@@ -16,6 +17,9 @@ const materials = {
   suit: metal(0x171619, 0.75, 0.08),
   glass: metal(0x170d11, 0.14, 0.7),
 };
+const textures=materialTextures();
+for(const key of ['dark','frame','alloy','pearl']) {materials[key].map=textures.metal||null;materials[key].needsUpdate=true;}
+materials.suit.map=textures.carbon||null;materials.rubber.map=textures.rubber||null;
 const palettes = COLORS.map((color) => ({
   ...materials,
   light: new THREE.MeshStandardMaterial({
