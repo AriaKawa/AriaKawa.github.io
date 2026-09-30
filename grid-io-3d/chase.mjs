@@ -1,6 +1,6 @@
-import { HALF, LANDMARKS, angleDifference, riderHeight, clamp } from "./simulation.mjs?v=neon-city-1";
+import { HALF, LANDMARKS, angleDifference, riderHeight, clamp } from "./simulation.mjs?v=pixel-freedom-1";
 
-// Keyboard and touch steering. The pointer is reserved for a small camera orbit.
+// Keyboard and touch steer. Holding the right mouse button unlocks the view.
 export function steeringAxis(value) {
   return Math.sign(value) * clamp((Math.abs(value) - 0.12) / 0.88, 0, 1);
 }
@@ -23,7 +23,7 @@ export class ChaseCamera {
     dt = clamp(dt, 0, 0.1);
     this.heading += angleDifference(rider.angle, this.heading) * (1 - Math.exp(-dt * 14));
     this.elevation += (riderHeight(rider) - this.elevation) * (1 - Math.exp(-dt * 18));
-    this.orbitX+=(clamp(orbit.x||0,-1,1)*.38-this.orbitX)*(1-Math.exp(-dt*7));
+    this.orbitX+=(clamp(orbit.x||0,-1,1)*.85-this.orbitX)*(1-Math.exp(-dt*7));
     this.orbitY+=(clamp(orbit.y||0,-1,1)-this.orbitY)*(1-Math.exp(-dt*7));
     this.pitch+=angleDifference(rider.pitch||0,this.pitch)*(1-Math.exp(-dt*18));
     this.boost += ((rider.boost && !reducedMotion ? 1 : 0) - this.boost) * (1 - Math.exp(-dt * 4));
@@ -45,16 +45,21 @@ export class ChaseCamera {
       const exit = projection + Math.sqrt(discriminant);
       if (exit > 0 && entry < boom) boom = Math.max(3, entry - 1);
     }
-    const pitch=this.pitch*(lookBack?-1:1),sin=Math.sin(pitch),cos=Math.cos(pitch);
-    const height=(inLoop?9:underground?7:portrait?13:10.5)-this.orbitY*3;
-    const upX=-dx*sin,upY=cos,upZ=-dz*sin;
+    const pitch=this.pitch,sin=Math.sin(pitch),cos=Math.cos(pitch);
+    const height=(inLoop?9:underground?7:portrait?13:10.5)-this.orbitY*5;
+    const yaw=this.heading+Math.PI/2;
+    const upX=inLoop?0:-Math.cos(this.heading)*sin,upY=cos,upZ=inLoop?sin:-Math.sin(this.heading)*sin;
+    const forward=inLoop?{x:Math.sin(yaw),y:sin*Math.cos(yaw),z:-cos*Math.cos(yaw)}:{x:Math.cos(this.heading)*cos,y:sin,z:Math.sin(this.heading)*cos};
+    const side={x:forward.y*upZ-forward.z*upY,y:forward.z*upX-forward.x*upZ,z:forward.x*upY-forward.y*upX};
+    const orbitAngle=this.orbitX+(lookBack?Math.PI:0),c=Math.cos(orbitAngle),s=Math.sin(orbitAngle);
+    const fx=forward.x*c+side.x*s,fy=forward.y*c+side.y*s,fz=forward.z*c+side.z*s;
     return {
-      x: clamp(rider.x-dx*cos*boom+upX*height,-HALF+2,HALF-2),
-      y: this.elevation-sin*boom+upY*height+(distance-boom)*.4,
-      z: clamp(rider.z-dz*cos*boom+upZ*height,-HALF+2,HALF-2),
-      targetX: rider.x+dx*cos*(inLoop?10:18)+upX*2.8,
-      targetY: this.elevation+sin*(inLoop?10:18)+upY*(2.8-this.orbitY*2),
-      targetZ: rider.z+dz*cos*(inLoop?10:18)+upZ*2.8,
+      x: clamp(rider.x-fx*boom+upX*height,-HALF+2,HALF-2),
+      y: this.elevation-fy*boom+upY*height+(distance-boom)*.4,
+      z: clamp(rider.z-fz*boom+upZ*height,-HALF+2,HALF-2),
+      targetX: rider.x+fx*(inLoop?10:18)+upX*2.8,
+      targetY: this.elevation+fy*(inLoop?10:18)+upY*(2.8-this.orbitY*2),
+      targetZ: rider.z+fz*(inLoop?10:18)+upZ*2.8,
       upX,upY,upZ,
       fov: (portrait ? 76 : 68) + this.boost * 5,
     };

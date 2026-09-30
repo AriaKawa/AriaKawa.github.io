@@ -1,12 +1,14 @@
-import { ChaseCamera } from "./chase.mjs?v=neon-city-1";
+import { MeshCollisionWorld } from './collisions.mjs?v=pixel-freedom-1';
+import { surfaceUp, surfaceForward } from './terrain.mjs?v=pixel-freedom-1';
+import { ChaseCamera } from "./chase.mjs?v=pixel-freedom-1";
 import * as THREE from "../grid-io/vendor/three.module.min.js";
-import { createBike, animateWheels } from "./bike-model.js?v=neon-city-1";
-import { NeonTrails } from "./neon-trails.js?v=neon-city-1";
-import { DistantBikes } from "./distant-bikes.js?v=neon-city-1";
+import { createBike, animateWheels } from "./bike-model.js?v=pixel-freedom-1";
+import { NeonTrails } from "./neon-trails.js?v=pixel-freedom-1";
+import { DistantBikes } from "./distant-bikes.js?v=pixel-freedom-1";
 import { mergeGeometries } from "../grid-io/vendor/utils/BufferGeometryUtils.js";
-import { buildTerrain } from './terrain-renderer.js?v=neon-city-1';
-import { materialTextures, reflectionEnvironment } from './textures.js?v=neon-city-1';
-import { PICKUP_COLORS } from './population.mjs?v=neon-city-1';
+import { buildTerrain } from './terrain-renderer.js?v=pixel-freedom-1';
+import { materialTextures, reflectionEnvironment } from './textures.js?v=pixel-freedom-1';
+import { PICKUP_COLORS } from './population.mjs?v=pixel-freedom-1';
 import {
   HALF,
   WORLD_SIZE,
@@ -16,7 +18,7 @@ import {
   riderHeight,
   trailHead,
   angleDifference,
-} from "./simulation.mjs?v=neon-city-1";
+} from "./simulation.mjs?v=pixel-freedom-1";
 
 const palette = COLORS.map((c) => new THREE.Color(c));
 const pickupPalette=PICKUP_COLORS.map(c=>new THREE.Color(c));
@@ -118,6 +120,7 @@ export class GridRenderer {
     this.textureLoader = new THREE.TextureLoader();
     this.glowTexture = canvasGlow();
     this.buildWorld();
+    this.collisionWorld=new MeshCollisionWorld(this.scene);
     this.batchArchitecture();
     this.bikes = new Map();
     this.distantBikes = new DistantBikes();
@@ -125,12 +128,11 @@ export class GridRenderer {
     this.particles = [];
     this.rings = [];
     this.crystals = new THREE.InstancedMesh(
-      new THREE.IcosahedronGeometry(0.8,1),
+      new THREE.BoxGeometry(1.4,1.4,1.4),
       new THREE.MeshStandardMaterial({
         color: 0xffffff,
-        map:materialTextures().metal,
-        metalness: 0.45,
-        roughness: 0.19,
+        metalness: 0.15,
+        roughness: 0.5,
         emissive: 0x315565,
         emissiveIntensity: 0.5,
       }),
@@ -139,7 +141,7 @@ export class GridRenderer {
     this.crystals.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     this.crystals.frustumCulled = false;
     this.scene.add(this.crystals);
-    this.crystalRings=new THREE.InstancedMesh(new THREE.TorusGeometry(1.2,.14,6,16),new THREE.MeshBasicMaterial({color:0xffffff,toneMapped:false}),2000);
+    this.crystalRings=new THREE.InstancedMesh(new THREE.BoxGeometry(1.55,1.55,1.55),new THREE.MeshBasicMaterial({color:0xffffff,toneMapped:false,side:THREE.BackSide}),2000);
     this.crystalRings.frustumCulled=false;this.scene.add(this.crystalRings);
     this.crystalGlows = new THREE.InstancedMesh(
       new THREE.PlaneGeometry(1, 1),
@@ -157,7 +159,7 @@ export class GridRenderer {
     this.walls = new NeonTrails();
     this.scene.add(this.walls);
     this.sparks = new THREE.InstancedMesh(
-      new THREE.OctahedronGeometry(0.5),
+      new THREE.BoxGeometry(.65,.65,.65),
       new THREE.MeshBasicMaterial({ toneMapped: false }),
       600,
     );
@@ -386,6 +388,7 @@ export class GridRenderer {
     return target;
   }
   reset(arena) {
+    arena.worldCollision=this.collisionWorld;
     for (const entry of this.bikes.values()) {
       this.scene.remove(entry.group, entry.shadow, entry.aura);
       entry.shadow.geometry.dispose();
@@ -440,7 +443,14 @@ export class GridRenderer {
       this.scene,
     );
     aura.rotation.x = -Math.PI / 2;
-    const result = { group, pivot, shadow, aura, visual: {} };
+    const jumpLight=new THREE.Group();jumpLight.name='jump-ready-rear-tire';
+    const jumpMaterial=new THREE.MeshBasicMaterial({color:0x83fff3,toneMapped:false});
+    for(const side of [-1,1]) {
+      const ring=new THREE.Mesh(new THREE.TorusGeometry(1.4,.14,8,32),jumpMaterial);
+      ring.position.set(-2.65,1.35,side*.7);jumpLight.add(ring);
+    }
+    model.add(jumpLight);
+    const result = { group, pivot, shadow, aura, jumpLight, jumpMaterial, visual: {} };
     this.bikes.set(r.id, result);
     return result;
   }
@@ -456,6 +466,17 @@ export class GridRenderer {
     this.sun.position.set(p.x - 80, 160, p.z - 70);
     this.sun.target.position.set(p.x, 0, p.z);
     this.sun.target.updateMatrixWorld();
+  }
+  explode(r) {
+    const f=surfaceForward(r),u=surfaceUp(r),side=new THREE.Vector3(f.x,f.y,f.z).cross(new THREE.Vector3(u.x,u.y,u.z));
+    for(let i=0;i<150;i++) {
+      const x=(Math.random()-.5)*8,y=Math.random()*5.5,z=(Math.random()-.5)*2;
+      if(this.particles.length>=600)this.particles.shift();
+      const life=.9+Math.random()*1.2;
+      this.particles.push({x:r.x+f.x*x+u.x*y+side.x*z,y:riderHeight(r)+f.y*x+u.y*y+side.y*z,z:r.z+f.z*x+u.z*y+side.z*z,
+        vx:f.x*r.speed*.25+(Math.random()-.5)*40,vz:f.z*r.speed*.25+(Math.random()-.5)*40,vy:9+Math.random()*26,
+        floor:(r.y||0),life,max:life,skin:r.skin,pickup:null,size:.5+Math.random()*1.2});
+    }
   }
   emit(x, z, skin, count = 12, power = 1, altitude=0, pickup=null) {
     for (let i = 0; i < count; i++) {
@@ -498,7 +519,11 @@ export class GridRenderer {
       const r = this.interpolate(rider, alpha, b.visual);
       const altitude = riderHeight(r);
       b.group.position.set(r.x, altitude + 0.06, r.z);
-      b.group.rotation.set(0, -r.angle, r.pitch||0,'YXZ');
+      const up=surfaceUp(r),forward=surfaceForward(r),fv=new THREE.Vector3(forward.x,forward.y,forward.z),uv=new THREE.Vector3(up.x,up.y,up.z);
+      b.group.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(fv,uv,new THREE.Vector3().crossVectors(fv,uv)));
+      const ready=r.cooldown<=0&&!r.wheelieActive&&!r.airborne&&arena.speedMultiplier>0;
+      b.jumpLight.visible=r.player&&ready;
+      b.jumpMaterial.color.setScalar(1).multiplyScalar(1.25+Math.sin(time*5)*.15).multiply(new THREE.Color(0x83fff3));
       b.group.scale.setScalar(r.player ? 1.35 : 1.17);
       b.pivot.rotation.z = (r.wheelie || 0) * 0.68;
       animateWheels(b.group, r.speed * dt);
@@ -523,12 +548,12 @@ export class GridRenderer {
       const scale = 0.85 + f.value * 0.15;
       const float=1.7+Math.sin(time*2+f.index)*.2;
       dummy.position.set(f.x+(f.nx||0)*float,(f.y||0)+(f.ny??1)*float,f.z+(f.nz||0)*float);
-      dummy.rotation.set(0, time * 0.7 + f.index, Math.PI / 8);
+      dummy.rotation.set(0, time * 0.35 + f.index, 0);
       dummy.scale.setScalar(scale);
       dummy.updateMatrix();
       this.crystals.setMatrixAt(fi, dummy.matrix);
       this.crystals.setColorAt(fi, pickupPalette[f.kind||0]);
-      dummy.rotation.set(Math.PI/3,time*.6+f.index,.3);dummy.updateMatrix();
+      dummy.updateMatrix();
       this.crystalRings.setMatrixAt(fi,dummy.matrix);this.crystalRings.setColorAt(fi,pickupPalette[f.kind||0]);
       dummy.position.set(f.x+(f.nx||0)*.08,(f.y||0)+(f.ny??1)*.08,f.z+(f.nz||0)*.08);
       dummy.quaternion.setFromUnitVectors(planeNormal,pickupUp.set(f.nx||0,f.ny??1,f.nz||0));
@@ -539,7 +564,7 @@ export class GridRenderer {
       fi++;
     }
     this.crystals.count = this.crystalGlows.count = this.crystalRings.count = fi;
-    this.crystalGlows.visible = this.quality;
+    this.crystalGlows.visible = false;
     for (const m of [this.crystals, this.crystalGlows,this.crystalRings]) {
       m.instanceMatrix.needsUpdate = true;
       if (m.instanceColor) m.instanceColor.needsUpdate = true;
@@ -554,7 +579,7 @@ export class GridRenderer {
         const distance=(a.x-p.x)**2+(a.z-p.z)**2;
         if(distance>rangeSq || (band===0 ? distance>150**2 : distance<=150**2))continue;
         const lengthSq=(b.x-a.x)**2+(b.z-a.z)**2;
-        if(lengthSq<0.0001||lengthSq>36)continue;
+        if(lengthSq+((b.y||0)-(a.y||0))**2<0.0001||lengthSq>36)continue;
         this.walls.segment(a,b,palette[rider.skin]);
       }
     }
@@ -573,21 +598,15 @@ export class GridRenderer {
       s.vy -= 32 * dt;
       dummy.position.set(s.x, Math.max((s.floor||0)+0.1, s.y), s.z);
       dummy.rotation.set(time * 3, time * 4, 0);
-      dummy.scale.setScalar(Math.min(1, s.life * 2));
+      dummy.scale.setScalar((s.size||1)*Math.min(1, s.life * 2));
       dummy.updateMatrix();
       this.sparks.setMatrixAt(si, dummy.matrix);
-      this.sparks.setColorAt(si, s.pickup===null?palette[s.skin]:pickupPalette[s.pickup]);
+      this.sparks.setColorAt(si, s.pickup==null?palette[s.skin]:pickupPalette[s.pickup]);
       si++;
     }
     this.sparks.count = si;
     this.sparks.instanceMatrix.needsUpdate = true;
     if (this.sparks.instanceColor) this.sparks.instanceColor.needsUpdate = true;
-    for (const r of this.rotors) {
-      if (r.geometry.type === "OctahedronGeometry") {
-        r.rotation.y = time * 0.5;
-        r.position.y = 18 + Math.sin(time) * 1.2;
-      } else r.rotation.z = time * 0.15;
-    }
     this.renderer.render(this.scene, this.camera);
   }
 }

@@ -2,6 +2,19 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { ChaseCamera, steeringAxis, steeringTarget, relativeTurn } from "../chase.mjs";
 import { Arena, HALF, LANDMARKS, jumpHeight } from "../../grid-io/simulation.mjs";
+import { LOOP, loopPoint } from '../terrain.mjs';
+
+test('camera orbit remains independent underground and throughout an inverted loop',()=>{
+ const poses=[{x:0,y:-24,z:310,angle:0,pitch:0,jump:0},...[.25,.5,.75].map(t=>({...loopPoint(LOOP.approach+LOOP.circle*t),loopS:LOOP.approach+LOOP.circle*t,jump:0}))];
+ for(const rider of poses) {
+   const camera=new ChaseCamera();camera.reset(rider);const locked=camera.update(rider,1/60);let orbit;
+   for(let i=0;i<60;i++)orbit=camera.update(rider,1/60,{orbit:{x:1,y:-.7}});
+   assert(Math.hypot(locked.x-orbit.x,locked.y-orbit.y,locked.z-orbit.z)>8);
+   assert(Math.abs(camera.orbitX-.85)<.002);
+   for(let i=0;i<100;i++)camera.update(rider,1/60);
+   assert(Math.abs(camera.orbitX)<.001);
+ }
+});
 test("relative steering keeps the original turn rate in all headings", () => {
   for (const heading of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
     assert.equal(steeringTarget(heading, 0, 1 / 60), heading);

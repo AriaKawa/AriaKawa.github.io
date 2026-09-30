@@ -1,5 +1,5 @@
 @import url("../grid-io/style.css?v=speed-1");
-.menu { background: linear-gradient(90deg, #0b080bea 0%, #0b080bc4 35%, #0b080b30 68%), url("assets/chase-cover.png?v=neon-city-1") center / cover no-repeat; }
+.menu { background: linear-gradient(90deg, #0b080bea 0%, #0b080bc4 35%, #0b080b30 68%), url("assets/chase-cover.png?v=pixel-freedom-1") center / cover no-repeat; }
 .menu-header { justify-content: space-between; }
 .back-games { text-decoration: none; }
 .menu-center { left: 9%; transform: none; top: 15%; width: min(450px, 42vw); }
@@ -30,7 +30,7 @@
   #wheelie-button .ability-icon { font-size: 20px; }
   .run-info { bottom: 137px; }
   #pointer-hint { bottom: 200px; }
-  .menu { background-image: linear-gradient(#09070aa8, #09070ad4), url("assets/chase-cover.png?v=neon-city-1"); background-position: 57% center; }
+  .menu { background-image: linear-gradient(#09070aa8, #09070ad4), url("assets/chase-cover.png?v=pixel-freedom-1"); background-position: 57% center; }
   .menu-center { left: 50%; transform: translateX(-50%); top: 15%; width: min(420px, 90vw); }
   .edition-label { margin-bottom: 20px; }
   .ride-status { left: 17px; top: 67px; }
@@ -61,3 +61,7 @@
   .leaderboard { top: 63px; padding: 9px; }
   #toast { top: 146px; }
 }
+
+.jump-ready {border-color:#83fff3!important;box-shadow:0 0 18px #54ffe533,inset 0 0 14px #54ffe51a}
+.jump-ready #jump-label {color:#83fff3;font-weight:700}
+.jump-ready #jump-meter {background:#83fff3;box-shadow:0 0 12px #83fff3}

@@ -1,5 +1,5 @@
 import * as THREE from "../grid-io/vendor/three.module.min.js";
-import { WALL_HEIGHT, WALL_BOTTOM } from "./simulation.mjs?v=neon-city-1";
+import { WALL_HEIGHT, WALL_BOTTOM } from "./simulation.mjs?v=pixel-freedom-1";
 
 const vertexShader = `
 attribute vec3 segmentStart;

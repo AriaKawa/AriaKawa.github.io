@@ -1,7 +1,9 @@
-import { botControl } from "./bots.mjs?v=neon-city-1";
-import { updateSurface, advanceLoop, roadById, terrainBlocked, inGroundCut, surfaceUp, LOOP } from './terrain.mjs?v=neon-city-1';
-import { populateFood, matureTrail, pickupKind } from './population.mjs?v=neon-city-1';
-import { TrailIndex } from './trail-index.mjs?v=neon-city-1';
+import { bikeSpheres, sphereTriangle } from './collisions.mjs?v=pixel-freedom-1';
+import { Vector3 } from '../grid-io/vendor/three.module.min.js';
+import { botControl } from "./bots.mjs?v=pixel-freedom-1";
+import { updateSurface, advanceLoop, advanceAirborne, surfaceForward, roadById, terrainBlocked, inGroundCut, surfaceUp, LOOP } from './terrain.mjs?v=pixel-freedom-1';
+import { populateFood, matureTrail, pickupKind } from './population.mjs?v=pixel-freedom-1';
+import { TrailIndex } from './trail-index.mjs?v=pixel-freedom-1';
 import {
   normalizeLoadout,
   BODIES,
@@ -27,17 +29,17 @@ export const trailDistance = (a, b) =>
   Math.sqrt((b.x-a.x)**2+(b.z-a.z)**2+((b.y??0)-(a.y??0))**2);
 // Only the fresh attachment immediately behind a bike is excluded from
 // self-collision. The rest of its wall is as lethal as another rider's.
-export const SELF_CLEARANCE = 8;
+export const SELF_CLEARANCE = 12;
 export const WHEELIE_STOP_TIME = 2;
 export const WHEELIE_HOLD_TIME = 1;
 export const rearOffset = r => 2.65 * (r.player ? 1.35 : 1.17);
 export const riderHeight = r => (r.y || 0) + jumpHeight(r);
 export function rearContact(r, height = riderHeight(r)) {
   const offset = rearOffset(r);
-  const pitch=r.pitch||0,up=surfaceUp(r);
-  return { x:r.x-Math.cos(r.angle)*Math.cos(pitch)*offset,y:height-Math.sin(pitch)*offset,z:r.z-Math.sin(r.angle)*Math.cos(pitch)*offset,nx:up.x,ny:up.y,nz:up.z };
+  const f=surfaceForward(r),up=surfaceUp(r);
+  return { x:r.x-f.x*offset,y:height-f.y*offset,z:r.z-f.z*offset,nx:up.x,ny:up.y,nz:up.z };
 }
-export function trailHead(r, height = riderHeight(r)) {return r.wheelieActive&&r.laserAnchor?r.laserAnchor:rearContact(r,height);}
+export function trailHead(r, height = riderHeight(r)) {return rearContact(r,height);}
 export const COLORS = [
   "#ff302a",
   "#ff7160",
@@ -286,6 +288,14 @@ export class Arena {
   }
   appendTrail(r,point) {
     const last=r.trail.at(-1);
+    if(last) {
+      const length=trailDistance(last,point),parts=Math.ceil(length/3);
+      for(let i=1;i<parts;i++) {
+        const t=i/parts,p={};
+        for(const key of ['x','y','z','nx','ny','nz'])p[key]=(last[key]??(key==='ny'?1:0))+((point[key]??(key==='ny'?1:0))-(last[key]??(key==='ny'?1:0)))*t;
+        p._distance=(last._distance||0)+length*t;r.trail.push(p);
+      }
+    }
     point._distance=last?(last._distance||0)+trailDistance(last,point):0;
     r.trail.push(point);
   }
@@ -381,10 +391,35 @@ export class Arena {
     }
     return null;
   }
+  contactAt(r,spheres) {
+    const vertices=[new Vector3(),new Vector3(),new Vector3(),new Vector3()];
+    for(const sphere of spheres) {
+      for(const s of this.trailHash.query(sphere.x,sphere.z,sphere.radius+6,this.trailCandidates)) {
+        if(!s.rider.alive||s.rider.grace>0)continue;
+        if(s.rider===r&&r._trailHeadDistance-s.endDistance<SELF_CLEARANCE)continue;
+        for(const [i,p] of [[0,s.a],[1,s.b]]) {
+          vertices[i].set(p.x+(p.nx||0)*WALL_BOTTOM,(p.y||0)+(p.ny??1)*WALL_BOTTOM,p.z+(p.nz||0)*WALL_BOTTOM);
+          vertices[i+2].set(p.x+(p.nx||0)*WALL_HEIGHT,(p.y||0)+(p.ny??1)*WALL_HEIGHT,p.z+(p.nz||0)*WALL_HEIGHT);
+        }
+        if(sphereTriangle(sphere,vertices[0],vertices[1],vertices[2])||sphereTriangle(sphere,vertices[1],vertices[3],vertices[2]))return s.rider;
+      }
+    }
+    for(const other of this.riders) {
+      if(other===r||!other.alive||other.grace>0||Math.hypot(r.x-other.x,r.z-other.z)>16)continue;
+      const body=bikeSpheres(other,riderHeight(other));
+      for(const a of spheres)for(const b of body)if((a.x-b.x)**2+(a.y-b.y)**2+(a.z-b.z)**2<(a.radius+b.radius)**2)return other;
+    }
+    return null;
+  }
   jump(r) {
-    if (this.speedMultiplier > 0 && r.alive && r.cooldown <= 0 && !r.wheelieActive && !Number.isFinite(r.loopS)) {
+    if (this.speedMultiplier > 0 && r.alive && r.cooldown <= 0 && !r.wheelieActive && !r.airborne) {
       this.recordTrail(r);
-      r.jump = JUMP_DURATION;
+      if(Number.isFinite(r.loopS)) {
+        const up=surfaceUp(r),f=surfaceForward(r);
+        r.airborne={vy:f.y*r.speed+up.y*31.4,vx:f.x*r.speed+up.x*31.4,vz:f.z*r.speed+up.z*31.4,pitch:r.pitch,angle:r.angle,time:0};
+        r.x+=up.x*.3;r.y+=up.y*.3;r.z+=up.z*.3;
+        r.loopS=null;r.jump=0;
+      } else r.jump = JUMP_DURATION;
       r.cooldown = JUMP_COOLDOWN;
       this.events.push({ type: "jump", rider: r });
       return true;
@@ -432,7 +467,7 @@ export class Arena {
     }
     Object.assign(r, p, {
       alive: true,
-      y:0,pitch:0,road:null,loopS:null,
+      y:0,pitch:0,road:null,loopS:null,airborne:null,
       length: 65 + this.random() * 110,
       angle: this.random() * Math.PI * 2,
       jump: 0,
@@ -444,7 +479,7 @@ export class Arena {
       wheelie: 0,
       wheelieActive: false,
       brakeTime: 0,
-      wheelieElapsed:0,wheelieLocked:false,wheelieCooldown:0,laserAnchor:null,wheeliePath:null,
+      wheelieElapsed:0,wheelieLocked:false,wheelieCooldown:0,loopPivotS:null,
       recovery: false,
       previousX: p.x,
       previousZ: p.z,
@@ -477,6 +512,7 @@ export class Arena {
       r.previousX = r.x; r.previousZ = r.z; r.previousAngle = r.angle;
       r.previousJump = r.jump; r.previousWheelie = r.wheelie;
       r.previousY=r.y||0;r.previousPitch=r.pitch||0;
+      const previousBody=this.worldCollision?bikeSpheres(r,riderHeight(r)):null;
       const previousHeight = riderHeight(r),
         previousJump = r.jump,
         wasJumping = previousJump > 0;
@@ -487,14 +523,13 @@ export class Arena {
       if(!control.wheelie)r.wheelieLocked=false;
       if(r.wheelieActive)r.wheelieElapsed+=dt;
       if(r.wheelieActive&&r.wheelieElapsed>=WHEELIE_STOP_TIME+WHEELIE_HOLD_TIME-1e-8)r.wheelieLocked=true;
-      const wheelie = !!control.wheelie && !r.wheelieLocked && r.wheelieCooldown<=0 && r.jump <= 0;
+      const wheelie = !!control.wheelie && !r.wheelieLocked && r.wheelieCooldown<=0 && r.jump <= 0 && !r.airborne;
       const wasWheelie = r.wheelieActive;
       if (wheelie && !wasWheelie) {
         r.brakeEntrySpeed = r.speed; r.brakeTime = 0;
         r.wheelieElapsed=dt;
         const pivot = rearContact(r); r.pivotX = pivot.x; r.pivotZ = pivot.z;
         this.recordTrail(r, previousHeight);
-        r.laserAnchor={...pivot};r.wheeliePath=[];
       }
       r.wheelieActive = wheelie;
       r.wheelie += ((wheelie ? 1 : 0) - r.wheelie) * (1 - Math.exp(-dt * (wheelie ? 9 : 7)));
@@ -508,7 +543,6 @@ export class Arena {
         if (wasWheelie) {
           r.recovery = true;
           r.wheelieCooldown=1.2;
-          for(const point of r.wheeliePath)this.appendTrail(r,point);r.wheeliePath=null;r.laserAnchor=null;
           if (this.mode === "90") {
             r.angle = cardinalAngle(r.angle);
             r.x = r.pivotX + Math.cos(r.angle) * rearOffset(r);
@@ -545,8 +579,8 @@ export class Arena {
           }
         }
       }
-      if (advanceLoop(r,dt,control.steer||0)) {
-        // The magnetic helix guides the inversion; steering changes lane.
+      if (advanceAirborne(r,dt) || advanceLoop(r,dt,control.steer||0)) {
+        // Surface coordinates preserve the rider's heading and free steering.
       } else if (wheelie) {
         r.pivotX += Math.cos(r.angle) * r.speed * dt;
         r.pivotZ += Math.sin(r.angle) * r.speed * dt;
@@ -557,13 +591,9 @@ export class Arena {
         r.z += Math.sin(r.angle) * r.speed * dt;
       }
       updateSurface(r);
-      if(wheelie) {
-        const point=rearContact(r),last=r.wheeliePath.at(-1)||r.laserAnchor;
-        if(trailDistance(last,point)>=2.8)r.wheeliePath.push(point);
-      }
       const last = r.trail[r.trail.length - 1],
         head = trailHead(r);
-      if (!wheelie && (
+      if ((
         !last ||
         trailDistance(last, head) >= 2.8 ||
         (previousJump > JUMP_DURATION / 2 &&
@@ -579,17 +609,20 @@ export class Arena {
         if(cut)r.trail.splice(0,cut);
       }
       if (r.grace <= 0) {
-        if (this.blocked(r.x, r.z, 2.3)||terrainBlocked(r,r.x,r.z,2.3)||r.hitRail) {
+        const spheres=bikeSpheres(r,riderHeight(r));
+        const hit=this.worldCollision?.sweep(r,previousBody,spheres);
+        const fallback=!this.worldCollision && (this.blocked(r.x,r.z,2.3)||terrainBlocked({...r,y:riderHeight(r)},r.x,r.z,2.3));
+        if (hit || fallback) {
           this.kill(
             r,
             null,
             Math.abs(r.x) > HALF - 3 || Math.abs(r.z) > HALF - 3
               ? "boundary"
-              : terrainBlocked(r,r.x,r.z,2.3)||r.hitRail?"barrier":"reactor",
+              : hit ? "barrier" : terrainBlocked(r,r.x,r.z,2.3)?"barrier":"reactor",
           );
           continue;
         }
-        const killer = this.trailAt(r, r.x, r.z);
+        const killer = this.worldCollision ? this.contactAt(r,spheres) : this.trailAt(r, r.x, r.z);
         if (killer) {
           this.kill(r, killer, killer === r ? "self" : "trail");
           continue;

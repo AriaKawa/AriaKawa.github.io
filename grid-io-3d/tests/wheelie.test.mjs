@@ -26,10 +26,12 @@ for(const mode of ["90","360"])test(`${mode}: stopped wheelie pivots around a fi
   assert(Math.abs(Math.hypot(p.x-pivot.x,p.z-pivot.z)-rearOffset(p))<1e-7);
   step(a,24,{wheelie:true,steer:-1}); assert(Math.abs(p.angle)<1e-7);
 });
-test('the complete laser stays fixed throughout braking and resumes without losing stored length',()=>{
+test('wheelies preserve every existing laser point and keep emitting from the rear tire',()=>{
   const a=arena(),p=a.player;step(a,1,{wheelie:true});
   const points=structuredClone(p.trail),head={...trailHead(p)},length=p.length;
-  step(a,165,{wheelie:true,steer:.15});assert.deepEqual(p.trail,points);assert.deepEqual(trailHead(p),head);assert.equal(p.length,length);
+  step(a,165,{wheelie:true,steer:.15});assert.deepEqual(p.trail.slice(0,points.length),points);assert.notDeepEqual(trailHead(p),head);assert.equal(p.length,length);
+  assert(p.trail.length>points.length);
+  assert.deepEqual(trailHead(p),rearContact(p));
   step(a,20,{wheelie:true});assert(!p.wheelieActive);assert.equal(p.length,length);assert(p.trail.length>0);
 });
 test("wheelie suppresses boost costs and prevents a jump while pivoting",()=>{

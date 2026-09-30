@@ -1,6 +1,6 @@
 import * as THREE from '../grid-io/vendor/three.module.min.js';
-import {ROADS,LOOP,GROUND_CUTS,roadPoint,loopPoint} from './terrain.mjs?v=neon-city-1';
-import {materialTextures} from './textures.js?v=neon-city-1';
+import {ROADS,LOOP,GROUND_CUTS,roadPoint,loopPoint} from './terrain.mjs?v=pixel-freedom-1';
+import {materialTextures} from './textures.js?v=pixel-freedom-1';
 
 const upAt=p=>new THREE.Vector3(-Math.cos(p.angle)*Math.sin(p.pitch),Math.cos(p.pitch),-Math.sin(p.angle)*Math.sin(p.pitch));
 function roadGeometry(sample,length,width) {
@@ -19,7 +19,7 @@ export function buildTerrain(scene) {
   const ground=new THREE.ShapeGeometry(shape).rotateX(-Math.PI/2),position=ground.attributes.position;
   for(let i=0;i<position.count;i++)ground.attributes.uv.setXY(i,position.getX(i)/48,position.getZ(i)/48);
   const floor=new THREE.Mesh(ground,new THREE.MeshStandardMaterial({map:textures.floor,bumpMap:textures.relief,bumpScale:.22,roughness:.63,metalness:.48,color:0xaabcc6,side:THREE.DoubleSide}));
-  floor.name='textured-ground-with-open-ramps';floor.position.y=-.14;root.add(floor);
+  floor.name='textured-ground-with-open-ramps';floor.userData.surface='ground';floor.position.y=-.14;root.add(floor);
   const steel=new THREE.MeshStandardMaterial({map:textures.metal,color:0x617784,roughness:.37,metalness:.72});
   const concrete=new THREE.MeshStandardMaterial({map:textures.road,bumpMap:textures.roadRelief,bumpScale:.25,color:0x5c7484,roughness:.85,metalness:.1});
   const glow=new THREE.MeshBasicMaterial({color:0xffffff,toneMapped:false});
@@ -52,7 +52,7 @@ export function buildTerrain(scene) {
   for(const road of [...ROADS,LOOP]) {
     const loop=road===LOOP,length=loop?LOOP.length:road.end-road.start,sample=s=>loop?loopPoint(s):roadPoint(road,s),width=road.width;
     const material=new THREE.MeshStandardMaterial({map:textures.road,bumpMap:textures.roadRelief,bumpScale:.16,color:0x99adba,roughness:.46,metalness:.56,side:THREE.DoubleSide});
-    const deck=new THREE.Mesh(roadGeometry(sample,length,width),material);deck.name=road.id+'-drivable-surface';root.add(deck);
+    const deck=new THREE.Mesh(roadGeometry(sample,length,width),material);deck.name=road.id+'-drivable-surface';deck.userData.surface=road.id;root.add(deck);
     const segmentStep=loop?4:8;
     for(let s=0;s<length;s+=segmentStep) {
       const a=sample(s),b=sample(Math.min(length,s+segmentStep));
@@ -69,11 +69,7 @@ export function buildTerrain(scene) {
           const mid=at(sample(Math.min(length,s+4)),side*(width/2+.6));
           box(walls,mid.x,mid.y+height/2,mid.z,8.2,height,1.2);
         }
-        if(s%48===0&&a.y<-12) {
-          for(const side of [-1,1])bar(structure,at(a,side*(width/2-.8),0),at(a,side*(width/2-.8),11),.6,.6);
-          bar(structure,at(a,-width/2,11),at(a,width/2,11),.7,.7);
-          bar(lights,at(a,-width/2+2,10.5),at(a,width/2-2,10.5),.36,.22,road.color);
-        }
+
       }
     }
     if(!loop&&road.kind==='bridge') {
@@ -85,7 +81,10 @@ export function buildTerrain(scene) {
     }
     if(loop)for(let s=LOOP.approach+25;s<LOOP.approach+LOOP.circle;s+=34) {
       const p=sample(s);if(p.y<6)continue;
-      for(const side of [-1,1]){const q=at(p,side*(width/2+2));bar(structure,{x:q.x,y:0,z:q.z},q,1.3,1.3);}
+      for(const side of [-1,1]) {
+        const q={x:side<0?LOOP.x-width/2-5:LOOP.x+LOOP.drift+width/2+5,y:p.y,z:p.z};
+        bar(structure,{x:q.x,y:0,z:q.z},q,1.3,1.3);
+      }
     }
     const first=sample(5),last=sample(length-5);
     sign(loop?'HELIX // 360':road.name.toUpperCase(),loop?'MAGNETIC LOOP  •  FOLLOW THE LIGHT':road.kind==='tunnel'?'DESCENT  /  THROUGH ROUTE':'ELEVATED TRANSIT  /  BOTH DIRECTIONS',road.color,first,first.angle);
@@ -96,6 +95,7 @@ export function buildTerrain(scene) {
     for(let i=0;i<list.length;i++){mesh.setMatrixAt(i,list[i].matrix);if(colored)mesh.setColorAt(i,new THREE.Color(list[i].color));}
     mesh.name=name;mesh.computeBoundingSphere();root.add(mesh);return mesh;
   }
-  batch(structure,steel,'transit-rails-and-supports');batch(walls,concrete,'tunnel-retaining-walls');batch(lights,glow,'transit-neon-and-lane-markings',true);
+  batch(structure,steel,'transit-rails-and-supports');batch(walls,concrete,'tunnel-retaining-walls');
+  batch(lights,glow,'transit-neon-and-lane-markings',true).userData.noCollision=true;
   return root;
 }

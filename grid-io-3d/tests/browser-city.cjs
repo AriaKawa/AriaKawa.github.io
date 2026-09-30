@@ -10,9 +10,9 @@ const base=process.env.GRID3D_BASE_URL||'http://127.0.0.1:5276';
   await page.goto(base+'/grid-io-3d/?test=1');await page.waitForFunction(()=>!document.getElementById('play').disabled);await page.locator('#play').click();
   await page.evaluate(()=>{window.__GRID_TEST__.arena.player.grace=1000;window.__GRID_TEST__.arena.player.length=500;});
   const heading=await page.evaluate(()=>window.__GRID_TEST__.arena.player.angle);
-  await page.mouse.move(1300,180);await page.waitForTimeout(350);
+  await page.mouse.move(700,450);await page.mouse.down({button:"right"});await page.mouse.move(1300,180);await page.waitForTimeout(350);
   const camera=await page.evaluate(()=>({angle:window.__GRID_TEST__.arena.player.angle,x:window.__GRID_TEST__.graphics.chase.orbitX,y:window.__GRID_TEST__.graphics.chase.orbitY}));
-  assert.equal(camera.angle,heading);assert(camera.x>.2&&camera.y<-.3);
+  assert.equal(camera.angle,heading);assert(camera.x>.4&&camera.y<-.3);await page.mouse.up({button:"right"});
   await page.mouse.click(1300,180);await page.mouse.click(1300,180,{button:'right'});
   assert(await page.evaluate(()=>!window.__GRID_TEST__.arena.player.boost&&window.__GRID_TEST__.arena.player.jump===0));
   const audio=await page.evaluate(async()=>{
@@ -23,9 +23,9 @@ const base=process.env.GRID3D_BASE_URL||'http://127.0.0.1:5276';
   assert.equal(audio.state,'running');assert(audio.rms>.002,'engine should produce audible samples');
   await page.keyboard.down('ShiftLeft');await page.waitForTimeout(220);assert(await page.evaluate(rpm=>window.__GRID_TEST__.audio.engine.rpm>rpm+30,audio.rpm));await page.keyboard.up('ShiftLeft');
   await page.keyboard.down('ControlLeft');await page.waitForFunction(()=>window.__GRID_TEST__.arena.player.wheelieActive);
-  const frozen=await page.evaluate(()=>JSON.stringify(window.__GRID_TEST__.arena.player.trail));
+  const frozen=await page.evaluate(()=>JSON.stringify(window.__GRID_TEST__.arena.player.trail.map(p=>[p.x,p.y,p.z])));
   await page.waitForFunction(()=>window.__GRID_TEST__.arena.player.wheelieElapsed>2.45);
-  assert.equal(await page.evaluate(()=>JSON.stringify(window.__GRID_TEST__.arena.player.trail)),frozen);
+  assert.equal(await page.evaluate(n=>JSON.stringify(window.__GRID_TEST__.arena.player.trail.slice(0,n).map(p=>[p.x,p.y,p.z])),JSON.parse(frozen).length),frozen);
   assert(await page.evaluate(()=>window.__GRID_TEST__.arena.player.speed<.001));
   await page.waitForFunction(()=>!window.__GRID_TEST__.arena.player.wheelieActive&&window.__GRID_TEST__.arena.player.speed>10);
   assert(await page.evaluate(()=>window.__GRID_TEST__.arena.player.wheelieLocked));await page.keyboard.up('ControlLeft');
@@ -34,7 +34,7 @@ const base=process.env.GRID3D_BASE_URL||'http://127.0.0.1:5276';
   await page.keyboard.press('Escape');
   async function pose(kind,progress) {
     await page.evaluate(async({kind,progress})=>{
-      const {ROADS,LOOP,roadPoint,loopPoint}=await import('./terrain.mjs?v=neon-city-1');const {arena:a,graphics:g}=window.__GRID_TEST__;
+      const {ROADS,LOOP,roadPoint,loopPoint}=await import('./terrain.mjs?v=pixel-freedom-1');const {arena:a,graphics:g}=window.__GRID_TEST__;
       for(const r of a.riders.slice(1)){r.alive=false;r.respawn=1e9;}
       const road=ROADS.find(r=>r.id===kind),q=road?roadPoint(road,progress):loopPoint(progress);
       Object.assign(a.player,{...q,jump:0,previousJump:0,wheelie:0,previousWheelie:0,wheelieActive:false,laserAnchor:null,road:road?.id||null,loopS:road?null:progress,loopDir:1,loopLane:0,boost:false,grace:1000,angle:q.angle,previousX:q.x,previousY:q.y,previousZ:q.z,previousAngle:q.angle,previousPitch:q.pitch});
@@ -46,8 +46,8 @@ const base=process.env.GRID3D_BASE_URL||'http://127.0.0.1:5276';
   }
   await pose('skyway-east',950);await pose('underpass-south',190);await pose('underpass-south',700);
   await pose('helix-loop',80+Math.hypot(2*Math.PI*32,44)*.25);await pose('helix-loop',80+Math.hypot(2*Math.PI*32,44)*.5);
-  const scene=await page.evaluate(()=>{const t=window.__GRID_TEST__;return {terrain:t.graphics.terrain.children.length,ringInstances:t.graphics.crystalRings.count,drawCalls:t.graphics.renderer.info.render.calls,cameraY:t.graphics.camera.position.y,bikePitch:t.graphics.getBike(t.arena.player).group.rotation.z};});
-  assert(scene.terrain>12);assert(scene.ringInstances>0);assert(scene.cameraY>0);assert(Math.abs(scene.bikePitch-Math.PI)<.1);assert.deepEqual(errors,[]);
-  console.log('PASS neon pickups, keyboard-only driving, mouse pan, audible variable-speed engine, mute, frozen laser, automatic wheelie release, textured skyways/underpasses and inverted loop rendering.',{audio,scene,out});
+  const scene=await page.evaluate(()=>{const t=window.__GRID_TEST__;return {terrain:t.graphics.terrain.children.length,ringInstances:t.graphics.crystalRings.count,drawCalls:t.graphics.renderer.info.render.calls,cameraY:t.graphics.camera.position.y,bikeUp:Math.cos(t.graphics.getBike(t.arena.player).group.rotation.x)*Math.cos(t.graphics.getBike(t.arena.player).group.rotation.z)};});
+  assert(scene.terrain>12);assert(scene.ringInstances>0);assert(scene.cameraY>0);assert(scene.bikeUp<-.9);assert.deepEqual(errors,[]);
+  console.log('PASS neon pickups, keyboard-only driving, right-button camera drag, audible variable-speed engine, mute, continuous laser, automatic wheelie release, textured skyways/underpasses and inverted loop rendering.',{audio,scene,out});
  } finally {await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

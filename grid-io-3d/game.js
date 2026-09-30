@@ -1,4 +1,4 @@
-import { steeringAxis, steeringTarget, relativeTurn } from "./chase.mjs?v=neon-city-1";
+import { steeringAxis, steeringTarget, relativeTurn } from "./chase.mjs?v=pixel-freedom-1";
 import {
   Arena,
   COLORS,
@@ -10,17 +10,17 @@ import {
   jumpHeight,
   riderHeight,
   normalizeSpeed,
-} from "./simulation.mjs?v=neon-city-1";
-import { GridRenderer } from "./renderer.js?v=neon-city-1";
-import { BikeGarage } from "./garage.js?v=neon-city-1";
-import { BikeEngine } from './engine-audio.js?v=neon-city-1';
-import { ROADS, LOOP, roadPoint, loopPoint } from './terrain.mjs?v=neon-city-1';
+} from "./simulation.mjs?v=pixel-freedom-1";
+import { GridRenderer } from "./renderer.js?v=pixel-freedom-1";
+import { BikeGarage } from "./garage.js?v=pixel-freedom-1";
+import { BikeEngine } from './engine-audio.js?v=pixel-freedom-1';
+import { ROADS, LOOP, roadPoint, loopPoint } from './terrain.mjs?v=pixel-freedom-1';
 import {
   BODIES,
   WHEELS,
   RIDERS,
   normalizeLoadout,
-} from "../grid-io/customization.mjs?v=neon-city-1";
+} from "../grid-io/customization.mjs?v=pixel-freedom-1";
 
 const $ = (id) => document.getElementById(id);
 const read = (key, fallback) => {
@@ -249,6 +249,7 @@ for (const d of document.querySelectorAll("dialog")) {
 }
 
 function clearInput() {
+  releaseCamera();
   keys.clear();
   boostPointer = null;
   wheeliePointer = null; touchWheelie = false;
@@ -287,7 +288,7 @@ function start() {
     ? "Steer left/right · hold Wheelie to brake and pivot"
     : mode === "90"
       ? "A / D: 90° turns · Ctrl: wheelie brake · Space: jump"
-      : "A / D: steer · Mouse: camera · Ctrl: wheelie · Space: jump";
+      : "A / D: steer · Hold right mouse: camera · Ctrl: wheelie · Space: jump";
   $("pointer-hint").hidden = false;
 }
 function pause() {
@@ -326,7 +327,7 @@ function end(event) {
   $("death-reason").textContent =
     event.reason === "boundary"
       ? "You hit the arena boundary."
-      : event.reason === 'barrier' ? 'You hit a transit guardrail or support. Enter using the signed ramps.'
+      : event.reason === 'barrier' ? 'Your bike hit a solid surface. Jump clear of an obstacle to pass over it.'
       : event.reason === "reactor"
         ? "You collided with a reactor platform."
         : event.reason === "self"
@@ -334,7 +335,7 @@ function end(event) {
           : `You hit ${event.killer?.name ?? "a rival"}'s laser trail.`;
   setTimeout(() => {
     if (state === "dead") $("death-dialog").showModal();
-  }, 650);
+  }, 1250);
 }
 $("play-form").addEventListener("submit", (e) => {
   e.preventDefault();
@@ -419,12 +420,26 @@ window.addEventListener("resize", () => {
   graphics?.resize();
   if (graphics && arena && state === "paused") graphics.draw(arena, 0, arena.time);
 });
-$("world").addEventListener("pointermove", (e) => {
-  if (e.pointerType === "mouse" && state === "playing") {
-    graphics.orbit.x=Math.max(-1,Math.min(1,e.clientX/innerWidth*2-1));
-    graphics.orbit.y=Math.max(-1,Math.min(1,e.clientY/innerHeight*2-1));
+let cameraPointer=null,cameraLast=null;
+function releaseCamera() {
+  cameraPointer=null;cameraLast=null;
+  if(graphics){graphics.orbit.x=graphics.orbit.y=0;}
+}
+$("world").addEventListener("pointerdown",e=>{
+  if(e.pointerType==='mouse'&&e.button===2&&state==='playing') {
+    e.preventDefault();cameraPointer=e.pointerId;cameraLast={x:e.clientX,y:e.clientY};
+    e.currentTarget.setPointerCapture(e.pointerId);
   }
 });
+$("world").addEventListener("pointermove",e=>{
+  if(e.pointerId!==cameraPointer||!cameraLast||state!=='playing')return;
+  if(!(e.buttons&2)){releaseCamera();return;}
+  graphics.orbit.x=Math.max(-1,Math.min(1,graphics.orbit.x+(e.clientX-cameraLast.x)/350));
+  graphics.orbit.y=Math.max(-1,Math.min(1,graphics.orbit.y+(e.clientY-cameraLast.y)/280));
+  cameraLast={x:e.clientX,y:e.clientY};
+});
+for(const type of ['pointerup','pointercancel','lostpointercapture'])window.addEventListener(type,e=>{if(e.pointerId===cameraPointer)releaseCamera();});
+window.addEventListener('blur',releaseCamera);
 for (const type of ["pointerup", "pointercancel"])
   window.addEventListener(type, e => {
     if (e.pointerId === boostPointer) { touchBoost = false; boostPointer = null; }
@@ -517,7 +532,7 @@ function updateHUD() {
   const p = arena.player;
   $("ride-speed").textContent = Math.round(p.speed);
   $("district").textContent = arena.sector();
-  $("wheelie-label").textContent = p.wheelieActive ? (p.speed < 0.1 ? `Pivot · ${Math.max(0,3-p.wheelieElapsed).toFixed(1)}s` : "Braking · laser held") : p.wheelieLocked?'Release Ctrl to rearm':p.wheelieCooldown>0?'Recovering…':"Hold Ctrl · brake + pivot";
+  $("wheelie-label").textContent = p.wheelieActive ? (p.speed < 0.1 ? `Pivot · ${Math.max(0,3-p.wheelieElapsed).toFixed(1)}s` : "Braking · trail active") : p.wheelieLocked?'Release Ctrl to rearm':p.wheelieCooldown>0?'Recovering…':"Hold Ctrl · brake + pivot";
   $("wheelie-button").classList.toggle("active", p.wheelieActive);
   $("length").textContent = Math.floor(p.length);
   $("personal-best").textContent =
@@ -666,7 +681,7 @@ function frame(now) {
           soundEvent(e);
         }
         if (e.type === "death") {
-          graphics.emit(e.rider.x, e.rider.z, e.rider.skin, 75, 1.3,riderHeight(e.rider));
+          graphics.explode(e.rider);
           if (e.rider.player) {
             soundEvent(e);
             end(e);
@@ -680,10 +695,11 @@ function frame(now) {
     }
     const p = arena.player;
     $("jump-label").textContent =
-      p.cooldown > 0 ? `${p.cooldown.toFixed(1)}s` : "Ready";
+      p.cooldown > 0 ? `${p.cooldown.toFixed(1)}s` : p.wheelieActive||p.airborne ? "Land / lower bike" : "READY · rear tire lit";
     $("jump-meter").style.transform =
       `scaleX(${1 - p.cooldown / JUMP_COOLDOWN})`;
     $("jump-button").classList.toggle("cooldown", p.cooldown > 0);
+    $("jump-meter").parentElement.classList.toggle("jump-ready",p.cooldown<=0&&!p.wheelieActive&&!p.airborne);
     $("boost-label").textContent = p.boost
       ? "Boosting"
       : p.length < 50

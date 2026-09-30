@@ -1,5 +1,5 @@
 import * as THREE from "../grid-io/vendor/three.module.min.js";
-import { COLORS, riderHeight } from "./simulation.mjs?v=neon-city-1";
+import { COLORS, riderHeight } from "./simulation.mjs?v=pixel-freedom-1";
 
 // Far riders keep a readable bike/rider silhouette without rendering every
 // wheel spoke, armor plate, and suspension piece in dozens of separate draws.

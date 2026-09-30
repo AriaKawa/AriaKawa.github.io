@@ -1,4 +1,4 @@
-import { ROADS, LOOP, roadPoint, loopPoint, inGroundCut, terrainBlocked } from './terrain.mjs?v=neon-city-1';
+import { ROADS, LOOP, roadPoint, loopPoint, inGroundCut, terrainBlocked } from './terrain.mjs?v=pixel-freedom-1';
 
 export const PICKUP_COLORS=['#37e7ff','#bb75ff','#ffbd4b','#efffff'];
 export const PICKUP_NAMES=['Cyan charge','Violet cell','Amber cache','White core'];

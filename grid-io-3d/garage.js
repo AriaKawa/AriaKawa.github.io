@@ -1,6 +1,6 @@
 import * as THREE from "../grid-io/vendor/three.module.min.js";
-import { createBike } from "./bike-model.js?v=neon-city-1";
-import { reflectionEnvironment } from './textures.js?v=neon-city-1';
+import { createBike } from "./bike-model.js?v=pixel-freedom-1";
+import { reflectionEnvironment } from './textures.js?v=pixel-freedom-1';
 
 export class BikeGarage {
   constructor(teaser, stage, reducedMotion = false) {

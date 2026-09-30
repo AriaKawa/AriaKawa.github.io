@@ -35,8 +35,18 @@ export const GROUND_CUTS=ROADS.filter(r=>r.kind==='tunnel').flatMap(r=>[
 ]);
 export const inGroundCut=(x,z,pad=0)=>GROUND_CUTS.some(h=>x>h.x0-pad&&x<h.x1+pad&&z>h.z0-pad&&z<h.z1+pad);
 export function surfaceUp(r) {
+  if(Number.isFinite(r.loopS)) {
+    const p=loopPoint(r.loopS);return {x:0,y:Math.cos(p.pitch),z:Math.sin(p.pitch)};
+  }
   const pitch=r.pitch||0;
   return {x:-Math.cos(r.angle)*Math.sin(pitch),y:Math.cos(pitch),z:-Math.sin(r.angle)*Math.sin(pitch)};
+}
+export function surfaceForward(r) {
+  if(Number.isFinite(r.loopS)) {
+    const p=loopPoint(r.loopS),yaw=r.angle+Math.PI/2;
+    return {x:Math.sin(yaw),y:Math.sin(p.pitch)*Math.cos(yaw),z:-Math.cos(p.pitch)*Math.cos(yaw)};
+  }
+  return {x:Math.cos(r.angle)*Math.cos(r.pitch||0),y:Math.sin(r.pitch||0),z:Math.sin(r.angle)*Math.cos(r.pitch||0)};
 }
 export function terrainBlocked(r,x,z,pad=0) {
   for(const road of ROADS) {
@@ -64,7 +74,7 @@ export function terrainBlocked(r,x,z,pad=0) {
   return false;
 }
 export function updateSurface(r) {
-  if(Number.isFinite(r.loopS))return;
+  if(Number.isFinite(r.loopS)||r.airborne)return;
   let road=roadById(r.road);
   if(!road) {
     road=ROADS.find(candidate=>{
@@ -76,28 +86,73 @@ export function updateSurface(r) {
   if(road) {
     const {s,lateral}=roadCoordinates(road,r.x,r.z);
     if(s<0||s>road.end-road.start) {r.road=null;r.y=0;r.pitch=0;r.hitRail=false;return;}
-    // Guardrails contain the deck; there is no invisible fall through the floor.
-    const lane=clamp(lateral,-road.width/2+2.5,road.width/2-2.5);
-    r.hitRail=Math.abs(lateral)>road.width/2-2.3;
-    if(road.axis==='x')r.z=road.cross+lane;else r.x=road.cross+lane;
+    // Steering never clamps to a lane. The visible rail handles contact; a
+    // rider clearing it can leave the deck and fall to the surface below.
+    if(Math.abs(lateral)>road.width/2) {
+      const lift=r.jump>0?Math.sin(Math.PI*(1-r.jump/1.05))*10.5:0;
+      const vy=r.jump>0?Math.cos(Math.PI*(1-r.jump/1.05))*Math.PI*10.5/1.05:0;
+      r.y+=lift;r.jump=0;r.airborne={vy};r.road=null;r.pitch=0;return;
+    }
+    r.hitRail=false;
     const {y,slope}=roadProfile(road,s);
     r.y=y;r.pitch=Math.atan(slope*(road.axis==='x'?Math.cos(r.angle):Math.sin(r.angle)));
   } else {r.y=0;r.pitch=0;r.hitRail=false;}
 }
 export function advanceLoop(r,dt,steer=0) {
+  if(r.airborne||r.jump>0)return false;
   if(!Number.isFinite(r.loopS)) {
     for(const [s,dir] of [[0,1],[LOOP.length,-1]]) {
       const p=loopPoint(s),heading=p.angle+(dir<0?Math.PI:0);
-      if(Math.hypot(r.x-p.x,r.z-p.z)<9&&Math.cos(r.angle-heading)>0.65) {
-        r.loopS=s;r.loopDir=dir;r.loopLane=clamp(r.x-p.x,-8,8);r.road=null;break;
+      if(Math.abs(r.y||0)<1&&Math.hypot(r.x-p.x,r.z-p.z)<5&&Math.cos(r.angle-heading)>0.65) {
+        r.loopS=s;r.loopDir=dir;r.loopLane=r.x-p.x;r.loopPivotS=null;r.road=null;break;
       }
     }
     if(!Number.isFinite(r.loopS))return false;
   }
-  r.loopS+=r.speed*dt*r.loopDir;
-  r.loopLane=clamp((r.loopLane||0)+steer*r.speed*dt*0.28*r.loopDir,-LOOP.width/2+3,LOOP.width/2-3);
+  const yaw=r.angle+Math.PI/2;
+  const offset=2.65*(r.player?1.35:1.17);
+  if(r.wheelieActive) {
+    if(!Number.isFinite(r.loopPivotS)) {
+      const previousYaw=(r.previousAngle??r.angle)+Math.PI/2;
+      r.loopPivotS=r.loopS-Math.cos(previousYaw)*offset;
+      r.loopPivotLane=(r.loopLane||0)-Math.sin(previousYaw)*offset;
+    }
+    r.loopPivotS+=r.speed*dt*Math.cos(yaw);r.loopPivotLane+=r.speed*dt*Math.sin(yaw);
+    r.loopS=r.loopPivotS+Math.cos(yaw)*offset;r.loopLane=r.loopPivotLane+Math.sin(yaw)*offset;
+  } else {
+    r.loopPivotS=null;r.loopS+=r.speed*dt*Math.cos(yaw);
+    r.loopLane=(r.loopLane||0)+r.speed*dt*Math.sin(yaw);
+  }
   const p=loopPoint(r.loopS,r.loopLane);
-  Object.assign(r,{x:p.x,y:p.y,z:p.z,angle:p.angle+(r.loopDir<0?Math.PI:0),pitch:p.pitch*r.loopDir});
-  if(r.loopS<0||r.loopS>LOOP.length) {r.loopS=null;r.pitch=0;}
+  Object.assign(r,{x:p.x,y:p.y,z:p.z,pitch:p.pitch});
+  if(r.wheelieActive) {const f=surfaceForward(r);r.pivotX=r.x-f.x*offset;r.pivotZ=r.z-f.z*offset;}
+  if(Math.abs(r.loopLane)>LOOP.width/2) {
+    const f=surfaceForward(r);r.airborne={vy:f.y*r.speed,vx:f.x*r.speed,vz:f.z*r.speed,pitch:r.pitch,angle:r.angle,time:0};r.loopS=null;
+  } else if(r.loopS<0||r.loopS>LOOP.length) {r.loopS=null;r.pitch=0;}
+  return true;
+}
+
+export function advanceAirborne(r,dt) {
+  if(!r.airborne)return false;
+  const a=r.airborne,oldY=r.y;
+  // The same steering input works in the air, including after leaving a loop.
+  if(Number.isFinite(a.vx)) {
+    const turn=r.angle-a.angle,c=Math.cos(turn),s=Math.sin(turn),vx=a.vx;
+    a.vx=vx*c-a.vz*s;a.vz=vx*s+a.vz*c;a.angle=r.angle;
+    r.x+=a.vx*dt;r.z+=a.vz*dt;
+  } else {r.x+=Math.cos(r.angle)*r.speed*dt;r.z+=Math.sin(r.angle)*r.speed*dt;}
+  a.time=(a.time||0)+dt;a.vy-=32*dt;r.y+=a.vy*dt;
+  r.pitch=(a.pitch||0)*Math.max(0,1-a.time/.7);
+  let height=inGroundCut(r.x,r.z)?-Infinity:0,landing=null;
+  for(const road of ROADS) {
+    const {s,lateral}=roadCoordinates(road,r.x,r.z);
+    if(s<0||s>road.end-road.start||Math.abs(lateral)>road.width/2)continue;
+    const y=roadProfile(road,s).y;
+    if(y<=oldY+.1 && y>height){height=y;landing=road;}
+    if(road.kind==='tunnel'&&oldY<0){height=y;landing=road;}
+  }
+  if(a.vy<=0&&r.y<=height&&oldY>=height-.1) {
+    r.y=height;r.airborne=null;r.road=landing?.id||null;updateSurface(r);
+  }
   return true;
 }
