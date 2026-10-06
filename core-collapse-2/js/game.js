@@ -87,7 +87,8 @@ class Game {
     this.playScale = avail / 2 / WORLD_EXTENT;
     this.playCx = W / 2; this.playCy = landscape ? H / 2 : H / 2 + 6;
     this.landscape = landscape;
-    if (this.cx == null) { this.cx = this.state === 'title' ? this.titleCx() : this.playCx; this.cy = this.playCy; }
+    // resizes snap the camera; state changes (title <-> play) glide in render()
+    this.cx = this.state === 'title' ? this.titleCx() : this.playCx; this.cy = this.playCy;
     this.scale = this.state === 'title' ? this.titleScale() : this.playScale;
     if (this.sprites.orbs.length && Math.abs(this.sprites.px - this.scale * this.dpr * 1.15) > 0.05) this.buildSprites();
   }
