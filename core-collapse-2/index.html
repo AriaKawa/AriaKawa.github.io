@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#03050c">
+  <meta name="description" content="CORE COLLAPSE II — fuse elements inside a living star, feed iron to the core, and detonate supernovae across a campaign of stars.">
+  <title>CORE COLLAPSE II — Supernova Saga</title>
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700;800&family=Orbitron:wght@600;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./style.css?v=2.0.0">
+</head>
+<body>
+  <canvas id="bg" aria-hidden="true"></canvas>
+  <canvas id="fg" aria-label="Core Collapse II play field"></canvas>
+  <div id="flash" aria-hidden="true"></div>
+
+  <!-- ===================== HUD ===================== -->
+  <div id="hud" class="hidden" aria-live="polite">
+    <div class="panel hud-score">
+      <div class="label">SCORE</div>
+      <div class="score" id="score">0</div>
+      <div class="mult" id="mult"><span>CHAIN</span> <b id="multVal">×1.0</b><i id="chainBar"></i></div>
+      <div class="best"><span>BEST</span> <b id="best">0</b></div>
+    </div>
+
+    <div class="panel hud-queue">
+      <div class="queue-col">
+        <div class="label">NEXT</div>
+        <div class="queue" id="queue"></div>
+      </div>
+      <button class="hold-col" id="holdBtn" type="button" title="Hold (Right-click / C)">
+        <div class="label">HOLD</div>
+        <div class="holds" id="holds"></div>
+        <kbd>C</kbd>
+      </button>
+    </div>
+
+    <div class="panel hud-star">
+      <div class="label" id="starIndex">STAR 1</div>
+      <div class="star-name" id="starName">PROXIMA</div>
+      <div class="star-cls" id="starCls">Red dwarf</div>
+      <div class="iron-row"><span>IRON CORE</span><div class="iron-pips" id="ironPips"></div></div>
+      <div class="mods" id="mods"></div>
+    </div>
+
+    <div class="panel hud-ladder">
+      <div class="label">FUSION LADDER</div>
+      <div class="ladder" id="ladder"></div>
+    </div>
+
+    <div class="hud-actions">
+      <button class="flare-btn" id="flareBtn" type="button" title="Solar Flare (F)">
+        <svg viewBox="0 0 100 100" aria-hidden="true"><circle class="track" cx="50" cy="50" r="44"/><circle class="fill" id="flareRing" cx="50" cy="50" r="44"/></svg>
+        <span class="sun">☀</span>
+        <span class="flare-label">FLARE</span>
+        <kbd>F</kbd>
+      </button>
+    </div>
+    <button class="icon-btn pause-btn" id="pauseBtn" type="button" aria-label="Pause">❚❚</button>
+    <div class="coach hidden" id="coach"></div>
+    <div class="toasts" id="toasts"></div>
+  </div>
+
+  <!-- ===================== SCREENS ===================== -->
+  <section class="screen" id="title">
+    <div class="title-wrap">
+      <div class="logo">
+        <div class="logo-kicker">A STELLAR FUSION SAGA</div>
+        <h1><span>CORE</span><span>COLLAPSE</span></h1>
+        <div class="logo-two">II</div>
+      </div>
+      <div class="title-card panel">
+        <button class="btn primary" id="playBtn" type="button">IGNITE <span>▶</span></button>
+        <div class="btn-row">
+          <button class="btn" id="howBtn" type="button">How to play</button>
+          <button class="btn" id="setBtn" type="button">Settings</button>
+        </div>
+        <div class="records" id="records"></div>
+        <a class="back-link" href="../games.html">← Back to Games</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen hidden" id="howto">
+    <div class="panel dialog wide">
+      <h2>How to play</h2>
+      <div class="how-grid">
+        <div class="how"><div class="how-i">◎</div><h3>Aim &amp; release</h3><p>Move around the star to aim. Click (or tap, or Space) to release the next element toward the core. The dotted path shows where it lands.</p></div>
+        <div class="how"><div class="how-i">⚛</div><h3>Fuse</h3><p>Two identical elements fuse into the next: <b>H → He → C → O → Ne → Mg → Si → Fe</b>. Identical elements that nearly touch are drawn together by <b>fusion affinity</b>. Fuse in quick succession to build a chain multiplier.</p></div>
+        <div class="how"><div class="how-i">⬢</div><h3>Feed the core</h3><p>Iron can't fuse. Instead it sinks into the core. Feed the core enough iron and the star goes <b>supernova</b>, and you move on to the next star.</p></div>
+        <div class="how"><div class="how-i">⚠</div><h3>Stay inside</h3><p>Anything that lingers past the glowing danger ring starts a countdown. If one runs out, the star sheds its envelope: <b>mass ejection</b>, run over.</p></div>
+        <div class="how"><div class="how-i">⇄</div><h3>Hold</h3><p>Right-click, C or the HOLD button stashes the current element for later (once per release).</p></div>
+        <div class="how"><div class="how-i">☀</div><h3>Solar Flare</h3><p>Fusions charge the flare. Unleash it (F) to vaporize every H and He in the star, clearing room fast.</p></div>
+        <div class="how"><div class="how-i">✧</div><h3>Strange matter</h3><p><b>Neutron shards</b> upgrade whatever they touch. <b>Dark matter</b> is inert; three fusions next to it dissolve it.</p></div>
+        <div class="how"><div class="how-i">✦</div><h3>Boons</h3><p>After each supernova, pick a boon. Each new star brings new hazards: magnetic swirl, binary companions and stellar flares.</p></div>
+      </div>
+      <p class="keys"><kbd>←</kbd><kbd>→</kbd> aim · <kbd>Space</kbd> release · <kbd>C</kbd> hold · <kbd>F</kbd> flare · <kbd>Esc</kbd> pause</p>
+      <button class="btn primary" data-close type="button">Got it</button>
+    </div>
+  </section>
+
+  <section class="screen hidden" id="settings">
+    <div class="panel dialog">
+      <h2>Settings</h2>
+      <label class="row">Music <input type="range" id="optMusic" min="0" max="1" step="0.05"></label>
+      <label class="row">Sound effects <input type="range" id="optSfx" min="0" max="1" step="0.05"></label>
+      <label class="row">Screen shake <input type="checkbox" id="optShake"></label>
+      <label class="row">Reduced flashes <input type="checkbox" id="optFlash"></label>
+      <label class="row">Graphics
+        <select id="optQuality"><option value="low">Low</option><option value="med">Balanced</option><option value="high">High</option></select>
+      </label>
+      <label class="row">Mute everything <input type="checkbox" id="optMute"></label>
+      <button class="btn primary" data-close type="button">Done</button>
+    </div>
+  </section>
+
+  <section class="screen hidden" id="pause">
+    <div class="panel dialog">
+      <h2>Paused</h2>
+      <div class="pause-stats" id="pauseStats"></div>
+      <button class="btn primary" id="resumeBtn" type="button">Resume</button>
+      <button class="btn" id="pauseSetBtn" type="button">Settings</button>
+      <button class="btn" id="pauseHowBtn" type="button">How to play</button>
+      <button class="btn danger" id="quitBtn" type="button">Abandon star</button>
+    </div>
+  </section>
+
+  <section class="screen hidden" id="boons">
+    <div class="nova-head">
+      <div class="nova-kicker" id="novaKicker">STAR 1 · PROXIMA</div>
+      <h2 class="nova-title">SUPERNOVA</h2>
+      <div class="nova-score" id="novaScore">+5,000</div>
+      <p class="nova-sub">Choose a boon to carry into the next star.</p>
+    </div>
+    <div class="boon-cards" id="boonCards"></div>
+  </section>
+
+  <section class="screen hidden" id="gameover">
+    <div class="panel dialog">
+      <div class="go-kicker" id="goKicker">STAR 1 · PROXIMA</div>
+      <h2 class="go-title">MASS EJECTION</h2>
+      <p class="go-sub">Your star shed its outer layers. A quieter star survives, and your run ends here.</p>
+      <div class="go-stats" id="goStats"></div>
+      <div class="go-best" id="goBest"></div>
+      <button class="btn primary" id="againBtn" type="button">Ignite a new star</button>
+      <button class="btn" id="menuBtn" type="button">Title screen</button>
+    </div>
+  </section>
+
+  <div class="intro hidden" id="intro">
+    <div class="intro-kicker" id="introKicker">STAR 1</div>
+    <div class="intro-name" id="introName">PROXIMA</div>
+    <div class="intro-goal" id="introGoal">Feed 1 iron to the core</div>
+    <div class="intro-mods" id="introMods"></div>
+  </div>
+
+  <script type="module" src="./js/game.js?v=2.0.0"></script>
+</body>
+</html>
