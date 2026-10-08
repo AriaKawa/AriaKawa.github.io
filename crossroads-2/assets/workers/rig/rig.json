@@ -1,0 +1,86 @@
+{
+ "lumber": {
+  "file": "lumberjack",
+  "w": 51,
+  "h": 54,
+  "pivot": [
+   32.19,
+   31.21
+  ],
+  "foot": [
+   23.4,
+   47
+  ],
+  "top": 9
+ },
+ "farm": {
+  "file": "farmer",
+  "w": 55,
+  "h": 50,
+  "pivot": [
+   22.97,
+   28.98
+  ],
+  "foot": [
+   28.6,
+   43
+  ],
+  "top": 7
+ },
+ "hunter": {
+  "file": "hunter",
+  "w": 51,
+  "h": 54,
+  "pivot": [
+   19.92,
+   31.31
+  ],
+  "foot": [
+   25.9,
+   46
+  ],
+  "top": 10
+ },
+ "fisher": {
+  "file": "fisherman",
+  "w": 55,
+  "h": 50,
+  "pivot": [
+   23.01,
+   29.38
+  ],
+  "foot": [
+   27.9,
+   43
+  ],
+  "top": 9
+ },
+ "wolves": {
+  "file": "wolf-den-worker",
+  "w": 54,
+  "h": 51,
+  "pivot": [
+   21.06,
+   30.04
+  ],
+  "foot": [
+   27.2,
+   44
+  ],
+  "top": 9
+ },
+ "gatherer": {
+  "file": "berry-gatherer",
+  "w": 50,
+  "h": 54,
+  "pivot": [
+   18.15,
+   29.35
+  ],
+  "foot": [
+   23.9,
+   46
+  ],
+  "top": 10
+ }
+}
