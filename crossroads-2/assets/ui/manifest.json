@@ -1,0 +1,641 @@
+{
+  "pixelScale": 3,
+  "assets": {
+    "panel": {
+      "width": 48,
+      "height": 48,
+      "slice": 7,
+      "scale": 3
+    },
+    "card": {
+      "width": 48,
+      "height": 48,
+      "slice": 7,
+      "scale": 3
+    },
+    "tooltip": {
+      "width": 48,
+      "height": 48,
+      "slice": 7,
+      "scale": 3
+    },
+    "toast": {
+      "width": 48,
+      "height": 48,
+      "slice": 7,
+      "scale": 3
+    },
+    "inset": {
+      "width": 24,
+      "height": 24,
+      "slice": 3,
+      "scale": 3
+    },
+    "primary-normal": {
+      "width": 30,
+      "height": 18,
+      "slice": 5,
+      "scale": 3
+    },
+    "primary-hover": {
+      "width": 30,
+      "height": 18,
+      "slice": 5,
+      "scale": 3
+    },
+    "primary-pressed": {
+      "width": 30,
+      "height": 18,
+      "slice": 5,
+      "scale": 3
+    },
+    "primary-disabled": {
+      "width": 30,
+      "height": 18,
+      "slice": 5,
+      "scale": 3
+    },
+    "primary-focus": {
+      "width": 30,
+      "height": 18,
+      "slice": 5,
+      "scale": 3
+    },
+    "secondary-normal": {
+      "width": 30,
+      "height": 18,
+      "slice": 5,
+      "scale": 3
+    },
+    "secondary-hover": {
+      "width": 30,
+      "height": 18,
+      "slice": 5,
+      "scale": 3
+    },
+    "secondary-pressed": {
+      "width": 30,
+      "height": 18,
+      "slice": 5,
+      "scale": 3
+    },
+    "secondary-disabled": {
+      "width": 30,
+      "height": 18,
+      "slice": 5,
+      "scale": 3
+    },
+    "secondary-focus": {
+      "width": 30,
+      "height": 18,
+      "slice": 5,
+      "scale": 3
+    },
+    "icon-normal": {
+      "width": 30,
+      "height": 18,
+      "slice": 5,
+      "scale": 3
+    },
+    "icon-hover": {
+      "width": 30,
+      "height": 18,
+      "slice": 5,
+      "scale": 3
+    },
+    "icon-pressed": {
+      "width": 30,
+      "height": 18,
+      "slice": 5,
+      "scale": 3
+    },
+    "icon-disabled": {
+      "width": 30,
+      "height": 18,
+      "slice": 5,
+      "scale": 3
+    },
+    "icon-focus": {
+      "width": 30,
+      "height": 18,
+      "slice": 5,
+      "scale": 3
+    },
+    "tab-normal": {
+      "width": 30,
+      "height": 18,
+      "slice": 5,
+      "scale": 3
+    },
+    "tab-hover": {
+      "width": 30,
+      "height": 18,
+      "slice": 5,
+      "scale": 3
+    },
+    "tab-pressed": {
+      "width": 30,
+      "height": 18,
+      "slice": 5,
+      "scale": 3
+    },
+    "tab-disabled": {
+      "width": 30,
+      "height": 18,
+      "slice": 5,
+      "scale": 3
+    },
+    "tab-focus": {
+      "width": 30,
+      "height": 18,
+      "slice": 5,
+      "scale": 3
+    },
+    "toggle-normal": {
+      "width": 30,
+      "height": 18,
+      "slice": 5,
+      "scale": 3
+    },
+    "toggle-hover": {
+      "width": 30,
+      "height": 18,
+      "slice": 5,
+      "scale": 3
+    },
+    "toggle-pressed": {
+      "width": 30,
+      "height": 18,
+      "slice": 5,
+      "scale": 3
+    },
+    "toggle-disabled": {
+      "width": 30,
+      "height": 18,
+      "slice": 5,
+      "scale": 3
+    },
+    "toggle-focus": {
+      "width": 30,
+      "height": 18,
+      "slice": 5,
+      "scale": 3
+    },
+    "divider": {
+      "width": 48,
+      "height": 7,
+      "slice": 0,
+      "scale": 3
+    },
+    "corner": {
+      "width": 9,
+      "height": 9,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-pause": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-up": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-sun": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-axe": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-house": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-paw": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-pot": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-sickle": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-gear": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-play": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-sound": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-mute": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-music": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-help": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-value": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-left": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-right": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-rotate": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-down": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-drop": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-hold": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-restart": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-wheat": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-antler": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-berry": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-road": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-sprout": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-coin": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-scroll": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-feather": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-hammer": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-lantern": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-boot": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-stall": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-crown": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-sign": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-chest": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-shield": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-eye": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-spring": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-summer": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-autumn": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-winter": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-wood": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-hides": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-harvest": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-next": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-settings": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "icon-levy": {
+      "width": 12,
+      "height": 12,
+      "slice": 0,
+      "scale": 3
+    },
+    "tile-grass": {
+      "width": 16,
+      "height": 16,
+      "slice": 0,
+      "scale": 3
+    },
+    "tile-forest": {
+      "width": 16,
+      "height": 16,
+      "slice": 0,
+      "scale": 3
+    },
+    "tile-timber": {
+      "width": 16,
+      "height": 16,
+      "slice": 0,
+      "scale": 3
+    },
+    "tile-wheat": {
+      "width": 16,
+      "height": 16,
+      "slice": 0,
+      "scale": 3
+    },
+    "tile-orchard": {
+      "width": 16,
+      "height": 16,
+      "slice": 0,
+      "scale": 3
+    },
+    "tile-pond": {
+      "width": 16,
+      "height": 16,
+      "slice": 0,
+      "scale": 3
+    },
+    "tile-road": {
+      "width": 16,
+      "height": 16,
+      "slice": 0,
+      "scale": 3
+    },
+    "tile-empty": {
+      "width": 16,
+      "height": 16,
+      "slice": 0,
+      "scale": 3
+    },
+    "tile-farm": {
+      "width": 16,
+      "height": 16,
+      "slice": 0,
+      "scale": 3
+    },
+    "tile-gatherer": {
+      "width": 16,
+      "height": 16,
+      "slice": 0,
+      "scale": 3
+    },
+    "tile-hunter": {
+      "width": 16,
+      "height": 16,
+      "slice": 0,
+      "scale": 3
+    },
+    "tile-fisher": {
+      "width": 16,
+      "height": 16,
+      "slice": 0,
+      "scale": 3
+    },
+    "tile-lumber": {
+      "width": 16,
+      "height": 16,
+      "slice": 0,
+      "scale": 3
+    },
+    "tile-wolves": {
+      "width": 16,
+      "height": 16,
+      "slice": 0,
+      "scale": 3
+    },
+    "tile-house": {
+      "width": 16,
+      "height": 16,
+      "slice": 0,
+      "scale": 3
+    },
+    "tile-market": {
+      "width": 16,
+      "height": 16,
+      "slice": 0,
+      "scale": 3
+    },
+    "tile-well": {
+      "width": 16,
+      "height": 16,
+      "slice": 0,
+      "scale": 3
+    },
+    "tile-cookhouse": {
+      "width": 16,
+      "height": 16,
+      "slice": 0,
+      "scale": 3
+    },
+    "tile-tannery": {
+      "width": 16,
+      "height": 16,
+      "slice": 0,
+      "scale": 3
+    },
+    "tile-architect": {
+      "width": 16,
+      "height": 16,
+      "slice": 0,
+      "scale": 3
+    },
+    "tile-roadwright": {
+      "width": 16,
+      "height": 16,
+      "slice": 0,
+      "scale": 3
+    },
+    "checkbox-off": {
+      "width": 16,
+      "height": 16,
+      "slice": 0,
+      "scale": 3
+    },
+    "checkbox-on": {
+      "width": 16,
+      "height": 16,
+      "slice": 0,
+      "scale": 3
+    },
+    "worn-path": {
+      "width": 96,
+      "height": 96,
+      "slice": 0,
+      "usage": "World-space narrow footpath texture; all roads and approaches"
+    },
+    "tile-pasture": {
+      "width": 16,
+      "height": 16,
+      "slice": 0,
+      "scale": 3
+    }
+  }
+}
