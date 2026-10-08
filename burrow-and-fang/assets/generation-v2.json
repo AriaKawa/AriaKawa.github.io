@@ -1,0 +1,27 @@
+{
+  "revision": 2,
+  "changes": "Higher view buildings, flat meadow, road texture and cosmetic walking workers",
+  "generated": [
+    [
+      "terrainV2",
+      "Production pixel-art strategy game terrain background, wide landscape 1800 by 1100 composition. HIGH bird's-eye camera at 65 degrees looking downward, almost top-down, no horizon. ONE continuous perfectly FLAT grassy woodland clearing filling central 85% of frame, broad unobstructed battle space from left to right. No river, no water, no bridge, no chasm, no central obstacle, no hills in playable area. Low woodland trees, stones and bushes only at extreme outer perimeter. Subtle muted olive-green grass, worn pale earth patches and tiny wildflowers; peaceful natural village ground. Detailed authentic 32-bit PIXEL ART, crisp square pixels, consistent small texture scale, warm soft daylight, restrained earthy colors. No buildings, no characters, no roads drawn into center, no UI, no letters. Broad central ground must stay empty for freely placed villages and battlefield.",
+      false
+    ],
+    [
+      "workersV2",
+      "Production game sprite animation atlas. True transparent PNG. Exact 6 columns x 4 rows with equal cells, full characters, wide empty margins, no overlaps, no labels. Tiny cute animal WORKERS in canvas aprons, carrying a small crate. HIGH 60-degree bird's-eye strategy game view: clear top of head/ears and shoulders, short visible body. Row 1 brown rat worker facing southeast/right. Row 2 same rat worker facing northeast away from camera. Row 3 gray wolf worker facing southeast/right. Row 4 same wolf worker facing northeast away from camera. Six columns are successive WALK CYCLE frames: left foot forward, passing, right foot forward, passing, left foot forward with slight alternate arm, settling. Crate stays firmly in hands. Very clear moving leg poses, grounded feet at same baseline each cell, same position and scale in every frame. Coarse crisp 32-bit pixel art matching medieval woodland village, tan apron, small animal ears and tails, no weapons. NO ground, NO shadows, no background color, genuinely transparent alpha.",
+      true
+    ],
+    [
+      "ratsV2",
+      "Production high-angle pixel-art building atlas. Transparent PNG, 3 columns x 3 rows, nine individual RAT CLAN sewer village buildings. HIGH bird's-eye view looking DOWN at 60 degrees: roofs and floor plans dominate, short visible walls, compact squat buildings, NOT tall front-view towers. Every sprite sits flush on its own small irregular earth-and-cobblestone foundation immediately under its walls. NO floating island, NO detached shadow, NO thick plinth. Nine separate equal cells, generous transparent padding, no overlap. Row1: crown-roof Rat Court stone citadel; humble sewer Warren with pipe doorway; Scout Post short square watchhouse with telescope. Row2: Mage Tower squat round apothecary with purple roof and green crystal; Iron Gate barracks low fortified drainage gate; Scrap Market with brown canopy and cheese crates. Row3: Spore Farm low greenhouse of green mushrooms; Plague Bell squat green bell pavilion; Alchemy Vat workshop with green bubbling cistern. Consistent chunky pixel art with hard square pixels, moss-gray masonry, copper pipes, warm little windows. View roofs clearly from above. All entirely inside separate cells, no text, no labels, no characters, no shadows beyond footprint, genuinely transparent background.",
+      true
+    ],
+    [
+      "wolvesV2",
+      "Production high-angle pixel-art building atlas. Transparent PNG, 3 columns x 3 rows, nine individual WOLF CLAN timber den village buildings. HIGH bird's-eye view looking DOWN at 60 degrees: roofs and floor plans dominate, short visible walls, compact squat buildings, NOT tall front-view towers. Every sprite sits flush on its own small irregular dirt-and-stone foundation immediately beneath walls. NO floating island, NO detached shadow, NO thick plinth. Nine separate equal cells, generous transparent padding, no overlap. Row1: Alpha Lodge timber longhouse with carved wolf roof and blue banner; Wolf Den low rocky den with timber entrance; Ranger Post short timber lookout. Row2: Moon Shrine small open stone circle with cyan crescent; Fang Hall low shield-adorned log barracks; Fur Market brown canopy and pelts. Row3: Smokehouse log hut with food racks; Howling Totem short carved wolf sculpture on dirt; Moonwell low circular stone pool with moon rune. Consistent chunky pixel art hard square pixels, warm timber brown, blue cloth and cyan moon accents. View roofs clearly from above. All entirely inside separate cells, no text, no labels, no characters, no shadows beyond footprint, genuinely transparent background.",
+      true
+    ]
+  ],
+  "roadPrompt": "Production seamless ground texture for a pixel-art strategy game's narrow village paths. Flat top-down orthographic view, tightly packed tiny irregular pale earth-brown cobbles and worn dirt, a few muted moss flecks. No perspective, no shadows, no raised edges, no objects, no large stones, no writing. Authentic chunky pixel art, low contrast muted tan/gray palette so it blends into olive grass. The image fills the entire square and tiles seamlessly. Texture will be reduced to 64x64 and used to paint curving roads."
+}

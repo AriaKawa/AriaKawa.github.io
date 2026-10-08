@@ -1,6 +1,6 @@
-import * as E from "./engine.mjs";
-import { Renderer } from "./render.mjs";
-import { matchmaking, ping } from "./network.mjs";
+import * as E from "./engine.mjs?v=2";
+import { Renderer } from "./render.mjs?v=2";
+import { matchmaking, ping } from "./network.mjs?v=2";
 const $ = (id) => document.getElementById(id),
   SAVE = "burrow-fang-run-v1";
 const renderer = new Renderer($("world"));
@@ -91,6 +91,7 @@ function select(uid) {
   if (state?.phase !== "build" || busy) return;
   selected = uid;
   renderer.selected = uid;
+  if (!renderer.cursor) renderer.cursor = renderer.screen(E.point(1, 0));
   beep();
   updateSelection();
   updateReserve();
@@ -164,8 +165,9 @@ function updateShop() {
       button.style.setProperty("--rarity", rarity[d.cost]);
       button.classList.toggle("unaffordable", state.gold < d.cost);
       button.setAttribute("aria-label", `Buy ${d.name}, ${d.cost} gold`);
-      button.innerHTML = `<img src="assets/${state.clan}-building-${d.art}.png" alt=""><span class="card-copy"><strong>${d.name}</strong><small><i class="coin"></i>${d.cost}<span class="card-kind">${d.kind === "unit" ? "⚔" : d.kind === "economy" ? "◈" : "✧"}</span></small></span>`;
-      button.onclick = () => {
+      button.innerHTML = `<span class="hex-frame"><span class="hex-inner"><img src="assets/${state.clan}-building-${d.art}-v2.png" alt=""></span></span><span class="price-badge"><i class="coin"></i>${d.cost}</span>`;
+      button.onclick = (event) => {
+        renderer.cursor = { x: event.clientX, y: event.clientY };
         if (busy) return;
         hideTip();
         const result = E.buy(state, i);
@@ -209,7 +211,7 @@ function updateReserve() {
     button.className = "reserve-slot";
     if (b) {
       const d = E.definition(state.clan, b.type);
-      button.innerHTML = `<img src="assets/${state.clan}-building-${d.art}.png" alt=""><small>${"★".repeat(b.star)}</small>`;
+      button.innerHTML = `<img src="assets/${state.clan}-building-${d.art}-v2.png" alt=""><small>${"★".repeat(b.star)}</small>`;
       button.classList.toggle("active", selected === b.uid);
       button.setAttribute(
         "aria-label",
@@ -245,7 +247,7 @@ function update() {
         ? "Complete"
         : "Build";
   $("clan-name").textContent = state.clan === "rats" ? "Rats" : "Wolves";
-  $("clan-icon").src = `assets/${state.clan}-building-0.png`;
+  $("clan-icon").src = `assets/${state.clan}-building-0-v2.png`;
   const army = E.armyBuildings(state),
     other = E.onBoard(state).length - army.length;
   const troopCount = army.reduce(
@@ -273,7 +275,10 @@ function update() {
   $("opponent").hidden = !sim;
   $("battle").disabled = busy || army.length === 0;
   $("battle-label").textContent = busy ? "Finding…" : "Battle";
-  $("battle-symbol").textContent = busy ? "· · ·" : "➜";
+  $("battle").setAttribute("aria-label", busy ? "Finding opponent" : "Battle");
+  $("battle-symbol").innerHTML = busy
+    ? "· · ·"
+    : '<svg viewBox="0 0 64 64" width="1em" height="1em" aria-hidden="true"><path d="M7 9 40 32 7 55V41L20 32 7 23Z M29 9 62 32 29 55V41L42 32 29 23Z" fill="currentColor" stroke="#13242d" stroke-width="2"/></svg>';
   $("selection").hidden = !build || !selected;
   $("hint").hidden = !build;
   $("grid").disabled = !build;
@@ -528,6 +533,9 @@ $("gold-button").onclick = () => {
 };
 $("gold-button").onmouseleave = hideTip;
 let pointer = null;
+addEventListener("pointermove", (e) => {
+  renderer.cursor = { x: e.clientX, y: e.clientY };
+});
 $("world").addEventListener("pointerdown", (e) => {
   if (!$("menu").hidden || !$("result").hidden) return;
   pointer = {
@@ -546,7 +554,7 @@ $("world").addEventListener("pointermove", (e) => {
   if (!pointer || pointer.id !== e.pointerId) return;
   if (Math.hypot(e.clientX - pointer.x, e.clientY - pointer.y) > 8)
     pointer.drag = true;
-  if (pointer.drag) {
+  if (pointer.drag && !selected) {
     const l = renderer.layout(!!sim);
     renderer.target.x = Math.max(
       100,
@@ -566,12 +574,10 @@ $("world").addEventListener("pointerup", (e) => {
   if (!pointer) return;
   const p = pointer;
   pointer = null;
-  if (p.drag || !state || state.phase !== "build" || busy) return;
-  const cell = renderer.hit(e.clientX, e.clientY);
-  if (!cell) {
-    clearSelected();
+  if ((p.drag && !selected) || !state || state.phase !== "build" || busy)
     return;
-  }
+  const cell = renderer.hit(e.clientX, e.clientY);
+  if (!cell) return;
   if (selected) {
     const b = state.buildings.find((x) => x.uid === selected);
     if (b?.q === cell.q && b?.r === cell.r) {

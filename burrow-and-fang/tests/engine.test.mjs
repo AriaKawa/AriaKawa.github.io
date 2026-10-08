@@ -1,19 +1,37 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import * as E from "../engine.mjs";
-import { makeRoads } from "../render.mjs";
-test("units can pursue back across the bridge without oscillating", () => {
+import { makeRoads, roadGraph, roadRoute } from "../render.mjs";
+test("units pursue directly across open ground without a central waypoint", () => {
   const own = E.newGame("rats", 7);
   const enemy = E.newGame("wolves", 8);
   const sim = E.createBattle(E.snapshot(own), E.snapshot(enemy), 10);
   const rat = sim.units.find((u) => u.side === 0);
   const wolf = sim.units.find((u) => u.side === 1);
   sim.units = [rat, wolf];
-  Object.assign(rat, { x: 940, y: 462 });
-  Object.assign(wolf, { x: 880, y: 462 });
+  Object.assign(rat, { x: 1000, y: 220 });
+  Object.assign(wolf, { x: 800, y: 220 });
   E.stepBattle(sim, 0.05);
-  assert.ok(rat.x < 940);
-  assert.ok(wolf.x > 880);
+  assert.ok(rat.x < 1000);
+  assert.ok(wolf.x > 800);
+  assert.equal(rat.y, 220);
+  assert.equal(wolf.y, 220);
+});
+test("every occupied plot has a perimeter and workers can reach every road node", () => {
+  const roads = makeRoads(E.CELLS);
+  assert.equal(roads.filter((p) => p.length === 7 && p[0] === p[6]).length, 37);
+  const graph = roadGraph(roads),
+    start = graph.keys().next().value;
+  for (const destination of graph.keys()) {
+    if (destination === start) continue;
+    const route = roadRoute(graph, start, destination);
+    assert.equal(route.at(-1), destination);
+    let previous = start;
+    for (const next of route) {
+      assert.ok(graph.get(previous).neighbors.has(next));
+      previous = next;
+    }
+  }
 });
 test("37 valid unique plots and connected roads", () => {
   assert.equal(E.CELLS.length, 37);

@@ -8,6 +8,8 @@ Serve the repository root with a local HTTP server and open `/burrow-and-fang/`.
 
 Choose Rats or Wolves. Buy from four shop cards, place purchases on the 37-hex village, then battle. Units are recreated from their buildings each round. Three equal copies merge automatically, through three stars. Move or swap buildings freely during preparation; reserve and sell actions are in the selected-building panel. Unit buildings and non-unit buildings each have a capacity equal to village level. The eight-slot reserve holds purchases.
 
+Click a purchase or village building to pick it up. Its preview follows the pointer and snaps to nearby hexes; click to place or Escape to cancel. The higher-angle village uses grounded foundations, connected perimeter roads, animated patrols and cosmetic workers. Workers carry supplies along the road graph, stop at destinations, and never enter the economy, saved armies or combat simulation. Combat takes place on an open meadow with direct pursuit rather than a central crossing. The shop uses opaque hex portrait frames and price badges, with names and statistics in tooltips.
+
 Rats field small swarms, poison casters and a summoning Rat King. Wolves gain 6% damage per nearby packmate, up to 18%; a Pack Leader adds a 35% damage aura, and shamans heal nearby allies. Adjacent support buildings add attack speed or starting health. Each clan has nine building types with generated art.
 
 Rounds pay 5 gold, up to 5 interest (1 per 10 saved), economy-building income, streak income, and 1 extra gold for a victory. Rerolls cost 2; 4 gold buys 4 XP; battles grant 2 XP. Levels 3–8 unlock higher shop odds and more building slots. Reach 10 wins before health runs out. Runs also end after round 25. Buildings sell for their combined purchase value.
@@ -19,6 +21,7 @@ Rounds pay 5 gold, up to 5 interest (1 per 10 saved), economy-building income, s
 - `game.mjs`: minimal DOM interface, input, sound synthesis and local autosave.
 - `network.mjs`: asynchronous saved-army matching through the site's Firebase project.
 - `assets/generation.json`: built-in image-generation prompts and asset provenance. Runtime art includes 18 extracted building sprites, two 24-frame unit sheets, a 16-frame VFX sheet, and terrain. The cover is a capture of the rendered generated art.
+- `assets/generation-v2.json`: higher-view building and meadow prompts, road texture and a 24-frame worker atlas. Version 2 unit sheets align the existing poses to a shared foot baseline to prevent floating during animation.
 
 ## Async battles and persistence
 

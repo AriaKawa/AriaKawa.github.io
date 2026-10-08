@@ -638,7 +638,7 @@ export function makeOpponent(s) {
   };
 }
 export const HEX_R = 54,
-  HEX_Y = 0.72;
+  HEX_Y = 0.92;
 export function point(q, r, side = 0) {
   return {
     x: 455 + side * 890 + Math.sqrt(3) * HEX_R * (q + r / 2),
@@ -855,17 +855,7 @@ export function stepBattle(sim, dt) {
     if (dist > u.range) {
       let mx = dx,
         my = dy;
-      // Cross the river at the bridge before closing on a target on the other bank.
-      if (u.x < 855 && target.x > 945) {
-        mx = 900 - u.x;
-        my = 462 - u.y;
-      } else if (u.x > 945 && target.x < 855) {
-        mx = 900 - u.x;
-        my = 462 - u.y;
-      } else if (u.x >= 855 && u.x <= 945) {
-        mx = dx;
-        my = Math.max(442, Math.min(482, target.y)) - u.y;
-      }
+      // The whole meadow is traversable; approach across the full front.
       const len = Math.hypot(mx, my) || 1;
       u.x += (mx / len) * u.speed * dt;
       u.y += (my / len) * u.speed * dt;

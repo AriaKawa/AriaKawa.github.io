@@ -8,7 +8,7 @@ import {
   UNIT,
   hexDistance,
   rng,
-} from "./engine.mjs";
+} from "./engine.mjs?v=2";
 export class Renderer {
   constructor(canvas) {
     this.canvas = canvas;
@@ -20,6 +20,9 @@ export class Renderer {
     this.height = 0;
     this.hover = null;
     this.selected = null;
+    this.cursor = null;
+    this.towns = new Map();
+    this.roadPattern = null;
     this.grid = false;
     this.effects = [];
     this.roadCache = new Map();
@@ -29,12 +32,14 @@ export class Renderer {
   }
   async load(progress) {
     const files = [
-      "terrain.webp",
+      "terrain-v2.webp",
+      "workers-v2.png",
+      "road-v2.png",
       "vfx.png",
-      "rats-units.png",
-      "wolves-units.png",
+      "rats-units-v2.png",
+      "wolves-units-v2.png",
       ...["rats", "wolves"].flatMap((c) =>
-        Array.from({ length: 9 }, (_, i) => `${c}-building-${i}.png`),
+        Array.from({ length: 9 }, (_, i) => `${c}-building-${i}-v2.png`),
       ),
     ];
     let done = 0;
@@ -121,7 +126,7 @@ export class Renderer {
     c.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     c.fillStyle = "#14252b";
     c.fillRect(0, 0, w, h);
-    const backdrop = this.images["terrain.webp"];
+    const backdrop = this.images["terrain-v2.webp"];
     if (backdrop) {
       const cover = Math.max(w / backdrop.width, h / backdrop.height);
       c.globalAlpha = 0.28;
@@ -139,7 +144,7 @@ export class Renderer {
     c.scale(l.scale, l.scale);
     c.translate(-this.camera.x, -this.camera.y);
     c.imageSmoothingEnabled = false;
-    const terrain = this.images["terrain.webp"];
+    const terrain = this.images["terrain-v2.webp"];
     if (terrain) c.drawImage(terrain, -40, -30, 1880, 1060);
     if (!state) return;
     this.drawRoads(state, 0);
@@ -175,49 +180,41 @@ export class Renderer {
         if (u.hp > 0 || u.dead > 0)
           renderObjects.push({ kind: "unit", u, y: u.y });
     } else {
-      for (const b of onBoard(state)) {
-        const d = definition(state.clan, b.type);
-        if (d.kind !== "unit") continue;
-        const t = UNIT[d.unit],
-          p = point(b.q, b.r);
-        const n = Math.min(3, d.count);
-        for (let i = 0; i < n; i++) {
-          const angle = this.time * 0.22 + i * 2.8 + b.uid * 0.7;
-          renderObjects.push({
-            kind: "idle",
-            u: {
-              ...t,
-              type: d.unit,
-              clan: state.clan,
-              side: 0,
-              x: p.x + Math.cos(angle) * 35,
-              y: p.y + 21 + Math.sin(angle) * 10,
-              facing: Math.cos(angle) > 0 ? 1 : -1,
-              star: b.star,
-            },
-            y: p.y + 25,
-          });
-        }
-      }
+      for (const actor of this.townActors(state, dt))
+        renderObjects.push({
+          kind: actor.worker ? "worker" : "idle",
+          u: actor,
+          y: actor.y,
+        });
     }
     renderObjects.sort((a, b) => a.y - b.y);
     for (const o of renderObjects) {
       if (o.kind === "building") this.drawBuilding(o.b, battle);
+      else if (o.kind === "worker") this.drawWorker(o.u);
       else this.drawUnit(o.u, sim, o.kind === "idle");
     }
-    if (!battle && this.selected) {
+    if (!battle && this.selected && this.cursor) {
       const b = state.buildings.find((x) => x.uid === this.selected);
-      if (b && this.hover) {
-        const p = point(this.hover.q, this.hover.r),
-          valid = this.hover.q !== 0 || this.hover.r !== 0;
-        this.hex(p, valid ? "#cbd993" : "#df9990", 0.16, 2);
+      if (b) {
+        const near = this.hit(this.cursor.x, this.cursor.y);
+        const raw = this.world(this.cursor.x, this.cursor.y);
+        const at = near ? point(near.q, near.r) : raw;
+        const valid = near && (near.q !== 0 || near.r !== 0);
+        if (near) this.hex(at, valid ? "#d6f6e9" : "#df9990", 0.28, 3);
         const img =
           this.images[
-            `${state.clan}-building-${definition(state.clan, b.type).art}.png`
+            state.clan +
+              "-building-" +
+              definition(state.clan, b.type).art +
+              "-v2.png"
           ];
-        c.globalAlpha = 0.55;
-        this.sprite(img, p.x, p.y + 12, 93);
-        c.globalAlpha = 1;
+        this.sprite(
+          img,
+          at.x,
+          at.y + 28,
+          86 + (b.star - 1) * 3,
+          valid ? 0.84 : 0.48,
+        );
       }
     }
     if (sim) this.drawCombat(sim);
@@ -328,14 +325,17 @@ export class Renderer {
     const c = this.ctx,
       p = point(b.q, b.r, b.side);
     const d = b.hq ? { art: 0, kind: "hq" } : definition(b.clan, b.type);
-    const img = this.images[`${b.clan}-building-${d.art}.png`];
-    const width = b.hq ? 137 : 87 + (b.star - 1) * 9;
-    c.fillStyle = "#18201655";
-    c.beginPath();
-    c.ellipse(p.x, p.y + 9, width * 0.42, width * 0.14, 0, 0, Math.PI * 2);
-    c.fill();
-    if (!battle && b.uid === this.selected) this.hex(p, "#e1d39c", 0.2, 2);
-    this.sprite(img, p.x, p.y + 18, width, battle ? 0.64 : 1);
+    const img = this.images[`${b.clan}-building-${d.art}-v2.png`];
+    const width = b.hq ? 96 : 84 + (b.star - 1) * 3;
+    if (!battle && b.uid === this.selected) this.hex(p, "#e1d39c", 0.16, 2);
+    // The generated foundation is the contact surface; no detached ellipse shadow.
+    this.sprite(
+      img,
+      p.x,
+      p.y + 28,
+      width,
+      b.uid === this.selected && !battle ? 0.24 : 1,
+    );
     if (!battle && !b.hq) {
       c.font = "bold 9px sans-serif";
       c.textAlign = "center";
@@ -365,23 +365,20 @@ export class Renderer {
   }
   drawUnit(u, sim, idle = false) {
     const c = this.ctx,
-      img = this.images[`${u.clan}-units.png`];
+      img = this.images[`${u.clan}-units-v2.png`];
     if (!img) return;
-    let frame = idle
-      ? 0
-      : u.attack > 0
+    const walking = !!u.moving;
+    const cycle = [1, 0, 2, 0];
+    const frame =
+      !idle && u.attack > 0
         ? 3 + Math.min(2, Math.floor(((0.38 - u.attack) / 0.38) * 3))
-        : u.moving
-          ? 1 + (Math.floor(this.time * 9 + u.id) % 2)
+        : walking
+          ? cycle[Math.floor(idle ? u.walked / 5 : this.time * 9 + u.id) % 4]
           : 0;
     const fw = img.width / 6,
       fh = img.height / 4;
-    let size = u.size * (idle ? 0.82 : 1.14);
-    const bob = idle
-      ? Math.sin(this.time * 2 + u.x) * 0.6
-      : u.moving
-        ? Math.sin(this.time * 19 + u.id) * 1.5
-        : 0;
+    const size = u.size * (idle ? 0.48 : 0.92);
+    const bob = 0;
     c.globalAlpha = u.hp <= 0 ? u.dead / 0.7 : 1;
     c.fillStyle = "#09181955";
     c.beginPath();
@@ -407,7 +404,7 @@ export class Renderer {
       fw,
       fh,
       -size * 0.65,
-      -size * 1.05,
+      -size * 1.3 * 0.875,
       size * 1.3,
       size * 1.3,
     );
@@ -429,6 +426,131 @@ export class Renderer {
         c.fillRect(u.x + width / 2 + 2, u.y - size * 1.02, 3, 3);
       }
     }
+  }
+  townActors(state, dt) {
+    const buildings = [{ uid: 0, q: 0, r: 0 }, ...onBoard(state)];
+    const key =
+      state.clan +
+      ":" +
+      buildings.map((b) => b.uid + "," + b.q + "," + b.r).join(";");
+    let town = this.towns.get(key);
+    if (!town) {
+      const roads = makeRoads(buildings),
+        graph = roadGraph(roads),
+        actors = [];
+      const random = rng(7341 + buildings.length);
+      const nodes = [...graph.values()];
+      buildings.forEach((b, i) => {
+        const origin = point(b.q, b.r);
+        const start = nearestNode(graph, { x: origin.x, y: origin.y + 40 });
+        actors.push({
+          worker: true,
+          id: i,
+          clan: state.clan,
+          x: start.x,
+          y: start.y,
+          node: start.key,
+          route: [],
+          wait: random() * 2,
+          walked: 0,
+          facing: 1,
+          back: false,
+          speed: 20 + random() * 7,
+          random,
+        });
+        if (b.uid) {
+          const d = definition(state.clan, b.type);
+          if (d.kind === "unit") {
+            actors.push({
+              ...UNIT[d.unit],
+              type: d.unit,
+              id: 100 + i,
+              clan: state.clan,
+              x: start.x,
+              y: start.y,
+              node: start.key,
+              home: origin,
+              route: [],
+              wait: 1 + random() * 3,
+              walked: 0,
+              facing: 1,
+              star: b.star,
+              speed: 16 + random() * 5,
+              random,
+            });
+          }
+        }
+      });
+      town = { actors, graph, nodes };
+      this.towns.clear();
+      this.towns.set(key, town);
+    }
+    for (const a of town.actors) {
+      a.moving = false;
+      if (a.wait > 0) {
+        a.wait -= dt;
+        continue;
+      }
+      if (!a.route.length) {
+        const candidates = a.home
+          ? town.nodes.filter(
+              (n) =>
+                Math.hypot(n.x - a.home.x, (n.y - a.home.y) / HEX_Y) <
+                HEX_R * 1.15,
+            )
+          : town.nodes;
+        const dest = candidates[Math.floor(a.random() * candidates.length)];
+        if (dest) a.route = roadRoute(town.graph, a.node, dest.key);
+        if (!a.route.length) {
+          a.wait = 0.8;
+          continue;
+        }
+      }
+      const next = town.graph.get(a.route[0]),
+        dx = next.x - a.x,
+        dy = next.y - a.y,
+        len = Math.hypot(dx, dy),
+        travel = Math.min(len, a.speed * dt);
+      if (len > 0.01) {
+        a.x += (dx / len) * travel;
+        a.y += (dy / len) * travel;
+        a.facing = dx >= 0 ? 1 : -1;
+        a.back = dy < 0;
+        a.walked += travel;
+        a.moving = true;
+      }
+      if (travel >= len - 0.01) {
+        a.node = a.route.shift();
+        if (!a.route.length)
+          a.wait = a.worker ? 0.7 + a.random() * 1.8 : 2 + a.random() * 4;
+      }
+    }
+    return town.actors;
+  }
+  drawWorker(a) {
+    const img = this.images["workers-v2.png"];
+    if (!img) return;
+    const c = this.ctx,
+      row = (a.clan === "rats" ? 0 : 2) + (a.back ? 1 : 0),
+      frame = a.moving ? Math.floor(a.walked / 4) % 6 : 0;
+    const size = 21,
+      fw = img.width / 6,
+      fh = img.height / 4;
+    c.save();
+    c.translate(Math.round(a.x), Math.round(a.y));
+    c.scale(a.facing, 1);
+    c.drawImage(
+      img,
+      frame * fw,
+      row * fh,
+      fw,
+      fh,
+      -size / 2,
+      -size * 0.875,
+      size,
+      size,
+    );
+    c.restore();
   }
   drawCombat(sim) {
     const c = this.ctx,
@@ -507,27 +629,17 @@ export class Renderer {
     const c = this.ctx;
     c.lineCap = "round";
     c.lineJoin = "round";
+    if (!this.roadPattern && this.images["road-v2.png"])
+      this.roadPattern = c.createPattern(this.images["road-v2.png"], "repeat");
     for (const [color, width] of [
-      ["#645b3540", 16],
-      ["#8e7e5055", 12],
-      ["#a28c5d70", 8],
+      ["#84775155", 15],
+      [this.roadPattern || "#a28c5d", 9],
     ]) {
       c.strokeStyle = color;
       c.lineWidth = width;
       for (const path of roads) {
         c.beginPath();
-        path.forEach((p, i) => {
-          if (!i) c.moveTo(p.x, p.y);
-          else if (i < path.length - 1) {
-            const next = path[i + 1];
-            c.quadraticCurveTo(
-              p.x,
-              p.y,
-              (p.x + next.x) / 2,
-              (p.y + next.y) / 2,
-            );
-          } else c.lineTo(p.x, p.y);
-        });
+        path.forEach((p, i) => (i ? c.lineTo(p.x, p.y) : c.moveTo(p.x, p.y)));
         c.stroke();
       }
     }
@@ -595,10 +707,11 @@ export function makeRoads(buildings, side = 0) {
     const p = point(b.q, b.r, side),
       keys = corners.get(b.q + "," + b.r);
     if (!keys) continue;
+    paths.push([...keys, keys[0]].map((k) => vertices.get(k)));
     const start = keys[2];
     paths.push([{ x: p.x, y: p.y + 17 }, vertices.get(start)]);
     if (!connected.size) {
-      connected.add(start);
+      keys.forEach((k) => connected.add(k));
       continue;
     }
     const costs = new Map([[start, 0]]),
@@ -635,6 +748,57 @@ export function makeRoads(buildings, side = 0) {
       }
       paths.push(path);
     }
+    keys.forEach((k) => connected.add(k));
   }
   return paths;
+}
+
+export function roadGraph(paths) {
+  const graph = new Map();
+  const key = (p) => Math.round(p.x) + "," + Math.round(p.y);
+  for (const path of paths) {
+    for (let i = 0; i < path.length; i++) {
+      const p = path[i],
+        k = key(p);
+      if (!graph.has(k)) graph.set(k, { ...p, key: k, neighbors: new Set() });
+      if (i) {
+        const prev = key(path[i - 1]);
+        graph.get(k).neighbors.add(prev);
+        graph.get(prev).neighbors.add(k);
+      }
+    }
+  }
+  return graph;
+}
+function nearestNode(graph, p) {
+  return [...graph.values()].reduce(
+    (best, n) =>
+      !best ||
+      Math.hypot(n.x - p.x, n.y - p.y) < Math.hypot(best.x - p.x, best.y - p.y)
+        ? n
+        : best,
+    null,
+  );
+}
+export function roadRoute(graph, from, to) {
+  const queue = [from],
+    previous = new Map([[from, null]]);
+  for (let i = 0; i < queue.length; i++) {
+    const k = queue[i];
+    if (k === to) break;
+    for (const n of graph.get(k)?.neighbors || []) {
+      if (!previous.has(n)) {
+        previous.set(n, k);
+        queue.push(n);
+      }
+    }
+  }
+  if (!previous.has(to)) return [];
+  const result = [];
+  let k = to;
+  while (k !== from) {
+    result.unshift(k);
+    k = previous.get(k);
+  }
+  return result;
 }
