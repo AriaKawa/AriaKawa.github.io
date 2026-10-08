@@ -1,0 +1,13 @@
+{
+  "tool": "Built-in imagegen",
+  "prompt": "Transparent PNG production PIXEL ART game UI atlas, exact 3 columns by 2 rows equal cells, six separate isolated icons with generous transparent padding. Earthy medieval woodland, dark carved walnut wood and worn antique bronze, warm cream symbols, crisp pixel edges. NO blue, NO text, NO letters, NO numbers, no background sheet. Row1 column1 circular carved wooden battle button with ivory DOUBLE right chevron; row1 column2 elongated horizontal small wooden reroll button with ivory circular refresh arrows centered (no text); row1 column3 standalone bronze cog gear with transparent center and NO box or backplate. Row2 column1 single gold coin face with embossed paw; row2 column2 tiny five-point golden star; row2 column3 plain horizontal dark wood panel with subtle bronze corner studs, empty center for overlay UI text. All six separated entirely within cells, straight front-on view, true transparent alpha, no cast shadows outside icons. High quality restrained pixel-art fantasy UI assets, readable small.",
+  "assets": [
+    "ui-battle-v3.png",
+    "ui-reroll-v3.png",
+    "ui-cog-v3.png",
+    "ui-coin-v3.png",
+    "ui-star-v3.png",
+    "ui-panel-v3.png"
+  ],
+  "processing": "Extracted six atlas cells, trimmed alpha bounds and scaled with nearest-neighbor; retained transparency."
+}

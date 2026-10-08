@@ -8,7 +8,8 @@ import {
   UNIT,
   hexDistance,
   rng,
-} from "./engine.mjs?v=2";
+  upgradeHue,
+} from "./engine.mjs?v=3";
 export class Renderer {
   constructor(canvas) {
     this.canvas = canvas;
@@ -35,6 +36,7 @@ export class Renderer {
       "terrain-v2.webp",
       "workers-v2.png",
       "road-v2.png",
+      "ui-star-v3.png",
       "vfx.png",
       "rats-units-v2.png",
       "wolves-units-v2.png",
@@ -110,7 +112,7 @@ export class Renderer {
     this.target = { x: battle ? 900 : 455, y: 490, z: 1 };
   }
   zoom(delta) {
-    this.target.z = Math.max(0.72, Math.min(2.3, this.target.z + delta));
+    this.target.z = Math.max(0.72, Math.min(3.2, this.target.z + delta));
   }
   burst(q, r) {
     const p = point(q, r);
@@ -189,7 +191,7 @@ export class Renderer {
     }
     renderObjects.sort((a, b) => a.y - b.y);
     for (const o of renderObjects) {
-      if (o.kind === "building") this.drawBuilding(o.b, battle);
+      if (o.kind === "building") this.drawBuilding(o.b, battle, state);
       else if (o.kind === "worker") this.drawWorker(o.u);
       else this.drawUnit(o.u, sim, o.kind === "idle");
     }
@@ -321,13 +323,22 @@ export class Renderer {
         this.hex(p, "#8ee3d0", 0.16, 1.5);
     }
   }
-  drawBuilding(b, battle) {
+  drawBuilding(b, battle, state) {
     const c = this.ctx,
       p = point(b.q, b.r, b.side);
     const d = b.hq ? { art: 0, kind: "hq" } : definition(b.clan, b.type);
     const img = this.images[`${b.clan}-building-${d.art}-v2.png`];
     const width = b.hq ? 96 : 84 + (b.star - 1) * 3;
     if (!battle && b.uid === this.selected) this.hex(p, "#e1d39c", 0.16, 2);
+    const upgrade =
+      !battle && !b.hq && b.star < 3 && state.shop.includes(b.type);
+    if (upgrade) {
+      c.save();
+      c.shadowColor = upgradeHue(b.type);
+      c.shadowBlur = 13;
+      this.sprite(img, p.x, p.y + 28, width);
+      c.restore();
+    }
     // The generated foundation is the contact surface; no detached ellipse shadow.
     this.sprite(
       img,
@@ -337,15 +348,10 @@ export class Renderer {
       b.uid === this.selected && !battle ? 0.24 : 1,
     );
     if (!battle && !b.hq) {
-      c.font = "bold 9px sans-serif";
-      c.textAlign = "center";
-      c.fillStyle = "#122027d9";
-      c.fillRect(p.x - 17, p.y + 18, 34, 15);
-      c.strokeStyle = "#9ba58777";
-      c.lineWidth = 1;
-      c.strokeRect(p.x - 17, p.y + 18, 34, 15);
-      c.fillStyle = "#e3cf8d";
-      c.fillText("★".repeat(b.star), p.x, p.y + 29);
+      const star = this.images["ui-star-v3.png"];
+      for (let i = 0; i < b.star; i++)
+        if (star)
+          c.drawImage(star, p.x - (b.star * 7) / 2 + i * 7, p.y + 30, 6, 6);
     }
     if (!battle && b.hq) {
       c.fillStyle = "#17292ac0";
@@ -632,8 +638,8 @@ export class Renderer {
     if (!this.roadPattern && this.images["road-v2.png"])
       this.roadPattern = c.createPattern(this.images["road-v2.png"], "repeat");
     for (const [color, width] of [
-      ["#84775155", 15],
-      [this.roadPattern || "#a28c5d", 9],
+      ["#84775144", 8],
+      [this.roadPattern || "#a28c5d", 4],
     ]) {
       c.strokeStyle = color;
       c.lineWidth = width;
@@ -654,8 +660,8 @@ export class Renderer {
           c.fillRect(
             a.x + (b.x - a.x) * t - 1,
             a.y + (b.y - a.y) * t - 1,
-            3,
-            2,
+            1,
+            1,
           );
         }
       }

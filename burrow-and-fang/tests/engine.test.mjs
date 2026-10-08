@@ -60,48 +60,57 @@ test("shop always four cards with level rarity restrictions and reroll cost", ()
     assert.equal(JSON.stringify(s.shop), before);
   }
 });
-test("three copies merge onto the board and three upgraded copies cascade", () => {
+test("shop upgrades the same building immediately and caps at three stars", () => {
   const s = E.newGame("rats");
-  s.gold = 100;
-  s.buildings = [
-    E.makeBuilding(s, "warren", 1, 0),
-    E.makeBuilding(s, "warren"),
-    E.makeBuilding(s, "warren", null, null, 2),
-    E.makeBuilding(s, "warren", null, null, 2),
-  ];
-  s.shop[0] = "warren";
-  const r = E.buy(s, 0);
-  assert.equal(r.error, undefined);
-  assert.equal(s.buildings.length, 1);
-  assert.equal(s.buildings[0].star, 3);
-  assert.equal(s.buildings[0].q, 1);
-  assert.equal(E.sellPrice(s, s.buildings[0]), 9);
+  s.gold = 30;
+  const b = s.buildings[0],
+    uid = b.uid;
+  s.shop = ["warren", "warren", "warren", "market"];
+  assert.equal(E.buy(s, 0).upgraded, true);
+  assert.equal(b.star, 2);
+  assert.equal(b.uid, uid);
+  assert.equal(b.q, 1);
+  assert.equal(s.buildings.length, 2);
+  assert.equal(E.buy(s, 1).upgraded, true);
+  assert.equal(b.star, 3);
+  assert.equal(E.sellPrice(s, b), 3);
+  const gold = s.gold;
+  assert.equal(E.buy(s, 2).error, "Maximum upgrade");
+  assert.equal(s.gold, gold);
+  assert.equal(s.shop[2], "warren");
+  for (let i = 0; i < 30; i++) {
+    s.gold = 100;
+    E.roll(s);
+    assert.ok(!s.shop.includes("warren"));
+  }
 });
-test("full reserve blocks purchases except immediate merge", () => {
+test("full reserve allows upgrades but not another new type", () => {
   const s = E.newGame("wolves");
-  s.gold = 50;
-  s.buildings = [];
-  for (let i = 0; i < 8; i++)
-    s.buildings.push(
-      E.makeBuilding(
-        s,
-        [
-          "warren",
-          "warren",
-          "scout",
-          "mage",
-          "guard",
-          "king",
-          "market",
-          "farm",
-        ][i],
-      ),
-    );
-  s.shop[0] = "market";
+  s.gold = 30;
+  s.buildings = E.CATALOG.wolves
+    .slice(0, 8)
+    .map((d) => E.makeBuilding(s, d.id));
+  s.shop = ["well", "warren", null, null];
   assert.equal(E.buy(s, 0).error, "Reserve is full");
-  s.shop[0] = "warren";
-  assert.ok(!E.buy(s, 0).error);
-  assert.equal(E.bench(s).length, 7);
+  assert.equal(E.buy(s, 1).upgraded, true);
+  assert.equal(E.bench(s).length, 8);
+});
+test("legacy duplicates are refunded once and duplicate placement is blocked", () => {
+  const s = E.newGame("rats");
+  delete s.rules;
+  s.gold = 10;
+  s.buildings = [
+    E.makeBuilding(s, "warren", 1, 0, 2),
+    E.makeBuilding(s, "warren", 0, 1),
+  ];
+  const restored = E.restore(JSON.stringify(s));
+  assert.equal(restored.buildings.length, 1);
+  assert.equal(restored.buildings[0].star, 2);
+  assert.equal(restored.gold, 12);
+  assert.equal(E.restore(JSON.stringify(restored)).gold, 12);
+  const duplicate = E.makeBuilding(restored, "warren");
+  restored.buildings.push(duplicate);
+  assert.match(E.place(restored, duplicate.uid, -1, 0), /Upgrade/);
 });
 test("army and support caps, swapping, headquarters, stash and selling", () => {
   const s = E.newGame("rats");

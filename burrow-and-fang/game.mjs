@@ -1,6 +1,6 @@
-import * as E from "./engine.mjs?v=2";
-import { Renderer } from "./render.mjs?v=2";
-import { matchmaking, ping } from "./network.mjs?v=2";
+import * as E from "./engine.mjs?v=3";
+import { Renderer } from "./render.mjs?v=3";
+import { matchmaking, ping } from "./network.mjs?v=3";
 const $ = (id) => document.getElementById(id),
   SAVE = "burrow-fang-run-v1";
 const renderer = new Renderer($("world"));
@@ -162,9 +162,16 @@ function updateShop() {
       button.disabled = true;
       button.setAttribute("aria-label", "Sold building");
     } else {
+      const owned = state.buildings.find((b) => b.type === d.id);
+      button.classList.toggle("upgrade", !!owned && owned.star < 3);
+      button.style.setProperty("--upgrade-hue", E.upgradeHue(d.id));
+      button.disabled = owned?.star >= 3;
       button.style.setProperty("--rarity", rarity[d.cost]);
       button.classList.toggle("unaffordable", state.gold < d.cost);
-      button.setAttribute("aria-label", `Buy ${d.name}, ${d.cost} gold`);
+      button.setAttribute(
+        "aria-label",
+        `${owned ? "Upgrade" : "Buy"} ${d.name}, ${d.cost} gold`,
+      );
       button.innerHTML = `<span class="hex-frame"><span class="hex-inner"><img src="assets/${state.clan}-building-${d.art}-v2.png" alt=""></span></span><span class="price-badge"><i class="coin"></i>${d.cost}</span>`;
       button.onclick = (event) => {
         renderer.cursor = { x: event.clientX, y: event.clientY };
@@ -174,14 +181,15 @@ function updateShop() {
         if (result.error) return err(result.error);
         beep(result.merged.length ? "merge" : "buy");
         if (result.merged.length) {
-          toast("Merged · " + d.name);
+          toast("Upgraded · " + d.name);
           for (const uid of result.merged) {
             const b = state.buildings.find((x) => x.uid === uid);
             if (b?.q !== null) renderer.burst(b.q, b.r);
           }
         }
         commit();
-        if (result.building?.q === null) select(result.building.uid);
+        if (!result.upgraded && result.building?.q === null)
+          select(result.building.uid);
         else clearSelected();
       };
       button.onmouseenter = () =>

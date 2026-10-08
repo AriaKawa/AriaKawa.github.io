@@ -333,6 +333,7 @@ export function newGame(clan, seed = Date.now() >>> 0) {
     locked: false,
     phase: "build",
     buildings: [],
+    rules: 3,
     shop: [],
     history: [],
     runId:
@@ -361,10 +362,16 @@ export function roll(s, free = false) {
       if (n < 0) break;
       tier++;
     }
-    const choices = CATALOG[s.clan].filter((d) => d.cost === tier);
+    const available = CATALOG[s.clan].filter(
+      (d) => !s.buildings.some((b) => b.type === d.id && b.star >= 3),
+    );
+    const choices = available.filter((d) => d.cost === tier);
     return (
-      choices[Math.floor(random(s) * choices.length)] || CATALOG[s.clan][0]
-    ).id;
+      (
+        choices[Math.floor(random(s) * choices.length)] ||
+        available[Math.floor(random(s) * available.length)]
+      )?.id || null
+    );
   });
   return null;
 }
@@ -372,41 +379,64 @@ export const bench = (s) => s.buildings.filter((b) => b.q === null);
 export const onBoard = (s) => s.buildings.filter((b) => b.q !== null);
 export const armyBuildings = (s) =>
   onBoard(s).filter((b) => definition(s.clan, b.type).kind === "unit");
-export function merge(s) {
-  const merged = [];
-  for (let star = 1; star < 3; star++)
-    for (const d of CATALOG[s.clan]) {
-      let found = s.buildings.filter((b) => b.type === d.id && b.star === star);
-      while (found.length >= 3) {
-        found.sort((a, b) => (a.q === null) - (b.q === null) || a.uid - b.uid);
-        const [keep, ...consume] = found.slice(0, 3);
-        keep.star++;
-        s.buildings = s.buildings.filter((b) => !consume.includes(b));
-        merged.push(keep.uid);
-        found = s.buildings.filter((b) => b.type === d.id && b.star === star);
-      }
+export const upgradeHue = (type) =>
+  [
+    "#d5acff",
+    "#86e1ae",
+    "#ffd181",
+    "#89cafa",
+    "#ff9eae",
+    "#e5e78b",
+    "#96e4dd",
+    "#e8b894",
+    "#c6b9ff",
+  ][
+    [
+      "warren",
+      "scout",
+      "mage",
+      "guard",
+      "king",
+      "market",
+      "farm",
+      "totem",
+      "well",
+    ].indexOf(type)
+  ] || "#efca76";
+export function migrateBuildings(s) {
+  if (s.rules === 3) return;
+  const kept = new Map();
+  for (const b of [...s.buildings].sort(
+    (a, b) => (a.q === null) - (b.q === null) || b.star - a.star,
+  )) {
+    const cost = definition(s.clan, b.type).cost;
+    if (kept.has(b.type)) s.gold += cost * 3 ** (b.star - 1);
+    else {
+      kept.set(b.type, b);
+      s.gold += cost * (3 ** (b.star - 1) - b.star);
     }
-  return merged;
+  }
+  s.buildings = [...kept.values()];
+  s.rules = 3;
 }
 export function buy(s, index) {
   if (s.phase !== "build") return { error: "Finish the battle first" };
+  migrateBuildings(s);
   const d = definition(s.clan, s.shop[index]);
   if (!d) return { error: "Sold" };
+  const existing = s.buildings.find((b) => b.type === d.id);
+  if (existing?.star >= 3) return { error: "Maximum upgrade" };
   if (s.gold < d.cost) return { error: "Not enough gold" };
-  const canMerge =
-    s.buildings.filter((b) => b.type === d.id && b.star === 1).length >= 2;
-  if (bench(s).length >= 8 && !canMerge) return { error: "Reserve is full" };
+  if (!existing && bench(s).length >= 8) return { error: "Reserve is full" };
   s.gold -= d.cost;
   s.shop[index] = null;
-  const b = makeBuilding(s, d.id);
-  s.buildings.push(b);
-  const merged = merge(s);
-  return {
-    building:
-      s.buildings.find((x) => x.uid === b.uid) ||
-      s.buildings.find((x) => merged.includes(x.uid)),
-    merged,
-  };
+  if (existing) {
+    existing.star++;
+    return { building: existing, merged: [existing.uid], upgraded: true };
+  }
+  const building = makeBuilding(s, d.id);
+  s.buildings.push(building);
+  return { building, merged: [], upgraded: false };
 }
 export function place(s, uid, q, r) {
   if (s.phase !== "build") return "Finish the battle first";
@@ -417,6 +447,10 @@ export function place(s, uid, q, r) {
   const target = s.buildings.find(
     (x) => x.q === q && x.r === r && x.uid !== uid,
   );
+  if (
+    s.buildings.some((x) => x.uid !== uid && x.type === b.type && x.q !== null)
+  )
+    return "Upgrade the existing building";
   const type = definition(s.clan, b.type).kind;
   if (b.q === null) {
     const current = onBoard(s).filter(
@@ -446,8 +480,7 @@ export function stash(s, uid) {
   }
   return null;
 }
-export const sellPrice = (s, b) =>
-  definition(s.clan, b.type).cost * 3 ** (b.star - 1);
+export const sellPrice = (s, b) => definition(s.clan, b.type).cost * b.star;
 export function sell(s, uid) {
   if (s.phase !== "build") return 0;
   const b = s.buildings.find((x) => x.uid === uid);
@@ -518,6 +551,7 @@ export function nextRound(s) {
   if (s.phase !== "result") return;
   s.round++;
   s.phase = "build";
+  migrateBuildings(s);
   s.opponent = null;
   if (!s.locked) roll(s, true);
 }
@@ -1021,6 +1055,7 @@ export function restore(raw) {
     s.nextId = Math.max(0, ...s.buildings.map((b) => b.uid));
     if (s.phase === "battle" && !validateSnapshot(s.opponent, s.round))
       s.phase = "build";
+    if (s.phase !== "battle") migrateBuildings(s);
     return s;
   } catch {
     return null;

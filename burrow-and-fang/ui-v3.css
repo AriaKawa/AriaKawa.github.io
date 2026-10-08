@@ -1,0 +1,239 @@
+/* Generated wood and bronze controls; unframed shop artwork. */
+.utility {
+  display: none !important;
+}
+#shop::before,
+.hex-frame::before {
+  display: none;
+}
+#shop {
+  top: auto;
+  bottom: 154px;
+  height: min(650px, calc(100dvh - 250px));
+  gap: 10px;
+}
+#shop-cards {
+  gap: 10px;
+}
+#shop .shop-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+}
+#shop .hex-frame {
+  height: calc(100% - 22px);
+  max-height: 130px;
+  width: 100%;
+  aspect-ratio: auto;
+  background: none;
+  clip-path: none;
+}
+#shop .hex-inner {
+  inset: 0;
+  clip-path: none;
+  background: none;
+  box-shadow: none;
+  overflow: visible;
+}
+#shop .hex-inner img {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+#shop .price-badge {
+  position: static;
+  transform: none;
+  min-width: 0;
+  height: 20px;
+  padding: 0;
+  background: none;
+  border: 0;
+  box-shadow: none;
+  border-radius: 0;
+  font-size: 17px;
+  text-shadow: 0 2px 3px #000;
+}
+#shop .shop-card.upgrade .hex-inner img {
+  filter: drop-shadow(0 0 4px var(--upgrade-hue))
+    drop-shadow(0 0 7px var(--upgrade-hue));
+}
+#shop .shop-card.sold {
+  background: none;
+  clip-path: none;
+}
+#shop .shop-action {
+  background: transparent url("assets/ui-reroll-v3.png") center/100% 100%
+    no-repeat;
+  border: 0;
+  box-shadow: none;
+  height: 42px;
+  min-height: 42px;
+  margin: 8px 4px 0;
+  position: relative;
+}
+#shop .shop-action span:first-child {
+  visibility: hidden;
+}
+#shop .shop-action span:last-child {
+  position: absolute;
+  right: 7px;
+  bottom: 9px;
+  font-size: 14px;
+}
+#shop .shop-action .coin {
+  width: 12px;
+  height: 12px;
+}
+.battle-button {
+  background: transparent url("assets/ui-battle-v3.png") center/contain
+    no-repeat;
+  border: 0;
+  box-shadow: none;
+  border-radius: 0;
+}
+.battle-button #battle-symbol,
+.battle-button #battle-label {
+  visibility: hidden;
+}
+.battle-button:disabled {
+  filter: grayscale(0.6);
+  opacity: 0.5;
+}
+#menu-button {
+  font-size: 0;
+  background: transparent url("assets/ui-cog-v3.png") center/contain no-repeat;
+  border: 0;
+  box-shadow: none;
+  width: 32px;
+  height: 32px;
+}
+.coin,
+#shop .price-badge .coin {
+  display: inline-block;
+  background: transparent url("assets/ui-coin-v3.png") center/contain no-repeat;
+  border: 0;
+  box-shadow: none;
+  border-radius: 0;
+  width: 17px;
+  height: 17px;
+}
+.coin::before,
+.coin::after {
+  display: none;
+}
+.village-stats span,
+#opponent {
+  background: none;
+  border: 0;
+  box-shadow: none;
+  text-shadow: 0 2px 3px #000;
+}
+.level-button,
+.selection,
+.tooltip,
+.small-button,
+.primary,
+.selection-actions button {
+  background: #312414 url("assets/ui-panel-v3.png") center/100% 100% no-repeat;
+  border: 0;
+  box-shadow: none;
+  color: #eadbb8;
+}
+.level-button {
+  background-color: transparent;
+  padding: 14px;
+}
+.reserve-slot {
+  background: none;
+  border-color: #a78c5477;
+}
+.reserve-slot:empty {
+  opacity: 0.4;
+}
+#lock {
+  background: none;
+  border: 0;
+  box-shadow: none;
+  color: #ead5a4;
+}
+.xp-track {
+  background: #291c13;
+}
+.xp-track i {
+  background: #c59b4b;
+}
+#hint {
+  display: none;
+}
+:root {
+  --panel: #2a2119ed;
+  --line: #8c7049;
+  --accent: #dbc183;
+}
+#toast,
+#tooltip,
+#help,
+.confirm-card,
+.menu-content {
+  background: #251d16f2;
+  border-color: #856b43;
+  color: #eaddbf;
+}
+.reserve-slot {
+  background: transparent !important;
+}
+#pause,
+#speed {
+  background: #382b1a url("assets/ui-panel-v3.png") center/100% 100% no-repeat;
+  border: 0;
+  box-shadow: none;
+}
+@media (max-width: 800px) {
+  #shop {
+    bottom: 133px;
+    height: min(580px, calc(100dvh - 225px));
+  }
+  #shop .price-badge {
+    font-size: 14px;
+  }
+  #shop .shop-action {
+    height: 34px;
+    min-height: 34px;
+    margin-top: 6px;
+  }
+  #shop .shop-action span:last-child {
+    right: 3px;
+    bottom: 7px;
+    font-size: 12px;
+  }
+}
+@media (max-height: 600px) and (min-width: 801px) {
+  #shop {
+    bottom: 110px;
+    height: calc(100dvh - 180px);
+    width: 110px;
+  }
+  #shop-cards {
+    gap: 3px;
+  }
+  #shop .hex-frame {
+    max-height: none;
+    height: calc(100% - 16px);
+  }
+  #shop .price-badge {
+    height: 14px;
+    font-size: 12px;
+  }
+  #shop .shop-action {
+    height: 30px;
+    min-height: 30px;
+    margin: 4px 0 0;
+  }
+  #shop .shop-action span:last-child {
+    bottom: 6px;
+    font-size: 12px;
+  }
+}
