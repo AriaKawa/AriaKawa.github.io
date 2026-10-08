@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#111b20" />
+    <title>Burrow &amp; Fang</title>
+    <link rel="icon" href="assets/rats-building-0.png" />
+    <link rel="stylesheet" href="style.css?v=1" />
+  </head>
+  <body>
+    <canvas
+      id="world"
+      aria-label="Village hex board. Select a building from the reserve, then choose a plot."
+      tabindex="0"
+    ></canvas>
+    <div id="loading">
+      <span class="loading-mark">B<span>&amp;</span>F</span
+      ><progress id="load-progress" max="1" value="0"></progress>
+    </div>
+    <main id="game" hidden>
+      <header id="hud">
+        <button id="clan-badge" class="clan-badge" aria-label="Open menu">
+          <img id="clan-icon" alt="" /><span id="clan-name">Rats</span>
+        </button>
+        <div class="round-hud">
+          <div id="round-track" class="round-track"></div>
+          <strong id="round">Round 1</strong><span id="phase">Build</span>
+        </div>
+        <div class="resources">
+          <span class="health" title="Village health"
+            ><i>♥</i><b id="hp">100</b></span
+          ><button id="gold-button" class="gold" aria-label="Income breakdown">
+            <i class="coin"></i><b id="gold">10</b></button
+          ><button id="menu-button" class="icon-button" aria-label="Settings">
+            ⚙
+          </button>
+        </div>
+      </header>
+      <div class="village-stats">
+        <span id="army-count" title="Unit buildings / army capacity"></span
+        ><span
+          id="support-count"
+          title="Economy and support buildings / village capacity"
+        ></span
+        ><span id="troops" title="Units in your army"></span>
+      </div>
+      <div id="opponent" hidden>
+        <span id="opponent-label"></span><small id="opponent-source"></small>
+      </div>
+      <div id="battle-hud" hidden>
+        <span id="battle-counts"></span>
+        <div>
+          <button id="pause" class="icon-button" aria-label="Pause battle">
+            Ⅱ</button
+          ><button id="speed" class="small-button">1×</button>
+        </div>
+      </div>
+      <aside id="shop">
+        <div class="shop-heading">
+          <span>Build</span
+          ><button
+            id="lock"
+            class="icon-button"
+            aria-label="Lock shop"
+            title="Keep shop for next round"
+          >
+            ◇
+          </button>
+        </div>
+        <div id="shop-cards"></div>
+        <button id="reroll" class="shop-action">
+          <span>↻ <kbd>D</kbd></span
+          ><span><i class="coin"></i>2</span>
+        </button>
+      </aside>
+      <section id="selection" class="selection" hidden></section>
+      <footer id="bottom">
+        <div class="village-controls">
+          <button id="level-button" class="level-button">
+            <span><b id="level">Lv. 3</b><small id="xp">0 / 6</small></span
+            ><span class="xp-track"><i id="xp-fill"></i></span
+            ><span class="xp-buy"
+              >+4 XP <kbd>F</kbd><em><i class="coin"></i>4</em></span
+            >
+          </button>
+          <div>
+            <div class="reserve-heading">
+              <span>Reserve</span><small id="reserve-count">0 / 8</small>
+            </div>
+            <div id="reserve" class="reserve"></div>
+          </div>
+        </div>
+        <button id="battle" class="battle-button">
+          <span id="battle-symbol">➜</span><b id="battle-label">Battle</b>
+        </button>
+      </footer>
+      <div id="hint" role="status"></div>
+      <div id="toast" role="status"></div>
+      <div class="utility">
+        <button
+          id="grid"
+          class="icon-button"
+          aria-label="Show hex grid"
+          title="Hex grid (G)"
+        >
+          ⬡</button
+        ><button id="zoom-out" class="icon-button" aria-label="Zoom out">
+          −</button
+        ><button id="zoom-in" class="icon-button" aria-label="Zoom in">+</button
+        ><button id="recenter" class="icon-button" aria-label="Reset camera">
+          ⌖</button
+        ><button id="help-button" class="icon-button" aria-label="How to play">
+          ?</button
+        ><span id="network" title="Connecting to saved armies"></span>
+      </div>
+    </main>
+    <section id="menu" class="overlay" hidden>
+      <div class="menu-content">
+        <a href="../games.html" class="back-link">← AriaKawa</a>
+        <h1>BURROW<span>&amp;</span>FANG</h1>
+        <div id="clan-choice">
+          <button class="clan-choice active" data-clan="rats">
+            <img
+              src="assets/rats-building-0.png"
+              alt="Rat sewer citadel"
+            /><strong>Rats</strong><small>Swarm</small></button
+          ><button class="clan-choice" data-clan="wolves">
+            <img
+              src="assets/wolves-building-0.png"
+              alt="Wolf longhouse"
+            /><strong>Wolves</strong><small>Pack</small>
+          </button>
+        </div>
+        <button id="continue" class="primary" hidden>Continue</button
+        ><button id="start" class="primary">New village</button>
+        <div class="menu-tools">
+          <button id="sound" class="text-button">Sound on</button
+          ><button id="menu-help" class="text-button">How to play</button>
+        </div>
+      </div>
+    </section>
+    <section id="result" class="overlay result-overlay" hidden>
+      <div class="result-panel">
+        <div id="result-emblem"></div>
+        <h2 id="result-title">Victory</h2>
+        <div id="result-score"></div>
+        <div id="earnings"></div>
+        <button id="next" class="primary">Next round <span>→</span></button>
+      </div>
+    </section>
+    <dialog id="help">
+      <button class="dialog-close" aria-label="Close help">×</button>
+      <h2>How to play</h2>
+      <p>Buy a building. Choose a hex. Battle when ready.</p>
+      <dl>
+        <dt>Three copies</dt>
+        <dd>Merge into a stronger building.</dd>
+        <dt>Unit buildings</dt>
+        <dd>Send their units into each battle.</dd>
+        <dt>Support buildings</dt>
+        <dd>Boost unit buildings on adjacent hexes.</dd>
+        <dt>Economy buildings</dt>
+        <dd>Earn gold at the end of each round.</dd>
+        <dt>Interest</dt>
+        <dd>+1 gold per 10 saved, up to +5.</dd>
+        <dt>Streaks</dt>
+        <dd>2 / 4 / 5 wins or losses earn +1 / +2 / +3.</dd>
+        <dt>Level up</dt>
+        <dd>More buildings and rarer shop cards.</dd>
+        <dt>Win</dt>
+        <dd>Reach 10 victories before health runs out.</dd>
+      </dl>
+      <p class="help-small">
+        Saved armies fight asynchronously. When no army is available, you face a
+        practice village. Your run saves automatically.
+      </p>
+      <div class="shortcuts">
+        <span><kbd>D</kbd> Reroll</span><span><kbd>F</kbd> XP</span
+        ><span><kbd>G</kbd> Grid</span><span><kbd>Esc</kbd> Cancel</span
+        ><span>Drag to pan · scroll to zoom</span>
+      </div>
+    </dialog>
+    <dialog id="confirm">
+      <h2>Start a new village?</h2>
+      <p>Your current run will be replaced.</p>
+      <div class="dialog-actions">
+        <button id="cancel-new" class="small-button">Cancel</button
+        ><button id="confirm-new" class="primary">New village</button>
+      </div>
+    </dialog>
+    <div id="tooltip" role="tooltip" hidden></div>
+    <script type="module" src="game.mjs?v=1"></script>
+  </body>
+</html>

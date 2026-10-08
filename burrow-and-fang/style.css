@@ -1,0 +1,1441 @@
+@import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap");
+:root {
+  color-scheme: dark;
+  --ink: #111c22;
+  --panel: #14232bee;
+  --line: #81969266;
+  --gold: #e6c67b;
+  --paper: #eee8d9;
+  --muted: #99aaa7;
+  --accent: #b4c989;
+  --shop: 206px;
+  font-family: "DM Sans", sans-serif;
+  color: var(--paper);
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  overflow: hidden;
+  background: #111c22;
+  touch-action: none;
+}
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+button:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+button {
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+button:hover:not(:disabled) {
+  border-color: var(--gold);
+  filter: brightness(1.12);
+}
+button:focus-visible,
+a:focus-visible,
+canvas:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+}
+button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+[hidden] {
+  display: none !important;
+}
+#world {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  outline: none;
+}
+#game {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(
+    #081219a6,
+    transparent 20%,
+    transparent 74%,
+    #071117a6
+  );
+}
+#game button,
+#game aside,
+#game .selection {
+  pointer-events: auto;
+}
+#hud {
+  position: absolute;
+  inset: 22px 26px auto 25px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  height: 80px;
+}
+.clan-badge {
+  display: flex;
+  align-items: center;
+  border: 0;
+  background: none;
+  gap: 14px;
+  font-family: Cinzel, serif;
+  font-size: 18px;
+  letter-spacing: 0.07em;
+}
+.clan-badge img {
+  height: 76px;
+  width: 76px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 5px 7px #000a);
+}
+.round-hud {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  top: 7px;
+  white-space: nowrap;
+}
+.round-hud strong {
+  font-family: Cinzel, serif;
+  font-size: 19px;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+.round-hud > span {
+  display: block;
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  margin-top: 7px;
+}
+.round-track {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 17px;
+  justify-content: center;
+}
+.round-track i {
+  width: 9px;
+  height: 9px;
+  transform: rotate(45deg);
+  border: 1px solid #7d9395;
+  background: #253a40;
+}
+.round-track i.won {
+  background: var(--gold);
+  border-color: #ffe0a1;
+}
+.round-track i.lost {
+  background: #805b61;
+  border-color: #c38789;
+}
+.round-track i.current {
+  box-shadow: 0 0 0 3px #e6c67b22;
+  border-color: var(--gold);
+}
+.resources {
+  display: flex;
+  gap: 25px;
+  align-items: center;
+  min-height: 45px;
+  font-size: 22px;
+}
+.resources > span,
+.resources > button {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.health {
+  color: #e1a39d;
+}
+.health i {
+  font-style: normal;
+  font-size: 20px;
+}
+.gold {
+  color: var(--gold);
+  border: 0;
+  background: none;
+  font-size: 22px;
+  padding: 4px;
+}
+.coin {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #dbb85f;
+  border: 2px solid #f4d789;
+  box-shadow: inset 2px 0 #ad863f;
+  vertical-align: -1px;
+  margin-right: 5px;
+  flex-shrink: 0;
+}
+.resources .coin {
+  width: 18px;
+  height: 18px;
+}
+.icon-button {
+  width: 34px;
+  height: 34px;
+  display: inline-grid;
+  place-items: center;
+  background: #15232bb5;
+  border: 1px solid #7e929446;
+  border-radius: 4px;
+  font-size: 19px;
+  font-weight: 400;
+}
+.resources .icon-button {
+  font-size: 21px;
+}
+.village-stats {
+  position: absolute;
+  top: 121px;
+  left: 34px;
+  display: flex;
+  gap: 20px;
+  color: #d7dfce;
+  font-size: 14px;
+}
+.village-stats span {
+  padding: 5px 10px;
+  border: 1px solid #8c9a8544;
+  background: #172b2c88;
+  backdrop-filter: blur(8px);
+  border-radius: 3px;
+}
+.village-stats b {
+  font-weight: 600;
+  margin-left: 6px;
+}
+.utility {
+  position: absolute;
+  left: 30px;
+  bottom: 140px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.utility .icon-button {
+  width: 29px;
+  height: 29px;
+  font-size: 17px;
+}
+.utility .active {
+  color: var(--gold);
+  border-color: var(--gold);
+}
+#network {
+  display: block;
+  width: 6px;
+  height: 6px;
+  margin-left: 7px;
+  border-radius: 50%;
+  background: #b7a477;
+  pointer-events: auto;
+}
+#network.online {
+  background: #a2c980;
+}
+#shop {
+  position: absolute;
+  right: 28px;
+  top: 115px;
+  bottom: 148px;
+  width: var(--shop);
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+.shop-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--muted);
+  padding: 0 7px;
+}
+.shop-heading .icon-button {
+  width: 25px;
+  height: 25px;
+  font-size: 17px;
+}
+.shop-heading .locked {
+  color: var(--gold);
+  border-color: var(--gold);
+}
+#shop-cards {
+  flex: 1;
+  display: grid;
+  grid-template-rows: repeat(4, 1fr);
+  gap: 11px;
+  min-height: 0;
+}
+.shop-card {
+  position: relative;
+  width: 100%;
+  padding: 6px 10px 6px 2px;
+  display: flex;
+  align-items: center;
+  min-height: 0;
+  border: 1px solid #90a29365;
+  border-left: 3px solid var(--rarity);
+  border-radius: 3px;
+  background: linear-gradient(115deg, #1d3336ed, #10212af2);
+  box-shadow: 0 8px 22px #0003;
+  text-align: left;
+  overflow: hidden;
+}
+.shop-card::after {
+  content: "";
+  position: absolute;
+  right: -30px;
+  top: -30px;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: var(--rarity);
+  filter: blur(55px);
+  opacity: 0.18;
+}
+.shop-card img {
+  width: 94px;
+  height: 100%;
+  max-height: 108px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 5px 2px #0007);
+  flex-shrink: 0;
+}
+.card-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  font-size: 13px;
+  z-index: 1;
+  flex: 1;
+}
+.card-copy strong {
+  font-weight: 500;
+  line-height: 1.3;
+}
+.card-copy small {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--gold);
+  font-size: 13px;
+}
+.card-kind {
+  color: var(--muted);
+  font-size: 12px;
+  margin-left: auto;
+}
+.shop-card.sold {
+  opacity: 0.35;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-size: 20px;
+}
+.shop-card.unaffordable {
+  filter: saturate(0.45);
+  opacity: 0.62;
+}
+.shop-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: 3px;
+}
+.shop-action span {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 16px;
+}
+.shop-action span:last-child {
+  color: var(--gold);
+  font-size: 14px;
+}
+.shop-action kbd {
+  margin-left: 8px;
+}
+kbd {
+  font:
+    10px "DM Sans",
+    sans-serif;
+  opacity: 0.55;
+  border: 1px solid currentColor;
+  padding: 1px 4px;
+  border-radius: 3px;
+  vertical-align: 2px;
+}
+#bottom {
+  position: absolute;
+  left: 30px;
+  right: 28px;
+  bottom: 26px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+}
+.village-controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 22px;
+}
+.level-button {
+  width: 123px;
+  padding: 12px 12px 10px;
+  border-radius: 4px;
+}
+.level-button > span:first-child {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.level-button b {
+  font-size: 17px;
+  font-weight: 500;
+}
+.level-button small {
+  font-size: 10px;
+  color: var(--muted);
+}
+.xp-track {
+  display: block;
+  height: 3px;
+  background: #455459;
+  margin: 10px 0 11px;
+}
+.xp-track i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+.xp-buy {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.xp-buy em {
+  font-style: normal;
+  color: var(--gold);
+}
+.xp-buy .coin {
+  width: 10px;
+  height: 10px;
+  margin-right: 3px;
+}
+.xp-buy kbd {
+  margin-left: 3px;
+  margin-right: 8px;
+}
+.reserve-heading {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  display: flex;
+  justify-content: space-between;
+  margin: 0 8px 9px;
+  color: var(--muted);
+}
+.reserve-heading small {
+  font-size: 10px;
+  letter-spacing: 0;
+}
+.reserve {
+  display: flex;
+  gap: 5px;
+}
+.reserve-slot {
+  width: 59px;
+  height: 65px;
+  position: relative;
+  clip-path: polygon(
+    25% 0,
+    75% 0,
+    100% 25%,
+    100% 75%,
+    75% 100%,
+    25% 100%,
+    0 75%,
+    0 25%
+  );
+  border: 0;
+  background: #6f8a825e;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+.reserve-slot::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  background: #14242bec;
+  clip-path: inherit;
+  z-index: -1;
+}
+.reserve-slot.active {
+  background: var(--gold);
+}
+.reserve-slot img {
+  width: 56px;
+  height: 54px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+.reserve-slot small {
+  position: absolute;
+  bottom: 2px;
+  font-size: 9px;
+  color: var(--gold);
+  letter-spacing: 2px;
+}
+.battle-button {
+  height: 104px;
+  width: 104px;
+  border-radius: 50%;
+  border: 2px solid #92a9a6;
+  background: radial-gradient(circle at 30% 20%, #344e58, #13272f);
+  box-shadow:
+    0 0 0 5px #12232fcc,
+    0 0 0 6px #819b9977,
+    0 7px 25px #0008;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.battle-button span {
+  font-size: 37px;
+  color: #e2eee3;
+  line-height: 1;
+}
+.battle-button b {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+.selection {
+  position: absolute;
+  bottom: 185px;
+  left: 31px;
+  width: 246px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 15px;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 30px #0005;
+}
+.selection-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+}
+.selection h3 {
+  margin: 0;
+  font:
+    600 15px Cinzel,
+    serif;
+}
+.selection .stars {
+  color: var(--gold);
+  font-size: 10px;
+}
+.selection p {
+  font-size: 12px;
+  color: #b9c7bd;
+  line-height: 1.5;
+  margin: 9px 0 12px;
+}
+.selection-actions {
+  display: flex;
+  gap: 7px;
+}
+.selection-actions button {
+  font-size: 11px;
+  padding: 6px 10px;
+  flex: 1;
+  border-radius: 3px;
+}
+.selection small {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  margin-top: 10px;
+}
+#hint {
+  position: absolute;
+  bottom: 137px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #e7e4ce;
+  font-size: 12px;
+  text-shadow: 0 2px 5px #000;
+  white-space: nowrap;
+}
+#toast {
+  position: absolute;
+  top: 118px;
+  left: 50%;
+  transform: translate(-50%, -8px);
+  opacity: 0;
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
+  background: #192930f5;
+  border: 1px solid #c2b58377;
+  border-radius: 4px;
+  padding: 11px 22px;
+  font-size: 13px;
+  z-index: 30;
+}
+#toast.visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+#opponent {
+  position: absolute;
+  top: 118px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  padding: 7px 18px;
+  background: #17262bca;
+  border: 1px solid #8a93934d;
+  border-radius: 4px;
+  font:
+    500 14px Cinzel,
+    serif;
+}
+#opponent small {
+  display: block;
+  font:
+    10px "DM Sans",
+    sans-serif;
+  color: var(--muted);
+  margin-top: 5px;
+}
+#battle-hud {
+  position: absolute;
+  bottom: 35px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  font-size: 20px;
+}
+#battle-hud > div {
+  display: flex;
+  gap: 8px;
+}
+.small-button {
+  padding: 7px 14px;
+  border-radius: 4px;
+  font-size: 13px;
+}
+#tooltip {
+  position: fixed;
+  z-index: 70;
+  pointer-events: none;
+  background: #14252bf7;
+  border: 1px solid #81969288;
+  border-radius: 5px;
+  padding: 13px 16px;
+  max-width: 280px;
+  font-size: 12px;
+  line-height: 1.7;
+  box-shadow: 0 10px 25px #0006;
+  color: #ccd4c8;
+}
+#tooltip strong {
+  display: block;
+  font:
+    600 14px Cinzel,
+    serif;
+  color: var(--paper);
+  margin-bottom: 5px;
+}
+#tooltip .muted {
+  color: var(--muted);
+}
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  background: #09171b88;
+  backdrop-filter: blur(5px);
+}
+.menu-content {
+  position: relative;
+  width: min(590px, 92vw);
+  padding: 34px 44px 28px;
+  text-align: center;
+  background: linear-gradient(150deg, #182930f5, #0c1921f7);
+  border: 1px solid #89998777;
+  box-shadow: 0 35px 100px #0008;
+  border-radius: 8px;
+}
+.back-link {
+  position: absolute;
+  left: 25px;
+  top: 22px;
+  font-size: 11px;
+  color: var(--muted);
+  text-decoration: none;
+}
+h1 {
+  font:
+    500 clamp(30px, 4vw, 44px) Cinzel,
+    serif;
+  letter-spacing: 0.065em;
+  margin: 40px 0 25px;
+  color: #f1e6cc;
+  text-shadow: 0 2px 12px #0006;
+  white-space: nowrap;
+}
+h1 span {
+  font-size: 24px;
+  margin: 0 11px;
+  color: var(--gold);
+}
+#clan-choice {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.clan-choice {
+  flex: 1;
+  border: 1px solid #60797055;
+  border-radius: 5px;
+  background: #2b3c393d;
+  padding: 12px 12px 17px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+.clan-choice img {
+  width: 166px;
+  height: 165px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 8px 8px #0008);
+}
+.clan-choice strong {
+  font:
+    500 20px Cinzel,
+    serif;
+  letter-spacing: 0.05em;
+}
+.clan-choice small {
+  font-size: 11px;
+  color: var(--muted);
+}
+.clan-choice.active {
+  border-color: #c8b780;
+  background: #99905d22;
+  box-shadow: inset 0 0 30px #c6ad6020;
+}
+.primary {
+  background: #d5bd86;
+  color: #1e2a2a;
+  border: 1px solid #eedcad;
+  border-radius: 4px;
+  padding: 13px 25px;
+  font-size: 14px;
+  font-weight: 600;
+  min-width: 190px;
+}
+.menu-content > .primary {
+  display: block;
+  width: 100%;
+  margin-top: 9px;
+}
+#continue ~ #start {
+  background: #24363b;
+  color: #dacba9;
+  border-color: #64786e;
+}
+#continue[hidden] ~ #start {
+  background: #d5bd86;
+  color: #1e2a2a;
+  border-color: #eedcad;
+}
+.menu-tools {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  margin-top: 22px;
+}
+.text-button {
+  border: 0;
+  background: none;
+  font-size: 11px;
+  color: var(--muted);
+  padding: 4px;
+}
+.result-overlay {
+  background: #08121960;
+  backdrop-filter: blur(2px);
+}
+.result-panel {
+  min-width: 370px;
+  padding: 35px 50px;
+  text-align: center;
+  background: linear-gradient(140deg, #1c3036f7, #101f27fc);
+  border: 1px solid #a7a28388;
+  box-shadow: 0 20px 80px #0007;
+  border-radius: 6px;
+}
+#result-emblem {
+  font-size: 35px;
+  color: var(--gold);
+}
+h2 {
+  font:
+    500 28px Cinzel,
+    serif;
+  margin: 10px 0 18px;
+}
+#result-score {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0 0 24px;
+}
+#earnings {
+  font-size: 12px;
+  margin-bottom: 25px;
+  text-align: left;
+}
+#earnings > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 50px;
+  margin: 9px 0;
+  color: var(--muted);
+}
+#earnings b {
+  color: var(--gold);
+  font-weight: 500;
+}
+#earnings .total {
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+  color: var(--paper);
+  font-size: 14px;
+}
+dialog {
+  color: var(--paper);
+  background: #14242b;
+  border: 1px solid #91a08a88;
+  border-radius: 7px;
+  max-width: 510px;
+  width: calc(100% - 40px);
+  padding: 30px 34px;
+  box-shadow: 0 20px 80px #0009;
+}
+dialog::backdrop {
+  background: #061217a6;
+  backdrop-filter: blur(5px);
+}
+dialog h2 {
+  font-size: 24px;
+}
+dialog p {
+  font-size: 13px;
+  color: #bdc9bf;
+  line-height: 1.7;
+}
+dialog dl {
+  font-size: 12px;
+  display: grid;
+  grid-template-columns: 105px 1fr;
+  gap: 13px 18px;
+  line-height: 1.5;
+  margin: 24px 0;
+}
+dialog dt {
+  color: var(--gold);
+}
+dialog dd {
+  margin: 0;
+  color: #bdc9bf;
+}
+.dialog-close {
+  position: absolute;
+  right: 12px;
+  top: 9px;
+  background: none;
+  border: 0;
+  font-size: 24px;
+  color: var(--muted);
+}
+.help-small {
+  font-size: 11px !important;
+  border-top: 1px solid var(--line);
+  padding-top: 15px;
+}
+.shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 20px;
+}
+.dialog-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 25px;
+}
+#loading {
+  position: fixed;
+  inset: 0;
+  background: #101c23;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 30px;
+}
+.loading-mark {
+  font:
+    500 58px Cinzel,
+    serif;
+  letter-spacing: 10px;
+  color: #e2cd9c;
+}
+.loading-mark span {
+  font-size: 32px;
+  color: #788e7b;
+}
+progress {
+  height: 3px;
+  width: 180px;
+  accent-color: var(--gold);
+  border: 0;
+}
+progress::-webkit-progress-bar {
+  background: #2b3c40;
+}
+progress::-webkit-progress-value {
+  background: var(--gold);
+}
+@media (min-height: 950px) {
+  #shop {
+    top: 150px;
+    bottom: 180px;
+    gap: 15px;
+  }
+  #shop-cards {
+    gap: 15px;
+  }
+  .shop-card img {
+    width: 105px;
+    max-height: 138px;
+  }
+}
+@media (max-width: 1100px) {
+  :root {
+    --shop: 175px;
+  }
+  #shop {
+    right: 20px;
+  }
+  .shop-card img {
+    width: 79px;
+  }
+  .card-copy {
+    font-size: 11px;
+  }
+  .resources {
+    gap: 15px;
+  }
+  .reserve-slot {
+    width: 48px;
+    height: 57px;
+  }
+  .reserve-slot img {
+    width: 46px;
+    height: 47px;
+  }
+  .village-controls {
+    gap: 12px;
+  }
+  .round-hud {
+    left: 46%;
+  }
+  .village-stats {
+    top: 105px;
+  }
+  .clan-badge {
+    gap: 6px;
+    font-size: 15px;
+  }
+  .clan-badge img {
+    width: 62px;
+    height: 62px;
+  }
+}
+@media (max-height: 680px) and (min-width: 801px) {
+  #hud {
+    top: 12px;
+  }
+  #shop {
+    top: 89px;
+    bottom: 110px;
+    gap: 5px;
+  }
+  #shop-cards {
+    gap: 6px;
+  }
+  .shop-heading {
+    display: none;
+  }
+  .shop-card img {
+    max-height: 84px;
+  }
+  .shop-action {
+    padding: 7px 12px;
+  }
+  #bottom {
+    bottom: 15px;
+  }
+  .battle-button {
+    width: 82px;
+    height: 82px;
+  }
+  .reserve-slot {
+    height: 50px;
+    width: 48px;
+  }
+  .reserve-slot img {
+    height: 43px;
+    width: 43px;
+  }
+  .level-button {
+    padding: 8px;
+    width: 110px;
+  }
+  .utility {
+    bottom: 114px;
+  }
+  .selection {
+    bottom: 153px;
+  }
+  .round-track {
+    margin-bottom: 10px;
+  }
+  .clan-badge img {
+    height: 58px;
+    width: 58px;
+  }
+  .village-stats {
+    top: 89px;
+  }
+  .menu-content {
+    padding: 12px 38px 18px;
+  }
+  h1 {
+    margin: 32px 0 15px;
+  }
+  .clan-choice img {
+    height: 110px;
+  }
+  #clan-choice {
+    margin-bottom: 13px;
+  }
+  .menu-tools {
+    margin-top: 12px;
+  }
+}
+@media (max-width: 800px) {
+  :root {
+    --shop: 140px;
+  }
+  #hud {
+    inset: 12px 14px auto;
+  }
+  .clan-badge img {
+    width: 48px;
+    height: 48px;
+  }
+  .clan-badge span {
+    display: none;
+  }
+  .resources {
+    font-size: 17px;
+    gap: 13px;
+  }
+  .resources .gold {
+    font-size: 17px;
+  }
+  .round-hud {
+    top: 2px;
+    left: 44%;
+  }
+  .round-hud strong {
+    font-size: 14px;
+  }
+  .round-track {
+    gap: 7px;
+    margin-bottom: 10px;
+  }
+  .round-track i {
+    height: 6px;
+    width: 6px;
+  }
+  .round-hud > span {
+    font-size: 8px;
+    margin-top: 5px;
+  }
+  .resources .icon-button {
+    width: 29px;
+    height: 29px;
+  }
+  .resources .coin {
+    width: 14px;
+    height: 14px;
+  }
+  #shop {
+    top: 90px;
+    right: 13px;
+    bottom: 126px;
+    gap: 7px;
+  }
+  #shop-cards {
+    gap: 7px;
+  }
+  .shop-heading {
+    padding: 0 3px;
+  }
+  .shop-card {
+    padding: 2px 6px 2px 0;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .shop-card img {
+    width: 75px;
+    height: 65%;
+    max-height: 95px;
+  }
+  .card-copy {
+    display: flex;
+    flex-direction: row;
+    gap: 3px;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    font-size: 10px;
+    flex: 0;
+  }
+  .card-copy small {
+    font-size: 11px;
+  }
+  .card-kind {
+    display: none;
+  }
+  .card-copy .coin {
+    height: 10px;
+    width: 10px;
+    margin-right: 0;
+  }
+  .shop-action {
+    padding: 7px 10px;
+  }
+  .shop-action kbd {
+    display: none;
+  }
+  #bottom {
+    left: 15px;
+    right: 17px;
+    bottom: 18px;
+  }
+  .village-controls {
+    gap: 8px;
+  }
+  .level-button {
+    width: 94px;
+    padding: 9px 8px;
+  }
+  .level-button b {
+    font-size: 14px;
+  }
+  .level-button kbd {
+    display: none;
+  }
+  .level-button .xp-buy {
+    font-size: 10px;
+  }
+  .reserve {
+    gap: 3px;
+    display: grid;
+    grid-template-columns: repeat(4, 40px);
+  }
+  .reserve-slot {
+    height: 34px;
+    width: 40px;
+    clip-path: polygon(
+      12% 0,
+      88% 0,
+      100% 20%,
+      100% 80%,
+      88% 100%,
+      12% 100%,
+      0 80%,
+      0 20%
+    );
+  }
+  .reserve-slot img {
+    width: 33px;
+    height: 31px;
+  }
+  .reserve-slot small {
+    font-size: 7px;
+  }
+  .reserve-heading {
+    margin: 0 2px 5px;
+    font-size: 8px;
+  }
+  .reserve-heading small {
+    font-size: 8px;
+  }
+  .battle-button {
+    width: 75px;
+    height: 75px;
+  }
+  .battle-button span {
+    font-size: 28px;
+  }
+  .battle-button b {
+    font-size: 8px;
+  }
+  .village-stats {
+    top: 83px;
+    left: 18px;
+    gap: 7px;
+    font-size: 11px;
+  }
+  .village-stats span {
+    padding: 5px 7px;
+  }
+  .utility {
+    left: 16px;
+    bottom: 129px;
+    gap: 4px;
+  }
+  .utility .icon-button {
+    width: 25px;
+    height: 25px;
+    font-size: 14px;
+  }
+  .selection {
+    left: 16px;
+    bottom: 167px;
+    width: 215px;
+    padding: 12px;
+  }
+  #hint {
+    bottom: 117px;
+    font-size: 10px;
+    left: 40%;
+  }
+  #toast {
+    top: 132px;
+    font-size: 11px;
+    padding: 8px 13px;
+    max-width: 80%;
+    white-space: nowrap;
+  }
+  .result-panel {
+    min-width: 300px;
+    padding: 25px 32px;
+  }
+  .menu-content {
+    padding: 24px;
+  }
+  h1 {
+    font-size: clamp(24px, 5.5vw, 36px);
+    letter-spacing: 0.01em;
+  }
+  h1 span {
+    font-size: 20px;
+    margin: 0 7px;
+  }
+  .clan-choice img {
+    width: 120px;
+    height: 135px;
+  }
+  .clan-choice {
+    padding: 10px 4px;
+  }
+  .clan-choice strong {
+    font-size: 18px;
+  }
+  #opponent {
+    top: 83px;
+    font-size: 12px;
+  }
+  #battle-hud {
+    bottom: 40px;
+  }
+  dialog {
+    max-height: 90dvh;
+    overflow: auto;
+  }
+}
+@media (max-width: 480px) {
+  :root {
+    --shop: 102px;
+  }
+  .shop-card img {
+    width: 70px;
+    max-height: 90px;
+  }
+  .card-copy {
+    font-size: 9px;
+  }
+  .shop-card {
+    padding: 4px;
+  }
+  .round-hud {
+    left: 43%;
+  }
+  .round-track {
+    gap: 5px;
+  }
+  .resources {
+    gap: 9px;
+  }
+  .village-stats {
+    gap: 4px;
+  }
+  .village-stats span {
+    padding: 4px;
+  }
+  .village-stats b {
+    margin-left: 2px;
+  }
+  .reserve {
+    grid-template-columns: repeat(4, 34px);
+  }
+  .reserve-slot {
+    width: 34px;
+  }
+  .village-controls {
+    gap: 6px;
+  }
+  .level-button {
+    width: 80px;
+  }
+  .level-button small {
+    font-size: 8px;
+  }
+  .battle-button {
+    width: 68px;
+    height: 68px;
+  }
+  .selection {
+    width: 210px;
+  }
+  #hint {
+    left: 39%;
+    font-size: 9px;
+  }
+  .utility {
+    gap: 3px;
+  }
+  .utility .icon-button {
+    width: 23px;
+    height: 24px;
+  }
+  #zoom-out,
+  #zoom-in {
+    display: none;
+  }
+  .clan-choice img {
+    width: 105px;
+    height: 125px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+  .overlay {
+    backdrop-filter: none;
+  }
+}
+.menu-content {
+  max-height: calc(100dvh - 20px);
+  overflow: auto;
+}
+@media (max-width: 480px) {
+  #zoom-out,
+  #zoom-in {
+    display: inline-grid;
+  }
+}
+@media (max-height: 500px) and (min-width: 801px) {
+  .shop-card {
+    padding: 2px 8px 2px 2px;
+  }
+  .shop-card img {
+    height: 100%;
+    width: 48px;
+  }
+  .card-copy {
+    gap: 1px;
+    font-size: 10px;
+    line-height: 1.1;
+  }
+  .card-copy small {
+    font-size: 10px;
+  }
+  .shop-card .coin {
+    width: 10px;
+    height: 10px;
+  }
+  .card-kind {
+    font-size: 10px;
+  }
+}
