@@ -1,6 +1,91 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import * as E from "../engine.mjs";
+import { attackTiming, unitPose } from "../animation.mjs";
+test("animation follows stride distance and freezes with the simulation clock", () => {
+  const u = {
+    id: 1,
+    clan: "rats",
+    art: 0,
+    size: 32,
+    walked: 0,
+    moving: true,
+    hp: 100,
+  };
+  const frames = [];
+  for (let i = 0; i < 8; i++) {
+    u.walked = i * 3;
+    frames.push(unitPose(u, 0).frame);
+  }
+  assert.deepEqual(frames, [0, 1, 2, 3, 4, 5, 6, 7]);
+  assert.deepEqual(unitPose(u, 0), unitPose(u, 99));
+  u.moving = false;
+  assert.deepEqual(unitPose(u, 2), unitPose(u, 2));
+  u.back = true;
+  u.moving = true;
+  assert.equal(unitPose(u, 2).sheet, "back");
+});
+test("attack damage and projectiles wait for their painted release pose", () => {
+  for (const type of ["rat", "scout", "mage", "king"]) {
+    const own = E.newGame("rats", 7),
+      enemy = E.newGame("wolves", 8);
+    const sim = E.createBattle(E.snapshot(own), E.snapshot(enemy), 10),
+      u = sim.units.find((x) => x.side === 0),
+      v = sim.units.find((x) => x.side === 1);
+    Object.assign(u, E.UNIT[type], {
+      type,
+      clan: "rats",
+      hp: 100,
+      maxHP: 100,
+      x: 700,
+      y: 400,
+      cooldown: 0,
+      cast: 100,
+    });
+    Object.assign(v, {
+      hp: 10000,
+      maxHP: 10000,
+      x: 720,
+      y: 400,
+      cooldown: 100,
+      cast: 100,
+    });
+    sim.units = [u, v];
+    E.stepBattle(sim, 1 / 60);
+    assert.equal(v.hp, 10000);
+    assert.equal(sim.projectiles.length, 0);
+    assert.ok(u.swing);
+    const { windup } = attackTiming(u);
+    let time = 0;
+    while (time + 1 / 60 < windup - 1e-6) {
+      E.stepBattle(sim, 1 / 60);
+      time += 1 / 60;
+      assert.equal(v.hp, 10000);
+      assert.equal(sim.projectiles.length, 0);
+    }
+    for (let i = 0; i < 3; i++) E.stepBattle(sim, 1 / 60);
+    assert.equal(u.swing, null);
+    assert.ok(v.hp < 10000 || sim.projectiles.length > 0);
+    assert.ok(unitPose(u, sim.time).frame >= 3);
+  }
+});
+test("a unit killed during its wind-up cannot deliver a delayed attack", () => {
+  const sim = E.createBattle(
+      E.snapshot(E.newGame("rats", 7)),
+      E.snapshot(E.newGame("wolves", 8)),
+      10,
+    ),
+    u = sim.units.find((x) => x.side === 0),
+    v = sim.units.find((x) => x.side === 1);
+  sim.units = [u, v];
+  Object.assign(u, { x: 700, y: 400, cooldown: 0, cast: 100 });
+  Object.assign(v, { x: 720, y: 400, cooldown: 100, cast: 100 });
+  E.stepBattle(sim, 1 / 60);
+  const hp = v.hp;
+  u.hp = 0;
+  for (let i = 0; i < 30; i++) E.stepBattle(sim, 1 / 60);
+  assert.equal(v.hp, hp);
+});
 import { makeRoads, roadGraph, roadRoute } from "../render.mjs";
 test("units pursue directly across open ground without a central waypoint", () => {
   const own = E.newGame("rats", 7);

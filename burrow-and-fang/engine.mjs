@@ -1,3 +1,4 @@
+import { attackTiming } from "./animation.mjs?v=5";
 export const VERSION = 1;
 export const CLANS = ["rats", "wolves"];
 export const XP = [0, 0, 2, 6, 10, 18, 28, 42, 60];
@@ -753,6 +754,9 @@ function spawn(sim, type, clan, side, x, y, star = 1, haste = 0, health = 0) {
     poisonPower: 0,
     flash: 0,
     attack: 0,
+    swing: null,
+    walked: 0,
+    back: false,
     moving: false,
     facing: side === 0 ? 1 : -1,
     dead: 0,
@@ -816,6 +820,29 @@ function impact(sim, p) {
     { radius: p.splash || 18 },
   );
 }
+function releaseAttack(sim, u, target) {
+  const rage = sim.time > 45 ? 1 + (sim.time - 45) * 0.06 : 1;
+  if (u.projectile) {
+    sim.projectiles.push({
+      x: u.x,
+      y: u.y - 12,
+      target: target.id,
+      tx: target.x,
+      ty: target.y,
+      side: u.side,
+      kind: u.projectile,
+      damage: u.damage * u.buff * rage,
+      splash: u.splash || 0,
+      speed: u.projectile === "arrow" ? 410 : 270,
+      life: 3,
+    });
+  } else {
+    hit(sim, target, u.damage * u.buff * rage);
+    event(sim, "slash", (u.x + target.x) / 2, (u.y + target.y) / 2, "#f2e1ba", {
+      flip: u.facing,
+    });
+  }
+}
 export function stepBattle(sim, dt) {
   if (sim.done) return;
   dt = Math.min(0.05, dt);
@@ -877,6 +904,18 @@ export function stepBattle(sim, dt) {
       event(sim, "heal", u.x, u.y, "#8bded2", { radius: 150 });
       u.cast = 5;
     }
+    if (u.swing) {
+      u.swing.remaining -= dt;
+      if (u.swing.remaining <= 0) {
+        const target = sim.units.find(
+          (v) => v.id === u.swing.target && v.hp > 0,
+        );
+        if (target && (u.projectile || distance(u, target) <= u.range + 24))
+          releaseAttack(sim, u, target);
+        u.swing = null;
+      }
+    }
+    if (u.attack > 0) continue;
     let target = enemies.reduce(
       (best, v) => (!best || distance(u, v) < distance(u, best) ? v : best),
       null,
@@ -885,7 +924,8 @@ export function stepBattle(sim, dt) {
     const dx = target.x - u.x,
       dy = target.y - u.y,
       dist = distance(u, target);
-    u.facing = dx >= 0 ? 1 : -1;
+    if (Math.abs(dx) > 3) u.facing = dx >= 0 ? 1 : -1;
+    u.back = dy < -Math.abs(dx) * 0.4;
     if (dist > u.range) {
       let mx = dx,
         my = dy;
@@ -893,36 +933,12 @@ export function stepBattle(sim, dt) {
       const len = Math.hypot(mx, my) || 1;
       u.x += (mx / len) * u.speed * dt;
       u.y += (my / len) * u.speed * dt;
+      u.walked += u.speed * dt;
       u.moving = true;
     } else if (u.cooldown <= 0) {
       u.cooldown = u.rate;
-      u.attack = 0.38;
-      const rage = sim.time > 45 ? 1 + (sim.time - 45) * 0.06 : 1;
-      if (u.projectile) {
-        sim.projectiles.push({
-          x: u.x,
-          y: u.y - 12,
-          target: target.id,
-          tx: target.x,
-          ty: target.y,
-          side: u.side,
-          kind: u.projectile,
-          damage: u.damage * u.buff * rage,
-          splash: u.splash || 0,
-          speed: u.projectile === "arrow" ? 410 : 270,
-          life: 3,
-        });
-      } else {
-        hit(sim, target, u.damage * u.buff * rage);
-        event(
-          sim,
-          "slash",
-          (u.x + target.x) / 2,
-          (u.y + target.y) / 2,
-          "#f2e1ba",
-          { flip: u.facing },
-        );
-      }
+      u.attack = attackTiming(u).duration;
+      u.swing = { target: target.id, remaining: attackTiming(u).windup };
     }
   }
   // Gentle separation keeps the swarm readable without blocking melee contact.

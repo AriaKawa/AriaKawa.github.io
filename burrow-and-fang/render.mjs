@@ -1,3 +1,4 @@
+import { unitPose } from "./animation.mjs?v=5";
 import {
   CELLS,
   HEX_R,
@@ -9,7 +10,7 @@ import {
   hexDistance,
   rng,
   upgradeHue,
-} from "./engine.mjs?v=4";
+} from "./engine.mjs?v=5";
 export class Renderer {
   constructor(canvas) {
     this.canvas = canvas;
@@ -37,8 +38,9 @@ export class Renderer {
       "workers-v4.png",
       "ui-star-v3.png",
       "vfx-v4.png",
-      "rats-units-v4.png",
-      "wolves-units-v4.png",
+      ...["rats", "wolves"].flatMap((clan) =>
+        ["walk", "back", "action"].map((kind) => `${clan}-${kind}-v5.png`),
+      ),
       ...["rats", "wolves"].flatMap((c) =>
         Array.from({ length: 9 }, (_, i) => `${c}-building-${i}-v4.png`),
       ),
@@ -375,22 +377,16 @@ export class Renderer {
     }
   }
   drawUnit(u, sim, idle = false) {
+    const pose = unitPose(u, sim ? sim.time : this.time);
     const c = this.ctx,
-      img = this.images[`${u.clan}-units-v4.png`];
+      img = this.images[u.clan + "-" + pose.sheet + "-v5.png"];
     if (!img) return;
-    const walking = !!u.moving;
-    const cycle = [1, 0, 2, 0];
-    const frame =
-      !idle && u.attack > 0
-        ? 3 + Math.min(2, Math.floor(((0.38 - u.attack) / 0.38) * 3))
-        : walking
-          ? cycle[Math.floor(idle ? u.walked / 5 : this.time * 9 + u.id) % 4]
-          : 0;
-    const fw = img.width / 6,
+    const frame = pose.frame,
+      fw = img.width / 8,
       fh = img.height / 4;
-    const size = u.size * (idle ? 0.65 : 1.12);
-    const bob = 0;
-    c.globalAlpha = u.hp <= 0 ? u.dead / 0.7 : 1;
+    const size = u.size * (idle ? 0.65 : 1.12),
+      bob = pose.drop;
+    c.globalAlpha = pose.alpha;
     c.fillStyle = "#09181955";
     c.beginPath();
     c.ellipse(u.x, u.y, size * 0.31, size * 0.09, 0, 0, Math.PI * 2);
@@ -403,7 +399,7 @@ export class Renderer {
       c.stroke();
     }
     c.save();
-    c.translate(Math.round(u.x), Math.round(u.y + bob));
+    c.translate(Math.round(u.x + pose.lean * u.facing), Math.round(u.y + bob));
     c.scale(u.facing, 1);
     if (u.flash > 0) c.filter = "brightness(1.7)";
     if (u.type === "guard" || u.type === "guardian")
@@ -525,8 +521,8 @@ export class Renderer {
       if (len > 0.01) {
         a.x += (dx / len) * travel;
         a.y += (dy / len) * travel;
-        a.facing = dx >= 0 ? 1 : -1;
-        a.back = dy < 0;
+        if (Math.abs(dx) > 1) a.facing = dx >= 0 ? 1 : -1;
+        a.back = dy < -Math.abs(dx) * 0.4;
         a.walked += travel;
         a.moving = true;
       }
@@ -543,7 +539,7 @@ export class Renderer {
     if (!img) return;
     const c = this.ctx,
       row = (a.clan === "rats" ? 0 : 2) + (a.back ? 1 : 0),
-      frame = a.moving ? Math.floor(a.walked / 4) % 6 : 0;
+      frame = a.moving ? Math.floor((a.walked / 24) * 6) % 6 : 0;
     const size = 25,
       fw = img.width / 6,
       fh = img.height / 4;

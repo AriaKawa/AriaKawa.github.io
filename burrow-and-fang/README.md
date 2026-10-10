@@ -40,3 +40,7 @@ Version 3 UI assets and their built-in imagegen prompt are recorded in assets/ge
 ## Art revision 4
 
 The user-provided Tooth and Tail screenshots guide the original art's simpler silhouettes, broad material shading and warm autumn lighting. Runtime buildings fit within 48-pixel sprites; units and workers use 48-pixel animation cells with shared foot baselines. The 640×360 map favors quiet color masses over fine grass noise. Every sprite is rendered with nearest-neighbor sampling. Generated prompts and reference filenames are recorded in assets/generation-v4.json. UI layout and gameplay rules remain unchanged.
+
+## Animation revision 5
+
+Six generated atlases provide eight-frame running loops, rear-facing movement and separate idle/attack poses for both clans. Sprites are extracted as complete silhouettes and registered to a shared foot baseline; incomplete generated recovery poses reuse intact recovery art. Strides follow distance traveled, and combat poses follow simulation time, including pause and speed controls. Shared wind-up timing delays hits and projectile release until the contact pose, and cancels attacks when the attacker dies. Buildings, terrain and interface retain revision 4 art. Built-in generation prompts are recorded in assets/generation-v5.json.
