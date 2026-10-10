@@ -1,6 +1,6 @@
-import * as E from "./engine.mjs?v=3";
-import { Renderer } from "./render.mjs?v=3";
-import { matchmaking, ping } from "./network.mjs?v=3";
+import * as E from "./engine.mjs?v=4";
+import { Renderer } from "./render.mjs?v=4";
+import { matchmaking, ping } from "./network.mjs?v=4";
 const $ = (id) => document.getElementById(id),
   SAVE = "burrow-fang-run-v1";
 const renderer = new Renderer($("world"));
@@ -172,7 +172,7 @@ function updateShop() {
         "aria-label",
         `${owned ? "Upgrade" : "Buy"} ${d.name}, ${d.cost} gold`,
       );
-      button.innerHTML = `<span class="hex-frame"><span class="hex-inner"><img src="assets/${state.clan}-building-${d.art}-v2.png" alt=""></span></span><span class="price-badge"><i class="coin"></i>${d.cost}</span>`;
+      button.innerHTML = `<span class="hex-frame"><span class="hex-inner"><img src="assets/${state.clan}-building-${d.art}-v4.png" alt=""></span></span><span class="price-badge"><i class="coin"></i>${d.cost}</span>`;
       button.onclick = (event) => {
         renderer.cursor = { x: event.clientX, y: event.clientY };
         if (busy) return;
@@ -219,7 +219,7 @@ function updateReserve() {
     button.className = "reserve-slot";
     if (b) {
       const d = E.definition(state.clan, b.type);
-      button.innerHTML = `<img src="assets/${state.clan}-building-${d.art}-v2.png" alt=""><small>${"★".repeat(b.star)}</small>`;
+      button.innerHTML = `<img src="assets/${state.clan}-building-${d.art}-v4.png" alt=""><small>${"★".repeat(b.star)}</small>`;
       button.classList.toggle("active", selected === b.uid);
       button.setAttribute(
         "aria-label",
@@ -255,7 +255,7 @@ function update() {
         ? "Complete"
         : "Build";
   $("clan-name").textContent = state.clan === "rats" ? "Rats" : "Wolves";
-  $("clan-icon").src = `assets/${state.clan}-building-0-v2.png`;
+  $("clan-icon").src = `assets/${state.clan}-building-0-v4.png`;
   const army = E.armyBuildings(state),
     other = E.onBoard(state).length - army.length;
   const troopCount = army.reduce(

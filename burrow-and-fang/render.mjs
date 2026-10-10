@@ -9,7 +9,7 @@ import {
   hexDistance,
   rng,
   upgradeHue,
-} from "./engine.mjs?v=3";
+} from "./engine.mjs?v=4";
 export class Renderer {
   constructor(canvas) {
     this.canvas = canvas;
@@ -33,15 +33,14 @@ export class Renderer {
   }
   async load(progress) {
     const files = [
-      "terrain-v2.webp",
-      "workers-v2.png",
-      "road-v2.png",
+      "terrain-v4.webp",
+      "workers-v4.png",
       "ui-star-v3.png",
-      "vfx.png",
-      "rats-units-v2.png",
-      "wolves-units-v2.png",
+      "vfx-v4.png",
+      "rats-units-v4.png",
+      "wolves-units-v4.png",
       ...["rats", "wolves"].flatMap((c) =>
-        Array.from({ length: 9 }, (_, i) => `${c}-building-${i}-v2.png`),
+        Array.from({ length: 9 }, (_, i) => `${c}-building-${i}-v4.png`),
       ),
     ];
     let done = 0;
@@ -126,12 +125,12 @@ export class Renderer {
     for (const k of ["x", "y", "z"])
       this.camera[k] += (this.target[k] - this.camera[k]) * lerp;
     c.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
-    c.fillStyle = "#14252b";
+    c.fillStyle = "#323a27";
     c.fillRect(0, 0, w, h);
-    const backdrop = this.images["terrain-v2.webp"];
+    const backdrop = this.images["terrain-v4.webp"];
     if (backdrop) {
       const cover = Math.max(w / backdrop.width, h / backdrop.height);
-      c.globalAlpha = 0.28;
+      c.globalAlpha = 0.55;
       c.drawImage(
         backdrop,
         (w - backdrop.width * cover) / 2,
@@ -146,7 +145,7 @@ export class Renderer {
     c.scale(l.scale, l.scale);
     c.translate(-this.camera.x, -this.camera.y);
     c.imageSmoothingEnabled = false;
-    const terrain = this.images["terrain-v2.webp"];
+    const terrain = this.images["terrain-v4.webp"];
     if (terrain) c.drawImage(terrain, -40, -30, 1880, 1060);
     if (!state) return;
     this.drawRoads(state, 0);
@@ -208,13 +207,16 @@ export class Renderer {
             state.clan +
               "-building-" +
               definition(state.clan, b.type).art +
-              "-v2.png"
+              "-v4.png"
           ];
         this.sprite(
           img,
           at.x,
           at.y + 28,
-          86 + (b.star - 1) * 3,
+          Math.min(
+            86 + (b.star - 1) * 3,
+            img ? (88 * img.width) / img.height : 86,
+          ),
           valid ? 0.84 : 0.48,
         );
       }
@@ -258,7 +260,7 @@ export class Renderer {
       Math.max(w, h) * 0.69,
     );
     shade.addColorStop(0, "#06111800");
-    shade.addColorStop(1, "#061118b0");
+    shade.addColorStop(1, "#1d24106b");
     c.fillStyle = shade;
     c.fillRect(0, 0, w, h);
   }
@@ -327,8 +329,11 @@ export class Renderer {
     const c = this.ctx,
       p = point(b.q, b.r, b.side);
     const d = b.hq ? { art: 0, kind: "hq" } : definition(b.clan, b.type);
-    const img = this.images[`${b.clan}-building-${d.art}-v2.png`];
-    const width = b.hq ? 96 : 84 + (b.star - 1) * 3;
+    const img = this.images[`${b.clan}-building-${d.art}-v4.png`];
+    const width = Math.min(
+      b.hq ? 96 : 84 + (b.star - 1) * 3,
+      img ? ((b.hq ? 96 : 88) * img.width) / img.height : 84,
+    );
     if (!battle && b.uid === this.selected) this.hex(p, "#e1d39c", 0.16, 2);
     const upgrade =
       !battle && !b.hq && b.star < 3 && state.shop.includes(b.type);
@@ -339,7 +344,7 @@ export class Renderer {
       this.sprite(img, p.x, p.y + 28, width);
       c.restore();
     }
-    // The generated foundation is the contact surface; no detached ellipse shadow.
+    // Compact silhouettes meet the ground without a detached building shadow.
     this.sprite(
       img,
       p.x,
@@ -371,7 +376,7 @@ export class Renderer {
   }
   drawUnit(u, sim, idle = false) {
     const c = this.ctx,
-      img = this.images[`${u.clan}-units-v2.png`];
+      img = this.images[`${u.clan}-units-v4.png`];
     if (!img) return;
     const walking = !!u.moving;
     const cycle = [1, 0, 2, 0];
@@ -383,7 +388,7 @@ export class Renderer {
           : 0;
     const fw = img.width / 6,
       fh = img.height / 4;
-    const size = u.size * (idle ? 0.48 : 0.92);
+    const size = u.size * (idle ? 0.65 : 1.12);
     const bob = 0;
     c.globalAlpha = u.hp <= 0 ? u.dead / 0.7 : 1;
     c.fillStyle = "#09181955";
@@ -534,12 +539,12 @@ export class Renderer {
     return town.actors;
   }
   drawWorker(a) {
-    const img = this.images["workers-v2.png"];
+    const img = this.images["workers-v4.png"];
     if (!img) return;
     const c = this.ctx,
       row = (a.clan === "rats" ? 0 : 2) + (a.back ? 1 : 0),
       frame = a.moving ? Math.floor(a.walked / 4) % 6 : 0;
-    const size = 21,
+    const size = 25,
       fw = img.width / 6,
       fh = img.height / 4;
     c.save();
@@ -560,7 +565,7 @@ export class Renderer {
   }
   drawCombat(sim) {
     const c = this.ctx,
-      img = this.images["vfx.png"];
+      img = this.images["vfx-v4.png"];
     for (const p of sim.projectiles) {
       c.strokeStyle =
         p.kind === "poison"
@@ -635,11 +640,9 @@ export class Renderer {
     const c = this.ctx;
     c.lineCap = "round";
     c.lineJoin = "round";
-    if (!this.roadPattern && this.images["road-v2.png"])
-      this.roadPattern = c.createPattern(this.images["road-v2.png"], "repeat");
     for (const [color, width] of [
-      ["#84775144", 8],
-      [this.roadPattern || "#a28c5d", 4],
+      ["#ad874526", 6],
+      ["#ac884b99", 3],
     ]) {
       c.strokeStyle = color;
       c.lineWidth = width;
@@ -649,22 +652,6 @@ export class Renderer {
         c.stroke();
       }
     }
-    c.fillStyle = "#d5bd812c";
-    for (const path of roads)
-      for (let i = 1; i < path.length; i++) {
-        const a = path[i - 1],
-          b = path[i],
-          n = Math.ceil(Math.hypot(a.x - b.x, a.y - b.y) / 12);
-        for (let j = 0; j < n; j++) {
-          const t = j / n;
-          c.fillRect(
-            a.x + (b.x - a.x) * t - 1,
-            a.y + (b.y - a.y) * t - 1,
-            1,
-            1,
-          );
-        }
-      }
   }
 }
 // Roads share the hex boundaries, so they never run through a building footprint.

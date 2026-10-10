@@ -36,3 +36,7 @@ For local UI verification, `?qa=1` exposes a narrow test interface only on `loca
 The engine suite covers hex topology, shop costs and odds, direct upgrades, legacy duplicate refunds, full reserves, caps and swaps, interest and income, XP, locking, support adjacency, snapshot validation, saves, combat determinism, and complete campaigns for both clans. Browser playtests cover purchases, placement, XP, locking, refresh during battle, settlement, next round, two-browser saved-army matching, restart confirmation and desktop/portrait/landscape layouts. Matchmaking tests use isolated temporary database paths.
 
 Version 3 UI assets and their built-in imagegen prompt are recorded in assets/generation-v3.json. Legacy saves retain a single building per type and refund removed duplicates and the old extra star investment; in-progress battles finish before this migration.
+
+## Art revision 4
+
+The user-provided Tooth and Tail screenshots guide the original art's simpler silhouettes, broad material shading and warm autumn lighting. Runtime buildings fit within 48-pixel sprites; units and workers use 48-pixel animation cells with shared foot baselines. The 640×360 map favors quiet color masses over fine grass noise. Every sprite is rendered with nearest-neighbor sampling. Generated prompts and reference filenames are recorded in assets/generation-v4.json. UI layout and gameplay rules remain unchanged.

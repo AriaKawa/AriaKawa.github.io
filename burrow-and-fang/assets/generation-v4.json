@@ -1,0 +1,66 @@
+{
+  "date": "2026-10-10",
+  "tool": "Built-in imagegen",
+  "direction": "Tooth and Tail reference screenshots: strong silhouettes, large pixel clusters, restrained material shading, quiet terrain and warm amber lighting. References supplied by user; original clan designs generated.",
+  "processing": "Building sprites fitted inside 48x48 pixels, 32-color palettes without dithering. Unit and worker poses registered in 48x48 cells with a shared foot baseline, 48-color atlas. Terrain 640x360. Effects 192x192 atlas. Nearest-neighbor rendering. No gameplay or UI layout changes.",
+  "assets": [
+    {
+      "name": "terrain",
+      "prompt": "Production pixel art for Burrow & Fang. Rework inspired directly by the supplied Tooth and Tail screenshots: LOW detail, chunky deliberate pixel clusters, strong simple silhouettes, 3-4 flat shade bands per material, warm amber top-left light and cool olive shadows. 16-bit-era visual simplicity, NOT ornate high-resolution fantasy illustration. No dithering, no noisy microtexture, no fine etched details, no glitter, no tiny bricks. Original rat/wolf medieval designs, no copied characters. References are STYLE only, not edit targets. Generate a wide game background: high three-quarter overhead flat autumn meadow, enormous open playable clearing across center 85%, trees and rocks only on extreme outer edges. Use large calm ochre and olive ground color masses, sparse chunky grass tufts, red and golden woodland canopies. Ground mostly smooth broad areas with very little texture, warm pools of sunlight and soft atmospheric shadows like reference image 2. No river, no bridge, no buildings, no characters, no UI. Underlying art should read as a 480x280 pixel scene enlarged: obvious large square pixel clusters with smooth broad lighting on top. No noisy photographic grass. Entire center traversable flat earth.",
+      "transparent": false,
+      "referenceImages": [
+        "codex-clipboard-c3c14926-cb11-4d14-a82f-052748ecb501.png",
+        "codex-clipboard-9a9924e9-705e-4367-868b-f9b151a9ad4f.png"
+      ]
+    },
+    {
+      "name": "rats",
+      "prompt": "Production pixel art for Burrow & Fang. Rework inspired directly by the supplied Tooth and Tail screenshots: LOW detail, chunky deliberate pixel clusters, strong simple silhouettes, 3-4 flat shade bands per material, warm amber top-left light and cool olive shadows. 16-bit-era visual simplicity, NOT ornate high-resolution fantasy illustration. No dithering, no noisy microtexture, no fine etched details, no glitter, no tiny bricks. Original rat/wolf medieval designs, no copied characters. References STYLE only. Transparent 3 columns x 3 rows atlas, nine distinct isolated RAT sewer buildings centered in equal cells with generous padding. Each building must look constructed from only a 48x48 pixel source, large flat roof planes, squat walls, big simple pipe openings, no tiny accessories. High 60-degree view, roofs visible. No ground tile or pedestal or shadows outside silhouette. Row1: small Rat Court with one gold crown on broad dark-red roof; Warren low sewer pipe hut with rust-red awning; Scout Post small timber watch platform and red flag. Row2: Mage lab squat round green-roof pipe tower with one violet crystal; Guard barracks stone gate with a single iron grate; Market simple rust cloth canopy with two cheese crates. Row3: Mushroom farm simple low green greenhouse; Bell shelter with one large brass bell under red roof; Alchemy tank one green vat and a fat copper pipe. Cohesive palette muted gray stone, rust red, olive and cream highlight. Large clean low-detail forms. EXACT nine buildings 3x3, NO labels, no characters. True alpha.",
+      "transparent": true,
+      "referenceImages": [
+        "codex-clipboard-c3c14926-cb11-4d14-a82f-052748ecb501.png",
+        "codex-clipboard-4928e5de-f05a-4446-b157-66f9eef572b1.png"
+      ]
+    },
+    {
+      "name": "wolves",
+      "prompt": "Production pixel art for Burrow & Fang. Rework inspired directly by the supplied Tooth and Tail screenshots: LOW detail, chunky deliberate pixel clusters, strong simple silhouettes, 3-4 flat shade bands per material, warm amber top-left light and cool olive shadows. 16-bit-era visual simplicity, NOT ornate high-resolution fantasy illustration. No dithering, no noisy microtexture, no fine etched details, no glitter, no tiny bricks. Original rat/wolf medieval designs, no copied characters. References STYLE only. Transparent 3 columns x 3 rows atlas, nine distinct isolated WOLF woodland buildings centered in equal cells with generous padding. Each building like a tiny 48x48 pixel source enlarged, large flat roof planes, strong silhouette, minimal decoration. High 60-degree view. No ground tile or pedestal or external shadow. Row1: Alpha lodge simple broad teal roof and ivory wolf emblem; Den chunky gray boulder cave with timber entry; Ranger post low log watch platform with blue flag. Row2: Moon shrine small teal pointed tent and one pale crescent; Fang barracks simple timber hall with two ivory fang posts; Fur market teal cloth canopy over wooden stall. Row3: Smokehouse simple timber hut with chunky chimney; Howl totem one carved wood wolf head on pole in stone ring; Moonwell low simple circular stone basin with blue water. Muted teal, brown wood, slate, cream. NO individual roof shingles or wood grain, no carved ornament, no tiny details. EXACT nine 3x3, NO labels, no characters. True alpha.",
+      "transparent": true,
+      "referenceImages": [
+        "codex-clipboard-c3c14926-cb11-4d14-a82f-052748ecb501.png",
+        "codex-clipboard-4928e5de-f05a-4446-b157-66f9eef572b1.png"
+      ]
+    },
+    {
+      "name": "ratsUnits",
+      "prompt": "Production pixel art for Burrow & Fang. Rework inspired directly by the supplied Tooth and Tail screenshots: LOW detail, chunky deliberate pixel clusters, strong simple silhouettes, 3-4 flat shade bands per material, warm amber top-left light and cool olive shadows. 16-bit-era visual simplicity, NOT ornate high-resolution fantasy illustration. No dithering, no noisy microtexture, no fine etched details, no glitter, no tiny bricks. Original rat/wolf medieval designs, no copied characters. References STYLE and character readability only. Exact 6 columns x 4 rows animation atlas with generous transparent gutters. Original RAT characters: row1 small brown rat footsoldier, big ears, rust-red tunic, short dagger; row2 rat scout with rust hood and short crossbow; row3 rat mage with green robe and one purple staff; row4 stout Rat King with simple gold crown, red cloak, polearm. Four rows, each row SAME CHARACTER across six poses. Columns: 1 idle, 2 left foot forward walk, 3 right foot forward walk, 4 attack windup, 5 attack extended, 6 recover. ALL face southeast/right, full body, fixed scale and feet baseline, no overlap. Characters use 24x32 pixel equivalent anatomy with chunky visible pixels: prominent nose, ears, readable torso silhouette, legs and tail. Two-tone cloth, three-tone fur, single-pixel eye, no fur strands or tiny armor details. Comparable simplicity to the small soldiers in screenshot image1, NOT an elaborate portrait. No backgrounds or ground shadows, genuinely transparent.",
+      "transparent": true,
+      "referenceImages": [
+        "codex-clipboard-9a9924e9-705e-4367-868b-f9b151a9ad4f.png",
+        "codex-clipboard-4928e5de-f05a-4446-b157-66f9eef572b1.png"
+      ]
+    },
+    {
+      "name": "wolvesUnits",
+      "prompt": "Production pixel art for Burrow & Fang. Rework inspired directly by the supplied Tooth and Tail screenshots: LOW detail, chunky deliberate pixel clusters, strong simple silhouettes, 3-4 flat shade bands per material, warm amber top-left light and cool olive shadows. 16-bit-era visual simplicity, NOT ornate high-resolution fantasy illustration. No dithering, no noisy microtexture, no fine etched details, no glitter, no tiny bricks. Original rat/wolf medieval designs, no copied characters. References STYLE and character readability only. Exact 6 columns x 4 rows animation atlas with generous transparent gutters. Original WOLF characters: row1 gray wolf warrior in teal tunic with short spear; row2 lean wolf ranger in teal hood with bow; row3 pale wolf shaman in teal robe with moon staff; row4 large gray Pack Leader with teal cloak and simple ivory axe. Four rows, each row SAME CHARACTER across six poses. Columns: 1 idle, 2 left foot forward walk, 3 right foot forward walk, 4 attack windup, 5 attack extended, 6 recover. ALL face southeast/right, full body, fixed scale and feet baseline, no overlap. Characters use 24x32 pixel equivalent anatomy with chunky visible pixels: prominent nose, ears, readable torso silhouette, legs and tail. Two-tone cloth, three-tone fur, single-pixel eye, no fur strands or tiny armor details. Comparable simplicity to the small soldiers in screenshot image1, NOT an elaborate portrait. No backgrounds or ground shadows, genuinely transparent.",
+      "transparent": true,
+      "referenceImages": [
+        "codex-clipboard-9a9924e9-705e-4367-868b-f9b151a9ad4f.png",
+        "codex-clipboard-4928e5de-f05a-4446-b157-66f9eef572b1.png"
+      ]
+    },
+    {
+      "name": "workers",
+      "prompt": "Production pixel art for Burrow & Fang. Rework inspired directly by the supplied Tooth and Tail screenshots: LOW detail, chunky deliberate pixel clusters, strong simple silhouettes, 3-4 flat shade bands per material, warm amber top-left light and cool olive shadows. 16-bit-era visual simplicity, NOT ornate high-resolution fantasy illustration. No dithering, no noisy microtexture, no fine etched details, no glitter, no tiny bricks. Original rat/wolf medieval designs, no copied characters. Reference STYLE only. Exact 6x4 sprite atlas, true transparency, equal cells. Simple tiny animal villagers carrying one crate; each like a 20x24 pixel sprite enlarged. Row1 rat worker facing right/front; row2 rat worker right/back; row3 wolf worker right/front; row4 wolf worker right/back. Tan apron, simple ears, nose and tail, 3 fur shades only. Six columns successive walking poses left foot to right foot then back. Constant body scale and fixed foot baseline, empty gutters, no overlap, no ground, no shadows, no labels.",
+      "transparent": true,
+      "referenceImages": [
+        "codex-clipboard-4928e5de-f05a-4446-b157-66f9eef572b1.png"
+      ]
+    },
+    {
+      "name": "vfx",
+      "prompt": "Production pixel art for Burrow & Fang. Rework inspired directly by the supplied Tooth and Tail screenshots: LOW detail, chunky deliberate pixel clusters, strong simple silhouettes, 3-4 flat shade bands per material, warm amber top-left light and cool olive shadows. 16-bit-era visual simplicity, NOT ornate high-resolution fantasy illustration. No dithering, no noisy microtexture, no fine etched details, no glitter, no tiny bricks. Original rat/wolf medieval designs, no copied characters. Transparent 4x4 sprite atlas for combat effects. Exact equal cells, four rows four frames. Each effect like 32x32 pixel source enlarged, clean low-detail clusters, broad saturated forms. Row1 ivory-gold sword slash arcs: start, broad swipe, follow-through, sparks fade. Row2 muted lime poison puffs: small puff, cloud, spread, dissipate. Row3 pale teal moon magic ring: start, bright ring, broad ring, fade. Row4 warm gold building upgrade starburst: start, burst, small sparks, fade. No huge overbright cloud obscuring units, no noise, no ground, no labels, empty transparent gutters.",
+      "transparent": true
+    }
+  ]
+}

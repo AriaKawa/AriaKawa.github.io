@@ -1,4 +1,4 @@
-import { snapshot, validateSnapshot, makeOpponent } from "./engine.mjs?v=3";
+import { snapshot, validateSnapshot, makeOpponent } from "./engine.mjs?v=4";
 import { firebaseConfig } from "../assets/js/firebase-config.js";
 const ROOT =
   "https://multiplayer-640ec-default-rtdb.firebaseio.com/burrowAndFang/v1";
