@@ -18,15 +18,15 @@
   <style>
     body.booting{margin:0;background:#10271e;overflow:hidden}body.booting>:not(#boot-loader):not(script):not(style){visibility:hidden!important}
     #boot-loader{--loaded:0%;position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:24px;background:radial-gradient(ellipse at 50% 40%,#285338,#11291f 72%);color:#e9f2cc;font-family:Georgia,serif;text-align:center;transition:opacity .35s ease;box-sizing:border-box}
-    #boot-loader.finished{opacity:0;pointer-events:none}.boot-card{width:min(420px,100%)}.boot-title{font-size:clamp(30px,8vw,48px);margin:0 0 8px;font-weight:700;letter-spacing:-1px}.boot-subtitle{font:12px system-ui,sans-serif;text-transform:uppercase;letter-spacing:3px;color:#b1cf93;margin:0 0 38px}
+    #boot-loader.finished{opacity:0;pointer-events:none}.boot-card{width:min(420px,100%)}.boot-title{font-size:clamp(30px,8vw,48px);margin:0 0 8px;font-weight:700;letter-spacing:-1px}.boot-subtitle{font:12px system-ui,sans-serif;text-transform:uppercase;letter-spacing:3px;color:#b1cf93;margin:0 0 104px}
     .loading-field{height:66px;position:relative;border-bottom:9px solid #5c4730;border-radius:5px;background:repeating-linear-gradient(0deg,#3d3527 0 6px,#59452c 6px 9px);box-shadow:0 4px 0 #0a1c13,inset 0 2px 0 #73613d}
     .loading-crops{position:absolute;inset:0 auto 0 0;width:var(--loaded);border-radius:5px 0 0 0;background-color:#3c703f;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='22' viewBox='0 0 24 22'%3E%3Cpath d='M12 20V9M12 14Q3 14 4 6Q12 7 12 14M12 11Q20 11 20 3Q12 3 12 11' fill='%239dc862' stroke='%23bddc85' stroke-width='1.4'/%3E%3C/svg%3E");transition:width .18s linear;box-shadow:3px 0 14px #91c85c44}
-    .loading-farmer{width:56px;height:70px;position:absolute;bottom:26px;left:clamp(0px,calc(var(--loaded) - 26px),calc(100% - 44px));overflow:visible;transition:left .18s linear;filter:drop-shadow(0 3px 1px #10251a66)}.farmer-body{animation:farmer-bob .7s ease-in-out infinite}.farmer-hoe{transform-origin:31px 34px;animation:farmer-hoe .7s ease-in-out infinite}
+    .loading-farmer{width:165px;height:150px;position:absolute;bottom:20px;left:clamp(0px,calc(var(--loaded) - 86px),calc(100% - 165px));transition:left .18s linear;image-rendering:pixelated;filter:drop-shadow(0 3px 1px #10251a66)}.farmer-body{position:relative;width:100%;height:100%;animation:farmer-bob .7s ease-in-out infinite}.loading-farmer img{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated}.farmer-hoe{transform-origin:41.8% 58%;animation:farmer-hoe .7s ease-in-out infinite}
     .boot-progress-label{display:flex;justify-content:space-between;gap:16px;margin-top:18px;color:#d3e6b7;font:13px system-ui,sans-serif}.boot-hint{color:#96b599;font:12px/1.6 system-ui,sans-serif;margin-top:12px}.boot-retry{padding:10px 20px;background:#9fc879;color:#11271c;border:0;border-radius:7px;font:600 14px system-ui,sans-serif;cursor:pointer}.boot-retry[hidden]{display:none}
     @keyframes farmer-bob{50%{transform:translateY(2px)}}@keyframes farmer-hoe{0%,100%{transform:rotate(-22deg)}55%{transform:rotate(20deg)}}
     @media(prefers-reduced-motion:reduce){.farmer-body,.farmer-hoe{animation:none}#boot-loader,.loading-crops,.loading-farmer{transition:none}}
   </style>
-  <script type="module" crossorigin src="./assets/index-CZp7IoS9.js"></script>
+  <script type="module" crossorigin src="./assets/index-C8iAoQRz.js"></script>
   <link rel="stylesheet" crossorigin href="./assets/index-DIorVUEq.css">
 </head>
 <body class="booting">
@@ -34,14 +34,10 @@
     <div class="boot-card"><h1 class="boot-title">Crossroads II</h1><p class="boot-subtitle">A little land. A growing town.</p>
       <div class="loading-field" id="boot-progress" role="progressbar" aria-label="Loading town artwork" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
         <div class="loading-crops"></div>
-        <svg class="loading-farmer" viewBox="0 0 56 70" aria-hidden="true"><g class="farmer-body">
-          <path d="M20 49v13h7V49M32 48l3 14h7l-4-17" fill="#243d35" stroke="#14281f" stroke-width="2"/><path d="M19 62h10v5H17v-3M34 62h10v5H33" fill="#3b2920"/>
-          <path d="M17 31q12-8 23 1l1 22H17z" fill="#84ae58"/><path d="M22 31v21h14V30" fill="#436b45"/><path d="M22 37h14v12H22z" fill="#5e8950"/>
-          <path d="M22 17h15v14q-8 7-15-1z" fill="#e8b680"/><path d="M21 18h17v8h-3v-6H21" fill="#69472e"/><circle cx="33" cy="25" r="1.4" fill="#25352b"/>
-          <path d="M17 18l5-12h13l5 12" fill="#c5a45d"/><path d="M13 17h31v6H12z" fill="#e3c17b"/><path d="M20 14h18v4H20z" fill="#7d653e"/>
-          <g class="farmer-hoe"><path d="M34 33l9 9" stroke="#e8b680" stroke-width="6" stroke-linecap="round"/><path d="M44 30L36 62" stroke="#b28b56" stroke-width="3"/><path d="M36 61l13 2-1 5-15-4z" fill="#9cae91"/></g>
-          <path d="M20 35l-4 12" stroke="#e8b680" stroke-width="6" stroke-linecap="round"/>
-        </g></svg>
+        <div class="loading-farmer" aria-hidden="true"><div class="farmer-body">
+          <img src="./assets/workers/rig/farmer-body.webp" width="55" height="50" fetchpriority="high" alt="">
+          <img class="farmer-hoe" src="./assets/workers/rig/farmer-tool.webp" width="55" height="50" fetchpriority="high" alt="">
+        </div></div>
       </div>
       <div class="boot-progress-label"><span id="boot-status" role="status">Preparing your fields…</span><span id="boot-percent">0%</span></div>
       <p class="boot-hint">Planting the scenery, one little plot at a time.</p>
