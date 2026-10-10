@@ -1,5 +1,5 @@
 import * as E from "./engine.mjs?v=5";
-import { Renderer } from "./render.mjs?v=5";
+import { Renderer } from "./render.mjs?v=6";
 import { matchmaking, ping } from "./network.mjs?v=5";
 const $ = (id) => document.getElementById(id),
   SAVE = "burrow-fang-run-v1";

@@ -1,0 +1,13 @@
+{
+  "tool": "Built-in image_gen",
+  "prompt": "Create a production UI sprite atlas for a restrained 16-bit pixel-art woodland animal strategy game. Six separate elements in EXACTLY 3 columns and 2 rows, evenly spaced on transparent background, no labels or text. Chunky visible pixel clusters, small limited palette, warm cream highlights, muted olive-gray iron and dark umber, broad simple shading, no intricate grain, no realistic glossy metal, no blue. Each element fully contained within its own cell with generous transparent margin. Top left: square plain UI panel, thin stepped pixel border of muted olive brass, solid perfectly flat dark brown center; straight continuous edges and simple square corners suitable for nine-slice scaling, no internal symbols. Top middle: round battle button, simple dark olive disk with narrow bronze rim and one bold cream rightward arrow inset, perfectly circular. Top right: standalone small cog icon with transparent hole, no button or plate behind it. Bottom left: one gold coin with simple highlight, no frame. Bottom middle: standalone cream circular reroll arrow icon, no frame. Bottom right: small plain five-point gold upgrade star, no frame. Consistent pixel size across all six elements. Minimal functional game UI assets that fit small hand-painted pixel animal sprites, original artwork.",
+  "assets": [
+    "ui-panel-v6.png",
+    "ui-battle-v6.png",
+    "ui-cog-v6.png",
+    "ui-coin-v6.png",
+    "ui-reroll-v6.png",
+    "ui-star-v6.png"
+  ],
+  "processing": "Extracted transparent cells, reduced with nearest-neighbor sampling to 48px panel, 64px battle and 24px icons, 24-color palette. Panel uses seven-pixel nine-slice borders with repeating edges and a solid CSS interior; icons use contain."
+}

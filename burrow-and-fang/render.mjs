@@ -36,7 +36,7 @@ export class Renderer {
     const files = [
       "terrain-v4.webp",
       "workers-v4.png",
-      "ui-star-v3.png",
+      "ui-star-v6.png",
       "vfx-v4.png",
       ...["rats", "wolves"].flatMap((clan) =>
         ["walk", "back", "action"].map((kind) => `${clan}-${kind}-v5.png`),
@@ -355,7 +355,7 @@ export class Renderer {
       b.uid === this.selected && !battle ? 0.24 : 1,
     );
     if (!battle && !b.hq) {
-      const star = this.images["ui-star-v3.png"];
+      const star = this.images["ui-star-v6.png"];
       for (let i = 0; i < b.star; i++)
         if (star)
           c.drawImage(star, p.x - (b.star * 7) / 2 + i * 7, p.y + 30, 6, 6);

@@ -1,0 +1,215 @@
+/* Pixel UI: fixed corners, repeating edges, independent content and icons. */
+:root {
+  --paper: #f3e5bd;
+  --muted: #c4b68f;
+  --gold: #f1c365;
+  --panel: #30251d;
+  --line: #82744c;
+  font-family: "Trebuchet MS", sans-serif;
+}
+.level-button,
+.selection,
+.small-button,
+.primary,
+.selection-actions button,
+#pause,
+#speed,
+#shop .shop-action,
+.menu-content,
+.result-panel,
+dialog,
+#tooltip,
+#toast {
+  border: 10px solid transparent;
+  border-image: url("assets/ui-panel-v6.png") 7 / 10px / 0 round;
+  background: #30251d;
+  background-clip: padding-box;
+  border-radius: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  color: var(--paper);
+  image-rendering: pixelated;
+}
+.menu-content,
+.result-panel,
+dialog {
+  border-width: 14px;
+  border-image-width: 14px;
+}
+#tooltip,
+#toast,
+.selection {
+  border-width: 8px;
+  border-image-width: 8px;
+}
+#tooltip {
+  color: var(--paper);
+}
+#continue ~ #start,
+#continue[hidden] ~ #start {
+  background: #30251d;
+  color: var(--paper);
+  border-color: transparent;
+}
+.primary {
+  padding: 9px 17px;
+}
+.selection {
+  padding: 10px;
+}
+.selection-actions button {
+  padding: 4px;
+  border-width: 6px;
+  border-image-width: 6px;
+}
+.level-button {
+  padding: 7px;
+}
+#pause {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-width: 7px;
+  border-image-width: 7px;
+}
+#speed {
+  padding: 3px 8px;
+}
+#shop .shop-action {
+  height: 42px;
+  min-height: 42px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 6px;
+  margin: 8px 4px 0;
+  border-width: 7px;
+  border-image-width: 7px;
+}
+#shop .shop-action span:first-child {
+  visibility: visible;
+  font-size: 0;
+  width: 24px;
+  height: 24px;
+  background: url("assets/ui-reroll-v6.png") center / contain no-repeat;
+  flex-shrink: 0;
+}
+#shop .shop-action span:last-child {
+  position: static;
+  font-size: 14px;
+  gap: 3px;
+}
+.battle-button {
+  background: transparent url("assets/ui-battle-v6.png") center / contain
+    no-repeat;
+  image-rendering: pixelated;
+  border: 0;
+  box-shadow: none;
+}
+#menu-button {
+  background: transparent url("assets/ui-cog-v6.png") center / 28px 28px
+    no-repeat;
+  image-rendering: pixelated;
+  width: 32px;
+  height: 32px;
+}
+.coin,
+#shop .price-badge .coin {
+  background: transparent url("assets/ui-coin-v6.png") center / contain
+    no-repeat;
+  image-rendering: pixelated;
+  aspect-ratio: 1;
+  border: 0;
+  box-shadow: none;
+}
+.reserve-slot {
+  border: 6px solid transparent;
+  border-image: url("assets/ui-panel-v6.png") 7 / 6px / 0 round;
+  clip-path: none;
+  image-rendering: pixelated;
+  background: #30251d88 !important;
+  background-clip: padding-box !important;
+}
+.reserve-slot::before {
+  display: none;
+}
+.reserve-slot.active {
+  filter: brightness(1.5);
+}
+.reserve-slot img {
+  max-width: 100%;
+  max-height: 100%;
+}
+.reserve-slot:empty {
+  opacity: 0.4;
+}
+.clan-choice {
+  background: #453d2922;
+  border-color: #85724b66;
+  border-radius: 0;
+  box-shadow: none;
+}
+.clan-choice.active {
+  background: #85724b33;
+  border-color: #d9b96e;
+  box-shadow: none;
+}
+.round-track i {
+  background: #463c2a;
+  border-color: #aa9466;
+}
+.xp-track {
+  background: #1e1914;
+}
+.xp-track i {
+  background: #b0b57a;
+}
+.round-hud strong,
+.clan-badge,
+.selection h3,
+#tooltip strong,
+#opponent {
+  font-family: "Trebuchet MS", sans-serif;
+  letter-spacing: 0.02em;
+}
+.overlay {
+  background: #19191088;
+}
+#loading {
+  background: #26241b;
+}
+@media (max-width: 800px) {
+  .level-button {
+    border-width: 7px;
+    border-image-width: 7px;
+    padding: 4px;
+  }
+  #shop .shop-action {
+    height: 36px;
+    min-height: 36px;
+    padding: 0 3px;
+  }
+  #shop .shop-action span:first-child {
+    width: 20px;
+    height: 20px;
+  }
+  #shop .shop-action span:last-child {
+    font-size: 12px;
+  }
+  .reserve-slot {
+    border-width: 4px;
+    border-image-width: 4px;
+  }
+}
+@media (max-height: 600px) and (min-width: 801px) {
+  #shop .shop-action {
+    height: 32px;
+    min-height: 32px;
+    border-width: 5px;
+    border-image-width: 5px;
+  }
+  #shop .shop-action span:first-child {
+    width: 20px;
+    height: 20px;
+  }
+}
