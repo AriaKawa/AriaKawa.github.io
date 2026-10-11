@@ -1,0 +1,829 @@
+{
+  "name": "Japanese Village v2",
+  "buildings": 27,
+  "directions": 108,
+  "assets": [
+    {
+      "id": "cottage",
+      "width": 160,
+      "height": 133,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "cottage_W",
+      "width": 160,
+      "height": 159,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "cottage_N",
+      "width": 160,
+      "height": 125,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "cottage_E",
+      "width": 159,
+      "height": 160,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "cottage2",
+      "width": 133,
+      "height": 160,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "cottage2_W",
+      "width": 131,
+      "height": 160,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "cottage2_N",
+      "width": 122,
+      "height": 160,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "cottage2_E",
+      "width": 125,
+      "height": 160,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "cottage3",
+      "width": 160,
+      "height": 125,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "cottage3_W",
+      "width": 160,
+      "height": 147,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "cottage3_N",
+      "width": 160,
+      "height": 118,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "cottage3_E",
+      "width": 160,
+      "height": 148,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "market",
+      "width": 160,
+      "height": 155,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "market_W",
+      "width": 158,
+      "height": 160,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "market_N",
+      "width": 160,
+      "height": 158,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "market_E",
+      "width": 154,
+      "height": 160,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "well",
+      "width": 143,
+      "height": 160,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "well_W",
+      "width": 141,
+      "height": 160,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "well_N",
+      "width": 147,
+      "height": 160,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "well_E",
+      "width": 141,
+      "height": 160,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "cookhouse",
+      "width": 160,
+      "height": 146,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "cookhouse_W",
+      "width": 160,
+      "height": 145,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "cookhouse_N",
+      "width": 160,
+      "height": 141,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "cookhouse_E",
+      "width": 160,
+      "height": 141,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "tannery",
+      "width": 160,
+      "height": 126,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "tannery_W",
+      "width": 160,
+      "height": 129,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "tannery_N",
+      "width": 160,
+      "height": 127,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "tannery_E",
+      "width": 160,
+      "height": 142,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "architect",
+      "width": 160,
+      "height": 135,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "architect_W",
+      "width": 160,
+      "height": 154,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "architect_N",
+      "width": 160,
+      "height": 127,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "architect_E",
+      "width": 160,
+      "height": 156,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "roadwright",
+      "width": 160,
+      "height": 107,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "roadwright_W",
+      "width": 160,
+      "height": 131,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "roadwright_N",
+      "width": 160,
+      "height": 123,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "roadwright_E",
+      "width": 160,
+      "height": 128,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "paver",
+      "width": 160,
+      "height": 133,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "paver_W",
+      "width": 160,
+      "height": 153,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "paver_N",
+      "width": 160,
+      "height": 125,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "paver_E",
+      "width": 160,
+      "height": 153,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "wizard",
+      "width": 160,
+      "height": 142,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "wizard_W",
+      "width": 160,
+      "height": 156,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "wizard_N",
+      "width": 160,
+      "height": 140,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "wizard_E",
+      "width": 160,
+      "height": 159,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "farm",
+      "width": 160,
+      "height": 145,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "farm_W",
+      "width": 160,
+      "height": 159,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "farm_N",
+      "width": 160,
+      "height": 151,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "farm_E",
+      "width": 160,
+      "height": 157,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "farm2",
+      "width": 160,
+      "height": 131,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "farm2_W",
+      "width": 160,
+      "height": 150,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "farm2_N",
+      "width": 160,
+      "height": 127,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "farm2_E",
+      "width": 160,
+      "height": 150,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "farm3",
+      "width": 160,
+      "height": 135,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "farm3_W",
+      "width": 160,
+      "height": 153,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "farm3_N",
+      "width": 160,
+      "height": 135,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "farm3_E",
+      "width": 160,
+      "height": 154,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "hunter",
+      "width": 160,
+      "height": 154,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "hunter_W",
+      "width": 153,
+      "height": 160,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "hunter_N",
+      "width": 160,
+      "height": 144,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "hunter_E",
+      "width": 158,
+      "height": 160,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "hunter2",
+      "width": 160,
+      "height": 137,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "hunter2_W",
+      "width": 160,
+      "height": 155,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "hunter2_N",
+      "width": 160,
+      "height": 135,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "hunter2_E",
+      "width": 160,
+      "height": 151,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "hunter3",
+      "width": 160,
+      "height": 139,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "hunter3_W",
+      "width": 160,
+      "height": 154,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "hunter3_N",
+      "width": 160,
+      "height": 140,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "hunter3_E",
+      "width": 160,
+      "height": 149,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "gatherer",
+      "width": 160,
+      "height": 137,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "gatherer_W",
+      "width": 158,
+      "height": 160,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "gatherer_N",
+      "width": 160,
+      "height": 133,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "gatherer_E",
+      "width": 160,
+      "height": 158,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "gatherer2",
+      "width": 160,
+      "height": 126,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "gatherer2_W",
+      "width": 160,
+      "height": 151,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "gatherer2_N",
+      "width": 160,
+      "height": 123,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "gatherer2_E",
+      "width": 160,
+      "height": 150,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "gatherer3",
+      "width": 160,
+      "height": 133,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "gatherer3_W",
+      "width": 160,
+      "height": 158,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "gatherer3_N",
+      "width": 160,
+      "height": 153,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "gatherer3_E",
+      "width": 159,
+      "height": 160,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "lumber",
+      "width": 160,
+      "height": 149,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "lumber_W",
+      "width": 160,
+      "height": 153,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "lumber_N",
+      "width": 160,
+      "height": 153,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "lumber_E",
+      "width": 160,
+      "height": 152,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "lumber2",
+      "width": 160,
+      "height": 137,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "lumber2_W",
+      "width": 154,
+      "height": 160,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "lumber2_N",
+      "width": 160,
+      "height": 160,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "lumber2_E",
+      "width": 160,
+      "height": 160,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "lumber3",
+      "width": 160,
+      "height": 155,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "lumber3_W",
+      "width": 160,
+      "height": 154,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "lumber3_N",
+      "width": 160,
+      "height": 151,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "lumber3_E",
+      "width": 160,
+      "height": 159,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "wolves",
+      "width": 160,
+      "height": 141,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "wolves_W",
+      "width": 160,
+      "height": 144,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "wolves_N",
+      "width": 148,
+      "height": 160,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "wolves_E",
+      "width": 146,
+      "height": 160,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "wolves2",
+      "width": 160,
+      "height": 140,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "wolves2_W",
+      "width": 160,
+      "height": 147,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "wolves2_N",
+      "width": 160,
+      "height": 121,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "wolves2_E",
+      "width": 160,
+      "height": 157,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "wolves3",
+      "width": 160,
+      "height": 113,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "wolves3_W",
+      "width": 160,
+      "height": 141,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "wolves3_N",
+      "width": 160,
+      "height": 112,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "wolves3_E",
+      "width": 160,
+      "height": 139,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "fisher",
+      "width": 160,
+      "height": 134,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "fisher_W",
+      "width": 160,
+      "height": 159,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "fisher_N",
+      "width": 160,
+      "height": 130,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "fisher_E",
+      "width": 160,
+      "height": 159,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "rice0",
+      "width": 79,
+      "height": 96,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "rice1",
+      "width": 84,
+      "height": 96,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "rice2",
+      "width": 96,
+      "height": 84,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "rice3",
+      "width": 96,
+      "height": 93,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "grass",
+      "width": 256,
+      "height": 256,
+      "transparent": false
+    },
+    {
+      "id": "packedRoad",
+      "width": 256,
+      "height": 256,
+      "transparent": false
+    },
+    {
+      "id": "cobbleRoad",
+      "width": 256,
+      "height": 256,
+      "transparent": false
+    },
+    {
+      "id": "earth",
+      "width": 256,
+      "height": 256,
+      "transparent": false
+    },
+    {
+      "id": "sika-deer",
+      "width": 137,
+      "height": 160,
+      "transparent": true,
+      "anchor": "bottom-center"
+    },
+    {
+      "id": "sika-deer-fallen",
+      "width": 160,
+      "height": 96,
+      "transparent": true,
+      "anchor": "bottom-center"
+    }
+  ]
+}

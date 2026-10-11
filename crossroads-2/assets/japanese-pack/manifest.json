@@ -1,0 +1,139 @@
+{
+  "name": "Crossroads II — Japanese Village",
+  "generator": "Built-in image_gen",
+  "count": 6,
+  "assets": [
+    {
+      "id": "minka-house",
+      "png": "minka-house.png",
+      "file": "minka-house.webp",
+      "width": 96,
+      "height": 78,
+      "contentBounds": {
+        "left": 2,
+        "top": 2,
+        "width": 92,
+        "height": 74
+      },
+      "recommendedTileWidth": 0.38,
+      "anchor": "bottom-center",
+      "masterBounds": {
+        "left": 0,
+        "top": 38,
+        "width": 1370,
+        "height": 1107
+      },
+      "transparent": true
+    },
+    {
+      "id": "machiya-townhouse",
+      "png": "machiya-townhouse.png",
+      "file": "machiya-townhouse.webp",
+      "width": 96,
+      "height": 89,
+      "contentBounds": {
+        "left": 2,
+        "top": 2,
+        "width": 92,
+        "height": 85
+      },
+      "recommendedTileWidth": 0.4,
+      "anchor": "bottom-center",
+      "masterBounds": {
+        "left": 0,
+        "top": 11,
+        "width": 1288,
+        "height": 1188
+      },
+      "transparent": true
+    },
+    {
+      "id": "japanese-market",
+      "png": "japanese-market.png",
+      "file": "japanese-market.webp",
+      "width": 96,
+      "height": 88,
+      "contentBounds": {
+        "left": 2,
+        "top": 2,
+        "width": 92,
+        "height": 84
+      },
+      "recommendedTileWidth": 0.4,
+      "anchor": "bottom-center",
+      "masterBounds": {
+        "left": 0,
+        "top": 9,
+        "width": 1300,
+        "height": 1190
+      },
+      "transparent": true
+    },
+    {
+      "id": "village-shrine",
+      "png": "village-shrine.png",
+      "file": "village-shrine.webp",
+      "width": 96,
+      "height": 86,
+      "contentBounds": {
+        "left": 2,
+        "top": 2,
+        "width": 92,
+        "height": 82
+      },
+      "recommendedTileWidth": 0.42,
+      "anchor": "bottom-center",
+      "masterBounds": {
+        "left": 0,
+        "top": 20,
+        "width": 1304,
+        "height": 1170
+      },
+      "transparent": true
+    },
+    {
+      "id": "sakura-pink",
+      "png": "sakura-pink.png",
+      "file": "sakura-pink.webp",
+      "width": 96,
+      "height": 80,
+      "contentBounds": {
+        "left": 2,
+        "top": 2,
+        "width": 92,
+        "height": 76
+      },
+      "recommendedTileWidth": 0.24,
+      "anchor": "bottom-center",
+      "masterBounds": {
+        "left": 0,
+        "top": 7,
+        "width": 1371,
+        "height": 1138
+      },
+      "transparent": true
+    },
+    {
+      "id": "sakura-white",
+      "png": "sakura-white.png",
+      "file": "sakura-white.webp",
+      "width": 96,
+      "height": 90,
+      "contentBounds": {
+        "left": 2,
+        "top": 2,
+        "width": 92,
+        "height": 86
+      },
+      "recommendedTileWidth": 0.2,
+      "anchor": "bottom-center",
+      "masterBounds": {
+        "left": 0,
+        "top": 5,
+        "width": 1284,
+        "height": 1207
+      },
+      "transparent": true
+    }
+  ]
+}
