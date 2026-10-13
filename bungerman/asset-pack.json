@@ -1,0 +1,138 @@
+{
+  "version": 1,
+  "purpose": "Every new visual style must supply a newly generated individual PNG for every required asset. The game mechanics remain identical across styles.",
+  "styles": {
+    "16bit": "SNES-era pixel art, limited palette, crisp pixels",
+    "64bit": "Late-1990s low-poly console art, visible polygon facets",
+    "cartoon": "Modern hand-drawn 2D cartoon, bold outlines and cel shading"
+  },
+  "directory": "dist/assets/<style>/",
+  "required": [
+    {
+      "id": "peanut",
+      "file": "peanut.png",
+      "transparent": true,
+      "framing": "One centered subject, entirely visible, generous transparent margin",
+      "use": "Shared character-select portrait, HUD face, gameplay sprite"
+    },
+    {
+      "id": "hutch",
+      "file": "hutch.png",
+      "transparent": true,
+      "framing": "One centered subject, entirely visible, generous transparent margin",
+      "use": "Shared character-select portrait, HUD face, gameplay sprite"
+    },
+    {
+      "id": "ninja",
+      "file": "ninja.png",
+      "transparent": true,
+      "framing": "One centered subject, entirely visible, generous transparent margin",
+      "use": "Shared character-select portrait, HUD face, gameplay sprite"
+    },
+    {
+      "id": "logo",
+      "file": "logo.png",
+      "transparent": true,
+      "framing": "Wide BUNGERMAN wordmark, no other text",
+      "use": "logo"
+    },
+    {
+      "id": "floor",
+      "file": "floor.png",
+      "transparent": false,
+      "framing": "Opaque square seamless grass tile, edge to edge",
+      "use": "floor"
+    },
+    {
+      "id": "wall",
+      "file": "wall.png",
+      "transparent": true,
+      "framing": "One centered subject, entirely visible, generous transparent margin",
+      "use": "wall"
+    },
+    {
+      "id": "crate",
+      "file": "crate.png",
+      "transparent": true,
+      "framing": "One centered subject, entirely visible, generous transparent margin",
+      "use": "crate"
+    },
+    {
+      "id": "bomb",
+      "file": "bomb.png",
+      "transparent": true,
+      "framing": "One centered subject, entirely visible, generous transparent margin",
+      "use": "bomb"
+    },
+    {
+      "id": "pickup",
+      "file": "pickup.png",
+      "transparent": true,
+      "framing": "One centered subject, entirely visible, generous transparent margin",
+      "use": "pickup"
+    },
+    {
+      "id": "blast",
+      "file": "blast.png",
+      "transparent": true,
+      "framing": "One centered subject, entirely visible, generous transparent margin",
+      "use": "blast"
+    },
+    {
+      "id": "paused",
+      "file": "paused.png",
+      "transparent": true,
+      "framing": "One centered subject, entirely visible, generous transparent margin",
+      "use": "paused"
+    },
+    {
+      "id": "won",
+      "file": "won.png",
+      "transparent": true,
+      "framing": "One centered subject, entirely visible, generous transparent margin",
+      "use": "won"
+    },
+    {
+      "id": "lost",
+      "file": "lost.png",
+      "transparent": true,
+      "framing": "One centered subject, entirely visible, generous transparent margin",
+      "use": "lost"
+    },
+    {
+      "id": "roundWon",
+      "file": "roundWon.png",
+      "transparent": true,
+      "framing": "One centered subject, entirely visible, generous transparent margin",
+      "use": "Between-round menu illustration"
+    }
+  ],
+  "rules": [
+    "One new image-generation call per logical asset, no composite sprite sheets, no recolors of another style.",
+    "Save exact prompts under asset-prompts/<style> and original output PNGs unchanged under dist/assets/<style>.",
+    "Peanut: anthropomorphic peanut, propeller cap, white gloves and shoes.",
+    "HutchMF: human, extremely heavyset with large belly, backwards black cap, beard, black polo, jeans, tattoo arms.",
+    "Ninja: slender human, spiky blue hair, yellow headband, blue hoodie.",
+    "Use consistent perspective, lighting, palette, silhouette and outline weights within each pack.",
+    "All menu states receive their own illustration: paused, won, lost, roundWon. Character select uses the three individual character images.",
+    "UI buttons, borders, indicators and accessibility labels are code-native controls themed with each pack, not images of text.",
+    "Animation uses runtime bob, lean, squash, pulse and falling transforms of the separate assets. Direction is mirrored. No baked-in animation sheet.",
+    "Assets load atomically; never mix styles or silently substitute old assets. Disable Play during load and show a retryable error.",
+    "Original images are preserved. Runtime alpha-bounds cropping only removes transparent padding for consistent display.",
+    "Validate unique hashes and complete inventory, inspect each style in character selection, gameplay and menus at desktop and mobile sizes."
+  ],
+  "overtime": {
+    "startsAtSecondsRemaining": 25,
+    "warningSeconds": 1.2,
+    "fuseSeconds": 1.35,
+    "normalWave": {
+      "intervalSeconds": 2.5,
+      "bombs": 2
+    },
+    "final10Seconds": {
+      "intervalSeconds": 1.1,
+      "bombs": 3
+    },
+    "placement": "Random empty floor cells, no duplicate pending drops or existing bombs; warning ring before landing; normal blast collision and chain reaction rules; bots see danger; reset every round."
+  }
+}
