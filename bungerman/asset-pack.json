@@ -1,8 +1,8 @@
 {
-  "version": 2,
-  "purpose": "Each new style supplies 14 separate original PNGs plus articulated character and effect source modules. The rejected previous editions are removed.",
+  "version": 3,
+  "purpose": "One shaded arcade edition with original painted character animation sheets and a generated cabinet. Each logical asset has its own image-generation output and exact prompt.",
   "styles": {
-    "arcade2005": "Rounded DS-era arcade art, silver machinery, bright green inset floor panels, chunky brown bricks. Animation is the priority."
+    "arcade2005": "Rounded, shaded 2005 handheld arcade characters with hand-painted highlights, depth and directional animation. Green inset arena, silver pillars, chunky brick, illustrated arcade cabinet."
   },
   "directory": "dist/assets/<style>/",
   "required": [
@@ -11,21 +11,21 @@
       "file": "peanut.png",
       "transparent": true,
       "framing": "One centered subject, entirely visible, generous transparent margin",
-      "use": "Character reference portrait and gallery. In-game and menu characters use the articulated rig for consistent live animation."
+      "use": "Reference portrait retained in gallery. Live character uses the separate painted animation sheet."
     },
     {
       "id": "hutch",
       "file": "hutch.png",
       "transparent": true,
       "framing": "One centered subject, entirely visible, generous transparent margin",
-      "use": "Character reference portrait and gallery. In-game and menu characters use the articulated rig for consistent live animation."
+      "use": "Reference portrait retained in gallery. Live character uses the separate painted animation sheet."
     },
     {
       "id": "ninja",
       "file": "ninja.png",
       "transparent": true,
       "framing": "One centered subject, entirely visible, generous transparent margin",
-      "use": "Character reference portrait and gallery. In-game and menu characters use the articulated rig for consistent live animation."
+      "use": "Reference portrait retained in gallery. Live character uses the separate painted animation sheet."
     },
     {
       "id": "logo",
@@ -103,24 +103,61 @@
       "transparent": true,
       "framing": "One centered subject, entirely visible, generous transparent margin",
       "use": "Between-round menu illustration"
+    },
+    {
+      "id": "peanut-sheet",
+      "file": "peanut-sheet.png",
+      "transparent": true,
+      "framing": "6 columns × 4 rows. Full-body frames with consistent cell alignment, directional walks and six throwing poses.",
+      "use": "Live character animation, character selection and HUD."
+    },
+    {
+      "id": "hutch-sheet",
+      "file": "hutch-sheet.png",
+      "transparent": true,
+      "framing": "6 columns × 4 rows. Full-body frames with consistent cell alignment, directional walks and six throwing poses.",
+      "use": "Live character animation, character selection and HUD."
+    },
+    {
+      "id": "ninja-sheet",
+      "file": "ninja-sheet.png",
+      "transparent": true,
+      "framing": "6 columns × 4 rows. Full-body frames with consistent cell alignment, directional walks and six throwing poses.",
+      "use": "Live character animation, character selection and HUD."
+    },
+    {
+      "id": "tpain-sheet",
+      "file": "tpain-sheet.png",
+      "transparent": true,
+      "framing": "6 columns × 4 rows. Full-body frames with consistent cell alignment, directional walks and six throwing poses.",
+      "use": "Live character animation, character selection and HUD."
+    },
+    {
+      "id": "cabinet",
+      "file": "cabinet.png",
+      "transparent": true,
+      "framing": "Front-view cabinet with rectangular screen opening and illustrated controls.",
+      "use": "Cabinet surrounding the live game screen."
     }
   ],
   "rules": [
-    "One new image-generation call per logical asset, no composite sprite sheets, no recolors of another style.",
+    "One image generation call per logical asset. Animation sheets count as one asset per character. Never reuse another character’s sheet. Preserve originals unchanged; source rectangles are selected at runtime.",
     "Save exact prompts under asset-prompts/<style> and original output PNGs unchanged under dist/assets/<style>.",
     "Peanut: anthropomorphic peanut, propeller cap, white gloves and shoes.",
     "HutchMF: human, extremely heavyset with large belly, backwards black cap, beard, black polo, jeans, tattoo arms.",
     "Ninja: slender human, spiky blue hair, yellow headband, blue hoodie.",
     "Use consistent perspective, lighting, palette, silhouette and outline weights within each pack.",
-    "All menu states receive their own illustration: paused, won, lost, roundWon. Character select uses the three individual character images.",
     "UI buttons, borders, indicators and accessibility labels are code-native controls themed with each pack, not images of text.",
     "Assets load atomically; never mix styles or silently substitute old assets. Disable Play during load and show a retryable error.",
     "Original images are preserved. Runtime alpha-bounds cropping only removes transparent padding for consistent display.",
     "Validate unique hashes and complete inventory, inspect each style in character selection, gameplay and menus at desktop and mobile sizes.",
-    "Characters must use independent animated limbs and four directional views. A static sprite with whole-image rotation or bobbing is insufficient.",
-    "Required animation states: idle breathing and blinking; alternating arm/leg walk; charge anticipation; crouch/reach bomb placement; hit recoil; death squash; victory jump.",
     "Environment animation: accelerating bomb pulse, placement bounce, burning fuse sparks, connected flame ignition and decay, brick debris, pickup rotation, warned bomb-rain descent.",
-    "Pause must freeze gameplay animation and timers. Reduced motion must suppress cosmetic shake, bob and particles while keeping gameplay states readable."
+    "Pause must freeze gameplay animation and timers. Reduced motion must suppress cosmetic shake, bob and particles while keeping gameplay states readable.",
+    "T-Pain: Black human, beard and locs, sunglasses, hat, gold chain, purple jacket. Equal gameplay polish to the other three characters.",
+    "Use illustrated frames for all four characters in the arena, menu and HUD. Runtime may mirror side frames, but may not substitute geometric character rigs.",
+    "Each sheet: six down-walk frames, six right-walk frames, six back-walk frames, six anticipation/overhead/release/follow-through throwing frames.",
+    "Tap to plant; hold and release to throw along a clear corridor. Bombs travel on visible arcs, reserve landing cells, and start their fuse on landing.",
+    "AI uses reaction delays, persistent goals, personalities, and timed escape planning. No direct input reading or instant perfect reactions."
   ],
   "overtime": {
     "startsAtSecondsRemaining": 25,

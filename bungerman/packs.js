@@ -1,5 +1,5 @@
 export const PACK_IDS=['arcade2005'];
-export const ASSET_IDS=['peanut','hutch','ninja','logo','floor','wall','crate','bomb','pickup','blast','paused','won','lost','roundWon'];
+export const ASSET_IDS=['logo','pickup','paused','won','lost','roundWon'];
 const cache=new Map();
 function bounds(img){
  const c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;
