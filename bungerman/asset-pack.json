@@ -1,10 +1,8 @@
 {
-  "version": 1,
-  "purpose": "Every new visual style must supply a newly generated individual PNG for every required asset. The game mechanics remain identical across styles.",
+  "version": 2,
+  "purpose": "Each new style supplies 14 separate original PNGs plus articulated character and effect source modules. The rejected previous editions are removed.",
   "styles": {
-    "16bit": "SNES-era pixel art, limited palette, crisp pixels",
-    "64bit": "Late-1990s low-poly console art, visible polygon facets",
-    "cartoon": "Modern hand-drawn 2D cartoon, bold outlines and cel shading"
+    "arcade2005": "Rounded DS-era arcade art, silver machinery, bright green inset floor panels, chunky brown bricks. Animation is the priority."
   },
   "directory": "dist/assets/<style>/",
   "required": [
@@ -13,21 +11,21 @@
       "file": "peanut.png",
       "transparent": true,
       "framing": "One centered subject, entirely visible, generous transparent margin",
-      "use": "Shared character-select portrait, HUD face, gameplay sprite"
+      "use": "Character reference portrait and gallery. In-game and menu characters use the articulated rig for consistent live animation."
     },
     {
       "id": "hutch",
       "file": "hutch.png",
       "transparent": true,
       "framing": "One centered subject, entirely visible, generous transparent margin",
-      "use": "Shared character-select portrait, HUD face, gameplay sprite"
+      "use": "Character reference portrait and gallery. In-game and menu characters use the articulated rig for consistent live animation."
     },
     {
       "id": "ninja",
       "file": "ninja.png",
       "transparent": true,
       "framing": "One centered subject, entirely visible, generous transparent margin",
-      "use": "Shared character-select portrait, HUD face, gameplay sprite"
+      "use": "Character reference portrait and gallery. In-game and menu characters use the articulated rig for consistent live animation."
     },
     {
       "id": "logo",
@@ -116,10 +114,13 @@
     "Use consistent perspective, lighting, palette, silhouette and outline weights within each pack.",
     "All menu states receive their own illustration: paused, won, lost, roundWon. Character select uses the three individual character images.",
     "UI buttons, borders, indicators and accessibility labels are code-native controls themed with each pack, not images of text.",
-    "Animation uses runtime bob, lean, squash, pulse and falling transforms of the separate assets. Direction is mirrored. No baked-in animation sheet.",
     "Assets load atomically; never mix styles or silently substitute old assets. Disable Play during load and show a retryable error.",
     "Original images are preserved. Runtime alpha-bounds cropping only removes transparent padding for consistent display.",
-    "Validate unique hashes and complete inventory, inspect each style in character selection, gameplay and menus at desktop and mobile sizes."
+    "Validate unique hashes and complete inventory, inspect each style in character selection, gameplay and menus at desktop and mobile sizes.",
+    "Characters must use independent animated limbs and four directional views. A static sprite with whole-image rotation or bobbing is insufficient.",
+    "Required animation states: idle breathing and blinking; alternating arm/leg walk; charge anticipation; crouch/reach bomb placement; hit recoil; death squash; victory jump.",
+    "Environment animation: accelerating bomb pulse, placement bounce, burning fuse sparks, connected flame ignition and decay, brick debris, pickup rotation, warned bomb-rain descent.",
+    "Pause must freeze gameplay animation and timers. Reduced motion must suppress cosmetic shake, bob and particles while keeping gameplay states readable."
   ],
   "overtime": {
     "startsAtSecondsRemaining": 25,
