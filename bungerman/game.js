@@ -1,7 +1,7 @@
-import {Game,CAST,COLS,ROWS,MAPS} from './engine.js?v=plant';
-import {loadPack,drawAsset} from './packs.js?v=plant';
-import {drawCharacter,loadCharacterSprites} from './characters.js?v=plant';
-import {drawArena,drawBomb,drawFlames,drawClosingWalls,drawRockets} from './arena.js?v=plant';
+import {Game,CAST,COLS,ROWS,MAPS} from './engine.js?v=two';
+import {loadPack,drawAsset} from './packs.js?v=two';
+import {drawCharacter,loadCharacterSprites} from './characters.js?v=two';
+import {drawArena,drawBomb,drawFlames,drawClosingWalls,drawRockets} from './arena.js?v=two';
 const $=id=>document.getElementById(id),canvas=$('game'),ctx=canvas.getContext('2d');
 const W=416,H=352,T=30,OX=13,OY=11;
 canvas.width=W*3;canvas.height=H*3;ctx.scale(3,3);
