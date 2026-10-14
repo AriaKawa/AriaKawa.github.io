@@ -1,7 +1,7 @@
-import {Game,CAST,COLS,ROWS,MAPS} from './engine.js?v=front7';
-import {loadPack,drawAsset} from './packs.js?v=front7';
-import {drawCharacter,loadCharacterSprites} from './characters.js?v=front7';
-import {drawArena,drawBomb,drawFlames,drawClosingWalls,drawRockets} from './arena.js?v=front7';
+import {Game,CAST,COLS,ROWS,MAPS} from './engine.js?v=cosmetic9';
+import {loadPack,drawAsset} from './packs.js?v=cosmetic9';
+import {drawCharacter,loadCharacterSprites} from './characters.js?v=cosmetic9';
+import {drawArena,drawBomb,drawFlames,drawClosingWalls,drawRockets} from './arena.js?v=cosmetic9';
 const $=id=>document.getElementById(id),canvas=$('game'),ctx=canvas.getContext('2d');
 const W=416,H=352,T=30,OX=13,OY=11;
 canvas.width=W*3;canvas.height=H*3;ctx.scale(3,3);
