@@ -1,7 +1,7 @@
-import {UI_ASSETS} from './assets/runtime/ui-assets.js';
+import {UI_ASSETS} from './assets/runtime/ui-assets.js?v=walls';
 import {loadImage} from './image-loader.js';
 export const PACK_IDS=['arcade2005'];
-export const ASSET_IDS=['logo','pickup','paused','won','lost','roundWon'];
+export const ASSET_IDS=['logo','pickup','range','rpg','paused','won','lost','roundWon'];
 const cache=new Map();
 export async function loadPack(id,{onProgress,load=loadImage}={}){
  if(!PACK_IDS.includes(id))throw new Error('Unknown art style');
@@ -18,3 +18,4 @@ export function drawAsset(c,pack,id,x,y,w,h,{contain=true,alpha=1}={}){
  if(contain){const scale=Math.min(w/b[2],h/b[3]),nw=b[2]*scale,nh=b[3]*scale;x+=(w-nw)/2;y+=(h-nh)/2;w=nw;h=nh;}
  c.save();c.imageSmoothingEnabled=pack.id!=='16bit';c.globalAlpha*=alpha;c.drawImage(asset.img,...b,x,y,w,h);c.restore();return true;
 }
+

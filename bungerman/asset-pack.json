@@ -1,5 +1,5 @@
 {
-  "version": 6,
+  "version": 7,
   "purpose": "One shaded arcade edition with original painted character animation sheets and a generated cabinet. Each logical asset has its own image-generation output and exact prompt.",
   "styles": {
     "arcade2005": "Rounded, shaded 2005 handheld arcade characters with hand-painted highlights, depth and directional animation. Green inset arena, silver pillars, chunky brick, illustrated arcade cabinet."
@@ -134,9 +134,9 @@
     },
     {
       "id": "cabinet",
-      "file": "cabinet-v3.png",
+      "file": "cabinet-v4.png",
       "transparent": true,
-      "framing": "1169 x 1346 front view with substantial side panels roughly 15% of width each. Screen x16.253%, y21.323%, width67.493%, height54.309%; preserve native aspect ratio.",
+      "framing": "1169 x 1346 front view; broad side columns, solid lower front, no hat or deck. Screen x204,y271,width738,height716; left17.451%,top20.134%,width63.131%,height53.195%. Preserve native aspect ratio.",
       "use": "Cabinet surrounding the live game screen."
     },
     {
@@ -168,32 +168,32 @@
       "use": "Replaces the main-sheet side walk for a complete two-step gait; mirror for left facing."
     },
     {
-      "id": "peanut-cap",
-      "file": "peanut-cap.png",
+      "id": "range",
+      "file": "range.png",
       "transparent": true,
-      "framing": "Colorful red, blue and yellow kid propeller beanie with green brim, matching Peanut; short spindle but no rotor.",
-      "use": "Stationary cap above cabinet, clickable to briefly spin separate rotor."
+      "framing": "Blue diamond-shaped Viagra-style pill, shaded and readable at 22 pixels. No lettering.",
+      "use": "Live arena pickup and HUD where appropriate."
     },
     {
-      "id": "peanut-rotor",
-      "file": "peanut-rotor.png",
+      "id": "rpg",
+      "file": "rpg.png",
       "transparent": true,
-      "framing": "One separate red two-blade propeller with centered silver hub.",
-      "use": "Brief click-triggered spin, completely stationary at all other times."
+      "framing": "Painted compact RPG launcher pickup, readable at 22 pixels. No lettering.",
+      "use": "Live arena pickup and HUD where appropriate."
     }
   ],
   "rules": [
     "One image generation call per logical asset. Animation sheets count as one asset per character. Never reuse another character’s sheet. Preserve originals unchanged; source rectangles are selected at runtime.",
     "Save exact prompts under asset-prompts/<style> and original output PNGs unchanged under dist/assets/<style>.",
     "Peanut: anthropomorphic peanut, propeller cap, white gloves and shoes.",
-    "HutchMF: human, extremely heavyset with large belly, backwards black cap, beard, black polo, jeans, tattoo arms.",
+    "Hutch: human, extremely heavyset with large belly, backwards black cap, beard, black polo, jeans, tattoo arms.",
     "Ninja: slender human, spiky blue hair, yellow headband, blue hoodie.",
     "Use consistent perspective, lighting, palette, silhouette and outline weights within each pack.",
     "UI buttons, borders, indicators and accessibility labels are code-native controls themed with each pack, not images of text.",
     "Assets load atomically; never mix styles or silently substitute old assets. Disable Play during load and show a retryable error.",
     "Original PNG images are preserved. Build scripts isolate painted frames and precompute anchors, then create compact transparent WebP delivery atlases; the browser only decodes and draws prepared rectangles.",
     "Validate unique hashes and complete inventory, inspect each style in character selection, gameplay and menus at desktop and mobile sizes.",
-    "Environment animation: accelerating bomb pulse, placement bounce, burning fuse sparks, connected flame ignition and decay, brick debris, pickup rotation, warned bomb-rain descent.",
+    "Environment animation: accelerating bomb pulse, placement bounce, burning fuse sparks, connected flame ignition and decay, brick debris, pickup rotation, warned inward steel-wall descent.",
     "Pause must freeze gameplay animation and timers. Reduced motion must suppress cosmetic shake, bob and particles while keeping gameplay states readable.",
     "T-Pain: Black human, beard and locs, sunglasses, hat, gold chain, purple jacket. Equal gameplay polish to the other three characters.",
     "Use illustrated frames for all four characters in the arena, menu and HUD. Runtime may mirror side frames, but may not substitute geometric character rigs.",
@@ -205,32 +205,28 @@
     "Dedicated 12-frame side-walk sheets must include feet-together passing positions and opposing contacts; repeated spread-leg stances do not count as a complete walk.",
     "Charging fills twice as fast and clamps at full power indefinitely. A held bomb never overcooks; only released bombs start their fuse after landing.",
     "HUD is a separate row above the arena with larger hearts, timer, sound, then pause. No heat meter, bomb-stock dots, Home button, control legend or Fan Demo footer.",
-    "Painted cabinet joystick and gold buttons act as touch controls, with no separate visible control bar. Player damage produces a red edge pulse, sprite highlight, lost-heart floater and enlarged red hearts.",
-    "Production startup must not download the full source PNG sheets or scan pixels. Four prepared character atlases plus six UI images must total less than 1 MB. All character, pack and cabinet delivery files use dist/assets/runtime/.",
+    "Drag the game screen to move; tap or hold and release to bomb. A second finger can bomb while dragging. The RPG button appears only while ammunition is available. Player damage produces a red edge pulse, sprite highlight, lost-heart floater and enlarged red hearts.",
+    "Production startup must not download the full source PNG sheets or scan pixels. Four prepared character atlases plus eight UI images must total less than 1 MB. All character, pack and cabinet delivery files use dist/assets/runtime/.",
     "Keep the generated wide cabinet side columns at natural proportions; do not squeeze the side panels to enlarge the screen.",
-    "Peanut wears a colorful kid propeller beanie, not a top hat. The cabinet cap is still by default. Only clicking or keyboard-activating it briefly spins the rotor; the cap body never spins or bobs.",
-    "Image loading displays progress and fails with a retry control after a bounded timeout. Rebuild optimized delivery assets whenever source art changes."
+    "Image loading displays progress and fails with a retry control after a bounded timeout. Rebuild optimized delivery assets whenever source art changes.",
+    "Cabinet has no separate hat and no illustrated control deck. Closed dark navy lower front and broad sides surround the screen; page background is dark grey.",
+    "Fill exactly the rounded 90% of eligible floor cells outside active spawn safe zones. A quarter of those crates are reinforced, visibly strapped; first explosion damages them, second destroys them.",
+    "Range pickups use the generated blue pill and float a small Range Up label above the collector. Each adds one blast tile, capped at three bonuses and six total range.",
+    "RPG pickups grant three rounds up to six carried. E or the in-screen RPG button fires along the facing direction with a small impact explosion. Bots use the same pickups with delayed decisions."
   ],
   "overtime": {
     "startsAtSecondsRemaining": 25,
-    "warningSeconds": 1.2,
-    "fuseSeconds": 1.35,
-    "normalWave": {
-      "intervalSeconds": 2.5,
-      "bombs": 2
-    },
-    "final10Seconds": {
-      "intervalSeconds": 1.1,
-      "bombs": 3
-    },
-    "placement": "Random empty floor cells, no duplicate pending drops or existing bombs; warning ring before landing; normal blast collision and chain reaction rules; bots see danger; reset every round."
+    "warningSeconds": 1.5,
+    "intervalSeconds": 5,
+    "rings": 5,
+    "placement": "Seal successive outer playable rings with permanent immovable steel. Warning hatch and inward arrows precede each closure. Crush defeats actors even during invulnerability. Covered bombs, projectiles, flames and pickups are removed; bots see warnings and plan inward."
   },
   "delivery": {
     "characters": "node scripts/build-character-atlases.mjs",
     "uiAndCabinet": "python scripts/build-ui-assets.py",
     "sourceImages": "dist/assets/arcade2005/",
     "runtimeAssets": "dist/assets/runtime/",
-    "startupCharacterAndMenuBytes": 769758,
+    "startupCharacterAndMenuBytes": 777424,
     "characterFrames": 240,
     "notes": "Original PNGs remain the art source and download gallery. Generated WebP atlases retain every pose with precomputed alpha masks, anchors and frame rectangles."
   }

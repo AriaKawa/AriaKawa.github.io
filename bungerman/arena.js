@@ -32,6 +32,32 @@ function brick(c,x,y,seed){
  }
  rect(c,x,y+27,29,2,'#352921');
 }
+function reinforcedCrate(c,x,y,damaged=false){
+ // Deep timber, two broad bolted straps, and a separate bevel read as two-hit cover.
+ rect(c,x+2,y+3,28,27,'#082b22aa');rect(c,x,y,29,29,'#302922');
+ rect(c,x+1,y+1,27,26,gradient(c,x,y,27,damaged?['#a87c4b','#6e4b30','#4b3226']:['#dbab67','#9f703d','#674527']));
+ for(let row=0;row<3;row++){
+  const yy=y+2+row*8;rect(c,x+2,yy,25,1,damaged?'#b49363':'#e4bb7b');
+  rect(c,x+2,yy+7,25,1,'#4b3324');rect(c,x+4+(row%2)*5,yy+3,12,1,'#72502b70');
+ }
+ rect(c,x+1,y+1,1,25,'#edc58a');rect(c,x+27,y+2,1,25,'#473b2f');
+ for(const dx of [5,20]){
+  rect(c,x+dx,y,5,28,'#273b43');
+  rect(c,x+dx+1,y+1,3,26,gradient(c,x,y,28,damaged?['#8b9690','#526363','#35434c']:['#c4d0bc','#819991','#3b5760']));
+  rect(c,x+dx,y+1,1,26,'#cad4bc');rect(c,x+dx+4,y+2,1,26,'#1c343f');
+  for(const dy of [4,23]){oval(c,x+dx+2.5,y+dy,1.7,1.7,'#243b43');rect(c,x+dx+2,y+dy-1,1,1,'#edf0c9');}
+ }
+ rect(c,x+11,y+11,7,7,'#493b29');rect(c,x+12,y+12,5,5,damaged?'#70604c':'#bbaa68');
+ if(damaged){
+  // Broken right band exposes a dark gouge; bright split edges distinguish damage at game size.
+  polygon(c,[[x+18,y+8],[x+25,y+10],[x+23,y+13],[x+26,y+15],[x+20,y+18],[x+17,y+16],[x+20,y+13]],'#392b25');
+  polygon(c,[[x+20,y+8],[x+25,y+10],[x+23,y+12],[x+20,y+11]],'#acb8a5');
+  c.strokeStyle='#39271e';c.lineWidth=2;c.beginPath();c.moveTo(x+11,y+2);c.lineTo(x+14,y+8);c.lineTo(x+11,y+14);c.lineTo(x+16,y+20);c.lineTo(x+14,y+27);c.stroke();
+  c.strokeStyle='#deb27a';c.lineWidth=.8;c.beginPath();c.moveTo(x+12,y+3);c.lineTo(x+15,y+8);c.lineTo(x+12,y+14);c.lineTo(x+17,y+20);c.stroke();
+  polygon(c,[[x+1,y+20],[x+4,y+23],[x+2,y+27],[x+1,y+27]],'#35281f');
+ }
+ rect(c,x,y+28,29,1,'#24372f');
+}
 export function drawArena(ctx,game,{time=0,reduced=false}={}){
  ctx.save();rect(ctx,0,0,W,H,'#172c37');
  // Machinery surrounds the playable grid, with a restrained hazard stripe rail.
@@ -46,6 +72,7 @@ export function drawArena(ctx,game,{time=0,reduced=false}={}){
   rect(ctx,sx+5,sy+5,21,1,'#0f8838');rect(ctx,sx+26,sy+4,1,23,'#075d2b');rect(ctx,sx+4,sy+26,22,1,'#07622b');
   if(game.grid[y][x]===1)metal(ctx,sx,sy,x===0||y===0||x===12||y===10);
   else if(game.grid[y][x]===2)brick(ctx,sx,sy,x*7+y*3);
+  else if(game.grid[y][x]>=3)reinforcedCrate(ctx,sx,sy,game.grid[y][x]===4);
  }
  for(let x=28;x<W-22;x+=60){rect(ctx,x,4,12,4,'#183038');rect(ctx,x+1,4,9,2,!reduced&&Math.sin(time*2+x)>.8?'#ffb257':'#f05732');}
  ctx.restore();
@@ -96,19 +123,48 @@ export function drawFlames(ctx,game,{time=0,reduced=false}={}){
  }
  ctx.restore();
 }
-export function drawRain(ctx,game,options={}){
- const {time=0,reduced=false}=options;ctx.save();
- for(const r of game.rain??[]){
-  const x=OX+r.x*T+15,y=OY+r.y*T+15,p=clamp(1-r.delay/(r.maxDelay??1.2));
-  const pulse=reduced?1:.75+.25*Math.sin(time*19);ctx.globalAlpha=.6+.4*p;
-  oval(ctx,x,y,12,9,'#ff57282a');ctx.strokeStyle='#ffbd58';ctx.lineWidth=1.6;ctx.beginPath();ctx.ellipse(x,y,11,8,0,0,TAU);ctx.stroke();
-  ctx.strokeStyle='#ff663e';ctx.lineWidth=2;ctx.globalAlpha=pulse;
-  ctx.beginPath();ctx.moveTo(x-4,y-4);ctx.lineTo(x+4,y+4);ctx.moveTo(x+4,y-4);ctx.lineTo(x-4,y+4);ctx.stroke();
-  ctx.globalAlpha=1;
-  if(p>.48){const fall=clamp((p-.48)/.52),height=reduced?18:85*(1-fall*fall);const yy=y-height;
-   if(!reduced){ctx.strokeStyle='#fff3a273';ctx.lineWidth=2;for(let i=-1;i<=1;i++){ctx.beginPath();ctx.moveTo(x+i*5,yy-13);ctx.lineTo(x+i*5,yy-22-fall*8);ctx.stroke();}}
-   drawBomb(ctx,x,yy,{fuse:1.35,maxFuse:1.35,heat:.6},{...options,reduced:true});
+export function drawClosingWalls(ctx,game,{time=0,reduced=false}={}){
+ ctx.save();
+ for(const warning of game.wallWarnings??[]){
+  const x=OX+warning.x*T,y=OY+warning.y*T,p=clamp(1-warning.delay/(warning.maxDelay??1.5));
+  // Full-cell hatch and a filling perimeter remain readable even with reduced motion.
+  ctx.globalAlpha=.24+p*.22;rect(ctx,x+1,y+1,28,28,'#ff652a');
+  ctx.save();ctx.beginPath();ctx.rect(x+1,y+1,28,28);ctx.clip();
+  ctx.strokeStyle='#ffe1a5';ctx.lineWidth=2;ctx.globalAlpha=.32+p*.25;
+  for(let offset=-30;offset<50;offset+=9){ctx.beginPath();ctx.moveTo(x+offset,y+29);ctx.lineTo(x+offset+29,y);ctx.stroke();}
+  ctx.restore();
+  ctx.globalAlpha=reduced?1:.8+.2*Math.sin(time*14);ctx.strokeStyle='#ffc75f';ctx.lineWidth=1.8;ctx.strokeRect(x+1.5,y+1.5,27,27);
+  ctx.globalAlpha=1;ctx.strokeStyle='#fff1c5';ctx.lineWidth=2.4;
+  ctx.beginPath();const perimeter=108*p,points=[[x+1.5,y+1.5],[x+28.5,y+1.5],[x+28.5,y+28.5],[x+1.5,y+28.5],[x+1.5,y+1.5]];
+  ctx.moveTo(...points[0]);for(let edge=0;edge<4;edge++){const fraction=clamp((perimeter-edge*27)/27);if(!fraction)break;ctx.lineTo(points[edge][0]+(points[edge+1][0]-points[edge][0])*fraction,points[edge][1]+(points[edge+1][1]-points[edge][1])*fraction);}ctx.stroke();
+  // The small chevron points toward the surviving center, not toward the closing boundary.
+  const horizontal=Math.abs(warning.x-6)/6>=Math.abs(warning.y-5)/5;
+  const angle=horizontal?(warning.x<6?0:Math.PI):(warning.y<5?Math.PI/2:-Math.PI/2);
+  ctx.save();ctx.translate(x+15,y+15);ctx.rotate(angle);ctx.strokeStyle='#502a1b';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(-3,-5);ctx.lineTo(3,0);ctx.lineTo(-3,5);ctx.stroke();ctx.strokeStyle='#fff2bf';ctx.lineWidth=2;ctx.stroke();ctx.restore();
+  if(!reduced&&p>.78){const landing=clamp((p-.78)/.22);ctx.globalAlpha=landing*.6;metal(ctx,x,y-(1-landing)*(1-landing)*20);}
+ }
+ ctx.restore();
+}
+// Retain the export for older consumers; sudden death is now closing steel, never bomb rain.
+export const drawRain=drawClosingWalls;
+export function drawRockets(ctx,game,{time=0,reduced=false,pack,drawAsset}={}){
+ ctx.save();
+ for(const rocket of game.rockets??[]){
+  const x=OX+rocket.x*T+15,y=OY+rocket.y*T+15,angle=Math.atan2(rocket.dy,rocket.dx);
+  oval(ctx,x,y+7,7,2.2,'#09292275');ctx.save();ctx.translate(x,y);ctx.rotate(angle);
+  const flicker=reduced?0:Math.sin(time*52+rocket.x*3)*2;
+  if(!reduced){
+   for(let i=3;i>=1;i--){ctx.globalAlpha=.18*(1-i/4);oval(ctx,-11-i*7,1,i*1.3,i*1.3,'#d5d5c9');}
+   ctx.globalAlpha=1;
   }
+  polygon(ctx,[[-6,-3],[-17-flicker,0],[-6,3]],'#ff8528');
+  polygon(ctx,[[-6,-1.6],[-12-flicker,0],[-6,1.6]],'#fff1a1');
+  // A compact, shaded dart is a projectile effect, separate from the illustrated RPG pickup.
+  polygon(ctx,[[-7,-3],[-3,-2],[-3,2],[-7,3]],'#556c64');
+  rect(ctx,-5,-2,9,4,gradient(ctx,0,-2,4,['#dfdfb3','#8b9b65','#425b3f']));
+  polygon(ctx,[[3,-3],[8,0],[3,3]],'#bdcc87');
+  rect(ctx,-4,-2,7,1,'#f3edbd');
+  ctx.restore();
  }
  ctx.restore();
 }
