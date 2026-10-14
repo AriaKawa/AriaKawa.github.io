@@ -1,7 +1,7 @@
-import {Game,CAST,COLS,ROWS} from './engine.js?v=hat';
-import {loadPack,drawAsset} from './packs.js?v=hat';
-import {drawCharacter,loadCharacterSprites,ANIMATION_TIMING} from './characters.js?v=hat';
-import {drawArena,drawBomb,drawFlames,drawRain} from './arena.js?v=hat';
+import {Game,CAST,COLS,ROWS} from './engine.js?v=fast';
+import {loadPack,drawAsset} from './packs.js?v=fast';
+import {drawCharacter,loadCharacterSprites,ANIMATION_TIMING} from './characters.js?v=fast';
+import {drawArena,drawBomb,drawFlames,drawRain} from './arena.js?v=fast';
 const $=id=>document.getElementById(id),canvas=$('game'),ctx=canvas.getContext('2d');
 const W=416,H=352,T=30,OX=13,OY=11;
 canvas.width=W*3;canvas.height=H*3;ctx.scale(3,3);
@@ -19,16 +19,21 @@ function drawPortraits(){document.querySelectorAll('.portrait').forEach(p=>{cons
 function drawLogo(){drawAsset(smallCanvas('logo',320,84),pack,'logo',0,4,320,76);}
 function drawMenuArt(state){const c=smallCanvas('menu-art',160,124);if(['paused','won','lost','roundWon'].includes(state))drawAsset(c,pack,state,5,4,150,116);}
 async function choosePack(id){
- const ticket=++loadTicket;packReady=false;$('play').disabled=true;$('pack-status').textContent='LOADING…';
+ const ticket=++loadTicket;const progress={ui:0,cast:0};const report=(group,value)=>{if(ticket!==loadTicket)return;progress[group]=value.loaded;$('pack-status').textContent='LOADING '+Math.round((progress.ui+progress.cast)/10*100)+'%';};packReady=false;$('play').disabled=true;$('pack-status').textContent='LOADING…';
  document.querySelectorAll('[data-style]').forEach(b=>{b.setAttribute('aria-pressed',String(b.dataset.style===id));});
- try{const [next]=await Promise.all([loadPack('arcade2005'),loadCharacterSprites()]);if(ticket!==loadTicket)return;pack=next;packReady=true;document.body.dataset.style=id;
+ try{const [next]=await Promise.all([loadPack('arcade2005',{onProgress:value=>report('ui',value)}),loadCharacterSprites({onProgress:value=>report('cast',value)})]);if(ticket!==loadTicket)return;pack=next;packReady=true;document.body.dataset.style=id;
  canvas.width=W*3;canvas.height=H*3;ctx.setTransform(3,0,0,3,0,0);
  $('play').disabled=false;$('pack-status').textContent='';drawLogo();drawPortraits();drawMenuArt(menuState);
  try{localStorage.setItem('bungerman-style',id);}catch{}
- }catch(error){if(ticket!==loadTicket)return;$('pack-status').textContent='LOAD FAILED';$('retry-assets').hidden=false;console.error(error);}
+ }catch(error){if(ticket!==loadTicket)return;++loadTicket;$('pack-status').textContent='COULDN’T LOAD — RETRY';$('retry-assets').hidden=false;console.error(error);}
 }
 $('retry-assets').addEventListener('click',()=>{ $('retry-assets').hidden=true;choosePack('arcade2005');});
 choosePack('arcade2005');
+// A click spins only the propeller, then it settles back to a completely still cap.
+const cap=$('peanut-cap'),rotor=$('cap-rotor');
+cap.addEventListener('click',()=>{rotor.classList.remove('spinning');void rotor.offsetWidth;rotor.classList.add('spinning');});
+rotor.addEventListener('animationend',()=>rotor.classList.remove('spinning'));
+cap.addEventListener('keydown',e=>{if(e.code==='Space'||e.code==='Enter')e.stopPropagation();});
 function tone(freq,duration=.07,type='square',volume=.035,end){if(!sound||!audio)return;try{const osc=audio.createOscillator(),gain=audio.createGain();osc.type=type;osc.frequency.setValueAtTime(freq,audio.currentTime);if(end)osc.frequency.exponentialRampToValueAtTime(end,audio.currentTime+duration);gain.gain.setValueAtTime(volume,audio.currentTime);gain.gain.exponentialRampToValueAtTime(.001,audio.currentTime+duration);osc.connect(gain);gain.connect(audio.destination);osc.start();osc.stop(audio.currentTime+duration);}catch{}}
 function sfx(kind){if(kind==='drop')tone(190,.09,'triangle',.06,95);if(kind==='explosion'){tone(105,.2,'sawtooth',.05,25);tone(59,.23,'triangle',.08,22);}if(kind==='charge')tone(210,.15,'triangle',.04,350);if(kind==='hit')tone(380,.2,'square',.035,80);if(kind==='pickup'){tone(670,.08,'sine',.08);setTimeout(()=>tone(890,.09,'sine',.06),70);}if(kind==='win')[440,550,660,880].forEach((f,i)=>setTimeout(()=>tone(f,.2,'triangle',.07),i*90));if(kind==='lost')[220,170,100].forEach((f,i)=>setTimeout(()=>tone(f,.16,'triangle',.07),i*120));}
 function toast(text){$('toast').textContent=text;$('toast').classList.add('visible');toastTimer=1.4;}

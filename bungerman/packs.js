@@ -1,19 +1,16 @@
+import {UI_ASSETS} from './assets/runtime/ui-assets.js';
+import {loadImage} from './image-loader.js';
 export const PACK_IDS=['arcade2005'];
 export const ASSET_IDS=['logo','pickup','paused','won','lost','roundWon'];
 const cache=new Map();
-function bounds(img){
- const c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;
- const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(img,0,0);const pixels=x.getImageData(0,0,c.width,c.height).data;
- let left=c.width,top=c.height,right=-1,bottom=-1;
- for(let y=0;y<c.height;y++)for(let xx=0;xx<c.width;xx++)if(pixels[(y*c.width+xx)*4+3]>40){left=Math.min(left,xx);right=Math.max(right,xx);top=Math.min(top,y);bottom=Math.max(bottom,y);}
- return right<0?[0,0,c.width,c.height]:[left,top,right-left+1,bottom-top+1];
-}
-export async function loadPack(id){
+export async function loadPack(id,{onProgress,load=loadImage}={}){
  if(!PACK_IDS.includes(id))throw new Error('Unknown art style');
- if(cache.has(id))return cache.get(id);
- const promise=Promise.all(ASSET_IDS.map(name=>new Promise((resolve,reject)=>{
- const img=new Image();img.onload=()=>{try{resolve([name,{img,bounds:bounds(img)}]);}catch(e){reject(e);}};img.onerror=()=>reject(new Error('Missing asset: '+id+'/'+name));img.src='assets/'+id+'/'+name+'.png';
- }))).then(entries=>({id,assets:Object.fromEntries(entries)}));
+ if(cache.has(id)){const pack=await cache.get(id);onProgress?.({loaded:ASSET_IDS.length,total:ASSET_IDS.length});return pack;}
+ let loaded=0;
+ const promise=Promise.all(ASSET_IDS.map(async name=>{
+ const asset=UI_ASSETS[name],img=await load(new URL('./assets/runtime/'+asset.file,import.meta.url).href);
+ onProgress?.({loaded:++loaded,total:ASSET_IDS.length});return [name,{img,bounds:asset.bounds}];
+ })).then(entries=>({id,assets:Object.fromEntries(entries)}));
  cache.set(id,promise);try{return await promise;}catch(e){cache.delete(id);throw e;}
 }
 export function drawAsset(c,pack,id,x,y,w,h,{contain=true,alpha=1}={}){

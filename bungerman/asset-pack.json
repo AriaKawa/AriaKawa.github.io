@@ -1,5 +1,5 @@
 {
-  "version": 5,
+  "version": 6,
   "purpose": "One shaded arcade edition with original painted character animation sheets and a generated cabinet. Each logical asset has its own image-generation output and exact prompt.",
   "styles": {
     "arcade2005": "Rounded, shaded 2005 handheld arcade characters with hand-painted highlights, depth and directional animation. Green inset arena, silver pillars, chunky brick, illustrated arcade cabinet."
@@ -134,9 +134,9 @@
     },
     {
       "id": "cabinet",
-      "file": "cabinet-v2.png",
+      "file": "cabinet-v3.png",
       "transparent": true,
-      "framing": "1122 x 1402 front-view cabinet, compact side motifs, screen aperture at x10.16%, y23.54%, width80.04%, height53.78%. Preserve native aspect ratio.",
+      "framing": "1169 x 1346 front view with substantial side panels roughly 15% of width each. Screen x16.253%, y21.323%, width67.493%, height54.309%; preserve native aspect ratio.",
       "use": "Cabinet surrounding the live game screen."
     },
     {
@@ -168,11 +168,18 @@
       "use": "Replaces the main-sheet side walk for a complete two-step gait; mirror for left facing."
     },
     {
-      "id": "top-hat",
-      "file": "top-hat.png",
+      "id": "peanut-cap",
+      "file": "peanut-cap.png",
       "transparent": true,
-      "framing": "One navy and gold top hat, peanut medallion and playful propeller, fully visible with transparent margin.",
-      "use": "Spinning decoration perched on top of the cabinet; pause and reduced-motion aware."
+      "framing": "Colorful red, blue and yellow kid propeller beanie with green brim, matching Peanut; short spindle but no rotor.",
+      "use": "Stationary cap above cabinet, clickable to briefly spin separate rotor."
+    },
+    {
+      "id": "peanut-rotor",
+      "file": "peanut-rotor.png",
+      "transparent": true,
+      "framing": "One separate red two-blade propeller with centered silver hub.",
+      "use": "Brief click-triggered spin, completely stationary at all other times."
     }
   ],
   "rules": [
@@ -184,7 +191,7 @@
     "Use consistent perspective, lighting, palette, silhouette and outline weights within each pack.",
     "UI buttons, borders, indicators and accessibility labels are code-native controls themed with each pack, not images of text.",
     "Assets load atomically; never mix styles or silently substitute old assets. Disable Play during load and show a retryable error.",
-    "Original images are preserved. Runtime alpha-bounds cropping only removes transparent padding for consistent display.",
+    "Original PNG images are preserved. Build scripts isolate painted frames and precompute anchors, then create compact transparent WebP delivery atlases; the browser only decodes and draws prepared rectangles.",
     "Validate unique hashes and complete inventory, inspect each style in character selection, gameplay and menus at desktop and mobile sizes.",
     "Environment animation: accelerating bomb pulse, placement bounce, burning fuse sparks, connected flame ignition and decay, brick debris, pickup rotation, warned bomb-rain descent.",
     "Pause must freeze gameplay animation and timers. Reduced motion must suppress cosmetic shake, bob and particles while keeping gameplay states readable.",
@@ -198,7 +205,11 @@
     "Dedicated 12-frame side-walk sheets must include feet-together passing positions and opposing contacts; repeated spread-leg stances do not count as a complete walk.",
     "Charging fills twice as fast and clamps at full power indefinitely. A held bomb never overcooks; only released bombs start their fuse after landing.",
     "HUD is a separate row above the arena with larger hearts, timer, sound, then pause. No heat meter, bomb-stock dots, Home button, control legend or Fan Demo footer.",
-    "Painted cabinet joystick and gold buttons act as touch controls, with no separate visible control bar. Player damage produces a red edge pulse, sprite highlight, lost-heart floater and enlarged red hearts."
+    "Painted cabinet joystick and gold buttons act as touch controls, with no separate visible control bar. Player damage produces a red edge pulse, sprite highlight, lost-heart floater and enlarged red hearts.",
+    "Production startup must not download the full source PNG sheets or scan pixels. Four prepared character atlases plus six UI images must total less than 1 MB. All character, pack and cabinet delivery files use dist/assets/runtime/.",
+    "Keep the generated wide cabinet side columns at natural proportions; do not squeeze the side panels to enlarge the screen.",
+    "Peanut wears a colorful kid propeller beanie, not a top hat. The cabinet cap is still by default. Only clicking or keyboard-activating it briefly spins the rotor; the cap body never spins or bobs.",
+    "Image loading displays progress and fails with a retry control after a bounded timeout. Rebuild optimized delivery assets whenever source art changes."
   ],
   "overtime": {
     "startsAtSecondsRemaining": 25,
@@ -213,5 +224,14 @@
       "bombs": 3
     },
     "placement": "Random empty floor cells, no duplicate pending drops or existing bombs; warning ring before landing; normal blast collision and chain reaction rules; bots see danger; reset every round."
+  },
+  "delivery": {
+    "characters": "node scripts/build-character-atlases.mjs",
+    "uiAndCabinet": "python scripts/build-ui-assets.py",
+    "sourceImages": "dist/assets/arcade2005/",
+    "runtimeAssets": "dist/assets/runtime/",
+    "startupCharacterAndMenuBytes": 769758,
+    "characterFrames": 240,
+    "notes": "Original PNGs remain the art source and download gallery. Generated WebP atlases retain every pose with precomputed alpha masks, anchors and frame rectangles."
   }
 }
