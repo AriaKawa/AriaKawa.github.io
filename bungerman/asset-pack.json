@@ -1,5 +1,5 @@
 {
-  "version": 8,
+  "version": 9,
   "purpose": "One shaded arcade edition with original painted character animation sheets and a generated cabinet. Each logical asset has its own image-generation output and exact prompt.",
   "styles": {
     "arcade2005": "Rounded, shaded 2005 handheld arcade characters with hand-painted highlights, depth and directional animation. Green inset arena, silver pillars, chunky brick, illustrated arcade cabinet."
@@ -134,9 +134,9 @@
     },
     {
       "id": "cabinet",
-      "file": "cabinet-v6.png",
+      "file": "cabinet-v7.png",
       "transparent": true,
-      "framing": "Authentic 1024x1536 upright cabinet: marquee, recessed screen, sloped joystick/button deck, coin door and tall base. Delivery tight alpha crop152,2..915,1529=763x1527. Safe screen within crop159,285,436,454. Preserve native aspect ratio.",
+      "framing": "Direct frontal 1024x1536 navy and gold upright cabinet with peanut/bomb columns and full solid base/coin door, red joystick and exactly two gold buttons. Tight alpha crop142,0..882,1532=740x1532. Safe screen in crop166,311,404,350. Preserve native aspect ratio.",
       "use": "Cabinet surrounding the live game screen."
     },
     {
@@ -220,7 +220,8 @@
     "Space plants immediately. All actors have two active bombs maximum. No charging, throwing, airborne bombs or throw input remains. Original sheets retain unused poses for provenance.",
     "Bomb and RPG flames persist for 0.56 seconds; AI hazard duration matches.",
     "Three selectable maps: Garden checker pillars with green inset tiles; Foundry rail walls with copper/grated floor; Neon offset pillar clusters with purple circuit tiles and cyan metal. Preserve safe starts and connected permanent floor.",
-    "Silly juice uses the generated Voodoo Ranger bottle. Pickup floats Speed up and grants 30% movement speed for ten game seconds, indicated by a shrinking green ring. Another pickup refreshes ten seconds without stacking strength. Pausing freezes the timer."
+    "Silly juice uses the generated Voodoo Ranger bottle. Pickup floats Speed up and grants 30% movement speed for ten game seconds, indicated by a shrinking green ring. Another pickup refreshes ten seconds without stacking strength. Pausing freezes the timer.",
+    "Cabinet faces directly toward the player. Red joystick moves; left gold button plants and right gold button fires RPG. Exactly two painted buttons. Sound effects unlock on Play and respect the saved mute preference."
   ],
   "overtime": {
     "startsAtSecondsRemaining": 25,
