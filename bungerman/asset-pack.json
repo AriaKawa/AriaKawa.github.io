@@ -1,5 +1,5 @@
 {
-  "version": 7,
+  "version": 8,
   "purpose": "One shaded arcade edition with original painted character animation sheets and a generated cabinet. Each logical asset has its own image-generation output and exact prompt.",
   "styles": {
     "arcade2005": "Rounded, shaded 2005 handheld arcade characters with hand-painted highlights, depth and directional animation. Green inset arena, silver pillars, chunky brick, illustrated arcade cabinet."
@@ -134,9 +134,9 @@
     },
     {
       "id": "cabinet",
-      "file": "cabinet-v4.png",
+      "file": "cabinet-v6.png",
       "transparent": true,
-      "framing": "1169 x 1346 front view; broad side columns, solid lower front, no hat or deck. Screen x204,y271,width738,height716; left17.451%,top20.134%,width63.131%,height53.195%. Preserve native aspect ratio.",
+      "framing": "Authentic 1024x1536 upright cabinet: marquee, recessed screen, sloped joystick/button deck, coin door and tall base. Delivery tight alpha crop152,2..915,1529=763x1527. Safe screen within crop159,285,436,454. Preserve native aspect ratio.",
       "use": "Cabinet surrounding the live game screen."
     },
     {
@@ -180,6 +180,13 @@
       "transparent": true,
       "framing": "Painted compact RPG launcher pickup, readable at 22 pixels. No lettering.",
       "use": "Live arena pickup and HUD where appropriate."
+    },
+    {
+      "id": "speed",
+      "file": "speed.png",
+      "transparent": true,
+      "framing": "Single green Voodoo Ranger bottle with skeleton-hat label, fully visible.",
+      "use": "Silly juice speed pickup; ten seconds of 30% faster movement."
     }
   ],
   "rules": [
@@ -198,21 +205,22 @@
     "T-Pain: Black human, beard and locs, sunglasses, hat, gold chain, purple jacket. Equal gameplay polish to the other three characters.",
     "Use illustrated frames for all four characters in the arena, menu and HUD. Runtime may mirror side frames, but may not substitute geometric character rigs.",
     "Each sheet: 12 front-walk frames, 12 right-walk, 12 back-walk, 12 throwing poses, 6 front standing idles, 3 side standing idles and 3 back standing idles. Feet remain grounded during idle.",
-    "Tap to plant; hold and release to throw along a clear corridor. Bombs travel on visible arcs, reserve landing cells, and start their fuse on landing.",
     "AI uses reaction delays, persistent goals, personalities, and timed escape planning. No direct input reading or instant perfect reactions.",
     "Gait advances once per 3.125 travelled tiles, not once per tile. Visual movement uses constant-speed travel; idle uses a dedicated relaxed standing loop.",
-    "Throw animation lasts 0.36 seconds with the projectile leaving the hand at 0.18 seconds. Pause freezes animation; reduced motion freezes idle cosmetics.",
     "Dedicated 12-frame side-walk sheets must include feet-together passing positions and opposing contacts; repeated spread-leg stances do not count as a complete walk.",
-    "Charging fills twice as fast and clamps at full power indefinitely. A held bomb never overcooks; only released bombs start their fuse after landing.",
     "HUD is a separate row above the arena with larger hearts, timer, sound, then pause. No heat meter, bomb-stock dots, Home button, control legend or Fan Demo footer.",
-    "Drag the game screen to move; tap or hold and release to bomb. A second finger can bomb while dragging. The RPG button appears only while ammunition is available. Player damage produces a red edge pulse, sprite highlight, lost-heart floater and enlarged red hearts.",
-    "Production startup must not download the full source PNG sheets or scan pixels. Four prepared character atlases plus eight UI images must total less than 1 MB. All character, pack and cabinet delivery files use dist/assets/runtime/.",
+    "Drag the arena or painted joystick to move; tap the arena or gold deck button to plant. A second finger can plant while dragging. The RPG button appears only while ammunition is available. Player damage produces a red edge pulse, sprite highlight, lost-heart floater and enlarged red hearts.",
+    "Production startup must not download the full source PNG sheets or scan pixels. Four prepared character atlases plus nine UI images must total less than 1 MB. All character, pack and cabinet delivery files use dist/assets/runtime/.",
     "Keep the generated wide cabinet side columns at natural proportions; do not squeeze the side panels to enlarge the screen.",
     "Image loading displays progress and fails with a retry control after a bounded timeout. Rebuild optimized delivery assets whenever source art changes.",
-    "Cabinet has no separate hat and no illustrated control deck. Closed dark navy lower front and broad sides surround the screen; page background is dark grey.",
-    "Fill exactly the rounded 90% of eligible floor cells outside active spawn safe zones. A quarter of those crates are reinforced, visibly strapped; first explosion damages them, second destroys them.",
+    "Use an authentic upright cabinet with a marquee, recessed game screen, projecting joystick/button control deck, coin door and full tall base. Dark navy/charcoal body and dark grey page; no decorative frame substitute or hat.",
+    "Fill exactly the rounded 72% of eligible floor cells outside active spawn safe zones. A quarter of those crates are reinforced, visibly strapped; first explosion damages them, second destroys them.",
     "Range pickups use the generated blue pill and float a small Range Up label above the collector. Each adds one blast tile, capped at three bonuses and six total range.",
-    "RPG pickups grant three rounds up to six carried. E or the in-screen RPG button fires along the facing direction with a small impact explosion. Bots use the same pickups with delayed decisions."
+    "RPG pickups grant three rounds up to six carried. E or the in-screen RPG button fires along the facing direction with a small impact explosion. Bots use the same pickups with delayed decisions.",
+    "Space plants immediately. All actors have one active bomb maximum. No charging, throwing, airborne bombs or throw input remains. Original sheets retain unused poses for provenance.",
+    "Bomb and RPG flames persist for 0.56 seconds; AI hazard duration matches.",
+    "Three selectable maps: Garden checker pillars with green inset tiles; Foundry rail walls with copper/grated floor; Neon offset pillar clusters with purple circuit tiles and cyan metal. Preserve safe starts and connected permanent floor.",
+    "Silly juice uses the generated Voodoo Ranger bottle. Pickup floats Speed up and grants 30% movement speed for ten game seconds, indicated by a shrinking green ring. Another pickup refreshes ten seconds without stacking strength. Pausing freezes the timer."
   ],
   "overtime": {
     "startsAtSecondsRemaining": 25,
@@ -226,7 +234,7 @@
     "uiAndCabinet": "python scripts/build-ui-assets.py",
     "sourceImages": "dist/assets/arcade2005/",
     "runtimeAssets": "dist/assets/runtime/",
-    "startupCharacterAndMenuBytes": 777424,
+    "startupCharacterAndMenuBytes": 782602,
     "characterFrames": 240,
     "notes": "Original PNGs remain the art source and download gallery. Generated WebP atlases retain every pose with precomputed alpha masks, anchors and frame rectangles."
   }

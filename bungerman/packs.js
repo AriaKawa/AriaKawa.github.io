@@ -1,7 +1,7 @@
-import {UI_ASSETS} from './assets/runtime/ui-assets.js?v=walls';
+import {UI_ASSETS} from './assets/runtime/ui-assets.js?v=plant';
 import {loadImage} from './image-loader.js';
 export const PACK_IDS=['arcade2005'];
-export const ASSET_IDS=['logo','pickup','range','rpg','paused','won','lost','roundWon'];
+export const ASSET_IDS=['logo','pickup','range','rpg','speed','paused','won','lost','roundWon'];
 const cache=new Map();
 export async function loadPack(id,{onProgress,load=loadImage}={}){
  if(!PACK_IDS.includes(id))throw new Error('Unknown art style');
