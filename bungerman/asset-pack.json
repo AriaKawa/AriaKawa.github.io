@@ -1,5 +1,5 @@
 {
-  "version": 4,
+  "version": 5,
   "purpose": "One shaded arcade edition with original painted character animation sheets and a generated cabinet. Each logical asset has its own image-generation output and exact prompt.",
   "styles": {
     "arcade2005": "Rounded, shaded 2005 handheld arcade characters with hand-painted highlights, depth and directional animation. Green inset arena, silver pillars, chunky brick, illustrated arcade cabinet."
@@ -134,9 +134,9 @@
     },
     {
       "id": "cabinet",
-      "file": "cabinet.png",
+      "file": "cabinet-v2.png",
       "transparent": true,
-      "framing": "Front-view cabinet with rectangular screen opening and illustrated controls.",
+      "framing": "1122 x 1402 front-view cabinet, compact side motifs, screen aperture at x10.16%, y23.54%, width80.04%, height53.78%. Preserve native aspect ratio.",
       "use": "Cabinet surrounding the live game screen."
     },
     {
@@ -166,6 +166,13 @@
       "transparent": true,
       "framing": "4 columns × 3 rows. Twelve dedicated side-walk poses with contact, recoil, passing and opposite-foot steps.",
       "use": "Replaces the main-sheet side walk for a complete two-step gait; mirror for left facing."
+    },
+    {
+      "id": "top-hat",
+      "file": "top-hat.png",
+      "transparent": true,
+      "framing": "One navy and gold top hat, peanut medallion and playful propeller, fully visible with transparent margin.",
+      "use": "Spinning decoration perched on top of the cabinet; pause and reduced-motion aware."
     }
   ],
   "rules": [
@@ -187,8 +194,11 @@
     "Tap to plant; hold and release to throw along a clear corridor. Bombs travel on visible arcs, reserve landing cells, and start their fuse on landing.",
     "AI uses reaction delays, persistent goals, personalities, and timed escape planning. No direct input reading or instant perfect reactions.",
     "Gait advances once per 3.125 travelled tiles, not once per tile. Visual movement uses constant-speed travel; idle uses a dedicated relaxed standing loop.",
-    "Throw animation lasts 0.72 seconds with the projectile leaving the hand at 0.36 seconds. Pause freezes animation; reduced motion freezes idle cosmetics.",
-    "Dedicated 12-frame side-walk sheets must include feet-together passing positions and opposing contacts; repeated spread-leg stances do not count as a complete walk."
+    "Throw animation lasts 0.36 seconds with the projectile leaving the hand at 0.18 seconds. Pause freezes animation; reduced motion freezes idle cosmetics.",
+    "Dedicated 12-frame side-walk sheets must include feet-together passing positions and opposing contacts; repeated spread-leg stances do not count as a complete walk.",
+    "Charging fills twice as fast and clamps at full power indefinitely. A held bomb never overcooks; only released bombs start their fuse after landing.",
+    "HUD is a separate row above the arena with larger hearts, timer, sound, then pause. No heat meter, bomb-stock dots, Home button, control legend or Fan Demo footer.",
+    "Painted cabinet joystick and gold buttons act as touch controls, with no separate visible control bar. Player damage produces a red edge pulse, sprite highlight, lost-heart floater and enlarged red hearts."
   ],
   "overtime": {
     "startsAtSecondsRemaining": 25,

@@ -42,7 +42,7 @@ export function animationPose(state={}) {
 export const CHARACTER_IDS=Object.freeze(['peanut','hutch','ninja','tpain']);
 let sheets=null, loading=null;
 
-export const ANIMATION_TIMING=Object.freeze({throwDuration:.72,throwRelease:.36,plantDuration:.34});
+export const ANIMATION_TIMING=Object.freeze({throwDuration:.36,throwRelease:.18,plantDuration:.34});
 const loopIndex=(phase,count)=>Math.floor(((phase%TAU+TAU)%TAU)/TAU*count)%count;
 const pingPong=(time,count,rate)=>{const n=Math.floor(Math.max(0,time)*rate)%(count*2-2);return n<count?n:count*2-2-n;};
 
