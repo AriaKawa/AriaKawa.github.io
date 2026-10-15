@@ -1,14 +1,15 @@
-import {ArcadeAudio} from './audio.js?v=sfx1';
-import {setupMultiplayer} from './multiplayer-ui.js?v=sfx1';
-import {Game,CAST,COLS,ROWS,MAPS} from './engine.js?v=sfx1';
-import {loadPack,drawAsset} from './packs.js?v=sfx1';
-import {drawCharacter,loadCharacterSprites} from './characters.js?v=sfx1';
-import {drawArena,drawBomb,drawFlames,drawClosingWalls,drawRockets} from './arena.js?v=sfx1';
+import {ArcadeMusic} from './music.js?v=music1';
+import {ArcadeAudio} from './audio.js?v=music1';
+import {setupMultiplayer} from './multiplayer-ui.js?v=music1';
+import {Game,CAST,COLS,ROWS,MAPS} from './engine.js?v=music1';
+import {loadPack,drawAsset} from './packs.js?v=music1';
+import {drawCharacter,loadCharacterSprites} from './characters.js?v=music1';
+import {drawArena,drawBomb,drawFlames,drawClosingWalls,drawRockets} from './arena.js?v=music1';
 const $=id=>document.getElementById(id),canvas=$('game'),ctx=canvas.getContext('2d');
 const W=416,H=352,T=30,OX=13,OY=11;
 canvas.width=W*3;canvas.height=H*3;ctx.scale(3,3);
 ctx.imageSmoothingEnabled=false;
-let selected='peanut',selectedMap='garden',game=new Game(),paused=false,keys=new Set(),last=performance.now(),clock=0,particles=[],floaters=[],puddles=[],shake=0,toastTimer=0,best=0,sound=true,audio=new ArcadeAudio(),menuState='select',playerHit=0;
+let selected='peanut',selectedMap='garden',game=new Game(),paused=false,keys=new Set(),last=performance.now(),clock=0,particles=[],floaters=[],puddles=[],shake=0,toastTimer=0,best=0,sound=true,musicOn=true,music=new ArcadeMusic(),audio=new ArcadeAudio(),menuState='select',playerHit=0;
 try{best=Number(localStorage.getItem('bungerman-best-v1'))||0;}catch{}
 $('best').textContent=String(best).padStart(5,'0');
 let animationStates=new WeakMap(),deaths=[],rings=[],menuDelay=0,pendingState=null;
@@ -31,16 +32,17 @@ async function choosePack(id){
 }
 $('retry-assets').addEventListener('click',()=>{ $('retry-assets').hidden=true;choosePack('arcade2005');});
 choosePack('arcade2005');
-try{sound=localStorage.getItem('bungerman-sound')!=='off';}catch{}
-function syncSound(){ $('sound-off').hidden=sound;$('sound').setAttribute('aria-label',sound?'Mute sound':'Enable sound');$('sound').setAttribute('aria-pressed',String(sound)); }
-function unlockAudio(){audio.setEnabled(sound);audio.unlock();syncSound();}
+try{sound=localStorage.getItem('bungerman-sound')!=='off';musicOn=localStorage.getItem('bungerman-music')!=='off';}catch{}
+function syncSound(){ $('sound-off').hidden=sound;$('sound').setAttribute('aria-label',sound?'Mute sound effects':'Enable sound effects');$('sound').setAttribute('aria-pressed',String(sound)); }
+function syncMusic(){ $('music-off').hidden=musicOn;$('music').setAttribute('aria-label',musicOn?'Mute music':'Enable music');$('music').setAttribute('aria-pressed',String(musicOn)); }
+function unlockAudio(){audio.setEnabled(sound);audio.unlock(musicOn);music.setEnabled(musicOn);music.attach(audio.context);syncSound();syncMusic();}
 function sfx(kind){audio.play(kind);}
-audio.setEnabled(sound);syncSound();
+audio.setEnabled(sound);music.setEnabled(musicOn);syncSound();syncMusic();
 // Capture unlock before any action handler; hover waits for the browser's first gesture.
 for(const type of ['pointerdown','keydown'])document.addEventListener(type,unlockAudio,{capture:true});
 const actionSounds={'map-prev':'map','map-next':'map','multiplayer':'open','room-create':'open','room-join':'open','multiplayer-back':'back','lobby-leave':'back','change-character':'back','fullscreen':'fullscreen','lobby-character-prev':'select','lobby-character-next':'select'};
 for(const type of ['pointerover','focusin'])document.addEventListener(type,e=>{const b=e.target.closest?.('button');if(!b||b.disabled||b.contains(e.relatedTarget))return;sfx('hover');});
-document.addEventListener('click',e=>{const b=e.target.closest?.('button');if(!b||b.disabled||['sound','play','pause','continue','lobby-ready','touch-bomb','touch-rpg','rpg-fire'].includes(b.id)||b.dataset.character)return;sfx(actionSounds[b.id]||'click');});
+document.addEventListener('click',e=>{const b=e.target.closest?.('button');if(!b||b.disabled||['sound','music','play','pause','continue','lobby-ready','touch-bomb','touch-rpg','rpg-fire'].includes(b.id)||b.dataset.character)return;sfx(actionSounds[b.id]||'click');});
 function toast(text){$('toast').textContent=text;$('toast').classList.add('visible');toastTimer=1.4;}
 function updateBest(){if(game.score>best){best=game.score;try{localStorage.setItem('bungerman-best-v1',String(best));}catch{}}$('best').textContent=String(best).padStart(5,'0');}
 function showState(state){resetTouches();menuState=state;toastTimer=0;$('toast').classList.remove('visible');keys.clear();$('menu').classList.remove('hidden');$('menu').dataset.view=state;$('multiplayer-view').hidden=true;$('lobby-view').hidden=true;$('select-view').hidden=state!=='select';$('state-view').hidden=state==='select';$('state-view').dataset.state=state;document.body.classList.remove('playing');$('pause').disabled=true;
@@ -53,6 +55,8 @@ function proceed(){if(multiplayer.inRoom){multiplayer.leave();return;}if(paused)
 $('play').addEventListener('click',start);$('continue').addEventListener('click',proceed);$('change-character').addEventListener('click',home);$('pause').addEventListener('click',pause);
 document.querySelectorAll('[data-character]').forEach(b=>b.addEventListener('click',()=>{selected=b.dataset.character;document.querySelectorAll('.character').forEach(c=>{const active=c===b;c.classList.toggle('selected',active);c.setAttribute('aria-pressed',String(active));});game=new Game(selected,9187,selectedMap);drawPortraits();sfx('select');updateHud();}));
 $('sound').addEventListener('click',()=>{sound=!sound;unlockAudio();try{localStorage.setItem('bungerman-sound',sound?'on':'off');}catch{}sfx('ready');});
+$('music').addEventListener('click',()=>{musicOn=!musicOn;unlockAudio();try{localStorage.setItem('bungerman-music',musicOn?'on':'off');}catch{}sfx('click');});
+document.addEventListener('visibilitychange',()=>music.setHidden(document.hidden));
 const mapped={KeyW:[0,-1],ArrowUp:[0,-1],KeyD:[1,0],ArrowRight:[1,0],KeyS:[0,1],ArrowDown:[0,1],KeyA:[-1,0],ArrowLeft:[-1,0]};
 window.addEventListener('keydown',e=>{if(e.code==='Escape'&&document.body.classList.contains('fullscreen')){fullscreenUI(false);return;}if(e.code==='Escape'){e.preventDefault();if(!e.repeat)pause();return;}if(game.status!=='playing'||paused)return;if(e.code==='KeyE'){e.preventDefault();if(!e.repeat)fire();return;}if(mapped[e.code]||e.code==='Space'){e.preventDefault();if(!e.repeat){keys.delete(e.code);keys.add(e.code);if(e.code==='Space')plant();}}});
 window.addEventListener('keyup',e=>{keys.delete(e.code);if(e.code==='Space'&&game.status==='playing')e.preventDefault();});
