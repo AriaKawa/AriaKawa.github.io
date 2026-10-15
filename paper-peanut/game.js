@@ -51,19 +51,24 @@ function home() {
 
 // Small procedural score: plucked notes, wooden impacts, and a warm sewer hum.
 const audio = {
-  on: false, ctx: null, nextBeat: 0, step: 0,
+  on: true, ctx: null, master: null, nextBeat: 0, step: 0,
   init() {
-    if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-    if (this.ctx.state === 'suspended') this.ctx.resume();
+    if (!this.ctx) {
+      const Context=window.AudioContext || window.webkitAudioContext;
+      if(!Context)return;
+      this.ctx=new Context();this.master=this.ctx.createGain();
+      this.master.gain.value=this.on?.65:0;this.master.connect(this.ctx.destination);
+    }
+    if (this.ctx.state === 'suspended' && this.on && !state.paused) this.ctx.resume().catch(()=>{});
   },
-  tone(freq, length = .12, type = 'sine', volume = .05, slide = 1) {
+  tone(freq, length = .12, type = 'sine', volume = .05, slide = 1, delay = 0) {
     if (!this.on || !this.ctx || state.paused) return;
-    const ac = this.ctx, osc = ac.createOscillator(), gain = ac.createGain();
-    osc.type = type; osc.frequency.setValueAtTime(freq, ac.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(Math.max(20, freq * slide), ac.currentTime + length);
-    gain.gain.setValueAtTime(volume, ac.currentTime);
-    gain.gain.exponentialRampToValueAtTime(.0001, ac.currentTime + length);
-    osc.connect(gain); gain.connect(ac.destination); osc.start(); osc.stop(ac.currentTime + length);
+    const ac = this.ctx, osc = ac.createOscillator(), gain = ac.createGain(), at=ac.currentTime+delay;
+    osc.type = type; osc.frequency.setValueAtTime(freq, at);
+    osc.frequency.exponentialRampToValueAtTime(Math.max(20, freq * slide), at + length);
+    gain.gain.setValueAtTime(.0001,at);gain.gain.exponentialRampToValueAtTime(volume,at+.006);
+    gain.gain.exponentialRampToValueAtTime(.0001, at + length);
+    osc.connect(gain); gain.connect(this.master); osc.start(at); osc.stop(at + length);
     osc.onended = () => { osc.disconnect(); gain.disconnect(); };
   },
   hit(heavy = false) {
@@ -74,14 +79,32 @@ const audio = {
     for(let i=0;i<data.length;i++)data[i]=(Math.random()*2-1)*(1-i/data.length)**3;
     const noise=ac.createBufferSource(), filter=ac.createBiquadFilter(), gain=ac.createGain();
     noise.buffer=buffer;filter.type='lowpass';filter.frequency.value=heavy?1700:2500;gain.gain.value=.16;
-    noise.connect(filter);filter.connect(gain);gain.connect(ac.destination);noise.start();
+    noise.connect(filter);filter.connect(gain);gain.connect(this.master);noise.start();
     noise.onended=()=>{noise.disconnect();filter.disconnect();gain.disconnect();};
   },
+  whoosh(pitch=700,length=.22) {
+    if(!this.on||!this.ctx||state.paused)return;
+    const ac=this.ctx,buffer=ac.createBuffer(1,Math.ceil(ac.sampleRate*length),ac.sampleRate),data=buffer.getChannelData(0);
+    for(let i=0;i<data.length;i++)data[i]=(Math.random()*2-1)*Math.sin(Math.PI*i/data.length);
+    const source=ac.createBufferSource(),filter=ac.createBiquadFilter(),gain=ac.createGain();
+    source.buffer=buffer;filter.type='bandpass';filter.Q.value=.7;filter.frequency.setValueAtTime(pitch,ac.currentTime);filter.frequency.exponentialRampToValueAtTime(pitch*.25,ac.currentTime+length);gain.gain.value=.12;
+    source.connect(filter);filter.connect(gain);gain.connect(this.master);source.start();source.onended=()=>{source.disconnect();filter.disconnect();gain.disconnect();};
+  },
+  jump(){this.tone(260,.2,'sine',.12,2.5);this.whoosh(1200,.18);},
+  launch(kind){
+    if(kind==='quake'){this.tone(100,.3,'triangle',.19,.35);this.whoosh(600,.35);}
+    else if(kind==='siphon'){this.tone(430,.35,'sine',.09,.45);this.tone(645,.35,'sine',.04,.45);}
+    else if(kind==='propeller'){this.tone(160,.3,'triangle',.08,3);this.whoosh(1500,.35);}
+    else{this.tone(220,.17,'sine',.12,2);this.tone(360,.2,'sine',.08,.5,.06);}
+  },
+  heal(){[440,554,660].forEach((f,i)=>this.tone(f,.24,'sine',.09,1,i*.09));},
+  victory(){[392,494,587,784].forEach((f,i)=>this.tone(f,.35,'triangle',.09,1,i*.11));},
+  defeat(){[220,185,147].forEach((f,i)=>this.tone(f,.35,'triangle',.07,.8,i*.16));},
   good() { this.tone(660, .24, 'sine', .1); this.tone(990, .32, 'triangle', .035); },
-  block() { this.tone(980, .18, 'triangle', .07, .6); },
+  block() { this.tone(880,.18,'triangle',.12,1.5);this.tone(1760,.25,'sine',.07,.75); },
   tick() { this.tone(420, .035, 'sine', .025); },
   music() {
-    if (!this.on || !this.ctx || state.time < this.nextBeat) return;
+    if (!this.on || !this.ctx || state.paused || state.phase==='title' || state.time < this.nextBeat) return;
     this.nextBeat = state.time + 290;
     const tune = [0, 7, 12, 10, 7, 3, 5, 7, 0, 7, 10, 12, 15, 12, 7, 5];
     const n = tune[this.step % tune.length];
@@ -270,6 +293,7 @@ async function jumpAttack(hero, target) {
   beginContact('jump', PACE.jumpWindup + PACE.jumpFlight, 'as Peanut lands');
   await move(hero, { stretchX: 1.16, stretchY: .84, rot: -.12 }, PACE.jumpWindup);
   const startX = hero.x, landX = target.x, landY = contactTop(target) + actorHeight(hero) * 50/1536;
+  audio.jump();
   const apexY = Math.max(actorHeight(hero) + state.H * .08, landY - 215);
   let lastTrail = 0;
   await animate(PACE.jumpFlight, p => {
@@ -286,7 +310,7 @@ async function jumpAttack(hero, target) {
     hero.stretchX = 1.2; hero.stretchY = .82;
     const hit = hurtEnemy(target, hits[i], 'jump', grade);
     if (i < hits.length-1 && target.enemy.hp > 0) {
-      await animate(PACE.jumpBounce, p => { hero.y=landY-Math.sin(p*Math.PI)*125; hero.stretchX=1-.13*Math.sin(p*Math.PI); hero.stretchY=1+.12*Math.sin(p*Math.PI); hero.rot=.08-Math.sin(p*Math.PI)*.17; });
+      audio.jump();await animate(PACE.jumpBounce, p => { hero.y=landY-Math.sin(p*Math.PI)*125; hero.stretchX=1-.13*Math.sin(p*Math.PI); hero.stretchY=1+.12*Math.sin(p*Math.PI); hero.rot=.08-Math.sin(p*Math.PI)*.17; });
       await hit;
     } else {
       await Promise.all([hit, animate(PACE.jumpReturn, p => { hero.x=landX+(hero.homeX-landX)*ease(p); hero.y=landY+(hero.homeY-landY)*p-Math.sin(p*Math.PI)*110; hero.rot=.08*(1-p); hero.stretchX=1; hero.stretchY=1; })]);
@@ -298,7 +322,7 @@ async function slamAttack(hero, target) {
   beginContact('slam', PACE.slamWindup + PACE.slamTravel, 'as the shells connect');
   const contactX = target.x - hero.width * .35 - target.width * .34;
   await move(hero, { x:hero.homeX-35, rot:-.23, stretchX:1.1, stretchY:.88 }, PACE.slamWindup);
-  const startX=hero.x;
+  audio.whoosh(450,.32);const startX=hero.x;
   await animate(PACE.slamTravel, p => {
     hero.x=startX+(contactX-startX)*p; hero.y=hero.homeY-Math.sin(p*Math.PI)*35;
     hero.rot=-.23+.49*p; hero.stretchX=1; hero.stretchY=1;
@@ -316,6 +340,7 @@ async function specialAttack(hero, targets, name) {
   });
   hero.stretchX=1;hero.rot=0;hero.y=hero.homeY;
   if(name==='quake'){burst(hero.x,hero.homeY-10,'#dbc08b',14);audio.hit(true);}
+  audio.launch(name);
   const startX=hero.x+hero.width*.36,startY=hero.homeY-actorHeight(hero)*.55;
   const flightTargets=name==='quake'?[targets.find(a=>a.enemy.id===state.selected)||targets[0]]:targets;
   state.projectiles=flightTargets.map(target=>({x:startX,y:startY,target,type:name,rot:0}));
@@ -333,7 +358,7 @@ async function specialAttack(hero, targets, name) {
     const orb={x:fromX,y:fromY,type:'siphon'};state.projectiles=[orb];
     await animate(330,p=>{orb.x=fromX+(hero.x-fromX)*p;orb.y=fromY+(hero.homeY-actorHeight(hero)*.45-fromY)*p;});
     state.projectiles=[];const heal=Math.min(grade==='perfect'?4:2,state.run.maxHp-state.run.hp);
-    state.run.hp+=heal;float(`+${heal} ♥`,hero,'#e5b9c4');burst(hero.x,hero.y-150,'#e5b9c4',12);updateHUD();
+    audio.heal();state.run.hp+=heal;float(`+${heal} ♥`,hero,'#e5b9c4');burst(hero.x,hero.y-150,'#e5b9c4',12);updateHUD();
   }
 }
 async function playerAction(name) {
@@ -344,7 +369,7 @@ async function playerAction(name) {
   state.phase='attack';for(const id of ['commands','targets','message','callout'])setHidden(id,true);
   if(name==='cheese'){
     const amount=Math.min(8,r.maxHp-r.hp);r.hp+=amount;r.cheese--;
-    float(`+${amount} ♥`,hero,'#e9c29b');burst(hero.x,hero.y-130,'#ffe159',20);audio.good();updateHUD();
+    float(`+${amount} ♥`,hero,'#e9c29b');burst(hero.x,hero.y-130,'#ffe159',20);audio.heal();updateHUD();
     showCallout('SILLY JUICE!','good',`+${amount} HP • BACK IN BUSINESS`);
     await move(hero,{y:hero.homeY-40,rot:-.12},180);
     await move(hero,{y:hero.homeY,rot:0},180);await wait(160);
@@ -428,12 +453,12 @@ function endEncounter() {
     resultButton('Run it back',startGame);
     for(let i=0;i<6;i++)burst(state.W*(.2+Math.random()*.6),state.H*.25,['#ee896a','#f7cf6a','#add7bc'][i%3],20);
   }
-  homeResultButton();audio.good();
+  homeResultButton();audio.victory();
 }
 function lose() {
   state.phase='result';hideCombat();$('pause').disabled=true;state.actors[0].rot=-.6;setHidden('result',false);
   $('result').innerHTML=`<span class="eyebrow">RUN OVER</span><h2>Defeated</h2><p>Scrap saved.</p><div class="rewards"><span>◆ ${profile.scrap} scrap banked</span></div><div class="run-stats">${state.run.perfect} perfect timings · ${state.run.blocks} blocks</div>`;
-  resultButton('Requeue the run',startGame);homeResultButton();
+  audio.defeat();resultButton('Requeue the run',startGame);homeResultButton();
 }
 
 function roundedRect(x,y,w,h,r,fill,stroke) {
@@ -561,7 +586,17 @@ $('restart').onclick=()=>{modalClose('pause-dialog');startGame();};
 document.querySelectorAll('[data-close]').forEach(button=>button.onclick=()=>modalClose(button.dataset.close));
 for(const id of ['help-dialog','pause-dialog'])$(id).addEventListener('cancel',event=>{event.preventDefault();modalClose(id);});
 $('relaxed').onchange=event=>{state.relaxed=event.target.checked;try{localStorage.setItem('rat-tales-cozy',String(state.relaxed));}catch{}};
-$('sound').onclick=()=>{audio.init();audio.on=!audio.on;$('sound').innerHTML=`♫ <span>Sound ${audio.on?'on':'off'}</span>`;$('sound').setAttribute('aria-pressed',String(audio.on));if(audio.on)audio.good();};
+function syncSound(){
+  $('sound').innerHTML=`${audio.on?'♫':'♪'} <span>Sound ${audio.on?'on':'off'}</span>`;
+  $('sound').setAttribute('aria-pressed',String(audio.on));$('sound').setAttribute('aria-label',audio.on?'Mute sound':'Enable sound');$('sound').title=audio.on?'Mute sound':'Enable sound';
+  if(audio.master)audio.master.gain.setTargetAtTime(audio.on?.65:0,audio.ctx.currentTime,.015);
+}
+try{audio.on=localStorage.getItem('paper-peanut-sound')!=='off';}catch{}
+syncSound();
+const unlockAudio=()=>{if(audio.on)audio.init();};
+document.addEventListener('pointerdown',unlockAudio,{capture:true});
+document.addEventListener('keydown',unlockAudio,{capture:true});
+$('sound').onclick=()=>{audio.on=!audio.on;audio.init();syncSound();try{localStorage.setItem('paper-peanut-sound',audio.on?'on':'off');}catch{}if(audio.on)audio.tick();};
 $('fullscreen').onclick=async()=>{try{if(!document.fullscreenElement)await $('app').requestFullscreen();else await document.exitFullscreen();}catch{note('Fullscreen is unavailable here. The game still plays in this window.');}};
 document.addEventListener('fullscreenchange',()=>{$('fullscreen').setAttribute('aria-label',document.fullscreenElement?'Exit fullscreen':'Enter fullscreen');});
 window.addEventListener('keydown',event=>{

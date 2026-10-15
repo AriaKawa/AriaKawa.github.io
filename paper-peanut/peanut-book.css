@@ -23,3 +23,13 @@ body,.app{background:#2d211e}.topbar{background:#261d1b}.storybook-home{backgrou
 .story-book.peanut-book{padding-top:calc((100svh - 86px)*.14);padding-bottom:calc((100svh - 86px)*.12)}
 @media(max-height:560px) and (min-width:901px){.story-book.peanut-book{padding-top:calc((100svh - 86px)*.14);padding-bottom:calc((100svh - 86px)*.12)}}
 @media(max-width:480px){.peanut-book .book-right .ribbon-button{width:100%}.peanut-book .arsenal-heading h2{font-size:14px}}
+/* Keep battle button geometry/opacity; give the paper richer earth pigments. */
+.commands .move{--move-top:#d6a667;--move-bottom:#b98248;background:linear-gradient(155deg,var(--move-top),var(--move-bottom));color:#38251c;border-color:#b18453;box-shadow:0 4px #735036,inset 0 1px #f9d7a266}
+.commands .move[data-move=bonk]{--move-top:#c38967;--move-bottom:#a4684d}
+.commands .move[data-move=whirl]{--move-top:#ddb35a;--move-bottom:#bd873f}
+.commands .move[data-move=propeller]{--move-top:#b0a2ba;--move-bottom:#897d9e}
+.commands .move[data-move=siphon]{--move-top:#d2a0a0;--move-bottom:#b77f87}
+.commands .move[data-move=quake]{--move-top:#c18d6a;--move-bottom:#a16a4e}
+.commands .move[data-move=cheese]{--move-top:#c5a9b5;--move-bottom:#a78b9d}
+.commands .move kbd{border-color:#563b2855;background:#ffe5ba26;color:#412b21}.commands .move small{color:#38251c}
+.commands .move:not(:disabled):hover,.commands .move:focus-visible{background:linear-gradient(155deg,var(--move-top),var(--move-bottom));filter:brightness(1.12)}
