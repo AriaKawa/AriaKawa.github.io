@@ -1,3 +1,4 @@
+import { touches, firstContact } from './contact.mjs';
 import { CHAPTERS, MOVES, freshRun, attackDamage, incomingDamage, hitEnemy, advanceChapter, jumpHits, createContactCommand, pressContact, contactTiming, CONTACT_GRACE_MS, PACE, jumpPose, applyUpgrade } from './engine.mjs';
 import { PROFILE_KEY, ARSENAL, readProfile, unlockAbility, equipAbility, rewardEncounter } from './progression.mjs';
 
@@ -214,9 +215,7 @@ async function startGame() {
   setHidden('hud', false); updateHUD(); makeActors();
   audio.init();
   note('BNN BREAKING: Peanut has entered the goop depot.');
-  state.actors[0].x = -200;
-  await move(state.actors[0], { x: state.actors[0].homeX }, 450);
-  await wait(180); choose();
+  await enterBattle(); choose();
 }
 function showCallout(text, grade, sub = '') {
   $('callout').replaceChildren(document.createTextNode(text));
@@ -255,10 +254,42 @@ async function finishContact() {
     else if (command.type !== 'jump') state.run.sp = Math.min(state.run.maxSp, state.run.sp + 1);
     audio.good();
   }
-  const text = success ? (command.type === 'block' ? 'BLOCKED!' : 'NICE!') : outcome === 'early' ? 'TOO EARLY' : outcome === 'late' ? 'TOO LATE' : command.type === 'block' ? 'OUCH!' : 'BONK!';
-  showCallout(text, success ? 'perfect' : 'miss', success ? (command.type === 'jump' ? 'DOUBLE STOMP!' : command.type === 'block' ? 'NO DAMAGE' : '+1 GOOP POWER') : 'Space right at contact');
+  const text = success ? (command.type === 'block' ? 'BLOCKED!' : 'NICE!') : outcome === 'early' ? 'TOO EARLY' : outcome === 'late' ? 'TOO LATE' : command.type === 'block' ? 'OUCH!' : 'HIT!';
+  showCallout(text, success ? 'perfect' : 'miss', success ? (command.type === 'jump' ? 'DOUBLE STOMP!' : command.type === 'block' ? 'NO DAMAGE' : '+1 GOOP POWER') : command.type==='block'?'Space right at contact':'Base damage');
   updateHUD(); return success ? 'perfect' : 'miss';
 }
+
+const masks=new WeakMap();
+function imageMask(img){
+ if(!masks.has(img)){const c=document.createElement('canvas');c.width=192;c.height=Math.max(1,Math.round(192*img.height/img.width));const cx=c.getContext('2d',{willReadFrequently:true});cx.drawImage(img,0,0,c.width,c.height);masks.set(img,cx.getImageData(0,0,c.width,c.height));}
+ return masks.get(img);
+}
+function actorShape(a){const height=actorHeight(a),sy=a.scale*a.stretchY;return {mask:imageMask(images[a.kind==='rat'?'pip':a.kind]),x:a.x,y:a.y-(a.rolling?height*.48:0),width:a.width*a.scale*a.stretchX,height:height*sy,pivot:(a.rolling?height*.48:0)*sy,rot:a.rot};}
+function blob(c){
+ c.beginPath();c.moveTo(-38,0);c.bezierCurveTo(-13,-5,-5,-22,15,-18);c.bezierCurveTo(43,-17,43,17,15,19);c.bezierCurveTo(-5,23,-13,5,-38,0);c.closePath();c.fillStyle='#db982b';c.fill();c.strokeStyle='#ffe4a2';c.lineWidth=3;c.stroke();
+ c.beginPath();c.ellipse(17,-7,11,4,-.2,0,Math.PI*2);c.fillStyle='#fff0bd';c.fill();
+}
+function paintProjectile(c,ball){
+ c.save();c.rotate(ball.rot||0);
+ if(ball.type==='quake'){c.drawImage(images.hutch,-50,-50,100,100);}
+ else if(ball.type==='whirl'){blob(c);}
+ else if(ball.type==='bolt'){c.beginPath();for(let i=0;i<6;i++){const a=i*Math.PI/3;i?c.lineTo(Math.cos(a)*21,Math.sin(a)*21):c.moveTo(Math.cos(a)*21,Math.sin(a)*21);}c.closePath();c.fillStyle='#adb8b0';c.fill();c.strokeStyle='#f5ecd1';c.lineWidth=4;c.stroke();c.beginPath();c.arc(0,0,7,0,Math.PI*2);c.fillStyle='#415453';c.fill();}
+ else if(ball.type==='propeller'){c.fillStyle='#819cc5';c.strokeStyle='#fff1c5';c.lineWidth=3;for(const [x,y,w,h] of [[-46,-10,92,20],[-10,-46,20,92]]){c.beginPath();c.roundRect(x,y,w,h,9);c.fill();c.stroke();}c.fillStyle='#ffd13d';c.beginPath();c.arc(0,0,13,0,Math.PI*2);c.fill();}
+ else{c.fillStyle='#bd8098';c.strokeStyle='#ffe2ef';c.lineWidth=3;c.beginPath();c.ellipse(0,0,25,19,0,0,Math.PI*2);c.fill();c.stroke();}
+ c.restore();
+}
+const projectileMasks=new Map();
+function projectileShape(ball){
+ if(!projectileMasks.has(ball.type)){const c=document.createElement('canvas');c.width=c.height=128;const cx=c.getContext('2d',{willReadFrequently:true});cx.translate(64,64);paintProjectile(cx,{type:ball.type,rot:0});projectileMasks.set(ball.type,cx.getImageData(0,0,128,128));}
+ return {mask:projectileMasks.get(ball.type),x:ball.x,y:ball.y,width:128,height:128,pivot:64,rot:ball.rot||0};
+}
+function splash(x,y,count=24){for(let i=0;i<count;i++){const angle=Math.random()*Math.PI*2,speed=100+Math.random()*240;state.particles.push({x,y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed-100,life:1,color:i%3?'#e4aa39':'#fff0ae',size:5+Math.random()*13,rot:angle,liquid:true});}}
+async function enterBattle(){
+ const actors=state.actors;actors.forEach((a,i)=>{a.x=i===0?-a.width:state.W+a.width+i*90;a.y=a.homeY;});
+ await Promise.all(actors.map((a,i)=>{const start=a.x;return animate(1000+i*90,p=>{a.x=start+(a.homeX-start)*ease(p);const step=Math.sin(p*Math.PI*12);a.y=a.homeY-Math.abs(step)*13*(1-p);a.rot=step*.07*(1-p);});}));
+ actors.forEach(a=>Object.assign(a,{x:a.homeX,y:a.homeY,rot:0}));await wait(150);
+}
+
 function actorHeight(a) {
   const img=images[a.kind==='rat'?'pip':a.kind];
   return a.width*(img?img.height/img.width:1);
@@ -287,7 +318,7 @@ async function hurtEnemy(actor,damage,moveName,grade='good') {
   const wasArmored=actor.enemy.armor;
   hitEnemy(actor.enemy,damage,moveName);
   const hitY=moveName==='jump'?contactTop(actor):actor.homeY-actorHeight(actor)*.38;
-  impact(actor.x,hitY,grade,moveName==='bonk');float(`−${damage}`,actor);
+  if(moveName==='whirl'){splash(actor.x,hitY,32);state.freeze=Math.max(state.freeze,50);if(!state.reducedMotion)state.shake=8;audio.hit();}else impact(actor.x,hitY,grade,moveName==='bonk');float(`−${damage}`,actor);
   actor.hit=state.time+180;
   if(wasArmored&&!actor.enemy.armor){
     burst(actor.x,hitY,'#9baf87',22,1.7);
@@ -304,18 +335,20 @@ async function hurtEnemy(actor,damage,moveName,grade='good') {
 async function jumpAttack(hero, target) {
   beginContact('jump', PACE.jumpWindup + PACE.jumpFlight, 'as Peanut lands');
   await move(hero, { stretchX: 1.16, stretchY: .84, rot: -.12 }, PACE.jumpWindup);
-  const startX = hero.x, landX = target.x, landY = contactTop(target) + actorHeight(hero) * 50/1536;
+  const startX = hero.x, landX = target.x; let landY = target.homeY;
   audio.jump();
-  const apexY = Math.max(actorHeight(hero) + state.H * .08, landY - 215);
+  const apexY = contactTop(target)-40;
+  const jumpPath=p=>{Object.assign(hero,jumpPose(p,startX,hero.homeY,landX,landY,apexY));hero.rot=-.12*(1-p);hero.stretchX=hero.stretchY=1;};
+  const jumpEnd=firstContact(jumpPath,()=>touches(actorShape(hero),actorShape(target)),.48);
   let lastTrail = 0;
   await animate(PACE.jumpFlight, p => {
-    Object.assign(hero, jumpPose(p, startX, hero.homeY, landX, landY, apexY));
-    hero.rot = -.12 * (1-p); hero.stretchX = 1; hero.stretchY = 1;
+    jumpPath(p*jumpEnd);
     motion(p < .48 ? 'Peanut is rising.' : p < .86 ? 'Peanut is descending.' : 'Peanut is about to land.');
     if (!state.reducedMotion && state.time-lastTrail > 65 && p > .1 && p < .85) {
       state.trails.push({ x: hero.x, y: hero.y, rot: hero.rot, born: state.fxTime }); lastTrail = state.time;
     }
   });
+  landY=hero.y;
   const grade = await finishContact(), hits = jumpHits(grade === 'perfect', target.enemy, state.run.upgrades.jump);
   for (let i=0; i<hits.length; i++) {
     if (target.enemy.hp <= 0) break;
@@ -332,11 +365,13 @@ async function jumpAttack(hero, target) {
 }
 async function slamAttack(hero, target) {
   beginContact('slam', PACE.slamWindup + PACE.slamTravel, 'as the shells connect');
-  const contactX = target.x - hero.width * .35 - target.width * .34;
+  const contactX = target.x;
   await move(hero, { x:hero.homeX-35, rot:-.23, stretchX:1.1, stretchY:.88 }, PACE.slamWindup);
   audio.whoosh(450,.32);const startX=hero.x;
-  await animate(PACE.slamTravel, p => {
-    hero.x=startX+(contactX-startX)*p; hero.y=hero.homeY-Math.sin(p*Math.PI)*35;
+  const slamPath=p=>{hero.x=startX+(contactX-startX)*p;hero.y=hero.homeY-Math.sin(p*Math.PI)*35;hero.rot=-.23+.49*p;hero.stretchX=hero.stretchY=1;};
+  const slamEnd=firstContact(slamPath,()=>touches(actorShape(hero),actorShape(target)));
+  await animate(PACE.slamTravel, progress => {
+    const p=progress*slamEnd;hero.x=startX+(contactX-startX)*p; hero.y=hero.homeY-Math.sin(p*Math.PI)*35;
     hero.rot=-.23+.49*p; hero.stretchX=1; hero.stretchY=1;
     motion(p < .92 ? 'Peanut is charging.' : 'Peanut is about to hit.');
   });
@@ -356,13 +391,12 @@ async function specialAttack(hero, targets, name) {
   const startX=hero.x+hero.width*.36,startY=hero.homeY-actorHeight(hero)*.55;
   const flightTargets=name==='quake'?[targets.find(a=>a.enemy.id===state.selected)||targets[0]]:targets;
   state.projectiles=flightTargets.map(target=>({x:startX,y:startY,target,type:name,rot:0}));
-  await animate(PACE.burstFlight,p=>{
-    for(const ball of state.projectiles){
-      const endX=ball.target.x-ball.target.width*.32,endY=ball.target.homeY-actorHeight(ball.target)*.4;
-      ball.rot=p*Math.PI*2;ball.x=startX+(endX-startX)*p;ball.y=startY+(endY-startY)*p-Math.sin(p*Math.PI)*(name==='quake'?160:name==='propeller'?35:85);
-    }
-    motion(p<.91?'The attack is flying.':'The attack is about to hit.');
-  });
+  for(const ball of state.projectiles){
+    ball.path=p=>{const endX=ball.target.x,endY=ball.target.homeY-actorHeight(ball.target)*.4;ball.rot=name==='whirl'?0:p*Math.PI*2;ball.x=startX+(endX-startX)*p;ball.y=startY+(endY-startY)*p-Math.sin(p*Math.PI)*(name==='quake'?160:name==='propeller'?35:85);};
+    ball.end=firstContact(ball.path,()=>touches(projectileShape(ball),actorShape(ball.target)));
+  }
+  await animate(PACE.burstFlight,p=>{for(const ball of state.projectiles)ball.path(p*ball.end);motion(p<.91?'The attack is flying.':'The attack is about to hit.');});
+  if(name==='whirl')for(const ball of state.projectiles)splash(ball.x,ball.y);
   const grade=await finishContact();state.projectiles=[];
   await Promise.all(targets.map(target=>hurtEnemy(target,attackDamage(name,grade,target.enemy,state.run.upgrades[name]||0),name,grade)));
   if(name==='siphon'){
@@ -401,17 +435,23 @@ async function enemyAttack(enemy,hero) {
   const travel=kind==='scrapper'?900:kind==='slinger'?1050:1150;
   beginContact('block',PACE.enemyWindup+travel,kind==='slinger'?'as the bolt hits you':kind==='baron'?'as the barrel hits you':'as the rat hits you');
   await move(enemy,{x:enemy.homeX+(kind==='slinger'?6:20),rot:kind==='slinger'?.08:-.14,stretchX:kind==='slinger'?.92:1.18,stretchY:kind==='slinger'?1.05:.8},PACE.enemyWindup);
-  const startX=enemy.x,contactX=hitX+enemy.width*(kind==='baron'?.43:.45);
+  const startX=enemy.x,contactX=hero.x;
   if(kind==='slinger'){
     enemy.stretchX=1;enemy.stretchY=1;enemy.rot=0;
     const bolt={type:'bolt',x:enemy.x-enemy.width*.43,y:enemy.homeY-actorHeight(enemy)*.57};
     const bx=bolt.x,by=bolt.y;state.projectiles=[bolt];audio.tone(650,.09,'triangle',.07,.4);
-    await animate(travel,p=>{bolt.x=bx+(hitX-bx)*p;bolt.y=by+(hitY-by)*p-Math.sin(p*Math.PI)*40;motion(p<.9?'The bolt is flying.':'The bolt is about to hit Peanut.');});
+    const path=p=>{bolt.x=bx+(hero.x-bx)*p;bolt.y=by+(hitY-by)*p-Math.sin(p*Math.PI)*40;bolt.rot=p*Math.PI*4;};
+    const end=firstContact(path,()=>touches(projectileShape(bolt),actorShape(hero)));
+    await animate(travel,p=>{path(p*end);motion(p<.9?'The bolt is flying.':'The bolt is about to hit Peanut.');});
   }else if(kind==='baron'){
     enemy.rolling=true;
-    await animate(travel,p=>{enemy.x=startX+(contactX-startX)*p;enemy.y=enemy.homeY-Math.sin(p*Math.PI*6)*5;enemy.rot=-p*Math.PI*4;enemy.stretchX=1;enemy.stretchY=1;motion(p<.91?'The barrel is rolling.':'The barrel is about to hit Peanut.');});
+    const path=p=>{enemy.x=startX+(contactX-startX)*p;enemy.y=enemy.homeY-Math.sin(p*Math.PI*6)*5;enemy.rot=-p*Math.PI*4;enemy.stretchX=enemy.stretchY=1;};
+    const end=firstContact(path,()=>touches(actorShape(enemy),actorShape(hero)));
+    await animate(travel,p=>{path(p*end);motion(p<.91?'The barrel is rolling.':'The barrel is about to hit Peanut.');});
   }else{
-    await animate(travel,p=>{enemy.x=startX+(contactX-startX)*p;enemy.y=enemy.homeY-Math.sin(p*Math.PI)*115;enemy.rot=-.18+Math.sin(p*Math.PI)*.3;enemy.stretchX=1+.1*Math.sin(p*Math.PI);enemy.stretchY=1;motion(p<.89?'The rat is pouncing.':'The rat is about to hit Peanut.');});
+    const path=p=>{enemy.x=startX+(contactX-startX)*p;enemy.y=enemy.homeY-Math.sin(p*Math.PI)*115;enemy.rot=-.18+Math.sin(p*Math.PI)*.3;enemy.stretchX=1+.1*Math.sin(p*Math.PI);enemy.stretchY=1;};
+    const end=firstContact(path,()=>touches(actorShape(enemy),actorShape(hero)));
+    await animate(travel,p=>{path(p*end);motion(p<.89?'The rat is pouncing.':'The rat is about to hit Peanut.');});
   }
   const grade=await finishContact();state.projectiles=[];enemy.rolling=false;enemy.rot=0;
   const damage=incomingDamage(enemy.enemy,grade);state.run.hp=Math.max(0,state.run.hp-damage);
@@ -454,7 +494,7 @@ function endEncounter() {
         $('upgrade-choices').querySelectorAll('button').forEach(b=>b.disabled=true);
         advanceChapter(r);setHidden('result',true);state.phase='intro';$('pause').disabled=false;makeActors();updateHUD();
         showCallout('UPGRADED!','perfect',`${MOVES[key].name.toUpperCase()} +${r.upgrades[key]}`);audio.good();
-        state.actors[0].x=-180;await move(state.actors[0],{x:state.actors[0].homeX},450);await wait(180);choose();
+        await enterBattle();choose();
       };
       card.append(button);$('upgrade-choices').append(card);
     }
@@ -485,7 +525,7 @@ function star(x,y,r,rot=0,fill='#f7d578') {
 function drawActor(a, index) {
   if (a.alpha <= .01) return;
   const t=state.time/1000, idle = state.phase === 'title' || state.phase === 'choose' || state.phase === 'intro';
-  const wobble = Math.sin(t*3.1+index*1.8), breath = Math.sin(t*2.5+index);
+  const wobble = Math.sin(t*3.1+index*1.8), breath = idle?Math.sin(t*2.5+index):0;
   const img=images[a.kind==='rat'?'pip':a.kind]; if(!img)return;
   const width=a.width, height=width*img.height/img.width;
   ctx.save();ctx.globalAlpha=a.alpha;
@@ -533,20 +573,7 @@ function draw(dt) {
   for(const trail of state.trails){const age=state.fxTime-trail.born,hero=state.actors[0];ctx.save();ctx.globalAlpha=Math.max(0,.18*(1-age/160));ctx.translate(trail.x,trail.y);ctx.rotate(trail.rot);ctx.drawImage(images.pip,-hero.width/2,-actorHeight(hero),hero.width,actorHeight(hero));ctx.restore();}
   state.trails=state.trails.filter(trail=>state.fxTime-trail.born<160);
   if(state.phase==='attack'){state.actors.slice(1).forEach((a,i)=>drawActor(a,i+1));drawActor(state.actors[0],0);}else if(state.phase!=='title'&&state.phase!=='loading') state.actors.forEach(drawActor);
-  for(const ball of state.projectiles){
-    ctx.save();ctx.translate(ball.x,ball.y);
-    if(ball.type==='bolt'){
-      ctx.rotate(state.time*.012);ctx.beginPath();for(let i=0;i<6;i++){const a=i*Math.PI/3;i?ctx.lineTo(Math.cos(a)*21,Math.sin(a)*21):ctx.moveTo(Math.cos(a)*21,Math.sin(a)*21);}ctx.closePath();ctx.fillStyle='#adb8b0';ctx.fill();ctx.strokeStyle='#f5ecd1';ctx.lineWidth=4;ctx.stroke();ctx.beginPath();ctx.arc(0,0,7,0,Math.PI*2);ctx.fillStyle='#415453';ctx.fill();
-    }else if(ball.type==='propeller'){
-      ctx.rotate(state.time*.032);ctx.shadowColor='#b5d9fa';ctx.shadowBlur=14;
-      roundedRect(-46,-10,92,20,9,'#819cc5','#fff1c5');roundedRect(-10,-46,20,92,9,'#819cc5','#fff1c5');star(0,0,16,0,'#ffd13d');
-    }else if(ball.type==='quake'){
-      ctx.rotate(ball.rot||0);const size=100;ctx.drawImage(images.hutch,-size/2,-size/2,size,size);
-    }else{
-      ctx.rotate(state.time*.02);ctx.shadowColor=ball.type==='siphon'?'#d8a1b4':'#ffdb32';ctx.shadowBlur=22;star(0,0,30,0,ball.type==='siphon'?'#bd8098':'#ffe547');star(0,0,17,.4,'#fffaaf');
-    }
-    ctx.restore();
-  }
+  for(const ball of state.projectiles){ctx.save();ctx.translate(ball.x,ball.y);paintProjectile(ctx,ball);ctx.restore();}
   for(const hit of state.impacts){
     const age=state.fxTime-hit.born,p=age/300,r=(24+90*p)*hit.power;
     ctx.save();ctx.translate(hit.x,hit.y);ctx.globalAlpha=Math.max(0,1-p);
@@ -557,7 +584,7 @@ function draw(dt) {
   }
   state.impacts=state.impacts.filter(hit=>state.fxTime-hit.born<300);
   for(let i=0;i<18;i++){const x=(i*97.37+Math.sin(state.time*.0004+i)*15)%W,y=(i*57.93-state.time*.009)%H;ctx.fillStyle=`rgba(246,219,158,${.1+(Math.sin(state.time*.001+i)+1)*.09})`;ctx.beginPath();ctx.arc(x,y<0?y+H:y,1.5,0,Math.PI*2);ctx.fill();}
-  for(const p of state.particles){p.x+=p.vx*dt/1000;p.y+=p.vy*dt/1000;p.vy+=330*dt/1000;p.life-=dt/1100;p.rot+=dt*.003;ctx.globalAlpha=Math.max(0,p.life);if(p.star)star(p.x,p.y,p.size,p.rot,p.color);else{ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot);ctx.fillStyle=p.color;ctx.fillRect(-p.size/2,-p.size/2,p.size,p.size*.6);ctx.restore();}}
+  for(const p of state.particles){p.x+=p.vx*dt/1000;p.y+=p.vy*dt/1000;p.vy+=330*dt/1000;p.life-=dt/1100;p.rot+=dt*.003;ctx.globalAlpha=Math.max(0,p.life);if(p.liquid){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot);ctx.fillStyle=p.color;ctx.beginPath();ctx.ellipse(0,0,p.size,p.size*.55,0,0,Math.PI*2);ctx.fill();ctx.restore();}else if(p.star)star(p.x,p.y,p.size,p.rot,p.color);else{ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot);ctx.fillStyle=p.color;ctx.fillRect(-p.size/2,-p.size/2,p.size,p.size*.6);ctx.restore();}}
   ctx.globalAlpha=1;state.particles=state.particles.filter(p=>p.life>0);
   for(const f of state.floats){const age=state.fxTime-f.born;const y=f.y-age*.065;ctx.save();ctx.translate(f.x,y);const pop=1+Math.max(0,1-age/180)*.35;ctx.scale(pop,pop);ctx.globalAlpha=Math.max(0,Math.min(1,(1000-age)/300));ctx.font=`600 ${f.small?19:50}px Fredoka, sans-serif`;ctx.textAlign='center';ctx.lineWidth=f.small?4:7;ctx.strokeStyle='#33321d';ctx.strokeText(f.text,0,0);ctx.fillStyle=f.color;ctx.fillText(f.text,0,0);ctx.restore();}
   state.floats=state.floats.filter(f=>state.fxTime-f.born<1000);

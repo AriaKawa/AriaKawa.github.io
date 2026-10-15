@@ -22,7 +22,7 @@ export function makeEnemies(chapter) {
 export function attackDamage(move, grade, enemy, level = 0) {
   if (move === 'jump') return jumpHits(grade === 'success' || grade === 'perfect', enemy, level).reduce((sum, hit) => sum + hit, 0);
   const base = MOVES[move].base + level;
-  const bonus = grade === 'perfect' ? 2 : grade === 'good' ? 1 : 0;
+  const bonus = (grade === 'perfect' || grade === 'success') ? 2 : grade === 'good' ? 1 : 0;
   const armor = enemy.armor && move !== 'bonk' && !MOVES[move].pierce ? 2 : 0;
   return Math.max(1, base + bonus - armor);
 }
@@ -33,12 +33,12 @@ export function incomingDamage(enemy, grade) {
 // TTYD-style ordinary Jump: one hit, or two equal hits on command success.
 // Defense applies to each stomp separately. Three power fits this game's HP scale.
 export function jumpHits(success, enemy, level = 0) {
-  const damage = Math.max(0, MOVES.jump.base + level - (enemy.defense ?? (enemy.armor ? 2 : 0)));
+  const damage = Math.max(1, MOVES.jump.base + level - (enemy.defense ?? (enemy.armor ? 2 : 0)));
   return success ? [damage, damage] : [damage];
 }
 // Every command is anchored to physical contact, never a moving meter.
 // A small grace period accommodates a press on the rendered contact frame.
-export const CONTACT_WINDOW_MS = 8 * 1000 / 60;
+export const CONTACT_WINDOW_MS = 90;
 export const CONTACT_GRACE_MS = 65;
 export const PACE = Object.freeze({ jumpWindup: 300 / 1.6, jumpFlight: 1250 / 1.6, jumpBounce: 360 / 1.6, jumpReturn: 420 / 1.6, slamWindup: 420, slamTravel: 1000, burstWindup: 450, burstFlight: 1000, enemyWindup: 500, enemyTravel: 1100 });
 export function createContactCommand(contactAt, relaxed = false) {
