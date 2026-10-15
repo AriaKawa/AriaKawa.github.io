@@ -13,7 +13,7 @@
   <link rel="stylesheet" href="peanut-book.css?v=warm-sfx-1">
   <link rel="stylesheet" href="stickers.css?v=1">
   <link rel="stylesheet" href="arsenal-stickers.css?v=3">
-  <link rel="stylesheet" href="desk.css?v=midnight-1">
+  <link rel="stylesheet" href="desk.css?v=pockets-1">
   <link rel="preload" href="assets/goop-depot.png" as="image">
   <link rel="preload" href="assets/midnight-scrapbook.png" as="image">
 </head>
@@ -42,7 +42,14 @@
             <button id="open-arsenal" class="desk-arsenal" aria-label="Open Arsenal"><span class="sr-only">Arsenal</span></button>
             <button id="start" class="desk-play" disabled><span id="start-label" class="sr-only">Loading…</span></button>
           </div>
-          <section class="story-book peanut-book polished arsenal-page" aria-label="Arsenal page" hidden>
+          <section class="chapter-page" aria-label="Choose a chapter" hidden>
+ <h2 class="sr-only">Chapters</h2>
+ <button id="close-chapters" aria-label="Back to home"><span class="sr-only">Back</span></button>
+ <button id="chapter-rats" aria-label="Me and My Rat Family"><span class="sr-only">Me and My Rat Family</span></button>
+ <button class="chapter-locked locked-two" disabled aria-label="Chapter 2 locked"><span class="sr-only">??? — Locked</span></button>
+ <button class="chapter-locked locked-three" disabled aria-label="Chapter 3 locked"><span class="sr-only">??? — Locked</span></button>
+</section>
+<section class="story-book peanut-book polished arsenal-page" aria-label="Arsenal page" hidden>
             <section class="book-left" aria-label="Arsenal">
               <div class="arsenal-heading"><button id="close-arsenal" aria-label="Back to home">←</button><h2 class="newspaper-title" aria-label="Arsenal"><span aria-hidden="true">A</span><span aria-hidden="true">r</span><span aria-hidden="true">s</span><span aria-hidden="true">e</span><span aria-hidden="true">n</span><span aria-hidden="true">a</span><span aria-hidden="true">l</span></h2><span id="arsenal-wallet" aria-label="Scrap balance"></span></div>
               <div id="arsenal-cards" class="arsenal-cards"></div>
@@ -83,6 +90,7 @@
 </dialog>
 <dialog id="pause-dialog" class="modal paper pause-modal"><h2>Paused</h2><button id="resume" class="ribbon-button">Resume</button><button id="restart" class="text-button">Restart</button><button id="go-home" class="text-button">Home</button></dialog>
 
-<script type="module" src="game.js?v=desk-1"></script>
+<script type="module" src="game.js?v=pockets-1"></script>
 </body>
 </html>
+

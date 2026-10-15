@@ -585,12 +585,22 @@ function modalClose(id){$(id).close();state.paused=false;if(audio.on&&audio.ctx)
 function pauseGame(){if(['loading','title','result'].includes(state.phase))return;modalOpen('pause-dialog');}
 function setArsenalPage(open){
   hideAbilityTip();$('title-screen').dataset.view=open?'arsenal':'home';
+  document.querySelector('.chapter-page').hidden=true;
   document.querySelector('.arsenal-page').hidden=!open;
   document.querySelector('.desk-menu').hidden=open;
 }
 $('open-arsenal').onclick=()=>{renderArsenal();setArsenalPage(true);$('close-arsenal').focus();};
 $('close-arsenal').onclick=()=>{setArsenalPage(false);$('open-arsenal').focus();};
-$('start').onclick=startGame;
+function setChapterPage(open){
+ hideAbilityTip();$('title-screen').dataset.view=open?'chapters':'home';
+ document.querySelector('.chapter-page').hidden=!open;
+ document.querySelector('.arsenal-page').hidden=true;
+ document.querySelector('.desk-menu').hidden=open;
+}
+function openChapters(){setChapterPage(true);$('chapter-rats').focus();}
+$('start').onclick=openChapters;
+$('close-chapters').onclick=()=>{setChapterPage(false);$('start').focus();};
+$('chapter-rats').onclick=startGame;
 $('go-home').onclick=()=>{modalClose('pause-dialog');home();};
 document.querySelector('.wordmark').onclick=event=>{event.preventDefault();if(state.phase==='title')return;if(state.phase==='result')home();else pauseGame();};
 document.querySelectorAll('[data-move]').forEach(button=>{
@@ -630,14 +640,14 @@ $('fullscreen').onclick=async()=>{try{if(!document.fullscreenElement)await $('ap
 document.addEventListener('fullscreenchange',()=>{$('fullscreen').setAttribute('aria-label',document.fullscreenElement?'Exit fullscreen':'Enter fullscreen');});
 window.addEventListener('keydown',event=>{
   if(state.paused)return;
-  if(event.key==='Escape'){event.preventDefault();if(state.phase==='title'&&$('title-screen').dataset.view==='arsenal'){setArsenalPage(false);$('open-arsenal').focus();}else pauseGame();return;}
+  if(event.key==='Escape'){event.preventDefault();if(state.phase==='title'&&$('title-screen').dataset.view==='arsenal'){setArsenalPage(false);$('open-arsenal').focus();}else if(state.phase==='title'&&$('title-screen').dataset.view==='chapters'){setChapterPage(false);$('start').focus();}else pauseGame();return;}
   if(event.code==='Space'||event.key==='Enter'){
     if(event.target instanceof Element && event.target.closest('nav button'))return;
     if(state.command||['attack','enemy'].includes(state.phase)){
       event.preventDefault();if(event.repeat)return;
       pressCommand();
     }
-    else if(state.phase==='title'&&$('title-screen').dataset.view!=='arsenal'&&!event.repeat&&!(event.target instanceof Element&&event.target.closest('button,a'))){event.preventDefault();startGame();}
+    else if(state.phase==='title'&&$('title-screen').dataset.view==='home'&&!event.repeat&&!(event.target instanceof Element&&event.target.closest('button,a'))){event.preventDefault();openChapters();}
     return;
   }
   if(event.repeat)return;
