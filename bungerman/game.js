@@ -1,8 +1,8 @@
-import {setupMultiplayer} from './multiplayer-ui.js?v=mp10';
-import {Game,CAST,COLS,ROWS,MAPS} from './engine.js?v=mp10';
-import {loadPack,drawAsset} from './packs.js?v=mp10';
-import {drawCharacter,loadCharacterSprites} from './characters.js?v=mp10';
-import {drawArena,drawBomb,drawFlames,drawClosingWalls,drawRockets} from './arena.js?v=mp10';
+import {setupMultiplayer} from './multiplayer-ui.js?v=mp11';
+import {Game,CAST,COLS,ROWS,MAPS} from './engine.js?v=mp11';
+import {loadPack,drawAsset} from './packs.js?v=mp11';
+import {drawCharacter,loadCharacterSprites} from './characters.js?v=mp11';
+import {drawArena,drawBomb,drawFlames,drawClosingWalls,drawRockets} from './arena.js?v=mp11';
 const $=id=>document.getElementById(id),canvas=$('game'),ctx=canvas.getContext('2d');
 const W=416,H=352,T=30,OX=13,OY=11;
 canvas.width=W*3;canvas.height=H*3;ctx.scale(3,3);
@@ -72,7 +72,7 @@ drawMapPreviews();
 function plant(){if(multiplayer.active)multiplayer.action('bomb');else game.plantBomb();}
 function fire(){if(multiplayer.active)multiplayer.action('rpg');else game.fireRpg();}
 const multiplayer=setupMultiplayer({selected:()=>selected,map:()=>selectedMap,loaded:()=>packReady,home,
- showPanel(id){resetTouches();keys.clear();paused=false;menuState=id;document.body.classList.remove('playing','paused');$('menu').classList.remove('hidden');for(const name of ['select','state','multiplayer','lobby'])$(name+'-view').hidden=name!==id;$('pause').disabled=true;},
+ showPanel(id){resetTouches();keys.clear();pendingState=null;menuDelay=0;paused=false;menuState=id;document.body.classList.remove('playing','paused');$('menu').classList.remove('hidden');for(const name of ['select','state','multiplayer','lobby'])$(name+'-view').hidden=name!==id;$('pause').disabled=true;},
  paint(el,character){const c=smallCanvas(el,88,100);if(character&&packReady)drawCast(c,44,94,character==='hutch'?84:76,character);},
  start(){unlockAudio();resetTouches();paused=false;keys.clear();particles=[];floaters=[];puddles=[];deaths=[];rings=[];animationStates=new WeakMap();pendingState=null;menuDelay=0;hideMenu();$('pause').disabled=true;},
  snapshot(next){game=next;drawCast(smallCanvas('hud-face',32,36),16,35,34,game.character);}
@@ -115,7 +115,7 @@ function render(){
 let hudTimer=0;
 function frame(now){const dt=Math.min((now-last)/1000,.05);last=now;
  const codes=[...keys].reverse(),direction=mapped[codes.find(k=>mapped[k])];multiplayer.frame(dt,direction?{dx:direction[0],dy:direction[1]}:{dx:0,dy:0});
- if(!paused){clock+=dt;playerHit=Math.max(0,playerHit-dt);if(game.status==='playing'){const codes=[...keys].reverse(),dir=mapped[codes.find(k=>mapped[k])];game.update(dt,dir?{dx:dir[0],dy:dir[1]}:{});events();}
+ if(!paused){clock+=dt;playerHit=Math.max(0,playerHit-dt);if(game.status==='playing'){const codes=[...keys].reverse(),dir=mapped[codes.find(k=>mapped[k])];game.update(dt,dir?{dx:dir[0],dy:dir[1]}:{});events();}else if(multiplayer.active){events();}
  for(const e of [game.player,...game.bots]){const st=stateFor(e),distance=Math.hypot(e.rx-st.x,e.ry-st.y);st.walk+=distance*Math.PI*2*.32;st.travelling=distance>.001||Math.hypot(e.x-e.rx,e.y-e.ry)>.02;st.moving+=((st.travelling?1:0)-st.moving)*Math.min(1,dt*24);st.x=e.rx;st.y=e.ry;st.plant=Math.max(0,st.plant-dt);st.hit=Math.max(0,st.hit-dt);}
  for(const p of particles){p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=140*dt;}particles=particles.filter(p=>p.life>0);for(const f of floaters){f.life-=dt;f.y-=13*dt;}floaters=floaters.filter(f=>f.life>0);for(const d of deaths)d.life-=dt;deaths=deaths.filter(d=>d.life>0);for(const r of rings)r.life-=dt;rings=rings.filter(r=>r.life>0);shake=Math.max(0,shake-dt*20);
  if(pendingState){menuDelay-=dt;if(menuDelay<=0){const state=pendingState;pendingState=null;showState(state);}}
