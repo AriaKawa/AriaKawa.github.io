@@ -1,0 +1,11 @@
+Crossroads UI samples from SFXMint — CC0 1.0 Universal.
+Source: https://sfxmint.com/sets/ui-soft
+License: https://creativecommons.org/publicdomain/zero/1.0/
+Downloaded 2026-10-15. Original MP3 files, unmodified.
+
+hover.mp3: Subtle Interface Hover Tick 15
+https://sfxmint.com/dl/ui-hover-15.mp3
+click.mp3: Wooden User Interface Click 56
+https://sfxmint.com/dl/ui-click-56.mp3
+
+Playback gains: hover 0.025, click 0.16. Both respect the game mute setting.
