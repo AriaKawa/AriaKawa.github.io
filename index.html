@@ -1,1030 +1,347 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AriaKawa — Games, learning &amp; experiments</title>
-    <meta name="description" content="Explore the AriaKawa collection of browser games, learning tools, and experiments. Keep your favorites close and find something to play.">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="vault-ui.css?v=20260910-pastel">
-<style>.bungerman-launch{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:18px 24px;border:1px solid white;border-radius:18px;background:linear-gradient(120deg,#fff1cd,#f7e7fa);box-shadow:0 7px 23px #8b9ec21c}.bungerman-launch img{width:220px;max-width:50%;height:74px;object-fit:contain}.bungerman-launch a{display:inline-flex;align-items:center;justify-content:center;padding:13px 20px;border-radius:12px;background:#30324e;color:#fff;text-decoration:none;font-weight:700;text-align:center}.bungerman-launch a:hover{background:#4b4268}.bungerman-launch a:focus-visible{outline:3px solid #7168c5;outline-offset:4px}@media(max-width:500px){.bungerman-launch{padding:12px;gap:10px}.bungerman-launch a{font-size:12px;padding:12px}.bungerman-launch img{height:58px}}</style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AriaKawa</title>
+<meta name="description" content="A shelf of little games and tools, made for fun.">
+<meta name="theme-color" content="#0d0c11">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23ffcf5a'/%3E%3Ctext x='32' y='42' font-family='Arial,sans-serif' font-weight='800' font-size='28' text-anchor='middle' fill='%230d0c11'%3Eak%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d0c11; --panel: #17161d; --panel-2: #1f1d27; --line: #ffffff17; --line-strong: #ffffff2e;
+  --ink: #f4efe6; --muted: #a7a2b3; --faint: #6f6b7b; --accent: #ffcf5a; --accent-ink: #1a1408; --hot: #ff7a59;
+  --radius: 16px; --display: 'Bricolage Grotesque', system-ui, sans-serif; --body: 'Figtree', system-ui, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0; min-height: 100vh; background: var(--bg); color: var(--ink); font: 400 16px/1.5 var(--body);
+  background-image: radial-gradient(1200px 600px at 85% -10%, #3b2a5a33, transparent 60%), radial-gradient(900px 500px at -10% 30%, #5a3a1f26, transparent 60%);
+  background-attachment: fixed; -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; }
+img { display: block; max-width: 100%; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+.wrap { width: min(1240px, 100% - 32px); margin: 0 auto; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---------- top bar ---------- */
+.top { position: sticky; top: 0; z-index: 10; backdrop-filter: blur(14px) saturate(1.2); background: #0d0c11b8; border-bottom: 1px solid var(--line); }
+.top .wrap { display: flex; align-items: center; gap: 16px; height: 64px; }
+.mark { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font: 800 20px/1 var(--display); letter-spacing: -.02em; margin-right: auto; }
+.mark b { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 9px; background: var(--accent); color: var(--accent-ink); font: 800 14px/1 var(--display); }
+.search { position: relative; flex: 0 1 300px; }
+.search svg { position: absolute; left: 12px; top: 50%; translate: 0 -50%; width: 16px; height: 16px; color: var(--faint); pointer-events: none; }
+.search input {
+  width: 100%; height: 40px; padding: 0 38px 0 36px; border-radius: 999px; border: 1px solid var(--line-strong);
+  background: var(--panel); color: var(--ink); font: 500 15px var(--body);
+}
+.search input::placeholder { color: var(--faint); }
+.search input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px #ffcf5a33; }
+.search kbd { position: absolute; right: 10px; top: 50%; translate: 0 -50%; font: 600 11px var(--body); color: var(--faint); border: 1px solid var(--line-strong); border-radius: 5px; padding: 1px 6px; }
+.search input:focus + kbd, .search input:not(:placeholder-shown) + kbd { display: none; }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 999px;
+  border: 1px solid var(--line-strong); background: var(--panel); color: var(--ink); font: 600 14px var(--body); text-decoration: none; cursor: pointer;
+  transition: background .15s, border-color .15s, transform .15s;
+}
+.btn:hover { background: var(--panel-2); border-color: #ffffff40; }
+.btn:active { transform: translateY(1px); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 700; }
+.btn.primary:hover { background: #ffdb7d; }
+.btn svg { width: 16px; height: 16px; }
+
+/* ---------- hero ---------- */
+.hero { position: relative; margin: 28px 0 8px; border-radius: 24px; overflow: hidden; border: 1px solid var(--line); min-height: 360px; display: grid; grid-template-columns: 1.15fr 1fr; isolation: isolate; }
+.hero-bg { position: absolute; inset: -40px; z-index: -1; background-size: cover; background-position: center; filter: blur(40px) saturate(1.3) brightness(.45); transform: scale(1.1); transition: background-image .4s; }
+.hero-art { min-width: 0; align-self: center; margin: 24px 0 24px 24px; border-radius: 16px; overflow: hidden; box-shadow: 0 30px 60px #00000080; border: 1px solid var(--line-strong); }
+.hero-art img { width: 100%; height: auto; object-fit: cover; aspect-ratio: 16 / 10; }
+.hero-copy { min-width: 0; }
+.hero-copy { display: flex; flex-direction: column; justify-content: center; gap: 14px; padding: 32px 40px; }
+.eyebrow { font: 700 12px/1 var(--body); letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+.hero h1 { margin: 0; font: 800 clamp(34px, 5vw, 60px)/.95 var(--display); letter-spacing: -.035em; text-wrap: balance; }
+.hero .when { color: var(--muted); font-size: 15px; }
+.hero .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
+.hero .actions .btn { height: 46px; padding: 0 22px; font-size: 15px; }
+
+/* ---------- sections ---------- */
+.section-head { display: flex; align-items: baseline; gap: 12px; margin: 48px 0 18px; }
+.section-head h2 { margin: 0; font: 800 28px/1 var(--display); letter-spacing: -.02em; }
+.section-head .count { color: var(--faint); font: 600 14px var(--body); }
+.section-head p { margin: 0 0 0 auto; color: var(--muted); font-size: 14px; }
+
+/* ---------- cover cards ---------- */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
+.card { position: relative; border-radius: var(--radius); background: var(--panel); border: 1px solid var(--line); transition: transform .2s cubic-bezier(.2,.8,.3,1), border-color .2s, box-shadow .2s; }
+.card:hover { transform: translateY(-4px); border-color: var(--line-strong); box-shadow: 0 18px 40px #00000070; }
+.card > a { display: block; text-decoration: none; border-radius: inherit; }
+.card .art { position: relative; aspect-ratio: 16 / 10; overflow: hidden; border-radius: var(--radius) var(--radius) 0 0; background: #000; }
+.card .art img { width: 100%; height: 100%; object-fit: cover; transition: transform .45s cubic-bezier(.2,.8,.3,1), filter .3s; }
+.card:hover .art img { transform: scale(1.05); }
+.card .meta { display: flex; align-items: center; gap: 10px; padding: 12px 14px 14px; }
+.card .title { font: 700 17px/1.2 var(--display); letter-spacing: -.01em; margin-right: auto; }
+.card .age { color: var(--faint); font-size: 13px; white-space: nowrap; }
+.badge { position: absolute; left: 12px; top: 12px; padding: 4px 9px; border-radius: 999px; background: var(--hot); color: #1b0a05; font: 700 11px/1.2 var(--body); letter-spacing: .06em; text-transform: uppercase; box-shadow: 0 4px 12px #00000060; }
+.pin {
+  position: absolute; right: 10px; top: 10px; z-index: 2; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%;
+  border: 1px solid #ffffff33; background: #0d0c11a6; color: #fff; cursor: pointer; backdrop-filter: blur(6px); opacity: 0; transition: opacity .15s, background .15s, color .15s;
+}
+.pin svg { width: 17px; height: 17px; }
+.card:hover .pin, .card:focus-within .pin, .pin[aria-pressed="true"] { opacity: 1; }
+.pin[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+@media (hover: none) { .pin { opacity: 1; } }
+.pinned { margin-bottom: 28px; }
+.pinned h3 { margin: 0 0 12px; font: 700 13px var(--body); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+
+/* ---------- everything else ---------- */
+.drawer { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.group { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 18px 10px; }
+.group h3 { margin: 0 0 8px; font: 700 13px var(--body); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between; }
+.group h3 span { color: var(--faint); letter-spacing: 0; }
+.group ul { list-style: none; margin: 0; padding: 0; }
+.group li a { display: flex; align-items: baseline; gap: 10px; padding: 8px 10px; margin: 0 -10px; border-radius: 9px; text-decoration: none; transition: background .12s; }
+.group li a:hover { background: var(--panel-2); }
+.group li a span:first-child { margin-right: auto; font-weight: 600; }
+.group li a span:last-child { color: var(--faint); font-size: 13px; white-space: nowrap; }
+
+.empty { text-align: center; color: var(--muted); padding: 60px 0; font-size: 17px; }
+footer { margin: 64px 0 40px; padding-top: 22px; border-top: 1px solid var(--line); color: var(--faint); font-size: 14px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+
+body.searching .hero { display: none; }
+[hidden] { display: none !important; }
+
+@media (max-width: 900px) {
+  .hero { grid-template-columns: 1fr; min-height: 0; }
+  .hero-art { margin: 16px 16px 0; }
+  .hero-copy { padding: 22px 22px 26px; gap: 12px; }
+  .drawer { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  .top .wrap { gap: 10px; }
+  .mark span { display: none; }
+  .search { flex: 1 1 auto; }
+  .search kbd { display: none; }
+  .btn.surprise span { display: none; }
+  .btn.surprise { width: 40px; padding: 0; }
+  .grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+  .card .meta { padding: 10px 11px 12px; }
+  .card .title { font-size: 15px; }
+  .card .age { display: none; }
+  .section-head { margin-top: 36px; flex-wrap: wrap; }
+  .section-head p { margin: 0; width: 100%; }
+  .hero .actions .btn { flex: 1; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; scroll-behavior: auto !important; } }
+</style>
 </head>
-<body class="vault-ui">
-    <a class="skip-link" href="#main-content">Skip to content</a>
-    <header class="studio-header">
-      <a class="studio-brand" href="index.html" aria-label="AriaKawa home"><span class="studio-mark" aria-hidden="true">ak</span>AriaKawa</a>
-      <nav class="studio-links" aria-label="Site navigation"><a href="games.html">Games</a><a href="education.html">Education</a><a href="other.html">Other</a></nav>
-
-    </header>
-    <main class="landing" id="main-content">
-        <div class="landing__top-bar">
-
-            <div class="account-menu" data-account-menu data-state="signed-out">
-                <button
-                    type="button"
-                    class="account-menu__trigger"
-                    data-account-trigger
-                    aria-haspopup="true"
-                    aria-expanded="false"
-                    aria-controls="landing-account-menu-dropdown"
-                >
-                    <span class="account-menu__avatar" data-account-avatar>G</span>
-                    <span class="sr-only">Open account menu</span>
-                </button>
-                <div
-                    class="account-menu__dropdown"
-                    data-account-dropdown
-                    id="landing-account-menu-dropdown"
-                    role="menu"
-                    aria-label="Account options"
-                    hidden
-                >
-                    <div class="account-menu__details">
-                        <span class="account-menu__name" data-account-name>Guest</span>
-                        <span class="account-menu__status" data-account-status>Signed out</span>
-                    </div>
-                    <div class="account-menu__actions">
-                        <button type="button" class="account-menu__action" data-account-action="signin" role="menuitem">
-                            Sign in
-                        </button>
-                        <button
-                            type="button"
-                            class="account-menu__action"
-                            data-account-action="signout"
-                            role="menuitem"
-                            hidden
-                        >
-                            Sign out
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <header class="landing__hero">
-
-            <div class="landing__hero-copy">
-
-                <h1>Vault</h1>
-
-            </div>
-        </header>
-        <nav class="landing__nav" aria-label="Primary">
-            <div class="vault-categories">
-                <a class="vault-category vault-category--games" href="games.html"><span>Games</span></a>
-                <a class="vault-category vault-category--education" href="education.html"><span>Education</span></a>
-                <a class="vault-category vault-category--other" href="other.html"><span>Other</span></a>
-            </div>
-        </nav>
-
-        <section class="bungerman-launch" aria-label="Bungerman"><img src="bungerman/assets/arcade2005/logo.png" alt="Bungerman"><a href="bungerman/">Play Bungerman <span aria-hidden="true">&nbsp;→</span></a></section>
-        <section class="favorites" aria-labelledby="favorites-title">
-            <div class="favorites__header">
-                <h2 class="favorites__title" id="favorites-title">Favorites</h2>
-            </div>
-
-            <div class="favorites__grid">
-                <article class="favorite-card is-favorited" data-favorite-card data-favorite-id="league-tracker">
-                    <button class="favorite-card__star" type="button" data-favorite-toggle aria-label="Remove League Tracker from favorites" aria-pressed="true"></button>
-                    <a class="favorite-card__link favorite-card__link--cover" href="league-tracker.html"><img class="favorite-cover" src="assets/cards/league-tracker.png" alt="" width="1536" height="1024">
-
-                        <span class="favorite-card__title">League Tracker</span>
-                    </a>
-                </article>
-                <article class="favorite-card is-favorited" data-favorite-card data-favorite-id="japanese-study">
-                    <button class="favorite-card__star" type="button" data-favorite-toggle aria-label="Remove Japanese Study from favorites" aria-pressed="true"></button>
-                    <a class="favorite-card__link" href="japanese-study.html">
-
-                        <span class="favorite-card__title">Japanese Study</span>
-                    </a>
-                </article>
-                <article class="favorite-card is-favorited" data-favorite-card data-favorite-id="pokemon-type-trainer">
-                    <button class="favorite-card__star" type="button" data-favorite-toggle aria-label="Remove Pokemon Type Trainer from favorites" aria-pressed="true"></button>
-                    <a class="favorite-card__link" href="type-helper.html">
-
-                        <span class="favorite-card__title">Pokemon Type Trainer</span>
-                    </a>
-                </article>
-                <article class="favorite-card is-favorited" data-favorite-card data-favorite-id="bass-guitar-frets">
-                    <button class="favorite-card__star" type="button" data-favorite-toggle aria-label="Remove Bass Guitar Frets from favorites" aria-pressed="true"></button>
-                    <a class="favorite-card__link" href="bass-guitar-frets.html">
-
-                        <span class="favorite-card__title">Bass Guitar Frets</span>
-                    </a>
-                </article>
-            </div>
-        </section>
-    </main>
-
-    <script>
-        (function setupBananaDownload() {
-            const button = document.querySelector('[data-download-banana]');
-            if (!(button instanceof HTMLButtonElement)) {
-                return;
-            }
-
-            const defaultLabel = button.textContent?.trim() || 'Download banana';
-            const downloadUrl = 'assets/banana.svg';
-            const downloadName = 'banana.svg';
-
-            button.addEventListener('click', async () => {
-                const restoreLabel = () => {
-                    button.textContent = defaultLabel;
-                    button.disabled = false;
-                };
-
-                button.disabled = true;
-                button.textContent = 'Preparing banana…';
-
-                try {
-                    const response = await fetch(downloadUrl, { cache: 'no-store' });
-                    if (!response.ok) {
-                        throw new Error(`Request failed with status ${response.status}`);
-                    }
-
-                    const blob = await response.blob();
-                    const href = URL.createObjectURL(blob);
-                    const anchor = document.createElement('a');
-                    anchor.href = href;
-                    anchor.download = downloadName;
-                    document.body.appendChild(anchor);
-                    anchor.click();
-                    anchor.remove();
-                    URL.revokeObjectURL(href);
-
-                    button.textContent = 'Banana ready!';
-                    window.setTimeout(restoreLabel, 1200);
-                } catch (error) {
-                    console.error('Unable to download banana image', error);
-                    button.textContent = 'Download failed. Try again';
-                    window.setTimeout(restoreLabel, 1800);
-                }
-            });
-        })();
-
-        (function setupAccountMenu() {
-            const menu = document.querySelector('[data-account-menu]');
-            if (!menu) {
-                return;
-            }
-
-            const trigger = menu.querySelector('[data-account-trigger]');
-            const dropdown = menu.querySelector('[data-account-dropdown]');
-            const avatar = menu.querySelector('[data-account-avatar]');
-            const nameEl = menu.querySelector('[data-account-name]');
-            const statusEl = menu.querySelector('[data-account-status]');
-            const signInButton = menu.querySelector('[data-account-action="signin"]');
-            const signOutButton = menu.querySelector('[data-account-action="signout"]');
-
-            if (!trigger || !dropdown || !avatar || !nameEl || !statusEl || !signInButton || !signOutButton) {
-                return;
-            }
-
-            const storageKey = 'ak-account';
-            const legacyStorageKeys = ['ak-account-profile'];
-            let storageAvailable = true;
-            let isOpen = false;
-            let account = null;
-
-            function normalizeName(value) {
-                if (typeof value !== 'string') {
-                    return '';
-                }
-
-                return value.replace(/\s+/g, ' ').trim();
-            }
-
-            function getInitial(name) {
-                const normalized = normalizeName(name);
-                if (!normalized) {
-                    return 'G';
-                }
-
-                return normalized.charAt(0).toUpperCase();
-            }
-
-            function updateUI() {
-                const isSignedIn = Boolean(account && account.name);
-                menu.dataset.state = isSignedIn ? 'signed-in' : 'signed-out';
-                avatar.textContent = isSignedIn ? getInitial(account.name) : 'G';
-                nameEl.textContent = isSignedIn ? account.name : 'Guest';
-
-                const statusText = isSignedIn ? 'Signed in' : 'Signed out';
-                statusEl.textContent = storageAvailable ? statusText : `${statusText} • not saved`;
-
-                signInButton.hidden = isSignedIn;
-                signOutButton.hidden = !isSignedIn;
-
-                const ariaLabel = isSignedIn
-                    ? `Open account menu for ${account.name}`
-                    : 'Open account menu. You are signed out.';
-                trigger.setAttribute('aria-label', ariaLabel);
-            }
-
-            function migrateLegacyAccount() {
-                if (!storageAvailable) {
-                    return;
-                }
-
-                try {
-                    const existing = window.localStorage.getItem(storageKey);
-                    if (existing) {
-                        return;
-                    }
-
-                    for (const legacyKey of legacyStorageKeys) {
-                        if (legacyKey === storageKey) {
-                            continue;
-                        }
-
-                        const legacyValue = window.localStorage.getItem(legacyKey);
-                        if (legacyValue) {
-                            window.localStorage.setItem(storageKey, legacyValue);
-                            break;
-                        }
-                    }
-                } catch (error) {
-                    storageAvailable = false;
-                    console.warn('Unable to migrate account state', error);
-                }
-            }
-
-            function loadAccount() {
-                if (!storageAvailable) {
-                    return null;
-                }
-
-                try {
-                    const stored = window.localStorage.getItem(storageKey);
-                    if (!stored) {
-                        return null;
-                    }
-
-                    const parsed = JSON.parse(stored);
-                    if (parsed && typeof parsed === 'object' && 'name' in parsed) {
-                        const normalizedName = normalizeName(parsed.name);
-                        if (normalizedName) {
-                            return { name: normalizedName };
-                        }
-                    }
-                } catch (error) {
-                    storageAvailable = false;
-                    console.warn('Account state unavailable', error);
-                }
-
-                return null;
-            }
-
-            function persistAccount(value) {
-                if (!storageAvailable) {
-                    return;
-                }
-
-                try {
-                    if (value && value.name) {
-                        window.localStorage.setItem(storageKey, JSON.stringify({ name: value.name }));
-                    } else {
-                        window.localStorage.removeItem(storageKey);
-                    }
-                } catch (error) {
-                    storageAvailable = false;
-                    console.warn('Unable to persist account state', error);
-                    updateUI();
-                }
-            }
-
-            function closeMenu(options = {}) {
-                const { focusTrigger = false } = options;
-
-                if (!isOpen) {
-                    if (focusTrigger) {
-                        trigger.focus();
-                    }
-                    return;
-                }
-
-                isOpen = false;
-                menu.classList.remove('is-open');
-                dropdown.hidden = true;
-                trigger.setAttribute('aria-expanded', 'false');
-                document.removeEventListener('pointerdown', handlePointerDown, true);
-                document.removeEventListener('keydown', handleKeydown, true);
-
-                if (focusTrigger) {
-                    trigger.focus();
-                }
-            }
-
-            function openMenu() {
-                if (isOpen) {
-                    return;
-                }
-
-                isOpen = true;
-                dropdown.hidden = false;
-                menu.classList.add('is-open');
-                trigger.setAttribute('aria-expanded', 'true');
-
-                document.addEventListener('pointerdown', handlePointerDown, true);
-                document.addEventListener('keydown', handleKeydown, true);
-
-                const firstAction = dropdown.querySelector('[data-account-action]:not([hidden])');
-                if (firstAction instanceof HTMLElement) {
-                    window.requestAnimationFrame(() => {
-                        firstAction.focus();
-                    });
-                }
-            }
-
-            function handlePointerDown(event) {
-                if (!menu.contains(event.target)) {
-                    closeMenu();
-                }
-            }
-
-            function handleKeydown(event) {
-                if (!isOpen) {
-                    return;
-                }
-
-                if (event.key === 'Escape') {
-                    event.preventDefault();
-                    closeMenu({ focusTrigger: true });
-                    return;
-                }
-
-                if (event.key === 'Tab') {
-                    const focusable = Array.from(
-                        dropdown.querySelectorAll('[data-account-action]:not([hidden])')
-                    );
-
-                    if (focusable.length === 0) {
-                        return;
-                    }
-
-                    const first = focusable[0];
-                    const last = focusable[focusable.length - 1];
-
-                    if (!event.shiftKey && document.activeElement === last) {
-                        event.preventDefault();
-                        first.focus();
-                    } else if (event.shiftKey && document.activeElement === first) {
-                        event.preventDefault();
-                        last.focus();
-                    }
-                }
-            }
-
-            trigger.addEventListener('click', () => {
-                if (isOpen) {
-                    closeMenu();
-                } else {
-                    openMenu();
-                }
-            });
-
-            trigger.addEventListener('keydown', (event) => {
-                if (event.key === 'ArrowDown') {
-                    event.preventDefault();
-                    openMenu();
-                }
-            });
-
-            signInButton.addEventListener('click', () => {
-                closeMenu();
-                const input = window.prompt('Enter your display name to sign in:', account?.name ?? '');
-                if (input === null) {
-                    trigger.focus();
-                    return;
-                }
-
-                const normalizedName = normalizeName(input);
-                if (!normalizedName) {
-                    trigger.focus();
-                    return;
-                }
-
-                account = { name: normalizedName };
-                persistAccount(account);
-                updateUI();
-                trigger.focus();
-            });
-
-            signOutButton.addEventListener('click', () => {
-                account = null;
-                persistAccount(account);
-                updateUI();
-                closeMenu({ focusTrigger: true });
-            });
-
-            migrateLegacyAccount();
-            account = loadAccount();
-            updateUI();
-        })();
-
-        (function setupFavorites() {
-            const cards = Array.from(document.querySelectorAll('[data-favorite-card]'));
-            if (cards.length === 0) {
-                return;
-            }
-
-            const storageKey = 'ak-home-favorites';
-            const defaultFavorites = cards
-                .map((card) => card instanceof HTMLElement ? card.dataset.favoriteId : '')
-                .filter(Boolean);
-            let favorites = new Set(defaultFavorites);
-            let storageAvailable = true;
-
-            function titleFor(card) {
-                return card.querySelector('.favorite-card__title')?.textContent?.trim() || 'this item';
-            }
-
-            function loadFavorites() {
-                try {
-                    const raw = window.localStorage.getItem(storageKey);
-                    if (!raw) {
-                        return new Set(defaultFavorites);
-                    }
-
-                    const parsed = JSON.parse(raw);
-                    if (!Array.isArray(parsed)) {
-                        return new Set(defaultFavorites);
-                    }
-
-                    return new Set(parsed.filter((value) => typeof value === 'string'));
-                } catch (error) {
-                    storageAvailable = false;
-                    console.warn('Favorite state unavailable', error);
-                    return new Set(defaultFavorites);
-                }
-            }
-
-            function saveFavorites() {
-                if (!storageAvailable) {
-                    return;
-                }
-
-                try {
-                    window.localStorage.setItem(storageKey, JSON.stringify(Array.from(favorites)));
-                } catch (error) {
-                    storageAvailable = false;
-                    console.warn('Unable to save favorites', error);
-                }
-            }
-
-            function renderCard(card) {
-                if (!(card instanceof HTMLElement)) {
-                    return;
-                }
-
-                const id = card.dataset.favoriteId;
-                const isFavorited = Boolean(id && favorites.has(id));
-                const button = card.querySelector('[data-favorite-toggle]');
-                card.classList.toggle('is-favorited', isFavorited);
-                card.classList.toggle('is-not-favorited', !isFavorited);
-
-                if (button instanceof HTMLButtonElement) {
-                    button.setAttribute('aria-pressed', String(isFavorited));
-                    button.setAttribute(
-                        'aria-label',
-                        `${isFavorited ? 'Remove' : 'Add'} ${titleFor(card)} ${isFavorited ? 'from' : 'to'} favorites`
-                    );
-                }
-            }
-
-            favorites = loadFavorites();
-            cards.forEach((card) => {
-                renderCard(card);
-                const button = card.querySelector('[data-favorite-toggle]');
-                if (!(button instanceof HTMLButtonElement) || !(card instanceof HTMLElement)) {
-                    return;
-                }
-
-                button.addEventListener('click', () => {
-                    const id = card.dataset.favoriteId;
-                    if (!id) {
-                        return;
-                    }
-
-                    if (favorites.has(id)) {
-                        favorites.delete(id);
-                    } else {
-                        favorites.add(id);
-                    }
-
-                    saveFavorites();
-                    renderCard(card);
-                });
-            });
-        })();
-
-        (function setupCursorGlow() {
-            const cursorGlowEnabled = false;
-
-            if (!cursorGlowEnabled || !document.body) {
-                return;
-            }
-
-            const glow = document.createElement('div');
-            glow.className = 'cursor-glow';
-            document.body.appendChild(glow);
-            document.body.classList.add('has-cursor-glow');
-
-            let rafId = null;
-            let targetX = window.innerWidth / 2;
-            let targetY = window.innerHeight / 2;
-            let currentX = targetX;
-            let currentY = targetY;
-
-            glow.style.left = `${currentX}px`;
-            glow.style.top = `${currentY}px`;
-
-            function animate() {
-                const dx = targetX - currentX;
-                const dy = targetY - currentY;
-
-                currentX += dx * 0.18;
-                currentY += dy * 0.18;
-
-                glow.style.left = `${currentX}px`;
-                glow.style.top = `${currentY}px`;
-
-                if (Math.abs(dx) > 0.1 || Math.abs(dy) > 0.1) {
-                    rafId = window.requestAnimationFrame(animate);
-                } else {
-                    rafId = null;
-                }
-            }
-
-            function queueAnimation() {
-                if (rafId === null) {
-                    rafId = window.requestAnimationFrame(animate);
-                }
-            }
-
-            window.addEventListener(
-                'pointermove',
-                (event) => {
-                    targetX = event.clientX;
-                    targetY = event.clientY;
-                    glow.style.opacity = '1';
-                    queueAnimation();
-                },
-                { passive: true }
-            );
-
-            function hideGlow() {
-                glow.style.opacity = '0';
-            }
-
-            window.addEventListener('pointerleave', hideGlow);
-            window.addEventListener('blur', hideGlow);
-        })();
-    </script>
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
-        import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-analytics.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyDRniZatGeylxphjHQadYjucOcirNBRIdk",
-            authDomain: "multiplayer-640ec.firebaseapp.com",
-            databaseURL: "https://multiplayer-640ec-default-rtdb.firebaseio.com",
-            projectId: "multiplayer-640ec",
-            storageBucket: "multiplayer-640ec.firebasestorage.app",
-            messagingSenderId: "94914236381",
-            appId: "1:94914236381:web:55ab00cc690140180cf034",
-            measurementId: "G-V43J1S8RGF"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        isSupported()
-            .then((supported) => {
-                if (supported) {
-                    getAnalytics(app);
-                }
-            })
-            .catch((err) => console.warn("Firebase analytics not supported", err));
-
-        const outfits = [
-            { id: 'classic', name: 'Cozy Classic', description: 'The baseline guild tunic.', price: 0 },
-            { id: 'hoodie', name: 'Midnight Hoodie', description: 'Urban stealth with neon trim.', price: 1 },
-            { id: 'adventurer', name: 'Adventurer Cape', description: 'Ready for future expeditions.', price: 2 }
-        ];
-
-        const avatarCard = document.querySelector('[data-avatar-card]');
-        const avatarPreview = avatarCard?.querySelector('.rat-avatar') ?? null;
-        const closet = avatarCard?.querySelector('[data-avatar-closet]') ?? null;
-        const closetToggle = closet?.querySelector('[data-closet-toggle]') ?? null;
-        const closetMenu = closet?.querySelector('[data-closet-menu]') ?? null;
-        const closetList = closet?.querySelector('[data-closet-list]') ?? null;
-        const closetEmpty = closet?.querySelector('[data-closet-empty]') ?? null;
-        const currentOutfitLabel = avatarCard?.querySelector('[data-current-outfit]') ?? null;
-        const currencyDisplay = document.querySelector('[data-currency-balance]');
-        const currencyAmount = currencyDisplay?.querySelector('[data-currency-amount]') ?? null;
-
-        if (!avatarCard || !avatarPreview || !closet || !closetToggle || !closetMenu || !closetList || !currentOutfitLabel) {
-            if (currencyAmount) {
-                currencyAmount.textContent = '—';
-            }
-        } else {
-
-        const outfitById = new Map(outfits.map((outfit) => [outfit.id, outfit]));
-        const closetEntries = new Map();
-
-        outfits.forEach((outfit) => {
-            const item = document.createElement('li');
-            item.className = 'closet-item';
-            item.dataset.outfit = outfit.id;
-
-            const body = document.createElement('div');
-            body.className = 'closet-item__body';
-
-            const name = document.createElement('span');
-            name.className = 'closet-item__name';
-            name.textContent = outfit.name;
-            body.appendChild(name);
-
-            if (outfit.description) {
-                const description = document.createElement('p');
-                description.className = 'closet-item__description';
-                description.textContent = outfit.description;
-                body.appendChild(description);
-            }
-
-            const footer = document.createElement('div');
-            footer.className = 'closet-item__footer';
-
-            const status = document.createElement('span');
-            status.className = 'closet-item__status';
-            status.setAttribute('data-closet-status', '');
-            footer.appendChild(status);
-
-            const action = document.createElement('button');
-            action.type = 'button';
-            action.className = 'closet-item__action';
-            action.setAttribute('data-closet-action', '');
-            action.textContent = 'Wear';
-            footer.appendChild(action);
-
-            item.appendChild(body);
-            item.appendChild(footer);
-            closetList.appendChild(item);
-
-            closetEntries.set(outfit.id, {
-                element: item,
-                status,
-                button: action
-            });
-        });
-
-        const outfitStorageKey = 'ak-avatar-outfit';
-        const walletStorageKey = 'ak-wallet-coins';
-        const ownedStorageKey = 'ak-avatar-owned-outfits';
-        const defaultOutfit = 'classic';
-        const defaultCoins = 1;
-        const defaultOwnedOutfits = new Set([defaultOutfit]);
-
-        let storageAvailable = true;
-        let coins = defaultCoins;
-        let ownedOutfits = new Set(defaultOwnedOutfits);
-        let currentOutfit = defaultOutfit;
-        let closetIsOpen = false;
-
-        function loadCoins() {
-            if (!storageAvailable) {
-                return defaultCoins;
-            }
-
-            try {
-                const stored = window.localStorage.getItem(walletStorageKey);
-                if (!stored) {
-                    return defaultCoins;
-                }
-
-                const parsed = Number.parseInt(stored, 10);
-                if (Number.isFinite(parsed) && parsed >= 0) {
-                    return parsed;
-                }
-            } catch (error) {
-                storageAvailable = false;
-                console.warn('Wallet state unavailable', error);
-            }
-
-            return defaultCoins;
-        }
-
-        function persistCoins(value) {
-            if (!storageAvailable) {
-                return;
-            }
-
-            try {
-                window.localStorage.setItem(walletStorageKey, String(value));
-            } catch (error) {
-                storageAvailable = false;
-                console.warn('Unable to save coin balance', error);
-            }
-        }
-
-        function loadOwnedOutfits() {
-            const owned = new Set(defaultOwnedOutfits);
-            if (!storageAvailable) {
-                return owned;
-            }
-
-            try {
-                const stored = window.localStorage.getItem(ownedStorageKey);
-                if (!stored) {
-                    return owned;
-                }
-
-                const parsed = JSON.parse(stored);
-                if (Array.isArray(parsed)) {
-                    parsed.forEach((value) => {
-                        if (typeof value === 'string' && value) {
-                            owned.add(value);
-                        }
-                    });
-                }
-            } catch (error) {
-                storageAvailable = false;
-                console.warn('Avatar shop ownership unavailable', error);
-            }
-
-            return owned;
-        }
-
-        function persistOwnedOutfits(owned) {
-            if (!storageAvailable) {
-                return;
-            }
-
-            try {
-                const value = JSON.stringify(Array.from(owned));
-                window.localStorage.setItem(ownedStorageKey, value);
-            } catch (error) {
-                storageAvailable = false;
-                console.warn('Unable to save owned outfits', error);
-            }
-        }
-
-        function loadOutfit() {
-            if (!storageAvailable) {
-                return defaultOutfit;
-            }
-
-            try {
-                const stored = window.localStorage.getItem(outfitStorageKey);
-                if (stored) {
-                    return stored;
-                }
-            } catch (error) {
-                storageAvailable = false;
-                console.warn('Avatar outfit storage unavailable', error);
-            }
-
-            return defaultOutfit;
-        }
-
-        function persistOutfit(value) {
-            if (!storageAvailable) {
-                return;
-            }
-
-            try {
-                window.localStorage.setItem(outfitStorageKey, value);
-            } catch (error) {
-                storageAvailable = false;
-                console.warn('Unable to save outfit selection', error);
-            }
-        }
-
-        function updateCurrencyUI() {
-            if (!currencyAmount) {
-                return;
-            }
-
-            const label = coins === 1 ? 'coin' : 'coins';
-            currencyAmount.textContent = `${coins} ${label}`;
-        }
-
-        function applyOutfit(value) {
-            const next = value && outfitById.has(value) ? value : defaultOutfit;
-            avatarPreview.dataset.outfit = next;
-            currentOutfit = next;
-            return next;
-        }
-
-        function updateCurrentOutfitSummary() {
-            const details = outfitById.get(currentOutfit) ?? outfitById.get(defaultOutfit);
-            const fallback = outfitById.get(defaultOutfit)?.name ?? 'Cozy Classic';
-            currentOutfitLabel.textContent = `Currently wearing: ${details?.name ?? fallback}`;
-        }
-
-        function updateClosetUI() {
-            let ownedCount = 0;
-
-            closetEntries.forEach((entry, outfitId) => {
-                const owned = ownedOutfits.has(outfitId);
-                entry.element.hidden = !owned;
-                entry.element.classList.toggle('is-selected', currentOutfit === outfitId);
-
-                if (!owned) {
-                    return;
-                }
-
-                ownedCount += 1;
-
-                if (entry.status) {
-                    entry.status.textContent = currentOutfit === outfitId ? 'Currently wearing' : 'Owned';
-                }
-
-                if (entry.button) {
-                    entry.button.disabled = currentOutfit === outfitId;
-                    entry.button.textContent = currentOutfit === outfitId ? 'Equipped' : 'Wear';
-                }
-            });
-
-            if (closetEmpty) {
-                closetEmpty.hidden = ownedCount > 0;
-            }
-
-            const disabled = ownedCount === 0;
-            closetToggle.disabled = disabled;
-            closetToggle.setAttribute('aria-disabled', disabled ? 'true' : 'false');
-        }
-
-        function openCloset() {
-            if (closetIsOpen) {
-                return;
-            }
-
-            closetIsOpen = true;
-            closet.classList.add('is-open');
-            closetMenu.hidden = false;
-            closetToggle.setAttribute('aria-expanded', 'true');
-
-            document.addEventListener('pointerdown', handlePointerDown, true);
-            document.addEventListener('keydown', handleClosetKeydown, true);
-
-            const focusable = closetMenu.querySelector('[data-closet-action]:not([disabled])');
-            if (focusable instanceof HTMLElement) {
-                window.requestAnimationFrame(() => {
-                    focusable.focus();
-                });
-            }
-        }
-
-        function closeCloset(options = {}) {
-            const { focusToggle = false } = options;
-
-            if (!closetIsOpen) {
-                if (focusToggle) {
-                    closetToggle.focus();
-                }
-                return;
-            }
-
-            closetIsOpen = false;
-            closet.classList.remove('is-open');
-            closetMenu.hidden = true;
-            closetToggle.setAttribute('aria-expanded', 'false');
-            document.removeEventListener('pointerdown', handlePointerDown, true);
-            document.removeEventListener('keydown', handleClosetKeydown, true);
-
-            if (focusToggle) {
-                closetToggle.focus();
-            }
-        }
-
-        function handlePointerDown(event) {
-            if (!closet.contains(event.target)) {
-                closeCloset();
-            }
-        }
-
-        function handleClosetKeydown(event) {
-            if (!closetIsOpen) {
-                return;
-            }
-
-            if (event.key === 'Escape') {
-                event.preventDefault();
-                closeCloset({ focusToggle: true });
-                return;
-            }
-
-            if (event.key === 'Tab') {
-                const focusable = Array.from(
-                    closetMenu.querySelectorAll('[data-closet-action]:not([disabled])')
-                );
-
-                if (focusable.length === 0) {
-                    return;
-                }
-
-                const first = focusable[0];
-                const last = focusable[focusable.length - 1];
-
-                if (!event.shiftKey && document.activeElement === last) {
-                    event.preventDefault();
-                    first.focus();
-                } else if (event.shiftKey && document.activeElement === first) {
-                    event.preventDefault();
-                    last.focus();
-                }
-            }
-        }
-
-        closetToggle.addEventListener('click', () => {
-            if (closetIsOpen) {
-                closeCloset();
-            } else {
-                openCloset();
-            }
-        });
-
-        closetToggle.addEventListener('keydown', (event) => {
-            if (event.key === 'ArrowDown') {
-                event.preventDefault();
-                openCloset();
-            }
-        });
-
-        closetList.addEventListener('click', (event) => {
-            const button = event.target instanceof HTMLElement
-                ? event.target.closest('[data-closet-action]')
-                : null;
-
-            if (!(button instanceof HTMLButtonElement)) {
-                return;
-            }
-
-            const item = button.closest('.closet-item');
-            if (!item) {
-                return;
-            }
-
-            const outfit = item.dataset.outfit;
-            if (!outfit || !ownedOutfits.has(outfit)) {
-                return;
-            }
-
-            if (currentOutfit === outfit) {
-                closeCloset({ focusToggle: true });
-                return;
-            }
-
-            const applied = applyOutfit(outfit);
-            persistOutfit(applied);
-            updateClosetUI();
-            updateCurrentOutfitSummary();
-            closeCloset({ focusToggle: true });
-        });
-
-        coins = loadCoins();
-        ownedOutfits = loadOwnedOutfits();
-        const storedOutfit = loadOutfit();
-        const appliedOutfit = applyOutfit(storedOutfit);
-        if (!ownedOutfits.has(appliedOutfit)) {
-            ownedOutfits.add(appliedOutfit);
-            persistOwnedOutfits(ownedOutfits);
-        }
-        if (appliedOutfit !== storedOutfit) {
-            persistOutfit(appliedOutfit);
-        }
-
-        updateCurrencyUI();
-        updateClosetUI();
-        updateCurrentOutfitSummary();
-        closeCloset();
-
-        window.addEventListener('storage', (event) => {
-            if (!event) {
-                return;
-            }
-
-            if (event.key === walletStorageKey) {
-                coins = loadCoins();
-                updateCurrencyUI();
-            } else if (event.key === ownedStorageKey) {
-                ownedOutfits = loadOwnedOutfits();
-                updateClosetUI();
-            } else if (event.key === outfitStorageKey) {
-                const next = applyOutfit(loadOutfit());
-                if (!ownedOutfits.has(next)) {
-                    ownedOutfits.add(next);
-                    persistOwnedOutfits(ownedOutfits);
-                }
-                updateCurrentOutfitSummary();
-                updateClosetUI();
-            }
-        });
-        }
-    </script>
-    <script src="site-navigation.js"></script>
+<body>
+<a class="sr" href="#shelf">Skip to the games</a>
+<header class="top">
+  <div class="wrap">
+    <a class="mark" href="./" aria-label="AriaKawa home"><b aria-hidden="true">ak</b><span>AriaKawa</span></a>
+    <label class="search">
+      <span class="sr">Search games and tools</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="Find something" autocomplete="off">
+      <kbd aria-hidden="true">/</kbd>
+    </label>
+    <button class="btn surprise" id="surprise" type="button" title="Open a random game"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg><span>Surprise me</span></button>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero" id="hero" aria-labelledby="hero-title">
+    <div class="hero-bg" id="hero-bg"></div>
+    <a class="hero-art" id="hero-art" tabindex="-1" aria-hidden="true"><img id="hero-img" alt="" width="1600" height="1000"></a>
+    <div class="hero-copy">
+      <div class="eyebrow" id="hero-eyebrow">Pick of the day</div>
+      <h1 id="hero-title"></h1>
+      <div class="when" id="hero-when"></div>
+      <div class="actions">
+        <a class="btn primary" id="hero-play">Play <span aria-hidden="true">→</span></a>
+        <button class="btn" id="hero-next" type="button">Another pick</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="shelf" aria-labelledby="shelf-title">
+    <div class="section-head"><h2 id="shelf-title">The shelf</h2><span class="count" id="shelf-count"></span><p>Most recently worked on first. Pin a game to keep it up front.</p></div>
+    <div class="pinned" id="pinned-wrap" hidden><h3>Pinned</h3><div class="grid" id="pinned"></div></div>
+    <div class="grid" id="covers"></div>
+  </section>
+
+  <section id="everything" aria-labelledby="else-title">
+    <div class="section-head"><h2 id="else-title">Everything else</h2><span class="count" id="else-count"></span><p>Prototypes, tools and things still waiting for cover art.</p></div>
+    <div class="drawer" id="drawer"></div>
+  </section>
+
+  <p class="empty" id="empty" hidden></p>
+
+  <footer><span>Little games, made for fun.</span><span id="total"></span></footer>
+</main>
+
+<script>
+// Games with cover art get a card on the shelf. `img` is a thumbnail in assets/shelf/ (plus a -wide version).
+const COVERS = [
+  { id: 'paper-peanut', title: 'Paper Peanut', href: 'paper-peanut/', date: '2026-10-15' },
+  { id: 'crossroads-2', title: 'CROSSROADS', href: 'crossroads-2/', date: '2026-10-15', tags: 'tetris village builder' },
+  { id: 'bungerman', title: 'Bungerman', href: 'bungerman/', date: '2026-10-14' },
+  { id: 'crossroads', title: 'CROSSROADS II', href: 'crossroads/', date: '2026-10-11', tags: 'village builder' },
+  { id: 'burrow-and-fang', title: 'Burrow & Fang', href: 'burrow-and-fang/', date: '2026-10-10', tags: 'rats village' },
+  { id: 'crossroads-3', title: 'CROSSROADS III', href: 'crossroads-3/', date: '2026-10-07', tags: 'village builder' },
+  { id: 'deadroad', title: 'Deadroad!', href: 'deadroad/', date: '2026-10-06', tags: 'zombies' },
+  { id: 'core-collapse-2', title: 'Core Collapse II', href: 'core-collapse-2/', date: '2026-10-06', tags: 'elements merge' },
+  { id: 'core-collapse', title: 'Core Collapse', href: 'core-collapse/', date: '2026-10-06', tags: 'elements merge' },
+  { id: 'grid-io-3d', title: 'Grid.io 3D', href: 'grid-io-3d/', date: '2026-09-30', tags: 'light cycles bikes' },
+  { id: 'grid-io', title: 'Grid.io', href: 'grid-io/', date: '2026-09-30', tags: 'light cycles bikes' },
+  { id: 'dead-run', title: 'Dead Run', href: 'dead-run/', date: '2026-09-27', tags: 'zombie roguelike' },
+  { id: 'neon-rail-rush', title: 'Neon Rail Rush', href: 'neon-rail-rush/', date: '2026-09-26', tags: 'runner' },
+  { id: 'deadroad-io', title: 'Deadroad', href: 'deadroad-io/', date: '2026-09-09', tags: 'zombies io' },
+  { id: 'rigged', title: 'Rigged', href: 'rigged/', date: '2026-08-31', tags: 'cars' },
+  { id: 'mogul-math', title: 'Mogul Math', href: 'pemdas-duel/', date: '2026-07-01', tags: 'pemdas maths' },
+  { id: 'league-tracker', title: 'League Tracker', href: 'league-tracker.html', date: '2026-05-18', tags: 'league of legends' },
+];
+// Everything without cover art, in three drawers.
+const REST = {
+  Games: [
+    ['Runeclash Tactics', 'runeclash/', '2026-09-07'], ['Deadroad 3', 'deadroad-3/', '2026-09-05'], ['Deadroad.io 2', 'deadroad-io-2/', '2026-09-04'],
+    ['Game Night', 'game-night/', '2026-08-25'], ['Last Lot', 'last-lot/', '2026-08-25'], ['Is That AI?', 'is-that-ai/', '2026-07-22'],
+    ['Riftbound Realms', 'riftbound-realms/', '2026-05-26'], ['Arcforge Duel', 'arcforge-duel/', '2026-05-26'], ['Primal War', 'primal-war/', '2026-05-26'],
+    ['Ron.io', 'ron-io/', '2026-05-23'], ['City Claim.io', 'city-claim-io/', '2026-05-22'], ['Kingdom.io', 'kingdom-io/', '2026-05-22'],
+    ['Starwake Conquest', 'starwake-conquest/', '2026-05-21'], ['Expansion.io', 'expansion-io-blob/', '2026-05-21'], ['Neon Arsenal Arena', 'neon-arsenal/', '2026-05-19'],
+    ['Anime Fantasy Co-Op TD', 'anime-fantasy-td/', '2026-05-18'], ['Nightbound Auto-Battler', 'nightbound-autobattler/', '2026-05-17'],
+    ['Nightbound Survivors', 'nightbound-survivors/', '2026-05-16'], ['Rat Royale Casino', 'rat-royale/', '2026-05-16'], ['Grand War', 'grand-war.html', '2026-05-15'],
+    ['2048: Dungeon Shift', '2048-rogue/', '2026-05-14'], ['Another World, Another Crown', 'isekai-reign.html', '2026-05-14'], ['Grid Runners: Overdrive', 'grid-runners/', '2026-05-14'],
+    ['Neon Ouroboros', 'neon-ouroboros/', '2026-05-14'], ['Rat Race', 'RatRace.html', '2026-05-14'], ['Blackjack', 'blackjack.html', '2026-05-14'],
+    ['Type-Off: Critical Mass', 'type-off/', '2026-05-14'], ['Trolley Game', 'trolley-game.html', '2026-05-14'], ['Thing vs Thing', 'thing-vs-thing.html', '2026-05-14'],
+    ['Rat Kingdom', 'rat-kingdom.html', '2026-05-14'], ['Know Your Friends', 'ForFriends.html', '2026-05-14'], ['Newlywed Game', 'newlywed.html', '2026-05-14'],
+    ['Reaction Time', 'reaction-time.html', '2026-05-14'], ['Tapple', 'tapple.html', '2026-05-14'], ['Matthew Quiz', 'matthew-quiz.html', '2026-05-14'],
+    ['AutoRogue', 'AutoRogue', '2026-05-14'], ['Council of Power', 'Council.html', '2026-05-14'],
+  ],
+  Learning: [
+    ['Kana Dungeon', 'kana-dungeon/', '2026-05-26'], ['Study Mine', 'study-mine/', '2026-05-23'], ['Bass Guitar Frets', 'bass-guitar-frets.html', '2026-05-19'],
+    ['Japanese Study', 'japanese-study.html', '2026-05-14'], ['Pokémon Typing Battle', 'pokemon.html', '2026-05-14'], ['Pokémon Type Helper', 'type-helper.html', '2026-05-14'],
+  ],
+  Tools: [
+    ['Pokémon Card Collection', 'pokemon-collection/', '2026-07-27'], ['Market Scout', 'market-scout/', '2026-05-21'], ['Innuendo Tee Lab', 'innuendo-tee.html', '2026-05-20'],
+    ['Movie Taste Recommender', 'movie-recommender.html', '2026-05-19'], ['VoiceScale', 'voice-scale/', '2026-05-14'], ['Movie Grid', 'movie-grid.html', '2026-05-14'],
+    ['Smash 1v1 Picker', 'Smash.html', '2026-05-14'],
+  ],
+};
+
+const $ = id => document.getElementById(id);
+const DAY = 864e5, today = new Date(new Date().toDateString());
+const daysAgo = date => Math.max(0, Math.round((today - new Date(date + 'T00:00')) / DAY));
+function ago(date) {
+  const d = daysAgo(date);
+  if (d === 0) return 'today';
+  if (d === 1) return 'yesterday';
+  if (d < 14) return `${d} days ago`;
+  if (d < 60) return `${Math.round(d / 7)} weeks ago`;
+  return new Date(date + 'T00:00').toLocaleDateString(undefined, { month: 'short', year: today.getFullYear() === +date.slice(0, 4) ? undefined : 'numeric' });
+}
+const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const store = { get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+
+// ---------- pins ----------
+let pins = new Set(store.get('ak-shelf-pins', []));
+const PIN = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.8 14.8 8.6l6.3.9-4.6 4.4 1.1 6.3L12 17.2l-5.6 3 1.1-6.3L2.9 9.5l6.3-.9z"/></svg>';
+
+function card(g) {
+  const fresh = daysAgo(g.date) <= 7;
+  return `<article class="card" data-id="${g.id}" data-search="${esc((g.title + ' ' + (g.tags || '')).toLowerCase())}">
+    <a href="${g.href}"><div class="art"><img src="assets/shelf/${g.id}.webp" alt="" loading="lazy" decoding="async" width="960" height="600">${fresh ? '<span class="badge">Fresh</span>' : ''}</div>
+    <div class="meta"><span class="title">${esc(g.title)}</span><span class="age">${ago(g.date)}</span></div></a>
+    <button class="pin" type="button" aria-pressed="${pins.has(g.id)}" aria-label="${pins.has(g.id) ? 'Unpin' : 'Pin'} ${esc(g.title)}" title="${pins.has(g.id) ? 'Unpin' : 'Pin to the front'}">${PIN}</button>
+  </article>`;
+}
+function renderShelf() {
+  const pinned = COVERS.filter(g => pins.has(g.id)), rest = COVERS.filter(g => !pins.has(g.id));
+  $('pinned').innerHTML = pinned.map(card).join('');
+  $('pinned-wrap').hidden = !pinned.length;
+  $('covers').innerHTML = rest.map(card).join('');
+  $('shelf-count').textContent = COVERS.length;
+  filter();
+}
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.pin');
+  if (!btn) return;
+  const id = btn.closest('.card').dataset.id;
+  pins.has(id) ? pins.delete(id) : pins.add(id);
+  store.set('ak-shelf-pins', [...pins]);
+  renderShelf();
+  document.querySelector(`.card[data-id="${id}"] .pin`)?.focus();
+});
+
+// ---------- everything else ----------
+let restCount = 0;
+$('drawer').innerHTML = Object.entries(REST).map(([group, items]) => {
+  restCount += items.length;
+  const sorted = [...items].sort((a, b) => b[2].localeCompare(a[2]) || a[0].localeCompare(b[0]));
+  return `<div class="group" data-group><h3>${group} <span>${items.length}</span></h3><ul>${sorted.map(([t, href, date]) =>
+    `<li data-search="${esc(t.toLowerCase())}"><a href="${href}"><span>${esc(t)}</span><span>${ago(date)}</span></a></li>`).join('')}</ul></div>`;
+}).join('');
+$('else-count').textContent = restCount;
+$('total').textContent = `${COVERS.length + restCount} things on the shelf`;
+
+// ---------- hero: one pick a day, or another on request ----------
+let pick = Math.floor(today / DAY) % COVERS.length, picks = 0;
+function showHero(i, label) {
+  const g = COVERS[i];
+  $('hero-bg').style.backgroundImage = `url(assets/shelf/${g.id}.webp)`;
+  $('hero-img').src = `assets/shelf/${g.id}-wide.webp`;
+  $('hero-art').href = $('hero-play').href = g.href;
+  $('hero-title').textContent = g.title;
+  $('hero-when').textContent = `Last worked on ${ago(g.date)}`;
+  $('hero-eyebrow').textContent = label;
+  $('hero-play').setAttribute('aria-label', `Play ${g.title}`);
+}
+showHero(pick, 'Pick of the day');
+$('hero-next').addEventListener('click', () => {
+  pick = (pick + 1 + Math.floor(Math.random() * (COVERS.length - 1))) % COVERS.length;
+  showHero(pick, ++picks === 1 ? 'How about' : ['Or maybe', 'Try this', 'How about', 'Or this one'][picks % 4]);
+});
+
+// ---------- surprise me: anything on the site ----------
+$('surprise').addEventListener('click', () => {
+  const all = [...COVERS.map(g => g.href), ...Object.values(REST).flat().map(r => r[1])];
+  location.href = all[Math.floor(Math.random() * all.length)];
+});
+
+// ---------- search ----------
+function filter() {
+  const q = $('q').value.trim().toLowerCase();
+  document.body.classList.toggle('searching', !!q);
+  let shown = 0;
+  document.querySelectorAll('[data-search]').forEach(el => { const on = !q || el.dataset.search.includes(q); el.hidden = !on; if (on) shown++; });
+  document.querySelectorAll('[data-group]').forEach(g => { g.hidden = !g.querySelector('li:not([hidden])'); });
+  $('pinned-wrap').hidden = !document.querySelector('#pinned .card:not([hidden])');
+  $('shelf').hidden = !document.querySelector('#shelf .card:not([hidden])');
+  $('everything').hidden = !document.querySelector('#drawer li:not([hidden])');
+  $('empty').hidden = shown > 0;
+  if (!shown) $('empty').textContent = `Nothing on the shelf matches “${$('q').value.trim()}”.`;
+}
+$('q').addEventListener('input', filter);
+$('q').addEventListener('keydown', e => {
+  if (e.key === 'Escape') { $('q').value = ''; filter(); }
+  if (e.key === 'Enter') { const first = document.querySelector('.card:not([hidden]) a, #drawer li:not([hidden]) a'); if (first) location.href = first.href; }
+});
+document.addEventListener('keydown', e => {
+  if (e.key === '/' && document.activeElement !== $('q') && !e.metaKey && !e.ctrlKey) { e.preventDefault(); $('q').focus(); }
+});
+renderShelf();
+</script>
+<script type="module">
+  // Visit counts for the site owner, as before.
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js';
+  import { getAnalytics, isSupported } from 'https://www.gstatic.com/firebasejs/12.3.0/firebase-analytics.js';
+  const app = initializeApp({ apiKey: 'AIzaSyDRniZatGeylxphjHQadYjucOcirNBRIdk', authDomain: 'multiplayer-640ec.firebaseapp.com', databaseURL: 'https://multiplayer-640ec-default-rtdb.firebaseio.com', projectId: 'multiplayer-640ec', storageBucket: 'multiplayer-640ec.firebasestorage.app', messagingSenderId: '94914236381', appId: '1:94914236381:web:55ab00cc690140180cf034', measurementId: 'G-V43J1S8RGF' });
+  isSupported().then(ok => ok && getAnalytics(app)).catch(() => {});
+</script>
 </body>
 </html>
