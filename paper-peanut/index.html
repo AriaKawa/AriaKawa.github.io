@@ -13,9 +13,9 @@
   <link rel="stylesheet" href="peanut-book.css?v=warm-sfx-1">
   <link rel="stylesheet" href="stickers.css?v=1">
   <link rel="stylesheet" href="arsenal-stickers.css?v=3">
-  <link rel="stylesheet" href="desk.css?v=1">
+  <link rel="stylesheet" href="desk.css?v=midnight-1">
   <link rel="preload" href="assets/goop-depot.png" as="image">
-  <link rel="preload" href="assets/peanut-book.png" as="image">
+  <link rel="preload" href="assets/midnight-scrapbook.png" as="image">
 </head>
 <body>
 <div id="app" class="app">
@@ -39,9 +39,8 @@
         <div class="desk-scene">
           <h1 class="sr-only">Paper Peanut</h1>
           <div class="desk-menu">
-            <button id="open-arsenal" class="desk-arsenal" aria-label="Open Arsenal"><span class="arsenal-art" aria-hidden="true"></span><span class="arsenal-label">Arsenal</span></button>
-            <img class="desk-peanut" src="assets/peanut-sticker.png" alt="Peanut smiling in a propeller hat">
-            <button id="start" class="desk-play" disabled><span id="start-label">Loading…</span></button>
+            <button id="open-arsenal" class="desk-arsenal" aria-label="Open Arsenal"><span class="sr-only">Arsenal</span></button>
+            <button id="start" class="desk-play" disabled><span id="start-label" class="sr-only">Loading…</span></button>
           </div>
           <section class="story-book peanut-book polished arsenal-page" aria-label="Arsenal page" hidden>
             <section class="book-left" aria-label="Arsenal">
