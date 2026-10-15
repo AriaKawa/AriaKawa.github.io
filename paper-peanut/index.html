@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="stickers.css?v=1">
   <link rel="stylesheet" href="arsenal-stickers.css?v=3">
   <link rel="stylesheet" href="desk.css?v=pockets-1">
+  <link rel="stylesheet" href="scrapbook-ui.css?v=1">
   <link rel="preload" href="assets/goop-depot.png" as="image">
   <link rel="preload" href="assets/midnight-scrapbook.png" as="image">
 </head>
@@ -80,17 +81,17 @@
   <footer hidden><span id="footer-hint"></span></footer>
 </div>
 <dialog id="help-dialog" class="modal paper">
-  <button class="close" data-close="help-dialog" aria-label="Close instructions">×</button><span class="eyebrow">CONTROLS</span><h2>Watch the characters.<br>Press at contact.</h2>
-  <div class="instruction"><b>01</b><div><strong>Choose your move</strong><p>Click an enemy or use ← → to pick a target. Choose Jump, Shell Slam, your equipped special, or Silly Juice. Keys 1–4 work too.</p></div></div>
-  <div class="instruction"><b>02</b><div><strong>Space as your attack hits</strong><p>Jump: press as Peanut lands on the enemy. Shell Slam: press as the shells connect. Special moves: press as the projectile or shockwave hits. One well-timed press earns a second stomp or bonus damage. Watch the action itself.</p></div></div>
-  <div class="instruction"><b>03</b><div><strong>Space as they hit you</strong><p>Each rat winds up, then pounces, fires a bolt, or rolls toward you. Press right as it reaches Peanut to block the hit and take no damage. An early press uses your attempt, so wait for contact instead of mashing or holding the key.</p></div></div>
-  <p class="modal-note">Space, Enter, or a tap on the stage all work.<br>Shell Slam cracks armor. Silly Juice heals 8 HP. Esc pauses. Clear encounters for scrap and one ability upgrade. Spend scrap in the home Arsenal for permanent special moves.</p>
+  <button class="close" data-close="help-dialog" aria-label="Close instructions">×</button><span class="eyebrow">CONTROLS</span><h2>How to play</h2>
+  <div class="instruction"><b>01</b><div><strong>Choose your move</strong><p>Choose an attack with 1–4. Pick a rat with ← →.</p></div></div>
+  <div class="instruction"><b>02</b><div><strong>Space as your attack hits</strong><p>Press Space at contact for a second stomp or bonus damage.</p></div></div>
+  <div class="instruction"><b>03</b><div><strong>Space as they hit you</strong><p>Press Space as the attack reaches Peanut to block. One press per hit.</p></div></div>
+  <p class="modal-note">Space, Enter, or tap at contact. Esc pauses.</p>
   <label class="relaxed"><input type="checkbox" id="relaxed"> Cozy timing <span>A wider timing window</span></label>
   <button class="ribbon-button" data-close="help-dialog">Close</button>
 </dialog>
 <dialog id="pause-dialog" class="modal paper pause-modal"><h2>Paused</h2><button id="resume" class="ribbon-button">Resume</button><button id="restart" class="text-button">Restart</button><button id="go-home" class="text-button">Home</button></dialog>
 
-<script type="module" src="game.js?v=pockets-1"></script>
+<script type="module" src="game.js?v=scrapbook-1"></script>
 </body>
 </html>
 

@@ -168,7 +168,7 @@ function updateHUD() {
   const r = state.run;
   $('hp').textContent = r.hp;
   $('hp-bar').style.width = `${r.hp / r.maxHp * 100}%`;
-  $('hp-bar').style.background = r.hp <= 6 ? '#bd393c' : '#de7050';
+  $('hp-bar').style.background = r.hp <= 6 ? '#bd3965' : '#ab6caa';
   $('sp').textContent = '✦ '.repeat(r.sp) + '· '.repeat(r.maxSp - r.sp);
   $('sp').setAttribute('aria-label', `${r.sp} of ${r.maxSp} goop power`);
   $('cheese-count').textContent = `+8 ♥ · ×${r.cheese}`;
@@ -502,14 +502,14 @@ function drawActor(a, index) {
   if(a.enemy&&a.enemy.hp>0&&state.phase!=='title'&&state.phase!=='loading'){
     const top=a.y-height-35, hp=a.enemy.hp/a.enemy.maxHp;
     ctx.save();ctx.globalAlpha=a.alpha;const bw=state.mobile?100:105;
-    roundedRect(a.x-bw/2,top,bw,11,5,'#332f26d9','#ddc8a6');
-    if(hp>0)roundedRect(a.x-bw/2+2,top+2,(bw-4)*hp,7,3,a.enemy.kind==='baron'?'#cc9256':'#9bb97d');
-    ctx.font=`600 ${state.mobile?18:22}px Fredoka, sans-serif`;ctx.textAlign='center';ctx.strokeStyle='#25342c';ctx.lineWidth=4;
+    roundedRect(a.x-bw/2,top,bw,11,5,'#422444ed','#e5bed8');
+    if(hp>0)roundedRect(a.x-bw/2+2,top+2,(bw-4)*hp,7,3,a.enemy.kind==='baron'?'#d7a65f':'#b77cb4');
+    ctx.font=`600 ${state.mobile?18:22}px Fredoka, sans-serif`;ctx.textAlign='center';ctx.strokeStyle='#3d2145';ctx.lineWidth=4;
     const label=a.enemy.name;
     if(selected){
       const textWidth=ctx.measureText(label).width;
-      roundedRect(a.x-textWidth/2-10,top-34,textWidth+20,31,7,'#ffdc58','#fff0a4');
-      ctx.fillStyle='#322d19';ctx.fillText(label,a.x,top-12);
+      roundedRect(a.x-textWidth/2-10,top-34,textWidth+20,31,7,'#dcb9db','#fff0d3');
+      ctx.fillStyle='#452448';ctx.fillText(label,a.x,top-12);
     }else{ctx.fillStyle='#fff0ce';ctx.strokeText(label,a.x,top-12);ctx.fillText(label,a.x,top-12);}
     ctx.font=`500 ${state.mobile?16:18}px Fredoka, sans-serif`;ctx.fillStyle='#fff0ce';
     const health=`${a.enemy.hp}/${a.enemy.maxHp}`;ctx.strokeText(health,a.x,top+32);ctx.fillText(health,a.x,top+32);
