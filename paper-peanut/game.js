@@ -27,22 +27,32 @@ function updateHome() {
   $('arsenal-wallet').textContent=`${profile.scrap}`;
 }
 function renderArsenal() {
-  $('arsenal-wallet').textContent=`${profile.scrap}`;
+  $('arsenal-wallet').textContent=String(profile.scrap);
+  $('arsenal-wallet').setAttribute('aria-label',profile.scrap+' scrap');
   $('arsenal-cards').replaceChildren(...Object.entries(ARSENAL).map(([key,a])=>{
-    const unlocked=profile.unlocked.includes(key), equipped=profile.equipped===key;
-    const card=document.createElement('article');card.className=`arsenal-card ${equipped?'equipped':unlocked?'':'locked'}`;card.dataset.ability=key;
-    card.innerHTML=`<span class="ability-badge" aria-hidden="true"></span><h3>${a.name}</h3><p>${a.detail}</p><div class="ability-power">${MOVES[key].base} damage · ${MOVES[key].cost} ✦</div><div class="ability-requirement">${unlocked?'':`${a.cost} scrap${profile.clears<a.clears?` · ${profile.clears}/${a.clears} clears`:''}`}</div>`;
-    const button=document.createElement('button');button.innerHTML='<span>'+a.name+'</span>';
-    card.querySelector('.ability-requirement').textContent=unlocked?(equipped?'Equipped':'Equip'):`Unlock · ${a.cost} scrap${profile.clears<a.clears?` · ${profile.clears}/${a.clears} clears`:''}`;
-    button.disabled=equipped||(!unlocked&&(profile.scrap<a.cost||profile.clears<a.clears));
-    button.setAttribute('aria-label',`${equipped?'Equipped':unlocked?'Equip':'Unlock'} ${a.name}${unlocked?'':` for ${a.cost} scrap`}`);
-    button.onclick=()=>{
-      const changed=unlocked?equipAbility(profile,key):unlockAbility(profile,key);
-      if(!changed)return;saveProfile();renderArsenal();audio.good();
-      $('arsenal-status').textContent=`${a.name} equipped.`;
-    };card.append(button);return card;
+    const unlocked=profile.unlocked.includes(key),equipped=profile.equipped===key;
+    const card=document.createElement('article');card.className='ability-slot'+(equipped?' equipped':'')+(unlocked?'':' locked');card.dataset.ability=key;
+    const sticker=document.createElement('button');sticker.className='sticker-control';sticker.innerHTML='<span>'+a.name+'</span>';
+    sticker.setAttribute('aria-label',(equipped?'Equipped ':unlocked?'Equip ':'About ')+a.name);
+    sticker.setAttribute('aria-pressed',String(equipped));
+    const detail=a.detail+' '+MOVES[key].base+' damage · '+MOVES[key].cost+' ✦'+(!unlocked&&profile.clears<a.clears?' · '+profile.clears+'/'+a.clears+' clears':'');
+    sticker.dataset.tip=detail;
+    sticker.onclick=()=>{if(!unlocked){showAbilityTip(sticker);return;}if(equipAbility(profile,key)){hideAbilityTip();saveProfile();renderArsenal();$('arsenal-status').textContent=a.name+' equipped.';}};
+    card.append(sticker);
+    if(!unlocked){const unlock=document.createElement('button');unlock.className='unlock-sticker';unlock.textContent='Unlock · '+a.cost+' scrap';unlock.disabled=profile.scrap<a.cost||profile.clears<a.clears;unlock.setAttribute('aria-label','Unlock '+a.name+' for '+a.cost+' scrap');unlock.onclick=()=>{if(unlockAbility(profile,key)){hideAbilityTip();saveProfile();renderArsenal();audio.good();$('arsenal-status').textContent=a.name+' unlocked.';}};card.append(unlock);}
+    return card;
   }));
 }
+let abilityTip;
+function hideAbilityTip(){if(abilityTip)abilityTip.hidden=true;document.querySelectorAll('[aria-describedby="ability-tooltip"]').forEach(el=>el.removeAttribute('aria-describedby'));}
+function showAbilityTip(button){
+  if(!abilityTip){abilityTip=document.createElement('div');abilityTip.id='ability-tooltip';abilityTip.className='ability-tooltip';abilityTip.setAttribute('role','tooltip');document.body.append(abilityTip);}
+  abilityTip.textContent=button.dataset.tip;abilityTip.hidden=false;button.setAttribute('aria-describedby','ability-tooltip');
+  const rect=button.getBoundingClientRect(),box=abilityTip.getBoundingClientRect();
+  abilityTip.style.left=Math.max(12,Math.min(innerWidth-box.width-12,rect.left+rect.width/2-box.width/2))+'px';
+  abilityTip.style.top=Math.max(12,rect.top>box.height+20?rect.top-box.height-8:Math.min(innerHeight-box.height-12,rect.bottom+8))+'px';
+}
+
 function home() {
   state.session++;state.tweens=[];state.command=null;state.phase='title';state.paused=false;
   state.floats=[];state.particles=[];state.impacts=[];state.trails=[];state.projectiles=[];state.freeze=0;state.shake=0;
@@ -597,6 +607,16 @@ syncSound();
 const unlockAudio=()=>{if(audio.on)audio.init();};
 document.addEventListener('pointerdown',unlockAudio,{capture:true});
 document.addEventListener('keydown',unlockAudio,{capture:true});
+let lastUiHover=0;
+document.addEventListener('pointerover',event=>{const button=event.target.closest('button');if(!button||button.contains(event.relatedTarget))return;if(button.dataset.tip)showAbilityTip(button);if(!button.disabled&&performance.now()-lastUiHover>70){audio.tone(620,.045,'sine',.035,1.25);lastUiHover=performance.now();}});
+document.addEventListener('pointerout',event=>{const button=event.target.closest('[data-tip]');if(button&&!button.contains(event.relatedTarget))hideAbilityTip();});
+document.addEventListener('focusin',event=>{if(event.target.dataset?.tip)showAbilityTip(event.target);});
+document.addEventListener('focusout',hideAbilityTip);
+document.addEventListener('click',event=>{const button=event.target.closest('button');if(button&&!button.disabled&&button.id!=='sound'){audio.init();audio.tone(440,.07,'triangle',.055,1.5);audio.tone(780,.05,'sine',.025,.8,.025);}},{capture:true});
+document.addEventListener('keydown',event=>{if(event.key==='Escape')hideAbilityTip();});
+window.addEventListener('resize',hideAbilityTip);
+document.addEventListener('scroll',hideAbilityTip,true);
+
 $('sound').onclick=()=>{audio.on=!audio.on;audio.init();syncSound();try{localStorage.setItem('paper-peanut-sound',audio.on?'on':'off');}catch{}if(audio.on)audio.tick();};
 $('fullscreen').onclick=async()=>{try{if(!document.fullscreenElement)await $('app').requestFullscreen();else await document.exitFullscreen();}catch{note('Fullscreen is unavailable here. The game still plays in this window.');}};
 document.addEventListener('fullscreenchange',()=>{$('fullscreen').setAttribute('aria-label',document.fullscreenElement?'Exit fullscreen':'Enter fullscreen');});
