@@ -10,8 +10,9 @@
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="storybook.css">
   <link rel="stylesheet" href="arsenal.css">
+  <link rel="stylesheet" href="peanut-book.css">
   <link rel="preload" href="assets/goop-depot.png" as="image">
-  <link rel="preload" href="assets/storybook-spread.png" as="image">
+  <link rel="preload" href="assets/peanut-book.png" as="image">
 </head>
 <body>
 <div id="app" class="app">
@@ -32,14 +33,17 @@
       </div>
       <div id="message" class="sr-only" role="status" aria-live="polite" hidden></div>
       <section id="title-screen" class="title-screen storybook-home">
-        <div class="story-book">
-          <div class="home-content book-left">
-            <h1>PAPER<br><span>PEANUT</span></h1>
-            <img class="mobile-frontispiece" src="assets/peanut-happy.png" alt="Peanut smiling in a propeller hat">
+        <div class="story-book peanut-book">
+          <h1 class="title-bookmark">PAPER PEANUT</h1>
+          <section class="book-left" aria-label="Arsenal">
+            <div class="arsenal-heading"><h2>Arsenal</h2><span id="arsenal-wallet" aria-label="Scrap balance"></span></div>
+            <div id="arsenal-cards" class="arsenal-cards"></div>
+            <p id="arsenal-status" class="sr-only" role="status"></p>
+          </section>
+          <div class="book-right">
+            <img class="book-hero" src="assets/peanut-happy.png" alt="Peanut smiling in a propeller hat">
             <button id="start" class="ribbon-button" disabled><span id="start-label">Loading…</span></button>
-            <button id="arsenal" class="arsenal-button" disabled>Arsenal</button>
           </div>
-          <div class="book-right"><img class="book-illustration" src="assets/peanut-happy.png" alt="Peanut smiling in a propeller hat"></div>
         </div>
       </section>
       <section id="commands" class="commands" aria-label="Choose a battle move" hidden>
@@ -73,7 +77,7 @@
   <button class="ribbon-button" data-close="help-dialog">Close</button>
 </dialog>
 <dialog id="pause-dialog" class="modal paper pause-modal"><h2>Paused</h2><button id="resume" class="ribbon-button">Resume</button><button id="restart" class="text-button">Restart</button><button id="go-home" class="text-button">Home</button></dialog>
-<dialog id="arsenal-dialog" class="modal paper arsenal-modal" aria-labelledby="arsenal-title"><button class="close" data-close="arsenal-dialog" aria-label="Close Arsenal">×</button><div class="arsenal-heading"><h2 id="arsenal-title">Arsenal</h2><span id="arsenal-wallet"></span></div><div id="arsenal-cards" class="arsenal-cards"></div><p id="arsenal-status" class="sr-only" role="status"></p></dialog>
+
 <script type="module" src="game.js"></script>
 </body>
 </html>

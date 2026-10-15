@@ -2,8 +2,8 @@ export const PROFILE_KEY = 'paper-peanut-profile-v1';
 export const ARSENAL = {
   whirl: {name:'Goop Burst', icon:'✺', cost:0, clears:0, detail:'Hits all enemies.', short:'Hit all · 2 ✦'},
   propeller: {name:'Propeller Blitz', icon:'✣', cost:3, clears:1, detail:'Hits one enemy. Ignores armor.', short:'Pierce armor · 2 ✦'},
-  siphon: {name:'Goop Siphon', icon:'❧', cost:6, clears:3, detail:'Hits one enemy. Heals 2 HP; 4 with perfect timing.', short:'Drain + heal · 2 ✦'},
-  quake: {name:'Depot Quake', icon:'ϟ', cost:9, clears:6, detail:'Hits all enemies. Breaks armor.', short:'Hit all + crack · 3 ✦'},
+  siphon: {name:'Do Not Come', icon:'❧', cost:6, clears:3, detail:'Hits one enemy. Heals 2 HP; 4 with perfect timing.', short:'Drain + heal · 2 ✦'},
+  quake: {name:'Cannonball', icon:'ϟ', cost:9, clears:6, detail:'Throw mini HutchMF. Hits all; breaks armor.', short:'Hit all + crack · 3 ✦'},
 };
 export function freshProfile() {return {version:1, scrap:0, clears:0, runs:0, best:0, unlocked:['whirl'], equipped:'whirl'};}
 export function readProfile(raw) {

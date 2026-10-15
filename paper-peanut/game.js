@@ -1,5 +1,5 @@
 import { CHAPTERS, MOVES, freshRun, attackDamage, incomingDamage, hitEnemy, advanceChapter, jumpHits, createContactCommand, pressContact, contactTiming, CONTACT_GRACE_MS, PACE, jumpPose, applyUpgrade } from './engine.mjs';
-import { PROFILE_KEY, ARSENAL, readProfile, rankFor, unlockAbility, equipAbility, rewardEncounter } from './progression.mjs';
+import { PROFILE_KEY, ARSENAL, readProfile, unlockAbility, equipAbility, rewardEncounter } from './progression.mjs';
 
 const $ = id => document.getElementById(id);
 const canvas = $('stage');
@@ -46,7 +46,7 @@ function home() {
   state.session++;state.tweens=[];state.command=null;state.phase='title';state.paused=false;
   state.floats=[];state.particles=[];state.impacts=[];state.trails=[];state.projectiles=[];state.freeze=0;state.shake=0;
   hideCombat();setHidden('result',true);setHidden('hud',true);setHidden('title-screen',false);$('pause').disabled=true;
-  gameEl.dataset.action='';updateHome();$('footer-hint').textContent='Clear encounters · upgrade your moves · unlock the Arsenal';
+  gameEl.dataset.action='';updateHome();renderArsenal();$('footer-hint').textContent='Clear encounters · upgrade your moves · unlock the Arsenal';
 }
 
 // Small procedural score: plucked notes, wooden impacts, and a warm sewer hum.
@@ -308,20 +308,21 @@ async function slamAttack(hero, target) {
   await Promise.all([hurtEnemy(target,attackDamage('bonk',grade,target.enemy,state.run.upgrades.bonk),'bonk',grade),move(hero,{x:hero.homeX,y:hero.homeY,rot:0,stretchX:1,stretchY:1},420)]);
 }
 async function specialAttack(hero, targets, name) {
-  const labels={whirl:'as the goop hits',propeller:'as the propeller hits',siphon:'as the siphon hits',quake:'as the shockwave hits'};
+  const labels={whirl:'as the goop hits',propeller:'as the propeller hits',siphon:'as the siphon hits',quake:'as Hutch lands'};
   beginContact(name, PACE.burstWindup + PACE.burstFlight, labels[name]);
   await animate(PACE.burstWindup, p => {
     hero.rot=-Math.sin(p*Math.PI)*.15;hero.stretchX=1-.18*Math.sin(p*Math.PI);
-    hero.y=hero.homeY-Math.sin(p*Math.PI)*(name==='quake'?100:35);
+    hero.y=hero.homeY-Math.sin(p*Math.PI)*35;
   });
   hero.stretchX=1;hero.rot=0;hero.y=hero.homeY;
   if(name==='quake'){burst(hero.x,hero.homeY-10,'#dbc08b',14);audio.hit(true);}
-  const startX=hero.x+hero.width*.36,startY=name==='quake'?hero.homeY-18:hero.homeY-actorHeight(hero)*.42;
-  state.projectiles=targets.map(target=>({x:startX,y:startY,target,type:name}));
+  const startX=hero.x+hero.width*.36,startY=hero.homeY-actorHeight(hero)*.55;
+  const flightTargets=name==='quake'?[targets.find(a=>a.enemy.id===state.selected)||targets[0]]:targets;
+  state.projectiles=flightTargets.map(target=>({x:startX,y:startY,target,type:name,rot:0}));
   await animate(PACE.burstFlight,p=>{
     for(const ball of state.projectiles){
-      const endX=ball.target.x-ball.target.width*.32,endY=name==='quake'?ball.target.homeY-18:ball.target.homeY-actorHeight(ball.target)*.4;
-      ball.x=startX+(endX-startX)*p;ball.y=startY+(endY-startY)*p-Math.sin(p*Math.PI)*(name==='quake'?0:name==='propeller'?35:85);
+      const endX=ball.target.x-ball.target.width*.32,endY=ball.target.homeY-actorHeight(ball.target)*.4;
+      ball.rot=p*Math.PI*2;ball.x=startX+(endX-startX)*p;ball.y=startY+(endY-startY)*p-Math.sin(p*Math.PI)*(name==='quake'?160:name==='propeller'?35:85);
     }
     motion(p<.91?'The attack is flying.':'The attack is about to hit.');
   });
@@ -332,7 +333,7 @@ async function specialAttack(hero, targets, name) {
     const orb={x:fromX,y:fromY,type:'siphon'};state.projectiles=[orb];
     await animate(330,p=>{orb.x=fromX+(hero.x-fromX)*p;orb.y=fromY+(hero.homeY-actorHeight(hero)*.45-fromY)*p;});
     state.projectiles=[];const heal=Math.min(grade==='perfect'?4:2,state.run.maxHp-state.run.hp);
-    state.run.hp+=heal;float(`+${heal} ♥`,hero,'#c9f38a');burst(hero.x,hero.y-150,'#c9f38a',12);updateHUD();
+    state.run.hp+=heal;float(`+${heal} ♥`,hero,'#e5b9c4');burst(hero.x,hero.y-150,'#e5b9c4',12);updateHUD();
   }
 }
 async function playerAction(name) {
@@ -343,7 +344,7 @@ async function playerAction(name) {
   state.phase='attack';for(const id of ['commands','targets','message','callout'])setHidden(id,true);
   if(name==='cheese'){
     const amount=Math.min(8,r.maxHp-r.hp);r.hp+=amount;r.cheese--;
-    float(`+${amount} ♥`,hero,'#d2f498');burst(hero.x,hero.y-130,'#ffe159',20);audio.good();updateHUD();
+    float(`+${amount} ♥`,hero,'#e9c29b');burst(hero.x,hero.y-130,'#ffe159',20);audio.good();updateHUD();
     showCallout('SILLY JUICE!','good',`+${amount} HP • BACK IN BUSINESS`);
     await move(hero,{y:hero.homeY-40,rot:-.12},180);
     await move(hero,{y:hero.homeY,rot:0},180);await wait(160);
@@ -503,9 +504,9 @@ function draw(dt) {
       ctx.rotate(state.time*.032);ctx.shadowColor='#b5d9fa';ctx.shadowBlur=14;
       roundedRect(-46,-10,92,20,9,'#819cc5','#fff1c5');roundedRect(-10,-46,20,92,9,'#819cc5','#fff1c5');star(0,0,16,0,'#ffd13d');
     }else if(ball.type==='quake'){
-      ctx.beginPath();ctx.moveTo(-50,10);ctx.lineTo(-30,-18);ctx.lineTo(-13,3);ctx.lineTo(2,-55);ctx.lineTo(15,0);ctx.lineTo(32,-23);ctx.lineTo(47,10);ctx.closePath();ctx.fillStyle='#eeb45a';ctx.fill();ctx.strokeStyle='#fff1bd';ctx.lineWidth=4;ctx.stroke();
+      ctx.rotate(ball.rot||0);const size=100;ctx.drawImage(images.hutch,-size/2,-size/2,size,size);
     }else{
-      ctx.rotate(state.time*.02);ctx.shadowColor=ball.type==='siphon'?'#bdf593':'#ffdb32';ctx.shadowBlur=22;star(0,0,30,0,ball.type==='siphon'?'#9ed175':'#ffe547');star(0,0,17,.4,'#fffaaf');
+      ctx.rotate(state.time*.02);ctx.shadowColor=ball.type==='siphon'?'#d8a1b4':'#ffdb32';ctx.shadowBlur=22;star(0,0,30,0,ball.type==='siphon'?'#bd8098':'#ffe547');star(0,0,17,.4,'#fffaaf');
     }
     ctx.restore();
   }
@@ -546,7 +547,6 @@ function modalOpen(id){state.paused=true;$(id).showModal();if(audio.ctx)audio.ct
 function modalClose(id){$(id).close();state.paused=false;if(audio.on&&audio.ctx)audio.ctx.resume();}
 function pauseGame(){if(['loading','title','result'].includes(state.phase))return;modalOpen('pause-dialog');}
 $('start').onclick=startGame;
-$('arsenal').onclick=()=>{renderArsenal();$('arsenal-status').textContent='';modalOpen('arsenal-dialog');};
 $('go-home').onclick=()=>{modalClose('pause-dialog');home();};
 document.querySelector('.wordmark').onclick=event=>{event.preventDefault();if(state.phase==='title')return;if(state.phase==='result')home();else pauseGame();};
 document.querySelectorAll('[data-move]').forEach(button=>{
@@ -559,7 +559,7 @@ $('pause').onclick=pauseGame;
 $('resume').onclick=()=>modalClose('pause-dialog');
 $('restart').onclick=()=>{modalClose('pause-dialog');startGame();};
 document.querySelectorAll('[data-close]').forEach(button=>button.onclick=()=>modalClose(button.dataset.close));
-for(const id of ['help-dialog','pause-dialog','arsenal-dialog'])$(id).addEventListener('cancel',event=>{event.preventDefault();modalClose(id);});
+for(const id of ['help-dialog','pause-dialog'])$(id).addEventListener('cancel',event=>{event.preventDefault();modalClose(id);});
 $('relaxed').onchange=event=>{state.relaxed=event.target.checked;try{localStorage.setItem('rat-tales-cozy',String(state.relaxed));}catch{}};
 $('sound').onclick=()=>{audio.init();audio.on=!audio.on;$('sound').innerHTML=`♫ <span>Sound ${audio.on?'on':'off'}</span>`;$('sound').setAttribute('aria-pressed',String(audio.on));if(audio.on)audio.good();};
 $('fullscreen').onclick=async()=>{try{if(!document.fullscreenElement)await $('app').requestFullscreen();else await document.exitFullscreen();}catch{note('Fullscreen is unavailable here. The game still plays in this window.');}};
@@ -591,8 +591,8 @@ canvas.addEventListener('pointerdown',event=>{
 });
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&audio.ctx)audio.ctx.suspend();else if(!state.paused&&audio.on&&audio.ctx)audio.ctx.resume();});
 
-Promise.all(Object.entries({sewer:'goop-depot',bookspread:'storybook-spread',bookpage:'storybook-page',bookribbon:'storybook-ribbon',pip:'peanut-happy',scrapper:'rat-scrapper',slinger:'rat-slinger',baron:'rat-boss'}).map(([name,file])=>new Promise((resolve,reject)=>{
+Promise.all(Object.entries({sewer:'goop-depot',bookspread:'peanut-book',hutch:'hutch-cannonball',bookribbon:'storybook-ribbon',pip:'peanut-happy',scrapper:'rat-scrapper',slinger:'rat-slinger',baron:'rat-boss'}).map(([name,file])=>new Promise((resolve,reject)=>{
   const img=new Image();img.onload=()=>{images[name]=img;resolve();};img.onerror=reject;img.src=`assets/${file}.png`;
 }))).then(()=>{
-  state.phase='title';makeActors();resize();home();$('start').disabled=false;$('arsenal').disabled=false;$('start-label').textContent='Play';
+  state.phase='title';makeActors();resize();home();$('start').disabled=false;$('start-label').textContent='Play';
 }).catch(()=>{setHidden('loading-error',false);$('start-label').textContent='A prop is missing';});

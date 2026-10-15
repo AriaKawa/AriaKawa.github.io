@@ -3,8 +3,8 @@ export const MOVES = {
   bonk: { name: 'Shell Slam', base: 4, cost: 0 },
   whirl: { name: 'Goop Burst', base: 3, cost: 2 },
   propeller: { name: 'Propeller Blitz', base: 5, cost: 2, pierce: true },
-  siphon: { name: 'Goop Siphon', base: 4, cost: 2 },
-  quake: { name: 'Depot Quake', base: 5, cost: 3, pierce: true },
+  siphon: { name: 'Do Not Come', base: 4, cost: 2 },
+  quake: { name: 'Cannonball', base: 5, cost: 3, pierce: true },
 };
 export const CHAPTERS = [
   { title: 'The rats want your goop.', subtitle: 'THE GOOP DEPOT', enemies: [ ['scrapper', 7], ['slinger', 8] ] },
