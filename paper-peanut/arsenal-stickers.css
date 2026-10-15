@@ -1,0 +1,44 @@
+/* Large die-cut abilities are the controls, pasted directly onto the page. */
+.peanut-book .book-left{overflow:hidden}
+.peanut-book .arsenal-heading{position:relative;display:flex;justify-content:center;align-items:center;flex:none;height:58px;margin:0 0 8px;padding:0 92px;gap:0}
+.peanut-book h2.newspaper-title{justify-content:center;flex:none;font-size:clamp(22px,2.8cqw,36px)}
+.peanut-book .arsenal-heading>span{position:absolute;right:0;top:6px;width:82px;height:42px;display:flex;align-items:center;justify-content:center;padding:0 4px 0 25px;background:transparent url('assets/scrap-counter.png') center/100% 100% no-repeat;border:0;box-shadow:none;border-radius:0;color:#50351f;font-size:17px;font-weight:700}
+.peanut-book .arsenal-cards{flex:1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));grid-auto-rows:auto;gap:12px 20px;padding:0 8px 4px;align-content:stretch;overflow:auto}
+.peanut-book .arsenal-card,.peanut-book .arsenal-card.locked,.peanut-book .arsenal-card.equipped{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(90px,1fr) 23px 32px 17px 17px;align-content:stretch;gap:0;padding:0;background:none;border:0;border-radius:0;box-shadow:none;filter:none;transform:none;text-align:center}
+.peanut-book .arsenal-card .ability-badge{display:none}
+.peanut-book .arsenal-card h3{grid-row:2;grid-column:1;display:flex;justify-content:center;align-items:center;font-size:clamp(12px,1.3cqw,17px);min-height:0;margin:0;line-height:1.05;color:#493321}
+.peanut-book .arsenal-card p{grid-row:3;grid-column:1;font-size:10px;line-height:1.3;margin:0;min-height:0;align-self:center;color:#57422e}
+.peanut-book .arsenal-card .ability-power{grid-row:4;grid-column:1;margin:0;min-height:0;line-height:17px;font-size:10px;color:#715239}
+.peanut-book .arsenal-card .ability-requirement,.peanut-book .arsenal-card .ability-requirement:empty{display:block;grid-row:5;grid-column:1;margin:0;min-height:0;line-height:17px;font-size:10px;color:#715239}
+.peanut-book .arsenal-card button,.peanut-book .arsenal-card.equipped button,.peanut-book .arsenal-card button:disabled,.peanut-book .arsenal-card.equipped button:disabled{position:relative;grid-row:1;grid-column:1;align-self:center;justify-self:center;width:auto;height:100%;aspect-ratio:1;max-width:100%;min-height:0;margin:0;padding:0;border:0;border-radius:0;background:transparent url('assets/ability-controls.png') 0 0/200% 200% no-repeat;box-shadow:none;opacity:1;color:#51331f;font:700 12px var(--round);filter:drop-shadow(1px 2px 1px #593c2b40);transition:filter .15s,transform .15s;cursor:pointer}
+.peanut-book .arsenal-card[data-ability=propeller] button{background-position:100% 0}
+.peanut-book .arsenal-card[data-ability=siphon] button{background-position:0 100%}
+.peanut-book .arsenal-card[data-ability=quake] button{background-position:100% 100%}
+.peanut-book .arsenal-card button span{position:absolute;top:79%;left:12%;width:76%;height:14%;display:flex;align-items:center;justify-content:center;font-size:clamp(10px,1.1cqw,14px);text-shadow:0 1px #ffe3ab}
+.peanut-book .arsenal-card.locked button{filter:saturate(.7) drop-shadow(1px 2px 1px #593c2b40)}
+.peanut-book .arsenal-card button:disabled{cursor:default}
+.peanut-book .arsenal-card button:not(:disabled):hover{transform:translateY(-2px) rotate(-2deg);filter:brightness(1.08) drop-shadow(2px 4px 2px #593c2b55)}
+.peanut-book .arsenal-card button:focus-visible{outline:2px dashed #8f5035;outline-offset:1px}
+.peanut-book .arsenal-card.equipped button:after{content:'✓';position:absolute;right:7%;top:10%;display:grid;place-items:center;width:22px;height:22px;background:#87533b;color:#fff0ce;border:2px solid #fff0ce;border-radius:50%;font-size:15px;transform:rotate(10deg)}
+.story-book.peanut-book{padding-bottom:calc((100svh - 86px)*.08)}
+@media(max-width:900px){.peanut-book .arsenal-heading{height:84px;align-items:flex-start;padding:0;margin-bottom:5px}.peanut-book h2.newspaper-title{font-size:24px}.peanut-book .arsenal-heading>span{top:37px;right:calc(50% - 37px);width:74px;height:36px;font-size:15px}.peanut-book .arsenal-cards{grid-template-columns:1fr;grid-template-rows:none;grid-auto-rows:230px;gap:20px;padding:0 5px 12px}.peanut-book .arsenal-card,.peanut-book .arsenal-card.locked,.peanut-book .arsenal-card.equipped{grid-template-rows:145px 22px 31px 16px 16px;padding:0}.peanut-book .arsenal-card h3{font-size:13px}.peanut-book .arsenal-card button span{font-size:11px}}
+@media(max-width:480px){.peanut-book h2.newspaper-title{font-size:20px}.peanut-book .arsenal-cards{grid-auto-rows:245px}.peanut-book .arsenal-card,.peanut-book .arsenal-card.locked,.peanut-book .arsenal-card.equipped{grid-template-rows:140px 26px 43px 16px 20px}.peanut-book .arsenal-card p{font-size:10px}.peanut-book .arsenal-card .ability-requirement{font-size:9px;line-height:11px;align-self:center}.peanut-book .arsenal-card .ability-power{font-size:9px}.peanut-book .arsenal-card button span{font-size:10px}}
+@media(prefers-reduced-motion:reduce){.peanut-book .arsenal-card button{transition:none}.peanut-book .arsenal-card button:not(:disabled):hover{transform:none}}
+/* Names live on painted ribbons; metadata shares fixed baselines. */
+.story-book.peanut-book{padding-bottom:calc((100svh - 86px)*.12)}
+.peanut-book .arsenal-heading{height:44px;margin-bottom:5px}
+.peanut-book .arsenal-cards{gap:8px 20px}
+.peanut-book .arsenal-card,.peanut-book .arsenal-card.locked,.peanut-book .arsenal-card.equipped{grid-template-rows:minmax(110px,1fr) 28px 16px 16px}
+.peanut-book .arsenal-card h3{display:none}
+.peanut-book .arsenal-card p{grid-row:2;font-size:10px;line-height:12px}
+.peanut-book .arsenal-card .ability-power{grid-row:3;line-height:16px}
+.peanut-book .arsenal-card .ability-requirement,.peanut-book .arsenal-card .ability-requirement:empty{grid-row:4;line-height:16px}
+.peanut-book .arsenal-card button span{top:79%;height:14%;font-size:clamp(9px,1cqw,13px);left:14%;width:72%;line-height:1}
+@media(max-width:900px){.peanut-book .arsenal-heading{height:84px}.peanut-book .arsenal-cards{grid-auto-rows:240px;gap:16px}.peanut-book .arsenal-card,.peanut-book .arsenal-card.locked,.peanut-book .arsenal-card.equipped{grid-template-rows:172px 36px 16px 16px}.peanut-book .arsenal-card button span{font-size:11px}}
+@media(max-width:480px){.peanut-book .arsenal-cards{grid-auto-rows:228px}.peanut-book .arsenal-card,.peanut-book .arsenal-card.locked,.peanut-book .arsenal-card.equipped{grid-template-rows:150px 42px 16px 20px}.peanut-book .arsenal-card button span{font-size:9px}.peanut-book .arsenal-card .ability-requirement{line-height:10px}}
+@media(min-width:901px){.story-book.peanut-book{background-size:100% 112%;padding-top:calc((100svh - 86px)*.10);padding-bottom:calc((100svh - 86px)*.10)}.peanut-book .arsenal-heading{height:50px;margin-bottom:10px}.peanut-book .arsenal-cards{padding-bottom:20px;gap:12px 20px}.peanut-book .arsenal-card p{max-width:195px;justify-self:center}.peanut-book .book-hero{top:9%}.peanut-book .book-right .ribbon-button{bottom:6%}}
+.peanut-book .arsenal-card[data-ability=propeller] button{background-position:100% 0!important}
+.peanut-book .arsenal-card[data-ability=siphon] button{background-position:0 100%!important}
+.peanut-book .arsenal-card[data-ability=quake] button{background-position:100% 100%!important}
+.story-book.peanut-book{background-image:url('assets/peanut-book-clean.png')}
+.peanut-book .arsenal-card p{align-self:start;padding-top:6px}

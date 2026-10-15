@@ -24,15 +24,16 @@ function saveProfile() {
   updateHome();
 }
 function updateHome() {
-  $('arsenal-wallet').textContent=`◆ ${profile.scrap}`;
+  $('arsenal-wallet').textContent=`${profile.scrap}`;
 }
 function renderArsenal() {
-  $('arsenal-wallet').textContent=`◆ ${profile.scrap}`;
+  $('arsenal-wallet').textContent=`${profile.scrap}`;
   $('arsenal-cards').replaceChildren(...Object.entries(ARSENAL).map(([key,a])=>{
     const unlocked=profile.unlocked.includes(key), equipped=profile.equipped===key;
     const card=document.createElement('article');card.className=`arsenal-card ${equipped?'equipped':unlocked?'':'locked'}`;card.dataset.ability=key;
     card.innerHTML=`<span class="ability-badge" aria-hidden="true"></span><h3>${a.name}</h3><p>${a.detail}</p><div class="ability-power">${MOVES[key].base} damage · ${MOVES[key].cost} ✦</div><div class="ability-requirement">${unlocked?'':`${a.cost} scrap${profile.clears<a.clears?` · ${profile.clears}/${a.clears} clears`:''}`}</div>`;
-    const button=document.createElement('button');button.textContent=equipped?'Equipped':unlocked?'Equip':'Unlock';
+    const button=document.createElement('button');button.innerHTML='<span>'+a.name+'</span>';
+    card.querySelector('.ability-requirement').textContent=unlocked?(equipped?'Equipped':'Equip'):`Unlock · ${a.cost} scrap${profile.clears<a.clears?` · ${profile.clears}/${a.clears} clears`:''}`;
     button.disabled=equipped||(!unlocked&&(profile.scrap<a.cost||profile.clears<a.clears));
     button.setAttribute('aria-label',`${equipped?'Equipped':unlocked?'Equip':'Unlock'} ${a.name}${unlocked?'':` for ${a.cost} scrap`}`);
     button.onclick=()=>{
