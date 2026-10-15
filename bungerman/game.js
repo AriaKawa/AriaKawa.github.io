@@ -1,8 +1,8 @@
-import {setupMultiplayer} from './multiplayer-ui.js?v=mp11';
-import {Game,CAST,COLS,ROWS,MAPS} from './engine.js?v=mp11';
-import {loadPack,drawAsset} from './packs.js?v=mp11';
-import {drawCharacter,loadCharacterSprites} from './characters.js?v=mp11';
-import {drawArena,drawBomb,drawFlames,drawClosingWalls,drawRockets} from './arena.js?v=mp11';
+import {setupMultiplayer} from './multiplayer-ui.js?v=mp12';
+import {Game,CAST,COLS,ROWS,MAPS} from './engine.js?v=mp12';
+import {loadPack,drawAsset} from './packs.js?v=mp12';
+import {drawCharacter,loadCharacterSprites} from './characters.js?v=mp12';
+import {drawArena,drawBomb,drawFlames,drawClosingWalls,drawRockets} from './arena.js?v=mp12';
 const $=id=>document.getElementById(id),canvas=$('game'),ctx=canvas.getContext('2d');
 const W=416,H=352,T=30,OX=13,OY=11;
 canvas.width=W*3;canvas.height=H*3;ctx.scale(3,3);
