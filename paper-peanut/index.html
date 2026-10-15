@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="peanut-book.css?v=warm-sfx-1">
   <link rel="stylesheet" href="stickers.css?v=1">
   <link rel="stylesheet" href="arsenal-stickers.css?v=3">
+  <link rel="stylesheet" href="desk.css?v=1">
   <link rel="preload" href="assets/goop-depot.png" as="image">
   <link rel="preload" href="assets/peanut-book.png" as="image">
 </head>
@@ -34,19 +35,21 @@
         <div class="hero-card paper" aria-label="Peanut health and energy"><div class="hero-info"><div class="health-line"><span class="heart" aria-hidden="true">♥</span><strong id="hp">20</strong><small>/20</small><div class="health-track"><i id="hp-bar"></i></div></div><div class="spark-line"><div id="sp" aria-label="Goop energy">✦ ✦ ✦ ✦</div></div></div></div>
       </div>
       <div id="message" class="sr-only" role="status" aria-live="polite" hidden></div>
-      <section id="title-screen" class="title-screen storybook-home">
-        <div class="story-book peanut-book polished">
-          <h1 class="title-bookmark">PAPER PEANUT</h1>
-          <section class="book-left" aria-label="Arsenal">
-            <div class="arsenal-heading"><h2 class="newspaper-title" aria-label="Arsenal"><span aria-hidden="true">A</span><span aria-hidden="true">r</span><span aria-hidden="true">s</span><span aria-hidden="true">e</span><span aria-hidden="true">n</span><span aria-hidden="true">a</span><span aria-hidden="true">l</span></h2><span id="arsenal-wallet" aria-label="Scrap balance"></span></div>
-            <div id="arsenal-cards" class="arsenal-cards"></div>
-            <p id="arsenal-status" class="sr-only" role="status"></p>
-          </section>
-          <div class="book-right">
-            <h1 class="paper-title" aria-label="Paper Peanut"><span class="cutout-word" aria-hidden="true"><b>P</b><b>a</b><b>p</b><b>e</b><b>r</b></span><span class="cutout-word" aria-hidden="true"><b>P</b><b>e</b><b>a</b><b>n</b><b>u</b><b>t</b></span></h1>
-            <img class="book-hero" src="assets/peanut-sticker.png" alt="Peanut smiling in a propeller hat">
-            <button id="start" class="ribbon-button" disabled><span id="start-label">Loading…</span></button>
+      <section id="title-screen" class="title-screen storybook-home desk-home" data-view="home">
+        <div class="desk-scene">
+          <h1 class="sr-only">Paper Peanut</h1>
+          <div class="desk-menu">
+            <button id="open-arsenal" class="desk-arsenal" aria-label="Open Arsenal"><span class="arsenal-art" aria-hidden="true"></span><span class="arsenal-label">Arsenal</span></button>
+            <img class="desk-peanut" src="assets/peanut-sticker.png" alt="Peanut smiling in a propeller hat">
+            <button id="start" class="desk-play" disabled><span id="start-label">Loading…</span></button>
           </div>
+          <section class="story-book peanut-book polished arsenal-page" aria-label="Arsenal page" hidden>
+            <section class="book-left" aria-label="Arsenal">
+              <div class="arsenal-heading"><button id="close-arsenal" aria-label="Back to home">←</button><h2 class="newspaper-title" aria-label="Arsenal"><span aria-hidden="true">A</span><span aria-hidden="true">r</span><span aria-hidden="true">s</span><span aria-hidden="true">e</span><span aria-hidden="true">n</span><span aria-hidden="true">a</span><span aria-hidden="true">l</span></h2><span id="arsenal-wallet" aria-label="Scrap balance"></span></div>
+              <div id="arsenal-cards" class="arsenal-cards"></div>
+              <p id="arsenal-status" class="sr-only" role="status"></p>
+            </section>
+          </section>
         </div>
       </section>
       <section id="commands" class="commands" aria-label="Choose a battle move" hidden>
@@ -81,6 +84,6 @@
 </dialog>
 <dialog id="pause-dialog" class="modal paper pause-modal"><h2>Paused</h2><button id="resume" class="ribbon-button">Resume</button><button id="restart" class="text-button">Restart</button><button id="go-home" class="text-button">Home</button></dialog>
 
-<script type="module" src="game.js?v=menu-polish-3"></script>
+<script type="module" src="game.js?v=desk-1"></script>
 </body>
 </html>

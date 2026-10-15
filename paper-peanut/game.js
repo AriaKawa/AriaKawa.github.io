@@ -54,6 +54,7 @@ function showAbilityTip(button){
 }
 
 function home() {
+  setArsenalPage(false);
   state.session++;state.tweens=[];state.command=null;state.phase='title';state.paused=false;
   state.floats=[];state.particles=[];state.impacts=[];state.trails=[];state.projectiles=[];state.freeze=0;state.shake=0;
   hideCombat();setHidden('result',true);setHidden('hud',true);setHidden('title-screen',false);$('pause').disabled=true;
@@ -582,6 +583,13 @@ requestAnimationFrame(frame);
 function modalOpen(id){state.paused=true;$(id).showModal();if(audio.ctx)audio.ctx.suspend();}
 function modalClose(id){$(id).close();state.paused=false;if(audio.on&&audio.ctx)audio.ctx.resume();}
 function pauseGame(){if(['loading','title','result'].includes(state.phase))return;modalOpen('pause-dialog');}
+function setArsenalPage(open){
+  hideAbilityTip();$('title-screen').dataset.view=open?'arsenal':'home';
+  document.querySelector('.arsenal-page').hidden=!open;
+  document.querySelector('.desk-menu').hidden=open;
+}
+$('open-arsenal').onclick=()=>{renderArsenal();setArsenalPage(true);$('close-arsenal').focus();};
+$('close-arsenal').onclick=()=>{setArsenalPage(false);$('open-arsenal').focus();};
 $('start').onclick=startGame;
 $('go-home').onclick=()=>{modalClose('pause-dialog');home();};
 document.querySelector('.wordmark').onclick=event=>{event.preventDefault();if(state.phase==='title')return;if(state.phase==='result')home();else pauseGame();};
@@ -622,14 +630,14 @@ $('fullscreen').onclick=async()=>{try{if(!document.fullscreenElement)await $('ap
 document.addEventListener('fullscreenchange',()=>{$('fullscreen').setAttribute('aria-label',document.fullscreenElement?'Exit fullscreen':'Enter fullscreen');});
 window.addEventListener('keydown',event=>{
   if(state.paused)return;
-  if(event.key==='Escape'){event.preventDefault();pauseGame();return;}
+  if(event.key==='Escape'){event.preventDefault();if(state.phase==='title'&&$('title-screen').dataset.view==='arsenal'){setArsenalPage(false);$('open-arsenal').focus();}else pauseGame();return;}
   if(event.code==='Space'||event.key==='Enter'){
     if(event.target instanceof Element && event.target.closest('nav button'))return;
     if(state.command||['attack','enemy'].includes(state.phase)){
       event.preventDefault();if(event.repeat)return;
       pressCommand();
     }
-    else if(state.phase==='title'&&!event.repeat&&!(event.target instanceof Element&&event.target.closest('button,a'))){event.preventDefault();startGame();}
+    else if(state.phase==='title'&&$('title-screen').dataset.view!=='arsenal'&&!event.repeat&&!(event.target instanceof Element&&event.target.closest('button,a'))){event.preventDefault();startGame();}
     return;
   }
   if(event.repeat)return;
