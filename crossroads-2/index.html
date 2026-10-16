@@ -19,8 +19,10 @@
     body.booting{margin:0;background:#10271e;overflow:hidden}body.booting>:not(#boot-loader):not(script):not(style){visibility:hidden!important}
     #boot-loader{--loaded:0%;position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:24px;background:radial-gradient(ellipse at 50% 40%,#285338,#11291f 72%);color:#e9f2cc;font-family:Georgia,serif;text-align:center;transition:opacity .35s ease;box-sizing:border-box}
     #boot-loader.finished{opacity:0;pointer-events:none}.boot-card{width:min(420px,100%)}.boot-title{font-size:clamp(30px,8vw,48px);margin:0 0 8px;font-weight:700;letter-spacing:-1px}.boot-subtitle{font:12px system-ui,sans-serif;text-transform:uppercase;letter-spacing:3px;color:#b1cf93;margin:0 0 104px}
-    .loading-field{height:66px;position:relative;border-bottom:9px solid #5c4730;border-radius:5px;background:repeating-linear-gradient(0deg,#3d3527 0 6px,#59452c 6px 9px);box-shadow:0 4px 0 #0a1c13,inset 0 2px 0 #73613d}
-    .loading-crops{position:absolute;inset:0 auto 0 0;width:var(--loaded);border-radius:5px 0 0 0;background-color:#3c703f;background-image:url("assets/ui/loading-crops.svg");transition:width .18s linear;box-shadow:3px 0 14px #91c85c44}
+    #boot-loader .loading-field{height:66px;position:relative;background:none;filter:drop-shadow(0 4px 2px #0a1c1366)}
+    .loading-soil,.loading-crops{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+    .loading-crops{clip-path:inset(0 calc(100% - var(--loaded)) 0 0);transition:clip-path .18s linear}
+    .loading-crops img{display:block;width:100%;height:100%}
     .loading-farmer{width:165px;height:150px;position:absolute;bottom:20px;left:clamp(0px,calc(var(--loaded) - 86px),calc(100% - 165px));transition:left .18s linear;image-rendering:pixelated;filter:drop-shadow(0 3px 1px #10251a66)}.farmer-body{position:relative;width:100%;height:100%;animation:farmer-bob .7s ease-in-out infinite}.loading-farmer img{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated}.farmer-hoe{transform-origin:41.8% 58%;animation:farmer-hoe .7s ease-in-out infinite}
     .boot-progress-label{display:flex;justify-content:space-between;gap:16px;margin-top:18px;color:#d3e6b7;font:13px system-ui,sans-serif}.boot-hint{color:#96b599;font:12px/1.6 system-ui,sans-serif;margin-top:12px}.boot-retry{padding:10px 20px;background:#9fc879;color:#11271c;border:0;border-radius:7px;font:600 14px system-ui,sans-serif;cursor:pointer}.boot-retry[hidden]{display:none}
     @keyframes farmer-bob{50%{transform:translateY(2px)}}@keyframes farmer-hoe{0%,100%{transform:rotate(-22deg)}55%{transform:rotate(20deg)}}
@@ -33,18 +35,19 @@
   <div id="boot-loader" data-ui-surface="ui-loading-screen" aria-label="Loading Crossroads">
     <div class="boot-card"><h1 class="boot-title">Crossroads</h1><p class="boot-subtitle">A little land. A growing town.</p>
       <div class="loading-field" data-ui-surface="ui-loading-field" id="boot-progress" role="progressbar" aria-label="Loading town artwork" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-        <div class="loading-crops"></div>
+        <img class="loading-soil" src="./assets/ui/loading-soil-v1.webp" width="840" height="132" fetchpriority="high" alt="">
+        <div class="loading-crops" aria-hidden="true"><img src="./assets/ui/loading-wheat-v1.webp" width="840" height="132" fetchpriority="high" alt=""></div>
         <div class="loading-farmer" aria-hidden="true"><div class="farmer-body">
           <img src="./assets/styles/minimal/worker-farmer-body.webp" width="55" height="50" fetchpriority="high" alt="">
           <img class="farmer-hoe" src="./assets/styles/minimal/worker-farmer-tool.webp" width="55" height="50" fetchpriority="high" alt="">
         </div></div>
       </div>
       <div class="boot-progress-label"><span id="boot-status" role="status">Preparing your fields…</span><span id="boot-percent">0%</span></div>
-      <p class="boot-hint">Planting the scenery, one little plot at a time.</p>
+      <p class="boot-hint">Growing your wheat fields, one little plot at a time.</p>
       <button class="boot-retry" id="boot-retry" hidden onclick="location.reload()">Try again</button>
       <noscript><p>Enable JavaScript to grow your town.</p></noscript>
     </div>
   </div>
-  <div id="app"></div>
+  <div id="app"></div>
 </body>
 </html>
