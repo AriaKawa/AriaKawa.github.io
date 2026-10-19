@@ -28,12 +28,12 @@
     @keyframes farmer-bob{50%{transform:translateY(2px)}}@keyframes farmer-hoe{0%,100%{transform:rotate(-22deg)}55%{transform:rotate(20deg)}}
     @media(prefers-reduced-motion:reduce){.farmer-body,.farmer-hoe{animation:none}#boot-loader,.loading-crops,.loading-farmer{transition:none}}
   </style>
-  <script type="module" crossorigin src="./assets/index-eLTApPTG.js"></script>
+  <script type="module" crossorigin src="./assets/index-38b7dd7bf7.js"></script>
   <link rel="stylesheet" crossorigin href="./assets/index-DXzjZfHf.css">
 </head>
 <body class="booting">
   <div id="boot-loader" data-ui-surface="ui-loading-screen" aria-label="Loading Crossroads">
-    <div class="boot-card"><h1 class="boot-title">Crossroads</h1><p class="boot-subtitle">A little land. A growing town.</p>
+    <div class="boot-card"><h1 class="boot-title">Crossroads</h1><p class="boot-subtitle">Loading</p>
       <div class="loading-field" data-ui-surface="ui-loading-field" id="boot-progress" role="progressbar" aria-label="Loading town artwork" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
         <img class="loading-soil" src="./assets/ui/loading-soil-v1.webp" width="840" height="132" fetchpriority="high" alt="">
         <div class="loading-crops" aria-hidden="true"><img src="./assets/ui/loading-wheat-v1.webp" width="840" height="132" fetchpriority="high" alt=""></div>
@@ -42,8 +42,7 @@
           <img class="farmer-hoe" src="./assets/styles/minimal/worker-farmer-tool.webp" width="55" height="50" fetchpriority="high" alt="">
         </div></div>
       </div>
-      <div class="boot-progress-label"><span id="boot-status" role="status">Preparing your fields…</span><span id="boot-percent">0%</span></div>
-      <p class="boot-hint">Growing your wheat fields, one little plot at a time.</p>
+      <div class="boot-progress-label"><span id="boot-status" role="status">Loading artwork…</span><span id="boot-percent">0%</span></div>
       <button class="boot-retry" id="boot-retry" hidden onclick="location.reload()">Try again</button>
       <noscript><p>Enable JavaScript to grow your town.</p></noscript>
     </div>
