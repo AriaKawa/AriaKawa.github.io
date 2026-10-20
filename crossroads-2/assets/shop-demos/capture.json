@@ -1,6 +1,10 @@
 [
   {
     "style": "minimal",
+    "width": 3840,
+    "height": 2880,
+    "codec": "VP9",
+    "bitrate": 32000000,
     "frames": 360,
     "fps": 30,
     "seconds": 12,
@@ -9,6 +13,10 @@
   },
   {
     "style": "rounded",
+    "width": 3840,
+    "height": 2880,
+    "codec": "VP9",
+    "bitrate": 32000000,
     "frames": 360,
     "fps": 30,
     "seconds": 12,
@@ -17,6 +25,10 @@
   },
   {
     "style": "current",
+    "width": 3840,
+    "height": 2880,
+    "codec": "VP9",
+    "bitrate": 32000000,
     "frames": 360,
     "fps": 30,
     "seconds": 12,
@@ -25,6 +37,10 @@
   },
   {
     "style": "japanese",
+    "width": 3840,
+    "height": 2880,
+    "codec": "VP9",
+    "bitrate": 32000000,
     "frames": 360,
     "fps": 30,
     "seconds": 12,
@@ -33,6 +49,10 @@
   },
   {
     "style": "cyberpunk",
+    "width": 3840,
+    "height": 2880,
+    "codec": "VP9",
+    "bitrate": 32000000,
     "frames": 360,
     "fps": 30,
     "seconds": 12,
@@ -41,6 +61,10 @@
   },
   {
     "style": "storybook-hollow",
+    "width": 3840,
+    "height": 2880,
+    "codec": "VP9",
+    "bitrate": 32000000,
     "frames": 360,
     "fps": 30,
     "seconds": 12,
