@@ -1,0 +1,86 @@
+[
+  {
+    "style": "minimal",
+    "seed": 31632,
+    "firstColumn": 2,
+    "firstRow": 13,
+    "rows": 4,
+    "columns": 4,
+    "clip": {
+      "x": 606,
+      "y": 709,
+      "width": 212,
+      "height": 212
+    }
+  },
+  {
+    "style": "rounded",
+    "seed": 31632,
+    "firstColumn": 2,
+    "firstRow": 13,
+    "rows": 4,
+    "columns": 4,
+    "clip": {
+      "x": 606,
+      "y": 709,
+      "width": 212,
+      "height": 212
+    }
+  },
+  {
+    "style": "current",
+    "seed": 31632,
+    "firstColumn": 2,
+    "firstRow": 13,
+    "rows": 4,
+    "columns": 4,
+    "clip": {
+      "x": 606,
+      "y": 709,
+      "width": 212,
+      "height": 212
+    }
+  },
+  {
+    "style": "japanese",
+    "seed": 31632,
+    "firstColumn": 2,
+    "firstRow": 13,
+    "rows": 4,
+    "columns": 4,
+    "clip": {
+      "x": 606,
+      "y": 709,
+      "width": 212,
+      "height": 212
+    }
+  },
+  {
+    "style": "cyberpunk",
+    "seed": 31632,
+    "firstColumn": 2,
+    "firstRow": 13,
+    "rows": 4,
+    "columns": 4,
+    "clip": {
+      "x": 606,
+      "y": 709,
+      "width": 212,
+      "height": 212
+    }
+  },
+  {
+    "style": "storybook-hollow",
+    "seed": 31632,
+    "firstColumn": 2,
+    "firstRow": 13,
+    "rows": 4,
+    "columns": 4,
+    "clip": {
+      "x": 606,
+      "y": 709,
+      "width": 212,
+      "height": 212
+    }
+  }
+]

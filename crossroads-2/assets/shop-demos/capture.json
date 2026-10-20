@@ -1,0 +1,50 @@
+[
+  {
+    "style": "minimal",
+    "frames": 360,
+    "fps": 30,
+    "seconds": 12,
+    "seed": 31632,
+    "statesHash": "9514338214fafa4fec818dd6659f3c62aa5cda1ad2c5bfa97a73695cf95799d1"
+  },
+  {
+    "style": "rounded",
+    "frames": 360,
+    "fps": 30,
+    "seconds": 12,
+    "seed": 31632,
+    "statesHash": "9514338214fafa4fec818dd6659f3c62aa5cda1ad2c5bfa97a73695cf95799d1"
+  },
+  {
+    "style": "current",
+    "frames": 360,
+    "fps": 30,
+    "seconds": 12,
+    "seed": 31632,
+    "statesHash": "9514338214fafa4fec818dd6659f3c62aa5cda1ad2c5bfa97a73695cf95799d1"
+  },
+  {
+    "style": "japanese",
+    "frames": 360,
+    "fps": 30,
+    "seconds": 12,
+    "seed": 31632,
+    "statesHash": "9514338214fafa4fec818dd6659f3c62aa5cda1ad2c5bfa97a73695cf95799d1"
+  },
+  {
+    "style": "cyberpunk",
+    "frames": 360,
+    "fps": 30,
+    "seconds": 12,
+    "seed": 31632,
+    "statesHash": "9514338214fafa4fec818dd6659f3c62aa5cda1ad2c5bfa97a73695cf95799d1"
+  },
+  {
+    "style": "storybook-hollow",
+    "frames": 360,
+    "fps": 30,
+    "seconds": 12,
+    "seed": 31632,
+    "statesHash": "9514338214fafa4fec818dd6659f3c62aa5cda1ad2c5bfa97a73695cf95799d1"
+  }
+]
