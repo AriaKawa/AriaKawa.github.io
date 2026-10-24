@@ -62,6 +62,9 @@ body.fullscreen .drop-row strong{font-size:3.2cqw}
 #select-view .menu-actions{justify-self:end}
 body.fullscreen #select-view .menu-footer{gap:3cqw}
 
-.fullscreen-hint{position:fixed;z-index:13;top:max(12px,env(safe-area-inset-top));right:calc(max(12px,env(safe-area-inset-right)) + 46px);min-height:38px;display:flex;align-items:center;gap:12px;max-width:calc(100vw - 76px);color:#fff;font-size:24px;font-weight:800;line-height:1.2;text-shadow:0 2px 4px #000;pointer-events:none}
-.fullscreen-hint-arrow{font-size:52px;line-height:38px;font-weight:700;flex:none}
-@media(max-width:600px){.fullscreen-hint{top:6px;right:42px;min-height:30px;max-width:calc(100vw - 54px);font-size:18px;gap:8px}.fullscreen-hint-arrow{font-size:40px;line-height:30px}}
+/* Keep the control and its hint aligned using one shared corner inset. */
+:root{--fullscreen-size:76px;--fullscreen-margin:12px}
+.fullscreen-button{top:max(var(--fullscreen-margin),env(safe-area-inset-top));right:max(var(--fullscreen-margin),env(safe-area-inset-right));width:var(--fullscreen-size);height:var(--fullscreen-size);padding:16px;border-radius:12px}
+.fullscreen-hint{position:fixed;z-index:13;top:max(var(--fullscreen-margin),env(safe-area-inset-top));right:calc(max(var(--fullscreen-margin),env(safe-area-inset-right)) + var(--fullscreen-size) + 10px);min-height:var(--fullscreen-size);display:flex;align-items:center;gap:10px;max-width:calc(100vw - var(--fullscreen-size) - 46px);color:#fff;font-size:19px;font-weight:700;line-height:1.2;text-shadow:0 2px 4px #000;pointer-events:none}
+.fullscreen-hint-arrow{font-size:40px;line-height:1;font-weight:400;flex:none}
+@media(max-width:600px){:root{--fullscreen-size:60px;--fullscreen-margin:10px}.fullscreen-button{padding:12px}.fullscreen-hint{font-size:15px;gap:8px}.fullscreen-hint-arrow{font-size:32px}}
