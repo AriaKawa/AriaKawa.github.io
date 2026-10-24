@@ -47,7 +47,7 @@ function toast(text){$('toast').textContent=text;$('toast').classList.add('visib
 function updateBest(){if(game.score>best){best=game.score;try{localStorage.setItem('bungerman-best-v1',String(best));}catch{}}$('best').textContent=String(best).padStart(5,'0');}
 function showState(state){resetTouches();menuState=state;toastTimer=0;$('toast').classList.remove('visible');keys.clear();$('menu').classList.remove('hidden');$('menu').dataset.view=state;$('multiplayer-view').hidden=true;$('lobby-view').hidden=true;$('select-view').hidden=state!=='select';$('state-view').hidden=state==='select';$('state-view').dataset.state=state;document.body.classList.remove('playing');$('pause').disabled=true;
  if(state==='select')return;const content={paused:['PAUSED','RESUME'],roundWon:['CLEAR!','NEXT'],won:['YOU WIN!','REPLAY'],lost:['COOKED.','RETRY']}[state];$('state-title').textContent=content[0];$('continue').innerHTML=content[1]+' <span aria-hidden="true">▶</span>';$('state-score').hidden=state==='paused';$('state-score').textContent=String(game.score).padStart(5,'0');drawMenuArt(state);if(multiplayer.active){$('continue').textContent='MENU';$('state-title').textContent=game.isDraw?'DRAW':state==='won'?'YOU WIN!':'COOKED.';}}
-function hideMenu(){menuState=null;toastTimer=0;$('toast').classList.remove('visible');$('menu').classList.add('hidden');document.body.classList.add('playing');$('pause').disabled=false;canvas.focus({preventScroll:true});}
+function hideMenu(){$('fullscreen-hint').hidden=true;menuState=null;toastTimer=0;$('toast').classList.remove('visible');$('menu').classList.add('hidden');document.body.classList.add('playing');$('pause').disabled=false;canvas.focus({preventScroll:true});}
 function start(){if(!packReady)return;unlockAudio();resetTouches();game=new Game(selected,Math.floor(Math.random()*999999),selectedMap);paused=false;document.body.classList.remove('paused');playerHit=0;keys.clear();particles=[];floaters=[];puddles=[];deaths=[];rings=[];animationStates=new WeakMap();menuDelay=0;pendingState=null;game.start();hideMenu();drawPortraits();sfx('start');updateHud();}
 function home(){if(multiplayer.inRoom){multiplayer.leave();return;}if(pendingState)return;updateBest();paused=false;document.body.classList.remove('paused');playerHit=0;keys.clear();game=new Game(selected,9187,selectedMap);particles=[];floaters=[];puddles=[];deaths=[];rings=[];menuDelay=0;pendingState=null;showState('select');drawPortraits();updateHud();}
 function pause(){if(multiplayer.active){toast('ONLINE MATCH');return;}if(game.status!=='playing')return;paused=!paused;sfx(paused?'pause':'resume');document.body.classList.toggle('paused',paused);keys.clear();if(paused)showState('paused');else hideMenu();}
@@ -142,3 +142,6 @@ drawLogo();drawPortraits();updateHud();requestAnimationFrame(frame);
 
 
 
+
+// A new document or a return from browser history begins a fresh page visit.
+window.addEventListener('pageshow',e=>{if(e.persisted)$('fullscreen-hint').hidden=false;});
