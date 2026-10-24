@@ -6,6 +6,14 @@ import {loadPack,drawAsset} from './packs.js?v=pixel-items1';
 import {drawCharacter,loadCharacterSprites} from './characters.js?v=music1';
 import {drawArena,drawBomb,drawFlames,drawClosingWalls,drawRockets} from './arena.js?v=music1';
 const $=id=>document.getElementById(id),canvas=$('game'),ctx=canvas.getContext('2d');
+const fullscreenHintKey='bungerman-fullscreen-hint-dismissed-v1';
+let fullscreenHintDismissed=false;
+function restoreFullscreenHint(){try{fullscreenHintDismissed=fullscreenHintDismissed||localStorage.getItem(fullscreenHintKey)==='1';}catch{}$('fullscreen-hint').hidden=fullscreenHintDismissed;}
+function dismissFullscreenHint(){fullscreenHintDismissed=true;$('fullscreen-hint').hidden=true;try{localStorage.setItem(fullscreenHintKey,'1');}catch{}}
+restoreFullscreenHint();
+$('fullscreen').addEventListener('pointerenter',dismissFullscreenHint);
+window.addEventListener('pageshow',restoreFullscreenHint);
+window.addEventListener('storage',e=>{if(e.key===fullscreenHintKey&&e.newValue==='1'){fullscreenHintDismissed=true;$('fullscreen-hint').hidden=true;}});
 const W=416,H=352,T=30,OX=13,OY=11;
 canvas.width=W*3;canvas.height=H*3;ctx.scale(3,3);
 ctx.imageSmoothingEnabled=false;
@@ -47,7 +55,7 @@ function toast(text){$('toast').textContent=text;$('toast').classList.add('visib
 function updateBest(){if(game.score>best){best=game.score;try{localStorage.setItem('bungerman-best-v1',String(best));}catch{}}$('best').textContent=String(best).padStart(5,'0');}
 function showState(state){resetTouches();menuState=state;toastTimer=0;$('toast').classList.remove('visible');keys.clear();$('menu').classList.remove('hidden');$('menu').dataset.view=state;$('multiplayer-view').hidden=true;$('lobby-view').hidden=true;$('select-view').hidden=state!=='select';$('state-view').hidden=state==='select';$('state-view').dataset.state=state;document.body.classList.remove('playing');$('pause').disabled=true;
  if(state==='select')return;const content={paused:['PAUSED','RESUME'],roundWon:['CLEAR!','NEXT'],won:['YOU WIN!','REPLAY'],lost:['COOKED.','RETRY']}[state];$('state-title').textContent=content[0];$('continue').innerHTML=content[1]+' <span aria-hidden="true">▶</span>';$('state-score').hidden=state==='paused';$('state-score').textContent=String(game.score).padStart(5,'0');drawMenuArt(state);if(multiplayer.active){$('continue').textContent='MENU';$('state-title').textContent=game.isDraw?'DRAW':state==='won'?'YOU WIN!':'COOKED.';}}
-function hideMenu(){$('fullscreen-hint').hidden=true;menuState=null;toastTimer=0;$('toast').classList.remove('visible');$('menu').classList.add('hidden');document.body.classList.add('playing');$('pause').disabled=false;canvas.focus({preventScroll:true});}
+function hideMenu(){dismissFullscreenHint();menuState=null;toastTimer=0;$('toast').classList.remove('visible');$('menu').classList.add('hidden');document.body.classList.add('playing');$('pause').disabled=false;canvas.focus({preventScroll:true});}
 function start(){if(!packReady)return;unlockAudio();resetTouches();game=new Game(selected,Math.floor(Math.random()*999999),selectedMap);paused=false;document.body.classList.remove('paused');playerHit=0;keys.clear();particles=[];floaters=[];puddles=[];deaths=[];rings=[];animationStates=new WeakMap();menuDelay=0;pendingState=null;game.start();hideMenu();drawPortraits();sfx('start');updateHud();}
 function home(){if(multiplayer.inRoom){multiplayer.leave();return;}if(pendingState)return;updateBest();paused=false;document.body.classList.remove('paused');playerHit=0;keys.clear();game=new Game(selected,9187,selectedMap);particles=[];floaters=[];puddles=[];deaths=[];rings=[];menuDelay=0;pendingState=null;showState('select');drawPortraits();updateHud();}
 function pause(){if(multiplayer.active){toast('ONLINE MATCH');return;}if(game.status!=='playing')return;paused=!paused;sfx(paused?'pause':'resume');document.body.classList.toggle('paused',paused);keys.clear();if(paused)showState('paused');else hideMenu();}
@@ -87,7 +95,7 @@ const multiplayer=setupMultiplayer({sfx,selected:()=>selected,map:()=>selectedMa
  snapshot(next){game=next;drawCast(smallCanvas('hud-face',32,36),16,35,34,game.character);}
 });
 function fullscreenUI(on){document.body.classList.toggle('fullscreen',on);$('fullscreen').setAttribute('aria-pressed',String(on));$('fullscreen').setAttribute('aria-label',on?'Exit fullscreen game':'Enter fullscreen game');}
-$('fullscreen').addEventListener('click',async()=>{const on=!document.body.classList.contains('fullscreen');fullscreenUI(on);try{if(on)await document.documentElement.requestFullscreen?.();else if(document.fullscreenElement)await document.exitFullscreen();}catch{}});
+$('fullscreen').addEventListener('click',async()=>{dismissFullscreenHint();const on=!document.body.classList.contains('fullscreen');fullscreenUI(on);try{if(on)await document.documentElement.requestFullscreen?.();else if(document.fullscreenElement)await document.exitFullscreen();}catch{}});
 document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement)fullscreenUI(false);});
 $('rpg-fire').addEventListener('click',()=>{if(!paused&&!menuState){fire();canvas.focus({preventScroll:true});}});
 const px=x=>OX+(x+.5)*T,py=y=>OY+(y+.5)*T;
@@ -143,5 +151,4 @@ drawLogo();drawPortraits();updateHud();requestAnimationFrame(frame);
 
 
 
-// A new document or a return from browser history begins a fresh page visit.
-window.addEventListener('pageshow',e=>{if(e.persisted)$('fullscreen-hint').hidden=false;});
+
