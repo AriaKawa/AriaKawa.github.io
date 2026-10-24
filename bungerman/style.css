@@ -55,3 +55,9 @@ body.fullscreen .drop-row p{font-size:3cqw}
 body.fullscreen .drop-row strong{font-size:3.2cqw}
 
 .drop-row img,#rpg-fire img{image-rendering:pixelated}
+
+/* Match the footer columns to the character/drop columns. */
+#select-view .menu-footer{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.5cqw}
+#select-view .map-picker{justify-self:center;justify-content:center}
+#select-view .menu-actions{justify-self:end}
+body.fullscreen #select-view .menu-footer{gap:3cqw}
