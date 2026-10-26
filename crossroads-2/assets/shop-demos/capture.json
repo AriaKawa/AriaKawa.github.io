@@ -1,8 +1,6 @@
 [
   {
     "style": "minimal",
-    "file": "minimal.webm",
-    "revision": "clean-harvest-1",
     "width": 3840,
     "height": 2880,
     "codec": "VP9",
@@ -15,8 +13,6 @@
   },
   {
     "style": "rounded",
-    "file": "rounded.webm",
-    "revision": "clean-harvest-1",
     "width": 3840,
     "height": 2880,
     "codec": "VP9",
@@ -29,8 +25,6 @@
   },
   {
     "style": "current",
-    "file": "current.webm",
-    "revision": "clean-harvest-1",
     "width": 3840,
     "height": 2880,
     "codec": "VP9",
@@ -43,22 +37,6 @@
   },
   {
     "style": "japanese",
-    "file": "japanese.webm",
-    "revision": "clean-harvest-1",
-    "width": 3840,
-    "height": 2880,
-    "codec": "VP9",
-    "bitrate": 32000000,
-    "frames": 360,
-    "fps": 30,
-    "seconds": 12,
-    "seed": 31632,
-    "statesHash": "9514338214fafa4fec818dd6659f3c62aa5cda1ad2c5bfa97a73695cf95799d1"
-  },
-  {
-    "style": "japanese2",
-    "file": "japanese2.webm",
-    "revision": "clean-harvest-1",
     "width": 3840,
     "height": 2880,
     "codec": "VP9",
@@ -71,36 +49,6 @@
   },
   {
     "style": "cyberpunk",
-    "file": "cyberpunk.webm",
-    "revision": "clean-harvest-1",
-    "width": 3840,
-    "height": 2880,
-    "codec": "VP9",
-    "bitrate": 32000000,
-    "frames": 360,
-    "fps": 30,
-    "seconds": 12,
-    "seed": 31632,
-    "statesHash": "9514338214fafa4fec818dd6659f3c62aa5cda1ad2c5bfa97a73695cf95799d1"
-  },
-  {
-    "style": "country",
-    "file": "country.webm",
-    "revision": "clean-harvest-1",
-    "width": 3840,
-    "height": 2880,
-    "codec": "VP9",
-    "bitrate": 32000000,
-    "frames": 360,
-    "fps": 30,
-    "seconds": 12,
-    "seed": 31632,
-    "statesHash": "9514338214fafa4fec818dd6659f3c62aa5cda1ad2c5bfa97a73695cf95799d1"
-  },
-  {
-    "style": "original2",
-    "file": "original2.webm",
-    "revision": "clean-harvest-1",
     "width": 3840,
     "height": 2880,
     "codec": "VP9",
@@ -113,8 +61,6 @@
   },
   {
     "style": "storybook-hollow",
-    "file": "storybook-hollow-simple-3.webm",
-    "revision": "clean-harvest-1",
     "width": 3840,
     "height": 2880,
     "codec": "VP9",
@@ -126,9 +72,19 @@
     "statesHash": "9514338214fafa4fec818dd6659f3c62aa5cda1ad2c5bfa97a73695cf95799d1"
   },
   {
-    "style": "storybook-hollow2",
-    "file": "storybook-hollow2.webm",
-    "revision": "clean-harvest-1",
+    "style": "country",
+    "width": 3840,
+    "height": 2880,
+    "codec": "VP9",
+    "bitrate": 32000000,
+    "frames": 360,
+    "fps": 30,
+    "seconds": 12,
+    "seed": 31632,
+    "statesHash": "9514338214fafa4fec818dd6659f3c62aa5cda1ad2c5bfa97a73695cf95799d1"
+  },
+  {
+    "style": "original2",
     "width": 3840,
     "height": 2880,
     "codec": "VP9",
