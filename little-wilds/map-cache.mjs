@@ -18,10 +18,10 @@ export function createMapCache(imgs){
  for(const f of flowers){const im=imgs.plants,cw=im.width/4,ch=im.height/4;gg.drawImage(im,f.i%4*cw,Math.floor(f.i/4)*ch,cw,ch,f.x-13,f.y-26,26,26);}
  return{base,grass,x:x0,y:y0,size,res,pad,dirty:false,used:version};}
  return{init,clear(){tiles.clear();},invalidate(index){const x=index%W*48,y=Math.floor(index/W)*48;for(const t of tiles.values())if(x+110>=t.x&&x-110<=t.x+t.size&&y+110>=t.y&&y-110<=t.y+t.size)t.dirty=true;},
- visible(s,camera,vw,vh){version++;const lod=camera.zoom<.32?2:camera.zoom<.65?1:0,size=lod===0?256:lod===1?512:1024,lo=camera.world(0,0),hi=camera.world(vw,vh),list=[];for(let y=Math.floor(lo.y/size);y<=Math.floor(hi.y/size);y++)for(let x=Math.floor(lo.x/size);x<=Math.floor(hi.x/size);x++)list.push({key:lod+','+x+','+y,x,y});
+ visible(s,camera,vw,vh){version++;const lod=1,size=512,lo=camera.world(0,0),hi=camera.world(vw,vh),list=[];for(let y=Math.floor(lo.y/size);y<=Math.floor(hi.y/size);y++)for(let x=Math.floor(lo.x/size);x<=Math.floor(hi.x/size);x++)list.push({key:lod+','+x+','+y,x,y});
  list.sort((a,b)=>Math.hypot((a.x+.5)*size-camera.x,(a.y+.5)*size-camera.y)-Math.hypot((b.x+.5)*size-camera.x,(b.y+.5)*size-camera.y));const start=performance.now();let builds=0;
- for(const p of list){let t=tiles.get(p.key);if((!t||t.dirty)&&builds<3&&performance.now()-start<5){t=build(s,p.x,p.y,lod);tiles.set(p.key,t);builds++;}if(t)t.used=version;}
- if(tiles.size>128){const old=[...tiles.entries()].sort((a,b)=>a[1].used-b[1].used);for(let i=0;i<old.length-128;i++)tiles.delete(old[i][0]);}
+ for(const p of list){let t=tiles.get(p.key);if(!t||(t.dirty&&builds<3&&performance.now()-start<5)){t=build(s,p.x,p.y,lod);tiles.set(p.key,t);builds++;}if(t)t.used=version;}
+ const capacity=Math.max(128,list.length+32);if(tiles.size>capacity){const old=[...tiles.entries()].sort((a,b)=>a[1].used-b[1].used);for(let i=0;i<old.length-capacity;i++)tiles.delete(old[i][0]);}
  return list.map(p=>tiles.get(p.key)).filter(Boolean);}
  };
 }

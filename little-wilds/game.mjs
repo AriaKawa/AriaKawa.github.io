@@ -1,3 +1,4 @@
+import{FRAMES}from './spirit-frames.mjs';
 import{TYPES,UPGRADES,W,H,fresh,level,restoration,spiritCost,summon,upgradeCost,buy,prestigeReward,prestige,tick,offline,validate}from './core.mjs';
 import{advancePlanting,PLANT_SECONDS}from './planting.mjs';
 import{createRenderer}from './render.mjs';
@@ -40,10 +41,12 @@ canvas.addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();if
 canvas.addEventListener('keyup',e=>{if(e.code==='Space')release();});canvas.addEventListener('blur',release);window.addEventListener('blur',()=>{pointers.clear();release();});
 let last=performance.now();function loop(now){const dt=Math.min(30,Math.max(0,(now-last)/1000));last=now;if(ready&&!document.hidden){stepFalls(Math.min(dt,.1));for(let elapsed=0;elapsed<dt;elapsed+=.1)tick(s,Math.min(.1,dt-elapsed),renderer.grow,carry.spirit);
 advancePlanting(s,hand,Math.min(dt,.25),held&&!$('modal').open,pointerIndex,renderer.grow);$('charge').style.width=(hand.charge/PLANT_SECONDS*30)+'px';renderer.draw(s,now,carry);if(now-lastUI>250){updateUI();lastUI=now;}if(now-saveAt>5000){save();saveAt=now;}}requestAnimationFrame(loop);}
-let hiddenAt=0;document.addEventListener('visibilitychange',()=>{release();if(document.hidden){hiddenAt=Date.now();save();}else{if(hiddenAt&&!s.paused)offline(s,(Date.now()-hiddenAt)/1000);hiddenAt=0;renderer.clear();last=performance.now();save();updateUI();}});window.addEventListener('pagehide',save);buildDock();
+let hiddenAt=0;document.addEventListener('visibilitychange',()=>{release();if(document.hidden){hiddenAt=Date.now();save();}else{if(hiddenAt&&!s.paused)offline(s,(Date.now()-hiddenAt)/1000);hiddenAt=0;renderer.clear();last=performance.now();save();updateUI();}});window.addEventListener('pagehide',save);buildDock();centerPortraits();
 const imageReady=file=>new Promise((resolve,reject)=>{const im=new Image();im.onload=resolve;im.onerror=reject;im.src='assets/'+file;});
 Promise.all([renderer.load(),...['ui.png','button.png','cursor.png','pinch.png'].map(imageReady)]).then(()=>{ready=true;$('loading').remove();save();}).catch(()=>{$('loading').textContent='Artwork unavailable. Refresh.';});requestAnimationFrame(loop);
 
 
 
 
+
+function centerPortraits(){const im=new Image();im.onload=()=>{document.querySelectorAll(".portrait .sprite").forEach((el,i)=>{const [x,y,w,h]=FRAMES.spirits[i*4];const scale=Math.min(46/w,48/h);el.style.cssText=`width:${w*scale}px;height:${h*scale}px;background-size:${im.width*scale}px ${im.height*scale}px;background-position:${-x*scale}px ${-y*scale}px;`;});};im.src="assets/spirits.png";}
