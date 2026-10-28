@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="360" viewBox="0 0 240 360"><title>rounded Night Fair card</title>
+<rect x="2" y="2" width="236" height="356" rx="20" fill="#253622" stroke="#87a564" stroke-width="4"/>
+<rect x="7" y="7" width="226" height="346" rx="15" fill="none" stroke="#edca79" stroke-opacity=".38"/>
+<path d="M9 25Q6 9 25 9Q24 24 9 25Z" fill="#edca79" opacity=".65"/><path d="M10 24L23 11" fill="none" stroke="#edca79" stroke-width="2" stroke-linecap="round"/><g transform="translate(240 0) scale(-1 1)"><path d="M9 25Q6 9 25 9Q24 24 9 25Z" fill="#edca79" opacity=".65"/><path d="M10 24L23 11" fill="none" stroke="#edca79" stroke-width="2" stroke-linecap="round"/></g><g transform="translate(0 360) scale(1 -1)"><path d="M9 25Q6 9 25 9Q24 24 9 25Z" fill="#edca79" opacity=".65"/><path d="M10 24L23 11" fill="none" stroke="#edca79" stroke-width="2" stroke-linecap="round"/></g><g transform="translate(240 360) scale(-1 -1)"><path d="M9 25Q6 9 25 9Q24 24 9 25Z" fill="#edca79" opacity=".65"/><path d="M10 24L23 11" fill="none" stroke="#edca79" stroke-width="2" stroke-linecap="round"/></g>
+<path d="M40 15H104M136 15H200M40 345H104M136 345H200" stroke="#87a564" stroke-width="2"/>
+<path d="M120 9L126 15L120 21L114 15Z M120 339L126 345L120 351L114 345Z" fill="#edca79"/>
+</svg>
