@@ -1,4 +1,5 @@
-import{FRAMES}from './spirit-frames.mjs';
+import{STYLES,savedStyle,loadStyle,applyStyle,stylePath}from './styles.mjs';
+let activeStyle='original',styleBusy=false;
 import{TYPES,UPGRADES,W,H,fresh,level,restoration,spiritCost,summon,upgradeCost,buy,prestigeReward,prestige,tick,offline,validate}from './core.mjs';
 import{advancePlanting,PLANT_SECONDS}from './planting.mjs';
 import{createRenderer}from './render.mjs';
@@ -10,7 +11,7 @@ function toast(text){$('toast').textContent=text;$('toast').classList.add('show'
 function save(){try{s.last=Date.now();localStorage.setItem(KEY,JSON.stringify(s));}catch{toast('Storage unavailable. Export save.');}}
 const canvas=$('world'),renderer=createRenderer(canvas),hand={charge:0},carry=createCarry();let held=false,pointerIndex=-1,pointerId=null,keyboard=false;
 function release(){if(carry.spirit)place(carry,null,true);setPinch(false);held=false;keyboard=false;hand.charge=0;$('charge').style.width='0';$('cursor').classList.remove('planting');}
-function setPinch(on){const im=cursor.querySelector('img'),src=on?'assets/pinch.png':'assets/cursor.png';if(im.getAttribute('src')!==src)im.src=src;cursor.classList.toggle('carrying',on);}
+function setPinch(on){const im=cursor.querySelector('img'),src=stylePath(activeStyle)+(on?'pinch.png':'cursor.png');if(im.getAttribute('src')!==src)im.src=src;cursor.classList.toggle('carrying',on);}
 function showModal(type,html){release();modalType=type;$('modal-content').innerHTML=html;if(!$('modal').open)$('modal').showModal();$('modal').appendChild($('cursor'));updateUI();}
 $('close-modal').onclick=()=>$('modal').close();$('modal').addEventListener('close',()=>{modalType='';document.body.appendChild($('cursor'));release();});
 $('modal').addEventListener('click',e=>{if(e.target===$('modal')){const r=$('modal').getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)$('modal').close();}});
@@ -26,7 +27,7 @@ document.querySelectorAll('[data-upgrade]').forEach(b=>{const u=UPGRADES.find(x=
 if(modalType==='prestige'){$('reward').textContent=prestigeReward(s);$('confirm-prestige').disabled=!prestigeReward(s);$('prestige-gate').textContent=prestigeReward(s)?'+'+((s.memories+prestigeReward(s))*10)+'% life':'25% restoration required';}}
 $('pause').onclick=()=>{release();s.paused=!s.paused;save();updateUI();};
 $('fullscreen').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch{toast('Fullscreen unavailable');}};
-$('settings').onclick=()=>{showModal('save','<h2>Saves</h2><div class="save-actions"><button class="wood-button" id="export">Export</button><button class="wood-button" id="import">Import</button><input class="import-input" type="file" id="import-file" accept=".json,application/json"></div>');$('export').onclick=()=>{save();const u=URL.createObjectURL(new Blob([JSON.stringify(s)],{type:'application/json'})),a=document.createElement('a');a.href=u;a.download='little-wilds-'+s.cycle+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);};$('import').onclick=()=>$('import-file').click();$('import-file').onchange=async e=>{try{const f=e.target.files[0];if(!f)return;if(f.size>1000000)throw Error('Invalid save');const incoming=validate(JSON.parse(await f.text()));if(!confirm('Replace current save?'))return;s=incoming;s.last=Date.now();renderer.clear();save();updateUI();$('modal').close();}catch{toast('Invalid save');}};};
+$('settings').onclick=()=>{showModal('save','<h2>Settings</h2><h3>Graphics style</h3><div class="style-options">'+STYLES.map(t=>'<button class="style-choice" data-style-choice="'+t.id+'" aria-pressed="'+(activeStyle===t.id)+'" '+(styleBusy?'disabled':'')+'><span class="style-preview" style="background-image:url('+stylePath(t.id)+'spirits.png)"></span><strong>'+t.name+'</strong><small>'+t.description+'</small></button>').join('')+'</div><p id="style-status" class="essential" role="status">Choose a style. Your progress stays the same.</p><h3>Save data</h3><div class="save-actions"><button class="wood-button" id="export">Export</button><button class="wood-button" id="import">Import</button><input class="import-input" type="file" id="import-file" accept=".json,application/json"></div>');$('export').onclick=()=>{save();const u=URL.createObjectURL(new Blob([JSON.stringify(s)],{type:'application/json'})),a=document.createElement('a');a.href=u;a.download='little-wilds-'+s.cycle+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);};$('import').onclick=()=>$('import-file').click();$('import-file').onchange=async e=>{try{const f=e.target.files[0];if(!f)return;if(f.size>1000000)throw Error('Invalid save');const incoming=validate(JSON.parse(await f.text()));if(!confirm('Replace current save?'))return;s=incoming;s.last=Date.now();renderer.clear();save();updateUI();$('modal').close();}catch{toast('Invalid save');}};};
 document.addEventListener('pointermove',e=>{if(e.pointerType==='touch')return;$('cursor').hidden=false;document.body.classList.add('custom-cursor');$('cursor').style.left=e.clientX+'px';$('cursor').style.top=e.clientY+'px';});
 document.addEventListener('pointerleave',()=>{$('cursor').hidden=true;document.body.classList.remove('custom-cursor');release();});
 const pointers=new Map();let dragging=false,origin=null,pinch=0;
@@ -41,12 +42,15 @@ canvas.addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();if
 canvas.addEventListener('keyup',e=>{if(e.code==='Space')release();});canvas.addEventListener('blur',release);window.addEventListener('blur',()=>{pointers.clear();release();});
 let last=performance.now();function loop(now){const dt=Math.min(30,Math.max(0,(now-last)/1000));last=now;if(ready&&!document.hidden){stepFalls(Math.min(dt,.1));for(let elapsed=0;elapsed<dt;elapsed+=.1)tick(s,Math.min(.1,dt-elapsed),renderer.grow,carry.spirit);
 advancePlanting(s,hand,Math.min(dt,.25),held&&!$('modal').open,pointerIndex,renderer.grow);$('charge').style.width=(hand.charge/PLANT_SECONDS*30)+'px';renderer.draw(s,now,carry);if(now-lastUI>250){updateUI();lastUI=now;}if(now-saveAt>5000){save();saveAt=now;}}requestAnimationFrame(loop);}
-let hiddenAt=0;document.addEventListener('visibilitychange',()=>{release();if(document.hidden){hiddenAt=Date.now();save();}else{if(hiddenAt&&!s.paused)offline(s,(Date.now()-hiddenAt)/1000);hiddenAt=0;renderer.clear();last=performance.now();save();updateUI();}});window.addEventListener('pagehide',save);buildDock();centerPortraits();
-const imageReady=file=>new Promise((resolve,reject)=>{const im=new Image();im.onload=resolve;im.onerror=reject;im.src='assets/'+file;});
-Promise.all([renderer.load(),...['ui.png','button.png','cursor.png','pinch.png'].map(imageReady)]).then(()=>{ready=true;$('loading').remove();save();}).catch(()=>{$('loading').textContent='Artwork unavailable. Refresh.';});requestAnimationFrame(loop);
-
-
-
-
-
-function centerPortraits(){const im=new Image();im.onload=()=>{document.querySelectorAll(".portrait .sprite").forEach((el,i)=>{const [x,y,w,h]=FRAMES.spirits[i*4];const scale=Math.min(46/w,48/h);el.style.cssText=`width:${w*scale}px;height:${h*scale}px;background-size:${im.width*scale}px ${im.height*scale}px;background-position:${-x*scale}px ${-y*scale}px;`;});};im.src="assets/spirits.png";}
+let hiddenAt=0;document.addEventListener('visibilitychange',()=>{release();if(document.hidden){hiddenAt=Date.now();save();}else{if(hiddenAt&&!s.paused)offline(s,(Date.now()-hiddenAt)/1000);hiddenAt=0;renderer.clear();last=performance.now();save();updateUI();}});window.addEventListener('pagehide',save);buildDock();
+async function switchStyle(id){
+ if(styleBusy)return;styleBusy=true;release();
+ document.querySelectorAll('[data-style-choice]').forEach(b=>b.disabled=true);
+ const status=$('style-status');if(status)status.textContent='Loading artwork…';
+ try{const bundle=await loadStyle(id);renderer.setArt(bundle);activeStyle=id;applyStyle(bundle);setPinch(false);if(status)status.textContent=STYLES.find(t=>t.id===id).name+' selected.';}
+ catch(e){if(status)status.textContent='Artwork could not load. Your previous style is still active.';throw e;}
+ finally{styleBusy=false;document.querySelectorAll('[data-style-choice]').forEach(b=>{b.disabled=false;b.setAttribute('aria-pressed',String(b.dataset.styleChoice===activeStyle));});}
+}
+$('modal-content').addEventListener('click',e=>{const b=e.target.closest('[data-style-choice]');if(b)switchStyle(b.dataset.styleChoice).catch(()=>toast('Could not load style. Try again.'));});
+async function start(){try{try{await switchStyle(savedStyle());}catch{await switchStyle('original');}ready=true;$('loading').remove();save();}catch{$('loading').textContent='Artwork unavailable. Refresh to try again.';}}
+start();requestAnimationFrame(loop);

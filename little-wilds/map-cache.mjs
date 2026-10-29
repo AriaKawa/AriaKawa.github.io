@@ -4,7 +4,7 @@ import{fullness}from './grass-motion.mjs';
 export function createMapCache(imgs){
  const tiles=new Map(),stamp=[];let version=0,carpet;
  const surface=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');g.imageSmoothingEnabled=false;return[c,g];};
- function init(){const[c,g]=surface(16,16);g.drawImage(imgs.meadow,0,0,16,16);carpet=c;for(let row=0;row<4;row++){const[c,g]=surface(12,16),im=imgs.blades_simple;g.drawImage(im,im.width/4,row*im.height/4,im.width/4,im.height/4,0,0,12,16);stamp.push(c);}}
+ function init(){stamp.length=0;const[c,g]=surface(16,16);g.drawImage(imgs.meadow,0,0,16,16);carpet=c;for(let row=0;row<4;row++){const[c,g]=surface(12,16),im=imgs.blades_simple;g.drawImage(im,im.width/4,row*im.height/4,im.width/4,im.height/4,0,0,12,16);stamp.push(c);}}
  function build(s,cx,cy,lod){const res=lod===0?1:lod===1?.5:.25,size=256/res,pad=32,x0=cx*size,y0=cy*size;
  const[base,bg]=surface(256,256),[grass,gg]=surface(256+pad*2*res,256+pad*2*res);
  bg.scale(res,res);bg.translate(-x0,-y0);const tile=384;
