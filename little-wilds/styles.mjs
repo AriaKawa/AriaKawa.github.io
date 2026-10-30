@@ -4,7 +4,7 @@ export const STYLES=[
  {id:'pixel',name:'Pixel Pals',description:'Pastel animals and a soft pixel meadow.'},
  {id:'soft',name:'Sweet Spirits',description:'Rounder spirits, rosy cheeks, and honeywood.'}
 ];
-export const ASSETS=['spirits','struggle','plants','dirt','dirt_variants','meadow','blades_simple','ui','button','cursor','pinch'];
+export const ASSETS=['spirits','struggle','plants','dirt','dirt_variants','meadow','blades_simple','ui','button','cursor','pinch','landmarks'];
 const pending=new Map();
 export const stylePath=id=>id==='original'?'assets/':`assets/styles/${id}/`;
 export function savedStyle(){try {const id=localStorage.getItem('little-wilds-style');return STYLES.some(s=>s.id===id)?id:'original';}catch{return 'original';}}

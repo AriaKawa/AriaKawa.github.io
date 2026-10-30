@@ -1,3 +1,5 @@
+import{canWork}from './land.mjs';
+import{drawFeatures}from './land-render.mjs';
 import{W,H}from './core.mjs';
 import{lifeAt,meadowThreshold,randomAt}from './meadow.mjs';
 import{fullness}from './grass-motion.mjs';
@@ -11,8 +13,9 @@ export function createMapCache(imgs){
  for(let y=Math.floor(y0/tile)*tile;y<y0+size;y+=tile)for(let x=Math.floor(x0/tile)*tile;x<x0+size;x+=tile)bg.drawImage(imgs.dirt,x,y,tile+1,tile+1);
  const im=imgs.dirt_variants,cw=im.width/2,ch=im.height/2;
  for(let yy=Math.floor((y0-700)/300);yy<=Math.ceil((y0+size+700)/300);yy++)for(let xx=Math.floor((x0-700)/300);xx<=Math.ceil((x0+size+700)/300);xx++){const n=xx*7381+yy*2311,k=Math.floor(randomAt(n+89)*4),x=(xx+randomAt(n+43))*300,y=(yy+randomAt(n+7))*300,z=350+randomAt(n+9)*320;if(x+z*.7<x0||x-z*.7>x0+size||y+z*.7<y0||y-z*.7>y0+size)continue;bg.save();bg.translate(x,y);bg.rotate((randomAt(n+41)-.5)*1.4);bg.globalAlpha=.62;bg.drawImage(im,k%2*cw,Math.floor(k/2)*ch,cw,ch,-z/2,-z*.4,z,z*.8);bg.restore();}
+ drawFeatures(bg,imgs.landmarks,x0,y0,size);
  gg.scale(res,res);gg.translate(pad-x0,pad-y0);const spacing=lod===2?16:10,flowers=[],tufts=[];
- for(let yy=Math.max(0,Math.floor((y0-pad)/spacing));yy<=Math.min(H*48/spacing,Math.ceil((y0+size+pad)/spacing));yy++)for(let xx=Math.max(0,Math.floor((x0-pad)/spacing));xx<=Math.min(W*48/spacing,Math.ceil((x0+size+pad)/spacing));xx++){const n=yy*10007+xx,wx=(xx+randomAt(n+47))*spacing,wy=(yy+randomAt(n+93))*spacing,gx=wx/48,gy=wy/48,f=lifeAt(s.land,gx,gy,s.cover);if(f.coverage<meadowThreshold(gx,gy))continue;const density=fullness(gx,gy,f.richness,f.thickness);if(randomAt(n+719)>density)continue;const row=f.richness>4&&randomAt(n+61)<.2?3:Math.floor(randomAt(n+61)*3),z=.65+density*.55+randomAt(n+91)*.15,w=Math.round((25+f.thickness*9)*z),h=Math.round(28*z);tufts.push({wx,wy,w,h,row,thickness:f.thickness});if(f.richness>3.3&&randomAt(n+401)<.015)flowers.push({x:wx,y:wy,i:2+n%2});}
+ for(let yy=Math.max(0,Math.floor((y0-pad)/spacing));yy<=Math.min(H*48/spacing,Math.ceil((y0+size+pad)/spacing));yy++)for(let xx=Math.max(0,Math.floor((x0-pad)/spacing));xx<=Math.min(W*48/spacing,Math.ceil((x0+size+pad)/spacing));xx++){const n=yy*10007+xx,wx=(xx+randomAt(n+47))*spacing,wy=(yy+randomAt(n+93))*spacing,gx=wx/48,gy=wy/48,f=lifeAt(s.land,gx,gy,s.cover);if(!canWork(s,gx,gy))continue;if(f.coverage<meadowThreshold(gx,gy))continue;const density=fullness(gx,gy,f.richness,f.thickness);if(randomAt(n+719)>density)continue;const row=f.richness>4&&randomAt(n+61)<.2?3:Math.floor(randomAt(n+61)*3),z=.65+density*.55+randomAt(n+91)*.15,w=Math.round((25+f.thickness*9)*z),h=Math.round(28*z);tufts.push({wx,wy,w,h,row,thickness:f.thickness});if(f.richness>3.3&&randomAt(n+401)<.015)flowers.push({x:wx,y:wy,i:2+n%2});}
  for(const t of tufts){if(t.thickness>.7){gg.globalAlpha=Math.min(1,(t.thickness-.7)/.25);gg.drawImage(carpet,t.wx-spacing,t.wy-spacing,spacing*2,spacing*2);gg.globalAlpha=1;}}
  for(const t of tufts){gg.drawImage(stamp[t.row],Math.round(t.wx-t.w/2),Math.round(t.wy-t.h),t.w,t.h);if(t.thickness>.7)gg.drawImage(stamp[t.row],Math.round(t.wx-t.w/2+spacing*.45),Math.round(t.wy-t.h+spacing*.4),t.w,t.h);}
  for(const f of flowers){const im=imgs.plants,cw=im.width/4,ch=im.height/4;gg.drawImage(im,f.i%4*cw,Math.floor(f.i/4)*ch,cw,ch,f.x-13,f.y-26,26,26);}
