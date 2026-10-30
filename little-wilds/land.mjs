@@ -1,6 +1,6 @@
 export const WORLD_W=96,WORLD_H=64,PLOT_W=24,PLOT_H=16,START_PLOT=5;
-const names=['Fern Ridge','Willow Pond','Clover Downs','Pebble Hollow','Mossbank','First Clearing','Lily Pond','Sunlit Rise','Bramble Hill','Daisy Vale','Dewdrop Marsh','Birch Knoll','Quiet Stones','Honey Meadow','Moonwater','Wildflower Heights'];
-const kinds=['hill','pond','hill','stones','hill','clearing','pond','hill','hill','clearing','pond','hill','stones','clearing','pond','hill'];
+const names=['Loess Ridge','Willow Draw','Clover Downs','Pebble Hollow','Prairie Rise','First Clearing','Dry Creek Bend','Sunlit Rise','Bramble Hill','Daisy Vale','Low Prairie','Birch Knoll','Glacial Stones','Honey Meadow','Cottonwood Draw','Prairie Heights'];
+const kinds=['hill','swale','hill','stones','hill','clearing','swale','hill','hill','clearing','swale','hill','stones','clearing','swale','hill'];
 export const PLOTS=names.map((name,id)=>({id,name,kind:kinds[id],x:id%4*PLOT_W,y:Math.floor(id/4)*PLOT_H}));
 export const spawnPoint={x:35.5,y:23.5};
 export const plotAt=(x,y)=>x<-.5||y<-.5||x>=WORLD_W-.5||y>=WORLD_H-.5?-1:Math.floor((y+.5)/PLOT_H)*4+Math.floor((x+.5)/PLOT_W);
@@ -9,15 +9,8 @@ export const neighbors=id=>[id%4? id-1:-1,id%4<3?id+1:-1,id>=4?id-4:-1,id<12?id+
 export const canReach=(s,id)=>!owned(s,id)&&neighbors(id).some(n=>owned(s,n));
 export function plotCost(s,id){if(!PLOTS[id])return Infinity;const distance=Math.abs(id%4-1)+Math.abs(Math.floor(id/4)-1);return Math.floor(100*Math.pow(1.55,Math.max(0,(s.plots?.length??16)-1))*(1+distance*.25)/25)*25;}
 export function buyPlot(s,id){if(!Number.isInteger(id)||!PLOTS[id]||!canReach(s,id))return false;const price=plotCost(s,id);if(s.seeds<price)return false;s.seeds-=price;s.plots.push(id);s.plots.sort((a,b)=>a-b);return true;}
-export function featuresFor(plot){
- const cx=plot.x+11.5,cy=plot.y+7.5;
- if(plot.kind==='pond')return [{type:1,x:cx+1,y:cy,w:9,h:6.4},{type:3,x:cx-7,y:cy+4,w:2.8,h:2.3}];
- if(plot.kind==='hill')return [{type:0,x:cx-3,y:cy-2,w:10,h:6},{type:2,x:cx+6,y:cy+3,w:6,h:4}];
- if(plot.kind==='stones')return [{type:3,x:cx,y:cy,w:4,h:3},{type:2,x:cx-6,y:cy-4,w:6,h:4}];
- return [{type:2,x:plot.x+4,y:plot.y+3,w:5,h:3},{type:3,x:plot.x+19,y:plot.y+12,w:2.5,h:2}];
-}
-export const FEATURES=PLOTS.flatMap(p=>featuresFor(p).map(f=>({...f,plot:p.id})));
-export function waterAt(x,y){const p=PLOTS[plotAt(x,y)];if(!p||p.kind!=='pond')return false;const f=FEATURES.find(f=>f.plot===p.id&&f.type===1);return ((x-f.x)/(f.w*.41))**2+((y-f.y)/(f.h*.36))**2<1;}
+// Ponds are not pre-placed. Water creation belongs to a future Rainwisp action.
+export const waterAt=()=>false;
 export const RESTORABLE=Array.from({length:WORLD_W*WORLD_H},(_,i)=>i).filter(i=>!waterAt(i%WORLD_W,Math.floor(i/WORLD_W)));
 export const canWork=(s,x,y)=>owned(s,plotAt(x,y))&&!waterAt(x,y);
 export function segmentOpen(s,x0,y0,x1,y1){const steps=Math.max(1,Math.ceil(Math.hypot(x1-x0,y1-y0)*4));for(let i=0;i<=steps;i++)if(!canWork(s,x0+(x1-x0)*i/steps,y0+(y1-y0)*i/steps))return false;return true;}

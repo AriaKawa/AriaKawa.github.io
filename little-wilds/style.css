@@ -52,7 +52,7 @@ h2{font-size:22px;margin:0 0 22px;text-align:center;font-weight:700}h3{font-size
 .plot-choice[aria-pressed=true]{outline:3px solid var(--accent);outline-offset:1px}
 .plot-choice strong{font-size:11px;line-height:1.25;text-align:center}.plot-choice small{font-size:10px;font-weight:normal}
 .plot-symbol{width:36px;height:24px;border-radius:60% 50% 30% 30%;background:#9bae7e;box-shadow:inset 0 -5px #74895f}
-.plot-symbol.pond{background:#94cbce;box-shadow:0 0 0 3px #91a77c,inset 0 -4px #72aeb9;border-radius:50%}
+.plot-symbol.swale{background:#9c9c77;box-shadow:inset 0 5px #777f60,inset 0 -4px #b8ae85;border-radius:45% 55% 35% 45%}
 .plot-symbol.hill{border-radius:60% 65% 25% 25%;transform:rotate(-8deg)}
 .plot-symbol.stones{background:#bcb7a1;box-shadow:inset -7px -5px #989984;width:27px;border-radius:50% 55% 30% 30%}
 .plot-detail{margin-top:18px;padding:12px 14px;border:1px solid var(--edge);border-radius:12px}.plot-detail h3{margin:0 0 8px;font-size:16px}.plot-detail p{font-size:12px;line-height:1.5;margin:8px 0}.plot-detail .dialog-actions{margin-top:10px}
