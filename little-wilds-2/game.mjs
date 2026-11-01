@@ -1,64 +1,274 @@
-import{PLOTS,START_PLOT,owned,canReach,plotCost,buyPlot,canWork,plotAt}from './land.mjs';
-import{STYLES,savedStyle,loadStyle,applyStyle,stylePath}from './styles.mjs';
-let activeStyle='original',styleBusy=false;
-import{TYPES,UPGRADES,W,H,fresh,level,restoration,spiritCost,summon,upgradeCost,buy,prestigeReward,prestige,tick,offline,validate}from './core.mjs';
-import{advancePlanting,PLANT_SECONDS}from './planting.mjs';
-import{createRenderer}from './render.mjs';
-import{createCarry,pickUp,place,stepFalls}from './carry.mjs';
-const $=id=>document.getElementById(id),KEY='little-wilds-2-v1';let s=fresh(),ready=false,selected=0,modalType='',saveAt=0,lastUI=0,toastTimer;
-try{const raw=localStorage.getItem(KEY);if(raw){s=validate(JSON.parse(raw));if(!s.paused)offline(s,(Date.now()-s.last)/1000);}}catch{toast('Save unavailable');}
-const fmt=n=>n>=1e6?(n/1e6).toFixed(1)+'m':n>=10000?(n/1000).toFixed(1)+'k':Math.floor(n).toLocaleString();
-function toast(text){$('toast').textContent=text;$('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),2500);}
-function save(){try{s.last=Date.now();localStorage.setItem(KEY,JSON.stringify(s));}catch{toast('Storage unavailable. Export save.');}}
-const canvas=$('world'),renderer=createRenderer(canvas),hand={charge:0},carry=createCarry();let held=false,pointerIndex=-1,pointerId=null,keyboard=false;
-function release(){if(carry.spirit)place(carry,null,true);setPinch(false);held=false;keyboard=false;hand.charge=0;$('charge').style.width='0';$('cursor').classList.remove('planting');}
-function setPinch(on){const im=cursor.querySelector('img'),src=stylePath(activeStyle)+(on?'pinch.png':'cursor.png');if(im.getAttribute('src')!==src)im.src=src;cursor.classList.toggle('carrying',on);}
-function showModal(type,html){release();modalType=type;$('modal-content').innerHTML=html;if(!$('modal').open)$('modal').showModal();$('modal').appendChild($('cursor'));updateUI();}
-$('close-modal').onclick=()=>$('modal').close();$('modal').addEventListener('close',()=>{modalType='';document.body.appendChild($('cursor'));release();});
-$('modal').addEventListener('click',e=>{if(e.target===$('modal')){const r=$('modal').getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)$('modal').close();}});
-function buildDock(){$('spirit-dock').innerHTML=TYPES.map((t,i)=>'<div class="spirit-card" id="card-'+i+'"><button class="art-button art-portrait portrait" data-portrait="'+i+'" aria-label="'+t.name+'" title="'+t.name+'" aria-pressed="'+(selected===i)+'"><span class="sprite s'+i+'"></span><b class="count" id="count-'+i+'">0</b></button><div class="cost"><span class="icon seed"></span><span id="cost-'+i+'"></span></div><button class="summon" data-summon="'+i+'" aria-label="Summon '+t.name+'">Summon</button></div>').join('');updateUI();}
-$('spirit-dock').onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.portrait!==undefined){selected=+b.dataset.portrait;renderer.select(selected);const t=TYPES[selected];if(t.need&&!level(s,t.need)){openTree();}updateUI();}if(b.dataset.summon!==undefined&&summon(s,+b.dataset.summon)){selected=+b.dataset.summon;renderer.select(selected);save();updateUI();}};
-const short={roots:['Roots','+35% life',0],steps:['Speed','+20%',12],bloom:['Blossoms','Petalkin',3],harvest:['Harvest','+30% seeds',12],rain:['Rain','Rainwisp',13],dew:['Dew','+50%',13],elder:['Woodland','Elderoot',7],harmony:['Harmony','+25% life',14]};
-function openTree(){showModal('tree','<h2>Upgrades</h2><div class="upgrade-grid">'+UPGRADES.map(u=>{const [name,effect,icon]=short[u.id],l=level(s,u.id),c=upgradeCost(s,u),needs=u.parents.filter(p=>!level(s,p)).map(p=>short[p][0]);return '<div class="upgrade-node"><button class="art-button art-portrait" data-upgrade="'+u.id+'" aria-label="Upgrade '+name+'" title="'+effect+'"><span class="icon" style="background-position:'+(icon%4*100/3)+'% '+(Math.floor(icon/4)*100/3)+'%"></span><span class="node-level">'+l+'/'+u.max+'</span></button><span class="upgrade-name">'+name+'</span><span class="upgrade-value">'+effect+'</span><div class="upgrade-cost">'+(l>=u.max?'MAX':'<span class="icon seed"></span>'+fmt(c.seeds)+(c.dew?'<span class="icon water"></span>'+fmt(c.dew):''))+'</div><span class="upgrade-needs">'+(needs.length?'Needs '+needs.join(' + '):'')+'</span></div>';}).join('')+'</div>');}
-$('tree').onclick=openTree;$('modal-content').addEventListener('click',e=>{const b=e.target.closest('[data-upgrade]');if(b&&buy(s,b.dataset.upgrade)){save();openTree();}});
-function openPrestige(){const r=prestigeReward(s);showModal('prestige','<h2>Prestige</h2><span class="prestige-icon"></span><div class="stat"><span class="icon memory"></span> +<b id="reward">'+r+'</b></div><p class="essential" id="prestige-gate">'+(r?'+'+((s.memories+r)*10)+'% life':'25% restoration required')+'</p><p class="essential">Reset land, plot purchases, spirits & upgrades.<br>Keep memories.</p><div class="dialog-actions"><button class="wood-button" id="confirm-prestige">Prestige</button></div>');$('confirm-prestige').onclick=()=>{const next=prestige(s);if(next){s=next;renderer.clear();renderer.focusPlot();save();updateUI();$('modal').close();}};}
-$('prestige').onclick=openPrestige;
-function updateUI(){$('seeds').textContent=fmt(s.seeds);$('dew').textContent=fmt(s.dew);$('memories').textContent=fmt(s.memories);$('percent').textContent=(restoration(s)*100).toFixed(1)+'%';$('landbar').style.width=(restoration(s)*100)+'%';$('rebirth-badge').textContent=prestigeReward(s)?'+'+prestigeReward(s):'';$('pause').classList.toggle('art-pause',!s.paused);$('pause').classList.toggle('art-play',s.paused);$('pause').title=s.paused?'Resume':'Pause';$('pause').setAttribute('aria-label',s.paused?'Resume':'Pause');document.body.classList.toggle('paused',s.paused);for(let i=0;i<4;i++){const count=s.spirits.filter(a=>a.type===i).length,t=TYPES[i],locked=!!t.need&&!level(s,t.need);if(!$('count-'+i))continue;$('count-'+i).textContent=count;$('cost-'+i).textContent=fmt(spiritCost(s,i));$('card-'+i).classList.toggle('locked',locked);const b=document.querySelector('[data-summon="'+i+'"]');b.disabled=locked||s.seeds<spiritCost(s,i)||s.spirits.length>=40;b.title=locked?'Unlock '+short[t.need][0]:s.spirits.length>=40?'40 / 40':t.name;const p=document.querySelector('[data-portrait="'+i+'"]');p.setAttribute('aria-pressed',String(selected===i));p.classList.toggle('art-selected',selected===i);p.classList.toggle('art-portrait',selected!==i);}
-document.querySelectorAll('[data-upgrade]').forEach(b=>{const u=UPGRADES.find(x=>x.id===b.dataset.upgrade),c=upgradeCost(s,u);b.disabled=level(s,u.id)>=u.max||u.parents.some(p=>!level(s,p))||s.seeds<c.seeds||s.dew<c.dew;});
-if(modalType==='land')updateLand();
-if(modalType==='prestige'){$('reward').textContent=prestigeReward(s);$('confirm-prestige').disabled=!prestigeReward(s);$('prestige-gate').textContent=prestigeReward(s)?'+'+((s.memories+prestigeReward(s))*10)+'% life':'25% restoration required';}}
-$('pause').onclick=()=>{release();s.paused=!s.paused;save();updateUI();};
-$('fullscreen').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch{toast('Fullscreen unavailable');}};
-$('settings').onclick=()=>{showModal('save','<h2>Settings</h2><h3>Graphics style</h3><div class="style-options">'+STYLES.map(t=>'<button class="style-choice" data-style-choice="'+t.id+'" aria-pressed="'+(activeStyle===t.id)+'" '+(styleBusy?'disabled':'')+'><span class="style-preview" style="background-image:url('+stylePath(t.id)+'spirits.png)"></span><strong>'+t.name+'</strong><small>'+t.description+'</small></button>').join('')+'</div><p id="style-status" class="essential" role="status">Choose a style. Your progress stays the same.</p><h3>Save data</h3><div class="save-actions"><button class="wood-button" id="export">Export</button><button class="wood-button" id="import">Import</button><input class="import-input" type="file" id="import-file" accept=".json,application/json"></div>');$('export').onclick=()=>{save();const u=URL.createObjectURL(new Blob([JSON.stringify(s)],{type:'application/json'})),a=document.createElement('a');a.href=u;a.download='little-wilds-2-'+s.cycle+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);};$('import').onclick=()=>$('import-file').click();$('import-file').onchange=async e=>{try{const f=e.target.files[0];if(!f)return;if(f.size>1000000)throw Error('Invalid save');const incoming=validate(JSON.parse(await f.text()));if(!confirm('Replace current save?'))return;s=incoming;s.last=Date.now();renderer.clear();renderer.focusPlot();save();updateUI();$('modal').close();}catch{toast('Invalid save');}};};
-document.addEventListener('pointermove',e=>{if(e.pointerType==='touch')return;$('cursor').hidden=false;document.body.classList.add('custom-cursor');$('cursor').style.left=e.clientX+'px';$('cursor').style.top=e.clientY+'px';});
-document.addEventListener('pointerleave',()=>{$('cursor').hidden=true;document.body.classList.remove('custom-cursor');release();});
-const pointers=new Map();let dragging=false,origin=null,pinch=0;
-canvas.style.touchAction='none';
-canvas.addEventListener('contextmenu',e=>e.preventDefault());
-canvas.addEventListener('pointerdown',e=>{if(!ready||$('modal').open)return;pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});canvas.setPointerCapture(e.pointerId);canvas.focus({preventScroll:true});origin={x:e.clientX,y:e.clientY};dragging=e.button!==0||pointers.size>1;pinch=0;if(dragging){release();return;}const spirit=renderer.hitSpirit(s,e.clientX,e.clientY);if(spirit){release();pickUp(carry,spirit,e.clientX,e.clientY);pointerId=e.pointerId;setPinch(true);cursor.hidden=false;cursor.style.left=e.clientX+'px';cursor.style.top=e.clientY+'px';return;}held=!s.paused;keyboard=false;pointerId=e.pointerId;pointerIndex=renderer.indexAt(e.clientX,e.clientY);hand.charge=0;$('cursor').classList.add('planting');});
-canvas.addEventListener('pointermove',e=>{const prev=pointers.get(e.pointerId);if(carry.spirit&&e.pointerId===pointerId){carry.x=e.clientX;carry.y=e.clientY;cursor.style.left=e.clientX+'px';cursor.style.top=e.clientY+'px';return;}if(!prev){setPinch(!!renderer.hitSpirit(s,e.clientX,e.clientY));pointerIndex=renderer.indexAt(e.clientX,e.clientY);return;}pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});if(pointers.size===2){release();dragging=true;const [a,b]=[...pointers.values()],d=Math.hypot(a.x-b.x,a.y-b.y);if(pinch)renderer.zoom(d/pinch,(a.x+b.x)/2,(a.y+b.y)/2);pinch=d;renderer.pan((e.clientX-prev.x)/2,(e.clientY-prev.y)/2);return;}if(origin&&Math.hypot(e.clientX-origin.x,e.clientY-origin.y)>6)dragging=true;if(dragging){release();renderer.pan(e.clientX-prev.x,e.clientY-prev.y);}pointerIndex=renderer.indexAt(e.clientX,e.clientY);});
-function endPointer(e){if(carry.spirit&&pointerId===e.pointerId){const drop=renderer.dropAt(carry);const valid=canWork(s,drop.world.x/48,drop.world.y/48);if(!valid&&e.type==='pointerup')toast('Place your spirit on unlocked, dry land.');place(carry,drop.world,e.type!=='pointerup'||!valid,drop.height,s);save();}pointers.delete(e.pointerId);pointerId=null;pinch=0;release();if(!pointers.size){dragging=false;origin=null;}}
-canvas.addEventListener('pointerup',endPointer);canvas.addEventListener('pointercancel',endPointer);canvas.addEventListener('lostpointercapture',endPointer);
-canvas.addEventListener('wheel',e=>{e.preventDefault();release();if(e.ctrlKey||!e.shiftKey)renderer.zoom(Math.exp(-e.deltaY*.0015),e.clientX,e.clientY);else renderer.pan(-e.deltaX,-e.deltaY);pointerIndex=renderer.indexAt(e.clientX,e.clientY);},{passive:false});
-canvas.addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();if(!e.repeat&&!s.paused){held=true;keyboard=true;if(pointerIndex<0)pointerIndex=renderer.indexAt(innerWidth/2,innerHeight/2);}}const moves={ArrowLeft:[80,0],ArrowRight:[-80,0],ArrowUp:[0,80],ArrowDown:[0,-80]};if(moves[e.code]){e.preventDefault();release();renderer.pan(...moves[e.code]);}if(e.key==='+'||e.key==='=')renderer.zoom(1.2);if(e.key==='-')renderer.zoom(1/1.2);});
-canvas.addEventListener('keyup',e=>{if(e.code==='Space')release();});canvas.addEventListener('blur',release);window.addEventListener('blur',()=>{pointers.clear();release();});
-let last=performance.now();function loop(now){const dt=Math.min(30,Math.max(0,(now-last)/1000));last=now;if(ready&&!document.hidden){stepFalls(Math.min(dt,.1));for(let elapsed=0;elapsed<dt;elapsed+=.1)tick(s,Math.min(.1,dt-elapsed),renderer.grow,carry.spirit);
-advancePlanting(s,hand,Math.min(dt,.25),held&&!$('modal').open,pointerIndex,renderer.grow);$('charge').style.width=(hand.charge/PLANT_SECONDS*30)+'px';renderer.draw(s,now,carry);if(now-lastUI>250){updateUI();lastUI=now;}if(now-saveAt>5000){save();saveAt=now;}}requestAnimationFrame(loop);}
-let hiddenAt=0;document.addEventListener('visibilitychange',()=>{release();if(document.hidden){hiddenAt=Date.now();save();}else{if(hiddenAt&&!s.paused)offline(s,(Date.now()-hiddenAt)/1000);hiddenAt=0;renderer.clear();last=performance.now();save();updateUI();}});window.addEventListener('pagehide',save);buildDock();
-async function switchStyle(id){
- if(styleBusy)return;styleBusy=true;release();
- document.querySelectorAll('[data-style-choice]').forEach(b=>b.disabled=true);
- const status=$('style-status');if(status)status.textContent='Loading artwork…';
- try{const bundle=await loadStyle(id);renderer.setArt(bundle);activeStyle=id;applyStyle(bundle);setPinch(false);if(status)status.textContent=STYLES.find(t=>t.id===id).name+' selected.';}
- catch(e){if(status)status.textContent='Artwork could not load. Your previous style is still active.';throw e;}
- finally{styleBusy=false;document.querySelectorAll('[data-style-choice]').forEach(b=>{b.disabled=false;b.setAttribute('aria-pressed',String(b.dataset.styleChoice===activeStyle));});}
-}
-$('modal-content').addEventListener('click',e=>{const b=e.target.closest('[data-style-choice]');if(b)switchStyle(b.dataset.styleChoice).catch(()=>toast('Could not load style. Try again.'));});
-async function start(){try{try{await switchStyle(savedStyle());}catch{await switchStyle('original');}renderer.focusPlot(plotAt(s.spirits[0].x,s.spirits[0].y));ready=true;$('loading').remove();save();}catch{$('loading').textContent='Artwork unavailable. Refresh to try again.';}}
-start();requestAnimationFrame(loop);
+import { makeWorld, ZONES, CN, CW, CH, landAt, FINALE, hash } from './world.mjs';
+import { newLand, tick, touch, travel, catchUp, encode, decode, buySpirit, buyUpgrade, spiritCost, spiritOpen, upgradeCost, upgradeOpen, zonePct, zoneBloom, valleyPct, valleyComplete, initObjects, SPIRITS, UPGRADES, GREEN } from './sim.mjs';
+import { createLand } from './land.mjs';
+import { createRenderer } from './render.mjs';
+import { createAudio } from './audio.mjs';
 
-let selectedPlot=START_PLOT;
-const descriptions={clearing:'Open prairie with dormant ground cover. Restore it into a living meadow.',hill:'Broad rolling ridges and loess slopes. New grass follows the same contours as the dormant ground.',swale:'A shallow, dry drainage swale with darker alluvial soil. No water is placed here in advance.',stones:'Fine gravel and scattered glacial stones worked into the prairie soil.'};
-function openLand(){showModal('land','<h2>Grow your world</h2><p class="essential">Spend seeds to open neighboring plots.<br><span id="owned-count"></span> · Purchases last until prestige.</p><div class="plot-grid" aria-label="Land map">'+PLOTS.map(p=>'<button class="plot-choice" data-plot="'+p.id+'" aria-pressed="'+(p.id===selectedPlot)+'"><span class="plot-symbol '+p.kind+'" aria-hidden="true"></span><strong>'+p.name+'</strong><small></small></button>').join('')+'</div><section class="plot-detail"><h3 id="plot-name"></h3><p id="plot-description"></p><p id="plot-price"></p><div class="dialog-actions"><button class="wood-button" id="buy-plot">Unlock plot</button><button class="wood-button" id="view-plot">View plot</button></div></section>');$('buy-plot').onclick=()=>{if(buyPlot(s,selectedPlot)){renderer.clear();save();updateUI();toast(PLOTS[selectedPlot].name+' unlocked');}};$('view-plot').onclick=()=>{renderer.focusPlot(selectedPlot);$('modal').close();};updateLand();}
-function updateLand(){if(!$('owned-count'))return;$('owned-count').textContent=s.plots.length+' / 16 plots open';for(const b of document.querySelectorAll('[data-plot]')){const id=+b.dataset.plot;b.classList.toggle('owned',owned(s,id));b.classList.toggle('reachable',canReach(s,id));b.setAttribute('aria-pressed',String(id===selectedPlot));b.querySelector('small').textContent=owned(s,id)?'Open':canReach(s,id)?fmt(plotCost(s,id))+' seeds':'Locked';}const p=PLOTS[selectedPlot],isOwned=owned(s,p.id),reachable=canReach(s,p.id),price=plotCost(s,p.id);$('plot-name').textContent=p.name;$('plot-description').textContent=descriptions[p.kind];$('plot-price').textContent=isOwned?'This plot is yours.':!reachable?'Open a neighboring plot first.':price.toLocaleString()+' seeds'+(s.seeds<price?' · '+Math.ceil(price-s.seeds).toLocaleString()+' more needed':'');const b=$('buy-plot');if(b){b.disabled=isOwned||!reachable||s.seeds<price;b.textContent=isOwned?'Already open':'Unlock plot';}}
-$('land').onclick=openLand;$('modal-content').addEventListener('click',e=>{const b=e.target.closest('[data-plot]');if(b){selectedPlot=+b.dataset.plot;updateLand();}});
+const KEY = 'little-wilds-2-v2', CARDS_KEY = 'little-wilds-2-postcards', SOUND_KEY = 'little-wilds-2-muted';
+const $ = id => document.getElementById(id);
+const fmt = n => n >= 1e9 ? (n / 1e9).toFixed(2) + 'b' : n >= 1e6 ? (n / 1e6).toFixed(2) + 'm' : n >= 1e4 ? (n / 1e3).toFixed(1) + 'k' : Math.floor(n).toLocaleString();
+const load = src => new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = src; });
+const nextFrame = () => new Promise(r => setTimeout(r, 30));
+
+const audio = createAudio();
+let images, world, land, view, s;
+let ready = false, modal = '', lastUI = 0, lastSave = 0, last = performance.now(), toastTimer, bannerTimer, lastActive = performance.now(), tickBank = 0;
+let thenX = null, timelapse = null, currentZone = 0, seedShown = 0, wasHidden = 0;
+const pointer = { x: 0, y: 0, on: false, holding: false, id: null, kb: false };
+let carry = null, panning = false; const pointers = new Map(); let pinch = 0;
+
+function toast(text) { $('toast').textContent = text; $('toast').classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => $('toast').classList.remove('show'), 3200); }
+function banner(title, sub = '', ms = 5200) { $('banner-title').textContent = title; $('banner-sub').textContent = sub; $('banner').classList.add('show'); clearTimeout(bannerTimer); bannerTimer = setTimeout(() => $('banner').classList.remove('show'), ms); }
+function save() { if (!s) return; try { localStorage.setItem(KEY, encode(s)); } catch { toast('Saving is unavailable in this browser.'); } }
+
+async function buildLand(index) {
+  world = makeWorld(1 + index * 17);
+  land = createLand(world, index);
+  world.dirty = i => land.markCell(i);
+  world.waterMoved = z => land.markWater(z);
+}
+function attach() {
+  initObjects(s, world);
+  land.setSource(s.h, s.zones); land.flushAll();
+  view = createRenderer($('world'), world, land, images);
+  buildDock();
+  currentZone = firstOpen(); view.focusZone(currentZone, true);
+}
+const firstOpen = () => { const i = s.zones.findIndex(z => z.open && !z.done); return i < 0 ? FINALE : i; };
+
+function buildDock() {
+  $('dock').innerHTML = SPIRITS.map((d, i) => `<button class="card" id="card-${i}" data-spirit="${i}" title="${d.job}"><span class="count" id="count-${i}"></span><span class="face" style="background-position:0 ${i * 100 / 7}%"></span><b>${d.name}</b><small id="cost-${i}"></small></button>`).join('') + `<button class="card tend" id="tend" title="Upgrades"><span class="tend-icon">✿</span><b>Tend</b><small id="tend-note"></small></button>`;
+}
+$('hud').addEventListener('click', e => {
+  const b = e.target.closest('[data-spirit]'); if (!b) return;
+  audio.start(); wake();
+  const t = +b.dataset.spirit;
+  if (!spiritOpen(s, t)) { toast(`${SPIRITS[t].name} comes when ${SPIRITS[t].need} glade${SPIRITS[t].need > 1 ? 's are' : ' is'} restored.`); return; }
+  if (buySpirit(s, t)) { audio.buy(); save(); updateUI(); const a = s.spirits[s.spirits.length - 1]; a.x = view.toCell(innerWidth / 2, innerHeight / 2).x; a.y = view.toCell(innerWidth / 2, innerHeight / 2).y; toast(`${SPIRITS[t].name}: ${SPIRITS[t].job}`); }
+  else if (s.spirits.length >= 40) toast('The valley has all the spirits it can hold.');
+});
+function nextGoal() {
+  const costs = UPGRADES.filter(u => upgradeOpen(s, u) && (s.upgrades[u.id] || 0) < u.max).map(u => upgradeCost(s, u));
+  return costs.length ? Math.min(...costs) : Infinity;
+}
+function updateUI() {
+  if (!s) return;
+  $('seeds').textContent = fmt(s.seeds);
+  SPIRITS.forEach((d, i) => {
+    const open = spiritOpen(s, i), cost = spiritCost(s, i), can = open && s.seeds >= cost && s.spirits.length < 40, c = $('card-' + i); if (!c) return;
+    c.classList.toggle('locked', !open); c.classList.toggle('can', can);
+    $('count-' + i).textContent = s.spirits.filter(a => a.type === i).length || '';
+    $('cost-' + i).textContent = open ? fmt(cost) : `after ${d.need} glade${d.need > 1 ? 's' : ''}`;
+  });
+  const goal = nextGoal(), t = $('tend'); if (t) { t.classList.toggle('can', s.seeds >= goal); $('tend-note').textContent = goal === Infinity ? 'all done' : fmt(goal); }
+  // The chip follows whichever glade the player is looking at.
+  const look = view.toCell(innerWidth / 2, innerHeight / 2), cx = Math.max(0, Math.min(CW - 1, Math.round(look.x))), cy = Math.max(0, Math.min(CH - 1, Math.round(look.y)));
+  currentZone = world.zone[cy * CW + cx];
+  const z = s.zones[currentZone], pct = zonePct(s, world, currentZone), bl = zoneBloom(s, world, currentZone);
+  $('zone-name').textContent = ZONES[currentZone].name;
+  $('zone-bar').style.width = pct * 100 + '%'; $('bloom-bar').style.width = (z.done ? bl * 100 : 0) + '%';
+  $('zone-note').textContent = !z.open ? 'Still asleep' : z.bloomed ? 'Flourishing ✿' : z.done ? `Flowers ${Math.round(bl / .85 * 100)}%` : `${Math.floor(pct * 100)}% restored`;
+  if (modal === 'tend') refreshTend(); if (modal === 'valley') openValley();
+}
+function renderHint() {
+  const h = $('hint');
+  let text = '';
+  if (!s.touched) text = 'Hold and drag across the dead ground';
+  else if (s.spirits.length === 1 && s.seeds >= spiritCost(s, 0)) text = 'Those seeds can wake another Mossling';
+  h.hidden = !text; if (text) h.textContent = text;
+}
+
+/* Upgrades */
+function tendHTML() {
+  return `<h2>Tend the land</h2><p class="sub">Every upgrade changes what you see.</p>` + UPGRADES.map(u => {
+    const l = s.upgrades[u.id] || 0, open = upgradeOpen(s, u), cost = upgradeCost(s, u), max = l >= u.max;
+    return `<div class="up"><strong>${u.name}${u.max > 1 ? `<em>${l} / ${u.max}</em>` : ''}</strong><span>${open ? u.desc : 'Comes after your first restored glade.'}</span><button data-up="${u.id}" ${max || !open || s.seeds < cost ? 'disabled' : ''}>${max ? 'Done' : fmt(cost)}</button></div>`;
+  }).join('');
+}
+function refreshTend() { for (const b of document.querySelectorAll('[data-up]')) { const u = UPGRADES.find(q => q.id === b.dataset.up), l = s.upgrades[u.id] || 0; b.disabled = l >= u.max || !upgradeOpen(s, u) || s.seeds < upgradeCost(s, u); } }
+function show(type, html) { releaseAll(); modal = type; $('modal-body').innerHTML = html; if (!$('modal').open) $('modal').showModal(); }
+$('close').onclick = () => $('modal').close();
+$('modal').addEventListener('close', () => { modal = ''; wake(); });
+$('modal').addEventListener('click', e => { if (e.target === $('modal')) { const r = $('modal').getBoundingClientRect(); if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) $('modal').close(); } });
+$('hud').addEventListener('click', e => { if (e.target.closest('#tend')) { audio.start(); show('tend', tendHTML()); } });
+$('modal-body').addEventListener('click', e => {
+  const up = e.target.closest('[data-up]');
+  if (up && buyUpgrade(s, up.dataset.up)) { audio.buy(); save(); show('tend', tendHTML()); return; }
+  const f = e.target.closest('[data-focus]');
+  if (f) { view.focusZone(+f.dataset.focus); $('modal').close(); return; }
+  const a = e.target.closest('[data-act]'); if (!a) return;
+  ({ all() { view.focusAll(); $('modal').close(); }, travel: goOn, exportSave, importSave, reset: resetSave, cards: openCards, valley: openValley })[a.dataset.act]?.();
+});
+
+/* Valley map */
+function openValley() {
+  const cells = [...ZONES].sort((a, b) => a.row - b.row || a.col - b.col).map(z => { const st = s.zones[z.id], pct = zonePct(s, world, z.id); return `<button class="vz ${st.open ? '' : 'locked'} ${st.done ? 'done' : ''} ${st.bloomed ? 'bloomed' : ''}" data-focus="${z.id}"><b>${z.name}</b><small>${!st.open ? 'asleep' : st.bloomed ? 'flourishing ✿' : st.done ? 'restored' : Math.floor(pct * 100) + '%'}</small></button>`; }).join('');
+  const html = `<h2>${landAt(s.land).name}</h2><p class="sub">${(valleyPct(s, world) * 100).toFixed(1)}% restored. Choose a glade to visit.</p><div class="valley">${cells}</div><div class="row"><button class="wood" data-act="all">See the whole valley</button>${valleyComplete(s) ? '<button class="wood" data-act="travel">Travel on</button>' : ''}</div>`;
+  if (modal === 'valley' && $('modal-body').firstChild) { const scroll = $('modal').scrollTop; $('modal-body').innerHTML = html; $('modal').scrollTop = scroll; } else show('valley', html);
+}
+$('zonechip').onclick = () => { audio.start(); openValley(); };
+
+/* Menu */
+function openMenu() {
+  show('menu', `<h2>Little Wilds 2</h2><p class="sub">Bring a dead valley back to life, one patch at a time.</p>
+  <div class="row"><button class="wood" data-act="cards">Postcards</button><button class="wood" data-act="exportSave">Export save</button><button class="wood" data-act="importSave">Import save</button><button class="wood" data-act="reset">Start over</button></div>
+  <p class="sub" style="margin-top:14px">Hold and drag: heal the land.<br>Drag a spirit: carry it somewhere.<br>Right-drag, two fingers or arrow keys: look around.<br>Wheel or pinch: zoom. H: hide the interface.</p><input type="file" id="file" accept=".json,application/json" hidden>`);
+}
+$('btn-menu').onclick = () => { audio.start(); openMenu(); };
+function exportSave() { save(); const a = document.createElement('a'), u = URL.createObjectURL(new Blob([encode(s)], { type: 'application/json' })); a.href = u; a.download = 'little-wilds-2-save.json'; a.click(); setTimeout(() => URL.revokeObjectURL(u), 1000); }
+function importSave() {
+  const f = $('file'); f.onchange = async () => { try { const file = f.files[0]; if (!file || file.size > 2e6) throw 0; const text = await file.text(), o = JSON.parse(text); if (!confirm('Replace your current valley?')) return; await buildLand(o.land || 0); s = decode(text, world); attach(); save(); $('modal').close(); } catch { toast('That is not a Little Wilds 2 save.'); } }; f.click();
+}
+async function resetSave() { if (!confirm('Start again from barren ground? This erases your progress.')) return; s = newLand(0); await buildLand(0); attach(); try { localStorage.removeItem(CARDS_KEY); } catch {} save(); $('modal').close(); }
+const readCards = () => { try { return JSON.parse(localStorage.getItem(CARDS_KEY) || '[]'); } catch { return []; } };
+function openCards() { const list = readCards(); show('cards', `<h2>Postcards</h2><p class="sub">The lands you have brought back.</p>` + (list.length ? `<div class="cards">${list.map(c => `<figure><img src="${c.now}" alt="${c.name} restored"><figcaption>${c.name}</figcaption></figure>`).join('')}</div>` : '<p>Finish a whole valley to keep its postcard here.</p>')); }
+function celebrate() {
+  const then = view.snapshot(true), now = view.snapshot(false), name = landAt(s.land).name;
+  const list = readCards(); if (!list.some(c => c.land === s.land)) { list.push({ land: s.land, name, now }); try { localStorage.setItem(CARDS_KEY, JSON.stringify(list.slice(-6))); } catch {} }
+  show('postcard', `<h2>${name} lives again</h2><p class="sub">Drag to compare. Stay as long as you like, or travel on to the next land.</p><div class="compare" id="cmp"><img src="${then}" alt="The valley when you arrived"><img class="now" src="${now}" alt="The valley now"><input type="range" min="0" max="100" value="50" aria-label="Compare then and now"></div><div class="row"><button class="wood" data-act="travel">Travel on</button></div>`);
+  $('cmp').querySelector('input').oninput = e => $('cmp').style.setProperty('--cut', e.target.value + '%');
+}
+async function goOn() {
+  const next = travel(s); $('modal').close();
+  $('loading').style.display = ''; document.body.appendChild($('loading')); await nextFrame();
+  s = next; await buildLand(s.land); attach(); save(); $('loading').style.display = 'none';
+  banner(landAt(s.land).name, 'Another land is waiting.');
+}
+
+/* Then and now, sound */
+$('btn-then').onclick = () => { $('banner').classList.remove('show'); thenX = thenX == null ? innerWidth / 2 : null; $('btn-then').setAttribute('aria-pressed', thenX != null); if (thenX != null) toast('Drag across the land to compare. Press again to finish.'); };
+const syncSound = () => { $('btn-sound').textContent = audio.muted ? 'Muted' : 'Sound'; $('btn-sound').setAttribute('aria-pressed', audio.muted); };
+$('btn-sound').onclick = () => { audio.start(); audio.setMuted(!audio.muted); try { localStorage.setItem(SOUND_KEY, audio.muted ? '1' : ''); } catch {} syncSound(); };
+try { if (localStorage.getItem(SOUND_KEY)) audio.setMuted(true); } catch {} syncSound();
+
+/* Input */
+const canvas = $('world');
+function wake() { lastActive = performance.now(); document.body.classList.remove('quiet'); }
+function releaseAll() { pointer.holding = false; pointer.kb = false; if (carry) { carry.held = false; carry = null; } panning = false; }
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+canvas.addEventListener('pointerdown', e => {
+  if (!ready || $('modal').open) return;
+  audio.start(); wake(); canvas.focus({ preventScroll: true }); canvas.setPointerCapture(e.pointerId);
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY }); pointer.x = e.clientX; pointer.y = e.clientY; pointer.on = true;
+  if (thenX != null) { thenX = e.clientX; pointer.id = e.pointerId; return; }
+  if (pointers.size > 1 || e.button !== 0) { pointer.holding = false; if (carry) { carry.held = false; carry = null; } panning = true; pinch = 0; return; }
+  const hit = view.hitSpirit(s, e.clientX, e.clientY);
+  pointer.id = e.pointerId;
+  if (hit) { carry = hit; hit.held = true; hit.tx = -1; hit.px = e.clientX; hit.py = e.clientY; return; }
+  pointer.holding = true;
+});
+canvas.addEventListener('pointermove', e => {
+  wake();
+  const prev = pointers.get(e.pointerId); pointer.x = e.clientX; pointer.y = e.clientY; pointer.on = e.pointerType !== 'touch' || !!prev;
+  if (!prev) return;
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (thenX != null) { thenX = Math.max(0, Math.min(innerWidth, e.clientX)); return; }
+  if (carry) { carry.px = e.clientX; carry.py = e.clientY; return; }
+  if (panning) {
+    if (pointers.size === 2) { const [a, b] = [...pointers.values()], d = Math.hypot(a.x - b.x, a.y - b.y); if (pinch) view.zoomAt(d / pinch, (a.x + b.x) / 2, (a.y + b.y) / 2); pinch = d; view.pan((e.clientX - prev.x) / 2, (e.clientY - prev.y) / 2); }
+    else view.pan(e.clientX - prev.x, e.clientY - prev.y);
+  }
+});
+function endPointer(e) {
+  if (!pointers.has(e.pointerId)) return;
+  pointers.delete(e.pointerId);
+  if (carry && e.pointerId === pointer.id) { const c = view.toCell(e.clientX, e.clientY), i = Math.round(Math.max(0, Math.min(CH - 1, c.y + .6))) * CW + Math.round(Math.max(0, Math.min(CW - 1, c.x))); if (s.zones[world.zone[i]].open) { carry.x = i % CW; carry.y = Math.floor(i / CW); } else toast('That land is still asleep.'); carry.held = false; carry.tx = -1; carry = null; save(); }
+  if (e.pointerId === pointer.id) { pointer.holding = false; pointer.id = null; }
+  if (!pointers.size) { panning = false; pinch = 0; if (e.pointerType === 'touch') pointer.on = false; }
+}
+canvas.addEventListener('pointerup', endPointer); canvas.addEventListener('pointercancel', endPointer);
+canvas.addEventListener('pointerleave', () => { if (!pointers.size) pointer.on = false; });
+canvas.addEventListener('wheel', e => { e.preventDefault(); wake(); view.zoomAt(Math.exp(-e.deltaY * .0013), e.clientX, e.clientY); }, { passive: false });
+addEventListener('keydown', e => {
+  if (!ready || $('modal').open) return;
+  wake();
+  const moves = { ArrowLeft: [90, 0], ArrowRight: [-90, 0], ArrowUp: [0, 90], ArrowDown: [0, -90], KeyA: [90, 0], KeyD: [-90, 0], KeyW: [0, 90], KeyS: [0, -90] };
+  if (moves[e.code]) { e.preventDefault(); view.pan(...moves[e.code]); }
+  if (e.code === 'Space' && !e.repeat) { e.preventDefault(); audio.start(); pointer.holding = true; pointer.kb = true; if (!pointer.on) { pointer.x = innerWidth / 2; pointer.y = innerHeight / 2; pointer.on = true; } }
+  if (e.key === '+' || e.key === '=') view.zoomAt(1.2); if (e.key === '-') view.zoomAt(1 / 1.2);
+  if (e.code === 'KeyH') { document.body.classList.toggle('quiet'); lastActive = -1e9; }
+});
+addEventListener('keyup', e => { if (e.code === 'Space' && pointer.kb) { pointer.holding = false; pointer.kb = false; } });
+addEventListener('blur', () => { pointers.clear(); releaseAll(); });
+
+/* Events from the simulation: the game's big moments. */
+function handle(ev, now, quiet = false) {
+  for (const e of ev) {
+    if (e.t === 'revive' && !quiet) { view.revived(e.o, now); audio.pop(); }
+    if (e.t === 'water' && !quiet) { audio.water(); toast(`Water finds its way to ${ZONES[e.zone].name}.`); }
+    if (e.t === 'zone') {
+      land.markAll();
+      if (quiet) continue;
+      audio.chime(e.final); view.sweep(e.zone);
+      const names = e.opened.map(n => ZONES[n].name);
+      banner(`${ZONES[e.zone].name} restored`, names.length ? `The mist lifts from ${names.join(' and ')}.` : 'Life is coming back.');
+      const justOpened = SPIRITS.find(d => d.need === s.zones.filter(z => z.done).length);
+      if (justOpened) setTimeout(() => toast(`A new spirit has come: ${justOpened.name}.`), 5400);
+    }
+    if (e.t === 'bloom' && !quiet) { audio.chime(); view.sweep(e.zone, '#ffc6dd'); banner(`${ZONES[e.zone].name} is flourishing`, 'Deer have come back to graze.'); }
+    if (e.t === 'valley' && !quiet) setTimeout(celebrate, 7000);
+  }
+}
+function returnFrom(seconds) {
+  if (s.paused || seconds < 20) return;
+  const pre = s.h.slice(), r = catchUp(s, world, seconds); if (!r.seconds) return;
+  handle(r.ev, performance.now(), true);
+  let moved = 0; for (let i = 0; i < CN; i += 7) moved += Math.abs(s.h[i] - pre[i]);
+  if (moved > 2) { // Play back what grew while the player was gone.
+    timelapse = { pre, field: pre.slice(), start: performance.now(), dur: 5200, row: 0 };
+    land.setField(timelapse.field); view.setShown(timelapse.field); land.markAll();
+  }
+  const mins = Math.round(r.seconds / 60);
+  banner('While you were away', `${mins < 90 ? mins + ' minutes' : (mins / 60).toFixed(1) + ' hours'} of quiet growth · ${fmt(r.seeds)} seeds`, 5600);
+}
+function stepTimelapse(now) {
+  const t = timelapse, k = Math.min(1, (now - t.start) / t.dur), f = t.field, target = s.h, ROWS = CH;
+  for (let i = 0; i < CN; i += 1) { const delay = hash(i % CW >> 2, Math.floor(i / CW) >> 2, 5) * .18 + (Math.floor(i / CW) / ROWS) * .22, q = Math.max(0, Math.min(1, (k - delay) / .55)), e = q * q * (3 - 2 * q), next = t.pre[i] + (target[i] - t.pre[i]) * e; if (Math.abs(next - f[i]) > .004 || (k >= 1 && f[i] !== target[i])) { f[i] = next; land.markCell(i); } }
+  if (k >= 1) { timelapse = null; land.setField(s.h); view.setShown(null); land.markAll(); }
+}
+
+/* Main loop */
+function frame(now) {
+  requestAnimationFrame(frame);
+  const dt = Math.min(.05, Math.max(0, (now - last) / 1000)); last = now;
+  if (!ready || document.hidden) return;
+  if (!$('modal').open && !timelapse) {
+    const ev = [];
+    if (pointer.holding && !s.paused && thenX == null) {
+      const c = view.toCell(pointer.x, pointer.y), gain = touch(s, world, c.x, c.y, dt, ev);
+      if (gain > 0) { view.spark(c.x, c.y, gain * 7, 3); audio.pluck(gain * 25); wake(); }
+    }
+    tickBank += dt;
+    while (tickBank >= .1) { tick(s, world, .1, ev); tickBank -= .1; }
+    if (ev.length) handle(ev, now);
+  } else if (timelapse) stepTimelapse(now);
+  land.flush(timelapse ? 240 : 110);
+  view.draw(s, now, dt, { carry, pointer: pointer.on && !carry ? pointer : null, holding: pointer.holding, then: thenX });
+  if (now - lastUI > 200) { lastUI = now; updateUI(); renderHint(); audio.update(valleyPct(s, world), s.zones.some(z => z.water > 0)); if (Math.abs(s.seeds - seedShown) > 0) { seedShown = s.seeds; } if (!pointers.size && !$('modal').open && thenX == null && now - lastActive > 14000) document.body.classList.add('quiet'); }
+  if (now - lastSave > 6000) { lastSave = now; save(); }
+}
+document.addEventListener('visibilitychange', () => {
+  releaseAll();
+  if (document.hidden) { wasHidden = Date.now(); save(); }
+  else { if (wasHidden && ready) returnFrom((Date.now() - wasHidden) / 1000); wasHidden = 0; last = performance.now(); wake(); }
+});
+addEventListener('pagehide', save);
+
+async function main() {
+  try {
+    await nextFrame();
+    const [worldImg, spirits] = await Promise.all([load('assets/world.png'), load('assets/spirits.png')]);
+    images = { world: worldImg, spirits };
+    let raw = null, landIndex = 0;
+    try { raw = localStorage.getItem(KEY); if (raw) landIndex = JSON.parse(raw).land || 0; } catch { raw = null; }
+    await buildLand(landIndex);
+    try { s = raw ? decode(raw, world) : newLand(0); } catch { s = newLand(0); toast('That save could not be read, so the valley starts fresh.'); }
+    const away = (Date.now() - (s.last || Date.now())) / 1000;
+    attach();
+    if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) window.__lw = { get s() { return s; }, get w() { return world; }, get v() { return view; }, tick: (n, dt = .5) => { const ev = []; for (let k = 0; k < n; k++) tick(s, world, dt, ev); handle(ev, performance.now()); land.markAll(); updateUI(); return ev.length; }, grant: n => { s.seeds += n; updateUI(); } };
+    ready = true; $('loading').style.display = 'none'; updateUI();
+    if (raw) returnFrom(away); else banner('Little Wilds', 'Nothing has grown here in a long time.', 4500);
+    requestAnimationFrame(frame);
+  } catch (e) { console.error(e); $('loading').querySelector('span').textContent = 'The artwork could not load. Refresh to try again.'; }
+}
+main();
