@@ -1,8 +1,9 @@
-import { makeWorld, ZONES, CN, CW, CH, CELL, landAt, FINALE, hash } from './world.mjs';
-import { newLand, tick, touch, travel, catchUp, encode, decode, buySpirit, buyUpgrade, spiritCost, spiritOpen, upgradeCost, upgradeOpen, zonePct, zoneBloom, valleyPct, valleyComplete, initObjects, SPIRITS, UPGRADES, GREEN } from './sim.mjs';
+import { makeWorld, ZONES, LANDS, CN, CW, CH, CELL, landAt, FINALE, hash } from './world.mjs';
+import { newLand, tick, touch, leaveMap, enterMap, saveMap, gateState, pressGate, isComplete, mapReady, mapPct, income, mapIncome, upgradeMax, catchUp, encode, decode, buySpirit, buyUpgrade, spiritCost, spiritOpen, upgradeCost, upgradeOpen, zonePct, zoneBloom, valleyPct, valleyComplete, initObjects, SPIRITS, UPGRADES, GREEN } from './sim.mjs';
 import { createLand } from './land.mjs';
 import { createRenderer } from './render.mjs';
 import { createAudio } from './audio.mjs';
+import { openContinent } from './continent.mjs';
 
 const KEY = 'little-wilds-2-v2', CARDS_KEY = 'little-wilds-2-postcards', SOUND_KEY = 'little-wilds-2-muted', VOLUME_KEY = 'little-wilds-2-volume';
 const $ = id => document.getElementById(id);
@@ -25,7 +26,8 @@ function banner(title, sub = '', ms = 5200) { $('banner-title').textContent = ti
 function save() { if (!s) return; try { localStorage.setItem(KEY, encode(s)); } catch { toast('Saving is unavailable in this browser.'); } }
 
 async function buildLand(index) {
-  world = makeWorld(1 + index * 17);
+  world = makeWorld(1 + index * 17, index);
+  images.biome = index ? await load(`assets/biome-${index}.png`).catch(() => null) : null;
   land = createLand(world, index);
   world.dirty = i => { land.markCell(i); view?.floraCell(i); };
   world.waterMoved = z => land.markWater(z);
@@ -33,6 +35,7 @@ async function buildLand(index) {
 function attach() {
   initObjects(s, world);
   land.setSource(s.h, s.zones); land.flushAll();
+  view?.dispose(); quarters = []; glideTo = -1;
   view = createRenderer($('world'), world, land, images);
   view.onPet = (label, zone) => toast(`${label} has come back to ${ZONES[zone].name}.`);
   buildDock();
@@ -48,11 +51,11 @@ $('hud').addEventListener('click', e => {
   audio.start(); wake();
   const t = +b.dataset.spirit;
   if (!spiritOpen(s, t)) { toast(`${SPIRITS[t].name} comes when ${SPIRITS[t].need} glade${SPIRITS[t].need > 1 ? 's are' : ' is'} restored.`); return; }
-  if (buySpirit(s, t)) { audio.buy(); save(); updateUI(); const a = s.spirits[s.spirits.length - 1], home = view.toCell(innerWidth / 2, innerHeight / 2), cell = Math.round(Math.max(0, Math.min(CH - 1, home.y))) * CW + Math.round(Math.max(0, Math.min(CW - 1, home.x))); if (s.zones[world.zone[cell]].open) { a.x = home.x; a.y = home.y; } view.pop(a.x, a.y); toast(`${SPIRITS[t].name}: ${SPIRITS[t].job}`); }
+  if (buySpirit(s, t)) { audio.buy(); save(); updateUI(); const a = s.spirits[s.spirits.length - 1], home = view.toCell(innerWidth / 2, innerHeight / 2), cell = Math.round(Math.max(0, Math.min(CH - 1, home.y))) * CW + Math.round(Math.max(0, Math.min(CW - 1, home.x))); if (s.zones[world.zone[cell]].open && !world.blocked[cell]) { a.x = home.x; a.y = home.y; } view.pop(a.x, a.y); toast(`${SPIRITS[t].name}: ${SPIRITS[t].job}`); }
   else if (s.spirits.length >= 40) toast('The valley has all the spirits it can hold.');
 });
 function nextGoal() {
-  const costs = UPGRADES.filter(u => upgradeOpen(s, u) && (s.upgrades[u.id] || 0) < u.max).map(u => upgradeCost(s, u));
+  const costs = UPGRADES.filter(u => upgradeOpen(s, u) && (s.upgrades[u.id] || 0) < upgradeMax(s, u)).map(u => upgradeCost(s, u));
   return costs.length ? Math.min(...costs) : Infinity;
 }
 function updateUI() {
@@ -85,14 +88,14 @@ function renderHint() {
 /* Upgrades */
 function tendHTML() {
   return `<h2>Tend the land</h2><p class="sub">Every upgrade changes what you see.</p>` + UPGRADES.map(u => {
-    const l = s.upgrades[u.id] || 0, open = upgradeOpen(s, u), cost = upgradeCost(s, u), max = l >= u.max;
-    return `<div class="up"><strong>${u.name}${u.max > 1 ? `<em>${l} / ${u.max}</em>` : ''}</strong><span>${open ? u.desc : 'Comes after your first restored glade.'}</span><button data-up="${u.id}" ${max || !open || s.seeds < cost ? 'disabled' : ''}>${max ? 'Done' : fmt(cost)}</button></div>`;
+    const l = s.upgrades[u.id] || 0, top = upgradeMax(s, u), open = upgradeOpen(s, u), cost = upgradeCost(s, u), max = l >= top;
+    return `<div class="up"><strong>${u.name}${top > 1 ? `<em>${l} / ${top}</em>` : ''}</strong><span>${open ? u.desc : 'Comes after your first restored glade.'}</span><button data-up="${u.id}" ${max || !open || s.seeds < cost ? 'disabled' : ''}>${max ? 'Done' : fmt(cost)}</button></div>`;
   }).join('');
 }
-function refreshTend() { for (const b of document.querySelectorAll('[data-up]')) { const u = UPGRADES.find(q => q.id === b.dataset.up), l = s.upgrades[u.id] || 0; b.disabled = l >= u.max || !upgradeOpen(s, u) || s.seeds < upgradeCost(s, u); } }
+function refreshTend() { for (const b of document.querySelectorAll('[data-up]')) { const u = UPGRADES.find(q => q.id === b.dataset.up), l = s.upgrades[u.id] || 0; b.disabled = l >= upgradeMax(s, u) || !upgradeOpen(s, u) || s.seeds < upgradeCost(s, u); } }
 function show(type, html) { releaseAll(); modal = type; $('modal-body').innerHTML = html; if (!$('modal').open) $('modal').showModal(); }
 $('close').onclick = () => $('modal').close();
-$('modal').addEventListener('close', () => { modal = ''; wake(); });
+$('modal').addEventListener('close', () => { modal = ''; $('modal').classList.remove('wide'); wake(); });
 $('modal').addEventListener('click', e => { if (e.target === $('modal')) { const r = $('modal').getBoundingClientRect(); if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) $('modal').close(); } });
 $('hud').addEventListener('click', e => { if (e.target.closest('#tend')) { audio.start(); show('tend', tendHTML()); } });
 $('modal-body').addEventListener('click', e => {
@@ -101,13 +104,13 @@ $('modal-body').addEventListener('click', e => {
   const f = e.target.closest('[data-focus]');
   if (f) { view.focusZone(+f.dataset.focus); $('modal').close(); return; }
   const a = e.target.closest('[data-act]'); if (!a) return;
-  ({ all() { view.focusAll(); $('modal').close(); }, travel: goOn, exportSave, importSave, reset: resetSave, cards: openCards, valley: openValley })[a.dataset.act]?.();
+  ({ all() { view.focusAll(); $('modal').close(); }, continent: () => showContinent(), flood: () => showContinent(s.land), exportSave, importSave, reset: resetSave, cards: openCards, valley: openValley })[a.dataset.act]?.();
 });
 
 /* Valley map */
 function openValley() {
   const cells = [...ZONES].sort((a, b) => a.row - b.row || a.col - b.col).map(z => { const st = s.zones[z.id], pct = zonePct(s, world, z.id); return `<button class="vz ${st.open ? '' : 'locked'} ${st.done ? 'done' : ''} ${st.bloomed ? 'bloomed' : ''}" data-focus="${z.id}"><b>${z.name}</b><small>${!st.open ? 'asleep' : st.bloomed ? 'flourishing ✿' : st.done ? 'restored' : Math.floor(pct * 100) + '%'}</small></button>`; }).join('');
-  const html = `<h2>${landAt(s.land).name}</h2><p class="sub">${(valleyPct(s, world) * 100).toFixed(1)}% restored. Choose a glade to visit.</p><div class="valley">${cells}</div><div class="row"><button class="wood" data-act="all">See the whole valley</button>${valleyComplete(s) ? '<button class="wood" data-act="travel">Travel on</button>' : ''}</div>`;
+  const html = `<h2>${landAt(s.land).name}</h2><p class="sub">${(valleyPct(s, world) * 100).toFixed(1)}% restored. Choose a glade to visit.</p><div class="valley">${cells}</div><div class="row"><button class="wood" data-act="all">See the whole land</button><button class="wood" data-act="continent">See the continent</button></div>`;
   if (modal === 'valley' && $('modal-body').firstChild) { const scroll = $('modal').scrollTop; $('modal-body').innerHTML = html; $('modal').scrollTop = scroll; } else show('valley', html);
 }
 $('zonechip').onclick = () => { audio.start(); openValley(); };
@@ -121,7 +124,7 @@ function openMenu() {
 $('btn-menu').onclick = () => { audio.start(); openMenu(); $('volume').oninput = e => { audio.setVolume(e.target.value / 100); try { localStorage.setItem(VOLUME_KEY, audio.volume); } catch {} }; };
 function exportSave() { save(); const a = document.createElement('a'), u = URL.createObjectURL(new Blob([encode(s)], { type: 'application/json' })); a.href = u; a.download = 'little-wilds-2-save.json'; a.click(); setTimeout(() => URL.revokeObjectURL(u), 1000); }
 function importSave() {
-  const f = $('file'); f.onchange = async () => { try { const file = f.files[0]; if (!file || file.size > 2e6) throw 0; const text = await file.text(), o = JSON.parse(text); if (!confirm('Replace your current valley?')) return; await buildLand(o.land || 0); s = decode(text, world); attach(); save(); $('modal').close(); } catch { toast('That is not a Little Wilds 2 save.'); } }; f.click();
+  const f = $('file'); f.onchange = async () => { try { const file = f.files[0]; if (!file || file.size > 2e6) throw 0; const text = await file.text(), o = JSON.parse(text); if (!confirm('Replace your whole continent?')) return; await buildLand(saveMap(o)); s = decode(text, world); attach(); save(); $('modal').close(); } catch { toast('That is not a Little Wilds 2 save.'); } }; f.click();
 }
 async function resetSave() { if (!confirm('Start again from barren ground? This erases your progress.')) return; s = newLand(0); await buildLand(0); attach(); try { localStorage.removeItem(CARDS_KEY); } catch {} save(); $('modal').close(); }
 const readCards = () => { try { return JSON.parse(localStorage.getItem(CARDS_KEY) || '[]'); } catch { return []; } };
@@ -129,17 +132,32 @@ function openCards() { const list = readCards(); show('cards', `<h2>Postcards</h
 function celebrate() {
   const then = view.snapshot(true), now = view.snapshot(false), name = landAt(s.land).name;
   const list = readCards(); if (!list.some(c => c.land === s.land)) { list.push({ land: s.land, name, now }); try { localStorage.setItem(CARDS_KEY, JSON.stringify(list.slice(-6))); } catch {} }
-  show('postcard', `<h2>${name} lives again</h2><p class="sub">Drag to compare. Stay as long as you like, or travel on to the next land.</p><div class="compare" id="cmp"><img src="${then}" alt="The valley when you arrived"><img class="now" src="${now}" alt="The valley now"><input type="range" min="0" max="100" value="50" aria-label="Compare then and now"></div><div class="row"><button class="wood" data-act="travel">Travel on</button></div>`);
+  show('postcard', `<h2>${name} lives again</h2><p class="sub">Drag to compare. It stays restored and keeps earning seeds, wherever you go next.</p><div class="compare" id="cmp"><img src="${then}" alt="The valley when you arrived"><img class="now" src="${now}" alt="The valley now"><input type="range" min="0" max="100" value="50" aria-label="Compare then and now"></div><div class="row"><button class="wood" data-act="flood">See the continent</button></div>`);
   $('cmp').querySelector('input').oninput = e => $('cmp').style.setProperty('--cut', e.target.value + '%');
 }
-async function goOn() {
-  const next = travel(s); $('modal').close();
-  $('loading').style.display = ''; document.body.appendChild($('loading')); await nextFrame();
-  s = next; await buildLand(s.land); attach(); save(); $('loading').style.display = 'none';
-  banner(landAt(s.land).name, 'Another land is waiting.');
+let moving = false;
+async function goTo(id) {
+  if (moving || id === s.land) { if ($('modal').open) $('modal').close(); return; }
+  moving = true; releaseAll(); if ($('modal').open) $('modal').close();
+  const first = !s.atlas[id];
+  $('loading').querySelector('strong').textContent = LANDS[id].name; $('loading').querySelector('span').textContent = first ? 'The mist is parting…' : 'Walking back…';
+  $('loading').style.display = ''; await nextFrame(); await nextFrame();
+  leaveMap(s, world); await buildLand(id); enterMap(s, world, id); attach(); save(); $('loading').style.display = 'none'; moving = false; updateUI();
+  banner(LANDS[id].name, first ? 'Nothing has grown here in a long time.' : 'Just as you left it.');
+}
+function showContinent(flood = -1) {
+  const done = LANDS.filter((_, id) => isComplete(s, id)).length;
+  show('continent', `<h2>The Sleeping Continent</h2><p class="sub" id="cont-note">${done} of ${LANDS.length} lands restored${income(s) ? ` · they earn ${fmt(income(s))} seeds a second` : ''}. Choose a land.</p><canvas id="continent" width="1680" height="1200"></canvas>`);
+  $('modal').classList.add('wide');
+  openContinent($('continent'), { s, world, flood, isOpen: () => modal === 'continent', choose(id) {
+    if (s.opened[id]) { goTo(id); return; }
+    const from = LANDS.filter((l, n) => s.opened[n] && (l.col === LANDS[id].col && Math.abs(l.row - LANDS[id].row) === 1 || l.row === LANDS[id].row && Math.abs(l.col - LANDS[id].col) === 1)).map(l => l.name);
+    $('cont-note').textContent = mapReady(s, id) ? `Restore the gateway to ${LANDS[id].name}, on the border of ${from.join(' or ')}.` : `${LANDS[id].name} sleeps until ${LANDS[id].needs.filter(n => !isComplete(s, n)).map(n => LANDS[n].name).join(' and ')} ${LANDS[id].needs.filter(n => !isComplete(s, n)).length > 1 ? 'are' : 'is'} restored.`;
+  } });
 }
 
 /* Then and now, sound */
+$('btn-map').onclick = () => { audio.start(); showContinent(); };
 $('btn-then').onclick = () => { $('banner').classList.remove('show'); thenX = thenX == null ? innerWidth / 2 : null; $('btn-then').setAttribute('aria-pressed', thenX != null); if (thenX != null) toast('Drag across the land to compare. Press again to finish.'); };
 const syncSound = () => { $('btn-sound').textContent = audio.muted ? 'Muted' : 'Sound'; $('btn-sound').setAttribute('aria-pressed', audio.muted); };
 $('btn-sound').onclick = () => { audio.start(); audio.setMuted(!audio.muted); try { localStorage.setItem(SOUND_KEY, audio.muted ? '1' : ''); } catch {} syncSound(); };
@@ -148,7 +166,7 @@ try { if (localStorage.getItem(SOUND_KEY)) audio.setMuted(true); const v = parse
 /* Input */
 const canvas = $('world');
 function wake() { lastActive = performance.now(); document.body.classList.remove('quiet'); }
-function releaseAll() { pointer.holding = false; pointer.kb = false; if (carry) { carry.held = false; carry = null; } panning = false; }
+function releaseAll() { pointer.gate = null; pointer.holding = false; pointer.kb = false; if (carry) { carry.held = false; carry = null; } panning = false; }
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 canvas.addEventListener('pointerdown', e => {
   if (!ready || $('modal').open) return;
@@ -156,6 +174,13 @@ canvas.addEventListener('pointerdown', e => {
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY }); pointer.x = e.clientX; pointer.y = e.clientY; pointer.on = true;
   if (thenX != null) { thenX = e.clientX; pointer.id = e.pointerId; return; }
   if (pointers.size > 1 || e.button !== 0) { pointer.holding = false; if (carry) { carry.held = false; carry = null; } panning = true; pinch = 0; return; }
+  const gate = view.hitGate(e.clientX, e.clientY);
+  if (gate) {
+    const st = gateState(s, gate), t = LANDS[gate.target];
+    if (st === 'open') { goTo(gate.target); return; }
+    if (st === 'ready') { pointer.gate = gate; pointer.id = e.pointerId; return; }
+    toast(`This way sleeps until ${t.needs.filter(n => !isComplete(s, n)).map(n => LANDS[n].name).join(' and ')} ${t.needs.filter(n => !isComplete(s, n)).length > 1 ? 'are' : 'is'} restored.`);
+  }
   const petted = view.hitPet(e.clientX, e.clientY);
   if (petted) { view.pet(petted); audio.buy(); const gift = 10 + s.seeds * .002; s.seeds += gift; view.reward(petted.x, petted.y - 12, gift, 3); pulseSeeds(); return; }
   const hit = view.hitSpirit(s, e.clientX, e.clientY);
@@ -178,8 +203,8 @@ canvas.addEventListener('pointermove', e => {
 function endPointer(e) {
   if (!pointers.has(e.pointerId)) return;
   pointers.delete(e.pointerId);
-  if (carry && e.pointerId === pointer.id) { const c = view.toCell(e.clientX, e.clientY), i = Math.round(Math.max(0, Math.min(CH - 1, c.y + .6))) * CW + Math.round(Math.max(0, Math.min(CW - 1, c.x))); if (s.zones[world.zone[i]].open) { carry.x = i % CW; carry.y = Math.floor(i / CW); } else toast('That land is still asleep.'); carry.held = false; carry.tx = -1; carry = null; save(); }
-  if (e.pointerId === pointer.id) { pointer.holding = false; pointer.id = null; }
+  if (carry && e.pointerId === pointer.id) { const c = view.toCell(e.clientX, e.clientY), i = Math.round(Math.max(0, Math.min(CH - 1, c.y + .6))) * CW + Math.round(Math.max(0, Math.min(CW - 1, c.x))); if (s.zones[world.zone[i]].open && !world.blocked[i]) { carry.x = i % CW; carry.y = Math.floor(i / CW); } else toast('That land is still asleep.'); carry.held = false; carry.tx = -1; carry = null; save(); }
+  if (e.pointerId === pointer.id) { pointer.holding = false; pointer.id = null; pointer.gate = null; }
   if (!pointers.size) { panning = false; pinch = 0; if (e.pointerType === 'touch') pointer.on = false; }
 }
 canvas.addEventListener('pointerup', endPointer); canvas.addEventListener('pointercancel', endPointer);
@@ -211,8 +236,8 @@ function handle(ev, now, quiet = false) {
       const justOpened = SPIRITS.find(d => d.need === s.zones.filter(z => z.done).length);
       if (justOpened) setTimeout(() => toast(`A new spirit has come: ${justOpened.name}.`), 5400);
     }
-    if (e.t === 'bloom' && !quiet) { audio.chime(); view.sweep(e.zone, '#ffc6dd'); view.glow(e.zone, '255,190,220'); banner(`${ZONES[e.zone].name} is flourishing`, 'A spirit fawn has come to graze.'); }
-    if (e.t === 'valley' && !quiet) setTimeout(celebrate, 7000);
+    if (e.t === 'bloom' && !quiet) { audio.chime(); view.sweep(e.zone, '#ffc6dd'); view.glow(e.zone, '255,190,220'); banner(`${ZONES[e.zone].name} is flourishing`, 'New life has come to graze.'); }
+    if (e.t === 'valley') { save(); if (!quiet) { const here = s.land; setTimeout(() => { if (s.land === here && !$('modal').open) celebrate(); }, 7000); } }
   }
 }
 function returnFrom(seconds) {
@@ -244,6 +269,7 @@ function frame(now) {
       const c = view.toCell(pointer.x, pointer.y), gain = touch(s, world, c.x, c.y, dt, ev);
       if (gain > 0) { view.spark(c.x, c.y, gain * 7, 3); audio.pluck(gain * 25); wake(); }
     }
+    if (pointer.gate && pressGate(s, pointer.gate, dt)) { const g = pointer.gate; pointer.gate = null; audio.chime(true); view.revived({ id: -1, x: g.x / CELL, y: g.y / CELL, size: g.size }, now); banner(`The way to ${LANDS[g.target].name} is open`, 'Walk through the gateway whenever you like.'); save(); }
     tick(s, world, dt, ev, frameNo++ % SPIRIT_SLICES, SPIRIT_SLICES);
     if (ev.length) handle(ev, now);
   } else if (timelapse) stepTimelapse(now);
@@ -272,12 +298,12 @@ async function main() {
     const [worldImg, spirits, landmarks, pets] = await Promise.all([load('assets/world.png'), load('assets/spirits.png'), load('assets/landmarks.png'), load('assets/pets.png')]);
     images = { world: worldImg, spirits, landmarks, pets };
     let raw = null, landIndex = 0;
-    try { raw = localStorage.getItem(KEY); if (raw) landIndex = JSON.parse(raw).land || 0; } catch { raw = null; }
+    try { raw = localStorage.getItem(KEY); if (raw) landIndex = saveMap(JSON.parse(raw)); } catch { raw = null; }
     await buildLand(landIndex);
     try { s = raw ? decode(raw, world) : newLand(0); } catch { s = newLand(0); toast('That save could not be read, so the valley starts fresh.'); }
     const away = (Date.now() - (s.last || Date.now())) / 1000;
     attach();
-    if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) window.__lw = { get s() { return s; }, get w() { return world; }, get v() { return view; }, tick: (n, dt = .5) => { const ev = []; for (let k = 0; k < n; k++) tick(s, world, dt, ev); handle(ev, performance.now()); land.markAll(); view.allFlora(); updateUI(); return ev.length; }, grant: n => { s.seeds += n; updateUI(); } };
+    if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) window.__lw = { get s() { return s; }, get w() { return world; }, get v() { return view; }, goTo, showContinent, tick: (n, dt = .5) => { const ev = []; for (let k = 0; k < n; k++) tick(s, world, dt, ev); handle(ev, performance.now()); land.markAll(); view.allFlora(); updateUI(); return ev.length; }, grant: n => { s.seeds += n; updateUI(); } };
     ready = true; $('loading').style.display = 'none'; updateUI();
     if (raw) returnFrom(away); else banner('Little Wilds', 'Nothing has grown here in a long time.', 4500);
     requestAnimationFrame(frame);

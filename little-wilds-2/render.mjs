@@ -1,6 +1,6 @@
 // Everything above the ground: flora, the dead-and-revived objects, spirits, wildlife, weather and fog.
-import { TW, TH, CW, CH, CELL, ZONES, landAt, hash, fbm } from './world.mjs';
-import { GREEN, brushRadius, SPIRITS } from './sim.mjs';
+import { TW, TH, CW, CH, CELL, ZONES, LANDS, SEA, landAt, hash, fbm } from './world.mjs';
+import { GREEN, brushRadius, SPIRITS, gateState } from './sim.mjs';
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -17,8 +17,10 @@ const CRITTERS = {
   butterfly: ['#ffd166', '#ff9dc4', '#fff'].map(a => [false, true].map(open => art(open ? ['a.a', 'aba', 'a.a'] : ['...', 'aba', '...'], { a, b: '#4a3324' }))),
   bird: [false, true].map(up => art(up ? ['a...a', '.a.a.', '..b..'] : ['.....', 'aabaa', 'a...a'], { a: '#3d4a55', b: '#2a333b' })),
 };
+// Which cell of a land's 4x4 art sheet stands in for each kind of object.
+const BIOME = { 0: 0, 1: 1, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 7: 5, 8: 6, 9: 7 }, GATE_DEAD = 14;
 const HEART = art(['.a.a.', 'aaaaa', 'aaaaa', '.aaa.', '..a..'], { a: '#ff9dbb' });
-const PETS = { deer: { row: 0, size: 34, speed: 6, label: 'A spirit deer' }, fawn: { row: 0, size: 23, speed: 7, label: 'A spirit fawn' }, rabbit: { row: 1, size: 14, speed: 9, label: 'A moss rabbit' } };
+const PETS = { deer: { row: 0, size: 34, speed: 6, label: 'A spirit deer' }, fawn: { row: 0, size: 23, speed: 7, label: 'A spirit fawn', young: true }, rabbit: { row: 1, size: 14, speed: 9, label: 'A moss rabbit' } };
 
 function floraAtlas(P) {
   // Rows: 0 tuft, 1 tall grass, 2-6 flowers, 7 fern. Columns: three wind poses.
@@ -51,6 +53,8 @@ export function createRenderer(canvas, world, land, images) {
   const glintSpots = ZONES.map(z => { const out = [], p = world.ponds[z.id]; for (let k = 0; k < 26; k++) { const a = hash(k, z.id, 3) * 6.28, r = Math.sqrt(hash(k, z.id, 5)) * p.r * .8; out.push([p.x + Math.cos(a) * r, p.y + Math.sin(a) * r, hash(k, z.id, 7)]); } return out; });
   const padSpots = ZONES.map(z => { const p = world.ponds[z.id]; return [0, 1, 2, 3].map(k => [p.x + (hash(k, z.id, 11) - .5) * p.r * 1.2, p.y + (hash(k, z.id, 13) - .5) * p.r * 1.1, hash(k, z.id, 17)]); });
 
+  const seaSpots = [];
+  for (let k = 0; k < 2600 && seaSpots.length < 140; k++) { const x = Math.floor(hash(k, 1, 61) * TW), y = Math.floor(hash(k, 2, 61) * TH); if (world.edge[y * TW + x] === SEA) seaSpots.push([x, y, hash(k, 3, 61), world.zone[(y >> 2) * CW + (x >> 2)]]); }
   function resize() {
     W = innerWidth; H = innerHeight; dpr = Math.min(quality > 1 ? 2 : 1, devicePixelRatio || 1, Math.sqrt(3.7e6 / (W * H)));
     canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
@@ -97,6 +101,14 @@ export function createRenderer(canvas, world, land, images) {
     if (flip) { ctx.save(); ctx.translate(x, 0); ctx.scale(-1, 1); ctx.drawImage(atlas, fx, fy, SIZE, SIZE, -w / 2, y - h, w, h); ctx.restore(); }
     else ctx.drawImage(atlas, fx, fy, SIZE, SIZE, x - w / 2, y - h, w, h);
   }
+  function biomeCell(n, x, y, w, h = w) { ctx.drawImage(images.biome, n % 4 * 96, (n >> 2) * 96, 96, 96, x - w / 2, y - h, w, h); }
+  function drawArt(o, frame, x, y, w, h = w) {
+    const b = images.biome;
+    if (o.mark && (!b || frame >= GATE_DEAD)) ctx.drawImage(images.landmarks, frame % 4 * 96, Math.floor(frame / 4) * 96, 96, 96, x - w / 2, y - h, w, h);
+    else if (o.mark) biomeCell(8 + o.zone % 2 * 2 + (frame === o.live ? 1 : 0), x, y, w, h);
+    else if (b && BIOME[frame] !== undefined) biomeCell(BIOME[frame], x, y, w, h);
+    else sprite(images.world, frame, x, y, w, h);
+  }
   function drawGround(canvasSource) {
     const vw = W / cam.z, vh = H / cam.z, x0 = cam.x - vw / 2, y0 = cam.y - vh / 2;
     ctx.drawImage(canvasSource, x0, y0, vw, vh, 0, 0, W, H);
@@ -139,10 +151,11 @@ export function createRenderer(canvas, world, land, images) {
     for (const a of s.spirits) if (a !== carry) items.push({ y: (a.ry ?? a.y) * CELL, a });
     const night = clamp((Math.cos((s.age / 480) % 1 * 6.283) * -1 - .35) / .65, 0, 1) > .4;
     for (const c of critters) if (PETS[c.kind]) { if (!s.paused) stepPet(s, c, dt, night); const x = c.x, y = c.y; if (x > lx && x < hx && y > ly && y < hy) items.push({ y, c }); }
+    for (const g of world.gates) if (g.x > lx && g.x < hx && g.y > ly && g.y < hy) items.push({ y: g.y, g });
     for (const t of s.trees) { const y = t.y * CELL; if (t.x * CELL > lx && t.x * CELL < hx && y > ly && y < hy) items.push({ y, t }); }
     items.sort((a, b) => a.y - b.y);
     const atlas = images.world, spirits = images.spirits, tNow = time / 1000;
-    const art = (o, frame, x, y, w, h = w) => o.mark ? ctx.drawImage(images.landmarks, frame % 4 * 96, Math.floor(frame / 4) * 96, 96, 96, x - w / 2, y - h, w, h) : sprite(atlas, frame, x, y, w, h);
+    const art = drawArt;
     for (const it of items) {
       if (it.o) {
         const o = it.o, x = sx(o.x * CELL), y = sy(o.y * CELL), hp = s.objHp ? s.objHp[o.id] : o.hp, size = o.size * z, born = revives.get(o.id);
@@ -166,7 +179,8 @@ export function createRenderer(canvas, world, land, images) {
       } else if (it.t) {
         const t = it.t, g = Math.min(1, (s.age - t.born) / 9), x = sx(t.x * CELL), y = sy(t.y * CELL), size = (10 + 28 * g) * z;
         ctx.fillStyle = 'rgba(30,24,18,.2)'; ctx.beginPath(); ctx.ellipse(x, y - z, size * .3, size * .09, 0, 0, 7); ctx.fill();
-        sprite(atlas, t.blossom ? 2 : 1, x, y, size);
+        if (images.biome) biomeCell(1, x, y, size); else sprite(atlas, t.blossom ? 2 : 1, x, y, size);
+      } else if (it.g) { drawGate(s, it.g, time);
       } else if (it.c) { drawPet(it.c, tNow);
       } else {
         const a = it.a, k = 1 - Math.exp(-dt * 11);
@@ -187,9 +201,22 @@ export function createRenderer(canvas, world, land, images) {
       }
     }
   }
+  function drawGate(s, g, time) {
+    const state = gateState(s, g), x = sx(g.x), y = sy(g.y), size = g.size * cam.z, fill = state === 'open' ? 1 : s.gateFill[g.target] || 0, frame = { mark: true, live: GATE_DEAD + 1 };
+    ctx.fillStyle = 'rgba(30,24,18,.25)'; ctx.beginPath(); ctx.ellipse(x, y - cam.z, size * .36, size * .1, 0, 0, 7); ctx.fill();
+    drawArt(frame, fill >= 1 ? GATE_DEAD + 1 : GATE_DEAD, x, y, size);
+    if (fill > 0 && fill < 1) { const edge = y - size * fill; ctx.save(); ctx.beginPath(); ctx.rect(x - size, edge, size * 2, y - edge + cam.z); ctx.clip(); drawArt(frame, GATE_DEAD + 1, x, y, size); ctx.restore(); }
+    if (state === 'ready' && !reduced) { const b = .5 + Math.sin(time * .004) * .5; ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .08 + b * .12; ctx.fillStyle = '#ffd98a'; ctx.beginPath(); ctx.arc(x, y - size * .45, size * (.36 + b * .05), 0, 7); ctx.fill(); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; }
+    const label = state === 'locked' ? '???' : LANDS[g.target].name + (state === 'ready' ? ' - hold to open' : '');
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = '600 ' + Math.round(clamp(cam.z * 4.5, 12, 20)) + 'px "Pixelify Sans",Georgia,serif';
+    const ly = y - size - clamp(cam.z * 4, 8, 16) < 12 ? y + 14 : y - size - clamp(cam.z * 4, 8, 16);
+    const half = ctx.measureText(label).width / 2 + 8, lx = clamp(x, half, W - half);
+    ctx.fillStyle = '#2a2017'; ctx.fillText(label, lx + 1, ly + 1); ctx.fillStyle = state === 'locked' ? '#d8d0c0' : '#ffe9a8'; ctx.fillText(label, lx, ly);
+  }
   function drawWater(s, time) {
     if (reduced) return;
     const t = time / 1000, z = cam.z;
+    for (const [x, y, ph, id] of seaSpots) { if (!s.zones[id].done) continue; const b = Math.sin(t * 1.2 + ph * 40); if (b < .4) continue; ctx.fillStyle = `rgba(255,255,255,${(b - .4) * .9})`; ctx.fillRect(sx(x + Math.sin(t * .5 + ph * 9) * 3), sy(y), z * 4, z); }
     s.zones.forEach((st, id) => {
       if (st.water < .7) return;
       const fill = (st.water - .7) / .3;
@@ -218,7 +245,7 @@ export function createRenderer(canvas, world, land, images) {
       if (old) return old;
       const P = ZONES[zone], side = hash(zone, n, 35) * 6.28, far = PETS[kind] ? 150 : 0;
       const c = { kind, zone, n, x: P.px + Math.cos(side) * far + (hash(zone, n, 31) - .5) * 120, y: P.py + Math.sin(side) * far * .7 + (hash(n, zone, 33) - .5) * 90, tx: 0, ty: 0, pause: 0, dir: 1, variant: n % 3, alpha: first ? 1 : 0, state: 'walk', step: 0, hearts: 0, seen: hash(zone, n, 39) * 5 };
-      if (PETS[kind] && !first) api.onPet?.(PETS[kind].label, zone);
+      if (PETS[kind] && !first) api.onPet?.(petDef(kind).label, zone);
       return c;
     });
     greeted = true;
@@ -231,8 +258,10 @@ export function createRenderer(canvas, world, land, images) {
     }
     c.tx = P.px; c.ty = P.py;
   }
+  // Away from the heartland, each land's own creature takes the deer's place. Rabbits are everywhere.
+  function petDef(kind) { const d = PETS[kind], n = land.P.native; return n && d.row === 0 ? { row: 3, label: d.young ? n.label.replace(/^An? /, 'A young ') : n.label, size: d.young ? n.size * .72 : n.size, speed: n.speed } : d; }
   function stepPet(s, c, dt, night) {
-    const def = PETS[c.kind];
+    const def = petDef(c.kind);
     c.alpha = Math.min(1, c.alpha + dt * .5);
     if (c.hearts > 0) { c.hearts -= dt; c.state = 'idle'; return; }
     if (c.pause > 0) {
@@ -253,13 +282,14 @@ export function createRenderer(canvas, world, land, images) {
     c.x += (c.tx - c.x) / d * v; c.y += (c.ty - c.y) / d * v;
   }
   function drawPet(c, t) {
-    const def = PETS[c.kind], z = cam.z, x = sx(c.x), y = sy(c.y), hopping = c.state === 'walk' && c.kind === 'rabbit', hop = hopping ? Math.abs(Math.sin(c.step * 5)) : 0;
+    const def = petDef(c.kind), z = cam.z, x = sx(c.x), y = sy(c.y), hopping = c.state === 'walk' && c.kind === 'rabbit', hop = hopping ? Math.abs(Math.sin(c.step * 5)) : 0;
     const frame = c.state === 'sleep' ? 3 : c.state === 'graze' ? 2 : c.state === 'idle' ? 0 : c.kind === 'rabbit' ? (hop > .25 ? 1 : 0) : (Math.sin(c.step * 4.5) > 0 ? 1 : 0);
     const breath = c.state === 'walk' || reduced ? 0 : Math.sin(t * 1.8 + c.n) * .012, size = def.size * z, lift = hop * 3 * z, walkBob = c.state === 'walk' && c.kind !== 'rabbit' ? Math.abs(Math.sin(c.step * 4.5)) * .5 * z : 0;
     ctx.globalAlpha = c.alpha;
     ctx.fillStyle = 'rgba(30,24,18,.24)'; ctx.beginPath(); ctx.ellipse(x, y, size * .3, size * .08, 0, 0, 7); ctx.fill();
     ctx.save(); ctx.translate(x, y - lift - walkBob); if (c.dir < 0) ctx.scale(-1, 1);
-    ctx.drawImage(images.pets, frame * 96, def.row * 96, 96, 96, -size / 2, -size * (1 + breath), size, size * (1 + breath));
+    if (def.row === 3 && images.biome) ctx.drawImage(images.biome, frame * 96, 288, 96, 96, -size / 2, -size * (1 + breath), size, size * (1 + breath));
+    else ctx.drawImage(images.pets, frame * 96, Math.min(def.row, 0) * 96 + (c.kind === 'rabbit' ? 96 : 0), 96, 96, -size / 2, -size * (1 + breath), size, size * (1 + breath));
     ctx.restore();
     if (def.row === 0 && !reduced && quality > 0) { // Spirit deer shed slow motes of light.
       for (let k = 0; k < 3; k++) { const q = (t * .22 + k / 3 + c.n * .13) % 1; ctx.globalAlpha = c.alpha * Math.sin(q * 3.14) * .85; ctx.fillStyle = '#b8fff0'; ctx.fillRect(x + (hash(k, c.n, 41) - .5) * size * .8 + Math.sin(t + k) * z, y - size * (.35 + q * .85), Math.max(1, z * .7), Math.max(1, z * .7)); }
@@ -354,6 +384,9 @@ export function createRenderer(canvas, world, land, images) {
     allFlora() { floraDirty.fill(1); },
     get quality() { return quality; },
     setQuality(q) { quality = q; resize(); },
+    dispose() { removeEventListener('resize', resize); },
+    hitGate(px, py) { for (const g of world.gates) { const size = g.size * cam.z, x = sx(g.x), y = sy(g.y); if (Math.abs(px - x) < size * .5 && py > y - size && py < y + 6) return g; } return null; },
+    focusGate(g) { cam.tx = g.x; cam.ty = g.y - 20; cam.tz = clamp(cam.tz, minZoom(), 4); clampCam(); },
     hitPet(px, py) { for (const c of critters) { const d = PETS[c.kind]; if (!d) continue; const size = d.size * cam.z, x = sx(c.x), y = sy(c.y); if (Math.abs(px - x) < Math.max(16, size * .45) && py > y - Math.max(24, size) && py < y + 8) return c; } return null; },
     pet(c) { c.hearts = 1.6; c.dir = c.dir || 1; },
     cam, resize, focusZone, focusAll, zoomAt, pan, toCell, toWorld,
@@ -382,7 +415,7 @@ export function createRenderer(canvas, world, land, images) {
       if (opts.then !== null && opts.then !== undefined) {
         thenC ||= land.makeThen();
         ctx.save(); ctx.beginPath(); ctx.rect(0, 0, opts.then, H); ctx.clip(); drawGround(thenC);
-        for (const o of world.objects) { const x = sx(o.x * CELL), y = sy(o.y * CELL); if (x > -160 && x < W + 160 && y > -40 && y < H + 300) { if (o.mark) ctx.drawImage(images.landmarks, o.dead % 4 * 96, Math.floor(o.dead / 4) * 96, 96, 96, x - o.size * cam.z / 2, y - o.size * cam.z, o.size * cam.z, o.size * cam.z); else sprite(images.world, o.dead, x, y, o.size * cam.z); } }
+        for (const o of world.objects) { const x = sx(o.x * CELL), y = sy(o.y * CELL); if (x > -160 && x < W + 160 && y > -40 && y < H + 300) drawArt(o, o.dead, x, y, o.size * cam.z); }
         ctx.fillStyle = 'rgba(58,52,44,.12)'; ctx.fillRect(0, 0, W, H); ctx.restore();
         ctx.fillStyle = '#fff6df'; ctx.fillRect(opts.then - 2, 0, 4, H);
         ctx.beginPath(); ctx.arc(opts.then, H / 2, 20, 0, 7); ctx.fill(); ctx.fillStyle = '#4b4438'; ctx.font = '600 16px "Pixelify Sans",Georgia,serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('< >', opts.then, H / 2 + 1);

@@ -1,12 +1,12 @@
 // The ground as one pixel canvas. Every texel keeps a colour per growth stage and picks one
 // from the restoration field, so the front line between dead and alive stays crisp and organic.
-import { TW, TH, CW, CH, CELL, fbm, noise, hash, landAt } from './world.mjs';
+import { TW, TH, CW, CH, CELL, fbm, noise, hash, landAt, LANDS, SEA, BEACH, ROCK } from './world.mjs';
 
 const packed = (r, g, b) => (255 << 24) | (Math.max(0, Math.min(255, b)) << 16) | (Math.max(0, Math.min(255, g)) << 8) | Math.max(0, Math.min(255, r));
 const SOIL_AT = .1, GRASS_AT = .3, LUSH_AT = .74, CHUNK = 32, COLS = TW / CHUNK, ROWS = TH / CHUNK;
 
 export function createLand(w, landIndex) {
-  const P = landAt(landIndex), N = TW * TH, dead = new Uint32Array(N), soil = new Uint32Array(N), grass = new Uint32Array(N), lush = new Uint32Array(N), rimA = new Uint32Array(N), rimB = new Uint32Array(N), wet = new Uint32Array(N), jitter = new Float32Array(N);
+  const P = landAt(landIndex), N = TW * TH, dead = new Uint32Array(N), soil = new Uint32Array(N), grass = new Uint32Array(N), lush = new Uint32Array(N), rimA = new Uint32Array(N), rimB = new Uint32Array(N), wet = new Uint32Array(N), alive = new Uint32Array(N), jitter = new Float32Array(N);
   const s = w.seed;
   for (let y = 0, i = 0; y < TH; y++) for (let x = 0; x < TW; x++, i++) {
     const e = fbm(x / 58, y / 58, s + 200), ex = fbm((x + 3) / 58, y / 58, s + 200), ey = fbm(x / 58, (y + 3) / 58, s + 200);
@@ -41,6 +41,21 @@ export function createLand(w, landIndex) {
       soil[i] = packed(P.soil[0] * .7, P.soil[1] * .7, P.soil[2] * .7);
     }
   }
+  // The edges of the map: dull while the nearest glade sleeps, then blue sea, warm sand and green-shouldered peaks.
+  const mixTo = (c, t, k) => c.map((v, n) => v + (t[n] - v) * k), sand = P.sand || [226, 206, 158], peak = P.peak || [214, 208, 196], M = LANDS[landIndex];
+  const beyond = (x, y) => { let best = null, gap = 12; for (const [dc, dr, d] of [[0, -1, y], [1, 0, TW - 1 - x], [0, 1, TH - 1 - y], [-1, 0, x]]) { if (d >= gap) continue; const o = LANDS.find(l => l.col === M.col + dc && l.row === M.row + dr); if (o) { gap = d; best = o; } } return best ? [best, 1 - gap / 12] : null; };
+  for (let y = 0, i = 0; y < TH; y++) for (let x = 0; x < TW; x++, i++) {
+    const e = w.edge[i]; if (!e) continue;
+    const d = w.edgeD[i], grain = hash(x, y, s + 3), fine = noise(x / 5, y / 5, s + 220), band = Math.floor(fine * 4) / 4;
+    let a, b;
+    if (e === SEA) { const k = .72 + (1 - d) * .32 + band * .1, foam = d < .12 && noise(x / 4, y / 4, s + 250) > .5; a = mixTo(P.crack, [0, 0, 0], d * .25); b = foam ? [238, 246, 244] : P.water.map(v => v * k); }
+    else if (e === BEACH) { const k = .94 + band * .1 + (grain > .9 ? .05 : 0); a = P.dead.map(v => v * 1.14 * k); b = sand.map(v => v * k); }
+    else if (e === ROCK) { const h = d + (band - .4) * .35, k = .72 + h * .4 + (grain > .92 ? .06 : 0); a = mixTo(P.crack, P.dead, Math.min(1, h)).map(v => v * k); b = h > .78 ? peak : h > .42 ? [112 * k, 104 * k, 100 * k] : mixTo(P.soil, P.grass, .7).map(v => v * k); }
+    else { const k = .95 + band * .12; a = P.crack.map(v => v * 1.12 * k); b = mixTo(P.soil, sand, .55).map(v => v * k); }
+    const far = beyond(x, y);
+    if (far) { const m = far[1] * .8, tint = mixTo(far[0].lush, far[0].mist, .55); a = mixTo(a, far[0].mist, m); b = mixTo(b, tint, m); }
+    dead[i] = packed(a[0], a[1], a[2]); alive[i] = packed(b[0], b[1], b[2]);
+  }
   const canvas = document.createElement('canvas');
   canvas.width = TW; canvas.height = TH;
   const g = canvas.getContext('2d'), image = g.createImageData(TW, TH), out = new Uint32Array(image.data.buffer);
@@ -52,10 +67,13 @@ export function createLand(w, landIndex) {
     for (let y = y0; y < y0 + CHUNK; y++) {
       const fy = Math.min(CH - 1.001, Math.max(0, y / CELL - .5)), iy = Math.floor(fy), ty = fy - iy;
       for (let x = x0, i = y * TW + x0; x < x0 + CHUNK; x++, i++) {
+        if (w.edge[i]) { out[i] = zonesState[w.zone[(y >> 2) * CW + (x >> 2)]].done ? alive[i] : dead[i]; continue; }
         const t = w.waterT[i];
         if (t >= 0 && zonesState[w.waterZ[i]].water >= t) { out[i] = wet[i]; continue; }
         const fx = Math.min(CW - 1.001, Math.max(0, x / CELL - .5)), ix = Math.floor(fx), tx = fx - ix, c = iy * CW + ix;
-        const raw = (f[c] * (1 - tx) + f[c + 1] * tx) * (1 - ty) + (f[c + CW] * (1 - tx) + f[c + CW + 1] * tx) * ty;
+        // Next to an edge there is nothing to blend with, so the ground takes its restored neighbours' value.
+        const raw = w.near[c] ? Math.max(w.blocked[c] ? 0 : f[c], w.blocked[c + 1] ? 0 : f[c + 1], w.blocked[c + CW] ? 0 : f[c + CW], w.blocked[c + CW + 1] ? 0 : f[c + CW + 1])
+          : (f[c] * (1 - tx) + f[c + 1] * tx) * (1 - ty) + (f[c + CW] * (1 - tx) + f[c + CW + 1] * tx) * ty;
         if (raw <= .002) { out[i] = dead[i]; continue; }
         const v = raw + jitter[i] * .2 * Math.min(1, raw * 6);
         out[i] = v < SOIL_AT ? dead[i] : v < SOIL_AT + .03 ? rimA[i] : v < GRASS_AT ? soil[i] : v < GRASS_AT + .025 ? rimB[i] : v < LUSH_AT ? grass[i] : lush[i];

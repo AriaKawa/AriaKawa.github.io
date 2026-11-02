@@ -1,7 +1,7 @@
 // Rules of restoration. No DOM: runs in the game, offline catch-up and the pacing test alike.
-import { CW, CH, CN, ZONES, FINALE } from './world.mjs';
+import { CW, CH, CN, ZONES, FINALE, LANDS } from './world.mjs';
 
-const WORLD_VERSION = 2;
+const WORLD_VERSION = 3;
 export const GREEN = .6;           // the height a cell counts as restored
 export const SPIRITS = [
   { name: 'Mossling', job: 'Walks to bare ground and wakes the soil.', cost: 30, need: 0, r: 2.2, rate: .05, cap: GREEN, speed: 3.6 },
@@ -11,14 +11,22 @@ export const SPIRITS = [
 ];
 export const UPGRADES = [
   { id: 'reach', name: 'Wider hands', desc: 'Your touch heals a wider circle.', cost: 60, grow: 2.7, max: 7 },
-  { id: 'warmth', name: 'Warm touch', desc: 'Your touch wakes the ground 20% faster.', cost: 100, grow: 2.8, max: 7 },
-  { id: 'roots', name: 'Creeping roots', desc: 'Green land spreads on its own, 35% faster.', cost: 220, grow: 2.6, max: 8 },
-  { id: 'feet', name: 'Light feet', desc: 'Spirits move and work 25% faster.', cost: 800, grow: 3, max: 5 },
-  { id: 'earth', name: 'Generous earth', desc: 'Restored land gives 30% more seeds.', cost: 1500, grow: 3, max: 6 },
+  { id: 'warmth', name: 'Warm touch', desc: 'Your touch wakes the ground 20% faster.', cost: 100, grow: 2.8, max: 7, more: 1 },
+  { id: 'roots', name: 'Creeping roots', desc: 'Green land spreads on its own, 35% faster.', cost: 220, grow: 2.6, max: 8, more: 1 },
+  { id: 'feet', name: 'Light feet', desc: 'Spirits move and work 25% faster.', cost: 800, grow: 3, max: 5, more: 1 },
+  { id: 'earth', name: 'Generous earth', desc: 'Restored land gives 30% more seeds.', cost: 1500, grow: 3, max: 6, more: 1 },
   { id: 'bloom', name: 'Blooming touch', desc: 'Your touch can raise wildflowers too.', cost: 6000, grow: 1, max: 1, need: 1 },
 ];
 const lvl = (s, id) => s.upgrades[id] || 0;
-export const doneCount = s => s.zones.filter(z => z.done).length;
+export const isComplete = (s, id) => id === s.land ? s.zones.every(z => z.done) : !!s.atlas[id]?.complete;
+export const mapsDone = s => LANDS.filter((_, id) => isComplete(s, id)).length;
+export const mapReady = (s, id) => LANDS[id].needs.every(n => isComplete(s, n));
+export const upgradeMax = (s, u) => u.max + (u.more || 0) * mapsDone(s);
+export const mapPct = (s, w, id) => id === s.land ? valleyPct(s, w) : s.atlas[id]?.pct || 0;
+// Restored lands keep earning wherever you are.
+export const mapIncome = (s, id) => isComplete(s, id) ? 10 * Math.pow(1.5, id === s.land ? s.level : s.atlas[id].level) : 0;
+export const income = s => LANDS.reduce((a, _, id) => a + mapIncome(s, id), 0);
+export const doneCount = s => s.zones.filter(z => z.done).length + Object.values(s.atlas).reduce((a, m) => a + (m.done || 0), 0);
 export const spiritCost = (s, t) => Math.floor(SPIRITS[t].cost * Math.pow(1.6, s.spirits.filter(a => a.type === t).length - (t === 0 ? 1 : 0)));
 export const spiritOpen = (s, t) => doneCount(s) >= SPIRITS[t].need;
 export const upgradeCost = (s, u) => Math.floor(u.cost * Math.pow(u.grow, lvl(s, u.id)));
@@ -29,30 +37,65 @@ export const zoneBloom = (s, w, z) => Math.min(1, Math.max(0, (s.zones[z].l / w.
 export const valleyPct = (s, w) => s.zones.reduce((a, z, i) => a + zonePct(s, w, i), 0) / s.zones.length;
 export const valleyComplete = s => s.zones.every(z => z.done);
 
+const freshZones = () => ZONES.map(z => ({ open: z.id === 0, done: false, g: 0, l: 0, water: -1, sweep: -1, sweepLift: GREEN, bloomed: false }));
 export function newLand(land = 0) {
   return {
-    v: 3, land, seeds: 0, upgrades: {}, h: new Float32Array(CN),
+    v: 4, land, level: 0, seeds: 0, upgrades: {}, h: new Float32Array(CN), atlas: {}, opened: { 0: true }, gateFill: {},
     spirits: [{ type: 0, x: 40, y: 118, tx: -1, ty: -1, work: 0, walk: 0 }],
-    zones: ZONES.map(z => ({ open: z.id === 0, done: false, g: 0, l: 0, water: -1, sweep: -1, sweepLift: GREEN, bloomed: false })),
+    zones: freshZones(),
     objHp: null, trees: [], age: 0, played: 0, last: Date.now(), touched: false, paused: false,
   };
 }
-export function travel(s) {
-  const n = newLand(s.land + 1);
-  n.seeds = s.seeds; n.upgrades = s.upgrades; n.played = s.played; n.touched = true;
-  n.spirits = s.spirits.map((a, i) => ({ ...a, x: 34 + i % 8 * 2, y: 112 + (i >> 3) * 2, tx: -1, ty: -1, work: 0 }));
-  return n;
+export const gateState = (s, g) => s.opened[g.target] ? 'open' : mapReady(s, g.target) ? 'ready' : 'locked';
+// Holding on a ready gateway fills it with life. Returns true on the moment it opens.
+export function pressGate(s, g, dt) {
+  if (gateState(s, g) !== 'ready') return false;
+  s.gateFill[g.target] = Math.min(1, (s.gateFill[g.target] || 0) + dt / 1.5);
+  if (s.gateFill[g.target] < 1) return false;
+  s.opened[g.target] = true;
+  return true;
+}
+// Only one map is live at a time. The rest wait in the atlas as compact strings.
+export function leaveMap(s, w) {
+  const bytes = new Uint8Array(CN);
+  for (let i = 0; i < CN; i++) bytes[i] = Math.round(s.h[i] * 255);
+  s.atlas[s.land] = { h: b64(bytes), zones: s.zones.map(z => ({ ...z, g: 0, l: 0 })), objHp: s.objHp, trees: s.trees, wv: s.wv, level: s.level, complete: isComplete(s, s.land), done: s.zones.filter(z => z.done).length, pct: valleyPct(s, w) };
+}
+// `w` must already be the world of map `id`.
+export function enterMap(s, w, id) {
+  const m = s.atlas[id];
+  delete s.atlas[id];
+  s.level = m ? m.level : mapsDone(s);
+  s.land = id; s.opened[id] = true;
+  s.zones = m ? m.zones : freshZones(); s.objHp = m ? m.objHp : null; s.trees = m ? m.trees : []; s.wv = m ? m.wv : WORLD_VERSION;
+  s.h = new Float32Array(CN);
+  loadField(s, w, m?.h);
+  w.pend.fill(0); w.active.length = 0;
+  const at = s.zones.findIndex(z => z.open && !z.done), home = ZONES[at < 0 ? 0 : at];
+  s.spirits.forEach((a, i) => { a.x = home.px / 4 + (i % 8 - 4) * 1.5; a.y = home.py / 4 + 2 + (i >> 3) * 1.5; a.rx = a.ry = undefined; a.tx = -1; a.work = 0; a.nap = 0; });
+}
+function loadField(s, w, text) {
+  s.zones.forEach(z => { z.g = 0; z.l = 0; });
+  if (!text && text !== '') return;
+  const raw = text ? atob(text) : null;
+  if (raw && raw.length !== CN) throw Error('Bad land data.');
+  for (let i = 0; i < CN; i++) {
+    if (w.blocked[i]) continue;
+    const v = raw ? raw.charCodeAt(i) / 255 : 1, z = s.zones[w.zone[i]];
+    s.h[i] = v; z.g += Math.min(v, GREEN); z.l += v;
+  }
 }
 export const initObjects = (s, w) => { if (s.objHp?.length !== w.objects.length || s.wv !== WORLD_VERSION) { s.objHp = w.objects.map(o => s.zones[o.zone].done ? 0 : o.hp); if (s.wv !== WORLD_VERSION) s.zones.forEach(z => { if (z.done) z.sweep = 0; }); s.wv = WORLD_VERSION; } };
 
-const toughness = z => 1 + z * 1.3;
-const seedMult = (s, z) => (1 + z * 1.1) * (1 + lvl(s, 'earth') * .3) * Math.pow(1.5, s.land);
+const hardness = s => 1 + s.level * .6;
+const toughness = (s, z) => (1 + z * 1.3) * hardness(s);
+const seedMult = (s, z) => (1 + z * 1.1) * (1 + lvl(s, 'earth') * .3) * Math.pow(1.5, s.level);
 function raise(s, w, i, amount, cap, soft = true) {
   const z = w.zone[i], st = s.zones[z];
-  if (!st.open) return 0;
+  if (!st.open || w.blocked[i]) return 0;
   const v = s.h[i];
   if (v >= cap) return 0;
-  const n = Math.min(cap, v + (soft ? amount / toughness(z) : amount)), gain = n - v;
+  const n = Math.min(cap, v + (soft ? amount / toughness(s, z) : amount)), gain = n - v;
   s.h[i] = n;
   st.g += Math.min(n, GREEN) - Math.min(v, GREEN);
   st.l += gain;
@@ -91,10 +134,10 @@ function soak(s, w, cx, cy, r, amount, cap) {
   const x0 = Math.max(0, Math.floor(cx - r)), x1 = Math.min(CW - 1, Math.ceil(cx + r)), y0 = Math.max(0, Math.floor(cy - r)), y1 = Math.min(CH - 1, Math.ceil(cy + r));
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
     const d = Math.hypot(x - cx, y - cy) / r, i = y * CW + x, z = w.zone[i];
-    if (d >= 1 || !s.zones[z].open) continue;
+    if (d >= 1 || !s.zones[z].open || w.blocked[i]) continue;
     const room = cap - s.h[i] - w.pend[i];
     if (room <= 0) continue;
-    const add = Math.min(room, amount * (1 - d * d * .6) / (1 + z * 1.5));
+    const add = Math.min(room, amount * (1 - d * d * .6) / ((1 + z * 1.5) * hardness(s)));
     if (!w.pend[i]) w.active.push(i);
     w.pend[i] += add;
     total += add;
@@ -193,6 +236,7 @@ export function tick(s, w, dt, ev = [], slice = 0, of = 1) {
   if (s.paused) return ev;
   initObjects(s, w);
   s.age += dt;
+  s.seeds += income(s) * dt;
   if (!carries.has(s)) carries.set(s, { v: Math.random() });
   drink(s, w, dt);
   const lists = openCells(s, w);
@@ -235,7 +279,7 @@ export function buySpirit(s, t) {
 }
 export function buyUpgrade(s, id) {
   const u = UPGRADES.find(q => q.id === id);
-  if (!u || lvl(s, id) >= u.max || !upgradeOpen(s, u)) return false;
+  if (!u || lvl(s, id) >= upgradeMax(s, u) || !upgradeOpen(s, u)) return false;
   const cost = upgradeCost(s, u);
   if (s.seeds < cost) return false;
   s.seeds -= cost;
@@ -253,7 +297,7 @@ export function catchUp(s, w, seconds) {
   return { seconds: span, seeds: s.seeds - before, ev };
 }
 
-const b64 = bytes => { let t = ''; for (let i = 0; i < bytes.length; i += 8192) t += String.fromCharCode.apply(null, bytes.subarray(i, i + 8192)); return btoa(t); };
+function b64(bytes) { let t = ''; for (let i = 0; i < bytes.length; i += 8192) t += String.fromCharCode.apply(null, bytes.subarray(i, i + 8192)); return btoa(t); }
 export function encode(s) {
   const bytes = new Uint8Array(CN);
   for (let i = 0; i < CN; i++) bytes[i] = Math.round(s.h[i] * 255);
@@ -261,14 +305,16 @@ export function encode(s) {
 }
 export function decode(text, w) {
   const o = JSON.parse(text);
-  if (o?.v !== 3 || typeof o.h !== 'string' || !Array.isArray(o.spirits) || !Array.isArray(o.zones) || o.zones.length !== ZONES.length || !Number.isFinite(o.seeds)) throw Error('Not a Little Wilds 2 save.');
-  const raw = atob(o.h);
-  if (raw.length !== CN) throw Error('Bad land data.');
-  o.h = new Float32Array(CN);
-  o.zones.forEach(z => { z.g = 0; z.l = 0; });
-  for (let i = 0; i < CN; i++) {
-    const v = raw.charCodeAt(i) / 255, z = o.zones[w.zone[i]];
-    o.h[i] = v; z.g += Math.min(v, GREEN); z.l += v;
+  if (o?.v !== 3 && o?.v !== 4 || typeof o.h !== 'string' || !Array.isArray(o.spirits) || !Array.isArray(o.zones) || o.zones.length !== ZONES.length || !Number.isFinite(o.seeds)) throw Error('Not a Little Wilds 2 save.');
+  if (o.v === 3) { // Before the continent, "Travel on" discarded each finished land. Those count as restored.
+    const L = saveMap(o), full = ZONES.map(() => ({ open: true, done: true, g: 0, l: 0, water: 1, sweep: -1, sweepLift: 1, bloomed: true }));
+    o.v = 4; o.land = L; o.level = L; o.atlas = {}; o.opened = { [L]: true }; o.gateFill = {};
+    for (let n = 0; n < L; n++) { o.atlas[n] = { h: '', zones: full.map(z => ({ ...z })), objHp: null, trees: [], wv: WORLD_VERSION, level: n, complete: true, done: ZONES.length, pct: 1 }; o.opened[n] = true; }
   }
+  const text2 = o.h;
+  o.h = new Float32Array(CN);
+  loadField(o, w, text2);
   return o;
 }
+// Which map a save belongs on, so the caller can build that world before decoding.
+export const saveMap = o => o.v === 3 ? Math.min(o.land || 0, LANDS.length - 1) : o.land || 0;
