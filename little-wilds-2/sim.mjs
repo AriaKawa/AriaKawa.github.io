@@ -188,14 +188,15 @@ function completeZone(s, w, id, ev) {
   if (s.zones.every(q => q.done)) ev.push({ t: 'valley' });
 }
 const carries = new WeakMap();
-export function tick(s, w, dt, ev = []) {
+// `slice`/`of` let the game walk a fraction of the spirits each frame instead of all at once.
+export function tick(s, w, dt, ev = [], slice = 0, of = 1) {
   if (s.paused) return ev;
   initObjects(s, w);
   s.age += dt;
   if (!carries.has(s)) carries.set(s, { v: Math.random() });
   drink(s, w, dt);
   const lists = openCells(s, w);
-  for (const a of s.spirits) stepSpirit(s, w, a, dt, lists, ev);
+  for (let n = slice; n < s.spirits.length; n += of) stepSpirit(s, w, s.spirits[n], dt * of, lists, ev);
   creep(s, w, dt, carries.get(s));
   s.zones.forEach((z, id) => {
     if (!z.open) return;
@@ -256,7 +257,7 @@ const b64 = bytes => { let t = ''; for (let i = 0; i < bytes.length; i += 8192) 
 export function encode(s) {
   const bytes = new Uint8Array(CN);
   for (let i = 0; i < CN; i++) bytes[i] = Math.round(s.h[i] * 255);
-  return JSON.stringify({ ...s, h: b64(bytes), spirits: s.spirits.map(({ held, ...a }) => a), last: Date.now() });
+  return JSON.stringify({ ...s, h: b64(bytes), spirits: s.spirits.map(({ held, rx, ry, anim, px, py, ...a }) => a), last: Date.now() });
 }
 export function decode(text, w) {
   const o = JSON.parse(text);

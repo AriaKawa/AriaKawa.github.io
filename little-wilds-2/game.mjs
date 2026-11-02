@@ -12,7 +12,8 @@ const nextFrame = () => new Promise(r => setTimeout(r, 30));
 
 const audio = createAudio();
 let images, world, land, view, s;
-let ready = false, modal = '', lastUI = 0, lastSave = 0, last = performance.now(), toastTimer, bannerTimer, lastActive = performance.now(), tickBank = 0;
+let ready = false, modal = '', lastUI = 0, lastSave = 0, last = performance.now(), toastTimer, bannerTimer, lastActive = performance.now(), frameNo = 0, slowFrames = 0;
+const SPIRIT_SLICES = 6;
 let thenX = null, timelapse = null, currentZone = 0, seedShown = 0, wasHidden = 0;
 const pointer = { x: 0, y: 0, on: false, holding: false, id: null, kb: false };
 let glideTo = -1, glideAt = 0, gliding = 0, quarters = [], rateAt = 0, rateSeeds = 0, rate = 0, pulseTimer;
@@ -26,13 +27,14 @@ function save() { if (!s) return; try { localStorage.setItem(KEY, encode(s)); } 
 async function buildLand(index) {
   world = makeWorld(1 + index * 17);
   land = createLand(world, index);
-  world.dirty = i => land.markCell(i);
+  world.dirty = i => { land.markCell(i); view?.floraCell(i); };
   world.waterMoved = z => land.markWater(z);
 }
 function attach() {
   initObjects(s, world);
   land.setSource(s.h, s.zones); land.flushAll();
   view = createRenderer($('world'), world, land, images);
+  view.onPet = (label, zone) => toast(`${label} has come back to ${ZONES[zone].name}.`);
   buildDock();
   currentZone = firstOpen(); view.focusZone(currentZone, true);
 }
@@ -114,7 +116,7 @@ $('zonechip').onclick = () => { audio.start(); openValley(); };
 function openMenu() {
   show('menu', `<h2>Little Wilds 2</h2><p class="sub">Bring a dead valley back to life, one patch at a time.</p>
   <label class="volume">Volume <input id="volume" type="range" min="0" max="100" value="${Math.round(audio.volume * 100)}"></label><div class="row"><button class="wood" data-act="cards">Postcards</button><button class="wood" data-act="exportSave">Export save</button><button class="wood" data-act="importSave">Import save</button><button class="wood" data-act="reset">Start over</button></div>
-  <p class="sub" style="margin-top:14px">Hold and drag: heal the land.<br>Drag a spirit: carry it somewhere.<br>Right-drag, two fingers or arrow keys: look around.<br>Wheel or pinch: zoom. H: hide the interface.</p><input type="file" id="file" accept=".json,application/json" hidden>`);
+  <p class="sub" style="margin-top:14px">Hold and drag: heal the land.<br>Drag a spirit: carry it somewhere.<br>Click a deer or rabbit: give it a pat.<br>Right-drag, two fingers or arrow keys: look around.<br>Wheel or pinch: zoom. H: hide the interface.</p><input type="file" id="file" accept=".json,application/json" hidden>`);
 }
 $('btn-menu').onclick = () => { audio.start(); openMenu(); $('volume').oninput = e => { audio.setVolume(e.target.value / 100); try { localStorage.setItem(VOLUME_KEY, audio.volume); } catch {} }; };
 function exportSave() { save(); const a = document.createElement('a'), u = URL.createObjectURL(new Blob([encode(s)], { type: 'application/json' })); a.href = u; a.download = 'little-wilds-2-save.json'; a.click(); setTimeout(() => URL.revokeObjectURL(u), 1000); }
@@ -154,6 +156,8 @@ canvas.addEventListener('pointerdown', e => {
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY }); pointer.x = e.clientX; pointer.y = e.clientY; pointer.on = true;
   if (thenX != null) { thenX = e.clientX; pointer.id = e.pointerId; return; }
   if (pointers.size > 1 || e.button !== 0) { pointer.holding = false; if (carry) { carry.held = false; carry = null; } panning = true; pinch = 0; return; }
+  const petted = view.hitPet(e.clientX, e.clientY);
+  if (petted) { view.pet(petted); audio.buy(); const gift = 10 + s.seeds * .002; s.seeds += gift; view.reward(petted.x, petted.y - 12, gift, 3); pulseSeeds(); return; }
   const hit = view.hitSpirit(s, e.clientX, e.clientY);
   pointer.id = e.pointerId;
   if (hit) { carry = hit; hit.held = true; hit.tx = -1; hit.px = e.clientX; hit.py = e.clientY; return; }
@@ -207,7 +211,7 @@ function handle(ev, now, quiet = false) {
       const justOpened = SPIRITS.find(d => d.need === s.zones.filter(z => z.done).length);
       if (justOpened) setTimeout(() => toast(`A new spirit has come: ${justOpened.name}.`), 5400);
     }
-    if (e.t === 'bloom' && !quiet) { audio.chime(); view.sweep(e.zone, '#ffc6dd'); view.glow(e.zone, '255,190,220'); banner(`${ZONES[e.zone].name} is flourishing`, 'Deer have come back to graze.'); }
+    if (e.t === 'bloom' && !quiet) { audio.chime(); view.sweep(e.zone, '#ffc6dd'); view.glow(e.zone, '255,190,220'); banner(`${ZONES[e.zone].name} is flourishing`, 'A spirit fawn has come to graze.'); }
     if (e.t === 'valley' && !quiet) setTimeout(celebrate, 7000);
   }
 }
@@ -240,11 +244,12 @@ function frame(now) {
       const c = view.toCell(pointer.x, pointer.y), gain = touch(s, world, c.x, c.y, dt, ev);
       if (gain > 0) { view.spark(c.x, c.y, gain * 7, 3); audio.pluck(gain * 25); wake(); }
     }
-    tickBank += dt;
-    while (tickBank >= .1) { tick(s, world, .1, ev); tickBank -= .1; }
+    tick(s, world, dt, ev, frameNo++ % SPIRIT_SLICES, SPIRIT_SLICES);
     if (ev.length) handle(ev, now);
   } else if (timelapse) stepTimelapse(now);
-  land.flush(timelapse ? 240 : 110);
+  land.flush(timelapse ? 6 : 3);
+  // Step quality down if this machine is struggling, rather than stuttering.
+  slowFrames = Math.max(0, slowFrames + (dt > .032 ? 1 : -.25)); if (slowFrames > 90 && view.quality > 0) { view.setQuality(view.quality - 1); slowFrames = 0; }
   seedShown += (s.seeds - seedShown) * Math.min(1, dt * 9); if (Math.abs(s.seeds - seedShown) < 1) seedShown = s.seeds;
   $('seeds').textContent = fmt(seedShown);
   if (glideTo >= 0 && now > glideAt) { if (!pointer.holding && !pointers.size && !$('modal').open) { view.focusZone(glideTo); gliding = now + 5000; } glideTo = -1; }
@@ -264,15 +269,15 @@ addEventListener('pagehide', save);
 async function main() {
   try {
     await nextFrame();
-    const [worldImg, spirits, landmarks] = await Promise.all([load('assets/world.png'), load('assets/spirits.png'), load('assets/landmarks.png')]);
-    images = { world: worldImg, spirits, landmarks };
+    const [worldImg, spirits, landmarks, pets] = await Promise.all([load('assets/world.png'), load('assets/spirits.png'), load('assets/landmarks.png'), load('assets/pets.png')]);
+    images = { world: worldImg, spirits, landmarks, pets };
     let raw = null, landIndex = 0;
     try { raw = localStorage.getItem(KEY); if (raw) landIndex = JSON.parse(raw).land || 0; } catch { raw = null; }
     await buildLand(landIndex);
     try { s = raw ? decode(raw, world) : newLand(0); } catch { s = newLand(0); toast('That save could not be read, so the valley starts fresh.'); }
     const away = (Date.now() - (s.last || Date.now())) / 1000;
     attach();
-    if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) window.__lw = { get s() { return s; }, get w() { return world; }, get v() { return view; }, tick: (n, dt = .5) => { const ev = []; for (let k = 0; k < n; k++) tick(s, world, dt, ev); handle(ev, performance.now()); land.markAll(); updateUI(); return ev.length; }, grant: n => { s.seeds += n; updateUI(); } };
+    if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) window.__lw = { get s() { return s; }, get w() { return world; }, get v() { return view; }, tick: (n, dt = .5) => { const ev = []; for (let k = 0; k < n; k++) tick(s, world, dt, ev); handle(ev, performance.now()); land.markAll(); view.allFlora(); updateUI(); return ev.length; }, grant: n => { s.seeds += n; updateUI(); } };
     ready = true; $('loading').style.display = 'none'; updateUI();
     if (raw) returnFrom(away); else banner('Little Wilds', 'Nothing has grown here in a long time.', 4500);
     requestAnimationFrame(frame);

@@ -45,7 +45,7 @@ export function createLand(w, landIndex) {
   canvas.width = TW; canvas.height = TH;
   const g = canvas.getContext('2d'), image = g.createImageData(TW, TH), out = new Uint32Array(image.data.buffer);
   const dirty = new Uint8Array(COLS * ROWS);
-  let view = null, zonesState = null;
+  let view = null, zonesState = null, cursor = 0;
 
   function paint(cx, cy) {
     const x0 = cx * CHUNK, y0 = cy * CHUNK, f = view;
@@ -75,7 +75,8 @@ export function createLand(w, landIndex) {
     },
     markWater(zone) { for (const [x, y] of w.streams[zone]) { if (Math.round(x) % 12 < 2 || Math.round(y) % 12 < 2) { const a = Math.floor(x / CHUNK), b = Math.floor(y / CHUNK); if (a >= 0 && b >= 0 && a < COLS && b < ROWS) dirty[b * COLS + a] = 1; } } const p = w.ponds[zone]; for (let b = Math.floor((p.y - p.r - 6) / CHUNK); b <= (p.y + p.r + 6) / CHUNK; b++) for (let a = Math.floor((p.x - p.r - 6) / CHUNK); a <= (p.x + p.r + 6) / CHUNK; a++) if (a >= 0 && b >= 0 && a < COLS && b < ROWS) dirty[b * COLS + a] = 1; },
     markAll() { dirty.fill(1); },
-    flush(budget = 90) { for (let i = 0, n = 0; i < dirty.length && n < budget; i++) if (dirty[i]) { dirty[i] = 0; paint(i % COLS, Math.floor(i / COLS)); n++; } },
+    // Paints for a few milliseconds at most, resuming where it stopped so no corner of the map waits.
+    flush(ms = 3) { const end = performance.now() + ms; for (let k = 0, n = 0; k < dirty.length; k++) { const i = cursor; cursor = (cursor + 1) % dirty.length; if (!dirty[i]) continue; dirty[i] = 0; paint(i % COLS, Math.floor(i / COLS)); if (++n >= 6 && performance.now() > end) return; } },
     flushAll() { this.flush(Infinity); },
     makeThen() { // The land as it was on day one.
       const c = document.createElement('canvas'); c.width = TW; c.height = TH;
