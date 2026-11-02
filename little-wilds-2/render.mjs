@@ -1,5 +1,5 @@
 // Everything above the ground: flora, the dead-and-revived objects, spirits, wildlife, weather and fog.
-import { TW, TH, CW, CH, CELL, ZONES, landAt, hash } from './world.mjs';
+import { TW, TH, CW, CH, CELL, ZONES, landAt, hash, fbm } from './world.mjs';
 import { GREEN, brushRadius, SPIRITS } from './sim.mjs';
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -43,9 +43,11 @@ function floraAtlas(P) {
 
 export function createRenderer(canvas, world, land, images) {
   const ctx = canvas.getContext('2d'), cam = { x: 160, y: 530, z: 3.4, tx: 160, ty: 530, tz: 3.4 };
-  let W = 0, H = 0, dpr = 1, flora = floraAtlas(land.P), particles = [], rings = [], thenC = null, shown = null, critters = [], glints = [];
+  let flyers = [], floaters = [], glows = [], W = 0, H = 0, dpr = 1, flora = floraAtlas(land.P), particles = [], rings = [], thenC = null, shown = null, critters = [], glints = [];
   const fog = document.createElement('canvas'); fog.width = CW; fog.height = CH;
-  const fogG = fog.getContext('2d'), fogAlpha = ZONES.map(() => -1), revives = new Map();
+  const fogG = fog.getContext('2d'), fogAlpha = ZONES.map(() => -1), revives = new Map(), fogSoft = document.createElement('canvas'), wisps = new Float32Array(CW * CH);
+  fogSoft.width = CW; fogSoft.height = CH; const fogSoftG = fogSoft.getContext('2d');
+  for (let i = 0; i < wisps.length; i++) wisps[i] = fbm((i % CW) / 11, Math.floor(i / CW) / 11, 91);
   const glintSpots = ZONES.map(z => { const out = [], p = world.ponds[z.id]; for (let k = 0; k < 26; k++) { const a = hash(k, z.id, 3) * 6.28, r = Math.sqrt(hash(k, z.id, 5)) * p.r * .8; out.push([p.x + Math.cos(a) * r, p.y + Math.sin(a) * r, hash(k, z.id, 7)]); } return out; });
   const padSpots = ZONES.map(z => { const p = world.ponds[z.id]; return [0, 1, 2, 3].map(k => [p.x + (hash(k, z.id, 11) - .5) * p.r * 1.2, p.y + (hash(k, z.id, 13) - .5) * p.r * 1.1, hash(k, z.id, 17)]); });
 
@@ -83,10 +85,11 @@ export function createRenderer(canvas, world, land, images) {
     const im = fogG.createImageData(CW, CH), m = land.P.mist;
     for (let i = 0; i < world.zone.length; i++) {
       const a = fogAlpha[world.zone[i]]; if (!a) continue;
-      const k = i * 4, wisp = world.zone[i] % 3 / 3;
-      im.data[k] = m[0]; im.data[k + 1] = m[1]; im.data[k + 2] = m[2]; im.data[k + 3] = a * (190 + wisp * 18);
+      const k = i * 4, wisp = wisps[i];
+      im.data[k] = m[0]; im.data[k + 1] = m[1]; im.data[k + 2] = m[2]; im.data[k + 3] = a * (120 + wisp * 150);
     }
     fogG.putImageData(im, 0, 0);
+    fogSoftG.clearRect(0, 0, CW, CH); fogSoftG.filter = 'blur(2px)'; fogSoftG.drawImage(fog, 0, 0); fogSoftG.filter = 'none';
   }
   function sprite(atlas, frame, x, y, w, h = w, flip = false, cols = 4) {
     const fx = frame % cols * SIZE, fy = Math.floor(frame / cols) * SIZE;
@@ -129,6 +132,7 @@ export function createRenderer(canvas, world, land, images) {
         if (hp > 0) {
           const hurt = hp < o.hp ? Math.sin(tNow * 40) * z * .5 * (1 - hp / o.hp) : 0;
           art(o, o.dead, x + hurt, y, size);
+          if (hp < o.hp) { ctx.globalAlpha = (1 - hp / o.hp) * .9; art(o, o.live, x + hurt, y, size); ctx.globalAlpha = 1; } // life seeps in while you hold
         } else {
           let k = 1;
           if (born !== undefined) { const a = (time - born) / 620; if (a < 1) k = 1 + Math.sin(a * Math.PI) * .22 * (1 - a) + (a < .25 ? (a / .25 - 1) * .55 : 0); else revives.delete(o.id); }
@@ -224,6 +228,20 @@ export function createRenderer(canvas, world, land, images) {
       ctx.beginPath(); ctx.arc(sx(r.x), sy(r.y), rad * z, 0, 7); ctx.stroke();
     }
     ctx.globalAlpha = 1; rings = rings.filter(r => r.age < r.life);
+    if (glows.length) {
+      ctx.globalCompositeOperation = 'lighter';
+      for (const g of glows) {
+        g.age += dt; const k = g.age / g.life, rad = (70 + 230 * k) * z, x = sx(g.x), y = sy(g.y), fill = ctx.createRadialGradient(x, y, 0, x, y, rad);
+        fill.addColorStop(0, `rgba(${g.color},${.36 * (1 - k)})`); fill.addColorStop(1, `rgba(${g.color},0)`);
+        ctx.fillStyle = fill; ctx.fillRect(x - rad, y - rad, rad * 2, rad * 2);
+      }
+      ctx.globalCompositeOperation = 'source-over'; glows = glows.filter(g => g.age < g.life);
+    }
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = '600 ' + Math.round(clamp(z * 7, 17, 30)) + 'px "Pixelify Sans",Georgia,serif';
+    for (const f of floaters) { f.age += dt; const k = f.age / 1.3; ctx.globalAlpha = Math.min(1, (1 - k) * 2); ctx.fillStyle = '#2a2017'; ctx.fillText(f.text, sx(f.x) + 1, sy(f.y) - k * 26 * z + 2); ctx.fillStyle = '#ffe28a'; ctx.fillText(f.text, sx(f.x), sy(f.y) - k * 26 * z); }
+    ctx.globalAlpha = 1; floaters = floaters.filter(f => f.age < 1.3);
+    for (const f of flyers) { f.age += dt; if (f.age < 0) continue; const k = Math.min(1, f.age / f.life), e = k * k * (3 - 2 * k), s = 24 - k * 8; ctx.drawImage(images.world, 64, 192, 64, 64, f.x + (34 - f.x) * e - s / 2, f.y + (32 - f.y) * e - Math.sin(k * 3.14) * 46 - s / 2, s, s); }
+    flyers = flyers.filter(f => f.age < f.life);
   }
   // Light across the day. A full cycle is about eight minutes, and nights keep their fireflies.
   function drawLight(s, time) {
@@ -260,6 +278,14 @@ export function createRenderer(canvas, world, land, images) {
     cam, resize, focusZone, focusAll, zoomAt, pan, toCell, toWorld,
     screenOf(x, y) { return { x: sx(x), y: sy(y) }; },
     setShown(f) { shown = f; },
+    reward(x, y, amount, fly = 6) { // World position. A number rises and seeds fly home to the counter.
+      if (reduced) return;
+      floaters.push({ x, y, text: '+' + (amount >= 1e4 ? (amount / 1e3).toFixed(1) + 'k' : Math.round(amount)), age: 0 });
+      const from = { x: sx(x), y: sy(y) };
+      for (let k = 0; k < fly && flyers.length < 40; k++) flyers.push({ x: from.x + (Math.random() - .5) * 26, y: from.y + (Math.random() - .5) * 26, age: -k * .05, life: .75 });
+    },
+    glow(z, color = '255,236,170') { const p = world.ponds[z]; glows.push({ x: p.x, y: p.y, age: 0, life: 3.4, color }); },
+    pop(cellX, cellY) { burst(cellX * CELL, cellY * CELL - 6, 18, ['#fff', '#d8f58f', '#ffe28a'], 26); rings.push({ x: cellX * CELL, y: cellY * CELL - 6, from: 2, to: 18, age: 0, life: .5, color: '#fff3b8' }); },
     revived(o, time) { revives.set(o.id, time); const x = o.x * CELL, y = o.y * CELL - o.size * .4; burst(x, y, 12 + o.size * .5 | 0, ['#c9f07a', '#ffe28a', '#fff', '#8ad05a'], 30); rings.push({ x, y: y + o.size * .3, from: 4, to: 16 + o.size * .5, age: 0, life: .6, color: '#fff3b8' }); },
     sweep(z, color = '#fff3c4') { const p = world.ponds[z]; rings.push({ x: p.x, y: p.y, from: 8, to: 220, age: 0, life: 4.2, color }); burst(p.x, p.y, 70, ['#fff', '#ffe28a', '#c9f07a', '#ffc6dd'], 58); },
     spark(cellX, cellY, amount, r) { const n = Math.min(4, amount * .28); for (let k = 0; k < n; k++) { if (Math.random() > n / 4 + .2) continue; const a = Math.random() * 6.28, q = Math.random() * r * CELL; addParticle({ x: cellX * CELL + Math.cos(a) * q, y: cellY * CELL + Math.sin(a) * q, vx: (Math.random() - .5) * 8, vy: -8 - Math.random() * 16, g: 3, life: .55 + Math.random() * .6, age: 0, size: .8 + Math.random() * .6, color: ['#d8f58f', '#fff2ab', '#9ddc6a'][k % 3] }); } },
@@ -270,7 +296,7 @@ export function createRenderer(canvas, world, land, images) {
       updateFog(s); spawnCritters(s);
       drawGround(land.canvas); drawWater(s, time); drawFlora(s, time); drawProps(s, time, opts.carry); drawCritters(s, time, dt); drawLight(s, time);
       drawParticles(dt);
-      ctx.imageSmoothingEnabled = true; ctx.drawImage(fog, 0, 0, CW, CH, sx(0), sy(0), TW * cam.z, TH * cam.z); ctx.imageSmoothingEnabled = false;
+      ctx.imageSmoothingEnabled = true; const drift = reduced ? 0 : Math.sin(time * .00016) * 7 * cam.z; ctx.globalAlpha = .72; ctx.drawImage(fogSoft, 0, 0, CW, CH, sx(0), sy(0), TW * cam.z, TH * cam.z); ctx.globalAlpha = .5; ctx.drawImage(fogSoft, 0, 0, CW, CH, sx(0) + drift, sy(0) - drift * .5, TW * cam.z, TH * cam.z); ctx.globalAlpha = 1; ctx.imageSmoothingEnabled = false;
       drawLabels(s);
       if (opts.then !== null && opts.then !== undefined) {
         thenC ||= land.makeThen();

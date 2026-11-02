@@ -36,7 +36,7 @@ export function makeWorld(seed = 1) {
   const zone = new Uint8Array(CN), cellsOf = ZONES.map(() => []);
   for (let y = 0; y < CH; y++) for (let x = 0; x < CW; x++) {
     const tx = x * CELL + 2, ty = y * CELL + 2;
-    const wx = tx + (fbm(tx / 70, ty / 70, seed + 11) - .5) * 85, wy = ty + (fbm(tx / 70, ty / 70, seed + 29) - .5) * 85;
+    const wx = tx + (fbm(tx / 70, ty / 70, seed + 11) - .5) * 85 + (fbm(tx / 19, ty / 19, seed + 13) - .5) * 46, wy = ty + (fbm(tx / 70, ty / 70, seed + 29) - .5) * 85 + (fbm(tx / 19, ty / 19, seed + 31) - .5) * 46;
     let best = 0, bd = Infinity;
     for (const z of ZONES) { const d = (wx - z.px) ** 2 + (wy - z.py) ** 2; if (d < bd) { bd = d; best = z.id; } }
     zone[y * CW + x] = best;
@@ -121,8 +121,8 @@ export function makeWorld(seed = 1) {
     const tx = (x + hash(x, y + k, seed + 103)) * CELL, ty = (y + hash(x + k, y, seed + 105)) * CELL;
     if (xx0(Math.min(TW - 1, tx), Math.min(TH - 1, ty))) continue;
     let kind, thr;
-    if (r < .46) { kind = 0; thr = .42 + r2 * .14; }       // short tuft
-    else if (r < .66) { kind = 1; thr = .56 + r2 * .1; }   // tall grass
+    if (r < .46) { kind = 0; thr = .33 + r2 * .12; }       // short tuft
+    else if (r < .66) { kind = 1; thr = .46 + r2 * .12; }   // tall grass
     else if (r < .9) { kind = 2 + Math.floor(fbm(x / 13, y / 13, seed + 121) * 7) % 5; thr = .7 + r2 * .28; } // flowers, drifting in colour patches
     else if (r < .935) { kind = 7; thr = .8 + r2 * .18; }  // fern
     else continue;
@@ -134,11 +134,11 @@ export function makeWorld(seed = 1) {
     const p = ponds[z];
     return Uint32Array.from(list.map(i => [i, Math.hypot(i % CW * CELL - p.x, Math.floor(i / CW) * CELL - p.y) + hash(i, 1, seed) * 26]).sort((a, b) => a[1] - b[1]).map(e => e[0]));
   });
-  return { seed, zone, cellsOf, order, ponds, streams, waterT, waterZ, objects, flora, floraCols, floraRows, FC, count: cellsOf.map(l => l.length), dirty: () => {} };
+  return { seed, pend: new Float32Array(CN), active: [], zone, cellsOf, order, ponds, streams, waterT, waterZ, objects, flora, floraCols, floraRows, FC, count: cellsOf.map(l => l.length), dirty: () => {} };
 }
 
 export const LANDS = [
-  { name: 'Hollow Vale', dead: [132, 121, 106], crack: [86, 76, 66], soil: [78, 58, 44], grass: [82, 142, 66], lush: [110, 160, 72], water: [66, 150, 182], flowers: ['#fff4f0', '#ffd34d', '#ff8fb1', '#b890ff', '#ff9d5c'], mist: [214, 208, 192] },
+  { name: 'Hollow Vale', dead: [132, 121, 106], crack: [86, 76, 66], soil: [78, 58, 44], grass: [88, 138, 68], lush: [116, 160, 76], water: [66, 150, 182], flowers: ['#fff4f0', '#ffd34d', '#ff8fb1', '#b890ff', '#ff9d5c'], mist: [214, 208, 192] },
   { name: 'Ember Basin', dead: [92, 86, 88], crack: [48, 42, 46], soil: [70, 48, 44], grass: [66, 138, 106], lush: [214, 160, 66], water: [56, 170, 170], flowers: ['#ffe9b0', '#ff7a4d', '#ffc247', '#ff5f7e', '#fff4e0'], mist: [190, 180, 178] },
   { name: 'Frostmere', dead: [156, 162, 172], crack: [104, 112, 128], soil: [84, 78, 88], grass: [84, 158, 124], lush: [132, 204, 150], water: [84, 176, 224], flowers: ['#ffffff', '#ffc9e4', '#b8e0ff', '#d7b8ff', '#fff2a8'], mist: [226, 232, 240] },
 ];

@@ -3,14 +3,14 @@
 import { TW, TH, CW, CH, CELL, fbm, noise, hash, landAt } from './world.mjs';
 
 const packed = (r, g, b) => (255 << 24) | (Math.max(0, Math.min(255, b)) << 16) | (Math.max(0, Math.min(255, g)) << 8) | Math.max(0, Math.min(255, r));
-const SOIL_AT = .1, GRASS_AT = .38, LUSH_AT = .74, CHUNK = 32, COLS = TW / CHUNK, ROWS = TH / CHUNK;
+const SOIL_AT = .1, GRASS_AT = .3, LUSH_AT = .74, CHUNK = 32, COLS = TW / CHUNK, ROWS = TH / CHUNK;
 
 export function createLand(w, landIndex) {
   const P = landAt(landIndex), N = TW * TH, dead = new Uint32Array(N), soil = new Uint32Array(N), grass = new Uint32Array(N), lush = new Uint32Array(N), rimA = new Uint32Array(N), rimB = new Uint32Array(N), wet = new Uint32Array(N), jitter = new Float32Array(N);
   const s = w.seed;
   for (let y = 0, i = 0; y < TH; y++) for (let x = 0; x < TW; x++, i++) {
     const e = fbm(x / 58, y / 58, s + 200), ex = fbm((x + 3) / 58, y / 58, s + 200), ey = fbm(x / 58, (y + 3) / 58, s + 200);
-    const shade = 1 + Math.max(-.24, Math.min(.24, (e - ex) * 16 + (e - ey) * 22)) + (e - .5) * .25;
+    const shade = 1 + Math.max(-.13, Math.min(.13, (e - ex) * 10 + (e - ey) * 14)) + (e - .5) * .12;
     const grain = hash(x, y, s + 3), blotch = fbm(x / 14, y / 14, s + 210), fine = noise(x / 3.4, y / 3.4, s + 220);
     jitter[i] = (fbm(x / 7, y / 7, s + 230) - .5) * 1.1 + (grain - .5) * .45;
 

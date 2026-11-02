@@ -1,4 +1,4 @@
-import { makeWorld, ZONES, CN, CW, CH, landAt, FINALE, hash } from './world.mjs';
+import { makeWorld, ZONES, CN, CW, CH, CELL, landAt, FINALE, hash } from './world.mjs';
 import { newLand, tick, touch, travel, catchUp, encode, decode, buySpirit, buyUpgrade, spiritCost, spiritOpen, upgradeCost, upgradeOpen, zonePct, zoneBloom, valleyPct, valleyComplete, initObjects, SPIRITS, UPGRADES, GREEN } from './sim.mjs';
 import { createLand } from './land.mjs';
 import { createRenderer } from './render.mjs';
@@ -15,6 +15,8 @@ let images, world, land, view, s;
 let ready = false, modal = '', lastUI = 0, lastSave = 0, last = performance.now(), toastTimer, bannerTimer, lastActive = performance.now(), tickBank = 0;
 let thenX = null, timelapse = null, currentZone = 0, seedShown = 0, wasHidden = 0;
 const pointer = { x: 0, y: 0, on: false, holding: false, id: null, kb: false };
+let glideTo = -1, glideAt = 0, gliding = 0, quarters = [], rateAt = 0, rateSeeds = 0, rate = 0, pulseTimer;
+function pulseSeeds() { $('seeds').parentElement.classList.add('pulse'); clearTimeout(pulseTimer); pulseTimer = setTimeout(() => $('seeds').parentElement.classList.remove('pulse'), 170); }
 let carry = null, panning = false; const pointers = new Map(); let pinch = 0;
 
 function toast(text) { $('toast').textContent = text; $('toast').classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => $('toast').classList.remove('show'), 3200); }
@@ -44,7 +46,7 @@ $('hud').addEventListener('click', e => {
   audio.start(); wake();
   const t = +b.dataset.spirit;
   if (!spiritOpen(s, t)) { toast(`${SPIRITS[t].name} comes when ${SPIRITS[t].need} glade${SPIRITS[t].need > 1 ? 's are' : ' is'} restored.`); return; }
-  if (buySpirit(s, t)) { audio.buy(); save(); updateUI(); const a = s.spirits[s.spirits.length - 1]; a.x = view.toCell(innerWidth / 2, innerHeight / 2).x; a.y = view.toCell(innerWidth / 2, innerHeight / 2).y; toast(`${SPIRITS[t].name}: ${SPIRITS[t].job}`); }
+  if (buySpirit(s, t)) { audio.buy(); save(); updateUI(); const a = s.spirits[s.spirits.length - 1], home = view.toCell(innerWidth / 2, innerHeight / 2), cell = Math.round(Math.max(0, Math.min(CH - 1, home.y))) * CW + Math.round(Math.max(0, Math.min(CW - 1, home.x))); if (s.zones[world.zone[cell]].open) { a.x = home.x; a.y = home.y; } view.pop(a.x, a.y); toast(`${SPIRITS[t].name}: ${SPIRITS[t].job}`); }
   else if (s.spirits.length >= 40) toast('The valley has all the spirits it can hold.');
 });
 function nextGoal() {
@@ -53,7 +55,6 @@ function nextGoal() {
 }
 function updateUI() {
   if (!s) return;
-  $('seeds').textContent = fmt(s.seeds);
   SPIRITS.forEach((d, i) => {
     const open = spiritOpen(s, i), cost = spiritCost(s, i), can = open && s.seeds >= cost && s.spirits.length < 40, c = $('card-' + i); if (!c) return;
     c.classList.toggle('locked', !open); c.classList.toggle('can', can);
@@ -74,6 +75,7 @@ function renderHint() {
   const h = $('hint');
   let text = '';
   if (!s.touched) text = 'Hold and drag across the dead ground';
+  else if (!s.revivedAny && s.age > 10 && !s.zones[0].done) text = 'Hold on a dead tree or stone to bring it back';
   else if (s.spirits.length === 1 && s.seeds >= spiritCost(s, 0)) text = 'Those seeds can wake another Mossling';
   h.hidden = !text; if (text) h.textContent = text;
 }
@@ -194,18 +196,18 @@ addEventListener('blur', () => { pointers.clear(); releaseAll(); });
 /* Events from the simulation: the game's big moments. */
 function handle(ev, now, quiet = false) {
   for (const e of ev) {
-    if (e.t === 'revive' && !quiet) { view.revived(e.o, now); audio.pop(); }
+    if (e.t === 'revive' && !quiet) { view.revived(e.o, now); audio.pop(); view.reward(e.o.x * CELL, e.o.y * CELL - e.o.size * .7, e.reward, e.o.size > 40 ? 10 : 5); pulseSeeds(); s.revivedAny = true; }
     if (e.t === 'water' && !quiet) { audio.water(); toast(`Water finds its way to ${ZONES[e.zone].name}.`); }
     if (e.t === 'zone') {
       land.markAll();
       if (quiet) continue;
-      audio.chime(e.final); view.sweep(e.zone);
+      audio.chime(e.final); view.sweep(e.zone); view.glow(e.zone); glideTo = e.opened[0] ?? -1; glideAt = now + 6000;
       const names = e.opened.map(n => ZONES[n].name);
       banner(`${ZONES[e.zone].name} restored`, names.length ? `The mist lifts from ${names.join(' and ')}.` : 'Life is coming back.');
       const justOpened = SPIRITS.find(d => d.need === s.zones.filter(z => z.done).length);
       if (justOpened) setTimeout(() => toast(`A new spirit has come: ${justOpened.name}.`), 5400);
     }
-    if (e.t === 'bloom' && !quiet) { audio.chime(); view.sweep(e.zone, '#ffc6dd'); banner(`${ZONES[e.zone].name} is flourishing`, 'Deer have come back to graze.'); }
+    if (e.t === 'bloom' && !quiet) { audio.chime(); view.sweep(e.zone, '#ffc6dd'); view.glow(e.zone, '255,190,220'); banner(`${ZONES[e.zone].name} is flourishing`, 'Deer have come back to graze.'); }
     if (e.t === 'valley' && !quiet) setTimeout(celebrate, 7000);
   }
 }
@@ -243,7 +245,12 @@ function frame(now) {
     if (ev.length) handle(ev, now);
   } else if (timelapse) stepTimelapse(now);
   land.flush(timelapse ? 240 : 110);
-  view.draw(s, now, dt, { carry, pointer: pointer.on && !carry ? pointer : null, holding: pointer.holding, then: thenX });
+  seedShown += (s.seeds - seedShown) * Math.min(1, dt * 9); if (Math.abs(s.seeds - seedShown) < 1) seedShown = s.seeds;
+  $('seeds').textContent = fmt(seedShown);
+  if (glideTo >= 0 && now > glideAt) { if (!pointer.holding && !pointers.size && !$('modal').open) { view.focusZone(glideTo); gliding = now + 5000; } glideTo = -1; }
+  s.zones.forEach((z, i) => { const q = z.open && !z.done ? Math.floor(zonePct(s, world, i) * 4) : 0; if (quarters[i] !== undefined && q > quarters[i] && i === currentZone) { audio.water(); const c = $('zonechip'); c.classList.remove('pulse'); void c.offsetWidth; c.classList.add('pulse'); view.glow(i, '200,255,170'); } quarters[i] = q; });
+  if (now - rateAt > 1000) { const d = s.seeds - rateSeeds; if (d >= 0) rate += (d / ((now - rateAt) / 1000) - rate) * .35; rateSeeds = s.seeds; rateAt = now; $('rate').textContent = rate >= 1 ? '+' + fmt(rate) + '/s' : ''; }
+  view.draw(s, now, dt, { carry, pointer: pointer.on && !carry ? pointer : null, holding: pointer.holding, then: thenX, camSpeed: now < gliding ? .9 : 3.2 });
   if (now - lastUI > 200) { lastUI = now; updateUI(); renderHint(); audio.update(valleyPct(s, world), s.zones.some(z => z.water > 0)); if (Math.abs(s.seeds - seedShown) > 0) { seedShown = s.seeds; } if (!pointers.size && !$('modal').open && thenX == null && now - lastActive > 14000) document.body.classList.add('quiet'); }
   if (now - lastSave > 6000) { lastSave = now; save(); }
 }

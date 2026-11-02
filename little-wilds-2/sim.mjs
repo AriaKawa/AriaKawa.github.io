@@ -1,6 +1,7 @@
 // Rules of restoration. No DOM: runs in the game, offline catch-up and the pacing test alike.
 import { CW, CH, CN, ZONES, FINALE } from './world.mjs';
 
+const WORLD_VERSION = 2;
 export const GREEN = .6;           // the height a cell counts as restored
 export const SPIRITS = [
   { name: 'Mossling', job: 'Walks to bare ground and wakes the soil.', cost: 30, need: 0, r: 2.2, rate: .05, cap: GREEN, speed: 3.6 },
@@ -10,7 +11,7 @@ export const SPIRITS = [
 ];
 export const UPGRADES = [
   { id: 'reach', name: 'Wider hands', desc: 'Your touch heals a wider circle.', cost: 60, grow: 2.7, max: 7 },
-  { id: 'warmth', name: 'Warm touch', desc: 'Your touch wakes the ground 25% faster.', cost: 100, grow: 2.8, max: 7 },
+  { id: 'warmth', name: 'Warm touch', desc: 'Your touch wakes the ground 20% faster.', cost: 100, grow: 2.8, max: 7 },
   { id: 'roots', name: 'Creeping roots', desc: 'Green land spreads on its own, 35% faster.', cost: 220, grow: 2.6, max: 8 },
   { id: 'feet', name: 'Light feet', desc: 'Spirits move and work 25% faster.', cost: 800, grow: 3, max: 5 },
   { id: 'earth', name: 'Generous earth', desc: 'Restored land gives 30% more seeds.', cost: 1500, grow: 3, max: 6 },
@@ -22,7 +23,7 @@ export const spiritCost = (s, t) => Math.floor(SPIRITS[t].cost * Math.pow(1.6, s
 export const spiritOpen = (s, t) => doneCount(s) >= SPIRITS[t].need;
 export const upgradeCost = (s, u) => Math.floor(u.cost * Math.pow(u.grow, lvl(s, u.id)));
 export const upgradeOpen = (s, u) => doneCount(s) >= (u.need || 0);
-export const brushRadius = s => 3 + lvl(s, 'reach') * .6;
+export const brushRadius = s => 3 + lvl(s, 'reach') * .45;
 export const zonePct = (s, w, z) => Math.min(1, s.zones[z].g / (GREEN * w.count[z]));
 export const zoneBloom = (s, w, z) => Math.min(1, Math.max(0, (s.zones[z].l / w.count[z] - GREEN) / (1 - GREEN)));
 export const valleyPct = (s, w) => s.zones.reduce((a, z, i) => a + zonePct(s, w, i), 0) / s.zones.length;
@@ -42,7 +43,7 @@ export function travel(s) {
   n.spirits = s.spirits.map((a, i) => ({ ...a, x: 34 + i % 8 * 2, y: 112 + (i >> 3) * 2, tx: -1, ty: -1, work: 0 }));
   return n;
 }
-export const initObjects = (s, w) => { if (s.objHp?.length !== w.objects.length) s.objHp = w.objects.map(o => s.zones[o.zone].done ? 0 : o.hp); };
+export const initObjects = (s, w) => { if (s.objHp?.length !== w.objects.length || s.wv !== WORLD_VERSION) { s.objHp = w.objects.map(o => s.zones[o.zone].done ? 0 : o.hp); if (s.wv !== WORLD_VERSION) s.zones.forEach(z => { if (z.done) z.sweep = 0; }); s.wv = WORLD_VERSION; } };
 
 const toughness = z => 1 + z * 1.3;
 const seedMult = (s, z) => (1 + z * 1.1) * (1 + lvl(s, 'earth') * .3) * Math.pow(1.5, s.land);
@@ -82,11 +83,38 @@ function revive(s, w, o, ev) {
   s.seeds += reward;
   ev.push({ t: 'revive', o, reward });
 }
+// A touch soaks the ground and the land drinks it over the next moment, so green blooms
+// in a wake behind the hand instead of only under it.
+const TOUCH = 3.2, DRINK = 1.7;
+function soak(s, w, cx, cy, r, amount, cap) {
+  let total = 0;
+  const x0 = Math.max(0, Math.floor(cx - r)), x1 = Math.min(CW - 1, Math.ceil(cx + r)), y0 = Math.max(0, Math.floor(cy - r)), y1 = Math.min(CH - 1, Math.ceil(cy + r));
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+    const d = Math.hypot(x - cx, y - cy) / r, i = y * CW + x, z = w.zone[i];
+    if (d >= 1 || !s.zones[z].open) continue;
+    const room = cap - s.h[i] - w.pend[i];
+    if (room <= 0) continue;
+    const add = Math.min(room, amount * (1 - d * d * .6) / (1 + z * 1.5));
+    if (!w.pend[i]) w.active.push(i);
+    w.pend[i] += add;
+    total += add;
+  }
+  return total;
+}
+function drink(s, w, dt) {
+  const a = w.active;
+  for (let k = a.length - 1; k >= 0; k--) {
+    const i = a[k], take = Math.min(w.pend[i], DRINK * dt);
+    raise(s, w, i, take, 1, false);
+    w.pend[i] -= take;
+    if (w.pend[i] <= 1e-4) { w.pend[i] = 0; a[k] = a[a.length - 1]; a.pop(); }
+  }
+}
 // The player's touch. Returns how much land woke up, which drives the sound and sparkle.
 export function touch(s, w, cx, cy, dt, ev) {
-  const cap = lvl(s, 'bloom') ? 1 : GREEN, strength = .8 * (1 + lvl(s, 'warmth') * .25), r = brushRadius(s);
+  const cap = lvl(s, 'bloom') ? 1 : GREEN, strength = TOUCH * (1 + lvl(s, 'warmth') * .2), r = brushRadius(s);
   s.touched = true;
-  const gain = heal(s, w, cx, cy, r, strength * dt, cap);
+  const gain = soak(s, w, cx, cy, r, strength * dt, cap);
   hitObjects(s, w, cx, cy, r * .9, dt * .9 * (1 + lvl(s, 'warmth') * .25), ev);
   return gain;
 }
@@ -165,6 +193,7 @@ export function tick(s, w, dt, ev = []) {
   initObjects(s, w);
   s.age += dt;
   if (!carries.has(s)) carries.set(s, { v: Math.random() });
+  drink(s, w, dt);
   const lists = openCells(s, w);
   for (const a of s.spirits) stepSpirit(s, w, a, dt, lists, ev);
   creep(s, w, dt, carries.get(s));
