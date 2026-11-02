@@ -4,7 +4,7 @@ import { createLand } from './land.mjs';
 import { createRenderer } from './render.mjs';
 import { createAudio } from './audio.mjs';
 
-const KEY = 'little-wilds-2-v2', CARDS_KEY = 'little-wilds-2-postcards', SOUND_KEY = 'little-wilds-2-muted';
+const KEY = 'little-wilds-2-v2', CARDS_KEY = 'little-wilds-2-postcards', SOUND_KEY = 'little-wilds-2-muted', VOLUME_KEY = 'little-wilds-2-volume';
 const $ = id => document.getElementById(id);
 const fmt = n => n >= 1e9 ? (n / 1e9).toFixed(2) + 'b' : n >= 1e6 ? (n / 1e6).toFixed(2) + 'm' : n >= 1e4 ? (n / 1e3).toFixed(1) + 'k' : Math.floor(n).toLocaleString();
 const load = src => new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = src; });
@@ -111,10 +111,10 @@ $('zonechip').onclick = () => { audio.start(); openValley(); };
 /* Menu */
 function openMenu() {
   show('menu', `<h2>Little Wilds 2</h2><p class="sub">Bring a dead valley back to life, one patch at a time.</p>
-  <div class="row"><button class="wood" data-act="cards">Postcards</button><button class="wood" data-act="exportSave">Export save</button><button class="wood" data-act="importSave">Import save</button><button class="wood" data-act="reset">Start over</button></div>
+  <label class="volume">Volume <input id="volume" type="range" min="0" max="100" value="${Math.round(audio.volume * 100)}"></label><div class="row"><button class="wood" data-act="cards">Postcards</button><button class="wood" data-act="exportSave">Export save</button><button class="wood" data-act="importSave">Import save</button><button class="wood" data-act="reset">Start over</button></div>
   <p class="sub" style="margin-top:14px">Hold and drag: heal the land.<br>Drag a spirit: carry it somewhere.<br>Right-drag, two fingers or arrow keys: look around.<br>Wheel or pinch: zoom. H: hide the interface.</p><input type="file" id="file" accept=".json,application/json" hidden>`);
 }
-$('btn-menu').onclick = () => { audio.start(); openMenu(); };
+$('btn-menu').onclick = () => { audio.start(); openMenu(); $('volume').oninput = e => { audio.setVolume(e.target.value / 100); try { localStorage.setItem(VOLUME_KEY, audio.volume); } catch {} }; };
 function exportSave() { save(); const a = document.createElement('a'), u = URL.createObjectURL(new Blob([encode(s)], { type: 'application/json' })); a.href = u; a.download = 'little-wilds-2-save.json'; a.click(); setTimeout(() => URL.revokeObjectURL(u), 1000); }
 function importSave() {
   const f = $('file'); f.onchange = async () => { try { const file = f.files[0]; if (!file || file.size > 2e6) throw 0; const text = await file.text(), o = JSON.parse(text); if (!confirm('Replace your current valley?')) return; await buildLand(o.land || 0); s = decode(text, world); attach(); save(); $('modal').close(); } catch { toast('That is not a Little Wilds 2 save.'); } }; f.click();
@@ -139,7 +139,7 @@ async function goOn() {
 $('btn-then').onclick = () => { $('banner').classList.remove('show'); thenX = thenX == null ? innerWidth / 2 : null; $('btn-then').setAttribute('aria-pressed', thenX != null); if (thenX != null) toast('Drag across the land to compare. Press again to finish.'); };
 const syncSound = () => { $('btn-sound').textContent = audio.muted ? 'Muted' : 'Sound'; $('btn-sound').setAttribute('aria-pressed', audio.muted); };
 $('btn-sound').onclick = () => { audio.start(); audio.setMuted(!audio.muted); try { localStorage.setItem(SOUND_KEY, audio.muted ? '1' : ''); } catch {} syncSound(); };
-try { if (localStorage.getItem(SOUND_KEY)) audio.setMuted(true); } catch {} syncSound();
+try { if (localStorage.getItem(SOUND_KEY)) audio.setMuted(true); const v = parseFloat(localStorage.getItem(VOLUME_KEY)); if (v >= 0 && v <= 1) audio.setVolume(v); } catch {} syncSound();
 
 /* Input */
 const canvas = $('world');
