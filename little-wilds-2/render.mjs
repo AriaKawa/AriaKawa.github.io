@@ -121,19 +121,20 @@ export function createRenderer(canvas, world, land, images) {
     for (const t of s.trees) { const y = t.y * CELL; if (t.x * CELL > lx && t.x * CELL < hx && y > ly && y < hy) items.push({ y, t }); }
     items.sort((a, b) => a.y - b.y);
     const atlas = images.world, spirits = images.spirits, tNow = time / 1000;
+    const art = (o, frame, x, y, w, h = w) => o.mark ? ctx.drawImage(images.landmarks, frame % 4 * 96, Math.floor(frame / 4) * 96, 96, 96, x - w / 2, y - h, w, h) : sprite(atlas, frame, x, y, w, h);
     for (const it of items) {
       if (it.o) {
         const o = it.o, x = sx(o.x * CELL), y = sy(o.y * CELL), hp = s.objHp ? s.objHp[o.id] : o.hp, size = o.size * z, born = revives.get(o.id);
         ctx.fillStyle = 'rgba(30,24,18,.22)'; ctx.beginPath(); ctx.ellipse(x, y - z, size * .34, size * .1, 0, 0, 7); ctx.fill();
         if (hp > 0) {
           const hurt = hp < o.hp ? Math.sin(tNow * 40) * z * .5 * (1 - hp / o.hp) : 0;
-          sprite(atlas, o.dead, x + hurt, y, size);
+          art(o, o.dead, x + hurt, y, size);
         } else {
           let k = 1;
           if (born !== undefined) { const a = (time - born) / 620; if (a < 1) k = 1 + Math.sin(a * Math.PI) * .22 * (1 - a) + (a < .25 ? (a / .25 - 1) * .55 : 0); else revives.delete(o.id); }
-          const sway = o.size > 26 && !reduced ? Math.sin(tNow * 1.3 - o.x * .07) * .02 : 0;
-          ctx.save(); ctx.translate(x, y); ctx.transform(1, 0, sway, 1, 0, 0); sprite(atlas, o.live, 0, 0, size * (2 - k) ** .4, size * k); ctx.restore();
-          if (o.live === 11 && !reduced) { const b = .5 + Math.sin(tNow * 2 + o.x) * .5; ctx.globalAlpha = .18 + b * .2; ctx.fillStyle = '#b8ffe6'; ctx.beginPath(); ctx.arc(x, y - size * .55, size * .32, 0, 7); ctx.fill(); ctx.globalAlpha = 1; }
+          const sway = o.size > 26 && !o.mark && !reduced ? Math.sin(tNow * 1.3 - o.x * .07) * .02 : 0;
+          ctx.save(); ctx.translate(x, y); ctx.transform(1, 0, sway, 1, 0, 0); art(o, o.live, 0, 0, size * (2 - k) ** .4, size * k); ctx.restore();
+          if (o.live === 11 && !o.mark && !reduced) { const b = .5 + Math.sin(tNow * 2 + o.x) * .5; ctx.globalAlpha = .18 + b * .2; ctx.fillStyle = '#b8ffe6'; ctx.beginPath(); ctx.arc(x, y - size * .55, size * .32, 0, 7); ctx.fill(); ctx.globalAlpha = 1; }
         }
       } else if (it.t) {
         const t = it.t, g = Math.min(1, (s.age - t.born) / 9), x = sx(t.x * CELL), y = sy(t.y * CELL), size = (10 + 28 * g) * z;
@@ -274,7 +275,7 @@ export function createRenderer(canvas, world, land, images) {
       if (opts.then !== null && opts.then !== undefined) {
         thenC ||= land.makeThen();
         ctx.save(); ctx.beginPath(); ctx.rect(0, 0, opts.then, H); ctx.clip(); drawGround(thenC);
-        for (const o of world.objects) { const x = sx(o.x * CELL), y = sy(o.y * CELL); if (x > -160 && x < W + 160 && y > -40 && y < H + 300) sprite(images.world, o.dead, x, y, o.size * cam.z); }
+        for (const o of world.objects) { const x = sx(o.x * CELL), y = sy(o.y * CELL); if (x > -160 && x < W + 160 && y > -40 && y < H + 300) { if (o.mark) ctx.drawImage(images.landmarks, o.dead % 4 * 96, Math.floor(o.dead / 4) * 96, 96, 96, x - o.size * cam.z / 2, y - o.size * cam.z, o.size * cam.z, o.size * cam.z); else sprite(images.world, o.dead, x, y, o.size * cam.z); } }
         ctx.fillStyle = 'rgba(58,52,44,.12)'; ctx.fillRect(0, 0, W, H); ctx.restore();
         ctx.fillStyle = '#fff6df'; ctx.fillRect(opts.then - 2, 0, 4, H);
         ctx.beginPath(); ctx.arc(opts.then, H / 2, 20, 0, 7); ctx.fill(); ctx.fillStyle = '#4b4438'; ctx.font = '600 16px "Pixelify Sans",Georgia,serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('< >', opts.then, H / 2 + 1);

@@ -42,7 +42,7 @@ export function travel(s) {
   n.spirits = s.spirits.map((a, i) => ({ ...a, x: 34 + i % 8 * 2, y: 112 + (i >> 3) * 2, tx: -1, ty: -1, work: 0 }));
   return n;
 }
-export const initObjects = (s, w) => { if (!s.objHp) s.objHp = w.objects.map(o => o.hp); };
+export const initObjects = (s, w) => { if (s.objHp?.length !== w.objects.length) s.objHp = w.objects.map(o => s.zones[o.zone].done ? 0 : o.hp); };
 
 const toughness = z => 1 + z * 1.3;
 const seedMult = (s, z) => (1 + z * 1.1) * (1 + lvl(s, 'earth') * .3) * Math.pow(1.5, s.land);

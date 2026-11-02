@@ -257,8 +257,8 @@ addEventListener('pagehide', save);
 async function main() {
   try {
     await nextFrame();
-    const [worldImg, spirits] = await Promise.all([load('assets/world.png'), load('assets/spirits.png')]);
-    images = { world: worldImg, spirits };
+    const [worldImg, spirits, landmarks] = await Promise.all([load('assets/world.png'), load('assets/spirits.png'), load('assets/landmarks.png')]);
+    images = { world: worldImg, spirits, landmarks };
     let raw = null, landIndex = 0;
     try { raw = localStorage.getItem(KEY); if (raw) landIndex = JSON.parse(raw).land || 0; } catch { raw = null; }
     await buildLand(landIndex);

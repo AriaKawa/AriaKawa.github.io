@@ -13,6 +13,8 @@ export const ZONES = grid.map(([name, col, row, parent], id) => ({
 ZONES.forEach(z => { z.adj = ZONES.filter(o => Math.abs(o.col - z.col) + Math.abs(o.row - z.row) === 1).map(o => o.id); });
 export const FINALE = 8;
 
+// windmill, cottage, well, greenhouse, barn, watchtower, beehives, gateway
+const LANDMARKS = [[1, 50], [0, 66], [2, 38], [4, 60], [6, 38], [5, 62], [3, 54], [1, 50], [7, 52]];
 export const KIND = { deadTree: 0, tree: 1, blossom: 2, boulder: 3, mossy: 4, bramble: 5, bush: 6, flowering: 7, column: 8, ruin: 9, shrineDead: 10, shrine: 11, fern: 12, seed: 13, dew: 14, star: 15 };
 
 export function hash(x, y, seed = 0) {
@@ -91,6 +93,15 @@ export function makeWorld(seed = 1) {
     const pond = ponds[z.id];
     place(z.id, KIND.shrineDead, KIND.shrine, pond.x + pond.r + 18, pond.y - 4, 30);
     if (z.id === FINALE) place(z.id, KIND.deadTree, KIND.blossom, pond.x - pond.r - 34, pond.y + 6, 110);
+    // Each glade's landmark: frames come in dead, restored pairs in the landmarks atlas.
+    const [mark, size] = LANDMARKS[z.id];
+    for (let k = 0; k < 16; k++) {
+      const a = 1.2 + k * .79, x = pond.x + Math.cos(a) * (pond.r + size * .9), y = pond.y + Math.sin(a) * (pond.r + size * .55) + size * .3;
+      if (y < size + 8 || x < size || x > TW - size || y > TH - 8 || nearWater(x, y, 8) || !clear(x, y, 40)) continue;
+      place(z.id, mark * 2, mark * 2 + 1, x, y, size);
+      objects[objects.length - 1].mark = true;
+      break;
+    }
     const list = cellsOf[z.id];
     const quota = [[KIND.deadTree, hash(z.id, 21, seed) > .5 ? KIND.blossom : KIND.tree, 34, 7], [KIND.boulder, KIND.mossy, 18, 8], [KIND.bramble, KIND.flowering, 15, 11], [KIND.column, KIND.ruin, 24, 2]];
     let tries = 0;
