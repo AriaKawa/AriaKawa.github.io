@@ -348,6 +348,28 @@ export async function makeWorld(progress = async () => {}) {
       biome[i] = landAtTexel(x + dx + d * 16, y + dy - d * 16);
     }
   }
+  // A last look over the whole continent: nothing stands in water, on a road or crop row, on rock or sand, or on
+  // top of something else. A misplaced tree or stone shuffles a little way over, or is left out.
+  const solid = (x, y) => { x |= 0; y |= 0; if (x < 0 || y < 0 || x >= TW || y >= TH) return true; const i = y * TW + x; return edge[i] || road[i] || waterT[i] < 255; };
+  const footClear = (x, y, half) => { for (let yy = y - 6; yy <= y + 3; yy += 2) for (let xx = x - half; xx <= x + half; xx += 2) if (solid(xx, yy)) return false; return true; };
+  const BUCKET = 48, buckets = new Map(), bucketAt = (x, y) => Math.floor(x / BUCKET) * 1000 + Math.floor(y / BUCKET);
+  const crowded = (x, y, size, skip) => { for (let b = -1; b <= 1; b++) for (let a = -1; a <= 1; a++) for (const q of buckets.get(bucketAt(x + a * BUCKET, y + b * BUCKET)) || []) { if (q === skip) continue; const qx = q.x * CELL, qy = q.y * CELL; if (Math.abs(qx - x) < (q.size + size) * .3 && Math.abs(qy - y) < Math.max(8, (q.size + size) * .16)) return true; } return false; };
+  const keep = o => { const k = bucketAt(o.x * CELL, o.y * CELL); if (!buckets.has(k)) buckets.set(k, []); buckets.get(k).push(o); };
+  const kept = [];
+  for (const o of objects) if (o.mark) { kept.push(o); keep(o); } // Village buildings were laid out with their roads.
+  for (const o of objects) {
+    if (o.mark) continue;
+    const half = Math.max(3, Math.round(o.size * .22)), x0 = o.x * CELL, y0 = o.y * CELL;
+    let spot = footClear(x0, y0, half) && !crowded(x0, y0, o.size) ? [x0, y0] : null;
+    for (let r = 6; !spot && r <= 36; r += 6) for (let a = 0; a < 8 && !spot; a++) { const x = x0 + Math.cos(a * .785) * r, y = y0 + Math.sin(a * .785) * r * .7; if (!blocked[Math.floor(y / CELL) * CW + Math.floor(x / CELL)] && footClear(x, y, half) && !crowded(x, y, o.size)) spot = [x, y]; }
+    if (!spot) continue;
+    o.x = spot[0] / CELL; o.y = spot[1] / CELL; kept.push(o); keep(o);
+  }
+  kept.sort((a, b) => a.land - b.land || a.id - b.id);
+  objects.length = 0; kept.forEach((o, i) => { o.id = i; objects.push(o); });
+  LANDS.forEach((_, id) => { const i = objects.findIndex(o => o.land === id); objStart[id] = i < 0 ? objects.length : i; });
+  // Planted trees ask the same question: is this a clear patch of ground?
+  const free = (x, y, half = 5) => footClear(x, y, half) && !crowded(x, y, 30);
   // Village buildings keep their own land's art; trees and stones take the look of the ground they stand on.
   for (const o of objects) { o.zone = zone[Math.min(CN - 1, Math.floor(o.y) * CW + Math.floor(o.x))]; o.art = o.local ? o.land : biome[Math.min(N - 1, Math.floor(o.y * CELL) * TW + Math.floor(o.x * CELL))]; }
   // Neighbouring glades: they touch, or face each other across a ridge of rock.
@@ -361,7 +383,7 @@ export async function makeWorld(progress = async () => {}) {
   }
   ZONES.forEach((z, n) => { z.adj = [...links[n]]; });
   const sub = a => a.slice(0, fn);
-  return { biome, edge, edgeD, road, waterT, waterZ, blocked, near, zone, cellsOf, order, ponds, streams, objects, objStart, count: cellsOf.map(l => l.length), pend: new Float32Array(CN), active: [], dirty: () => {},
+  return { free, biome, edge, edgeD, road, waterT, waterZ, blocked, near, zone, cellsOf, order, ponds, streams, objects, objStart, count: cellsOf.map(l => l.length), pend: new Float32Array(CN), active: [], dirty: () => {},
     flora: { x: sub(fx), y: sub(fy), cell: sub(fcell), kind: sub(fkind), thr: sub(fthr), phase: sub(fphase), start: fstart, count: fcount } };
 }
 export const landOfCell = (w, i) => ZONES[w.zone[i]].land;

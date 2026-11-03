@@ -1,8 +1,8 @@
 // Everything above the ground: flora, the dead-and-revived objects, spirits, wildlife, weather and fog.
-import { TW, TH, LW, LH, CW, CH, CELL, ZONES, LANDS, SEA, hash, fbm, FC, FCOLS, FROWS, landAtTexel } from './world.mjs?v=8';
-import { GREEN, brushRadius, SPIRITS, gladeBuyable, gladePrice } from './sim.mjs?v=8';
-import { pixelize, newFrame } from './pixel.mjs?v=8';
-import { critterCanvas, NATIVE } from './critters.mjs?v=8';
+import { TW, TH, LW, LH, CW, CH, CELL, ZONES, LANDS, SEA, hash, fbm, FC, FCOLS, FROWS, landAtTexel } from './world.mjs?v=9';
+import { GREEN, brushRadius, SPIRITS, gladeBuyable, gladePrice } from './sim.mjs?v=9';
+import { pixelize, newFrame, shadowOf, skirtOf, apronOf } from './pixel.mjs?v=9';
+import { critterCanvas, NATIVE } from './critters.mjs?v=9';
 const money = n => n >= 1e9 ? (n / 1e9).toFixed(2) + 'b' : n >= 1e6 ? (n / 1e6).toFixed(2) + 'm' : n >= 1e4 ? (n / 1e3).toFixed(1) + 'k' : Math.floor(n).toLocaleString();
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -103,8 +103,11 @@ export function createRenderer(canvas, world, land, images) {
   // Every world sprite goes through the pixel converter at its size in ground texels, then sits on the texel grid.
   // `base` is that size when a squash or hop stretches the drawing; `snap` is off inside a rotated or sheared frame.
   const snapX = v => sx(Math.round((v - W / 2) / cam.z + cam.x)), snapY = v => sy(Math.round((v - H / 2) / cam.z + cam.y));
+  // Each land's light, which sprites standing in it are pulled toward. `tone` is the land being drawn in, or -1.
+  const LIGHT = LANDS.map(l => l.grass.map((v, i) => (v + l.lush[i]) / 2));
+  let tone = -1;
   function blit(img, fx, fy, fw, fh, x, y, w, h, flip = false, base = null, snap = true) {
-    const z = cam.z, bw = base ? base[0] : w / z, bh = base ? base[1] : h / z, c = pixelize(img, fx, fy, fw, fh, bw, bh, flip);
+    const z = cam.z, bw = base ? base[0] : w / z, bh = base ? base[1] : h / z, c = pixelize(img, fx, fy, fw, fh, bw, bh, flip, tone < 0 ? null : LIGHT[tone], tone + 1);
     if (!c) { if (flip) { ctx.save(); ctx.translate(x, 0); ctx.scale(-1, 1); ctx.drawImage(img, fx, fy, fw, fh, -w / 2, y - h, w, h); ctx.restore(); } else ctx.drawImage(img, fx, fy, fw, fh, x - w / 2, y - h, w, h); return; }
     const dw = base ? w : c.width * z, dh = base ? h : c.height * z, left = x - dw / 2, top = y - dh;
     ctx.drawImage(c, snap ? snapX(left) : left, snap ? snapY(top) : top, dw, dh);
@@ -113,13 +116,35 @@ export function createRenderer(canvas, world, land, images) {
     blit(atlas, frame % cols * SIZE, Math.floor(frame / cols) * SIZE, SIZE, SIZE, x, y, w, h, flip, base, snap);
   }
   function biomeCell(n, x, y, w, h, b, base = null, snap = true) { blit(b, n % 4 * 96, (n >> 2) * 96, 96, 96, x, y, w, h, false, base, snap); }
-  function drawArt(o, frame, x, y, w, h = w, base = null, snap = true) {
-    const b = images.biomes[o.art];
-    if (o.local && b) biomeCell(frame, x, y, w, h, b, base, snap);
-    else if (o.mark) blit(images.landmarks, frame % 4 * 96, Math.floor(frame / 4) * 96, 96, 96, x, y, w, h, false, base, snap);
-    else if (b && BIOME[frame] !== undefined) biomeCell(BIOME[frame], x, y, w, h, b, base, snap);
-    else sprite(images.world, frame, x, y, w, h, false, 4, base, snap);
+  // Where an object's art comes from: [image, x, y, width, height] in that image.
+  function artSrc(o, frame) {
+    const b = images.biomes[o.art], cell = (img, n) => [img, n % 4 * 96, (n >> 2) * 96, 96, 96];
+    if (o.local && b) return cell(b, frame);
+    if (o.mark) return cell(images.landmarks, frame);
+    if (b && BIOME[frame] !== undefined) return cell(b, BIOME[frame]);
+    return [images.world, frame % 4 * SIZE, Math.floor(frame / 4) * SIZE, SIZE, SIZE];
   }
+  function drawArt(o, frame, x, y, w, h = w, base = null, snap = true) {
+    const [img, fx, fy, fw, fh] = artSrc(o, frame);
+    tone = o.art; blit(img, fx, fy, fw, fh, x, y, w, h, false, base, snap); tone = -1;
+  }
+  // What ties a sprite to the ground: trodden earth under a building, then a shadow cast from its own silhouette.
+  // Returns where the sprite sits, so its foot can be given grass afterwards.
+  function underfoot(src, sizeT, land, x, y, yard) {
+    const c = pixelize(src[0], src[1], src[2], src[3], src[4], sizeT, sizeT, false, LIGHT[land], land + 1);
+    if (!c) return null;
+    const z = cam.z, left = snapX(x - c.width * z / 2), top = snapY(y - c.height * z), sh = shadowOf(c);
+    if (yard) { const P = LANDS[land], a = apronOf(c.width, (P.road || P.soil.map((v, i) => (v + P.dead[i]) / 2)).map(v => Math.round(v * .95)), c.width); ctx.drawImage(a, snapX(x - a.width * z / 2), top + (sh.foot + 1) * z - Math.round(a.height * .45) * z, a.width * z, a.height * z); }
+    ctx.drawImage(sh.c, left, top + (sh.foot - sh.c.height + 2) * z, sh.c.width * z, sh.c.height * z);
+    return { c, left, top };
+  }
+  // Grass grows up over the foot once the ground around it is green. Buildings keep their doorway clear.
+  function grassFoot(g, land, cell, seed, building) {
+    if (!g || s_.h[cell] < .3) return;
+    const P = LANDS[land], cols = [P.grass.map(v => v * .72), P.grass, P.lush].map(c => `rgb(${c.map(v => Math.round(Math.min(255, v))).join(',')})`), k = skirtOf(g.c, cols, seed, building), z = cam.z;
+    ctx.drawImage(k.c, g.left - 2 * z, g.top + (k.foot - k.c.height + 2) * z, k.c.width * z, k.c.height * z);
+  }
+  let s_ = null;
   function drawGround(canvasSource) {
     const vw = W / cam.z, vh = H / cam.z, x0 = cam.x - vw / 2, y0 = cam.y - vh / 2;
     ctx.drawImage(canvasSource, x0, y0, vw, vh, 0, 0, W, H);
@@ -163,6 +188,7 @@ export function createRenderer(canvas, world, land, images) {
     }
   }
   function drawProps(s, time, dt, carry) {
+    s_ = s;
     const items = [], z = cam.z, lx = cam.x - W / 2 / z - 70, hx = cam.x + W / 2 / z + 70, ly = cam.y - H / 2 / z - 10, hy = cam.y + H / 2 / z + 120;
     for (const o of world.objects) { const x = o.x * CELL, y = o.y * CELL; if (x > lx && x < hx && y > ly && y < hy) items.push({ y, o }); }
     for (const a of s.spirits) if (a !== carry) items.push({ y: (a.ry ?? a.y) * CELL, a });
@@ -175,7 +201,7 @@ export function createRenderer(canvas, world, land, images) {
     for (const it of items) {
       if (it.o) {
         const o = it.o, x = sx(o.x * CELL), y = sy(o.y * CELL), hp = s.objHp ? s.objHp[o.id] : o.hp, size = o.size * z, born = revives.get(o.id);
-        if (z > .9) { ctx.fillStyle = 'rgba(30,24,18,.22)'; ctx.beginPath(); ctx.ellipse(x, y - z, size * .34, size * .1, 0, 0, 7); ctx.fill(); }
+        const foot = z > .9 ? underfoot(artSrc(o, hp > 0 ? o.dead : o.live), o.size, o.art, x, y, o.mark) : null;
         if (hp > 0) {
           art(o, o.dead, x, y, size);
           const goal = 1 - hp / o.hp, was = rises.get(o.id) || 0, rise = was + (goal - was) * Math.min(1, dt * 10);
@@ -190,12 +216,15 @@ export function createRenderer(canvas, world, land, images) {
           if (born !== undefined) { const a = (time - born) / 620; if (a < 1) k = 1 + Math.sin(a * Math.PI) * .22 * (1 - a) + (a < .25 ? (a / .25 - 1) * .55 : 0); else revives.delete(o.id); }
           const sway = o.size > 26 && !o.mark && !reduced ? Math.sin(tNow * 1.3 - o.x * .07) * .02 : 0;
           if (!sway && k === 1) art(o, o.live, x, y, size); else { ctx.save(); ctx.translate(snapX(x), snapY(y)); ctx.transform(1, 0, sway, 1, 0, 0); art(o, o.live, 0, 0, size * (2 - k) ** .4, size * k, [o.size, o.size], false); ctx.restore(); }
+          grassFoot(foot, o.art, Math.floor(o.y) * CW + Math.floor(o.x), o.id, o.mark);
           if (o.live === 11 && !o.mark && !reduced) { const b = .5 + Math.sin(tNow * 2 + o.x) * .5; ctx.globalAlpha = .18 + b * .2; ctx.fillStyle = '#b8ffe6'; ctx.beginPath(); ctx.arc(x, y - size * .55, size * .32, 0, 7); ctx.fill(); ctx.globalAlpha = 1; }
         }
       } else if (it.t) {
         const t = it.t, g = Math.min(1, (s.age - t.born) / 9), x = sx(t.x * CELL), y = sy(t.y * CELL), size = (10 + 28 * g) * z;
-        ctx.fillStyle = 'rgba(30,24,18,.2)'; ctx.beginPath(); ctx.ellipse(x, y - z, size * .3, size * .09, 0, 0, 7); ctx.fill();
-        const tb = images.biomes[world.biome[Math.min(TH - 1, Math.floor(t.y * CELL)) * TW + Math.floor(t.x * CELL)]]; if (tb) biomeCell(1, x, y, size, size, tb); else sprite(atlas, t.blossom ? 2 : 1, x, y, size);
+        const land = world.biome[Math.min(TH - 1, Math.floor(t.y * CELL)) * TW + Math.floor(t.x * CELL)], tb = images.biomes[land], src = tb ? [tb, 96, 0, 96, 96] : [atlas, (t.blossom ? 2 : 1) * SIZE, 0, SIZE, SIZE];
+        const foot = z > .9 ? underfoot(src, size / z, land, x, y, false) : null;
+        tone = land; blit(...src, x, y, size, size); tone = -1;
+        grassFoot(foot, land, Math.floor(t.y) * CW + Math.floor(t.x), Math.floor(t.x * 7 + t.y), false);
       } else if (it.c) { drawPet(it.c, tNow);
       } else {
         const a = it.a, k = 1 - Math.exp(-dt * 11);
@@ -303,7 +332,7 @@ export function createRenderer(canvas, world, land, images) {
     ctx.globalAlpha = c.alpha;
     // Hand-drawn pixel animals, one art pixel per ground texel. Away from the old valley, the land's own creature stands in for the deer.
     const land = ZONES[c.zone].land, name = c.kind === 'rabbit' ? 'rabbit' : land ? NATIVE[land] : c.kind, art = critterCanvas(name, frame, c.dir < 0), aw = art.width * z, ah = art.height * z;
-    ctx.fillStyle = 'rgba(30,24,18,.24)'; ctx.beginPath(); ctx.ellipse(x, y, aw * .38, z * 1.4, 0, 0, 7); ctx.fill();
+    { const sh = shadowOf(art), left = snapX(x - aw / 2); ctx.drawImage(sh.c, left, snapY(y - ah) + (sh.foot - sh.c.height + 2) * z, sh.c.width * z, sh.c.height * z); }
     ctx.drawImage(art, snapX(x - aw / 2), snapY(y - lift - walkBob - ah), aw, ah);
     if (def.row === 0 && !reduced && quality > 0) { // Spirit deer shed slow motes of light.
       for (let k = 0; k < 3; k++) { const q = (t * .22 + k / 3 + c.n * .13) % 1; ctx.globalAlpha = c.alpha * Math.sin(q * 3.14) * .85; ctx.fillStyle = '#b8fff0'; ctx.fillRect(x + (hash(k, c.n, 41) - .5) * size * .8 + Math.sin(t + k) * z, y - size * (.35 + q * .85), Math.max(1, z * .7), Math.max(1, z * .7)); }

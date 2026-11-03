@@ -1,8 +1,8 @@
 // Rules of restoration. No DOM: runs in the game, offline catch-up and the pacing test alike.
 // One field covers the whole continent; glades are bought outward from the middle, and one army of spirits works all of it.
-import { CW, CN, LCW, LCH, LCN, ZONES, LANDS } from './world.mjs?v=8';
+import { CW, CN, LCW, LCH, LCN, ZONES, LANDS } from './world.mjs?v=9';
 
-const WORLD_VERSION = 4;
+const WORLD_VERSION = 5, FIELD_VERSION = 4; // objects / the shape of the glades
 export const SPIRIT_CAP = 60;
 export const GREEN = .6;           // the height a cell counts as restored
 export const SPIRITS = [
@@ -193,7 +193,7 @@ function stepSpirit(s, w, a, dt, ev) {
   if (lift) heal(s, w, a.x, a.y, def.r, def.rate * pace * dt, def.cap);
   if (a.type === 3 || a.type === 0) hitObjects(s, w, a.x, a.y, def.r, dt * (a.type === 3 ? 1.1 : .25) * pace, ev);
   if (a.work > 1.4) {
-    if (a.type === 3 && s.trees.length < 160 && s.h[Math.round(a.y) * CW + Math.round(a.x)] > .7 && Math.random() < .3) {
+    if (a.type === 3 && s.trees.length < 160 && s.h[Math.round(a.y) * CW + Math.round(a.x)] > .7 && Math.random() < .3 && w.free(a.x * 4, a.y * 4) && s.trees.every(q => Math.hypot(q.x - a.x, q.y - a.y) > 6)) {
       const t = { x: a.x, y: a.y, born: s.age, blossom: Math.random() < .35 };
       s.trees.push(t); ev.push({ t: 'tree', tree: t });
     }
@@ -368,6 +368,8 @@ export function decode(text, w) {
   for (let i = 0; i < CN; i++) o.h[i] = raw.charCodeAt(i) / 255;
   const share = o.zones.map((z, id) => (z.g || 0) / (GREEN * w.count[id]));
   loadField(o, w);
-  if (o.wv !== WORLD_VERSION) reshape(o, w, share.map((v, id) => Math.max(v, zonePct(o, w, id))));
+  if ((o.wv || 0) < FIELD_VERSION) reshape(o, w, share.map((v, id) => Math.max(v, zonePct(o, w, id))));
+  // Trees planted before they had to find clear ground: any in water, on a road or on top of another are gone.
+  o.trees = (o.trees || []).filter((q, n, all) => w.free(q.x * 4, q.y * 4) && all.slice(0, n).every(r => Math.hypot(r.x - q.x, r.y - q.y) > 6));
   return o;
 }
