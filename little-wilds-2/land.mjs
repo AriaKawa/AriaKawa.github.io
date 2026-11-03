@@ -1,7 +1,7 @@
 // The ground as one pixel canvas for the whole continent. Every texel keeps a small code for its grain,
 // shade and kind of ground; each land turns codes into colours through lookup tables, one per growth stage,
 // so the front line between dead and alive stays crisp and organic without a colour array per stage.
-import { TW, TH, LW, LH, CW, CH, CELL, fbm, noise, hash, LANDS, SEA, BEACH, ROCK, landAtTexel } from './world.mjs?v=9';
+import { TW, TH, LW, LH, CW, CH, CELL, fbm, noise, hash, LANDS, SEA, BEACH, ROCK, landAtTexel } from './world.mjs?v=10';
 
 const packed = (r, g, b) => (255 << 24) | (Math.max(0, Math.min(255, b)) << 16) | (Math.max(0, Math.min(255, g)) << 8) | Math.max(0, Math.min(255, r));
 const pack = c => packed(c[0], c[1], c[2]);
@@ -37,7 +37,11 @@ function edgeTables(P) {
     let a, b;
     if (e === SEA) { const k = .72 + (1 - d) * .32 + b4 * .1; a = mixTo(SEA_BLUE, [72, 84, 104], .62).map(v => v * (1 - d * .22)); b = foam ? [238, 246, 244] : SEA_BLUE.map(v => v * k); }
     else if (e === BEACH) { const k = .94 + b4 * .1 + (grain ? .05 : 0); a = P.dead.map(v => v * 1.14 * k); b = sand.map(v => v * k); }
-    else if (e === ROCK) { const h = d + (b4 - .4) * .35, k = .72 + h * .4 + (grain ? .06 : 0); a = mixTo(P.crack, P.dead, Math.min(1, h)).map(v => v * k); b = h > .78 ? peak : h > .42 ? [112 * k, 104 * k, 100 * k] : mixTo(P.soil, P.grass, .7).map(v => v * k); }
+    else if (e === ROCK) { // Weathered stone in faceted patches, moss creeping up its foot, snow or crystal on the highest peaks.
+      const h = d + (b4 - .4) * .35, k = .76 + b4 * .2 + (grain ? .07 : 0), stone = mixTo([138, 130, 122], P.dead, .3);
+      a = mixTo(P.crack, P.dead, Math.min(1, .3 + h * .6)).map(v => v * k);
+      b = h < .2 ? mixTo(stone, P.grass, .45).map(v => v * k) : h > .84 && P.peak ? P.peak.map(v => v * (.9 + b4 * .1)) : stone.map(v => v * k * (h > .66 ? 1.08 : 1));
+    }
     else { const k = .95 + b4 * .12; a = P.crack.map(v => v * 1.12 * k); b = mixTo(P.soil, sand, .55).map(v => v * k); }
     t[i] = pack(a); t[i + 1] = pack(b);
   }
@@ -115,7 +119,12 @@ export async function createLand(w, progress = async () => {}) {
       const fy = Math.min(CH - 1.001, Math.max(0, y / CELL - .5)), iy = Math.floor(fy), ty = fy - iy;
       for (let x = x0, i = y * TW + x0; x < x0 + CHUNK; x++, i++) {
         const c = code[i];
-        if (c >= EDGE && c < ROAD) { target[i] = edges[w.biome[i]][(c - EDGE) * 3 + (!dead && zonesState[w.zone[(y >> 2) * CW + (x >> 2)]].done ? 1 : 0)]; continue; }
+        if (c >= EDGE && c < ROAD) {
+          let col = edges[w.biome[i]][(c - EDGE) * 3 + (!dead && zonesState[w.zone[(y >> 2) * CW + (x >> 2)]].done ? 1 : 0)];
+          // Stone is lit from the upper left: its lower rim falls into shadow and its upper rim catches the light.
+          if ((c >> 12 & 3) === ROCK - 1) { const rock = j => (code[j] >> 12 & 3) === ROCK - 1 && code[j] >= EDGE && code[j] < ROAD, m = !rock(i + TW) ? .68 : !rock(i - TW) || !rock(i - 1) ? 1.14 : !rock(i + 1) ? .86 : 1; if (m !== 1) col = packed((col & 255) * m, (col >> 8 & 255) * m, (col >> 16 & 255) * m); }
+          target[i] = col; continue;
+        }
         if (dead) { target[i] = colourAt(i, DEAD, L); continue; }
         const t = w.waterT[i];
         if (t < 255 && zonesState[w.waterZ[i]].water * 254 >= t) {

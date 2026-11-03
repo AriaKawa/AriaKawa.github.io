@@ -254,14 +254,18 @@ export function makeLand(seed = 1, mapId = 0) {
   for (let y = 0; y < LCH; y++) for (let x = 0; x < LCW; x++) for (let k = 0; k < 2; k++) {
     const r = hash(x * 3 + k, y * 5 - k, seed + 101), r2 = hash(x + k * 9, y + k * 3, seed + 107);
     const tx = (x + hash(x, y + k, seed + 103)) * CELL, ty = (y + hash(x + k, y, seed + 105)) * CELL;
-    if (blocked[y * LCW + x] || edge[Math.min(LH - 1, Math.floor(ty)) * LW + Math.min(LW - 1, Math.floor(tx))] || road[Math.min(LH - 1, Math.floor(ty)) * LW + Math.min(LW - 1, Math.floor(tx))] || xx0(Math.min(LW - 1, tx), Math.min(LH - 1, ty))) continue;
+    // A blade whose cell is just inside rock or shore still grows if its own spot is ground, taking its growth
+    // from an open neighbour, so the meadow runs right up to the stone instead of stopping a cell short.
+    let cell = y * LCW + x;
+    if (blocked[cell]) { cell = -1; for (const [a, b] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]]) { const xx = x + a, yy = y + b; if (xx >= 0 && yy >= 0 && xx < LCW && yy < LCH && !blocked[yy * LCW + xx]) { cell = yy * LCW + xx; break; } } }
+    if (cell < 0 || edge[Math.min(LH - 1, Math.floor(ty)) * LW + Math.min(LW - 1, Math.floor(tx))] || road[Math.min(LH - 1, Math.floor(ty)) * LW + Math.min(LW - 1, Math.floor(tx))] || xx0(Math.min(LW - 1, tx), Math.min(LH - 1, ty))) continue;
     let kind, thr;
     if (r < .46) { kind = 0; thr = .33 + r2 * .12; }       // short tuft
     else if (r < .66) { kind = 1; thr = .46 + r2 * .12; }   // tall grass
     else if (r < .9) { kind = 2 + Math.floor(fbm(x / 13, y / 13, seed + 121) * 7) % 5; thr = .7 + r2 * .28; } // flowers, drifting in colour patches
     else if (r < .935) { kind = 7; thr = .8 + r2 * .18; }  // fern
     else continue;
-    flora[Math.floor(ty / FC) * floraCols + Math.floor(tx / FC)].push({ x: tx, y: ty, cell: y * LCW + x, kind, thr, phase: r2 });
+    flora[Math.floor(ty / FC) * floraCols + Math.floor(tx / FC)].push({ x: tx, y: ty, cell, kind, thr, phase: r2 });
   }
   for (const list of flora) list.sort((a, b) => a.y - b.y);
 
