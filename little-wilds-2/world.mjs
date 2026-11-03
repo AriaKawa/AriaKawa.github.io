@@ -1,16 +1,18 @@
 // The valley: deterministic geography shared by the simulation and the renderer.
 // Texels are the land's pixels; cells are the 4x4 texel blocks that hold restoration.
-export const TW = 960, TH = 640, CELL = 4, CW = TW / CELL, CH = TH / CELL, CN = CW * CH;
+export const LW = 960, LH = 640, CELL = 4, LCW = LW / CELL, LCH = LH / CELL, LCN = LCW * LCH;
+// The whole continent: the nine lands side by side.
+export const TW = LW * 3, TH = LH * 3, CW = TW / CELL, CH = TH / CELL, CN = CW * CH;
 
 const grid = [
   ['Hearthfield', 0, 2, -1], ['Clover Downs', 1, 2, 0], ['Willow Draw', 0, 1, 0],
   ['Pebble Hollow', 1, 1, 1], ['Honey Meadow', 2, 2, 1], ['Dry Creek Bend', 0, 0, 2],
   ['Birch Knoll', 2, 1, 3], ['Daisy Vale', 1, 0, 3], ["Mother's Rise", 2, 0, 6],
 ];
-export const ZONES = grid.map(([name, col, row, parent], id) => ({
+const GLADES = grid.map(([name, col, row, parent], id) => ({
   id, name, col, row, parent, px: 160 + col * 320, py: 110 + row * 210,
 }));
-ZONES.forEach(z => { z.adj = ZONES.filter(o => Math.abs(o.col - z.col) + Math.abs(o.row - z.row) === 1).map(o => o.id); });
+GLADES.forEach(z => { z.adj = GLADES.filter(o => Math.abs(o.col - z.col) + Math.abs(o.row - z.row) === 1).map(o => o.id); });
 export const FINALE = 8;
 
 // Village buildings: [dead frame, size, frame is in the land's own sheet]. The living frame is always the next one.
@@ -37,7 +39,7 @@ export function fbm(x, y, seed = 0) {
 
 // The continent is 3x3 maps. Coasts and ridges come from continent-wide coordinates, so neighbours line up.
 // The coast is a lobed, warped blob, so bays and headlands cut through the outer maps. Sampled coarsely since it is smooth.
-const GW = TW * 3, GH = TH * 3, COAST_STEP = 16, COAST_W = GW / COAST_STEP + 2, COAST_H = GH / COAST_STEP + 2;
+const GW = LW * 3, GH = LH * 3, COAST_STEP = 16, COAST_W = GW / COAST_STEP + 2, COAST_H = GH / COAST_STEP + 2;
 let coastGrid = null;
 function buildCoast() {
   coastGrid = new Float32Array(COAST_W * COAST_H);
@@ -56,80 +58,80 @@ export function coastInset(gx, gy) { // Roughly how many texels inland this poin
 export const SEA = 1, BEACH = 2, ROCK = 3, PATH = 4;
 export let edgeDepth = 0;
 export function terrain(col, row, x, y, pad = 0) {
-  const gx = col * TW + x, gy = row * TH + y;
+  const gx = col * LW + x, gy = row * LH + y;
   const inset = coastInset(gx, gy);
   if (inset < 100) {
     const shore = 44 + (fbm(gx / 85, gy / 85, 71) - .5) * 70 + (fbm(gx / 24, gy / 24, 72) - .5) * 16;
     if (inset < shore - pad) { edgeDepth = Math.min(1, (shore - inset) / 40); return SEA; }
     if (inset < shore + 9 - pad) { edgeDepth = 0; return BEACH; }
   }
-  const vx = gx < TW * 1.5 ? TW : TW * 2, hy = gy < TH * 1.5 ? TH : TH * 2;
+  const vx = gx < LW * 1.5 ? LW : LW * 2, hy = gy < LH * 1.5 ? LH : LH * 2;
   if (Math.abs(gx - vx) < 70) {
     const d = Math.abs(gx - vx + (fbm(gy / 60, 3, 73) - .5) * 26), wide = 18 + fbm(gy / 23, 8, 74) * 14;
-    if (d < wide - pad) { edgeDepth = 1 - d / wide; return Math.abs(y - TH / 2) < 30 + fbm(x / 9, gy / 9, 77) * 16 ? PATH : ROCK; }
+    if (d < wide - pad) { edgeDepth = 1 - d / wide; return Math.abs(y - LH / 2) < 30 + fbm(x / 9, gy / 9, 77) * 16 ? PATH : ROCK; }
   }
   if (Math.abs(gy - hy) < 70) {
     const d = Math.abs(gy - hy + (fbm(gx / 60, 5, 75) - .5) * 26), wide = 18 + fbm(gx / 23, 9, 76) * 14;
-    if (d < wide - pad) { edgeDepth = 1 - d / wide; return Math.abs(x - TW / 2) < 32 + fbm(gx / 9, y / 9, 78) * 16 ? PATH : ROCK; }
+    if (d < wide - pad) { edgeDepth = 1 - d / wide; return Math.abs(x - LW / 2) < 32 + fbm(gx / 9, y / 9, 78) * 16 ? PATH : ROCK; }
   }
   return 0;
 }
 
 // Each map dresses the same glade tree in its own names, opening on the side nearest the heartland.
-export function dressZones(mapId) {
+function dressZones(mapId) {
   const map = LANDS[mapId], flipX = map.col === 0, flipY = map.row === 2;
-  for (const z of ZONES) { const c = flipX ? 2 - z.col : z.col, r = flipY ? 2 - z.row : z.row; z.name = map.glades[z.id]; z.px = 160 + c * 320; z.py = 110 + r * 210; }
+  for (const z of GLADES) { const c = flipX ? 2 - z.col : z.col, r = flipY ? 2 - z.row : z.row; z.name = map.glades[z.id]; z.px = 160 + c * 320; z.py = 110 + r * 210; }
   if (mapId) fitGlades(map);
 }
 // Coastal maps squeeze their nine glades onto the ground that is actually there.
 function fitGlades(map) {
   const ground = [];
-  let x0 = TW, x1 = 0, y0 = TH, y1 = 0;
-  for (let y = 8; y < TH; y += 16) for (let x = 8; x < TW; x += 16) if (!terrain(map.col, map.row, x, y)) { ground.push(x, y); x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
-  for (const z of ZONES) { z.px = x0 + z.px / TW * (x1 - x0); z.py = y0 + z.py / TH * (y1 - y0); }
+  let x0 = LW, x1 = 0, y0 = LH, y1 = 0;
+  for (let y = 8; y < LH; y += 16) for (let x = 8; x < LW; x += 16) if (!terrain(map.col, map.row, x, y)) { ground.push(x, y); x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+  for (const z of GLADES) { z.px = x0 + z.px / LW * (x1 - x0); z.py = y0 + z.py / LH * (y1 - y0); }
   for (let k = 0; k < 14; k++) { // Each glade drifts to the middle of the ground nearest it, which evens out their sizes.
-    const sum = ZONES.map(() => [0, 0, 0]);
-    for (let g = 0; g < ground.length; g += 2) { let best = 0, bd = Infinity; for (const z of ZONES) { const d = (ground[g] - z.px) ** 2 + (ground[g + 1] - z.py) ** 2; if (d < bd) { bd = d; best = z.id; } } sum[best][0] += ground[g]; sum[best][1] += ground[g + 1]; sum[best][2]++; }
+    const sum = GLADES.map(() => [0, 0, 0]);
+    for (let g = 0; g < ground.length; g += 2) { let best = 0, bd = Infinity; for (const z of GLADES) { const d = (ground[g] - z.px) ** 2 + (ground[g + 1] - z.py) ** 2; if (d < bd) { bd = d; best = z.id; } } sum[best][0] += ground[g]; sum[best][1] += ground[g + 1]; sum[best][2]++; }
     let big = 0; sum.forEach((q, n) => { if (q[2] > sum[big][2]) big = n; });
-    for (const z of ZONES) if (sum[z.id][2]) { z.px = sum[z.id][0] / sum[z.id][2]; z.py = sum[z.id][1] / sum[z.id][2]; } else { z.px = ZONES[big].px + 40 + z.id * 9; z.py = ZONES[big].py + 30 - z.id * 7; } // A glade stranded in the sea takes half of the biggest one.
+    for (const z of GLADES) if (sum[z.id][2]) { z.px = sum[z.id][0] / sum[z.id][2]; z.py = sum[z.id][1] / sum[z.id][2]; } else { z.px = GLADES[big].px + 40 + z.id * 9; z.py = GLADES[big].py + 30 - z.id * 7; } // A glade stranded in the sea takes half of the biggest one.
   }
 }
 
-export function makeWorld(seed = 1, mapId = 0) {
+export function makeLand(seed = 1, mapId = 0) {
   dressZones(mapId);
   const map = LANDS[mapId], flipX = map.col === 0;
-  const edge = new Uint8Array(TW * TH), edgeD = new Float32Array(TW * TH), blocked = new Uint8Array(CN), near = new Uint8Array(CN);
-  for (let y = 0, i = 0; y < TH; y++) for (let x = 0; x < TW; x++, i++) { const e = terrain(map.col, map.row, x, y); if (e) { edge[i] = e; edgeD[i] = edgeDepth; } }
+  const edge = new Uint8Array(LW * LH), edgeD = new Float32Array(LW * LH), blocked = new Uint8Array(LCN), near = new Uint8Array(LCN);
+  for (let y = 0, i = 0; y < LH; y++) for (let x = 0; x < LW; x++, i++) { const e = terrain(map.col, map.row, x, y); if (e) { edge[i] = e; edgeD[i] = edgeDepth; } }
   // A cell is off limits only if it sits well inside the edge, so restored ground always reaches the shore.
-  for (let y = 0, i = 0; y < CH; y++) for (let x = 0; x < CW; x++, i++) if (terrain(map.col, map.row, x * CELL + 2, y * CELL + 2, 3)) blocked[i] = 1;
-  for (let y = 0, i = 0; y < CH; y++) for (let x = 0; x < CW; x++, i++) for (let b = -1; b < 3 && !near[i]; b++) for (let a = -1; a < 3; a++) { const xx = x + a, yy = y + b; if (xx >= 0 && yy >= 0 && xx < CW && yy < CH && blocked[yy * CW + xx]) { near[i] = 1; break; } }
-  const blockedAt = (x, y, r = 0) => { for (const [a, b] of [[0, 0], [r, 0], [-r, 0], [0, r], [0, -r]]) { const xx = Math.floor((x + a) / CELL), yy = Math.floor((y + b) / CELL); if (xx < 0 || yy < 0 || xx >= CW || yy >= CH || blocked[yy * CW + xx]) return true; } return false; };
-  const zone = new Uint8Array(CN), cellsOf = ZONES.map(() => []);
-  for (let y = 0; y < CH; y++) for (let x = 0; x < CW; x++) {
+  for (let y = 0, i = 0; y < LCH; y++) for (let x = 0; x < LCW; x++, i++) if (terrain(map.col, map.row, x * CELL + 2, y * CELL + 2, 3)) blocked[i] = 1;
+  for (let y = 0, i = 0; y < LCH; y++) for (let x = 0; x < LCW; x++, i++) for (let b = -1; b < 3 && !near[i]; b++) for (let a = -1; a < 3; a++) { const xx = x + a, yy = y + b; if (xx >= 0 && yy >= 0 && xx < LCW && yy < LCH && blocked[yy * LCW + xx]) { near[i] = 1; break; } }
+  const blockedAt = (x, y, r = 0) => { for (const [a, b] of [[0, 0], [r, 0], [-r, 0], [0, r], [0, -r]]) { const xx = Math.floor((x + a) / CELL), yy = Math.floor((y + b) / CELL); if (xx < 0 || yy < 0 || xx >= LCW || yy >= LCH || blocked[yy * LCW + xx]) return true; } return false; };
+  const zone = new Uint8Array(LCN), cellsOf = GLADES.map(() => []);
+  for (let y = 0; y < LCH; y++) for (let x = 0; x < LCW; x++) {
     const tx = x * CELL + 2, ty = y * CELL + 2;
     const wx = tx + (fbm(tx / 70, ty / 70, seed + 11) - .5) * 85 + (fbm(tx / 19, ty / 19, seed + 13) - .5) * 46, wy = ty + (fbm(tx / 70, ty / 70, seed + 29) - .5) * 85 + (fbm(tx / 19, ty / 19, seed + 31) - .5) * 46;
     let best = 0, bd = Infinity;
-    for (const z of ZONES) { const d = (wx - z.px) ** 2 + (wy - z.py) ** 2; if (d < bd) { bd = d; best = z.id; } }
-    zone[y * CW + x] = best;
-    if (!blocked[y * CW + x]) cellsOf[best].push(y * CW + x);
+    for (const z of GLADES) { const d = (wx - z.px) ** 2 + (wy - z.py) ** 2; if (d < bd) { bd = d; best = z.id; } }
+    zone[y * LCW + x] = best;
+    if (!blocked[y * LCW + x]) cellsOf[best].push(y * LCW + x);
   }
 
   // Ponds sit near each glade's heart; streams run to them from the parent's pond.
-  const ponds = ZONES.map(z => ({
+  const ponds = GLADES.map(z => ({
     x: z.px + (hash(z.id, 3, seed) - .5) * 70, y: z.py + (hash(z.id, 7, seed) - .5) * 50,
     r: z.id === FINALE ? 26 : 13 + hash(z.id, 9, seed) * 9,
   }));
-  for (const p of ponds) for (let k = 0; k < 40 && blockedAt(p.x, p.y, p.r + 16); k++) { const d = Math.hypot(TW / 2 - p.x, TH / 2 - p.y); p.x += (TW / 2 - p.x) / d * 6; p.y += (TH / 2 - p.y) / d * 6; }
-  const waterT = new Float32Array(TW * TH).fill(-1), waterZ = new Uint8Array(TW * TH);
+  for (const p of ponds) for (let k = 0; k < 40 && blockedAt(p.x, p.y, p.r + 16); k++) { const d = Math.hypot(LW / 2 - p.x, LH / 2 - p.y); p.x += (LW / 2 - p.x) / d * 6; p.y += (LH / 2 - p.y) / d * 6; }
+  const waterT = new Float32Array(LW * LH).fill(-1), waterZ = new Uint8Array(LW * LH);
   const stamp = (x, y, r, t, z) => {
     for (let yy = Math.floor(y - r); yy <= y + r; yy++) for (let xx = Math.floor(x - r); xx <= x + r; xx++) {
-      if (xx < 0 || yy < 0 || xx >= TW || yy >= TH || (xx - x) ** 2 + (yy - y) ** 2 > r * r) continue;
-      const i = yy * TW + xx;
+      if (xx < 0 || yy < 0 || xx >= LW || yy >= LH || (xx - x) ** 2 + (yy - y) ** 2 > r * r) continue;
+      const i = yy * LW + xx;
       if (waterT[i] < 0 && !edge[i]) { waterT[i] = t; waterZ[i] = z; }
     }
   };
-  const streams = ZONES.map(z => {
-    const end = ponds[z.id], p = z.parent >= 0 ? ponds[z.parent] : { x: flipX ? TW + 6 : -6, y: end.y + 30 };
+  const streams = GLADES.map(z => {
+    const end = ponds[z.id], p = z.parent >= 0 ? ponds[z.parent] : { x: flipX ? LW + 6 : -6, y: end.y + 30 };
     const len = Math.hypot(end.x - p.x, end.y - p.y), nx = -(end.y - p.y) / len, ny = (end.x - p.x) / len, path = [];
     for (let d = 0; d <= len; d += 1) {
       const t = d / len, sway = (fbm(d / 46, z.id * 7.3, seed + 41) - .5) * 110 * Math.sin(t * Math.PI);
@@ -142,20 +144,20 @@ export function makeWorld(seed = 1, mapId = 0) {
   ponds.forEach((p, id) => {
     const R = p.r + 4;
     for (let y = Math.floor(p.y - R); y <= p.y + R; y++) for (let x = Math.floor(p.x - R); x <= p.x + R; x++) {
-      if (x < 0 || y < 0 || x >= TW || y >= TH) continue;
+      if (x < 0 || y < 0 || x >= LW || y >= LH) continue;
       const a = Math.atan2(y - p.y, x - p.x), d = Math.hypot(x - p.x, y - p.y);
       const edge = p.r * (.82 + noise(a * 1.6 + 9, id, seed + 77) * .36);
-      if (d < edge) { const i = y * TW + x; waterT[i] = .7 + .3 * d / edge; waterZ[i] = id; }
+      if (d < edge) { const i = y * LW + x; waterT[i] = .7 + .3 * d / edge; waterZ[i] = id; }
     }
   });
   const nearWater = (x, y, r) => {
     for (let k = 0; k < 10; k++) {
       const a = k * .628, xx = Math.round(x + Math.cos(a) * r), yy = Math.round(y + Math.sin(a) * r);
-      if (xx >= 0 && yy >= 0 && xx < TW && yy < TH && waterT[yy * TW + xx] >= 0) return true;
+      if (xx >= 0 && yy >= 0 && xx < LW && yy < LH && waterT[yy * LW + xx] >= 0) return true;
     }
     return xx0(x, y);
   };
-  const xx0 = (x, y) => { const i = Math.round(y) * TW + Math.round(x); return waterT[i] >= 0; };
+  const xx0 = (x, y) => { const i = Math.round(y) * LW + Math.round(x); return waterT[i] >= 0; };
 
   // Dead things to bring back: each has one withered sprite and one living sprite.
   const objects = [];
@@ -163,16 +165,16 @@ export function makeWorld(seed = 1, mapId = 0) {
   const clear = (x, y, gap) => !objects.some(o => (o.x * CELL - x) ** 2 + (o.y * CELL - y) ** 2 < gap * gap);
   // A gateway stands in the pass on each inland side.
   const gates = [];
-  for (const [dc, dr, x, y] of [[0, -1, TW / 2, 50], [1, 0, TW - 50, TH / 2 + 18], [0, 1, TW / 2, TH - 26], [-1, 0, 50, TH / 2 + 18]]) {
+  for (const [dc, dr, x, y] of [[0, -1, LW / 2, 50], [1, 0, LW - 50, LH / 2 + 18], [0, 1, LW / 2, LH - 26], [-1, 0, 50, LH / 2 + 18]]) {
     const target = LANDS.findIndex(l => l.col === map.col + dc && l.row === map.row + dr);
     if (target >= 0) gates.push({ x, y, target, size: 58 });
   }
   // Villages: dirt roads link the glades and run out to the gateways. 1 road, 2 plank bridge, 3 crop rows.
-  const road = new Uint8Array(TW * TH), roadPoints = [];
+  const road = new Uint8Array(LW * LH), roadPoints = [];
   const lay = (x, y, r) => {
     for (let yy = Math.floor(y - r); yy <= y + r; yy++) for (let xx = Math.floor(x - r); xx <= x + r; xx++) {
-      if (xx < 0 || yy < 0 || xx >= TW || yy >= TH || (xx - x) ** 2 + (yy - y) ** 2 > r * r) continue;
-      const i = yy * TW + xx;
+      if (xx < 0 || yy < 0 || xx >= LW || yy >= LH || (xx - x) ** 2 + (yy - y) ** 2 > r * r) continue;
+      const i = yy * LW + xx;
       if (edge[i] || waterT[i] >= .7) continue;
       if (waterT[i] >= 0) { waterT[i] = -1; road[i] = 2; } else road[i] ||= 1;
     }
@@ -188,33 +190,33 @@ export function makeWorld(seed = 1, mapId = 0) {
       if (d % 14 === 0) { if (last) roadPoints.push({ x, y, nx: -(y - last.y) / 14, ny: (x - last.x) / 14 }); last = { x, y }; }
     }
   };
-  const scan = (test, x, y, w, up, down) => { for (let yy = Math.floor(y - up); yy <= y + down; yy += 3) for (let xx = Math.floor(x - w); xx <= x + w; xx += 3) if (xx >= 0 && yy >= 0 && xx < TW && yy < TH && test(yy * TW + xx)) return true; return false; };
+  const scan = (test, x, y, w, up, down) => { for (let yy = Math.floor(y - up); yy <= y + down; yy += 3) for (let xx = Math.floor(x - w); xx <= x + w; xx += 3) if (xx >= 0 && yy >= 0 && xx < LW && yy < LH && test(yy * LW + xx)) return true; return false; };
   const roadNear = (...box) => scan(i => road[i], ...box), wetNear = (...box) => scan(i => waterT[i] >= 0, ...box);
   const roomy = (x, y, size) => !objects.some(o => Math.abs(o.x * CELL - x) < (o.size + size) * .4 && y - size * .8 < o.y * CELL && o.y * CELL - o.size * .8 < y);
-  const hubs = ZONES.map(z => { const p = ponds[z.id]; let x = p.x, y = p.y + p.r + 32; for (let k = 0; k < 40 && blockedAt(x, y, 18); k++) { const d = Math.hypot(TW / 2 - x, TH / 2 - y); x += (TW / 2 - x) / d * 6; y += (TH / 2 - y) / d * 6; } return { x, y }; });
+  const hubs = GLADES.map(z => { const p = ponds[z.id]; let x = p.x, y = p.y + p.r + 32; for (let k = 0; k < 40 && blockedAt(x, y, 18); k++) { const d = Math.hypot(LW / 2 - x, LH / 2 - y); x += (LW / 2 - x) / d * 6; y += (LH / 2 - y) / d * 6; } return { x, y }; });
   if (map.village) {
-    ZONES.forEach(z => { if (z.parent >= 0) route(hubs[z.parent], hubs[z.id], z.id); });
+    GLADES.forEach(z => { if (z.parent >= 0) route(hubs[z.parent], hubs[z.id], z.id); });
     gates.forEach((g, n) => { const hub = hubs.reduce((a, b) => Math.hypot(b.x - g.x, b.y - g.y) < Math.hypot(a.x - g.x, a.y - g.y) ? b : a); route(hub, g, 20 + n); });
     for (const h of hubs) for (let a = 0; a < 6.28; a += .5) lay(h.x + Math.cos(a) * 12, h.y + Math.sin(a) * 8, 7);
   }
   // Homes stand beside a road, never on it, each with a footpath to the door. Barns and greenhouses get crop rows.
   const raiseVillage = id => {
-    const hub = hubs[id], spots = roadPoints.filter(q => zone[(Math.floor(q.y) >> 2) * CW + (Math.floor(q.x) >> 2)] === id || Math.hypot(q.x - hub.x, q.y - hub.y) < 130).map((q, n) => [q, Math.hypot(q.x - hub.x, q.y - hub.y) + hash(n, id, seed + 57) * 60]).sort((a, b) => a[1] - b[1]).map(e => e[0]);
+    const hub = hubs[id], spots = roadPoints.filter(q => zone[(Math.floor(q.y) >> 2) * LCW + (Math.floor(q.x) >> 2)] === id || Math.hypot(q.x - hub.x, q.y - hub.y) < 130).map((q, n) => [q, Math.hypot(q.x - hub.x, q.y - hub.y) + hash(n, id, seed + 57) * 60]).sort((a, b) => a[1] - b[1]).map(e => e[0]);
     for (const item of map.village[id]) {
       const [dead, size, own] = item;
       let done = false;
       for (const q of spots) {
         for (const side of [1, -1]) {
           const dx = q.nx * side, dy = q.ny * side, x = q.x + dx * (8 + size * .42), y = q.y + (dy > 0 ? dy * (8 + size * .95) : dy * 8) - (dy > 0 ? 0 : 3);
-          if (y < size + 8 || y > TH - 8 || x < size * .5 + 8 || x > TW - size * .5 - 8 || blockedAt(x, y, 10) || blockedAt(x, y - size * .6, 10)) continue;
+          if (y < size + 8 || y > LH - 8 || x < size * .5 + 8 || x > LW - size * .5 - 8 || blockedAt(x, y, 10) || blockedAt(x, y - size * .6, 10)) continue;
           if (roadNear(x, y, size * .36, size * .75, 1) || wetNear(x, y, size * .42, size * .8, 4) || !roomy(x, y, size)) continue;
           place(id, dead, dead + 1, x, y, size);
           const o = objects[objects.length - 1]; o.mark = true; o.local = !!own;
           for (let t = 0; t <= 1; t += .1) lay(x + (q.x - x) * t, y + 1 + (q.y - y - 1) * t, 1.2);
           if (item === BARN || item === GREENHOUSE) for (const way of [1, -1]) {
             const w = 26, h = 15, fx = x + way * (size * .4 + w + 3), fy = y - h - 1;
-            if (fx < w + 8 || fx > TW - w - 8 || blockedAt(fx, fy, w) || blockedAt(fx, fy, h) || roadNear(fx, fy, w, h, h) || wetNear(fx, fy, w, h, h) || !roomy(fx, fy + h, w * 2)) continue;
-            for (let yy = fy - h; yy <= fy + h; yy++) for (let xx = fx - w; xx <= fx + w; xx++) { const i = Math.floor(yy) * TW + Math.floor(xx); if (!edge[i] && !road[i]) road[i] = 3; }
+            if (fx < w + 8 || fx > LW - w - 8 || blockedAt(fx, fy, w) || blockedAt(fx, fy, h) || roadNear(fx, fy, w, h, h) || wetNear(fx, fy, w, h, h) || !roomy(fx, fy + h, w * 2)) continue;
+            for (let yy = fy - h; yy <= fy + h; yy++) for (let xx = fx - w; xx <= fx + w; xx++) { const i = Math.floor(yy) * LW + Math.floor(xx); if (!edge[i] && !road[i]) road[i] = 3; }
             break;
           }
           done = true; break;
@@ -223,7 +225,7 @@ export function makeWorld(seed = 1, mapId = 0) {
       }
     }
   };
-  for (const z of ZONES) {
+  for (const z of GLADES) {
     const pond = ponds[z.id];
     const shrineSide = blockedAt(pond.x + pond.r + 18, pond.y - 4, 8) ? -1 : 1;
     place(z.id, KIND.shrineDead, KIND.shrine, pond.x + shrineSide * (pond.r + 18), pond.y - 4, 30);
@@ -233,7 +235,7 @@ export function makeWorld(seed = 1, mapId = 0) {
       const big = z.id % 2 === 0, size = big ? 62 : 50;
       for (let k = 0; k < 16; k++) {
         const a = 1.2 + k * .79, x = pond.x + Math.cos(a) * (pond.r + size * .9), y = pond.y + Math.sin(a) * (pond.r + size * .55) + size * .3;
-        if (y < size + 8 || x < size || x > TW - size || y > TH - 8 || blockedAt(x, y, 14) || nearWater(x, y, 8) || !clear(x, y, 40)) continue;
+        if (y < size + 8 || x < size || x > LW - size || y > LH - 8 || blockedAt(x, y, 14) || nearWater(x, y, 8) || !clear(x, y, 40)) continue;
         place(z.id, big ? KIND.deadTree : KIND.boulder, big ? KIND.tree : KIND.mossy, x, y, size);
         break;
       }
@@ -243,34 +245,34 @@ export function makeWorld(seed = 1, mapId = 0) {
     let tries = 0;
     for (const [dead, live, size, count] of quota) for (let n = 0; n < count && tries < 900;) {
       tries++;
-      const c = list[Math.floor(hash(tries, z.id * 13 + dead, seed + 3) * list.length)], x = c % CW * CELL + 2, y = Math.floor(c / CW) * CELL + 2;
-      if (x < 20 || y < 34 || x > TW - 20 || y > TH - 10 || blockedAt(x, y, 6) || nearWater(x, y, 10) || !clear(x, y, 22) || roadNear(x, y, 9, 4, 4) || (map.village && !roomy(x, y, size))) continue;
+      const c = list[Math.floor(hash(tries, z.id * 13 + dead, seed + 3) * list.length)], x = c % LCW * CELL + 2, y = Math.floor(c / LCW) * CELL + 2;
+      if (x < 20 || y < 34 || x > LW - 20 || y > LH - 10 || blockedAt(x, y, 6) || nearWater(x, y, 10) || !clear(x, y, 22) || roadNear(x, y, 9, 4, 4) || (map.village && !roomy(x, y, size))) continue;
       place(z.id, dead, dead === KIND.deadTree && n % 3 === 2 ? KIND.tree : live, x, y, size + hash(tries, 5, seed) * 6);
       n++;
     }
   }
 
   // Flora appear when their cell passes a threshold. They are stored per chunk for culling.
-  const FC = 64, floraCols = Math.ceil(TW / FC), floraRows = Math.ceil(TH / FC), flora = Array.from({ length: floraCols * floraRows }, () => []);
-  for (let y = 0; y < CH; y++) for (let x = 0; x < CW; x++) for (let k = 0; k < 2; k++) {
+  const FC = 64, floraCols = Math.ceil(LW / FC), floraRows = Math.ceil(LH / FC), flora = Array.from({ length: floraCols * floraRows }, () => []);
+  for (let y = 0; y < LCH; y++) for (let x = 0; x < LCW; x++) for (let k = 0; k < 2; k++) {
     const r = hash(x * 3 + k, y * 5 - k, seed + 101), r2 = hash(x + k * 9, y + k * 3, seed + 107);
     const tx = (x + hash(x, y + k, seed + 103)) * CELL, ty = (y + hash(x + k, y, seed + 105)) * CELL;
-    if (blocked[y * CW + x] || edge[Math.min(TH - 1, Math.floor(ty)) * TW + Math.min(TW - 1, Math.floor(tx))] || road[Math.min(TH - 1, Math.floor(ty)) * TW + Math.min(TW - 1, Math.floor(tx))] || xx0(Math.min(TW - 1, tx), Math.min(TH - 1, ty))) continue;
+    if (blocked[y * LCW + x] || edge[Math.min(LH - 1, Math.floor(ty)) * LW + Math.min(LW - 1, Math.floor(tx))] || road[Math.min(LH - 1, Math.floor(ty)) * LW + Math.min(LW - 1, Math.floor(tx))] || xx0(Math.min(LW - 1, tx), Math.min(LH - 1, ty))) continue;
     let kind, thr;
     if (r < .46) { kind = 0; thr = .33 + r2 * .12; }       // short tuft
     else if (r < .66) { kind = 1; thr = .46 + r2 * .12; }   // tall grass
     else if (r < .9) { kind = 2 + Math.floor(fbm(x / 13, y / 13, seed + 121) * 7) % 5; thr = .7 + r2 * .28; } // flowers, drifting in colour patches
     else if (r < .935) { kind = 7; thr = .8 + r2 * .18; }  // fern
     else continue;
-    flora[Math.floor(ty / FC) * floraCols + Math.floor(tx / FC)].push({ x: tx, y: ty, cell: y * CW + x, kind, thr, phase: r2 });
+    flora[Math.floor(ty / FC) * floraCols + Math.floor(tx / FC)].push({ x: tx, y: ty, cell: y * LCW + x, kind, thr, phase: r2 });
   }
   for (const list of flora) list.sort((a, b) => a.y - b.y);
 
   const order = cellsOf.map((list, z) => {
     const p = ponds[z];
-    return Uint32Array.from(list.map(i => [i, Math.hypot(i % CW * CELL - p.x, Math.floor(i / CW) * CELL - p.y) + hash(i, 1, seed) * 26]).sort((a, b) => a[1] - b[1]).map(e => e[0]));
+    return Uint32Array.from(list.map(i => [i, Math.hypot(i % LCW * CELL - p.x, Math.floor(i / LCW) * CELL - p.y) + hash(i, 1, seed) * 26]).sort((a, b) => a[1] - b[1]).map(e => e[0]));
   });
-  return { seed, mapId, gates, road, edge, edgeD, blocked, near, pend: new Float32Array(CN), active: [], zone, cellsOf, order, ponds, streams, waterT, waterZ, objects, flora, floraCols, floraRows, FC, count: cellsOf.map(l => l.length), dirty: () => {} };
+  return { seed, mapId, gates, road, edge, edgeD, blocked, near, pend: new Float32Array(LCN), active: [], zone, cellsOf, order, ponds, streams, waterT, waterZ, objects, flora, floraCols, floraRows, FC, count: cellsOf.map(l => l.length), dirty: () => {} };
 }
 
 // id 1 and 2 keep the palettes older saves travelled to.
@@ -286,3 +288,54 @@ export const LANDS = [
   { name: 'Glimmerdeep', col: 0, row: 0, needs: [2, 4], native: { label: 'A crystal hedgehog', size: 16, speed: 6 }, glades: ['Shardgate', 'Quartz Hollow', 'Prism Draw', 'Echo Rise', 'Geode Meadow', 'Facet Bend', 'Amethyst Knoll', 'Glint Vale', 'The Deep Light'], dead: [116, 116, 134], crack: [68, 68, 90], soil: [62, 56, 86], grass: [78, 158, 160], lush: [120, 190, 220], water: [110, 150, 240], flowers: ['#ffffff', '#b8e8ff', '#d0b0ff', '#90f0e0', '#ffc0f0'], mist: [212, 214, 236], peak: [214, 196, 255] },
 ];
 export const landAt = i => LANDS[i % LANDS.length];
+
+// Every glade on the continent: land * 9 + its place in that land's tree.
+export const ZONES = [];
+export const FC = 64, FCOLS = TW / FC, FROWS = TH / FC;
+// The nine lands are generated one at a time on their own, exactly as before, then laid side by side.
+// Texel layers shrink to bytes here, since the whole continent is nine times the size of one land.
+export async function makeWorld(progress = async () => {}) {
+  const N = TW * TH, edge = new Uint8Array(N), edgeD = new Uint8Array(N), road = new Uint8Array(N), waterT = new Uint8Array(N).fill(255), waterZ = new Uint8Array(N);
+  const blocked = new Uint8Array(CN), near = new Uint8Array(CN), zone = new Uint8Array(CN), cellsOf = [], order = [], ponds = [], streams = [], objects = [], objStart = [];
+  const cap = CN * 2, fx = new Float32Array(cap), fy = new Float32Array(cap), fcell = new Uint32Array(cap), fkind = new Uint8Array(cap), fthr = new Float32Array(cap), fphase = new Float32Array(cap), fstart = new Uint32Array(FCOLS * FROWS), fcount = new Uint32Array(FCOLS * FROWS);
+  let fn = 0;
+  ZONES.length = 0;
+  for (let id = 0; id < LANDS.length; id++) {
+    await progress(id);
+    const L = makeLand(1 + id * 17, id), map = LANDS[id], ox = map.col * LW, oy = map.row * LH, cx = map.col * LCW, cy = map.row * LCH, zb = id * 9;
+    GLADES.forEach(g => { ZONES[zb + g.id] = { id: zb + g.id, land: id, glade: g.id, name: map.glades[g.id], px: g.px + ox, py: g.py + oy, adj: [] }; });
+    for (let y = 0; y < LH; y++) for (let x = 0, a = y * LW, b = (oy + y) * TW + ox; x < LW; x++, a++, b++) {
+      edge[b] = L.edge[a]; edgeD[b] = Math.round(L.edgeD[a] * 255); road[b] = L.road[a];
+      const t = L.waterT[a]; if (t >= 0) { waterT[b] = Math.round(t * 254); waterZ[b] = zb + L.waterZ[a]; }
+    }
+    for (let y = 0; y < LCH; y++) for (let x = 0, a = y * LCW, b = (cy + y) * CW + cx; x < LCW; x++, a++, b++) { blocked[b] = L.blocked[a]; near[b] = L.near[a]; zone[b] = zb + L.zone[a]; }
+    const toG = i => (cy + Math.floor(i / LCW)) * CW + cx + i % LCW;
+    L.cellsOf.forEach((l, j) => { cellsOf[zb + j] = l.map(toG); order[zb + j] = Uint32Array.from(L.order[j], toG); });
+    for (const p of L.ponds) ponds.push({ x: p.x + ox, y: p.y + oy, r: p.r });
+    for (const path of L.streams) streams.push(path.map(([x, y]) => [x + ox, y + oy]));
+    objStart[id] = objects.length;
+    for (const o of L.objects) objects.push({ ...o, id: objects.length, zone: zb + o.zone, land: id, x: o.x + cx, y: o.y + cy });
+    L.flora.forEach((list, k) => {
+      const c = (map.row * L.floraRows + Math.floor(k / L.floraCols)) * FCOLS + map.col * L.floraCols + k % L.floraCols;
+      fstart[c] = fn; fcount[c] = list.length;
+      for (const p of list) { fx[fn] = p.x + ox; fy[fn] = p.y + oy; fcell[fn] = toG(p.cell); fkind[fn] = p.kind; fthr[fn] = p.thr; fphase[fn] = p.phase; fn++; }
+    });
+  }
+  // Neighbouring glades: they touch, or face each other across one mountain ridge.
+  const links = ZONES.map(() => new Set()), across = (i, step, n) => { for (let k = 1; k <= n; k++) { const j = i + step * k; if (!blocked[j]) return j; const x = j % CW, y = Math.floor(j / CW), e = edge[(y * CELL + 2) * TW + x * CELL + 2]; if (e !== ROCK && e !== PATH) return -1; } return -1; };
+  for (let y = 0; y < CH - 1; y++) for (let x = 0; x < CW - 1; x++) {
+    const i = y * CW + x; if (blocked[i]) continue;
+    for (const step of [1, CW]) {
+      const j = blocked[i + step] ? (step === 1 ? (x + 16 < CW ? across(i, 1, 16) : -1) : (y + 16 < CH ? across(i, CW, 16) : -1)) : i + step;
+      if (j >= 0 && zone[j] !== zone[i]) { links[zone[i]].add(zone[j]); links[zone[j]].add(zone[i]); }
+    }
+  }
+  ZONES.forEach((z, n) => { z.adj = [...links[n]]; });
+  const sub = a => a.slice(0, fn);
+  return { edge, edgeD, road, waterT, waterZ, blocked, near, zone, cellsOf, order, ponds, streams, objects, objStart, count: cellsOf.map(l => l.length), pend: new Float32Array(CN), active: [], dirty: () => {},
+    flora: { x: sub(fx), y: sub(fy), cell: sub(fcell), kind: sub(fkind), thr: sub(fthr), phase: sub(fphase), start: fstart, count: fcount } };
+}
+export const landOfCell = (w, i) => ZONES[w.zone[i]].land;
+export const landAtTexel = (x, y) => LAND_GRID[Math.min(2, Math.max(0, Math.floor(y / LH))) * 3 + Math.min(2, Math.max(0, Math.floor(x / LW)))];
+const LAND_GRID = [];
+LANDS.forEach((l, id) => { LAND_GRID[l.row * 3 + l.col] = id; });

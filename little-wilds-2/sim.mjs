@@ -1,7 +1,9 @@
 // Rules of restoration. No DOM: runs in the game, offline catch-up and the pacing test alike.
-import { CW, CH, CN, ZONES, FINALE, LANDS } from './world.mjs';
+// One field covers the whole continent; glades are bought outward from the middle, and one army of spirits works all of it.
+import { CW, CN, LCW, LCH, LCN, ZONES, LANDS } from './world.mjs';
 
-const WORLD_VERSION = 3, LAND_BASE = 8000, LAND_GROW = 2.5;
+const WORLD_VERSION = 3;
+export const SPIRIT_CAP = 60;
 export const GREEN = .6;           // the height a cell counts as restored
 export const SPIRITS = [
   { name: 'Mossling', job: 'Walks to bare ground and wakes the soil.', cost: 30, need: 0, r: 2.2, rate: .05, cap: GREEN, speed: 3.6 },
@@ -18,129 +20,57 @@ export const UPGRADES = [
   { id: 'bloom', name: 'Blooming touch', desc: 'Your touch can raise wildflowers too.', cost: 6000, grow: 1, max: 1, need: 1 },
 ];
 const lvl = (s, id) => s.upgrades[id] || 0;
-export const isComplete = (s, id) => id === s.land ? s.zones.every(z => z.done) : !!s.atlas[id]?.complete;
-export const mapsDone = s => LANDS.filter((_, id) => isComplete(s, id)).length;
-// Any land can be bought at any time. Each one costs more than the last, whichever you pick.
-export const landsOwned = s => Object.keys(s.opened).length;
-export const landPrice = s => Math.floor(LAND_BASE * Math.pow(LAND_GROW, landsOwned(s) - 1));
-export const canBuyLand = (s, id) => !s.opened[id] && s.seeds >= landPrice(s);
-// A sleeping glade next to open ground can be woken with seeds, or for free by finishing its neighbour.
-export const gladeBuyable = (s, z) => !s.zones[z].open && ZONES[z].adj.some(n => s.zones[n].open);
-export const gladePrice = (s, z) => Math.floor(350 * (1 + z * 1.1) * Math.pow(1.5, s.level));
+const landZones = l => ZONES.slice(l * 9, l * 9 + 9).map(z => z.id);
+export const landDone = (s, l) => landZones(l).every(z => s.zones[z].done);
+export const mapsDone = s => LANDS.filter((_, l) => landDone(s, l)).length;
+export const landTouched = (s, l) => s.levels[l] !== undefined;
 export const upgradeMax = (s, u) => u.max + (u.more || 0) * mapsDone(s);
-export const mapPct = (s, w, id) => id === s.land ? valleyPct(s, w) : s.atlas[id]?.pct || 0;
-export const crewOf = (s, id) => id === s.land ? s.spirits.length : s.atlas[id]?.spirits?.length ?? (s.atlas[id] ? 1 : 0);
-// Restored lands keep earning wherever you are.
-export const mapIncome = (s, id) => isComplete(s, id) ? 40 * Math.pow(1.6, id === s.land ? s.level : s.atlas[id].level) : 0;
-export const income = s => LANDS.reduce((a, _, id) => a + mapIncome(s, id), 0);
-export const doneCount = s => s.zones.filter(z => z.done).length + Object.values(s.atlas).reduce((a, m) => a + (m.done || 0), 0);
-export const spiritCost = (s, t) => Math.floor(SPIRITS[t].cost * Math.pow(1.5, s.level) * Math.pow(1.6, s.spirits.filter(a => a.type === t).length - (t === 0 ? 1 : 0)));
+// Restored lands keep earning on their own.
+export const landIncome = (s, l) => landDone(s, l) ? 40 * Math.pow(1.6, s.levels[l] || 0) : 0;
+export const income = s => LANDS.reduce((a, _, l) => a + landIncome(s, l), 0);
+export const doneCount = s => s.zones.filter(z => z.done).length;
+export const spiritCost = (s, t) => Math.floor(SPIRITS[t].cost * Math.pow(1.6, s.spirits.filter(a => a.type === t).length - (t === 0 ? 1 : 0)));
 export const spiritOpen = (s, t) => doneCount(s) >= SPIRITS[t].need;
 export const upgradeCost = (s, u) => Math.floor(u.cost * Math.pow(u.grow, lvl(s, u.id)));
 export const upgradeOpen = (s, u) => doneCount(s) >= (u.need || 0);
 export const brushRadius = s => 3 + lvl(s, 'reach') * .45;
 export const zonePct = (s, w, z) => w.count[z] ? Math.min(1, s.zones[z].g / (GREEN * w.count[z])) : 1;
 export const zoneBloom = (s, w, z) => Math.min(1, Math.max(0, (s.zones[z].l / w.count[z] - GREEN) / (1 - GREEN)));
-export const valleyPct = (s, w) => s.zones.reduce((a, z, i) => a + zonePct(s, w, i), 0) / s.zones.length;
-export const valleyComplete = s => s.zones.every(z => z.done);
+export const landPct = (s, w, l) => landZones(l).reduce((a, z) => a + zonePct(s, w, z), 0) / 9;
 
-const freshZones = () => ZONES.map(z => ({ open: z.id === 0, done: false, g: 0, l: 0, water: -1, sweep: -1, sweepLift: GREEN, bloomed: false }));
-export function newLand(land = 0) {
-  return {
-    v: 4, land, level: 0, seeds: 0, upgrades: {}, h: new Float32Array(CN), atlas: {}, opened: { 0: true }, gateFill: {},
-    spirits: [{ type: 0, x: 40, y: 118, tx: -1, ty: -1, work: 0, walk: 0 }],
-    zones: freshZones(),
-    objHp: null, trees: [], age: 0, played: 0, last: Date.now(), touched: false, paused: false,
-  };
-}
-export const gateState = (s, g) => s.opened[g.target] ? 'open' : canBuyLand(s, g.target) ? 'ready' : 'locked';
-const firstCrew = () => [{ type: 0, x: 40, y: 118, tx: -1, ty: -1, work: 0, walk: 0 }];
-export function buyLand(s, id) {
-  if (!canBuyLand(s, id)) return false;
-  s.seeds -= landPrice(s);
-  s.atlas[id] = { zones: freshZones(), spirits: firstCrew(), objHp: null, trees: [], wv: WORLD_VERSION, level: landsOwned(s), complete: false, done: 0, pct: 0, p: ZONES.map(() => 0) };
-  s.opened[id] = true;
-  return true;
-}
+// Buying: any sleeping glade that touches open ground. The first glade in a new land is the big step;
+// after that a land's glades get dearer the more of it you hold, and later lands are richer and tougher.
+export const gladeBuyable = (s, z) => !s.zones[z].open && ZONES[z].adj.some(n => s.zones[n].open);
+const openIn = (s, l) => landZones(l).filter(z => s.zones[z].open).length;
+export const gladePrice = (s, z) => {
+  const l = ZONES[z].land;
+  if (!landTouched(s, l)) return Math.floor(8000 * Math.pow(2.5, Object.keys(s.levels).length - 1));
+  return Math.floor(350 * (1 + openIn(s, l) * 1.1) * Math.pow(1.5, s.levels[l]));
+};
 export function buyGlade(s, z) {
   if (!gladeBuyable(s, z) || s.seeds < gladePrice(s, z)) return false;
+  const l = ZONES[z].land;
   s.seeds -= gladePrice(s, z);
+  if (!landTouched(s, l)) s.levels[l] = Object.keys(s.levels).length;
+  s.zones[z].rank = openIn(s, l);
   s.zones[z].open = true;
   return true;
 }
-// Only one map is live at a time. The rest wait in the atlas as compact strings.
-export function leaveMap(s, w) {
-  const bytes = new Uint8Array(CN);
-  for (let i = 0; i < CN; i++) bytes[i] = Math.round(s.h[i] * 255);
-  s.atlas[s.land] = { h: b64(bytes), zones: s.zones.map(z => ({ ...z, g: 0, l: 0 })), spirits: s.spirits.map(({ held, rx, ry, anim, px, py, ...a }) => a), objHp: s.objHp, trees: s.trees, wv: s.wv, level: s.level, complete: isComplete(s, s.land), done: s.zones.filter(z => z.done).length, pct: valleyPct(s, w), p: s.zones.map((_, i) => zonePct(s, w, i)), counts: w.count };
-}
-// `w` must already be the world of map `id`.
-export function enterMap(s, w, id) {
-  const m = s.atlas[id];
-  delete s.atlas[id];
-  s.level = m ? m.level : landsOwned(s) - (s.opened[id] ? 1 : 0);
-  s.spirits = m?.spirits || firstCrew();
-  s.land = id; s.opened[id] = true;
-  s.zones = m ? m.zones : freshZones(); s.objHp = m ? m.objHp : null; s.trees = m ? m.trees : []; s.wv = m ? m.wv : WORLD_VERSION;
-  s.h = new Float32Array(CN);
-  loadField(s, w, m?.h);
-  if (m?.p) growTo(s, w, m.p);
-  w.pend.fill(0); w.active.length = 0;
-  const at = s.zones.findIndex(z => z.open && !z.done), home = ZONES[at < 0 ? 0 : at];
-  s.spirits.forEach((a, i) => { a.x = home.px / 4 + (i % 8 - 4) * 1.5; a.y = home.py / 4 + 2 + (i >> 3) * 1.5; a.rx = a.ry = undefined; a.tx = -1; a.work = 0; a.nap = 0; });
-}
-// Catches the ground up with what the crew did while nobody was looking, spreading out from each pond.
-function growTo(s, w, p) {
-  s.zones.forEach((z, id) => {
-    const want = (z.done ? 1 : p[id]) * GREEN * w.count[id], list = w.order[id];
-    for (let k = 0; k < list.length && z.g < want; k++) { const i = list[k], v = s.h[i]; if (v < GREEN) { s.h[i] = GREEN; z.g += GREEN - v; z.l += GREEN - v; } }
-  });
-  if (s.objHp) w.objects.forEach(o => { if (s.zones[o.zone].done) s.objHp[o.id] = 0; });
-}
-function loadField(s, w, text) {
-  s.zones.forEach(z => { z.g = 0; z.l = 0; });
-  if (!text && text !== '') return;
-  const raw = text ? atob(text) : null;
-  if (raw && raw.length !== CN) throw Error('Bad land data.');
-  for (let i = 0; i < CN; i++) {
-    if (w.blocked[i]) continue;
-    const v = raw ? raw.charCodeAt(i) / 255 : 1, z = s.zones[w.zone[i]];
-    s.h[i] = v; z.g += Math.min(v, GREEN); z.l += v;
-  }
+
+const freshZones = () => ZONES.map(z => ({ open: z.id === 0, done: false, g: 0, l: 0, water: -1, sweep: -1, sweepLift: GREEN, bloomed: false, rank: z.id === 0 ? 0 : undefined }));
+const firstSpirit = () => ({ type: 0, x: ZONES[0].px / 4, y: ZONES[0].py / 4 + 2, tx: -1, ty: -1, work: 0, walk: 0 });
+export function newLand() {
+  return {
+    v: 5, levels: { 0: 0 }, seeds: 0, upgrades: {}, h: new Float32Array(CN),
+    spirits: [firstSpirit()], zones: freshZones(),
+    objHp: null, trees: [], age: 0, played: 0, last: Date.now(), touched: false, paused: false,
+  };
 }
 export const initObjects = (s, w) => { if (s.objHp?.length !== w.objects.length || s.wv !== WORLD_VERSION) { s.objHp = w.objects.map(o => s.zones[o.zone].done ? 0 : o.hp); if (s.wv !== WORLD_VERSION) s.zones.forEach(z => { if (z.done) z.sweep = 0; }); s.wv = WORLD_VERSION; } };
 
-const hardness = s => 1 + s.level * .6;
-const toughness = (s, z) => (1 + z * 1.3) * hardness(s);
-const multAt = (s, z, level) => (1 + z * 1.1) * (1 + lvl(s, 'earth') * .3) * Math.pow(1.5, level);
-const seedMult = (s, z) => multAt(s, z, s.level);
-// Lands you are not on run on a simple model: their crew's work is shared across the open glades.
-const AWAY_RATE = [.9, 0, 1.1, 2.6], AWAY_CELLS = 3400;
-function stepAway(s, dt, ev) {
-  for (const id in s.atlas) {
-    const m = s.atlas[id];
-    if (m.complete || !m.zones) continue;
-    m.spirits ||= firstCrew();
-    m.p ||= m.zones.map(z => z.done ? 1 : 0);
-    const live = m.zones.map((z, i) => z.open && !z.done ? i : -1).filter(i => i >= 0);
-    if (!live.length) continue;
-    const pace = 1 + lvl(s, 'feet') * .25, reach = m.p.reduce((a, v) => a + v, 0) / m.p.length;
-    const work = m.spirits.reduce((a, q) => a + AWAY_RATE[q.type] * pace, 0) + 2 * Math.pow(1.35, lvl(s, 'roots')) * Math.min(1, reach * 2);
-    for (const z of live) {
-      const amount = work / live.length * dt / ((1 + z * 1.3) * (1 + m.level * .6)), cells = m.counts?.[z] || AWAY_CELLS;
-      const room = (1 - m.p[z]) * GREEN * cells, gain = Math.min(room, amount);
-      m.p[z] += gain / (GREEN * cells);
-      s.seeds += gain * .4 * multAt(s, z, m.level);
-      if (m.p[z] < .97) continue;
-      m.p[z] = 1; m.zones[z].done = true; m.done = (m.done || 0) + 1;
-      for (const n of ZONES[z].adj) m.zones[n].open = true;
-      s.seeds += 300 * multAt(s, z, m.level);
-      m.complete = m.zones.every(q => q.done);
-      ev.push({ t: 'away', land: +id, zone: z, complete: m.complete });
-    }
-    m.pct = Math.max(m.pct || 0, m.p.reduce((a, v) => a + v, 0) / m.p.length);
-  }
-}
+const levelOf = (s, z) => s.levels[ZONES[z].land] || 0, rankOf = (s, z) => s.zones[z].rank || 0;
+const toughness = (s, z) => (1 + rankOf(s, z) * 1.3) * (1 + levelOf(s, z) * .6);
+const seedMult = (s, z) => (1 + rankOf(s, z) * 1.1) * (1 + lvl(s, 'earth') * .3) * Math.pow(1.5, levelOf(s, z));
 function raise(s, w, i, amount, cap, soft = true) {
   const z = w.zone[i], st = s.zones[z];
   if (!st.open || w.blocked[i]) return 0;
@@ -156,7 +86,7 @@ function raise(s, w, i, amount, cap, soft = true) {
 }
 export function heal(s, w, cx, cy, r, amount, cap) {
   let total = 0;
-  const x0 = Math.max(0, Math.floor(cx - r)), x1 = Math.min(CW - 1, Math.ceil(cx + r)), y0 = Math.max(0, Math.floor(cy - r)), y1 = Math.min(CH - 1, Math.ceil(cy + r));
+  const x0 = Math.max(0, Math.floor(cx - r)), x1 = Math.min(CW - 1, Math.ceil(cx + r)), y0 = Math.max(0, Math.floor(cy - r)), y1 = Math.min(CN / CW - 1, Math.ceil(cy + r));
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
     const d = Math.hypot(x - cx, y - cy) / r;
     if (d < 1) total += raise(s, w, y * CW + x, amount * (1 - d * d * .6), cap);
@@ -165,7 +95,7 @@ export function heal(s, w, cx, cy, r, amount, cap) {
 }
 function hitObjects(s, w, cx, cy, r, amount, ev) {
   for (const o of w.objects) {
-    if (s.objHp[o.id] <= 0 || !s.zones[o.zone].open || Math.hypot(o.x - cx, o.y - cy) > r + o.size / 16) continue;
+    if (s.objHp[o.id] <= 0 || Math.abs(o.x - cx) > r + 8 || Math.abs(o.y - cy) > r + 8 || !s.zones[o.zone].open || Math.hypot(o.x - cx, o.y - cy) > r + o.size / 16) continue;
     s.objHp[o.id] -= amount;
     if (s.objHp[o.id] <= 0) revive(s, w, o, ev);
   }
@@ -182,13 +112,13 @@ function revive(s, w, o, ev) {
 const TOUCH = 3.2, DRINK = 1.7;
 function soak(s, w, cx, cy, r, amount, cap) {
   let total = 0;
-  const x0 = Math.max(0, Math.floor(cx - r)), x1 = Math.min(CW - 1, Math.ceil(cx + r)), y0 = Math.max(0, Math.floor(cy - r)), y1 = Math.min(CH - 1, Math.ceil(cy + r));
+  const x0 = Math.max(0, Math.floor(cx - r)), x1 = Math.min(CW - 1, Math.ceil(cx + r)), y0 = Math.max(0, Math.floor(cy - r)), y1 = Math.min(CN / CW - 1, Math.ceil(cy + r));
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
     const d = Math.hypot(x - cx, y - cy) / r, i = y * CW + x, z = w.zone[i];
     if (d >= 1 || !s.zones[z].open || w.blocked[i]) continue;
     const room = cap - s.h[i] - w.pend[i];
     if (room <= 0) continue;
-    const add = Math.min(room, amount * (1 - d * d * .6) / ((1 + z * 1.5) * hardness(s)));
+    const add = Math.min(room, amount * (1 - d * d * .6) / ((1 + rankOf(s, z) * 1.5) * (1 + levelOf(s, z) * .6)));
     if (!w.pend[i]) w.active.push(i);
     w.pend[i] += add;
     total += add;
@@ -213,14 +143,26 @@ export function touch(s, w, cx, cy, dt, ev) {
   return gain;
 }
 
-const openCells = (s, w) => { const out = []; s.zones.forEach((z, i) => { if (z.open) out.push(w.cellsOf[i]); }); return out; };
-function seek(s, w, a, lists) {
+// Spirits work the open glades nearest them that still need their kind of work, so the army spreads
+// across the frontier instead of all walking to the far side of the continent.
+const WANT = [z => !z.done, z => z.done && !z.bloomed, z => !z.done, z => !z.bloomed];
+function nearLists(s, w, a) {
+  const want = WANT[a.type], near = [];
+  for (let z = 0; z < s.zones.length; z++) {
+    const st = s.zones[z]; if (!st.open || !want(st)) continue;
+    near.push([(ZONES[z].px / 4 - a.x) ** 2 + (ZONES[z].py / 4 - a.y) ** 2, z]);
+  }
+  near.sort((p, q) => p[0] - q[0]);
+  return near.slice(0, 3).map(p => w.cellsOf[p[1]]);
+}
+function seek(s, w, a) {
   const def = SPIRITS[a.type];
   if (a.type === 3) {
     let best = null, bd = Infinity;
     for (const o of w.objects) if (s.objHp[o.id] > 0 && s.zones[o.zone].open) { const d = Math.hypot(o.x - a.x, o.y - a.y); if (d < bd) { bd = d; best = o; } }
-    if (best) { a.tx = best.x; a.ty = best.y + .5; return true; }
+    if (best && bd < 160) { a.tx = best.x; a.ty = best.y + .5; return true; }
   }
+  const lists = nearLists(s, w, a);
   const test = a.type === 1 ? v => v >= .5 && v < .97 : a.type === 3 ? v => v >= .5 && v < 1 : a.type === 0 ? v => v < .34 : v => v < .5;
   let best = -1, bd = Infinity, thin = -1, td = Infinity;
   for (let k = 0; k < 40 && lists.length; k++) {
@@ -233,11 +175,11 @@ function seek(s, w, a, lists) {
   a.tx = best % CW + Math.random() - .5; a.ty = Math.floor(best / CW) + Math.random() - .5;
   return def != null;
 }
-function stepSpirit(s, w, a, dt, lists, ev) {
+function stepSpirit(s, w, a, dt, ev) {
   const def = SPIRITS[a.type], pace = 1 + lvl(s, 'feet') * .25;
   if (a.held) return;
   if (a.nap > 0) { a.nap -= dt; if (a.nap > 0) return; }
-  if (a.tx < 0) { if (!seek(s, w, a, lists)) return; a.work = 0; }
+  if (a.tx < 0) { if (!seek(s, w, a)) return; a.work = 0; }
   const dx = a.tx - a.x, dy = a.ty - a.y, d = Math.hypot(dx, dy), step = def.speed * pace * dt;
   const lift = a.type === 1 ? (s.h[Math.round(a.y) * CW + Math.round(a.x)] >= .5 ? 1 : 0) : 1;
   if (d > .3) {
@@ -251,23 +193,31 @@ function stepSpirit(s, w, a, dt, lists, ev) {
   if (lift) heal(s, w, a.x, a.y, def.r, def.rate * pace * dt, def.cap);
   if (a.type === 3 || a.type === 0) hitObjects(s, w, a.x, a.y, def.r, dt * (a.type === 3 ? 1.1 : .25) * pace, ev);
   if (a.work > 1.4) {
-    if (a.type === 3 && s.trees.length < 90 && s.h[Math.round(a.y) * CW + Math.round(a.x)] > .7 && !w.road[Math.round(a.y * 4) * CW * 4 + Math.round(a.x * 4)] && Math.random() < .3) {
+    if (a.type === 3 && s.trees.length < 160 && s.h[Math.round(a.y) * CW + Math.round(a.x)] > .7 && Math.random() < .3) {
       const t = { x: a.x, y: a.y, born: s.age, blossom: Math.random() < .35 };
       s.trees.push(t); ev.push({ t: 'tree', tree: t });
     }
     a.tx = -1; a.work = 0;
   }
 }
+// Green spreads on its own. The rate scales with how much ground is open, as it did on a single land.
 function creep(s, w, dt, carry) {
-  const rate = 30 * Math.pow(1.35, lvl(s, 'roots')), hits = rate * dt + carry.v, n = Math.floor(hits);
-  carry.v = hits - n;
+  const lists = [], ends = [];
+  let total = 0;
+  s.zones.forEach((z, i) => { if (z.open && w.count[i]) { lists.push(w.cellsOf[i]); total += w.count[i]; ends.push(total); } });
+  if (!total) return;
+  const rate = 30 * Math.pow(1.35, lvl(s, 'roots')) * total / LCN, hits = rate * dt + carry.v, all = Math.floor(hits);
+  carry.v = hits - all;
+  // Long steps (offline catch-up) take fewer, bigger hops, so hours of growth cost a moment to work out.
+  const n = Math.min(all, 2500), push = Math.min(GREEN, .11 * all / Math.max(1, n));
   for (let k = 0; k < n; k++) {
-    const i = Math.floor(Math.random() * CN);
-    if (s.h[i] < .4 || !s.zones[w.zone[i]].open) continue;
+    const r = Math.random() * total; let q = 0; while (ends[q] <= r) q++;
+    const list = lists[q], i = list[Math.floor(Math.random() * list.length)];
+    if (s.h[i] < .4) continue;
     const x = i % CW, y = Math.floor(i / CW);
     for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
       const xx = x + dx, yy = y + dy;
-      if (xx >= 0 && yy >= 0 && xx < CW && yy < CH) raise(s, w, yy * CW + xx, .11, GREEN);
+      if (xx >= 0 && yy >= 0 && xx < CW && yy * CW < CN) raise(s, w, yy * CW + xx, push, GREEN);
     }
   }
 }
@@ -275,11 +225,10 @@ function completeZone(s, w, id, ev) {
   const z = s.zones[id];
   z.done = true; z.sweep = 0; z.sweepLift = GREEN;
   for (const o of w.objects) if (o.zone === id && s.objHp[o.id] > 0) revive(s, w, o, ev);
-  const opened = [];
-  for (const n of ZONES[id].adj) if (!s.zones[n].open) { s.zones[n].open = true; opened.push(n); }
   s.seeds += 300 * seedMult(s, id);
-  ev.push({ t: 'zone', zone: id, opened, final: id === FINALE });
-  if (s.zones.every(q => q.done)) ev.push({ t: 'valley' });
+  const land = ZONES[id].land, whole = landDone(s, land);
+  ev.push({ t: 'zone', zone: id, final: whole });
+  if (whole) ev.push({ t: 'valley', land });
 }
 const carries = new WeakMap();
 // `slice`/`of` let the game walk a fraction of the spirits each frame instead of all at once.
@@ -288,12 +237,9 @@ export function tick(s, w, dt, ev = [], slice = 0, of = 1) {
   initObjects(s, w);
   s.age += dt;
   s.seeds += income(s) * dt;
-  s.awayT = (s.awayT || 0) + dt;
-  if (s.awayT >= 1) { stepAway(s, s.awayT, ev); s.awayT = 0; }
   if (!carries.has(s)) carries.set(s, { v: Math.random() });
   drink(s, w, dt);
-  const lists = openCells(s, w);
-  for (let n = slice; n < s.spirits.length; n += of) stepSpirit(s, w, s.spirits[n], dt * of, lists, ev);
+  for (let n = slice; n < s.spirits.length; n += of) stepSpirit(s, w, s.spirits[n], dt * of, ev);
   creep(s, w, dt, carries.get(s));
   s.zones.forEach((z, id) => {
     if (!z.open) return;
@@ -322,11 +268,11 @@ export function tick(s, w, dt, ev = [], slice = 0, of = 1) {
   return ev;
 }
 export function buySpirit(s, t) {
-  if (s.spirits.length >= 40 || !spiritOpen(s, t)) return false;
+  if (s.spirits.length >= SPIRIT_CAP || !spiritOpen(s, t)) return false;
   const cost = spiritCost(s, t);
   if (s.seeds < cost) return false;
   s.seeds -= cost;
-  const home = s.spirits[0] || { x: 40, y: 118 };
+  const home = s.spirits[0] || firstSpirit();
   s.spirits.push({ type: t, x: home.x + Math.random() * 2 - 1, y: home.y + Math.random() * 2 - 1, tx: -1, ty: -1, work: 0, walk: 0, born: s.age });
   return true;
 }
@@ -356,18 +302,57 @@ export function encode(s) {
   for (let i = 0; i < CN; i++) bytes[i] = Math.round(s.h[i] * 255);
   return JSON.stringify({ ...s, h: b64(bytes), spirits: s.spirits.map(({ held, rx, ry, anim, px, py, ...a }) => a), last: Date.now() });
 }
+function loadField(s, w) {
+  s.zones.forEach(z => { z.g = 0; z.l = 0; });
+  for (let i = 0; i < CN; i++) { if (w.blocked[i]) { s.h[i] = 0; continue; } const v = s.h[i], z = s.zones[w.zone[i]]; z.g += Math.min(v, GREEN); z.l += v; }
+}
+// Raises each glade to at least the share of green it had reached, spreading out from its pond.
+function growTo(s, w, want) {
+  want.forEach((p, id) => {
+    if (p == null) return;
+    const z = s.zones[id], goal = (z.done ? 1 : p) * GREEN * w.count[id], list = w.order[id];
+    for (let k = 0; k < list.length && z.g < goal; k++) { const i = list[k], v = s.h[i]; if (v < GREEN) { s.h[i] = GREEN; z.g += GREEN - v; z.l += GREEN - v; } }
+  });
+}
+// Before the open continent, each land was its own map. Their saved pieces are laid back into place here.
+function fromLands(o, w) {
+  const h = new Float32Array(CN), zones = freshZones(), levels = {}, spirits = [], trees = [], hp = new Array(w.objects.length).fill(-1), want = [];
+  zones[0].open = false;
+  const lands = { ...o.atlas, [o.land]: { h: o.h, zones: o.zones, spirits: o.spirits, objHp: o.objHp, trees: o.trees, level: o.level } };
+  for (const key in lands) {
+    const id = +key, m = lands[key], L = LANDS[id], cx = L.col * LCW, cy = L.row * LCH, raw = m.h ? atob(m.h) : null, full = m.h === '';
+    if (!m.zones || (raw && raw.length !== LCN)) continue;
+    levels[id] = m.level || 0;
+    for (let y = 0; y < LCH; y++) for (let x = 0; x < LCW; x++) h[(cy + y) * CW + cx + x] = full ? 1 : raw ? raw.charCodeAt(y * LCW + x) / 255 : 0;
+    const open = m.zones.map((z, j) => z.open ? j : -1).filter(j => j >= 0);
+    m.zones.forEach((z, j) => { zones[id * 9 + j] = { open: !!z.open, done: !!z.done, g: 0, l: 0, water: z.water ?? -1, sweep: -1, sweepLift: z.bloomed ? 1 : GREEN, bloomed: !!z.bloomed, rank: z.open ? (id === 0 ? j : open.indexOf(j)) : undefined }; if (m.p) want[id * 9 + j] = m.p[j]; });
+    for (const a of m.spirits || [{ type: 0, x: 40, y: 118 }]) spirits.push({ type: a.type, x: a.x + cx, y: a.y + cy, tx: -1, ty: -1, work: 0, walk: 0, born: a.born });
+    for (const t of m.trees || []) trees.push({ ...t, x: t.x + cx, y: t.y + cy });
+    const start = w.objStart[id], end = w.objStart[id + 1] ?? w.objects.length;
+    if (m.objHp?.length === end - start) m.objHp.forEach((v, k) => { hp[start + k] = v; });
+  }
+  if (!Object.keys(levels).length) throw Error('Nothing to keep.');
+  const s = { ...o, v: 5, levels, h, zones, spirits: spirits.slice(0, SPIRIT_CAP), trees: trees.slice(0, 160), objHp: null, wv: WORLD_VERSION };
+  delete s.atlas; delete s.land; delete s.level; delete s.opened; delete s.gateFill; delete s.awayT;
+  loadField(s, w);
+  growTo(s, w, want);
+  s.objHp = w.objects.map((ob, k) => hp[k] >= 0 && !s.zones[ob.zone].done ? hp[k] : s.zones[ob.zone].done ? 0 : ob.hp);
+  return s;
+}
 export function decode(text, w) {
   const o = JSON.parse(text);
-  if (o?.v !== 3 && o?.v !== 4 || typeof o.h !== 'string' || !Array.isArray(o.spirits) || !Array.isArray(o.zones) || o.zones.length !== ZONES.length || !Number.isFinite(o.seeds)) throw Error('Not a Little Wilds 2 save.');
+  if (![3, 4, 5].includes(o?.v) || typeof o.h !== 'string' || !Array.isArray(o.spirits) || !Array.isArray(o.zones) || !Number.isFinite(o.seeds)) throw Error('Not a Little Wilds 2 save.');
   if (o.v === 3) { // Before the continent, "Travel on" discarded each finished land. Those count as restored.
-    const L = saveMap(o), full = ZONES.map(() => ({ open: true, done: true, g: 0, l: 0, water: 1, sweep: -1, sweepLift: 1, bloomed: true }));
-    o.v = 4; o.land = L; o.level = L; o.atlas = {}; o.opened = { [L]: true }; o.gateFill = {};
-    for (let n = 0; n < L; n++) { o.atlas[n] = { h: '', zones: full.map(z => ({ ...z })), objHp: null, trees: [], wv: WORLD_VERSION, level: n, complete: true, done: ZONES.length, pct: 1 }; o.opened[n] = true; }
+    const L = Math.min(o.land || 0, LANDS.length - 1), full = () => Array.from({ length: 9 }, () => ({ open: true, done: true, water: 1, bloomed: true }));
+    o.v = 4; o.land = L; o.level = L; o.atlas = {};
+    for (let n = 0; n < L; n++) o.atlas[n] = { h: '', zones: full(), trees: [], level: n };
   }
-  const text2 = o.h;
+  if (o.v === 4) { if (o.zones.length !== 9) throw Error('Not a Little Wilds 2 save.'); return fromLands(o, w); }
+  if (o.zones.length !== ZONES.length) throw Error('Not a Little Wilds 2 save.');
+  const raw = atob(o.h);
+  if (raw.length !== CN) throw Error('Bad land data.');
   o.h = new Float32Array(CN);
-  loadField(o, w, text2);
+  for (let i = 0; i < CN; i++) o.h[i] = raw.charCodeAt(i) / 255;
+  loadField(o, w);
   return o;
 }
-// Which map a save belongs on, so the caller can build that world before decoding.
-export const saveMap = o => o.v === 3 ? Math.min(o.land || 0, LANDS.length - 1) : o.land || 0;

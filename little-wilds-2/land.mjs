@@ -1,117 +1,170 @@
-// The ground as one pixel canvas. Every texel keeps a colour per growth stage and picks one
-// from the restoration field, so the front line between dead and alive stays crisp and organic.
-import { TW, TH, CW, CH, CELL, fbm, noise, hash, landAt, LANDS, SEA, BEACH, ROCK } from './world.mjs';
+// The ground as one pixel canvas for the whole continent. Every texel keeps a small code for its grain,
+// shade and kind of ground; each land turns codes into colours through lookup tables, one per growth stage,
+// so the front line between dead and alive stays crisp and organic without a colour array per stage.
+import { TW, TH, LW, LH, CW, CH, CELL, fbm, noise, hash, LANDS, SEA, BEACH, ROCK, landAtTexel } from './world.mjs';
 
 const packed = (r, g, b) => (255 << 24) | (Math.max(0, Math.min(255, b)) << 16) | (Math.max(0, Math.min(255, g)) << 8) | Math.max(0, Math.min(255, r));
-const SOIL_AT = .1, GRASS_AT = .3, LUSH_AT = .74, CHUNK = 32, COLS = TW / CHUNK, ROWS = TH / CHUNK;
+const pack = c => packed(c[0], c[1], c[2]);
+const mixTo = (c, t, k) => c.map((v, n) => v + (t[n] - v) * k);
+const SOIL_AT = .1, GRASS_AT = .3, LUSH_AT = .74, CHUNK = 32, COLS = TW / CHUNK, ROWS = TH / CHUNK, STAGE = 32768;
+// One sea for the whole coast, so neighbouring lands meet without a seam in the water.
+export const SEA_BLUE = [62, 148, 184];
+const EDGE = 0x8000, ROAD = 0xc000; // Codes at or above EDGE are coast, rock or road; below are open ground.
+// Growth stages in lookup order: dead, soil, grass, lush, then the two bright rims of the advancing front.
+const DEAD = 0, SOIL = 1, GRASS = 2, LUSH = 3, RIM_A = 4, RIM_B = 5;
 
-export function createLand(w, landIndex) {
-  const P = landAt(landIndex), N = TW * TH, dead = new Uint32Array(N), soil = new Uint32Array(N), grass = new Uint32Array(N), lush = new Uint32Array(N), rimA = new Uint32Array(N), rimB = new Uint32Array(N), wet = new Uint32Array(N), alive = new Uint32Array(N), jitter = new Float32Array(N);
-  const s = w.seed;
-  for (let y = 0, i = 0; y < TH; y++) for (let x = 0; x < TW; x++, i++) {
-    const e = fbm(x / 58, y / 58, s + 200), ex = fbm((x + 3) / 58, y / 58, s + 200), ey = fbm(x / 58, (y + 3) / 58, s + 200);
-    const shade = 1 + Math.max(-.13, Math.min(.13, (e - ex) * 10 + (e - ey) * 14)) + (e - .5) * .12;
-    const grain = hash(x, y, s + 3), blotch = fbm(x / 14, y / 14, s + 210), fine = noise(x / 3.4, y / 3.4, s + 220);
-    jitter[i] = (fbm(x / 7, y / 7, s + 230) - .5) * 1.1 + (grain - .5) * .45;
-
-    // Dead: cracked hardpan in dull bands, with pale salt and dark fissures.
-    const crackField = Math.abs(noise(x / 11, y / 11, s + 240) - noise(x / 11, y / 11, s + 241)), crack = crackField < .026;
-    const band = Math.floor(blotch * 6) / 6 + (grain > .9 ? .08 : 0) - .5, salt = grain > .992;
-    const dk = shade * (1 + band * .13) * (crack ? 0 : 1);
-    dead[i] = crack ? packed(P.crack[0] * shade, P.crack[1] * shade, P.crack[2] * shade)
-      : salt ? packed(P.dead[0] * 1.25, P.dead[1] * 1.25, P.dead[2] * 1.25) : packed(P.dead[0] * dk, P.dead[1] * dk, P.dead[2] * dk);
-
-    // Soil: dark and damp, so grey ground visibly drinks as the touch passes.
-    const sk = shade * (.9 + Math.floor(fine * 4) * .07 + (grain > .95 ? .14 : 0));
-    soil[i] = packed(P.soil[0] * sk, P.soil[1] * sk, P.soil[2] * sk);
-
-    // Grass: bright, mottled, in the same landforms the dead ground had.
-    const mottled = Math.floor(fine * 4) / 4 - .4, gk = shade * (1 + mottled * .2 + (grain > .9 ? .1 : 0));
-    grass[i] = packed(P.grass[0] * gk, P.grass[1] * gk, P.grass[2] * gk);
-    const sun = blotch > .55 ? .05 : 0, lk = shade * (1 + mottled * .18 + sun + (grain > .88 ? .1 : 0));
-    lush[i] = packed(P.lush[0] * lk, P.lush[1] * lk, P.lush[2] * lk);
-    rimA[i] = packed(P.soil[0] * 1.9 * shade, P.soil[1] * 1.9 * shade, P.soil[2] * 1.7 * shade);
-    rimB[i] = packed(P.lush[0] * 1.4 * shade + 22, P.lush[1] * 1.28 * shade + 18, P.lush[2] * 1.05 * shade);
-
-    if (w.waterT[i] >= 0) {
-      const edge = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b]) => { const j = i + b * TW + a; return j >= 0 && j < N && w.waterT[j] < 0; });
-      const wk = (edge ? .78 : .92 + Math.floor(fine * 3) * .07) * (w.waterT[i] >= .7 ? 1 - (1 - w.waterT[i]) * .6 : 1);
-      wet[i] = packed(P.water[0] * wk, P.water[1] * wk, P.water[2] * wk);
-      dead[i] = packed(P.crack[0] * .82, P.crack[1] * .82, P.crack[2] * .82);
-      soil[i] = packed(P.soil[0] * .7, P.soil[1] * .7, P.soil[2] * .7);
-    }
+// Open ground: shade (5 bits), fine mottling (2), blotch band (3), grain class (3), crack (1), sun (1).
+function groundTables(P) {
+  const t = new Uint32Array(STAGE * 6);
+  for (let c = 0; c < STAGE; c++) {
+    const shade = .78 + (c & 31) / 31 * .44, fine = c >> 5 & 3, band = (c >> 7 & 7) / 6, grain = c >> 10 & 7, crack = c >> 13 & 1, sun = c >> 14 & 1;
+    const g88 = grain >= 1, g90 = grain >= 2, g95 = grain >= 3, salt = grain === 4, mottled = fine / 4 - .4;
+    const dk = shade * (1 + (band + (g90 ? .08 : 0) - .5) * .13);
+    t[DEAD * STAGE + c] = crack ? pack(P.crack.map(v => v * shade)) : salt ? pack(P.dead.map(v => v * 1.25)) : pack(P.dead.map(v => v * dk));
+    t[SOIL * STAGE + c] = pack(P.soil.map(v => v * shade * (.9 + fine * .07 + (g95 ? .14 : 0))));
+    t[GRASS * STAGE + c] = pack(P.grass.map(v => v * shade * (1 + mottled * .2 + (g90 ? .1 : 0))));
+    t[LUSH * STAGE + c] = pack(P.lush.map(v => v * shade * (1 + mottled * .18 + (sun ? .05 : 0) + (g88 ? .1 : 0))));
+    t[RIM_A * STAGE + c] = packed(P.soil[0] * 1.9 * shade, P.soil[1] * 1.9 * shade, P.soil[2] * 1.7 * shade);
+    t[RIM_B * STAGE + c] = packed(P.lush[0] * 1.4 * shade + 22, P.lush[1] * 1.28 * shade + 18, P.lush[2] * 1.05 * shade);
   }
-  // The edges of the map: dull while the nearest glade sleeps, then blue sea, warm sand and green-shouldered peaks.
-  const mixTo = (c, t, k) => c.map((v, n) => v + (t[n] - v) * k), sand = P.sand || [226, 206, 158], peak = P.peak || [214, 208, 196], M = LANDS[landIndex];
-  const beyond = (x, y) => { let best = null, gap = 12; for (const [dc, dr, d] of [[0, -1, y], [1, 0, TW - 1 - x], [0, 1, TH - 1 - y], [-1, 0, x]]) { if (d >= gap) continue; const o = LANDS.find(l => l.col === M.col + dc && l.row === M.row + dr); if (o) { gap = d; best = o; } } return best ? [best, 1 - gap / 12] : null; };
-  for (let y = 0, i = 0; y < TH; y++) for (let x = 0; x < TW; x++, i++) {
-    const e = w.edge[i]; if (!e) continue;
-    const d = w.edgeD[i], grain = hash(x, y, s + 3), fine = noise(x / 5, y / 5, s + 220), band = Math.floor(fine * 4) / 4;
+  return t;
+}
+// Coast, rock and road: three colours each. Edges use [dead, alive]; roads use [dead, damp, grown].
+function edgeTables(P) {
+  const t = new Uint32Array(STAGE * 3), sand = P.sand || [226, 206, 158], peak = P.peak || [214, 208, 196];
+  for (let kind = 0; kind < 4; kind++) for (let dq = 0; dq < 16; dq++) for (let band = 0; band < 4; band++) for (let foam = 0; foam < 2; foam++) for (let grain = 0; grain < 2; grain++) {
+    const e = kind + 1, d = dq / 15, b4 = band / 4, i = (kind << 12 | dq << 8 | band << 6 | foam << 5 | grain << 4) * 3;
     let a, b;
-    if (e === SEA) { const k = .72 + (1 - d) * .32 + band * .1, foam = d < .12 && noise(x / 4, y / 4, s + 250) > .5; a = mixTo(P.water, [72, 84, 104], .62).map(v => v * (1 - d * .22)); b = foam ? [238, 246, 244] : P.water.map(v => v * k); }
-    else if (e === BEACH) { const k = .94 + band * .1 + (grain > .9 ? .05 : 0); a = P.dead.map(v => v * 1.14 * k); b = sand.map(v => v * k); }
-    else if (e === ROCK) { const h = d + (band - .4) * .35, k = .72 + h * .4 + (grain > .92 ? .06 : 0); a = mixTo(P.crack, P.dead, Math.min(1, h)).map(v => v * k); b = h > .78 ? peak : h > .42 ? [112 * k, 104 * k, 100 * k] : mixTo(P.soil, P.grass, .7).map(v => v * k); }
-    else { const k = .95 + band * .12; a = P.crack.map(v => v * 1.12 * k); b = mixTo(P.soil, sand, .55).map(v => v * k); }
-    const far = beyond(x, y);
-    if (far && e !== SEA) { const m = far[1] * .8, tint = mixTo(far[0].lush, far[0].mist, .55); a = mixTo(a, far[0].mist, m); b = mixTo(b, tint, m); }
-    dead[i] = packed(a[0], a[1], a[2]); alive[i] = packed(b[0], b[1], b[2]);
+    if (e === SEA) { const k = .72 + (1 - d) * .32 + b4 * .1; a = mixTo(SEA_BLUE, [72, 84, 104], .62).map(v => v * (1 - d * .22)); b = foam ? [238, 246, 244] : SEA_BLUE.map(v => v * k); }
+    else if (e === BEACH) { const k = .94 + b4 * .1 + (grain ? .05 : 0); a = P.dead.map(v => v * 1.14 * k); b = sand.map(v => v * k); }
+    else if (e === ROCK) { const h = d + (b4 - .4) * .35, k = .72 + h * .4 + (grain ? .06 : 0); a = mixTo(P.crack, P.dead, Math.min(1, h)).map(v => v * k); b = h > .78 ? peak : h > .42 ? [112 * k, 104 * k, 100 * k] : mixTo(P.soil, P.grass, .7).map(v => v * k); }
+    else { const k = .95 + b4 * .12; a = P.crack.map(v => v * 1.12 * k); b = mixTo(P.soil, sand, .55).map(v => v * k); }
+    t[i] = pack(a); t[i + 1] = pack(b);
   }
-  // Village ground reads as road in every growth stage: faint ruts while dead, packed dirt, planks and crops once alive.
-  if (P.road) for (let y = 0, i = 0; y < TH; y++) for (let x = 0; x < TW; x++, i++) {
-    const r = w.road[i]; if (!r) continue;
-    const grain = hash(x, y, s + 3), k = .92 + Math.floor(noise(x / 4, y / 4, s + 260) * 4) * .05 + (grain > .95 ? .12 : 0);
+  if (P.road) for (let r = 1; r < 4; r++) for (let rim = 0; rim < 2; rim++) for (let pat = 0; pat < 2; pat++) for (let kq = 0; kq < 4; kq++) for (let grain = 0; grain < 2; grain++) {
+    const k = .92 + kq * .05 + (grain ? .12 : 0), i = ((ROAD - EDGE) | r << 8 | rim << 7 | pat << 6 | kq << 4 | grain << 3) * 3;
     let a, b, c;
-    if (r === 2) { const gap = x % 5 === 0 ? .62 : 1; a = [104 * gap, 96 * gap, 88 * gap]; b = c = [142 * gap, 100 * gap, 62 * gap]; }
-    else if (r === 3) { const row = y % 5 < 2; a = (row ? P.crack : P.dead).map(v => v * k); b = (row ? P.soil : mixTo(P.soil, P.road, .4)).map(v => v * k); c = (row ? P.grass : P.soil).map(v => v * k); }
-    else {
-      const rim = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([p, q]) => { const j = i + q * TW + p; return j >= 0 && j < N && !w.road[j]; }) ? .8 : 1;
-      a = mixTo(P.dead, P.crack, .4).map(v => v * k * rim); b = P.road.map(v => v * k * rim); c = b;
-    }
-    dead[i] = packed(a[0], a[1], a[2]); soil[i] = rimA[i] = packed(b[0] * .86, b[1] * .86, b[2] * .86); grass[i] = lush[i] = rimB[i] = packed(c[0], c[1], c[2]);
+    if (r === 2) { const gap = pat ? .62 : 1; a = [104 * gap, 96 * gap, 88 * gap]; b = c = [142 * gap, 100 * gap, 62 * gap]; }
+    else if (r === 3) { a = (pat ? P.crack : P.dead).map(v => v * k); b = (pat ? P.soil : mixTo(P.soil, P.road, .4)).map(v => v * k); c = (pat ? P.grass : P.soil).map(v => v * k); }
+    else { const m = rim ? .8 : 1; a = mixTo(P.dead, P.crack, .4).map(v => v * k * m); b = P.road.map(v => v * k * m); c = b; }
+    t[i] = pack(a); t[i + 1] = pack(b.map(v => v * .86)); t[i + 2] = pack(c);
   }
+  return t;
+}
+
+export async function createLand(w, progress = async () => {}) {
+  const N = TW * TH, code = new Uint16Array(N), jitter = new Int8Array(N);
+  // Slow, smooth noise is sampled on a coarse grid and blended; only grain, mottling and cracks are per texel.
+  const G = 4, gw = LW / G + 2, gh = LH / G + 2, shadeG = new Float32Array(gw * gh), blotchG = new Float32Array(gw * gh), jitG = new Float32Array(gw * gh), cw2 = LW / 2 + 2, crackG = new Float32Array(cw2 * (LH / 2 + 2));
+  for (let id = 0; id < LANDS.length; id++) {
+    await progress(id);
+    const s = 1 + id * 17, ox = LANDS[id].col * LW, oy = LANDS[id].row * LH;
+    for (let gy = 0, k = 0; gy < gh; gy++) for (let gx = 0; gx < gw; gx++, k++) {
+      const x = gx * G, y = gy * G, e = fbm(x / 58, y / 58, s + 200), ex = fbm((x + 3) / 58, y / 58, s + 200), ey = fbm(x / 58, (y + 3) / 58, s + 200);
+      shadeG[k] = 1 + Math.max(-.13, Math.min(.13, (e - ex) * 10 + (e - ey) * 14)) + (e - .5) * .12;
+      blotchG[k] = fbm(x / 14, y / 14, s + 210); jitG[k] = fbm(x / 7, y / 7, s + 230);
+    }
+    for (let gy = 0, k = 0; gy < LH / 2 + 2; gy++) for (let gx = 0; gx < cw2; gx++, k++) crackG[k] = noise(gx * 2 / 11, gy * 2 / 11, s + 240) - noise(gx * 2 / 11, gy * 2 / 11, s + 241);
+    for (let y = 0; y < LH; y++) {
+      const fy = y / G, iy = Math.floor(fy), ty = fy - iy, icy = y >> 1, tcy = (y & 1) / 2;
+      for (let x = 0, i = (oy + y) * TW + ox; x < LW; x++, i++) {
+        const ix = x >> 2, tx = (x & 3) / 4, k = iy * gw + ix;
+        const lerp = a => (a[k] * (1 - tx) + a[k + 1] * tx) * (1 - ty) + (a[k + gw] * (1 - tx) + a[k + gw + 1] * tx) * ty;
+        const grain = hash(x, y, s + 3);
+        jitter[i] = Math.max(-127, Math.min(127, Math.round(((lerp(jitG) - .5) * 1.1 + (grain - .5) * .45) * 160)));
+        const e = w.edge[i], r = w.road[i];
+        if (e) {
+          const d = w.edgeD[i] / 255, band = Math.min(3, Math.floor(noise(x / 5, y / 5, s + 220) * 4)), foam = e === SEA && d < .12 && noise(x / 4, y / 4, s + 250) > .5 ? 1 : 0, gr = grain > (e === ROCK ? .92 : .9) ? 1 : 0;
+          code[i] = EDGE | (e - 1) << 12 | Math.round(d * 15) << 8 | band << 6 | foam << 5 | gr << 4;
+          continue;
+        }
+        if (r && LANDS[id].road) {
+          const rim = r === 1 && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([p, q]) => { const j = i + q * TW + p; return j >= 0 && j < N && !w.road[j]; }) ? 1 : 0;
+          const pat = r === 2 ? (x % 5 === 0 ? 1 : 0) : r === 3 ? (y % 5 < 2 ? 1 : 0) : 0;
+          code[i] = ROAD | r << 8 | rim << 7 | pat << 6 | Math.min(3, Math.floor(noise(x / 4, y / 4, s + 260) * 4)) << 4 | (grain > .95 ? 1 : 0) << 3;
+          continue;
+        }
+        const kc = icy * cw2 + (x >> 1), tcx = (x & 1) / 2, crack = Math.abs((crackG[kc] * (1 - tcx) + crackG[kc + 1] * tcx) * (1 - tcy) + (crackG[kc + cw2] * (1 - tcx) + crackG[kc + cw2 + 1] * tcx) * tcy) < .026;
+        const blotch = lerp(blotchG), shadeQ = Math.max(0, Math.min(31, Math.round((lerp(shadeG) - .78) / .44 * 31))), fine = Math.min(3, Math.floor(noise(x / 3.4, y / 3.4, s + 220) * 4));
+        const gcls = grain > .992 ? 4 : grain > .95 ? 3 : grain > .9 ? 2 : grain > .88 ? 1 : 0;
+        code[i] = shadeQ | fine << 5 | Math.min(5, Math.floor(blotch * 6)) << 7 | gcls << 10 | (crack ? 1 : 0) << 13 | (blotch > .55 ? 1 : 0) << 14;
+      }
+    }
+  }
+  const ground = LANDS.map(groundTables), edges = LANDS.map(edgeTables);
+  const wetDead = LANDS.map(P => pack(P.crack.map(v => v * .82))), wetSoil = LANDS.map(P => pack(P.soil.map(v => v * .7)));
   const canvas = document.createElement('canvas');
   canvas.width = TW; canvas.height = TH;
   const g = canvas.getContext('2d'), image = g.createImageData(TW, TH), out = new Uint32Array(image.data.buffer);
   const dirty = new Uint8Array(COLS * ROWS);
+  // Each glade's reach in chunks, so finishing one repaints only its own corner of the map.
+  const boxes = w.count.map(() => [COLS, ROWS, 0, 0]);
+  for (let i = 0; i < CW * CH; i++) { const b = boxes[w.zone[i]], x = (i % CW) * CELL / CHUNK | 0, y = Math.floor(i / CW) * CELL / CHUNK | 0; if (x < b[0]) b[0] = x; if (y < b[1]) b[1] = y; if (x > b[2]) b[2] = x; if (y > b[3]) b[3] = y; }
   let view = null, zonesState = null, cursor = 0;
 
-  function paint(cx, cy) {
-    const x0 = cx * CHUNK, y0 = cy * CHUNK, f = view;
+  function colourAt(i, stage, L) {
+    const c = code[i];
+    if (c >= ROAD) return edges[L][(c - EDGE) * 3 + (stage === DEAD ? 0 : stage === SOIL || stage === RIM_A ? 1 : 2)];
+    if (w.waterT[i] < 255 && (stage === DEAD || stage === SOIL || stage === RIM_A)) return stage === DEAD ? wetDead[L] : wetSoil[L];
+    return ground[L][stage * STAGE + c];
+  }
+  function paint(cx, cy, dead = false, target = out) {
+    const x0 = cx * CHUNK, y0 = cy * CHUNK, f = view, L = landAtTexel(x0, y0), P = LANDS[L], E = edges[L];
     for (let y = y0; y < y0 + CHUNK; y++) {
       const fy = Math.min(CH - 1.001, Math.max(0, y / CELL - .5)), iy = Math.floor(fy), ty = fy - iy;
       for (let x = x0, i = y * TW + x0; x < x0 + CHUNK; x++, i++) {
-        if (w.edge[i]) { out[i] = zonesState[w.zone[(y >> 2) * CW + (x >> 2)]].done ? alive[i] : dead[i]; continue; }
+        const c = code[i];
+        if (c >= EDGE && c < ROAD) { target[i] = E[(c - EDGE) * 3 + (!dead && zonesState[w.zone[(y >> 2) * CW + (x >> 2)]].done ? 1 : 0)]; continue; }
+        if (dead) { target[i] = colourAt(i, DEAD, L); continue; }
         const t = w.waterT[i];
-        if (t >= 0 && zonesState[w.waterZ[i]].water >= t) { out[i] = wet[i]; continue; }
-        const fx = Math.min(CW - 1.001, Math.max(0, x / CELL - .5)), ix = Math.floor(fx), tx = fx - ix, c = iy * CW + ix;
+        if (t < 255 && zonesState[w.waterZ[i]].water * 254 >= t) {
+          const shore = w.waterT[i + 1] === 255 || w.waterT[i - 1] === 255 || w.waterT[i + TW] === 255 || w.waterT[i - TW] === 255, fine = c < EDGE ? (c >> 5 & 3) * 3 >> 2 : 1;
+          const wk = (shore ? .78 : .92 + fine * .07) * (t >= 178 ? 1 - (1 - t / 254) * .6 : 1);
+          target[i] = packed(P.water[0] * wk, P.water[1] * wk, P.water[2] * wk); continue;
+        }
+        const fx = Math.min(CW - 1.001, Math.max(0, x / CELL - .5)), ix = Math.floor(fx), tx = fx - ix, n = iy * CW + ix;
         // Next to an edge there is nothing to blend with, so the ground takes its restored neighbours' value.
-        const raw = w.near[c] ? Math.max(w.blocked[c] ? 0 : f[c], w.blocked[c + 1] ? 0 : f[c + 1], w.blocked[c + CW] ? 0 : f[c + CW], w.blocked[c + CW + 1] ? 0 : f[c + CW + 1])
-          : (f[c] * (1 - tx) + f[c + 1] * tx) * (1 - ty) + (f[c + CW] * (1 - tx) + f[c + CW + 1] * tx) * ty;
-        if (raw <= .002) { out[i] = dead[i]; continue; }
-        const v = raw + jitter[i] * .2 * Math.min(1, raw * 6);
-        out[i] = v < SOIL_AT ? dead[i] : v < SOIL_AT + .03 ? rimA[i] : v < GRASS_AT ? soil[i] : v < GRASS_AT + .025 ? rimB[i] : v < LUSH_AT ? grass[i] : lush[i];
+        const raw = w.near[n] ? Math.max(w.blocked[n] ? 0 : f[n], w.blocked[n + 1] ? 0 : f[n + 1], w.blocked[n + CW] ? 0 : f[n + CW], w.blocked[n + CW + 1] ? 0 : f[n + CW + 1])
+          : (f[n] * (1 - tx) + f[n + 1] * tx) * (1 - ty) + (f[n + CW] * (1 - tx) + f[n + CW + 1] * tx) * ty;
+        if (raw <= .002) { target[i] = colourAt(i, DEAD, L); continue; }
+        const v = raw + jitter[i] / 160 * .2 * Math.min(1, raw * 6);
+        target[i] = colourAt(i, v < SOIL_AT ? DEAD : v < SOIL_AT + .03 ? RIM_A : v < GRASS_AT ? SOIL : v < GRASS_AT + .025 ? RIM_B : v < LUSH_AT ? GRASS : LUSH, L);
       }
     }
-    g.putImageData(image, 0, 0, x0, y0, CHUNK, CHUNK);
+    if (target === out) g.putImageData(image, 0, 0, x0, y0, CHUNK, CHUNK);
   }
+  const mark = (a, b) => { if (a >= 0 && b >= 0 && a < COLS && b < ROWS) dirty[b * COLS + a] = 1; };
+  let thenC = null;
   return {
-    canvas, dead, P,
+    canvas,
     setSource(field, zones) { view = field; zonesState = zones; dirty.fill(1); },
     setField(field) { view = field; },
     markCell(i) {
-      const x = i % CW, y = Math.floor(i / CW), a = Math.floor(x * CELL / CHUNK), b = Math.floor(y * CELL / CHUNK);
+      const x = i % CW * CELL, y = Math.floor(i / CW) * CELL, a = Math.floor(x / CHUNK), b = Math.floor(y / CHUNK);
       dirty[b * COLS + a] = 1;
-      const a2 = Math.min(COLS - 1, Math.floor((x * CELL + 6) / CHUNK)), a1 = Math.max(0, Math.floor((x * CELL - 6) / CHUNK)), b2 = Math.min(ROWS - 1, Math.floor((y * CELL + 6) / CHUNK)), b1 = Math.max(0, Math.floor((y * CELL - 6) / CHUNK));
-      if (a1 !== a || a2 !== a || b1 !== b || b2 !== b) { dirty[b1 * COLS + a1] = 1; dirty[b1 * COLS + a2] = 1; dirty[b2 * COLS + a1] = 1; dirty[b2 * COLS + a2] = 1; }
+      const a1 = Math.floor((x - 6) / CHUNK), a2 = Math.floor((x + 6) / CHUNK), b1 = Math.floor((y - 6) / CHUNK), b2 = Math.floor((y + 6) / CHUNK);
+      if (a1 !== a || a2 !== a || b1 !== b || b2 !== b) { mark(a1, b1); mark(a2, b1); mark(a1, b2); mark(a2, b2); }
     },
-    markWater(zone) { for (const [x, y] of w.streams[zone]) { if (Math.round(x) % 12 < 2 || Math.round(y) % 12 < 2) { const a = Math.floor(x / CHUNK), b = Math.floor(y / CHUNK); if (a >= 0 && b >= 0 && a < COLS && b < ROWS) dirty[b * COLS + a] = 1; } } const p = w.ponds[zone]; for (let b = Math.floor((p.y - p.r - 6) / CHUNK); b <= (p.y + p.r + 6) / CHUNK; b++) for (let a = Math.floor((p.x - p.r - 6) / CHUNK); a <= (p.x + p.r + 6) / CHUNK; a++) if (a >= 0 && b >= 0 && a < COLS && b < ROWS) dirty[b * COLS + a] = 1; },
+    markZone(z) { const [a0, b0, a1, b1] = boxes[z]; for (let b = b0; b <= b1; b++) for (let a = a0; a <= a1; a++) dirty[b * COLS + a] = 1; },
+    markWater(zone) { for (const [x, y] of w.streams[zone]) if (Math.round(x) % 12 < 2 || Math.round(y) % 12 < 2) mark(Math.floor(x / CHUNK), Math.floor(y / CHUNK)); const p = w.ponds[zone]; for (let b = Math.floor((p.y - p.r - 6) / CHUNK); b <= (p.y + p.r + 6) / CHUNK; b++) for (let a = Math.floor((p.x - p.r - 6) / CHUNK); a <= (p.x + p.r + 6) / CHUNK; a++) mark(a, b); },
     markAll() { dirty.fill(1); },
-    // Paints for a few milliseconds at most, resuming where it stopped so no corner of the map waits.
-    flush(ms = 3) { const end = performance.now() + ms; for (let k = 0, n = 0; k < dirty.length; k++) { const i = cursor; cursor = (cursor + 1) % dirty.length; if (!dirty[i]) continue; dirty[i] = 0; paint(i % COLS, Math.floor(i / COLS)); if (++n >= 6 && performance.now() > end) return; } },
+    // Paints for a few milliseconds at most: what is on screen first, then the rest where it left off.
+    flush(ms = 3, box = null) {
+      const end = performance.now() + ms;
+      let n = 0;
+      if (box) {
+        const a0 = Math.max(0, Math.floor(box[0] / CHUNK)), b0 = Math.max(0, Math.floor(box[1] / CHUNK)), a1 = Math.min(COLS - 1, Math.floor(box[2] / CHUNK)), b1 = Math.min(ROWS - 1, Math.floor(box[3] / CHUNK));
+        for (let b = b0; b <= b1; b++) for (let a = a0; a <= a1; a++) { const i = b * COLS + a; if (!dirty[i]) continue; dirty[i] = 0; paint(a, b); if (++n % 6 === 0 && performance.now() > end) return; }
+      }
+      for (let k = 0; k < dirty.length; k++) { const i = cursor; cursor = (cursor + 1) % dirty.length; if (!dirty[i]) continue; dirty[i] = 0; paint(i % COLS, Math.floor(i / COLS)); if (++n % 6 === 0 && performance.now() > end) return; }
+    },
     flushAll() { this.flush(Infinity); },
-    makeThen() { // The land as it was on day one.
-      const c = document.createElement('canvas'); c.width = TW; c.height = TH;
-      const cg = c.getContext('2d'), im = cg.createImageData(TW, TH); new Uint32Array(im.data.buffer).set(dead); cg.putImageData(im, 0, 0); return c;
+    dayOne() { // The continent as it was on day one, painted the first time it is asked for.
+      if (thenC) return thenC;
+      thenC = document.createElement('canvas'); thenC.width = TW; thenC.height = TH;
+      const cg = thenC.getContext('2d'), im = cg.createImageData(TW, TH), px = new Uint32Array(im.data.buffer);
+      for (let b = 0; b < ROWS; b++) for (let a = 0; a < COLS; a++) paint(a, b, true, px);
+      cg.putImageData(im, 0, 0); return thenC;
     },
   };
 }
