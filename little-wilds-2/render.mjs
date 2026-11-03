@@ -1,6 +1,8 @@
 // Everything above the ground: flora, the dead-and-revived objects, spirits, wildlife, weather and fog.
-import { TW, TH, LW, LH, CW, CH, CELL, ZONES, LANDS, SEA, hash, fbm, FC, FCOLS, FROWS, landAtTexel } from './world.mjs?v=7';
-import { GREEN, brushRadius, SPIRITS, gladeBuyable, gladePrice } from './sim.mjs?v=7';
+import { TW, TH, LW, LH, CW, CH, CELL, ZONES, LANDS, SEA, hash, fbm, FC, FCOLS, FROWS, landAtTexel } from './world.mjs?v=8';
+import { GREEN, brushRadius, SPIRITS, gladeBuyable, gladePrice } from './sim.mjs?v=8';
+import { pixelize, newFrame } from './pixel.mjs?v=8';
+import { critterCanvas, NATIVE } from './critters.mjs?v=8';
 const money = n => n >= 1e9 ? (n / 1e9).toFixed(2) + 'b' : n >= 1e6 ? (n / 1e6).toFixed(2) + 'm' : n >= 1e4 ? (n / 1e3).toFixed(1) + 'k' : Math.floor(n).toLocaleString();
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -21,7 +23,7 @@ const CRITTERS = {
 // Which cell of a land's 4x4 art sheet stands in for each kind of object.
 const BIOME = { 0: 0, 1: 1, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 7: 5, 8: 6, 9: 7 };
 const HEART = art(['.a.a.', 'aaaaa', 'aaaaa', '.aaa.', '..a..'], { a: '#ff9dbb' });
-const PETS = { deer: { row: 0, size: 34, speed: 6, label: 'A spirit deer' }, fawn: { row: 0, size: 23, speed: 7, label: 'A spirit fawn', young: true }, rabbit: { row: 1, size: 14, speed: 9, label: 'A moss rabbit' } };
+const PETS = { deer: { row: 0, size: 20, speed: 6, label: 'A spirit deer' }, fawn: { row: 0, size: 14, speed: 7, label: 'A spirit fawn', young: true }, rabbit: { row: 1, size: 11, speed: 9, label: 'A moss rabbit' } };
 
 function floraAtlas(P) {
   // Rows: 0 tuft, 1 tall grass, 2-6 flowers, 7 fern. Columns: three wind poses.
@@ -98,18 +100,25 @@ export function createRenderer(canvas, world, land, images) {
     fogG.putImageData(im, 0, 0);
     fogSoftG.clearRect(0, 0, CW, CH); fogSoftG.filter = 'blur(2px)'; fogSoftG.drawImage(fog, 0, 0); fogSoftG.filter = 'none';
   }
-  function sprite(atlas, frame, x, y, w, h = w, flip = false, cols = 4) {
-    const fx = frame % cols * SIZE, fy = Math.floor(frame / cols) * SIZE;
-    if (flip) { ctx.save(); ctx.translate(x, 0); ctx.scale(-1, 1); ctx.drawImage(atlas, fx, fy, SIZE, SIZE, -w / 2, y - h, w, h); ctx.restore(); }
-    else ctx.drawImage(atlas, fx, fy, SIZE, SIZE, x - w / 2, y - h, w, h);
+  // Every world sprite goes through the pixel converter at its size in ground texels, then sits on the texel grid.
+  // `base` is that size when a squash or hop stretches the drawing; `snap` is off inside a rotated or sheared frame.
+  const snapX = v => sx(Math.round((v - W / 2) / cam.z + cam.x)), snapY = v => sy(Math.round((v - H / 2) / cam.z + cam.y));
+  function blit(img, fx, fy, fw, fh, x, y, w, h, flip = false, base = null, snap = true) {
+    const z = cam.z, bw = base ? base[0] : w / z, bh = base ? base[1] : h / z, c = pixelize(img, fx, fy, fw, fh, bw, bh, flip);
+    if (!c) { if (flip) { ctx.save(); ctx.translate(x, 0); ctx.scale(-1, 1); ctx.drawImage(img, fx, fy, fw, fh, -w / 2, y - h, w, h); ctx.restore(); } else ctx.drawImage(img, fx, fy, fw, fh, x - w / 2, y - h, w, h); return; }
+    const dw = base ? w : c.width * z, dh = base ? h : c.height * z, left = x - dw / 2, top = y - dh;
+    ctx.drawImage(c, snap ? snapX(left) : left, snap ? snapY(top) : top, dw, dh);
   }
-  function biomeCell(n, x, y, w, h, b) { ctx.drawImage(b, n % 4 * 96, (n >> 2) * 96, 96, 96, x - w / 2, y - h, w, h); }
-  function drawArt(o, frame, x, y, w, h = w) {
+  function sprite(atlas, frame, x, y, w, h = w, flip = false, cols = 4, base = null, snap = true) {
+    blit(atlas, frame % cols * SIZE, Math.floor(frame / cols) * SIZE, SIZE, SIZE, x, y, w, h, flip, base, snap);
+  }
+  function biomeCell(n, x, y, w, h, b, base = null, snap = true) { blit(b, n % 4 * 96, (n >> 2) * 96, 96, 96, x, y, w, h, false, base, snap); }
+  function drawArt(o, frame, x, y, w, h = w, base = null, snap = true) {
     const b = images.biomes[o.art];
-    if (o.local && b) biomeCell(frame, x, y, w, h, b);
-    else if (o.mark) ctx.drawImage(images.landmarks, frame % 4 * 96, Math.floor(frame / 4) * 96, 96, 96, x - w / 2, y - h, w, h);
-    else if (b && BIOME[frame] !== undefined) biomeCell(BIOME[frame], x, y, w, h, b);
-    else sprite(images.world, frame, x, y, w, h);
+    if (o.local && b) biomeCell(frame, x, y, w, h, b, base, snap);
+    else if (o.mark) blit(images.landmarks, frame % 4 * 96, Math.floor(frame / 4) * 96, 96, 96, x, y, w, h, false, base, snap);
+    else if (b && BIOME[frame] !== undefined) biomeCell(BIOME[frame], x, y, w, h, b, base, snap);
+    else sprite(images.world, frame, x, y, w, h, false, 4, base, snap);
   }
   function drawGround(canvasSource) {
     const vw = W / cam.z, vh = H / cam.z, x0 = cam.x - vw / 2, y0 = cam.y - vh / 2;
@@ -180,7 +189,7 @@ export function createRenderer(canvas, world, land, images) {
           let k = 1;
           if (born !== undefined) { const a = (time - born) / 620; if (a < 1) k = 1 + Math.sin(a * Math.PI) * .22 * (1 - a) + (a < .25 ? (a / .25 - 1) * .55 : 0); else revives.delete(o.id); }
           const sway = o.size > 26 && !o.mark && !reduced ? Math.sin(tNow * 1.3 - o.x * .07) * .02 : 0;
-          ctx.save(); ctx.translate(x, y); ctx.transform(1, 0, sway, 1, 0, 0); art(o, o.live, 0, 0, size * (2 - k) ** .4, size * k); ctx.restore();
+          if (!sway && k === 1) art(o, o.live, x, y, size); else { ctx.save(); ctx.translate(snapX(x), snapY(y)); ctx.transform(1, 0, sway, 1, 0, 0); art(o, o.live, 0, 0, size * (2 - k) ** .4, size * k, [o.size, o.size], false); ctx.restore(); }
           if (o.live === 11 && !o.mark && !reduced) { const b = .5 + Math.sin(tNow * 2 + o.x) * .5; ctx.globalAlpha = .18 + b * .2; ctx.fillStyle = '#b8ffe6'; ctx.beginPath(); ctx.arc(x, y - size * .55, size * .32, 0, 7); ctx.fill(); ctx.globalAlpha = 1; }
         }
       } else if (it.t) {
@@ -199,7 +208,7 @@ export function createRenderer(canvas, world, land, images) {
         const hop = walking && !still ? Math.abs(Math.sin((a.anim || 0) * 8)) : 0, q = still ? 0 : walking ? (hop - .45) * .13 : a.working ? Math.sin(tNow * 5 + a.x) * .05 : Math.sin(tNow * 2 + a.x) * .018;
         const frame = still ? 0 : a.nap > 0 ? 1 : a.working ? 3 : 0, float = a.type === 2 ? 3 + Math.sin(tNow * 2 + a.x) : 0, size = (a.type === 3 ? 20 : 15) * z;
         ctx.fillStyle = 'rgba(30,24,18,.28)'; ctx.beginPath(); ctx.ellipse(x, y, size * (.28 - hop * .06), size * .09, 0, 0, 7); ctx.fill();
-        sprite(spirits, a.type * 4 + frame, x, y - (float + hop * 2.4) * z, size * (1 - q), size * (1 + q), a.dir < 0);
+        sprite(spirits, a.type * 4 + frame, x, y - (float + hop * 2.4) * z, size * (1 - q), size * (1 + q), a.dir < 0, 4, [size / z, size / z]);
         if (a.type === 2 && !s.paused && !reduced && quality > 0) { // Rainwisps carry their own little weather.
           const r = SPIRITS[2].r * CELL * z * .75; ctx.fillStyle = 'rgba(170,220,255,.7)';
           for (let n = 0; n < 7; n++) { const q2 = (tNow * 1.5 + n * .37) % 1, px = x + (hash(n, 1, 8) - .5) * r * 2, py = y - z * 2 + (hash(n, 2, 8) - .5) * r - (1 - q2) * 18 * z; ctx.fillRect(px, py, Math.max(1, z * .5), z * 2); }
@@ -292,12 +301,10 @@ export function createRenderer(canvas, world, land, images) {
     const frame = c.state === 'sleep' ? 3 : c.state === 'graze' ? 2 : c.state === 'idle' ? 0 : c.kind === 'rabbit' ? (hop > .25 ? 1 : 0) : (Math.sin(c.step * 4.5) > 0 ? 1 : 0);
     const breath = c.state === 'walk' || reduced ? 0 : Math.sin(t * 1.8 + c.n) * .012, size = def.size * z, lift = hop * 3 * z, walkBob = c.state === 'walk' && c.kind !== 'rabbit' ? Math.abs(Math.sin(c.step * 4.5)) * .5 * z : 0;
     ctx.globalAlpha = c.alpha;
-    ctx.fillStyle = 'rgba(30,24,18,.24)'; ctx.beginPath(); ctx.ellipse(x, y, size * .3, size * .08, 0, 0, 7); ctx.fill();
-    ctx.save(); ctx.translate(x, y - lift - walkBob); if (c.dir < 0) ctx.scale(-1, 1);
-    const pb = images.biomes[ZONES[c.zone].land];
-    if (def.row === 3 && pb) ctx.drawImage(pb, frame * 96, 288, 96, 96, -size / 2, -size * (1 + breath), size, size * (1 + breath));
-    else ctx.drawImage(images.pets, frame * 96, Math.min(def.row, 0) * 96 + (c.kind === 'rabbit' ? 96 : 0), 96, 96, -size / 2, -size * (1 + breath), size, size * (1 + breath));
-    ctx.restore();
+    // Hand-drawn pixel animals, one art pixel per ground texel. Away from the old valley, the land's own creature stands in for the deer.
+    const land = ZONES[c.zone].land, name = c.kind === 'rabbit' ? 'rabbit' : land ? NATIVE[land] : c.kind, art = critterCanvas(name, frame, c.dir < 0), aw = art.width * z, ah = art.height * z;
+    ctx.fillStyle = 'rgba(30,24,18,.24)'; ctx.beginPath(); ctx.ellipse(x, y, aw * .38, z * 1.4, 0, 0, 7); ctx.fill();
+    ctx.drawImage(art, snapX(x - aw / 2), snapY(y - lift - walkBob - ah), aw, ah);
     if (def.row === 0 && !reduced && quality > 0) { // Spirit deer shed slow motes of light.
       for (let k = 0; k < 3; k++) { const q = (t * .22 + k / 3 + c.n * .13) % 1; ctx.globalAlpha = c.alpha * Math.sin(q * 3.14) * .85; ctx.fillStyle = '#b8fff0'; ctx.fillRect(x + (hash(k, c.n, 41) - .5) * size * .8 + Math.sin(t + k) * z, y - size * (.35 + q * .85), Math.max(1, z * .7), Math.max(1, z * .7)); }
     }
@@ -433,7 +440,7 @@ export function createRenderer(canvas, world, land, images) {
     hitSpirit(s, px, py) { for (let i = s.spirits.length - 1; i >= 0; i--) { const a = s.spirits[i], size = (a.type === 3 ? 20 : 15) * cam.z, x = sx((a.rx ?? a.x) * CELL), y = sy((a.ry ?? a.y) * CELL); if (Math.abs(px - x) < Math.max(14, size * .4) && py > y - size && py < y + 6) return a; } return null; },
     draw(s, time, dt, opts) {
       if (cam.x !== cam.tx || cam.y !== cam.ty || cam.z !== cam.tz) { const k = 1 - Math.exp(-dt * (opts.camSpeed || 3.2)); cam.x += (cam.tx - cam.x) * k; cam.y += (cam.ty - cam.y) * k; cam.z += (cam.tz - cam.z) * k; if (Math.abs(cam.x - cam.tx) + Math.abs(cam.y - cam.ty) + Math.abs(cam.z - cam.tz) < .004) { cam.x = cam.tx; cam.y = cam.ty; cam.z = cam.tz; } }
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.imageSmoothingEnabled = false;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.imageSmoothingEnabled = false; newFrame();
       updateFog(s); spawnCritters(s, time);
       ctx.fillStyle = '#365568'; ctx.fillRect(0, 0, W, H);
       drawGround(land.canvas); drawWater(s, time); drawFlora(s, time, dt); drawProps(s, time, dt, opts.carry); drawCritters(s, time, dt); drawLight(s, time);
@@ -456,7 +463,7 @@ export function createRenderer(canvas, world, land, images) {
       }
       if (opts.carry) {
         const a = opts.carry, size = (a.type === 3 ? 24 : 19) * cam.z, wiggle = reduced ? 0 : Math.sin(time * .02) * .14;
-        ctx.save(); ctx.translate(a.px, a.py + 4); ctx.rotate(wiggle); sprite(images.spirits, 16 + a.type * 4 + (reduced ? 0 : Math.floor(time / 110) % 4), 0, size, size); ctx.restore();
+        ctx.save(); ctx.translate(a.px, a.py + 4); ctx.rotate(wiggle); sprite(images.spirits, 16 + a.type * 4 + (reduced ? 0 : Math.floor(time / 110) % 4), 0, size, size, size, false, 4, null, false); ctx.restore();
       }
     },
     snapshot(thenSide, l, width = 480) { // A small postcard of one land.
