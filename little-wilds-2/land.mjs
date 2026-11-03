@@ -1,7 +1,7 @@
 // The ground as one pixel canvas for the whole continent. Every texel keeps a small code for its grain,
 // shade and kind of ground; each land turns codes into colours through lookup tables, one per growth stage,
 // so the front line between dead and alive stays crisp and organic without a colour array per stage.
-import { TW, TH, LW, LH, CW, CH, CELL, fbm, noise, hash, LANDS, SEA, BEACH, ROCK, landAtTexel } from './world.mjs?v=5';
+import { TW, TH, LW, LH, CW, CH, CELL, fbm, noise, hash, LANDS, SEA, BEACH, ROCK, landAtTexel } from './world.mjs?v=6';
 
 const packed = (r, g, b) => (255 << 24) | (Math.max(0, Math.min(255, b)) << 16) | (Math.max(0, Math.min(255, g)) << 8) | Math.max(0, Math.min(255, r));
 const pack = c => packed(c[0], c[1], c[2]);
@@ -58,34 +58,34 @@ export async function createLand(w, progress = async () => {}) {
   const G = 4, gw = LW / G + 2, gh = LH / G + 2, shadeG = new Float32Array(gw * gh), blotchG = new Float32Array(gw * gh), jitG = new Float32Array(gw * gh), cw2 = LW / 2 + 2, crackG = new Float32Array(cw2 * (LH / 2 + 2));
   for (let id = 0; id < LANDS.length; id++) {
     await progress(id);
-    const s = 1 + id * 17, ox = LANDS[id].col * LW, oy = LANDS[id].row * LH;
+    const s = 1, ox = LANDS[id].col * LW, oy = LANDS[id].row * LH; // One seed and continent-wide coordinates, so the grain never jumps at a border.
     for (let gy = 0, k = 0; gy < gh; gy++) for (let gx = 0; gx < gw; gx++, k++) {
-      const x = gx * G, y = gy * G, e = fbm(x / 58, y / 58, s + 200), ex = fbm((x + 3) / 58, y / 58, s + 200), ey = fbm(x / 58, (y + 3) / 58, s + 200);
+      const x = ox + gx * G, y = oy + gy * G, e = fbm(x / 58, y / 58, s + 200), ex = fbm((x + 3) / 58, y / 58, s + 200), ey = fbm(x / 58, (y + 3) / 58, s + 200);
       shadeG[k] = 1 + Math.max(-.13, Math.min(.13, (e - ex) * 10 + (e - ey) * 14)) + (e - .5) * .12;
       blotchG[k] = fbm(x / 14, y / 14, s + 210); jitG[k] = fbm(x / 7, y / 7, s + 230);
     }
-    for (let gy = 0, k = 0; gy < LH / 2 + 2; gy++) for (let gx = 0; gx < cw2; gx++, k++) crackG[k] = noise(gx * 2 / 11, gy * 2 / 11, s + 240) - noise(gx * 2 / 11, gy * 2 / 11, s + 241);
+    for (let gy = 0, k = 0; gy < LH / 2 + 2; gy++) for (let gx = 0; gx < cw2; gx++, k++) crackG[k] = noise((ox + gx * 2) / 11, (oy + gy * 2) / 11, s + 240) - noise((ox + gx * 2) / 11, (oy + gy * 2) / 11, s + 241);
     for (let y = 0; y < LH; y++) {
       const fy = y / G, iy = Math.floor(fy), ty = fy - iy, icy = y >> 1, tcy = (y & 1) / 2;
       for (let x = 0, i = (oy + y) * TW + ox; x < LW; x++, i++) {
         const ix = x >> 2, tx = (x & 3) / 4, k = iy * gw + ix;
         const lerp = a => (a[k] * (1 - tx) + a[k + 1] * tx) * (1 - ty) + (a[k + gw] * (1 - tx) + a[k + gw + 1] * tx) * ty;
-        const grain = hash(x, y, s + 3);
+        const X = ox + x, Y = oy + y, grain = hash(X, Y, s + 3);
         jitter[i] = Math.max(-127, Math.min(127, Math.round(((lerp(jitG) - .5) * 1.1 + (grain - .5) * .45) * 160)));
         const e = w.edge[i], r = w.road[i];
         if (e) {
-          const d = w.edgeD[i] / 255, band = Math.min(3, Math.floor(noise(x / 5, y / 5, s + 220) * 4)), foam = e === SEA && d < .12 && noise(x / 4, y / 4, s + 250) > .5 ? 1 : 0, gr = grain > (e === ROCK ? .92 : .9) ? 1 : 0;
+          const d = w.edgeD[i] / 255, band = Math.min(3, Math.floor(noise(X / 5, Y / 5, s + 220) * 4)), foam = e === SEA && d < .12 && noise(X / 4, Y / 4, s + 250) > .5 ? 1 : 0, gr = grain > (e === ROCK ? .92 : .9) ? 1 : 0;
           code[i] = EDGE | (e - 1) << 12 | Math.round(d * 15) << 8 | band << 6 | foam << 5 | gr << 4;
           continue;
         }
         if (r && LANDS[id].road) {
           const rim = r === 1 && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([p, q]) => { const j = i + q * TW + p; return j >= 0 && j < N && !w.road[j]; }) ? 1 : 0;
           const pat = r === 2 ? (x % 5 === 0 ? 1 : 0) : r === 3 ? (y % 5 < 2 ? 1 : 0) : 0;
-          code[i] = ROAD | r << 8 | rim << 7 | pat << 6 | Math.min(3, Math.floor(noise(x / 4, y / 4, s + 260) * 4)) << 4 | (grain > .95 ? 1 : 0) << 3;
+          code[i] = ROAD | r << 8 | rim << 7 | pat << 6 | Math.min(3, Math.floor(noise(X / 4, Y / 4, s + 260) * 4)) << 4 | (grain > .95 ? 1 : 0) << 3;
           continue;
         }
         const kc = icy * cw2 + (x >> 1), tcx = (x & 1) / 2, crack = Math.abs((crackG[kc] * (1 - tcx) + crackG[kc + 1] * tcx) * (1 - tcy) + (crackG[kc + cw2] * (1 - tcx) + crackG[kc + cw2 + 1] * tcx) * tcy) < .026;
-        const blotch = lerp(blotchG), shadeQ = Math.max(0, Math.min(31, Math.round((lerp(shadeG) - .78) / .44 * 31))), fine = Math.min(3, Math.floor(noise(x / 3.4, y / 3.4, s + 220) * 4));
+        const blotch = lerp(blotchG), shadeQ = Math.max(0, Math.min(31, Math.round((lerp(shadeG) - .78) / .44 * 31))), fine = Math.min(3, Math.floor(noise(X / 3.4, Y / 3.4, s + 220) * 4));
         const gcls = grain > .992 ? 4 : grain > .95 ? 3 : grain > .9 ? 2 : grain > .88 ? 1 : 0;
         code[i] = shadeQ | fine << 5 | Math.min(5, Math.floor(blotch * 6)) << 7 | gcls << 10 | (crack ? 1 : 0) << 13 | (blotch > .55 ? 1 : 0) << 14;
       }
@@ -102,25 +102,26 @@ export async function createLand(w, progress = async () => {}) {
   for (let i = 0; i < CW * CH; i++) { const b = boxes[w.zone[i]], x = (i % CW) * CELL / CHUNK | 0, y = Math.floor(i / CW) * CELL / CHUNK | 0; if (x < b[0]) b[0] = x; if (y < b[1]) b[1] = y; if (x > b[2]) b[2] = x; if (y > b[3]) b[3] = y; }
   let view = null, zonesState = null, cursor = 0;
 
+  // Roads belong to their village's land; everything else takes the colours of the land whose ground it is.
   function colourAt(i, stage, L) {
-    const c = code[i];
+    const c = code[i], B = w.biome[i];
     if (c >= ROAD) return edges[L][(c - EDGE) * 3 + (stage === DEAD ? 0 : stage === SOIL || stage === RIM_A ? 1 : 2)];
-    if (w.waterT[i] < 255 && (stage === DEAD || stage === SOIL || stage === RIM_A)) return stage === DEAD ? wetDead[L] : wetSoil[L];
-    return ground[L][stage * STAGE + c];
+    if (w.waterT[i] < 255 && (stage === DEAD || stage === SOIL || stage === RIM_A)) return stage === DEAD ? wetDead[B] : wetSoil[B];
+    return ground[B][stage * STAGE + c];
   }
   function paint(cx, cy, dead = false, target = out) {
-    const x0 = cx * CHUNK, y0 = cy * CHUNK, f = view, L = landAtTexel(x0, y0), P = LANDS[L], E = edges[L];
+    const x0 = cx * CHUNK, y0 = cy * CHUNK, f = view, L = landAtTexel(x0, y0);
     for (let y = y0; y < y0 + CHUNK; y++) {
       const fy = Math.min(CH - 1.001, Math.max(0, y / CELL - .5)), iy = Math.floor(fy), ty = fy - iy;
       for (let x = x0, i = y * TW + x0; x < x0 + CHUNK; x++, i++) {
         const c = code[i];
-        if (c >= EDGE && c < ROAD) { target[i] = E[(c - EDGE) * 3 + (!dead && zonesState[w.zone[(y >> 2) * CW + (x >> 2)]].done ? 1 : 0)]; continue; }
+        if (c >= EDGE && c < ROAD) { target[i] = edges[w.biome[i]][(c - EDGE) * 3 + (!dead && zonesState[w.zone[(y >> 2) * CW + (x >> 2)]].done ? 1 : 0)]; continue; }
         if (dead) { target[i] = colourAt(i, DEAD, L); continue; }
         const t = w.waterT[i];
         if (t < 255 && zonesState[w.waterZ[i]].water * 254 >= t) {
           const shore = w.waterT[i + 1] === 255 || w.waterT[i - 1] === 255 || w.waterT[i + TW] === 255 || w.waterT[i - TW] === 255, fine = c < EDGE ? (c >> 5 & 3) * 3 >> 2 : 1;
           const wk = (shore ? .78 : .92 + fine * .07) * (t >= 178 ? 1 - (1 - t / 254) * .6 : 1);
-          target[i] = packed(P.water[0] * wk, P.water[1] * wk, P.water[2] * wk); continue;
+          const P = LANDS[w.biome[i]]; target[i] = packed(P.water[0] * wk, P.water[1] * wk, P.water[2] * wk); continue;
         }
         const fx = Math.min(CW - 1.001, Math.max(0, x / CELL - .5)), ix = Math.floor(fx), tx = fx - ix, n = iy * CW + ix;
         // Next to an edge there is nothing to blend with, so the ground takes its restored neighbours' value.

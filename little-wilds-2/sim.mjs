@@ -1,8 +1,8 @@
 // Rules of restoration. No DOM: runs in the game, offline catch-up and the pacing test alike.
 // One field covers the whole continent; glades are bought outward from the middle, and one army of spirits works all of it.
-import { CW, CN, LCW, LCH, LCN, ZONES, LANDS } from './world.mjs?v=5';
+import { CW, CN, LCW, LCH, LCN, ZONES, LANDS } from './world.mjs?v=6';
 
-const WORLD_VERSION = 3;
+const WORLD_VERSION = 4;
 export const SPIRIT_CAP = 60;
 export const GREEN = .6;           // the height a cell counts as restored
 export const SPIRITS = [
@@ -308,11 +308,23 @@ function loadField(s, w) {
 }
 // Raises each glade to at least the share of green it had reached, spreading out from its pond.
 function growTo(s, w, want) {
-  want.forEach((p, id) => {
-    if (p == null) return;
-    const z = s.zones[id], goal = (z.done ? 1 : p) * GREEN * w.count[id], list = w.order[id];
+  s.zones.forEach((z, id) => {
+    const p = want[id];
+    if (p == null && !z.done) return;
+    const goal = (z.done ? 1 : p) * GREEN * w.count[id], list = w.order[id];
     for (let k = 0; k < list.length && z.g < goal; k++) { const i = list[k], v = s.h[i]; if (v < GREEN) { s.h[i] = GREEN; z.g += GREEN - v; z.l += GREEN - v; } }
   });
+}
+// When the shape of the glades changes, each glade's share of green is laid back down around its own pond,
+// so old progress never keeps the outline of the old borders.
+function reshape(s, w, share) {
+  s.h = new Float32Array(CN);
+  s.zones.forEach((z, id) => {
+    if (!z.open) return;
+    const list = w.order[id], n = Math.round((z.done ? 1 : Math.min(1, share[id] || 0)) * list.length), v = z.bloomed ? .99 : z.done ? .75 : GREEN;
+    for (let k = 0; k < n; k++) s.h[list[k]] = v;
+  });
+  loadField(s, w);
 }
 // Before the open continent, each land was its own map. Their saved pieces are laid back into place here.
 function fromLands(o, w) {
@@ -336,6 +348,7 @@ function fromLands(o, w) {
   delete s.atlas; delete s.land; delete s.level; delete s.opened; delete s.gateFill; delete s.awayT;
   loadField(s, w);
   growTo(s, w, want);
+  reshape(s, w, s.zones.map((_, id) => zonePct(s, w, id)));
   s.objHp = w.objects.map((ob, k) => hp[k] >= 0 && !s.zones[ob.zone].done ? hp[k] : s.zones[ob.zone].done ? 0 : ob.hp);
   return s;
 }
@@ -353,6 +366,8 @@ export function decode(text, w) {
   if (raw.length !== CN) throw Error('Bad land data.');
   o.h = new Float32Array(CN);
   for (let i = 0; i < CN; i++) o.h[i] = raw.charCodeAt(i) / 255;
+  const share = o.zones.map((z, id) => (z.g || 0) / (GREEN * w.count[id]));
   loadField(o, w);
+  if (o.wv !== WORLD_VERSION) reshape(o, w, share.map((v, id) => Math.max(v, zonePct(o, w, id))));
   return o;
 }

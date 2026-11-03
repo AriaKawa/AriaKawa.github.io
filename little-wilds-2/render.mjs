@@ -1,6 +1,6 @@
 // Everything above the ground: flora, the dead-and-revived objects, spirits, wildlife, weather and fog.
-import { TW, TH, LW, LH, CW, CH, CELL, ZONES, LANDS, SEA, hash, fbm, FC, FCOLS, FROWS, landAtTexel } from './world.mjs?v=5';
-import { GREEN, brushRadius, SPIRITS, gladeBuyable, gladePrice } from './sim.mjs?v=5';
+import { TW, TH, LW, LH, CW, CH, CELL, ZONES, LANDS, SEA, hash, fbm, FC, FCOLS, FROWS, landAtTexel } from './world.mjs?v=6';
+import { GREEN, brushRadius, SPIRITS, gladeBuyable, gladePrice } from './sim.mjs?v=6';
 const money = n => n >= 1e9 ? (n / 1e9).toFixed(2) + 'b' : n >= 1e6 ? (n / 1e6).toFixed(2) + 'm' : n >= 1e4 ? (n / 1e3).toFixed(1) + 'k' : Math.floor(n).toLocaleString();
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -105,7 +105,7 @@ export function createRenderer(canvas, world, land, images) {
   }
   function biomeCell(n, x, y, w, h, b) { ctx.drawImage(b, n % 4 * 96, (n >> 2) * 96, 96, 96, x - w / 2, y - h, w, h); }
   function drawArt(o, frame, x, y, w, h = w) {
-    const b = images.biomes[o.land];
+    const b = images.biomes[o.art];
     if (o.local && b) biomeCell(frame, x, y, w, h, b);
     else if (o.mark) ctx.drawImage(images.landmarks, frame % 4 * 96, Math.floor(frame / 4) * 96, 96, 96, x - w / 2, y - h, w, h);
     else if (b && BIOME[frame] !== undefined) biomeCell(BIOME[frame], x, y, w, h, b);
@@ -119,14 +119,14 @@ export function createRenderer(canvas, world, land, images) {
   function bakeChunk(index, s) {
     let b = baked.get(index);
     if (!b) { const c = document.createElement('canvas'); c.width = FC + 18; c.height = FC + 14; b = { c, g: c.getContext('2d') }; b.g.imageSmoothingEnabled = false; baked.set(index, b); }
-    const cx = index % FCOLS * FC, cy = Math.floor(index / FCOLS) * FC, { c: atlas, cw, ch } = flora[landAtTexel(cx, cy)], f = shown || s.h;
+    const cx = index % FCOLS * FC, cy = Math.floor(index / FCOLS) * FC, { cw, ch } = flora[0], f = shown || s.h;
     b.g.clearRect(0, 0, b.c.width, b.c.height); b.empty = true;
     for (let k = F.start[index], end = k + F.count[index]; k < end; k++) {
       const h = f[F.cell[k]];
       if (h < F.thr[k] || F.phase[k] < LIVE_SHARE) continue;
       b.empty = false;
       const grow = Math.min(1, (h - F.thr[k]) / .07 + .25), dh = Math.round(ch * grow);
-      b.g.drawImage(atlas, cw, F.kind[k] * ch, cw, ch, Math.round(F.x[k] - cx + 9 - cw / 2), Math.round(F.y[k] - cy + 14 - dh), cw, dh);
+      b.g.drawImage(flora[world.biome[Math.min(TH - 1, F.y[k] | 0) * TW + (F.x[k] | 0)]].c, cw, F.kind[k] * ch, cw, ch, Math.round(F.x[k] - cx + 9 - cw / 2), Math.round(F.y[k] - cy + 14 - dh), cw, dh);
     }
   }
   // Most plants are baked into per-chunk images, so a full meadow costs a few draws rather than thousands.
@@ -143,13 +143,13 @@ export function createRenderer(canvas, world, land, images) {
     for (const i of visible) { const b = baked.get(i); if (b && !b.empty) ctx.drawImage(b.c, sx(i % FCOLS * FC - 9), sy(Math.floor(i / FCOLS) * FC - 14), b.c.width * z, b.c.height * z); }
     if (z < 1.7 || quality < 1) return;
     for (const i of visible) {
-      const { c, cw, ch } = flora[landAtTexel(i % FCOLS * FC, Math.floor(i / FCOLS) * FC)];
+      const { cw, ch } = flora[0];
       for (let k = F.start[i], stop = k + F.count[i]; k < stop; k++) {
         if (F.phase[k] >= LIVE_SHARE) continue;
         const h = f[F.cell[k]];
         if (h < F.thr[k]) continue;
         const px = F.x[k], py = F.y[k], gust = Math.sin(t * 1.3 - px * .018 - py * .009) + Math.sin(t * 2.7 + F.phase[k] * 18) * .25, pose = gust > .55 ? 2 : gust < -.75 ? 0 : 1, grow = Math.min(1, (h - F.thr[k]) / .07 + .25), dw = cw * z, dh = ch * z * grow;
-        ctx.drawImage(c, pose * cw, F.kind[k] * ch, cw, ch, sx(px) - dw / 2, sy(py) - dh, dw, dh);
+        ctx.drawImage(flora[world.biome[Math.min(TH - 1, py | 0) * TW + (px | 0)]].c, pose * cw, F.kind[k] * ch, cw, ch, sx(px) - dw / 2, sy(py) - dh, dw, dh);
       }
     }
   }
@@ -186,7 +186,7 @@ export function createRenderer(canvas, world, land, images) {
       } else if (it.t) {
         const t = it.t, g = Math.min(1, (s.age - t.born) / 9), x = sx(t.x * CELL), y = sy(t.y * CELL), size = (10 + 28 * g) * z;
         ctx.fillStyle = 'rgba(30,24,18,.2)'; ctx.beginPath(); ctx.ellipse(x, y - z, size * .3, size * .09, 0, 0, 7); ctx.fill();
-        const tb = images.biomes[landAtTexel(t.x * CELL, t.y * CELL)]; if (tb) biomeCell(1, x, y, size, size, tb); else sprite(atlas, t.blossom ? 2 : 1, x, y, size);
+        const tb = images.biomes[world.biome[Math.min(TH - 1, Math.floor(t.y * CELL)) * TW + Math.floor(t.x * CELL)]]; if (tb) biomeCell(1, x, y, size, size, tb); else sprite(atlas, t.blossom ? 2 : 1, x, y, size);
       } else if (it.c) { drawPet(it.c, tNow);
       } else {
         const a = it.a, k = 1 - Math.exp(-dt * 11);

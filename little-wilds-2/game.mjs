@@ -1,8 +1,8 @@
-import { makeWorld, ZONES, LANDS, CN, CW, CH, CELL, hash } from './world.mjs?v=5';
-import { newLand, tick, touch, buyGlade, gladeBuyable, gladePrice, landDone, landPct, landTouched, income, upgradeMax, catchUp, encode, decode, buySpirit, buyUpgrade, spiritCost, spiritOpen, upgradeCost, upgradeOpen, zonePct, zoneBloom, doneCount, initObjects, SPIRITS, UPGRADES, SPIRIT_CAP } from './sim.mjs?v=5';
-import { createLand } from './land.mjs?v=5';
-import { createRenderer } from './render.mjs?v=5';
-import { createAudio } from './audio.mjs?v=5';
+import { makeWorld, ZONES, LANDS, CN, CW, CH, CELL, hash } from './world.mjs?v=6';
+import { newLand, tick, touch, buyGlade, gladeBuyable, gladePrice, landDone, landPct, landTouched, income, upgradeMax, catchUp, encode, decode, buySpirit, buyUpgrade, spiritCost, spiritOpen, upgradeCost, upgradeOpen, zonePct, zoneBloom, doneCount, initObjects, SPIRITS, UPGRADES, SPIRIT_CAP } from './sim.mjs?v=6';
+import { createLand } from './land.mjs?v=6';
+import { createRenderer } from './render.mjs?v=6';
+import { createAudio } from './audio.mjs?v=6';
 
 const KEY = 'little-wilds-2-v2', CARDS_KEY = 'little-wilds-2-postcards', SOUND_KEY = 'little-wilds-2-muted', VOLUME_KEY = 'little-wilds-2-volume';
 const $ = id => document.getElementById(id);

@@ -65,15 +65,12 @@ export function terrain(col, row, x, y, pad = 0) {
     if (inset < shore - pad) { edgeDepth = Math.min(1, (shore - inset) / 40); return SEA; }
     if (inset < shore + 9 - pad) { edgeDepth = 0; return BEACH; }
   }
-  const vx = gx < LW * 1.5 ? LW : LW * 2, hy = gy < LH * 1.5 ? LH : LH * 2;
-  if (Math.abs(gx - vx) < 70) {
-    const d = Math.abs(gx - vx + (fbm(gy / 60, 3, 73) - .5) * 26), wide = 18 + fbm(gy / 23, 8, 74) * 14;
-    if (d < wide - pad) { edgeDepth = 1 - d / wide; return Math.abs(y - LH / 2) < 30 + fbm(x / 9, gy / 9, 77) * 16 ? PATH : ROCK; }
-  }
-  if (Math.abs(gy - hy) < 70) {
-    const d = Math.abs(gy - hy + (fbm(gx / 60, 5, 75) - .5) * 26), wide = 18 + fbm(gx / 23, 9, 76) * 14;
-    if (d < wide - pad) { edgeDepth = 1 - d / wide; return Math.abs(x - LW / 2) < 32 + fbm(gx / 9, y / 9, 78) * 16 ? PATH : ROCK; }
-  }
+  // No walls between lands: rocky outcrops rise here and there along wandering ridgelines instead.
+  // The old valley in the middle stays open meadow, fading in so no straight edge shows.
+  const away = Math.hypot(Math.max(LW - gx, gx - LW * 2, 0), Math.max(LH - gy, gy - LH * 2, 0));
+  const ridge = 1 - Math.abs(fbm(gx / 230, gy / 230, 91) * 2 - 1), lump = fbm(gx / 64, gy / 64, 93);
+  const rise = ridge * .78 + lump * .42 - Math.max(0, .3 - away / 500) - .985 + pad * .012;
+  if (rise > 0) { edgeDepth = Math.min(1, rise / .1); return ROCK; }
   return 0;
 }
 
@@ -321,7 +318,39 @@ export async function makeWorld(progress = async () => {}) {
       for (const p of list) { fx[fn] = p.x + ox; fy[fn] = p.y + oy; fcell[fn] = toG(p.cell); fkind[fn] = p.kind; fthr[fn] = p.thr; fphase[fn] = p.phase; fn++; }
     });
   }
-  // Neighbouring glades: they touch, or face each other across one mountain ridge.
+  // Glades belong to the whole continent, not to a rectangle: each cell joins the nearest glade through
+  // the same wavy warp the lands used, so glade edges (and the mist on them) wander across the old seams.
+  for (let y = 0, i = 0; y < CH; y++) for (let x = 0; x < CW; x++, i++) {
+    const tx = x * CELL + 2, ty = y * CELL + 2;
+    const wx = tx + (fbm(tx / 70, ty / 70, 511) - .5) * 85 + (fbm(tx / 19, ty / 19, 513) - .5) * 46, wy = ty + (fbm(tx / 70, ty / 70, 529) - .5) * 85 + (fbm(tx / 19, ty / 19, 531) - .5) * 46;
+    let best = 0, bd = Infinity;
+    for (const z of ZONES) { const d = (wx - z.px) ** 2 + (wy - z.py) ** 2; if (d < bd) { bd = d; best = z.id; } }
+    zone[i] = best;
+  }
+  for (let z = 0; z < ZONES.length; z++) cellsOf[z] = [];
+  for (let i = 0; i < CN; i++) if (!blocked[i]) cellsOf[zone[i]].push(i);
+  cellsOf.forEach((list, z) => { const p = ponds[z]; order[z] = Uint32Array.from(list.map(i => [i, Math.hypot(i % CW * CELL - p.x, Math.floor(i / CW) * CELL - p.y) + hash(i, 1, 7) * 26]).sort((a, b) => a[1] - b[1]).map(e => e[0])); });
+  near.fill(0);
+  for (let y = 0, i = 0; y < CH; y++) for (let x = 0; x < CW; x++, i++) for (let b = -1; b < 3 && !near[i]; b++) for (let a = -1; a < 3; a++) { const xx = x + a, yy = y + b; if (xx >= 0 && yy >= 0 && xx < CW && yy < CH && blocked[yy * CW + xx]) { near[i] = 1; break; } }
+  // Which land's ground each texel shows. The borders wander in broad bays and long fingers, and the last few
+  // texels are dithered, so one country runs into the next the way a meadow fades into heath.
+  const biome = new Uint8Array(N), gw = CW + 1, wxG = new Float32Array(gw * (CH + 1)), wyG = new Float32Array(gw * (CH + 1));
+  for (let gy = 0, k = 0; gy <= CH; gy++) for (let gx = 0; gx <= CW; gx++, k++) {
+    const x = gx * CELL, y = gy * CELL;
+    wxG[k] = (fbm(x / 620, y / 620, 601) - .5) * 560 + (fbm(x / 150, y / 150, 603) - .5) * 190 + (fbm(x / 38, y / 38, 605) - .5) * 46;
+    wyG[k] = (fbm(x / 620, y / 620, 611) - .5) * 560 + (fbm(x / 150, y / 150, 613) - .5) * 190 + (fbm(x / 38, y / 38, 615) - .5) * 46;
+  }
+  for (let y = 0, i = 0; y < TH; y++) {
+    const gy = y >> 2, ty = (y & 3) / 4;
+    for (let x = 0; x < TW; x++, i++) {
+      const gx = x >> 2, tx = (x & 3) / 4, k = gy * gw + gx, d = hash(x, y, 617) - .5;
+      const dx = (wxG[k] * (1 - tx) + wxG[k + 1] * tx) * (1 - ty) + (wxG[k + gw] * (1 - tx) + wxG[k + gw + 1] * tx) * ty, dy = (wyG[k] * (1 - tx) + wyG[k + 1] * tx) * (1 - ty) + (wyG[k + gw] * (1 - tx) + wyG[k + gw + 1] * tx) * ty;
+      biome[i] = landAtTexel(x + dx + d * 16, y + dy - d * 16);
+    }
+  }
+  // Village buildings keep their own land's art; trees and stones take the look of the ground they stand on.
+  for (const o of objects) { o.zone = zone[Math.min(CN - 1, Math.floor(o.y) * CW + Math.floor(o.x))]; o.art = o.local ? o.land : biome[Math.min(N - 1, Math.floor(o.y * CELL) * TW + Math.floor(o.x * CELL))]; }
+  // Neighbouring glades: they touch, or face each other across a ridge of rock.
   const links = ZONES.map(() => new Set()), across = (i, step, n) => { for (let k = 1; k <= n; k++) { const j = i + step * k; if (!blocked[j]) return j; const x = j % CW, y = Math.floor(j / CW), e = edge[(y * CELL + 2) * TW + x * CELL + 2]; if (e !== ROCK && e !== PATH) return -1; } return -1; };
   for (let y = 0; y < CH - 1; y++) for (let x = 0; x < CW - 1; x++) {
     const i = y * CW + x; if (blocked[i]) continue;
@@ -332,7 +361,7 @@ export async function makeWorld(progress = async () => {}) {
   }
   ZONES.forEach((z, n) => { z.adj = [...links[n]]; });
   const sub = a => a.slice(0, fn);
-  return { edge, edgeD, road, waterT, waterZ, blocked, near, zone, cellsOf, order, ponds, streams, objects, objStart, count: cellsOf.map(l => l.length), pend: new Float32Array(CN), active: [], dirty: () => {},
+  return { biome, edge, edgeD, road, waterT, waterZ, blocked, near, zone, cellsOf, order, ponds, streams, objects, objStart, count: cellsOf.map(l => l.length), pend: new Float32Array(CN), active: [], dirty: () => {},
     flora: { x: sub(fx), y: sub(fy), cell: sub(fcell), kind: sub(fkind), thr: sub(fthr), phase: sub(fphase), start: fstart, count: fcount } };
 }
 export const landOfCell = (w, i) => ZONES[w.zone[i]].land;
