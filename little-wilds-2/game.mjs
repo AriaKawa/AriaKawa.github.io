@@ -1,8 +1,8 @@
-import { makeWorld, ZONES, LANDS, CN, CW, CH, CELL, hash } from './world.mjs?v=6';
-import { newLand, tick, touch, buyGlade, gladeBuyable, gladePrice, landDone, landPct, landTouched, income, upgradeMax, catchUp, encode, decode, buySpirit, buyUpgrade, spiritCost, spiritOpen, upgradeCost, upgradeOpen, zonePct, zoneBloom, doneCount, initObjects, SPIRITS, UPGRADES, SPIRIT_CAP } from './sim.mjs?v=6';
-import { createLand } from './land.mjs?v=6';
-import { createRenderer } from './render.mjs?v=6';
-import { createAudio } from './audio.mjs?v=6';
+import { makeWorld, ZONES, LANDS, CN, CW, CH, CELL, hash } from './world.mjs?v=7';
+import { newLand, tick, touch, buyGlade, gladeBuyable, gladePrice, landDone, landPct, landTouched, income, upgradeMax, catchUp, encode, decode, buySpirit, buyUpgrade, spiritCost, spiritOpen, upgradeCost, upgradeOpen, zonePct, zoneBloom, doneCount, initObjects, SPIRITS, UPGRADES, SPIRIT_CAP } from './sim.mjs?v=7';
+import { createLand } from './land.mjs?v=7';
+import { createRenderer } from './render.mjs?v=7';
+import { createAudio } from './audio.mjs?v=7';
 
 const KEY = 'little-wilds-2-v2', CARDS_KEY = 'little-wilds-2-postcards', SOUND_KEY = 'little-wilds-2-muted', VOLUME_KEY = 'little-wilds-2-volume';
 const $ = id => document.getElementById(id);
@@ -14,7 +14,7 @@ const audio = createAudio();
 let images, world, land, view, s;
 let ready = false, modal = '', lastUI = 0, lastSave = 0, last = performance.now(), toastTimer, bannerTimer, lastActive = performance.now(), frameNo = 0, slowFrames = 0;
 const SPIRIT_SLICES = 6;
-let thenX = null, timelapse = null, currentZone = 0, seedShown = 0, wasHidden = 0, mapFrom = null;
+let preview = null, thenX = null, timelapse = null, currentZone = 0, seedShown = 0, wasHidden = 0, mapFrom = null;
 const pointer = { x: 0, y: 0, on: false, holding: false, id: null, kb: false };
 let glideTo = -1, glideAt = 0, gliding = 0, quarters = [], rateAt = 0, rateSeeds = 0, rate = 0, pulseTimer;
 function pulseSeeds() { $('seeds').parentElement.classList.add('pulse'); clearTimeout(pulseTimer); pulseTimer = setTimeout(() => $('seeds').parentElement.classList.remove('pulse'), 170); }
@@ -22,7 +22,7 @@ let carry = null, panning = false; const pointers = new Map(); let pinch = 0;
 
 function toast(text) { $('toast').textContent = text; $('toast').classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => $('toast').classList.remove('show'), 3200); }
 function banner(title, sub = '', ms = 5200) { $('banner-title').textContent = title; $('banner-sub').textContent = sub; $('banner').classList.add('show'); clearTimeout(bannerTimer); bannerTimer = setTimeout(() => $('banner').classList.remove('show'), ms); }
-function save() { if (!s) return; try { localStorage.setItem(KEY, encode(s)); } catch { toast('Saving is unavailable in this browser.'); } }
+function save() { if (!s || preview) return; try { localStorage.setItem(KEY, encode(s)); } catch { toast('Saving is unavailable in this browser.'); } }
 const loading = text => { $('loading').querySelector('span').textContent = text; return nextFrame(); };
 
 // The whole continent is built once, a land at a time behind the loading screen.
@@ -35,7 +35,8 @@ async function buildWorld() {
 function attach() {
   initObjects(s, world);
   land.setSource(s.h, s.zones); land.flushAll();
-  view?.dispose(); quarters = []; glideTo = -1; mapFrom = null;
+  view?.dispose(); quarters = []; glideTo = -1; mapFrom = null; preview = null;
+  $('btn-preview').textContent = 'Preview'; $('btn-preview').setAttribute('aria-pressed', false); $('btn-map').textContent = 'Map';
   view = createRenderer($('world'), world, land, images);
   view.onPet = (label, zone) => toast(`${label} has come back to ${ZONES[zone].name}.`);
   buildDock();
@@ -52,6 +53,7 @@ $('hud').addEventListener('click', e => {
   audio.start(); wake();
   const t = +b.dataset.spirit;
   if (!spiritOpen(s, t)) { toast(`${SPIRITS[t].name} comes when ${SPIRITS[t].need} glade${SPIRITS[t].need > 1 ? 's are' : ' is'} restored.`); return; }
+  if (preview) { toast('Switch Preview off to buy.'); return; }
   if (buySpirit(s, t)) { audio.buy(); save(); updateUI(); const a = s.spirits[s.spirits.length - 1], home = view.toCell(innerWidth / 2, innerHeight / 2), cell = Math.round(Math.max(0, Math.min(CH - 1, home.y))) * CW + Math.round(Math.max(0, Math.min(CW - 1, home.x))); if (s.zones[world.zone[cell]].open && !world.blocked[cell]) { a.x = home.x; a.y = home.y; } view.pop(a.x, a.y); toast(`${SPIRITS[t].name}: ${SPIRITS[t].job}`); }
   else if (s.spirits.length >= SPIRIT_CAP) toast('The continent has all the spirits it can hold.');
 });
@@ -101,7 +103,7 @@ function show(type, html) { releaseAll(); modal = type; $('modal-body').innerHTM
 $('close').onclick = () => $('modal').close();
 $('modal').addEventListener('close', () => { modal = ''; wake(); });
 $('modal').addEventListener('click', e => { if (e.target === $('modal')) { const r = $('modal').getBoundingClientRect(); if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) $('modal').close(); } });
-$('hud').addEventListener('click', e => { if (e.target.closest('#tend')) { audio.start(); show('tend', tendHTML()); } });
+$('hud').addEventListener('click', e => { if (e.target.closest('#tend') && !preview) { audio.start(); show('tend', tendHTML()); } });
 $('modal-body').addEventListener('click', e => {
   const up = e.target.closest('[data-up]');
   if (up && buyUpgrade(s, up.dataset.up)) { audio.buy(); save(); show('tend', tendHTML()); return; }
@@ -156,6 +158,28 @@ function toggleMap(out = !mapFrom) {
   $('btn-map').textContent = mapFrom ? 'Back' : 'Map';
 }
 
+// Preview: the whole continent finished, for a look. Nothing runs and nothing saves until it is switched off,
+// and switching off puts every field, glade and stone back exactly as it was.
+function togglePreview() {
+  releaseAll(); thenX = null; $('btn-then').setAttribute('aria-pressed', false);
+  if (!preview) {
+    preview = { h: s.h, zones: s.zones, objHp: s.objHp, active: world.active.slice(), pend: world.pend.slice() };
+    s.h = new Float32Array(CN); for (let i = 0; i < CN; i++) if (!world.blocked[i]) s.h[i] = .99;
+    s.zones = s.zones.map(z => ({ ...z, open: true, done: true, bloomed: true, water: 1, sweep: -1 }));
+    s.objHp = s.objHp.map(() => 0);
+    world.active.length = 0; world.pend.fill(0);
+    toggleMap(true); banner('Preview', 'The whole continent, restored. Press Preview again to go back.', 4200);
+  } else {
+    Object.assign(s, { h: preview.h, zones: preview.zones, objHp: preview.objHp });
+    world.active.length = 0; world.active.push(...preview.active); world.pend.set(preview.pend);
+    preview = null; toggleMap(false);
+  }
+  land.setSource(s.h, s.zones); land.flushAll(); view.allFlora(); view.regreet(); quarters = []; last = performance.now();
+  $('btn-preview').setAttribute('aria-pressed', !!preview); $('btn-preview').textContent = preview ? 'Back to mine' : 'Preview';
+  updateUI();
+}
+$('btn-preview').onclick = () => { audio.start(); togglePreview(); };
+
 /* Then and now, sound */
 $('btn-map').onclick = () => { audio.start(); toggleMap(); };
 $('btn-then').onclick = () => { $('banner').classList.remove('show'); thenX = thenX == null ? innerWidth / 2 : null; $('btn-then').setAttribute('aria-pressed', thenX != null); if (thenX != null) toast('Drag across the land to compare. Press again to finish.'); };
@@ -174,6 +198,7 @@ canvas.addEventListener('pointerdown', e => {
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY }); pointer.x = e.clientX; pointer.y = e.clientY; pointer.on = true;
   if (thenX != null) { thenX = e.clientX; pointer.id = e.pointerId; return; }
   if (pointers.size > 1 || e.button !== 0) { pointer.holding = false; if (carry) { carry.held = false; carry = null; } panning = true; pinch = 0; return; }
+  if (preview) { panning = true; pinch = 0; return; } // While previewing, a drag only looks around.
   const sign = view.hitSign(e.clientX, e.clientY);
   if (sign >= 0) { pointers.delete(e.pointerId); wakeGlade(sign); return; }
   const under = view.toCell(e.clientX, e.clientY), cellAt = Math.round(Math.max(0, Math.min(CH - 1, under.y))) * CW + Math.round(Math.max(0, Math.min(CW - 1, under.x))), zoneAt = world.zone[cellAt];
@@ -215,9 +240,10 @@ addEventListener('keydown', e => {
   wake();
   const moves = { ArrowLeft: [90, 0], ArrowRight: [-90, 0], ArrowUp: [0, 90], ArrowDown: [0, -90], KeyA: [90, 0], KeyD: [-90, 0], KeyW: [0, 90], KeyS: [0, -90] };
   if (moves[e.code]) { e.preventDefault(); view.pan(...moves[e.code]); }
-  if (e.code === 'Space' && !e.repeat) { e.preventDefault(); audio.start(); pointer.holding = true; pointer.kb = true; if (!pointer.on) { pointer.x = innerWidth / 2; pointer.y = innerHeight / 2; pointer.on = true; } }
+  if (e.code === 'Space' && !e.repeat && !preview) { e.preventDefault(); audio.start(); pointer.holding = true; pointer.kb = true; if (!pointer.on) { pointer.x = innerWidth / 2; pointer.y = innerHeight / 2; pointer.on = true; } }
   if (e.key === '+' || e.key === '=') view.zoomAt(1.2); if (e.key === '-') view.zoomAt(1 / 1.2);
   if (e.code === 'KeyM' && !e.repeat) toggleMap();
+  if (e.code === 'KeyP' && !e.repeat) togglePreview();
   if (e.code === 'KeyH') { document.body.classList.toggle('quiet'); lastActive = -1e9; }
 });
 addEventListener('keyup', e => { if (e.code === 'Space' && pointer.kb) { pointer.holding = false; pointer.kb = false; } });
@@ -264,7 +290,7 @@ function frame(now) {
   requestAnimationFrame(frame);
   const dt = Math.min(.05, Math.max(0, (now - last) / 1000)); last = now;
   if (!ready || document.hidden) return;
-  if (!$('modal').open && !timelapse) {
+  if (!$('modal').open && !timelapse && !preview) {
     const ev = [];
     if (pointer.holding && !s.paused && thenX == null) {
       const c = view.toCell(pointer.x, pointer.y), gain = touch(s, world, c.x, c.y, dt, ev);
@@ -288,7 +314,7 @@ function frame(now) {
 document.addEventListener('visibilitychange', () => {
   releaseAll();
   if (document.hidden) { wasHidden = Date.now(); save(); }
-  else { if (wasHidden && ready) returnFrom((Date.now() - wasHidden) / 1000); wasHidden = 0; last = performance.now(); wake(); }
+  else { if (wasHidden && ready && !preview) returnFrom((Date.now() - wasHidden) / 1000); wasHidden = 0; last = performance.now(); wake(); }
 });
 addEventListener('pagehide', save);
 
@@ -304,7 +330,7 @@ async function main() {
     const away = (Date.now() - (s.last || Date.now())) / 1000;
     await loading('Waking the spirits…');
     attach();
-    if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) window.__lw = { get s() { return s; }, get w() { return world; }, get v() { return view; }, get land() { return land; }, wakeGlade, toggleMap, celebrate, tick: (n, dt = .5) => { const ev = []; for (let k = 0; k < n; k++) tick(s, world, dt, ev); handle(ev, performance.now()); land.markAll(); view.allFlora(); updateUI(); return ev.length; }, grant: n => { s.seeds += n; updateUI(); } };
+    if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) window.__lw = { togglePreview, get preview() { return !!preview; }, get s() { return s; }, get w() { return world; }, get v() { return view; }, get land() { return land; }, wakeGlade, toggleMap, celebrate, tick: (n, dt = .5) => { const ev = []; for (let k = 0; k < n; k++) tick(s, world, dt, ev); handle(ev, performance.now()); land.markAll(); view.allFlora(); updateUI(); return ev.length; }, grant: n => { s.seeds += n; updateUI(); } };
     ready = true; $('loading').style.display = 'none'; updateUI();
     if (raw) returnFrom(away); else banner('Little Wilds', 'Nothing has grown here in a long time.', 4500);
     requestAnimationFrame(frame);

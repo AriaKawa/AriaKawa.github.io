@@ -1,6 +1,6 @@
 // Everything above the ground: flora, the dead-and-revived objects, spirits, wildlife, weather and fog.
-import { TW, TH, LW, LH, CW, CH, CELL, ZONES, LANDS, SEA, hash, fbm, FC, FCOLS, FROWS, landAtTexel } from './world.mjs?v=6';
-import { GREEN, brushRadius, SPIRITS, gladeBuyable, gladePrice } from './sim.mjs?v=6';
+import { TW, TH, LW, LH, CW, CH, CELL, ZONES, LANDS, SEA, hash, fbm, FC, FCOLS, FROWS, landAtTexel } from './world.mjs?v=7';
+import { GREEN, brushRadius, SPIRITS, gladeBuyable, gladePrice } from './sim.mjs?v=7';
 const money = n => n >= 1e9 ? (n / 1e9).toFixed(2) + 'b' : n >= 1e6 ? (n / 1e6).toFixed(2) + 'm' : n >= 1e4 ? (n / 1e3).toFixed(1) + 'k' : Math.floor(n).toLocaleString();
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -242,7 +242,7 @@ export function createRenderer(canvas, world, land, images) {
     const near = ZONES.filter(z => s.zones[z.id].open).map(z => [(z.px - cam.x) ** 2 + (z.py - cam.y) ** 2, z.id]).sort((a, b) => a[0] - b[0]).slice(0, 12).map(e => e[1]);
     const want = [];
     for (const id of near) wantFor(s, id, want);
-    if (!greeted) { const all = []; ZONES.forEach(z => wantFor(s, z.id, all)); for (const [kind, zone, n] of all) if (PETS[kind]) announced.add(zone * 16 + n); }
+    if (!greeted) { announced.clear(); const all = []; ZONES.forEach(z => wantFor(s, z.id, all)); for (const [kind, zone, n] of all) if (PETS[kind]) announced.add(zone * 16 + n); }
     greeted = true;
     const key = want.map(w => w[1] * 16 + w[2]).join();
     if (key === critters.key) return;
@@ -413,6 +413,8 @@ export function createRenderer(canvas, world, land, images) {
     hitSign(px, py) { for (const b of signs) if (px >= b.x && py >= b.y && px <= b.x + b.w && py <= b.y + b.h) return b.i; return -1; },
     hitPet(px, py) { for (const c of critters) { const d = PETS[c.kind]; if (!d) continue; const size = d.size * cam.z, x = sx(c.x), y = sy(c.y); if (Math.abs(px - x) < Math.max(16, size * .45) && py > y - Math.max(24, size) && py < y + 8) return c; } return null; },
     pet(c) { c.hearts = 1.6; c.dir = c.dir || 1; },
+    // Wildlife already on the land arrives quietly, as on a fresh load. Used when the whole state is swapped.
+    regreet() { greeted = false; critterAt = -1; },
     cam, resize, focusZone, focusAll, focusLand, zoomAt, pan, toCell, toWorld,
     viewBox() { return [cam.x - W / 2 / cam.z, cam.y - H / 2 / cam.z, cam.x + W / 2 / cam.z, cam.y + H / 2 / cam.z]; },
     screenOf(x, y) { return { x: sx(x), y: sy(y) }; },
