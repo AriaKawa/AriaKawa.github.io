@@ -1,6 +1,6 @@
 // Rules of restoration. No DOM: runs in the game, offline catch-up and the pacing test alike.
 // One field covers the whole continent; glades are bought outward from the middle, and one army of spirits works all of it.
-import { CW, CN, LCW, LCH, LCN, ZONES, LANDS } from './world.mjs';
+import { CW, CN, LCW, LCH, LCN, ZONES, LANDS } from './world.mjs?v=5';
 
 const WORLD_VERSION = 3;
 export const SPIRIT_CAP = 60;
