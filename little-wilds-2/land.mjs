@@ -48,13 +48,26 @@ export function createLand(w, landIndex) {
     const e = w.edge[i]; if (!e) continue;
     const d = w.edgeD[i], grain = hash(x, y, s + 3), fine = noise(x / 5, y / 5, s + 220), band = Math.floor(fine * 4) / 4;
     let a, b;
-    if (e === SEA) { const k = .72 + (1 - d) * .32 + band * .1, foam = d < .12 && noise(x / 4, y / 4, s + 250) > .5; a = mixTo(P.crack, [0, 0, 0], d * .25); b = foam ? [238, 246, 244] : P.water.map(v => v * k); }
+    if (e === SEA) { const k = .72 + (1 - d) * .32 + band * .1, foam = d < .12 && noise(x / 4, y / 4, s + 250) > .5; a = mixTo(P.water, [72, 84, 104], .62).map(v => v * (1 - d * .22)); b = foam ? [238, 246, 244] : P.water.map(v => v * k); }
     else if (e === BEACH) { const k = .94 + band * .1 + (grain > .9 ? .05 : 0); a = P.dead.map(v => v * 1.14 * k); b = sand.map(v => v * k); }
     else if (e === ROCK) { const h = d + (band - .4) * .35, k = .72 + h * .4 + (grain > .92 ? .06 : 0); a = mixTo(P.crack, P.dead, Math.min(1, h)).map(v => v * k); b = h > .78 ? peak : h > .42 ? [112 * k, 104 * k, 100 * k] : mixTo(P.soil, P.grass, .7).map(v => v * k); }
     else { const k = .95 + band * .12; a = P.crack.map(v => v * 1.12 * k); b = mixTo(P.soil, sand, .55).map(v => v * k); }
     const far = beyond(x, y);
-    if (far) { const m = far[1] * .8, tint = mixTo(far[0].lush, far[0].mist, .55); a = mixTo(a, far[0].mist, m); b = mixTo(b, tint, m); }
+    if (far && e !== SEA) { const m = far[1] * .8, tint = mixTo(far[0].lush, far[0].mist, .55); a = mixTo(a, far[0].mist, m); b = mixTo(b, tint, m); }
     dead[i] = packed(a[0], a[1], a[2]); alive[i] = packed(b[0], b[1], b[2]);
+  }
+  // Village ground reads as road in every growth stage: faint ruts while dead, packed dirt, planks and crops once alive.
+  if (P.road) for (let y = 0, i = 0; y < TH; y++) for (let x = 0; x < TW; x++, i++) {
+    const r = w.road[i]; if (!r) continue;
+    const grain = hash(x, y, s + 3), k = .92 + Math.floor(noise(x / 4, y / 4, s + 260) * 4) * .05 + (grain > .95 ? .12 : 0);
+    let a, b, c;
+    if (r === 2) { const gap = x % 5 === 0 ? .62 : 1; a = [104 * gap, 96 * gap, 88 * gap]; b = c = [142 * gap, 100 * gap, 62 * gap]; }
+    else if (r === 3) { const row = y % 5 < 2; a = (row ? P.crack : P.dead).map(v => v * k); b = (row ? P.soil : mixTo(P.soil, P.road, .4)).map(v => v * k); c = (row ? P.grass : P.soil).map(v => v * k); }
+    else {
+      const rim = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([p, q]) => { const j = i + q * TW + p; return j >= 0 && j < N && !w.road[j]; }) ? .8 : 1;
+      a = mixTo(P.dead, P.crack, .4).map(v => v * k * rim); b = P.road.map(v => v * k * rim); c = b;
+    }
+    dead[i] = packed(a[0], a[1], a[2]); soil[i] = rimA[i] = packed(b[0] * .86, b[1] * .86, b[2] * .86); grass[i] = lush[i] = rimB[i] = packed(c[0], c[1], c[2]);
   }
   const canvas = document.createElement('canvas');
   canvas.width = TW; canvas.height = TH;

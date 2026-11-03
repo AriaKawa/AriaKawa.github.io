@@ -46,3 +46,4 @@ h2{margin:0 26px 3px 0;font-weight:600;font-size:27px}p.sub{margin:0 0 14px;colo
 
 #modal.wide{width:min(96vw,1120px);max-width:96vw}
 #continent{display:block;width:100%;height:auto;max-height:72vh;object-fit:contain;cursor:pointer;border-radius:6px;image-rendering:pixelated;touch-action:manipulation}
+.vz.wake{border-color:var(--gold)}.vz.wake small{color:var(--gold)}.tools button.can{border-color:var(--gold);color:var(--gold);animation:ready 2.6s ease-in-out infinite}#cont-note button{margin:6px 0 0 8px}#cont-note button:disabled{opacity:.6}

@@ -1,6 +1,7 @@
 // Everything above the ground: flora, the dead-and-revived objects, spirits, wildlife, weather and fog.
 import { TW, TH, CW, CH, CELL, ZONES, LANDS, SEA, landAt, hash, fbm } from './world.mjs';
-import { GREEN, brushRadius, SPIRITS, gateState } from './sim.mjs';
+import { GREEN, brushRadius, SPIRITS, gateState, gladeBuyable, gladePrice, landPrice } from './sim.mjs';
+const money = n => n >= 1e9 ? (n / 1e9).toFixed(2) + 'b' : n >= 1e6 ? (n / 1e6).toFixed(2) + 'm' : n >= 1e4 ? (n / 1e3).toFixed(1) + 'k' : Math.floor(n).toLocaleString();
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -89,7 +90,7 @@ export function createRenderer(canvas, world, land, images) {
     if (!changed) return;
     const im = fogG.createImageData(CW, CH), m = land.P.mist;
     for (let i = 0; i < world.zone.length; i++) {
-      const a = fogAlpha[world.zone[i]]; if (!a) continue;
+      const a = fogAlpha[world.zone[i]]; if (!a || world.edge[(Math.floor(i / CW) * CELL + 2) * TW + i % CW * CELL + 2] === SEA) continue;
       const k = i * 4, wisp = wisps[i];
       im.data[k] = m[0]; im.data[k + 1] = m[1]; im.data[k + 2] = m[2]; im.data[k + 3] = a * (120 + wisp * 150);
     }
@@ -104,8 +105,8 @@ export function createRenderer(canvas, world, land, images) {
   function biomeCell(n, x, y, w, h = w) { ctx.drawImage(images.biome, n % 4 * 96, (n >> 2) * 96, 96, 96, x - w / 2, y - h, w, h); }
   function drawArt(o, frame, x, y, w, h = w) {
     const b = images.biome;
-    if (o.mark && (!b || frame >= GATE_DEAD)) ctx.drawImage(images.landmarks, frame % 4 * 96, Math.floor(frame / 4) * 96, 96, 96, x - w / 2, y - h, w, h);
-    else if (o.mark) biomeCell(8 + o.zone % 2 * 2 + (frame === o.live ? 1 : 0), x, y, w, h);
+    if (o.local && b) biomeCell(frame, x, y, w, h);
+    else if (o.mark) ctx.drawImage(images.landmarks, frame % 4 * 96, Math.floor(frame / 4) * 96, 96, 96, x - w / 2, y - h, w, h);
     else if (b && BIOME[frame] !== undefined) biomeCell(BIOME[frame], x, y, w, h);
     else sprite(images.world, frame, x, y, w, h);
   }
@@ -202,12 +203,11 @@ export function createRenderer(canvas, world, land, images) {
     }
   }
   function drawGate(s, g, time) {
-    const state = gateState(s, g), x = sx(g.x), y = sy(g.y), size = g.size * cam.z, fill = state === 'open' ? 1 : s.gateFill[g.target] || 0, frame = { mark: true, live: GATE_DEAD + 1 };
+    const state = gateState(s, g), x = sx(g.x), y = sy(g.y), size = g.size * cam.z, fill = state === 'open' ? 1 : 0, frame = { mark: true, live: GATE_DEAD + 1 };
     ctx.fillStyle = 'rgba(30,24,18,.25)'; ctx.beginPath(); ctx.ellipse(x, y - cam.z, size * .36, size * .1, 0, 0, 7); ctx.fill();
     drawArt(frame, fill >= 1 ? GATE_DEAD + 1 : GATE_DEAD, x, y, size);
-    if (fill > 0 && fill < 1) { const edge = y - size * fill; ctx.save(); ctx.beginPath(); ctx.rect(x - size, edge, size * 2, y - edge + cam.z); ctx.clip(); drawArt(frame, GATE_DEAD + 1, x, y, size); ctx.restore(); }
     if (state === 'ready' && !reduced) { const b = .5 + Math.sin(time * .004) * .5; ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .08 + b * .12; ctx.fillStyle = '#ffd98a'; ctx.beginPath(); ctx.arc(x, y - size * .45, size * (.36 + b * .05), 0, 7); ctx.fill(); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; }
-    const label = state === 'locked' ? '???' : LANDS[g.target].name + (state === 'ready' ? ' - hold to open' : '');
+    const label = LANDS[g.target].name + (state === 'open' ? '' : ` · buy for ${money(landPrice(s))}`);
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = '600 ' + Math.round(clamp(cam.z * 4.5, 12, 20)) + 'px "Pixelify Sans",Georgia,serif';
     const ly = y - size - clamp(cam.z * 4, 8, 16) < 12 ? y + 14 : y - size - clamp(cam.z * 4, 8, 16);
     const half = ctx.measureText(label).width / 2 + 8, lx = clamp(x, half, W - half);
@@ -367,14 +367,25 @@ export function createRenderer(canvas, world, land, images) {
       }
     }
   }
+  // Sleeping glades next to open ground carry a sign you can click to wake them.
+  let signs = [];
   function drawLabels(s) {
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; signs = [];
     ZONES.forEach((z, i) => {
       if (fogAlpha[i] < .5) return;
       const x = sx(z.px), y = sy(z.py); if (x < -120 || y < -40 || x > W + 120 || y > H + 40) return;
-      ctx.globalAlpha = fogAlpha[i] * .85; ctx.fillStyle = '#4b4438'; ctx.font = '600 ' + Math.round(clamp(cam.z * 7, 15, 30)) + 'px "Pixelify Sans",Georgia,serif'; ctx.fillText(z.name, x, y);
-      const openable = z.adj.some(n => s.zones[n].open);
-      if (openable) { ctx.font = Math.round(clamp(cam.z * 4, 11, 16)) + 'px "Pixelify Sans",Georgia,serif'; ctx.fillText('wakes when its neighbor is restored', x, y + clamp(cam.z * 7, 16, 30)); }
+      const size = Math.round(clamp(cam.z * 7, 15, 28));
+      ctx.globalAlpha = fogAlpha[i] * .9;
+      if (gladeBuyable(s, i)) {
+        const price = gladePrice(s, i), can = s.seeds >= price, text = `Wake for ${money(price)}`, small = Math.round(size * .78);
+        ctx.font = '600 ' + small + 'px "Pixelify Sans",Georgia,serif'; const tw = ctx.measureText(text).width; ctx.font = '600 ' + size + 'px "Pixelify Sans",Georgia,serif';
+        const bw = Math.max(tw, ctx.measureText(z.name).width) + 26, bh = size + small + 18, bx = clamp(x - bw / 2, 8, W - bw - 8), by = clamp(y - bh / 2, 96, H - bh - 112), beat = can && !reduced ? .5 + Math.sin(performance.now() * .004) * .5 : 0;
+        ctx.fillStyle = '#3a2e23'; ctx.strokeStyle = can ? `rgb(255,${200 + beat * 30},${90 + beat * 60})` : '#7a6650'; ctx.lineWidth = can ? 3 : 2;
+        ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 7); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#fff6df'; ctx.fillText(z.name, bx + bw / 2, by + 6 + size / 2);
+        ctx.font = '600 ' + small + 'px "Pixelify Sans",Georgia,serif'; ctx.fillStyle = can ? '#ffd36b' : '#c9b8a0'; ctx.fillText(text, bx + bw / 2, by + 9 + size + small / 2);
+        signs.push({ i, x: bx, y: by, w: bw, h: bh });
+      } else { ctx.fillStyle = '#4b4438'; ctx.font = '600 ' + size + 'px "Pixelify Sans",Georgia,serif'; ctx.fillText(z.name, x, y); }
       ctx.globalAlpha = 1;
     });
   }
@@ -385,6 +396,7 @@ export function createRenderer(canvas, world, land, images) {
     get quality() { return quality; },
     setQuality(q) { quality = q; resize(); },
     dispose() { removeEventListener('resize', resize); },
+    hitSign(px, py) { for (const b of signs) if (px >= b.x && py >= b.y && px <= b.x + b.w && py <= b.y + b.h) return b.i; return -1; },
     hitGate(px, py) { for (const g of world.gates) { const size = g.size * cam.z, x = sx(g.x), y = sy(g.y); if (Math.abs(px - x) < size * .5 && py > y - size && py < y + 6) return g; } return null; },
     focusGate(g) { cam.tx = g.x; cam.ty = g.y - 20; cam.tz = clamp(cam.tz, minZoom(), 4); clampCam(); },
     hitPet(px, py) { for (const c of critters) { const d = PETS[c.kind]; if (!d) continue; const size = d.size * cam.z, x = sx(c.x), y = sy(c.y); if (Math.abs(px - x) < Math.max(16, size * .45) && py > y - Math.max(24, size) && py < y + 8) return c; } return null; },

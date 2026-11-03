@@ -1,5 +1,5 @@
 import { makeWorld, ZONES, LANDS, CN, CW, CH, CELL, landAt, FINALE, hash } from './world.mjs';
-import { newLand, tick, touch, leaveMap, enterMap, saveMap, gateState, pressGate, isComplete, mapReady, mapPct, income, mapIncome, upgradeMax, catchUp, encode, decode, buySpirit, buyUpgrade, spiritCost, spiritOpen, upgradeCost, upgradeOpen, zonePct, zoneBloom, valleyPct, valleyComplete, initObjects, SPIRITS, UPGRADES, GREEN } from './sim.mjs';
+import { newLand, tick, touch, leaveMap, enterMap, saveMap, gateState, buyLand, buyGlade, canBuyLand, landPrice, gladeBuyable, gladePrice, isComplete, income, upgradeMax, catchUp, encode, decode, buySpirit, buyUpgrade, spiritCost, spiritOpen, upgradeCost, upgradeOpen, zonePct, zoneBloom, valleyPct, valleyComplete, initObjects, SPIRITS, UPGRADES, GREEN } from './sim.mjs';
 import { createLand } from './land.mjs';
 import { createRenderer } from './render.mjs';
 import { createAudio } from './audio.mjs';
@@ -66,6 +66,7 @@ function updateUI() {
     $('count-' + i).textContent = s.spirits.filter(a => a.type === i).length || '';
     $('cost-' + i).textContent = open ? fmt(cost) : `after ${d.need} glade${d.need > 1 ? 's' : ''}`;
   });
+  $('btn-map').classList.toggle('can', LANDS.some((_, id) => canBuyLand(s, id)));
   const goal = nextGoal(), t = $('tend'); if (t) { t.classList.toggle('can', s.seeds >= goal); $('tend-note').textContent = goal === Infinity ? 'all done' : fmt(goal); }
   // The chip follows whichever glade the player is looking at.
   const look = view.toCell(innerWidth / 2, innerHeight / 2), cx = Math.max(0, Math.min(CW - 1, Math.round(look.x))), cy = Math.max(0, Math.min(CH - 1, Math.round(look.y)));
@@ -73,7 +74,7 @@ function updateUI() {
   const z = s.zones[currentZone], pct = zonePct(s, world, currentZone), bl = zoneBloom(s, world, currentZone);
   $('zone-name').textContent = ZONES[currentZone].name;
   $('zone-bar').style.width = pct * 100 + '%'; $('bloom-bar').style.width = (z.done ? bl * 100 : 0) + '%';
-  $('zone-note').textContent = !z.open ? 'Still asleep' : z.bloomed ? 'Flourishing ✿' : z.done ? `Flowers ${Math.round(bl / .85 * 100)}%` : `${Math.floor(pct * 100)}% restored`;
+  $('zone-note').textContent = !z.open ? (gladeBuyable(s, currentZone) ? `Asleep · wake for ${fmt(gladePrice(s, currentZone))}` : 'Still asleep') : z.bloomed ? 'Flourishing ✿' : z.done ? `Flowers ${Math.round(bl / .85 * 100)}%` : `${Math.floor(pct * 100)}% restored`;
   if (modal === 'tend') refreshTend(); if (modal === 'valley') openValley();
 }
 function renderHint() {
@@ -82,6 +83,7 @@ function renderHint() {
   if (!s.touched) text = 'Hold and drag across the dead ground';
   else if (!s.revivedAny && s.age > 10 && !s.zones[0].done) text = 'Hold on a dead tree or stone to bring it back';
   else if (s.spirits.length === 1 && s.seeds >= spiritCost(s, 0)) text = 'Those seeds can wake another Mossling';
+  else if (!s.bought && ZONES.some(z => gladeBuyable(s, z.id) && s.seeds >= gladePrice(s, z.id))) text = 'You can afford to wake a new glade. Click its sign';
   h.hidden = !text; if (text) h.textContent = text;
 }
 
@@ -102,14 +104,16 @@ $('modal-body').addEventListener('click', e => {
   const up = e.target.closest('[data-up]');
   if (up && buyUpgrade(s, up.dataset.up)) { audio.buy(); save(); show('tend', tendHTML()); return; }
   const f = e.target.closest('[data-focus]');
-  if (f) { view.focusZone(+f.dataset.focus); $('modal').close(); return; }
+  if (f) { const z = +f.dataset.focus; if (gladeBuyable(s, z)) wakeGlade(z); view.focusZone(z); $('modal').close(); return; }
+  const bl = e.target.closest('[data-buyland]');
+  if (bl) { const id = +bl.dataset.buyland; if (buyLand(s, id)) { audio.chime(true); save(); goTo(id); } return; }
   const a = e.target.closest('[data-act]'); if (!a) return;
   ({ all() { view.focusAll(); $('modal').close(); }, continent: () => showContinent(), flood: () => showContinent(s.land), exportSave, importSave, reset: resetSave, cards: openCards, valley: openValley })[a.dataset.act]?.();
 });
 
 /* Valley map */
 function openValley() {
-  const cells = [...ZONES].sort((a, b) => a.row - b.row || a.col - b.col).map(z => { const st = s.zones[z.id], pct = zonePct(s, world, z.id); return `<button class="vz ${st.open ? '' : 'locked'} ${st.done ? 'done' : ''} ${st.bloomed ? 'bloomed' : ''}" data-focus="${z.id}"><b>${z.name}</b><small>${!st.open ? 'asleep' : st.bloomed ? 'flourishing ✿' : st.done ? 'restored' : Math.floor(pct * 100) + '%'}</small></button>`; }).join('');
+  const cells = [...ZONES].sort((a, b) => a.row - b.row || a.col - b.col).map(z => { const st = s.zones[z.id], pct = zonePct(s, world, z.id); return `<button class="vz ${st.open ? '' : gladeBuyable(s, z.id) ? 'wake' : 'locked'} ${st.done ? 'done' : ''} ${st.bloomed ? 'bloomed' : ''}" data-focus="${z.id}"><b>${z.name}</b><small>${gladeBuyable(s, z.id) ? `wake for ${fmt(gladePrice(s, z.id))}` : !st.open ? 'asleep' : st.bloomed ? 'flourishing ✿' : st.done ? 'restored' : Math.floor(pct * 100) + '%'}</small></button>`; }).join('');
   const html = `<h2>${landAt(s.land).name}</h2><p class="sub">${(valleyPct(s, world) * 100).toFixed(1)}% restored. Choose a glade to visit.</p><div class="valley">${cells}</div><div class="row"><button class="wood" data-act="all">See the whole land</button><button class="wood" data-act="continent">See the continent</button></div>`;
   if (modal === 'valley' && $('modal-body').firstChild) { const scroll = $('modal').scrollTop; $('modal-body').innerHTML = html; $('modal').scrollTop = scroll; } else show('valley', html);
 }
@@ -119,7 +123,7 @@ $('zonechip').onclick = () => { audio.start(); openValley(); };
 function openMenu() {
   show('menu', `<h2>Little Wilds 2</h2><p class="sub">Bring a dead valley back to life, one patch at a time.</p>
   <label class="volume">Volume <input id="volume" type="range" min="0" max="100" value="${Math.round(audio.volume * 100)}"></label><div class="row"><button class="wood" data-act="cards">Postcards</button><button class="wood" data-act="exportSave">Export save</button><button class="wood" data-act="importSave">Import save</button><button class="wood" data-act="reset">Start over</button></div>
-  <p class="sub" style="margin-top:14px">Hold and drag: heal the land.<br>Drag a spirit: carry it somewhere.<br>Click a deer or rabbit: give it a pat.<br>Right-drag, two fingers or arrow keys: look around.<br>Wheel or pinch: zoom. H: hide the interface.</p><input type="file" id="file" accept=".json,application/json" hidden>`);
+  <p class="sub" style="margin-top:14px">Hold and drag: heal the land.<br>Drag a spirit: carry it somewhere.<br>Click a sign on a sleeping glade: wake it with seeds.<br>Click a deer or rabbit: give it a pat.<br>Right-drag, two fingers or arrow keys: look around.<br>Wheel or pinch: zoom. H: hide the interface.</p><input type="file" id="file" accept=".json,application/json" hidden>`);
 }
 $('btn-menu').onclick = () => { audio.start(); openMenu(); $('volume').oninput = e => { audio.setVolume(e.target.value / 100); try { localStorage.setItem(VOLUME_KEY, audio.volume); } catch {} }; };
 function exportSave() { save(); const a = document.createElement('a'), u = URL.createObjectURL(new Blob([encode(s)], { type: 'application/json' })); a.href = u; a.download = 'little-wilds-2-save.json'; a.click(); setTimeout(() => URL.revokeObjectURL(u), 1000); }
@@ -139,21 +143,32 @@ let moving = false;
 async function goTo(id) {
   if (moving || id === s.land) { if ($('modal').open) $('modal').close(); return; }
   moving = true; releaseAll(); if ($('modal').open) $('modal').close();
-  const first = !s.atlas[id];
+  const first = !s.atlas[id]?.h;
   $('loading').querySelector('strong').textContent = LANDS[id].name; $('loading').querySelector('span').textContent = first ? 'The mist is parting…' : 'Walking back…';
   $('loading').style.display = ''; await nextFrame(); await nextFrame();
   leaveMap(s, world); await buildLand(id); enterMap(s, world, id); attach(); save(); $('loading').style.display = 'none'; moving = false; updateUI();
-  banner(LANDS[id].name, first ? 'Nothing has grown here in a long time.' : 'Just as you left it.');
+  banner(LANDS[id].name, first ? 'Nothing has grown here in a long time.' : isComplete(s, id) ? 'Restored and thriving.' : `Your ${s.spirits.length > 1 ? `${s.spirits.length} spirits have` : 'spirit has'} been busy.`);
+  if (isComplete(s, id) && !readCards().some(c => c.land === id)) setTimeout(() => { if (s.land === id && !$('modal').open) celebrate(); }, 2600); // Finished while you were elsewhere.
 }
 function showContinent(flood = -1) {
-  const done = LANDS.filter((_, id) => isComplete(s, id)).length;
-  show('continent', `<h2>The Sleeping Continent</h2><p class="sub" id="cont-note">${done} of ${LANDS.length} lands restored${income(s) ? ` · they earn ${fmt(income(s))} seeds a second` : ''}. Choose a land.</p><canvas id="continent" width="1680" height="1200"></canvas>`);
+  const done = LANDS.filter((_, id) => isComplete(s, id)).length, owned = LANDS.filter((_, id) => s.opened[id]).length;
+  show('continent', `<h2>The Sleeping Continent</h2><p class="sub" id="cont-note">${owned} of ${LANDS.length} lands yours, ${done} restored${income(s) ? ` · earning ${fmt(income(s))} seeds a second` : ''}. Your spirits keep working on every land you own. Click a land to visit or buy it.</p><canvas id="continent" width="1680" height="1200"></canvas>`);
   $('modal').classList.add('wide');
-  openContinent($('continent'), { s, world, flood, isOpen: () => modal === 'continent', choose(id) {
+  openContinent($('continent'), { s, world, flood, price: fmt(landPrice(s)), isOpen: () => modal === 'continent', choose(id) {
     if (s.opened[id]) { goTo(id); return; }
-    const from = LANDS.filter((l, n) => s.opened[n] && (l.col === LANDS[id].col && Math.abs(l.row - LANDS[id].row) === 1 || l.row === LANDS[id].row && Math.abs(l.col - LANDS[id].col) === 1)).map(l => l.name);
-    $('cont-note').textContent = mapReady(s, id) ? `Restore the gateway to ${LANDS[id].name}, on the border of ${from.join(' or ')}.` : `${LANDS[id].name} sleeps until ${LANDS[id].needs.filter(n => !isComplete(s, n)).map(n => LANDS[n].name).join(' and ')} ${LANDS[id].needs.filter(n => !isComplete(s, n)).length > 1 ? 'are' : 'is'} restored.`;
+    offerLand(id);
   } });
+}
+function offerLand(id) {
+  const can = canBuyLand(s, id), price = fmt(landPrice(s));
+  $('cont-note').innerHTML = `<b>${LANDS[id].name}</b> comes with one Mossling who starts working right away. <button class="wood" data-buyland="${id}" ${can ? '' : 'disabled'}>${can ? `Buy for ${price} seeds` : `Needs ${price} seeds`}</button>`;
+}
+function wakeGlade(z) {
+  if (!gladeBuyable(s, z)) return false;
+  const price = gladePrice(s, z);
+  if (!buyGlade(s, z)) { toast(`${ZONES[z].name} costs ${fmt(price)} seeds to wake, or finish the glade next to it for free.`); return false; }
+  s.bought = true; audio.chime(); view.glow(z); view.sweep(z); banner(`${ZONES[z].name} wakes`, 'The mist lifts.'); save(); updateUI();
+  return true;
 }
 
 /* Then and now, sound */
@@ -166,7 +181,7 @@ try { if (localStorage.getItem(SOUND_KEY)) audio.setMuted(true); const v = parse
 /* Input */
 const canvas = $('world');
 function wake() { lastActive = performance.now(); document.body.classList.remove('quiet'); }
-function releaseAll() { pointer.gate = null; pointer.holding = false; pointer.kb = false; if (carry) { carry.held = false; carry = null; } panning = false; }
+function releaseAll() { pointer.holding = false; pointer.kb = false; if (carry) { carry.held = false; carry = null; } panning = false; }
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 canvas.addEventListener('pointerdown', e => {
   if (!ready || $('modal').open) return;
@@ -174,13 +189,15 @@ canvas.addEventListener('pointerdown', e => {
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY }); pointer.x = e.clientX; pointer.y = e.clientY; pointer.on = true;
   if (thenX != null) { thenX = e.clientX; pointer.id = e.pointerId; return; }
   if (pointers.size > 1 || e.button !== 0) { pointer.holding = false; if (carry) { carry.held = false; carry = null; } panning = true; pinch = 0; return; }
+  const sign = view.hitSign(e.clientX, e.clientY);
+  if (sign >= 0) { pointers.delete(e.pointerId); wakeGlade(sign); return; }
   const gate = view.hitGate(e.clientX, e.clientY);
   if (gate) {
-    const st = gateState(s, gate), t = LANDS[gate.target];
-    if (st === 'open') { goTo(gate.target); return; }
-    if (st === 'ready') { pointer.gate = gate; pointer.id = e.pointerId; return; }
-    toast(`This way sleeps until ${t.needs.filter(n => !isComplete(s, n)).map(n => LANDS[n].name).join(' and ')} ${t.needs.filter(n => !isComplete(s, n)).length > 1 ? 'are' : 'is'} restored.`);
+    if (gateState(s, gate) === 'open') { goTo(gate.target); return; }
+    pointers.delete(e.pointerId); showContinent(); offerLand(gate.target); return;
   }
+  const under = view.toCell(e.clientX, e.clientY), cellAt = Math.round(Math.max(0, Math.min(CH - 1, under.y))) * CW + Math.round(Math.max(0, Math.min(CW - 1, under.x))), zoneAt = world.zone[cellAt];
+  if (!s.zones[zoneAt].open) toast(gladeBuyable(s, zoneAt) ? `${ZONES[zoneAt].name} is asleep. Click its sign to wake it for ${fmt(gladePrice(s, zoneAt))} seeds.` : `${ZONES[zoneAt].name} is asleep. Wake the glades beside it first.`);
   const petted = view.hitPet(e.clientX, e.clientY);
   if (petted) { view.pet(petted); audio.buy(); const gift = 10 + s.seeds * .002; s.seeds += gift; view.reward(petted.x, petted.y - 12, gift, 3); pulseSeeds(); return; }
   const hit = view.hitSpirit(s, e.clientX, e.clientY);
@@ -204,7 +221,7 @@ function endPointer(e) {
   if (!pointers.has(e.pointerId)) return;
   pointers.delete(e.pointerId);
   if (carry && e.pointerId === pointer.id) { const c = view.toCell(e.clientX, e.clientY), i = Math.round(Math.max(0, Math.min(CH - 1, c.y + .6))) * CW + Math.round(Math.max(0, Math.min(CW - 1, c.x))); if (s.zones[world.zone[i]].open && !world.blocked[i]) { carry.x = i % CW; carry.y = Math.floor(i / CW); } else toast('That land is still asleep.'); carry.held = false; carry.tx = -1; carry = null; save(); }
-  if (e.pointerId === pointer.id) { pointer.holding = false; pointer.id = null; pointer.gate = null; }
+  if (e.pointerId === pointer.id) { pointer.holding = false; pointer.id = null; }
   if (!pointers.size) { panning = false; pinch = 0; if (e.pointerType === 'touch') pointer.on = false; }
 }
 canvas.addEventListener('pointerup', endPointer); canvas.addEventListener('pointercancel', endPointer);
@@ -225,6 +242,7 @@ addEventListener('blur', () => { pointers.clear(); releaseAll(); });
 /* Events from the simulation: the game's big moments. */
 function handle(ev, now, quiet = false) {
   for (const e of ev) {
+    if (e.t === 'away' && !quiet) toast(e.complete ? `${LANDS[e.land].name} is fully restored and earning seeds.` : `${LANDS[e.land].glades[e.zone]} in ${LANDS[e.land].name} is restored.`);
     if (e.t === 'revive' && !quiet) { view.revived(e.o, now); audio.pop(); view.reward(e.o.x * CELL, e.o.y * CELL - e.o.size * .7, e.reward, e.o.size > 40 ? 10 : 5); pulseSeeds(); s.revivedAny = true; }
     if (e.t === 'water' && !quiet) { audio.water(); toast(`Water finds its way to ${ZONES[e.zone].name}.`); }
     if (e.t === 'zone') {
@@ -269,7 +287,6 @@ function frame(now) {
       const c = view.toCell(pointer.x, pointer.y), gain = touch(s, world, c.x, c.y, dt, ev);
       if (gain > 0) { view.spark(c.x, c.y, gain * 7, 3); audio.pluck(gain * 25); wake(); }
     }
-    if (pointer.gate && pressGate(s, pointer.gate, dt)) { const g = pointer.gate; pointer.gate = null; audio.chime(true); view.revived({ id: -1, x: g.x / CELL, y: g.y / CELL, size: g.size }, now); banner(`The way to ${LANDS[g.target].name} is open`, 'Walk through the gateway whenever you like.'); save(); }
     tick(s, world, dt, ev, frameNo++ % SPIRIT_SLICES, SPIRIT_SLICES);
     if (ev.length) handle(ev, now);
   } else if (timelapse) stepTimelapse(now);
