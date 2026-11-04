@@ -97,7 +97,7 @@ function deerLegs(H, hx, fx, A, k, pose, p, bob, far) {
     const a = 2 * Math.PI * (p + off), top = pts[0];
     const P = pts.map(([x, y, w]) => {
       const f = ease(-y / H > 1 ? 0 : 1 + y / H);
-      if (pose === 'walk') { x += Math.sin(a) * A * f; y -= Math.max(0, Math.cos(a)) * 1.4 * f; }
+      if (pose === 'walk') { x += Math.sin(a) * A * f; y -= Math.max(0, Math.cos(a)) * .9 * f; }
       else if (pose === 'leap') { const r = side > 0 ? -.95 : .85, dx = x - top[0], dy = y - top[1]; x = top[0] + dx * Math.cos(r) - dy * Math.sin(r); y = top[1] + dx * Math.sin(r) + dy * Math.cos(r); }
       return [x, y + bob * (1 - f), w];
     });
@@ -121,11 +121,11 @@ export const CRITTERS = {
         { d: [[-2, -9], [3, -10], [5, -9], [-4, -8]], c: 'x^' }].map(s => ({ c: 'b', ...s }));
       let [ax, ay, ang] = pose === 'graze' ? [12, -7, 1.15] : sleep ? [9, -19, -.1] : [10, -27, 0]; if (!sleep) ay += drop;
       return [
-        ...(sleep ? [{ e: [-5, -2, 4, 2], c: 'k' }, { e: [6, -2, 3.5, 2], c: 'k' }] : deerLegs(14, -6.5, 6.5, 2.2, 1, pose, p, drop, 1)),
+        ...(sleep ? [{ e: [-5, -2, 4, 2], c: 'k' }, { e: [6, -2, 3.5, 2], c: 'k' }] : deerLegs(14, -6.5, 6.5, 1.4, 1, pose, p, drop, 1)),
         { e: [-9.6, -20 + drop, 1.6, 2.4, -.5], c: 'c' },
         { e: [0, -17 + drop, 9, 5] , c: 'b' }, { e: [-5, -17 + drop, 4.6, 5.4], c: 'b' }, { e: [6, -17.5 + drop, 4.2, 5], c: 'b' },
         { e: [0, -13.3 + drop, 6, 1.5], c: 'c', flat: 1, ol: false }, { d: [[-10, -19 + drop], [-9, -18 + drop]], c: 'c^' },
-        ...(sleep ? [] : deerLegs(14, -6.5, 6.5, 2.2, 1, pose, p, drop, 0)),
+        ...(sleep ? [] : deerLegs(14, -6.5, 6.5, 1.4, 1, pose, p, drop, 0)),
         ...(sleep ? [] : [{ e: [-5.6, -16 + drop, 3.4, 4.6, .25], c: 'b' }, { e: [5.6, -16 + drop, 2.8, 4, -.15], c: 'b' }]),
         { l: [6, -19 + drop, ax - .5, ay + 1, 4], c: 'b' },
         ...rot(ax, ay, ang, head),
@@ -140,12 +140,12 @@ export const CRITTERS = {
         { e: [.5, 0, 2.7, 2.4] }, { l: [1.5, .5, 3.8, 1.2, 2.6] }, { l: [3.6, 1.2, 4.8, 1.7, 1.8] }, { d: [[5, 1]], c: 'n' }, eye(1, -1, sleep)].map(s => ({ c: 'b', ...s }));
       let [ax, ay, ang] = pose === 'graze' ? [9, -5, 1.1] : sleep ? [7, -13, -.1] : [7.5, -19, 0]; if (!sleep) ay += drop;
       return [
-        ...(sleep ? [{ e: [-4, -1.6, 3, 1.6], c: 'k' }, { e: [4, -1.6, 3, 1.6], c: 'k' }] : deerLegs(10, -4.6, 4.8, 1.6, .75, pose, p, drop, 1)),
+        ...(sleep ? [{ e: [-4, -1.6, 3, 1.6], c: 'k' }, { e: [4, -1.6, 3, 1.6], c: 'k' }] : deerLegs(10, -4.6, 4.8, 1.1, .75, pose, p, drop, 1)),
         { e: [-6.8, -14 + drop, 1.3, 1.8, -.5], c: 'c' },
         { e: [0, -12.5 + drop, 6.6, 3.8], c: 'b' }, { e: [-3.5, -12.5 + drop, 3.4, 4], c: 'b' },
         { e: [0, -9.8 + drop, 4.5, 1.1], c: 'c', flat: 1, ol: false },
         { d: [[-3, -14 + drop], [0, -15 + drop], [2, -13 + drop], [-1, -12 + drop], [-5, -12 + drop], [3, -15 + drop]], c: 'c' },
-        ...(sleep ? [] : deerLegs(10, -4.6, 4.8, 1.6, .75, pose, p, drop, 0)),
+        ...(sleep ? [] : deerLegs(10, -4.6, 4.8, 1.1, .75, pose, p, drop, 0)),
         ...(sleep ? [] : [{ e: [-3.8, -11.5 + drop, 2.5, 3.4, .25], c: 'b' }]),
         { l: [4.5, -14 + drop, ax - .4, ay + 1, 3.2], c: 'b' },
         ...rot(ax, ay, ang, head),

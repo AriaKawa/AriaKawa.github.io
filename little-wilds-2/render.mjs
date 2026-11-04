@@ -1,14 +1,16 @@
 // Everything above the ground: flora, the dead-and-revived objects, spirits, wildlife, weather and fog.
-import { TW, TH, LW, LH, CW, CH, CELL, ZONES, LANDS, SEA, hash, fbm, FC, FCOLS, FROWS, landAtTexel, SHRINK } from './world.mjs?v=17';
-import { GREEN, brushRadius, SPIRITS, gladeBuyable, gladePrice } from './sim.mjs?v=17';
-import { pixelize, newFrame, shadowOf, skirtOf, apronOf } from './pixel.mjs?v=17';
-import { critterCanvas, spiritCanvas, NATIVE, SCALE, WALK_FRAMES, strideOf } from './critters.mjs?v=17';
-import { steer, standable, overWater, escape } from './nav.mjs?v=17';
+import { TW, TH, LW, LH, CW, CH, CELL, ZONES, LANDS, SEA, hash, fbm, FC, FCOLS, FROWS, landAtTexel, SHRINK } from './world.mjs?v=18';
+import { GREEN, brushRadius, SPIRITS, gladeBuyable, gladePrice } from './sim.mjs?v=18';
+import { pixelize, newFrame, shadowOf, skirtOf, apronOf } from './pixel.mjs?v=18';
+import { critterCanvas, spiritCanvas, NATIVE, SCALE, WALK_FRAMES, strideOf } from './critters.mjs?v=18';
+import { steer, standable, overWater, escape } from './nav.mjs?v=18';
 const money = n => n >= 1e9 ? (n / 1e9).toFixed(2) + 'b' : n >= 1e6 ? (n / 1e6).toFixed(2) + 'm' : n >= 1e4 ? (n / 1e3).toFixed(1) + 'k' : Math.floor(n).toLocaleString();
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-const SIZE = 64, LIVE_SHARE = .22;
+const SIZE = 64;
+// How many plants of each grass style stay live to carry the wind, rather than being baked still.
+const LIVE = { original: .22, meadow: .45, silverwave: .45 };
 
 // Tiny hand-placed pixel art. Letters index a small per-sprite palette.
 const art = (rows, pal) => {
@@ -24,13 +26,15 @@ const CRITTERS = {
 // Which cell of a land's 4x4 art sheet stands in for each kind of object.
 const BIOME = { 0: 0, 1: 1, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 7: 5, 8: 6, 9: 7 };
 const HEART = art(['.a.a.', 'aaaaa', 'aaaaa', '.aaa.', '..a..'], { a: '#ff9dbb' });
-const PETS = { deer: { row: 0, size: 20, speed: 6, label: 'A spirit deer' }, fawn: { row: 0, size: 14, speed: 7, label: 'A spirit fawn', young: true }, rabbit: { row: 1, size: 11, speed: 9, label: 'A moss rabbit' } };
+const PETS = { deer: { row: 0, size: 20, speed: 4, label: 'A spirit deer' }, fawn: { row: 0, size: 14, speed: 5, label: 'A spirit fawn', young: true }, rabbit: { row: 1, size: 11, speed: 9, label: 'A moss rabbit' } };
 
-function floraAtlas(P) {
+export const GRASS_STYLES = { original: 'Original', meadow: 'Meadow', silverwave: 'Silverwave' };
+function floraAtlas(P, style = 'original') {
   // Rows: 0 tuft, 1 tall grass, 2-6 flowers, 7 fern. Columns: three wind poses.
   const cw = 9, ch = 11, c = document.createElement('canvas'); c.width = cw * 3; c.height = ch * 8;
   const g = c.getContext('2d'), tone = (k, a = 0) => `rgb(${P.grass.map((v, i) => clamp(v * k + (i === 1 ? a : 0), 0, 255) | 0).join(',')})`;
   const dot = (x, y, col, w = 1, h = 1) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
+  if (style !== 'original') return grassAtlas(P, style, c, g, cw, ch, dot);
   for (let pose = 0; pose < 3; pose++) {
     const lean = pose - 1, X = pose * cw;
     [[3, 8, 0], [5, 7, 1], [4, 6, 1]].forEach(([x, top, l], k) => { for (let y = top; y < ch; y++) dot(X + x + (y < 9 ? lean * l : 0), y, tone(.72 + k * .22)); });
@@ -47,9 +51,56 @@ function floraAtlas(P) {
   return { c, cw, ch };
 }
 
+// The other grass styles, drawn into the same rows and wind poses as the original.
+// Meadow: thin single-pixel blades in clumps, dark at the root and pale at the tip, each leaning its own way, so
+// a field reads plainly as grass and every gust and footstep shows. Silverwave: soft round tufts and feathery
+// seed heads whose tips catch the light as the wind leans them, so gusts roll across the field as pale waves.
+function grassAtlas(P, style, c, g, cw, ch, dot) {
+  const rgb = a => `rgb(${a.map(v => clamp(v, 0, 255) | 0).join(',')})`, mixc = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
+  const grey = a => { const m = (a[0] + a[1] + a[2]) / 3; return mixc(a, [m, m, m], .3); };
+  const silver = style === 'silverwave';
+  const dark = rgb(grey(P.grass).map(v => v * .62)), mid = rgb(grey(P.grass).map(v => v * .9)), pale = rgb(mixc(grey(P.grass), P.lush, .45).map(v => v * 1.14));
+  const sheen = rgb(mixc(P.lush, [255, 246, 214], .55)), seed = rgb(mixc(P.lush, [236, 214, 150], .6));
+  // One blade: from its root at (x, bottom of row) up `len` pixels, slanting `slope` per pixel, bent at the tip by the wind.
+  const blade = (X, row, x, len, slope, lean, tip = pale) => {
+    for (let i = 0; i < len; i++) {
+      const u = i / Math.max(1, len - 1), px = Math.round(X + x + slope * i + lean * u * u * 2), py = (row + 1) * ch - 1 - i;
+      dot(px, py, i === len - 1 ? tip : i < len * .4 ? dark : mid);
+    }
+  };
+  const TUFT = [[2, 4, -.45], [3, 6, -.22], [4, 5, .05], [5, 6, .28], [6, 4, .5], [4, 3, -.1], [3, 3, .3]];
+  const TALL = [[1, 6, -.4], [3, 8, -.18], [4, 9, 0], [5, 8, .2], [7, 6, .42], [2, 5, .1], [6, 5, -.1]];
+  for (let pose = 0; pose < 3; pose++) {
+    const lean = pose - 1, X = pose * cw, lit = silver && lean !== 0 ? sheen : pale;
+    if (silver) {
+      // Soft tufts: blades packed close and short, with a round top.
+      [[2, 3, -.3], [3, 5, -.12], [4, 6, 0], [5, 5, .14], [6, 3, .3], [3, 4, .2], [5, 4, -.2], [4, 3, 0]].forEach(([x, len, sl]) => blade(X, 0, x, len, sl, lean, lit));
+      // Feathery seed heads on long stems.
+      [[2, 7, -.25], [4, 9, 0], [6, 7, .25]].forEach(([x, len, sl], k) => {
+        blade(X, 1, x, len, sl, lean, lit);
+        const tx = Math.round(X + x + sl * (len - 1) + lean * 2), ty = 2 * ch - len;
+        dot(tx, ty - 1, lean ? sheen : seed); dot(tx - 1 + (k & 1), ty, lean ? sheen : seed); dot(tx, ty + 1, seed);
+      });
+    } else {
+      TUFT.forEach(([x, len, sl]) => blade(X, 0, x, len, sl, lean));
+      TALL.forEach(([x, len, sl]) => blade(X, 1, x, len, sl, lean));
+    }
+    // Flowers stand on a thin stem among a few blades.
+    P.flowers.forEach((col, f) => {
+      const r = 2 + f, fx = X + 4 + lean, fy = r * ch + 4;
+      [[2, 4, -.4], [6, 4, .4], [3, 3, -.1]].forEach(([x, len, sl]) => blade(X, r, x, len, sl, lean, lit));
+      for (let y = fy + 1; y < (r + 1) * ch; y++) dot(X + 4 + (y < fy + 3 ? lean : 0), y, mid);
+      dot(fx - 1, fy, col); dot(fx + 1, fy, col); dot(fx, fy - 1, col); dot(fx, fy + 1, col); dot(fx, fy, f === 0 ? '#ffc93c' : '#fff3c4');
+    });
+    // The fern row becomes a wider, low clump.
+    [[1, 3, -.5], [2, 5, -.3], [4, 6, 0], [6, 5, .3], [7, 3, .5], [3, 4, .15], [5, 4, -.15]].forEach(([x, len, sl]) => blade(X, 7, x, len, sl, lean, lit));
+  }
+  return { c, cw, ch };
+}
+
 export function createRenderer(canvas, world, land, images) {
   const ctx = canvas.getContext('2d'), cam = { x: 160, y: 530, z: 3.4, tx: 160, ty: 530, tz: 3.4 };
-  let fogTick = 0, quality = 2, greeted = false, flyers = [], floaters = [], glows = [], W = 0, H = 0, dpr = 1, flora = LANDS.map(floraAtlas), particles = [], rings = [], thenC = null, shown = null, critters = [], glints = [];
+  let fogTick = 0, quality = 2, greeted = false, flyers = [], floaters = [], glows = [], W = 0, H = 0, dpr = 1, grass = 'original', flora = LANDS.map(P => floraAtlas(P)), particles = [], rings = [], thenC = null, shown = null, critters = [], glints = [];
   const fog = document.createElement('canvas'); fog.width = CW; fog.height = CH;
   const fogG = fog.getContext('2d'), fogAlpha = ZONES.map(() => -1), revives = new Map(), rises = new Map(), baked = new Map(), floraDirty = new Uint8Array(FCOLS * FROWS).fill(1), fogSoft = document.createElement('canvas'), wisps = new Float32Array(CW * CH);
   fogSoft.width = CW; fogSoft.height = CH; const fogSoftG = fogSoft.getContext('2d');
@@ -158,7 +209,7 @@ export function createRenderer(canvas, world, land, images) {
     b.g.clearRect(0, 0, b.c.width, b.c.height); b.empty = true;
     for (let k = F.start[index], end = k + F.count[index]; k < end; k++) {
       const h = f[F.cell[k]];
-      if (h < F.thr[k] || F.phase[k] < LIVE_SHARE) continue;
+      if (h < F.thr[k] || F.phase[k] < LIVE[grass]) continue;
       b.empty = false;
       const grow = Math.min(1, (h - F.thr[k]) / .07 + .25), dh = Math.round(ch * grow);
       b.g.drawImage(flora[world.biome[Math.min(TH - 1, F.y[k] | 0) * TW + (F.x[k] | 0)]].c, cw, F.kind[k] * ch, cw, ch, Math.round(F.x[k] - cx + 9 - cw / 2), Math.round(F.y[k] - cy + 14 - dh), cw, dh);
@@ -180,7 +231,7 @@ export function createRenderer(canvas, world, land, images) {
     for (const i of visible) {
       const { cw, ch } = flora[0];
       for (let k = F.start[i], stop = k + F.count[i]; k < stop; k++) {
-        if (F.phase[k] >= LIVE_SHARE) continue;
+        if (F.phase[k] >= LIVE[grass]) continue;
         const h = f[F.cell[k]];
         if (h < F.thr[k]) continue;
         const px = F.x[k], py = F.y[k], gust = Math.sin(t * 1.3 - px * .018 - py * .009) + Math.sin(t * 2.7 + F.phase[k] * 18) * .25, pose = gust > .55 ? 2 : gust < -.75 ? 0 : 1, grow = Math.min(1, (h - F.thr[k]) / .07 + .25), dw = cw * z, dh = ch * z * grow;
@@ -380,8 +431,8 @@ export function createRenderer(canvas, world, land, images) {
     if (Math.abs(c.x - x0) > .02) c.dir = c.x < x0 ? -1 : 1;
     if (r !== 'moving') { c.tx = 0; c.state = 'idle'; c.pause = r === 'stuck' ? .5 : 1 + Math.random() * 2; }
   }
-  // Animals are drawn smaller than their art: deer and fawns at 60%, the rest at 70%.
-  const small = kind => kind === 'deer' || kind === 'fawn' ? .6 : SHRINK;
+  // Animals are drawn smaller than their art, the same share as everything else.
+  const small = () => SHRINK;
   function drawPet(c, t) {
     const def = petDef(c.kind, c.zone), z = cam.z, x = sx(c.x), y = sy(c.y), walking = c.state === 'walk';
     const land = ZONES[c.zone].land, name = c.kind === 'rabbit' ? 'rabbit' : land ? NATIVE[land] : c.kind;
@@ -505,6 +556,8 @@ export function createRenderer(canvas, world, land, images) {
     onPet: null,
     floraCell(i) { floraDirty[Math.floor(Math.floor(i / CW) * CELL / FC) * FCOLS + Math.floor(i % CW * CELL / FC)] = 1; },
     allFlora() { floraDirty.fill(1); },
+    get grass() { return grass; },
+    setGrass(style) { if (!GRASS_STYLES[style] || style === grass) return; grass = style; flora = LANDS.map(P => floraAtlas(P, style)); floraDirty.fill(1); },
     get quality() { return quality; },
     setQuality(q) { quality = q; resize(); },
     dispose() { removeEventListener('resize', resize); },
