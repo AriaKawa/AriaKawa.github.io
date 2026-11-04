@@ -82,45 +82,71 @@ function legs(list, pose, p, bob = 0) {
   return out;
 }
 const bobOf = (pose, p) => pose === 'leap' ? -1 : pose === 'walk' && Math.abs(Math.sin(2 * Math.PI * p)) < .38 ? -1 : 0;
+// Deer legs, after the Crossroads deer: each leg has shape (a thick thigh or shoulder tapering to a slim
+// cannon, the hind leg bending back at the hock), and walking shears it rather than swinging a stick. The top
+// stays tucked into the body and the lower leg sways more the nearer it is to the hoof, so the leg bends
+// softly as it goes. The outer pair (near hind, near fore) moves together, the inner pair opposite. H is the
+// height of the leg; hx, fx where the near hind and fore hooves stand; A how far a hoof sways each way.
+const ease = t => { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); };
+function deerLegs(H, hx, fx, A, k, pose, p, bob, far) {
+  const hind = x => [[x + .6, -H - 2, 3.6 * k], [x + .9, -H * .76, 3 * k], [x - 1.5, -H * .42, 1.9 * k], [x - .8, -H * .1, 1.5 * k], [x - .6, 0, 1.5 * k]];
+  const fore = x => [[x - .3, -H - 1.5, 3.3 * k], [x, -H * .78, 2.6 * k], [x + .3, -H * .42, 1.8 * k], [x + .6, -H * .1, 1.5 * k], [x + .7, 0, 1.5 * k]];
+  const set = far ? [[hind(hx + 1.6), .5, -1], [fore(fx - 1.6), .5, 1]] : [[hind(hx), 0, -1], [fore(fx), 0, 1]];
+  const out = [];
+  for (const [pts, off, side] of set) {
+    const a = 2 * Math.PI * (p + off), top = pts[0];
+    const P = pts.map(([x, y, w]) => {
+      const f = ease(-y / H > 1 ? 0 : 1 + y / H);
+      if (pose === 'walk') { x += Math.sin(a) * A * f; y -= Math.max(0, Math.cos(a)) * 1.4 * f; }
+      else if (pose === 'leap') { const r = side > 0 ? -.95 : .85, dx = x - top[0], dy = y - top[1]; x = top[0] + dx * Math.cos(r) - dy * Math.sin(r); y = top[1] + dx * Math.sin(r) + dy * Math.cos(r); }
+      return [x, y + bob * (1 - f), w];
+    });
+    for (let i = 0; i < P.length - 1; i++) {
+      const [x0, y0, w0] = P[i], [x1, y1, w1] = P[i + 1];
+      out.push({ l: [x0, y0, x1, y1, (w0 + w1) / 2], c: i === P.length - 2 ? 'h' : far ? 'k' : i < 2 ? 'b' : 'k', far, ol: i < 2 });
+    }
+  }
+  return out;
+}
 const eye = (x, y, closed, c = 'e') => closed ? { d: [[x - 1, y + 1], [x, y + 1]], c: 'b!' } : { d: [[x, y]], c };
 
 export const CRITTERS = {
-  deer: { stride: 2, // Spirit deer: a red-brown deer with a pale rump and belly, and antlers of glowing mint.
+  deer: { stride: 2.2, // Spirit deer: a red-brown deer with a pale rump and belly, and antlers of glowing mint.
     w: 36, h: 38, pal: { b: '#b9804c', c: '#efdcb8', k: '#8a5c38', h: '#3e2a1c', x: '#a8f2d6', e: '#1e140c', n: '#2a1c14' },
     build(pose, p) {
       const sleep = pose === 'sleep', drop = sleep ? 9 : bobOf(pose, p);
-      const L = [{ x: -4, y: -14, w: 2.4, c: 'k', hoof: 'h', far: 1, pair: 1 }, { x: 4, y: -14, w: 2.4, c: 'k', hoof: 'h', far: 1 }, { x: -6, y: -14, w: 2.6, c: 'b', c2: 'k', hoof: 'h', knee: -.6 }, { x: 6, y: -14, w: 2.4, c: 'b', c2: 'k', hoof: 'h', pair: 1, knee: .5 }];
       const head = [{ e: [-1.4, -3, 1.2, 2.6, -.75], c: 'b', far: 1 }, { e: [-.4, -3.2, 1.2, 2.6, -.35], c: 'b' }, { d: [[-1, -4]], c: 'c' },
         { e: [.6, 0, 2.8, 2.4] }, { l: [1.5, .5, 4.4, 1.3, 2.8] }, { l: [4.2, 1.3, 5.6, 1.9, 1.9] }, { d: [[3, 2], [4, 2]], c: 'c' }, { d: [[6, 1]], c: 'n' }, eye(1, -1, sleep),
         { l: [0, -2.5, -1, -8, 1.3], c: 'x', ol: false }, { l: [-.6, -5.5, -3.5, -7.4, 1.2], c: 'x', ol: false }, { l: [2, -2.5, 3, -8.6, 1.3], c: 'x', ol: false }, { l: [2.7, -6, 5, -8, 1.2], c: 'x', ol: false },
         { d: [[-2, -9], [3, -10], [5, -9], [-4, -8]], c: 'x^' }].map(s => ({ c: 'b', ...s }));
       let [ax, ay, ang] = pose === 'graze' ? [12, -7, 1.15] : sleep ? [9, -19, -.1] : [10, -27, 0]; if (!sleep) ay += drop;
       return [
-        ...(sleep ? [{ e: [-5, -2, 4, 2], c: 'k' }, { e: [6, -2, 3.5, 2], c: 'k' }] : legs(L.slice(0, 2), pose, p, drop)),
+        ...(sleep ? [{ e: [-5, -2, 4, 2], c: 'k' }, { e: [6, -2, 3.5, 2], c: 'k' }] : deerLegs(14, -6.5, 6.5, 2.2, 1, pose, p, drop, 1)),
         { e: [-9.6, -20 + drop, 1.6, 2.4, -.5], c: 'c' },
         { e: [0, -17 + drop, 9, 5] , c: 'b' }, { e: [-5, -17 + drop, 4.6, 5.4], c: 'b' }, { e: [6, -17.5 + drop, 4.2, 5], c: 'b' },
         { e: [0, -13.3 + drop, 6, 1.5], c: 'c', flat: 1, ol: false }, { d: [[-10, -19 + drop], [-9, -18 + drop]], c: 'c^' },
-        ...(sleep ? [] : legs(L.slice(2), pose, p, drop)),
+        ...(sleep ? [] : deerLegs(14, -6.5, 6.5, 2.2, 1, pose, p, drop, 0)),
+        ...(sleep ? [] : [{ e: [-5.6, -16 + drop, 3.4, 4.6, .25], c: 'b' }, { e: [5.6, -16 + drop, 2.8, 4, -.15], c: 'b' }]),
         { l: [6, -19 + drop, ax - .5, ay + 1, 4], c: 'b' },
         ...rot(ax, ay, ang, head),
       ];
     },
   },
-  fawn: { stride: 1.8, // A spotted fawn: big ears, long legs, no antlers yet.
+  fawn: { stride: 1.6, // A spotted fawn: big ears, long legs, no antlers yet.
     w: 26, h: 28, pal: { b: '#c48e58', c: '#f6e8cc', k: '#9a6a44', h: '#3e2a1c', e: '#1e140c', n: '#2a1c14' },
     build(pose, p) {
       const sleep = pose === 'sleep', drop = sleep ? 7 : bobOf(pose, p);
-      const L = [{ x: -3, y: -10, w: 2, c: 'k', hoof: 'h', far: 1, pair: 1, stride: 1.8 }, { x: 3, y: -10, w: 2, c: 'k', hoof: 'h', far: 1, stride: 1.8 }, { x: -4.5, y: -10, w: 2.2, c: 'b', c2: 'k', hoof: 'h', stride: 1.8 }, { x: 4.5, y: -10, w: 2, c: 'b', c2: 'k', hoof: 'h', pair: 1, stride: 1.8 }];
       const head = [{ e: [-1.6, -2.8, 1.3, 2.6, -.8], c: 'b', far: 1 }, { e: [-.5, -3.1, 1.3, 2.7, -.4], c: 'b' }, { d: [[-1, -4]], c: 'c' },
         { e: [.5, 0, 2.7, 2.4] }, { l: [1.5, .5, 3.8, 1.2, 2.6] }, { l: [3.6, 1.2, 4.8, 1.7, 1.8] }, { d: [[5, 1]], c: 'n' }, eye(1, -1, sleep)].map(s => ({ c: 'b', ...s }));
       let [ax, ay, ang] = pose === 'graze' ? [9, -5, 1.1] : sleep ? [7, -13, -.1] : [7.5, -19, 0]; if (!sleep) ay += drop;
       return [
-        ...(sleep ? [{ e: [-4, -1.6, 3, 1.6], c: 'k' }, { e: [4, -1.6, 3, 1.6], c: 'k' }] : legs(L.slice(0, 2), pose, p, drop)),
+        ...(sleep ? [{ e: [-4, -1.6, 3, 1.6], c: 'k' }, { e: [4, -1.6, 3, 1.6], c: 'k' }] : deerLegs(10, -4.6, 4.8, 1.6, .75, pose, p, drop, 1)),
         { e: [-6.8, -14 + drop, 1.3, 1.8, -.5], c: 'c' },
         { e: [0, -12.5 + drop, 6.6, 3.8], c: 'b' }, { e: [-3.5, -12.5 + drop, 3.4, 4], c: 'b' },
         { e: [0, -9.8 + drop, 4.5, 1.1], c: 'c', flat: 1, ol: false },
         { d: [[-3, -14 + drop], [0, -15 + drop], [2, -13 + drop], [-1, -12 + drop], [-5, -12 + drop], [3, -15 + drop]], c: 'c' },
-        ...(sleep ? [] : legs(L.slice(2), pose, p, drop)),
+        ...(sleep ? [] : deerLegs(10, -4.6, 4.8, 1.6, .75, pose, p, drop, 0)),
+        ...(sleep ? [] : [{ e: [-3.8, -11.5 + drop, 2.5, 3.4, .25], c: 'b' }]),
         { l: [4.5, -14 + drop, ax - .4, ay + 1, 3.2], c: 'b' },
         ...rot(ax, ay, ang, head),
       ];
