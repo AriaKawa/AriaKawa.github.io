@@ -1,9 +1,9 @@
 // Everything above the ground: flora, the dead-and-revived objects, spirits, wildlife, weather and fog.
-import { TW, TH, LW, LH, CW, CH, CELL, ZONES, LANDS, SEA, hash, fbm, FC, FCOLS, FROWS, landAtTexel, SHRINK } from './world.mjs?v=19';
-import { GREEN, brushRadius, SPIRITS, gladeBuyable, gladePrice } from './sim.mjs?v=19';
-import { pixelize, newFrame, shadowOf, skirtOf, apronOf } from './pixel.mjs?v=19';
-import { duckCanvas, critterCanvas, spiritCanvas, NATIVE, SCALE, WALK_FRAMES, strideOf } from './critters.mjs?v=19';
-import { steer, standable, overWater, escape } from './nav.mjs?v=19';
+import { TW, TH, LW, LH, CW, CH, CELL, ZONES, LANDS, SEA, hash, fbm, FC, FCOLS, FROWS, landAtTexel, SHRINK } from './world.mjs?v=20';
+import { GREEN, brushRadius, SPIRITS, gladeBuyable, gladePrice } from './sim.mjs?v=20';
+import { pixelize, newFrame, shadowOf, skirtOf, apronOf } from './pixel.mjs?v=20';
+import { duckCanvas, critterCanvas, spiritCanvas, NATIVE, SCALE, WALK_FRAMES, strideOf } from './critters.mjs?v=20';
+import { steer, standable, overWater, escape } from './nav.mjs?v=20';
 const money = n => n >= 1e9 ? (n / 1e9).toFixed(2) + 'b' : n >= 1e6 ? (n / 1e6).toFixed(2) + 'm' : n >= 1e4 ? (n / 1e3).toFixed(1) + 'k' : Math.floor(n).toLocaleString();
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -127,23 +127,31 @@ export function createRenderer(canvas, world, land, images) {
   addEventListener('resize', resize); resize();
   const minZoom = () => Math.min(W / TW, H / TH) * .96; // Far enough out to see the whole continent and its sea.
   const sx = x => (x - cam.x) * cam.z + W / 2, sy = y => (y - cam.y) * cam.z + H / 2;
-  const clampCam = () => {
-    const hw = W / 2 / cam.tz, hh = H / 2 / cam.tz;
-    cam.tx = clamp(cam.tx, Math.min(hw, TW / 2), Math.max(TW - hw, TW / 2));
-    cam.ty = clamp(cam.ty, Math.min(hh, TH / 2), Math.max(TH - hh, TH / 2));
-  };
+  // Keeps a view centred at (x, y) and zoom z inside the continent.
+  const keepIn = (x, y, z) => { const hw = W / 2 / z, hh = H / 2 / z; return [clamp(x, Math.min(hw, TW / 2), Math.max(TW - hw, TW / 2)), clamp(y, Math.min(hh, TH / 2), Math.max(TH - hh, TH / 2))]; };
+  const clampCam = () => { [cam.tx, cam.ty] = keepIn(cam.tx, cam.ty, cam.tz); };
+  // Wheel, pinch and key zooms ease toward their target around a fixed point: the spot under the cursor stays
+  // under the cursor the whole way, and the zoom moves at an even pace in scale (doubling takes as long as
+  // halving), so it never lurches. A glide to a glade clears it.
+  let anchor = null;
   function focusZone(z, snap = false) {
+    anchor = null;
     cam.tx = ZONES[z].px; cam.ty = ZONES[z].py; cam.tz = clamp(Math.min((W - 40) / 340, (H - 200) / 230), minZoom(), 7);
     clampCam(); if (snap) { cam.x = cam.tx; cam.y = cam.ty; cam.z = cam.tz; }
   }
-  function focusAll() { cam.tx = TW / 2; cam.ty = TH / 2; cam.tz = minZoom(); clampCam(); }
-  function focusLand(l) { const L = LANDS[l]; cam.tx = (L.col + .5) * LW; cam.ty = (L.row + .5) * LH; cam.tz = clamp(Math.min(W / LW, H / LH), minZoom(), 7); clampCam(); }
+  function focusAll() { anchor = null; cam.tx = TW / 2; cam.ty = TH / 2; cam.tz = minZoom(); clampCam(); }
+  function focusLand(l) { anchor = null; const L = LANDS[l]; cam.tx = (L.col + .5) * LW; cam.ty = (L.row + .5) * LH; cam.tz = clamp(Math.min(W / LW, H / LH), minZoom(), 7); clampCam(); }
   function zoomAt(f, px = W / 2, py = H / 2) {
-    const before = toWorld(px, py); cam.tz = cam.z = clamp(cam.tz * f, minZoom(), 9);
-    const hw = (px - W / 2) / cam.z, hh = (py - H / 2) / cam.z;
-    cam.tx = cam.x = before.x - hw; cam.ty = cam.y = before.y - hh; clampCam(); cam.x = cam.tx; cam.y = cam.ty;
+    // Keep the same world point while the cursor stays put, so a run of wheel notches zooms into one spot.
+    if (!anchor || Math.hypot(anchor.px - px, anchor.py - py) > 3) { if (!anchor) cam.tz = cam.z; const w = toWorld(px, py); anchor = { px, py, wx: w.x, wy: w.y }; }
+    cam.tz = clamp(cam.tz * f, minZoom(), 9);
+    [cam.tx, cam.ty] = keepIn(anchor.wx - (px - W / 2) / cam.tz, anchor.wy - (py - H / 2) / cam.tz, cam.tz);
   }
-  function pan(dx, dy) { cam.tx -= dx / cam.z; cam.ty -= dy / cam.z; clampCam(); cam.x = cam.tx; cam.y = cam.ty; }
+  function pan(dx, dy) {
+    if (anchor) { anchor.wx -= dx / cam.z; anchor.wy -= dy / cam.z; }
+    cam.tx -= dx / cam.z; cam.ty -= dy / cam.z; clampCam();
+    [cam.x, cam.y] = keepIn(cam.x - dx / cam.z, cam.y - dy / cam.z, cam.z);
+  }
   function toWorld(px, py) { return { x: (px - W / 2) / cam.z + cam.x, y: (py - H / 2) / cam.z + cam.y }; }
   const toCell = (px, py) => { const p = toWorld(px, py); return { x: p.x / CELL, y: p.y / CELL }; };
 
@@ -611,6 +619,7 @@ export function createRenderer(canvas, world, land, images) {
     regreet() { greeted = false; critterAt = -1; },
     pets: () => critters.filter(c => PETS[c.kind]),
     cam, resize, focusZone, focusAll, focusLand, zoomAt, pan, toCell, toWorld,
+    glide(x, y, z) { anchor = null; cam.tx = x; cam.ty = y; cam.tz = z; clampCam(); },
     viewBox() { return [cam.x - W / 2 / cam.z, cam.y - H / 2 / cam.z, cam.x + W / 2 / cam.z, cam.y + H / 2 / cam.z]; },
     screenOf(x, y) { return { x: sx(x), y: sy(y) }; },
     setShown(f) { shown = f; floraDirty.fill(1); },
@@ -627,7 +636,16 @@ export function createRenderer(canvas, world, land, images) {
     spark(cellX, cellY, amount, r) { const n = Math.min(4, amount * .28); for (let k = 0; k < n; k++) { if (Math.random() > n / 4 + .2) continue; const a = Math.random() * 6.28, q = Math.random() * r * CELL; addParticle({ x: cellX * CELL + Math.cos(a) * q, y: cellY * CELL + Math.sin(a) * q, vx: (Math.random() - .5) * 8, vy: -8 - Math.random() * 16, g: 3, life: .55 + Math.random() * .6, age: 0, size: .8 + Math.random() * .6, color: ['#d8f58f', '#fff2ab', '#9ddc6a'][k % 3] }); } },
     hitSpirit(s, px, py) { for (let i = s.spirits.length - 1; i >= 0; i--) { const a = s.spirits[i], size = (a.type === 3 ? 20 : 15) * cam.z, x = sx((a.rx ?? a.x) * CELL), y = sy((a.ry ?? a.y) * CELL); if (Math.abs(px - x) < Math.max(14, size * .4) && py > y - size && py < y + 6) return a; } return null; },
     draw(s, time, dt, opts) {
-      if (cam.x !== cam.tx || cam.y !== cam.ty || cam.z !== cam.tz) { const k = 1 - Math.exp(-dt * (opts.camSpeed || 3.2)); cam.x += (cam.tx - cam.x) * k; cam.y += (cam.ty - cam.y) * k; cam.z += (cam.tz - cam.z) * k; if (Math.abs(cam.x - cam.tx) + Math.abs(cam.y - cam.ty) + Math.abs(cam.z - cam.tz) < .004) { cam.x = cam.tx; cam.y = cam.ty; cam.z = cam.tz; } }
+      if (anchor) { // A zoom around a point: ease the scale, then place the view so the point stays put.
+        const k = 1 - Math.exp(-Math.min(dt, .05) * 12), lz = Math.log(cam.z), tl = Math.log(cam.tz);
+        cam.z = Math.abs(tl - lz) < .002 ? cam.tz : Math.exp(lz + (tl - lz) * k);
+        [cam.x, cam.y] = keepIn(anchor.wx - (anchor.px - W / 2) / cam.z, anchor.wy - (anchor.py - H / 2) / cam.z, cam.z);
+        if (cam.z === cam.tz) { anchor = null; cam.tx = cam.x; cam.ty = cam.y; }
+      } else if (cam.x !== cam.tx || cam.y !== cam.ty || cam.z !== cam.tz) { // A glide: position and scale ease together, the scale evenly.
+        const k = 1 - Math.exp(-Math.min(dt, .05) * (opts.camSpeed || 3.2)), lz = Math.log(cam.z), tl = Math.log(cam.tz);
+        cam.x += (cam.tx - cam.x) * k; cam.y += (cam.ty - cam.y) * k; cam.z = Math.exp(lz + (tl - lz) * k);
+        if (Math.abs(cam.x - cam.tx) + Math.abs(cam.y - cam.ty) < .05 && Math.abs(tl - lz) < .002) { cam.x = cam.tx; cam.y = cam.ty; cam.z = cam.tz; }
+      }
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.imageSmoothingEnabled = false; newFrame();
       updateFog(s); spawnCritters(s, time);
       ctx.fillStyle = '#365568'; ctx.fillRect(0, 0, W, H);

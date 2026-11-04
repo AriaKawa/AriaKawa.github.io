@@ -1,9 +1,9 @@
-import { makeWorld, ZONES, LANDS, CN, CW, CH, CELL, hash } from './world.mjs?v=19';
-import { newLand, tick, touch, buyGlade, gladeBuyable, gladePrice, landDone, landPct, landTouched, income, upgradeMax, catchUp, encode, decode, buySpirit, buyUpgrade, spiritCost, spiritOpen, upgradeCost, upgradeOpen, zonePct, zoneBloom, doneCount, initObjects, SPIRITS, UPGRADES, SPIRIT_CAP } from './sim.mjs?v=19';
-import { createLand } from './land.mjs?v=19';
-import { createRenderer, GRASS_STYLES } from './render.mjs?v=19';
-import { createAudio } from './audio.mjs?v=19';
-import { spiritFace } from './critters.mjs?v=19';
+import { makeWorld, ZONES, LANDS, CN, CW, CH, CELL, hash } from './world.mjs?v=20';
+import { newLand, tick, touch, buyGlade, gladeBuyable, gladePrice, landDone, landPct, landTouched, income, upgradeMax, catchUp, encode, decode, buySpirit, buyUpgrade, spiritCost, spiritOpen, upgradeCost, upgradeOpen, zonePct, zoneBloom, doneCount, initObjects, SPIRITS, UPGRADES, SPIRIT_CAP } from './sim.mjs?v=20';
+import { createLand } from './land.mjs?v=20';
+import { createRenderer, GRASS_STYLES } from './render.mjs?v=20';
+import { createAudio } from './audio.mjs?v=20';
+import { spiritFace } from './critters.mjs?v=20';
 
 const KEY = 'little-wilds-2-v2', CARDS_KEY = 'little-wilds-2-postcards', SOUND_KEY = 'little-wilds-2-muted', VOLUME_KEY = 'little-wilds-2-volume', GRASS_KEY = 'little-wilds-2-grass';
 const $ = id => document.getElementById(id);
@@ -157,7 +157,7 @@ function wakeGlade(z) {
 // The Map button flies out to the whole continent and back to where you were.
 function toggleMap(out = !mapFrom) {
   if (out) { mapFrom ||= { x: view.cam.tx, y: view.cam.ty, z: view.cam.tz }; view.focusAll(); gliding = performance.now() + 1500; }
-  else if (mapFrom) { Object.assign(view.cam, { tx: mapFrom.x, ty: mapFrom.y, tz: mapFrom.z }); mapFrom = null; gliding = performance.now() + 1500; }
+  else if (mapFrom) { view.glide(mapFrom.x, mapFrom.y, mapFrom.z); mapFrom = null; gliding = performance.now() + 1500; }
   $('btn-map').textContent = mapFrom ? 'Back' : 'Map';
 }
 
