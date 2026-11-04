@@ -320,6 +320,23 @@ export const CRITTERS = {
     },
   },
 };
+// A duck on the lake: a mallard drake or a brown hen, floating with its waterline at y = 0. frame 1 dabbles,
+// tail up and head under.
+const DUCK = { w: 16, h: 12, pal: { b: '#cfc2a6', d: '#9c7a56', w: '#7d6448', g: '#3d8a5e', o: '#f0a03c', e: '#1e140c', k: '#f4f0e6' } };
+export function duckCanvas(hen, frame, flip) {
+  const key = `duck:${hen ? 1 : 0}:${frame}:${flip ? 1 : 0}`;
+  let c = made.get(key); if (c) return c;
+  const body = hen ? 'd' : 'b', head = hen ? 'd' : 'g', dab = frame === 1;
+  const shapes = dab
+    ? [{ e: [-1, -1.6, 4.6, 1.8, -.25], c: body }, { e: [-4.6, -3.6, 1.6, 1.1, -.9], c: 'w' }, { e: [-1, -2.2, 2.8, 1, -.25], c: 'w' }, { e: [3.6, -.4, 1.7, 1, .4], c: head }]
+    : [{ e: [-.5, -2, 5, 2.2] , c: body }, { e: [-4.6, -3, 1.6, 1.1, -.5], c: 'w' }, { e: [-.8, -2.6, 3.2, 1.2] , c: 'w' },
+       { l: [3, -3, 3.6, -5.4, 2], c: head }, { e: [4, -6.2, 1.9, 1.7], c: head }, { l: [5.4, -5.8, 7, -5.6, 1.3], c: 'o', ol: false }, { d: [[4, -7]], c: 'e' },
+       ...(hen ? [] : [{ d: [[3, -4], [4, -4]], c: 'k' }])];
+  c = raster(DUCK.w, DUCK.h, DUCK.pal, shapes);
+  if (flip) { const f = document.createElement('canvas'); f.width = c.width; f.height = c.height; const g = f.getContext('2d'); g.translate(c.width, 0); g.scale(-1, 1); g.drawImage(c, 0, 0); c = f; }
+  made.set(key, c);
+  return c;
+}
 // Each land's own creature takes the deer's place there; rabbits are everywhere.
 export const NATIVE = [null, 'fox', 'lynx', 'tortoise', 'otter', 'ram', 'crab', 'toadling', 'hedgehog'];
 

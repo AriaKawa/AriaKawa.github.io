@@ -1,11 +1,11 @@
 // Rules of restoration. No DOM: runs in the game, offline catch-up and the pacing test alike.
 // One field covers the whole continent; glades are bought outward from the middle, and one army of spirits works all of it.
-import { CW, CN, LCW, LCH, LCN, ZONES, LANDS } from './world.mjs?v=18';
-import { buildNav, markTree, steer, standable, escape } from './nav.mjs?v=18';
+import { CW, CN, LCW, LCH, LCN, ZONES, LANDS } from './world.mjs?v=19';
+import { buildNav, markTree, steer, standable, escape } from './nav.mjs?v=19';
 // The ground map spirits and animals walk by, rebuilt when a different set of planted trees is in play.
 export function navOf(s, w) { if (!w.nav || w.navTrees !== s.trees) { buildNav(w); for (const t of s.trees) markTree(w, t); w.navTrees = s.trees; } return w.nav; }
 
-const WORLD_VERSION = 8, FIELD_VERSION = 4; // objects / the shape of the glades
+const WORLD_VERSION = 9, FIELD_VERSION = 4; // objects / the shape of the glades
 export const SPIRIT_CAP = 60;
 export const GREEN = .6;           // the height a cell counts as restored
 export const SPIRITS = [

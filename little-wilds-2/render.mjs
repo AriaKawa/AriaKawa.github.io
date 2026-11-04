@@ -1,9 +1,9 @@
 // Everything above the ground: flora, the dead-and-revived objects, spirits, wildlife, weather and fog.
-import { TW, TH, LW, LH, CW, CH, CELL, ZONES, LANDS, SEA, hash, fbm, FC, FCOLS, FROWS, landAtTexel, SHRINK } from './world.mjs?v=18';
-import { GREEN, brushRadius, SPIRITS, gladeBuyable, gladePrice } from './sim.mjs?v=18';
-import { pixelize, newFrame, shadowOf, skirtOf, apronOf } from './pixel.mjs?v=18';
-import { critterCanvas, spiritCanvas, NATIVE, SCALE, WALK_FRAMES, strideOf } from './critters.mjs?v=18';
-import { steer, standable, overWater, escape } from './nav.mjs?v=18';
+import { TW, TH, LW, LH, CW, CH, CELL, ZONES, LANDS, SEA, hash, fbm, FC, FCOLS, FROWS, landAtTexel, SHRINK } from './world.mjs?v=19';
+import { GREEN, brushRadius, SPIRITS, gladeBuyable, gladePrice } from './sim.mjs?v=19';
+import { pixelize, newFrame, shadowOf, skirtOf, apronOf } from './pixel.mjs?v=19';
+import { duckCanvas, critterCanvas, spiritCanvas, NATIVE, SCALE, WALK_FRAMES, strideOf } from './critters.mjs?v=19';
+import { steer, standable, overWater, escape } from './nav.mjs?v=19';
 const money = n => n >= 1e9 ? (n / 1e9).toFixed(2) + 'b' : n >= 1e6 ? (n / 1e6).toFixed(2) + 'm' : n >= 1e4 ? (n / 1e3).toFixed(1) + 'k' : Math.floor(n).toLocaleString();
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -11,6 +11,15 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const SIZE = 64;
 // How many plants of each grass style stay live to carry the wind, rather than being baked still.
 const LIVE = { original: .22, meadow: .45, silverwave: .45 };
+// The air is mostly still. Now and then a gust sweeps across the land as a broad band, a second or so long at
+// any one spot, roughly every ten seconds, some stronger than others. Returns 0 (calm) to 1 (the gust's peak).
+const GUST_SPEED = 110, GUST_GAP = 1100, GUST_WIDTH = 170;
+export function gustAt(x, y, t) {
+  const u = x * .8 + y * .45 - t * GUST_SPEED, d = ((u % GUST_GAP) + GUST_GAP) % GUST_GAP;
+  if (d > GUST_WIDTH) return 0;
+  const n = Math.floor(u / GUST_GAP), k = Math.abs(Math.sin(n * 12.9898 + 4.1) * 43758.5453) % 1;
+  return Math.sin(d / GUST_WIDTH * Math.PI) * (.45 + .55 * k);
+}
 
 // Tiny hand-placed pixel art. Letters index a small per-sprite palette.
 const art = (rows, pal) => {
@@ -234,7 +243,7 @@ export function createRenderer(canvas, world, land, images) {
         if (F.phase[k] >= LIVE[grass]) continue;
         const h = f[F.cell[k]];
         if (h < F.thr[k]) continue;
-        const px = F.x[k], py = F.y[k], gust = Math.sin(t * 1.3 - px * .018 - py * .009) + Math.sin(t * 2.7 + F.phase[k] * 18) * .25, pose = gust > .55 ? 2 : gust < -.75 ? 0 : 1, grow = Math.min(1, (h - F.thr[k]) / .07 + .25), dw = cw * z, dh = ch * z * grow;
+        const px = F.x[k], py = F.y[k], gust = t ? gustAt(px, py, t) : 0, pose = gust > .25 + F.phase[k] * 1.4 ? 2 : 1, grow = Math.min(1, (h - F.thr[k]) / .07 + .25), dw = cw * z, dh = ch * z * grow;
         ctx.drawImage(flora[world.biome[Math.min(TH - 1, py | 0) * TW + (px | 0)]].c, pose * cw, F.kind[k] * ch, cw, ch, sx(px) - dw / 2, sy(py) - dh, dw, dh);
       }
     }
@@ -245,14 +254,16 @@ export function createRenderer(canvas, world, land, images) {
   function grassOver(x, y, half, cut, step) {
     if (cam.z < .75 || !s_) return;
     const f = shown || s_.h, { cw, ch } = flora[0], z = cam.z;
-    for (let cy = Math.max(0, Math.floor((y - 1) / FC)); cy <= Math.min(FROWS - 1, Math.floor((y + 4) / FC)); cy++)
+    for (let cy = Math.max(0, Math.floor((y - 1) / FC)); cy <= Math.min(FROWS - 1, Math.floor((y + 9) / FC)); cy++)
       for (let cx = Math.max(0, Math.floor((x - half) / FC)); cx <= Math.min(FCOLS - 1, Math.floor((x + half) / FC)); cx++) {
         const i = cy * FCOLS + cx;
         for (let k = F.start[i], end = k + F.count[i]; k < end; k++) {
           const px = F.x[k], py = F.y[k], d = px - x;
-          if (py <= y - .5 || py > y + 3.5 || Math.abs(d) > half) continue;
+          if (py <= y - .5 || py > y + 8 || Math.abs(d) > half) continue;
           const h = f[F.cell[k]]; if (h < F.thr[k]) continue;
-          const grow = Math.min(1, (h - F.thr[k]) / .07 + .25), rows = Math.min(ch, cut / grow), near = Math.abs(d) < half * .75;
+          // Only the part of the blade that rises above the creature's feet, up to `cut` above them, covers it.
+          const grow = Math.min(1, (h - F.thr[k]) / .07 + .25), rows = Math.min(ch, (py - y + cut) / grow), near = Math.abs(d) < half * .75 && py < y + 3;
+          if (rows <= 0) continue;
           const pose = near ? (d > 0 ? 2 : 0) : step && Math.sin(step * 9 + px) > .6 ? (d > 0 ? 2 : 0) : 1;
           ctx.drawImage(flora[world.biome[Math.min(TH - 1, py | 0) * TW + (px | 0)]].c, pose * cw, F.kind[k] * ch + ch - rows, cw, rows, sx(px) - cw * z / 2, sy(py) - rows * grow * z, cw * z, rows * grow * z);
         }
@@ -310,7 +321,7 @@ export function createRenderer(canvas, world, land, images) {
         } else {
           let k = 1;
           if (born !== undefined) { const a = (time - born) / 620; if (a < 1) k = 1 + Math.sin(a * Math.PI) * .22 * (1 - a) + (a < .25 ? (a / .25 - 1) * .55 : 0); else revives.delete(o.id); }
-          const sway = o.size > 26 && !o.mark && !reduced ? Math.sin(tNow * 1.3 - o.x * .07) * .02 : 0;
+          const sway = o.size > 18 && !o.mark && !reduced && !s.paused ? Math.sin(tNow * .9 - o.x * .07) * .004 + gustAt(o.x * CELL, o.y * CELL, tNow) * .022 : 0;
           if (!sway && k === 1) art(o, o.live, x, y, size); else { ctx.save(); ctx.translate(snapX(x), snapY(y)); ctx.transform(1, 0, sway, 1, 0, 0); art(o, o.live, 0, 0, size * (2 - k) ** .4, size * k, [o.size, o.size], false); ctx.restore(); }
           grassFoot(foot, o.art, Math.floor(o.y) * CW + Math.floor(o.x), o.id, o.mark);
           if (o.live === 11 && !o.mark && !reduced) { const b = .5 + Math.sin(tNow * 2 + o.x) * .5; ctx.globalAlpha = .18 + b * .2; ctx.fillStyle = '#b8ffe6'; ctx.beginPath(); ctx.arc(x, y - size * .55, size * .32, 0, 7); ctx.fill(); ctx.globalAlpha = 1; }
@@ -356,6 +367,38 @@ export function createRenderer(canvas, world, land, images) {
       const path = world.streams[id];
       for (let k = 0; k < 16; k++) { const q = ((t * .06 + k / 16) % 1) * .7; if (q > st.water) continue; const p = path[Math.floor(q / .7 * (path.length - 1))]; ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.fillRect(sx(p[0]), sy(p[1]), z * 2, z); }
     });
+  }
+  // Ducks paddle about the great lake once it has filled: drifting to somewhere well out on the water, resting,
+  // now and then dabbling tail-up, each leaving a little wake.
+  const ducks = [];
+  function drawDucks(s, t, dt) {
+    const lakeZ = world.ponds.findIndex(p => p.lake);
+    if (lakeZ < 0 || !s.zones[lakeZ] || s.zones[lakeZ].water < 1) return;
+    const P = world.ponds[lakeZ], deep = (x, y) => { x |= 0; y |= 0; return x >= 0 && y >= 0 && x < TW && y < TH && world.waterT[y * TW + x] >= 200 && world.waterT[y * TW + x] < 255; };
+    const spot = () => { for (let k = 0; k < 60; k++) { const x = P.x + (Math.random() * 2 - 1) * P.r, y = P.y + (Math.random() * 2 - 1) * P.r * .7; if (deep(x, y)) return [x, y]; } return [P.x, P.y]; };
+    if (!ducks.length) for (let n = 0; n < 6; n++) { const [x, y] = spot(); ducks.push({ x, y, tx: x, ty: y, rest: Math.random() * 4, dab: 0, dir: 1, hen: n % 3 === 2, ph: Math.random() * 6 }); }
+    const z = cam.z, still = s.paused || reduced;
+    for (const d of ducks) {
+      let moving = false;
+      if (!still) {
+        if (d.dab > 0) d.dab -= dt;
+        else if (d.rest > 0) { d.rest -= dt; if (d.rest <= 0 && Math.random() < .3) d.dab = 1.4; }
+        else {
+          const dx = d.tx - d.x, dy = d.ty - d.y, dist = Math.hypot(dx, dy), step = 2.6 * dt;
+          if (dist < .5) { d.rest = 2 + Math.random() * 6; [d.tx, d.ty] = spot(); }
+          else { const nx = d.x + dx / dist * step, ny = d.y + dy / dist * step; if (deep(nx, ny)) { d.x = nx; d.y = ny; d.dir = dx < 0 ? -1 : 1; moving = true; } else [d.tx, d.ty] = spot(); }
+        }
+      }
+      const x = sx(d.x), y = sy(d.y);
+      if (x < -40 || y < -40 || x > W + 40 || y > H + 40) continue;
+      const c = duckCanvas(d.hen, d.dab > 0 ? 1 : 0, d.dir < 0), k = z * .85 / SCALE, bob = still ? 0 : Math.round(Math.sin(t * 2.2 + d.ph) * .6) * z * .5;
+      // Wake: two pale lines trailing out behind and a soft ring at the waterline.
+      ctx.fillStyle = 'rgba(235,248,255,.55)';
+      ctx.fillRect(x - c.width * k * .45, y, c.width * k * .9, Math.max(1, z * .5));
+      if (moving) for (let n = 1; n <= 3; n++) { const back = -d.dir * n * 2.2 * z; ctx.globalAlpha = .5 - n * .13; ctx.fillRect(x + back - n * z * .6, y - n * z * .5, z * 1.4, Math.max(1, z * .5)); ctx.fillRect(x + back - n * z * .6, y + n * z * .5, z * 1.4, Math.max(1, z * .5)); }
+      ctx.globalAlpha = 1;
+      ctx.drawImage(c, snapX(x - c.width * k / 2), snapY(y - c.height * k + z * .4 + bob), c.width * k, c.height * k);
+    }
   }
   // Wildlife arrives as the land heals. Butterflies and birds pass through; pets stay and graze.
   let critterAt = -1;
@@ -446,7 +489,7 @@ export function createRenderer(canvas, world, land, images) {
     const art = critterCanvas(name, pose, pose === 'walk' ? ph : 0, c.dir < 0), k = z * f / SCALE, aw = art.width * k, ah = art.height * k;
     { const sh = shadowOf(art), left = snapX(x - aw / 2); ctx.drawImage(sh.c, left, snapY(y - ah) + (sh.foot - sh.c.height + 2) * k, sh.c.width * k, sh.c.height * k); }
     ctx.drawImage(art, snapX(x - aw / 2), snapY(y - lift - ah), aw, ah);
-    if (lift < z * 1.5) { const cut = Math.max(1.6, ah / z * (rabbit ? .2 : .26)) - lift / z; grassOver(c.x, c.y, aw / z * .32, cut, walking ? c.dist : 0); fringe(c.x, c.y, aw / z * .6, cut, c.n | 0, walking ? c.dist / (strideOf(name) * f) * 2 : 0); }
+    if (lift < z * 1.5) { const cut = Math.max(1.6, ah / z * (rabbit ? .3 : .4)) - lift / z; grassOver(c.x, c.y, aw / z * .32, cut, walking ? c.dist : 0); fringe(c.x, c.y, aw / z * .6, cut, c.n | 0, walking ? c.dist / (strideOf(name) * f) * 2 : 0); }
     if (def.row === 0 && !reduced && quality > 0) { // Spirit deer shed slow motes of light.
       for (let k = 0; k < 3; k++) { const q = (t * .22 + k / 3 + c.n * .13) % 1; ctx.globalAlpha = c.alpha * Math.sin(q * 3.14) * .85; ctx.fillStyle = '#b8fff0'; ctx.fillRect(x + (hash(k, c.n, 41) - .5) * size * .8 + Math.sin(t + k) * z, y - size * (.35 + q * .85), Math.max(1, z * .7), Math.max(1, z * .7)); }
     }
@@ -588,7 +631,7 @@ export function createRenderer(canvas, world, land, images) {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.imageSmoothingEnabled = false; newFrame();
       updateFog(s); spawnCritters(s, time);
       ctx.fillStyle = '#365568'; ctx.fillRect(0, 0, W, H);
-      drawGround(land.canvas); drawWater(s, time); drawFlora(s, time, dt); drawProps(s, time, dt, opts.carry); drawCritters(s, time, dt); drawLight(s, time);
+      drawGround(land.canvas); drawWater(s, time); drawDucks(s, time / 1000, dt); drawFlora(s, time, dt); drawProps(s, time, dt, opts.carry); drawCritters(s, time, dt); drawLight(s, time);
       drawParticles(dt);
       if (fogAlpha.some(a => a > 0)) { ctx.imageSmoothingEnabled = true; const drift = reduced || quality < 1 ? 0 : Math.sin(time * .00016) * 7 * cam.z; ctx.globalAlpha = .72; ctx.drawImage(fogSoft, 0, 0, CW, CH, sx(0), sy(0), TW * cam.z, TH * cam.z); ctx.globalAlpha = quality > 1 ? .5 : .35; if (quality > 1) ctx.drawImage(fogSoft, 0, 0, CW, CH, sx(0) + drift, sy(0) - drift * .5, TW * cam.z, TH * cam.z); ctx.globalAlpha = 1; ctx.imageSmoothingEnabled = false; }
       drawLabels(s);

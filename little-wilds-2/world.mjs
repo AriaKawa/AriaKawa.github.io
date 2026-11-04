@@ -14,6 +14,8 @@ const GLADES = grid.map(([name, col, row, parent], id) => ({
 }));
 GLADES.forEach(z => { z.adj = GLADES.filter(o => Math.abs(o.col - z.col) + Math.abs(o.row - z.row) === 1).map(o => o.id); });
 export const FINALE = 8;
+// Pebble Hollow, in the middle of Hollow Vale, holds a great lake where ducks come to live.
+export const LAKE = { land: 0, glade: 3, r: 92, squash: 1.5 };
 
 // Village buildings: [dead frame, size, frame is in the land's own sheet]. The living frame is always the next one.
 const MILL = [0, 66], COTTAGE = [2, 58], WELL = [4, 34], GREENHOUSE = [6, 56], BARN = [8, 64], TOWER = [10, 62], HIVES = [12, 36], OWN_A = [8, 54, 1], OWN_B = [10, 62, 1];
@@ -118,6 +120,7 @@ export function makeLand(seed = 1, mapId = 0) {
     x: z.px + (hash(z.id, 3, seed) - .5) * 70, y: z.py + (hash(z.id, 7, seed) - .5) * 50,
     r: z.id === FINALE ? 26 : 13 + hash(z.id, 9, seed) * 9,
   }));
+  if (mapId === LAKE.land) { const p = ponds[LAKE.glade], z = GLADES[LAKE.glade]; p.x = z.px; p.y = z.py; p.r = LAKE.r; p.lake = true; }
   for (const p of ponds) for (let k = 0; k < 40 && blockedAt(p.x, p.y, p.r + 16); k++) { const d = Math.hypot(LW / 2 - p.x, LH / 2 - p.y); p.x += (LW / 2 - p.x) / d * 6; p.y += (LH / 2 - p.y) / d * 6; }
   const waterT = new Float32Array(LW * LH).fill(-1), waterZ = new Uint8Array(LW * LH);
   const stamp = (x, y, r, t, z) => {
@@ -139,11 +142,11 @@ export function makeLand(seed = 1, mapId = 0) {
     return path;
   });
   ponds.forEach((p, id) => {
-    const R = p.r + 4;
+    const R = p.r + 4, sq = p.lake ? LAKE.squash : 1; // The lake is a broad oval with a wandering shore.
     for (let y = Math.floor(p.y - R); y <= p.y + R; y++) for (let x = Math.floor(p.x - R); x <= p.x + R; x++) {
       if (x < 0 || y < 0 || x >= LW || y >= LH) continue;
-      const a = Math.atan2(y - p.y, x - p.x), d = Math.hypot(x - p.x, y - p.y);
-      const edge = p.r * (.82 + noise(a * 1.6 + 9, id, seed + 77) * .36);
+      const a = Math.atan2(y - p.y, x - p.x), d = Math.hypot(x - p.x, (y - p.y) * sq);
+      const edge = p.r * (p.lake ? .84 + noise(a * 2.4 + 9, id, seed + 77) * .2 + (fbm(x / 30, y / 30, seed + 79) - .5) * .16 : .82 + noise(a * 1.6 + 9, id, seed + 77) * .36);
       if (d < edge) { const i = y * LW + x; waterT[i] = .7 + .3 * d / edge; waterZ[i] = id; }
     }
   });
@@ -288,7 +291,7 @@ export async function makeWorld(progress = async () => {}) {
     for (let y = 0; y < LCH; y++) for (let x = 0, a = y * LCW, b = (cy + y) * CW + cx; x < LCW; x++, a++, b++) { blocked[b] = L.blocked[a]; near[b] = L.near[a]; zone[b] = zb + L.zone[a]; }
     const toG = i => (cy + Math.floor(i / LCW)) * CW + cx + i % LCW;
     L.cellsOf.forEach((l, j) => { cellsOf[zb + j] = l.map(toG); order[zb + j] = Uint32Array.from(L.order[j], toG); });
-    for (const p of L.ponds) ponds.push({ x: p.x + ox, y: p.y + oy, r: p.r });
+    for (const p of L.ponds) ponds.push({ x: p.x + ox, y: p.y + oy, r: p.r, lake: p.lake });
     for (const path of L.streams) streams.push(path.map(([x, y]) => [x + ox, y + oy]));
     objStart[id] = objects.length;
     for (const o of L.objects) objects.push({ ...o, id: objects.length, zone: zb + o.zone, land: id, x: o.x + cx, y: o.y + cy });
