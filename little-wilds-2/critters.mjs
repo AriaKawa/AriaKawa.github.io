@@ -62,33 +62,30 @@ function raster(W, H, pal, shapes) {
   return c;
 }
 
-// A four-legged walk, p running 0 to 1 over one stride. The legs step one after another, a quarter stride
-// apart (near hind, near fore, far hind, far fore), the way a real deer or fox walks: each foot stays planted
-// while the body passes over it, then lifts, swings forward and sets down again. Each leg bends at a knee,
-// forelegs jutting forward and hind legs back, and the body dips a little as the weight changes feet.
-export const STANCE = .62;
+// A plain, calm walk, p running 0 to 1 over one stride. Legs stay straight and swing from the hip like
+// pendulums, a small way each side, in diagonal pairs: near hind with far fore, near fore with far hind. A leg
+// swinging forward lifts its foot a pixel off the grass, and the body rises a pixel as the legs pass under it.
+// Over a stream the animal leaps instead: forelegs reaching forward, hind legs stretched back.
 function legs(list, pose, p, bob = 0) {
   const out = [];
   for (const L of list) {
-    const front = L.x > 0, A = L.stride ?? 2.4;
+    const front = L.x > 0, A = L.stride ?? 2, len = -L.y;
     let fx = L.x, fy = 0;
     if (pose === 'walk') {
-      const u = (p + (front ? .25 : 0) + (L.far ? .5 : 0)) % 1;
-      if (u < STANCE) fx = L.x + A - 2 * A * u / STANCE;
-      else { const s = (u - STANCE) / (1 - STANCE); fx = L.x - A + 2 * A * s * s * (3 - 2 * s); fy = -Math.sin(Math.PI * s) * (L.lift ?? Math.max(1, -L.y * .14)); }
-    }
-    const hy = L.y + bob, d = Math.hypot(fx - L.x, fy - hy) || 1, half = -L.y * .53, bend = Math.sqrt(Math.max(0, half * half - d * d / 4)) * (front ? 1 : -1);
-    const kx = (L.x + fx) / 2 + (fy - hy) / d * bend, ky = (hy + fy) / 2 - (fx - L.x) / d * bend;
-    out.push({ l: [L.x, hy, kx, ky, L.w], c: L.c, far: L.far }, { l: [kx, ky, fx, fy - (L.hoof ? 1 : 0), L.w * .85], c: L.c2 || L.c, far: L.far });
-    if (L.hoof) out.push({ l: [fx, fy - 1.2, fx + .2, fy, L.w * .85], c: L.hoof, far: L.far });
+      const off = front === !!L.far ? 0 : .5, a = 2 * Math.PI * (p + off);
+      fx = L.x + Math.sin(a) * A; fy = -Math.max(0, Math.cos(a)) * (L.lift ?? 1.1);
+    } else if (pose === 'leap') { fx = L.x + (front ? len * .5 : -len * .55); fy = front ? -len * .32 : -len * .22; }
+    const hy = L.y + bob, d = Math.hypot(fx - L.x, fy - hy) || 1, ux = (fx - L.x) / d, uy = (fy - hy) / d, mx = L.x + ux * d * .55, my = hy + uy * d * .55;
+    out.push({ l: [L.x, hy, mx, my, L.w], c: L.c, far: L.far }, { l: [mx, my, fx, fy, L.w * .85], c: L.c2 || L.c, far: L.far });
+    if (L.hoof) out.push({ l: [fx - ux * 1.1, fy - uy * 1.1, fx, fy, L.w * .85], c: L.hoof, far: L.far, ol: false });
   }
   return out;
 }
-const bobOf = (pose, p) => pose === 'walk' ? -Math.round(Math.max(0, Math.sin(p * 4 * Math.PI + .6)) * .85) : 0;
+const bobOf = (pose, p) => pose === 'leap' ? -1 : pose === 'walk' && Math.abs(Math.sin(2 * Math.PI * p)) < .38 ? -1 : 0;
 const eye = (x, y, closed, c = 'e') => closed ? { d: [[x - 1, y + 1], [x, y + 1]], c: 'b!' } : { d: [[x, y]], c };
 
 export const CRITTERS = {
-  deer: { stride: 2.4, // Spirit deer: a red-brown deer with a pale rump and belly, and antlers of glowing mint.
+  deer: { stride: 2, // Spirit deer: a red-brown deer with a pale rump and belly, and antlers of glowing mint.
     w: 36, h: 38, pal: { b: '#b9804c', c: '#efdcb8', k: '#8a5c38', h: '#3e2a1c', x: '#a8f2d6', e: '#1e140c', n: '#2a1c14' },
     build(pose, p) {
       const sleep = pose === 'sleep', drop = sleep ? 9 : bobOf(pose, p);
@@ -131,20 +128,31 @@ export const CRITTERS = {
   },
   rabbit: { // Moss rabbit: a brown-grey cottontail with moss on its back.
     w: 20, h: 22, pal: { b: '#b8a48a', m: '#7fa65a', p: '#e6a2a8', w: '#f6f0e4', e: '#1e140c' },
+    // Rabbits hop. Over one hop (p from 0 to 1): crouched with the long hind feet flat, then pushing off with
+    // the hind legs kicked out behind, then reaching forward with the forepaws to land, then crouched again.
+    // The game lifts the rabbit off the ground through the middle of the hop.
     build(pose, p) {
-      const sleep = pose === 'sleep', stretch = pose === 'walk' && (Math.floor(p * 4) % 2) ? 1 : 0, drop = 0;
-      const earA = sleep ? -1.25 : pose === 'graze' ? -.5 : -stretch * .3;
+      const sleep = pose === 'sleep', hop = pose === 'walk' || pose === 'leap';
+      const phase = !hop ? 'sit' : pose === 'leap' ? 'push' : p < .2 || p >= .85 ? 'sit' : p < .55 ? 'push' : 'reach';
+      const low = sleep ? 1 : 0, tilt = phase === 'push' ? -.2 : phase === 'reach' ? .14 : 0;
+      const earA = sleep ? -1.25 : pose === 'graze' ? -.5 : phase === 'push' ? -.45 : phase === 'reach' ? -.25 : 0;
       const ears = rot(-.5, -2, earA, [{ l: [0, 0, -1.6, -7, 2.4], c: 'b', far: 1 }, { l: [1.4, 0, .6, -7.2, 2.4], c: 'b' }, { l: [1.1, -2, .7, -6, .9], c: 'p', ol: false }]);
       const head = [...ears, { e: [0, 0, 3, 2.7], c: 'b' }, { e: [1.8, 1.2, 1.6, 1.1], c: 'w', ol: false }, { d: [[3, 0]], c: 'p' }, eye(1, -1, sleep)];
-      let [ax, ay, ang] = pose === 'graze' ? [5.5, -4, .35] : sleep ? [4.5, -6, .1] : [4.5 + stretch, -9, 0]; if (!sleep) ay += drop;
-      return [
-        { e: [-2 - stretch, -.8, 3, 1], c: 'b_' },
-        { e: [0, -5 + (sleep ? 1 : 0), 5.4 + stretch, 4.3], c: 'b' }, { e: [-2, -4.6 + (sleep ? 1 : 0), 4, 4], c: 'b' },
-        { e: [-1, -8 + (sleep ? 1 : 0), 3.8, 1.5, -.15], c: 'm', flat: 1, ol: false }, { d: [[-2, -9 + (sleep ? 1 : 0)], [1, -9 + (sleep ? 1 : 0)]], c: 'm^' },
-        { e: [-5.6 - stretch, -6, 1.7, 1.7], c: 'w' },
-        ...(sleep ? [] : [{ l: [3.5 + stretch, -3, 4 + stretch * 2, -.5, 1.8], c: 'b' }]),
+      const [ax, ay, ang] = pose === 'graze' ? [5.5, -4, .35] : sleep ? [4.5, -6, .1] : [4.6, -9, 0];
+      const hind = phase === 'sit' ? (sleep ? [] : [{ e: [-1.4, -.8, 3.2, 1], c: 'b' }])
+        : phase === 'push' ? [{ l: [-2.5, -3.5, -6.5, -1.2, 2.4], c: 'b' }, { l: [-6.5, -1.2, -8.8, -.4, 1.6], c: 'b' }]
+        : [{ l: [-2.5, -3.2, -5, -2.6, 2.4], c: 'b' }, { l: [-5, -2.6, -6.8, -3.4, 1.6], c: 'b' }];
+      const fore = sleep ? [] : phase === 'sit' ? [{ l: [3.4, -3, 3.6, -.4, 1.7], c: 'b' }]
+        : phase === 'push' ? [{ l: [3.4, -3.4, 5.6, -4.4, 1.6], c: 'b' }] : [{ l: [3.4, -3.2, 6, -.6, 1.6], c: 'b' }];
+      const body = [
+        ...hind,
+        { e: [0, -5 + low, 5.4, 4.3], c: 'b' }, { e: [-2, -4.6 + low, 4, 4], c: 'b' },
+        { e: [-1, -8 + low, 3.8, 1.5, -.15], c: 'm', flat: 1, ol: false }, { d: [[-2, -9 + low], [1, -9 + low]], c: 'm^' },
+        { e: [-5.6, -6 + low, 1.7, 1.7], c: 'w' },
+        ...fore,
         ...rot(ax, ay, ang, head),
       ];
+      return tilt ? rot(0, -3, tilt, body) : body;
     },
   },
   fox: { stride: 2, // Ember Basin: a cinder fox with dark socks and an ember-tipped brush.
@@ -168,7 +176,7 @@ export const CRITTERS = {
       ];
     },
   },
-  lynx: { stride: 2.4, // Frostmere: a snow lynx, stocky, with tufted ears, a cheek ruff and a stub of a tail.
+  lynx: { stride: 2, // Frostmere: a snow lynx, stocky, with tufted ears, a cheek ruff and a stub of a tail.
     w: 34, h: 28, pal: { b: '#e6e8ee', s: '#9aa2b4', k: '#3c4250', p: '#d48a9a', e: '#2a3a2a' },
     build(pose, p) {
       const sleep = pose === 'sleep', drop = sleep ? 7 : bobOf(pose, p);
@@ -203,11 +211,11 @@ export const CRITTERS = {
       ];
     },
   },
-  otter: { stride: 1.6, // Mistfen: a reed otter, long and low, with a pale chin and a tapering tail.
+  otter: { stride: 1.1, // Mistfen: a reed otter, long and low, with a pale chin and a tapering tail.
     w: 36, h: 18, pal: { b: '#7c5232', l: '#e6cfa4', k: '#4a3020', e: '#140c08' },
     build(pose, p) {
       const sleep = pose === 'sleep', drop = sleep ? 2.5 : bobOf(pose, p);
-      const L = [{ x: -5, y: -4, w: 2, c: 'k', far: 1, pair: 1, stride: 1.6 }, { x: 4, y: -4, w: 2, c: 'k', far: 1, stride: 1.6 }, { x: -6.5, y: -4, w: 2.2, c: 'b', c2: 'k', stride: 1.6 }, { x: 5.5, y: -4, w: 2.2, c: 'b', c2: 'k', pair: 1, stride: 1.6 }];
+      const L = [{ x: -5, y: -4, w: 2, c: 'k', far: 1, pair: 1, stride: 1.1 }, { x: 4, y: -4, w: 2, c: 'k', far: 1, stride: 1.1 }, { x: -6.5, y: -4, w: 2.2, c: 'b', c2: 'k', stride: 1.1 }, { x: 5.5, y: -4, w: 2.2, c: 'b', c2: 'k', pair: 1, stride: 1.1 }];
       const head = [{ e: [-1.6, -2.2, 1.1, .9], c: 'b' }, { e: [0, 0, 3, 2.4], c: 'b' }, { e: [2.4, 1, 2, 1.4], c: 'l', ol: false }, { d: [[4, 0]], c: 'e' }, eye(1, -1, sleep)];
       let [ax, ay, ang] = pose === 'graze' ? [11, -3, .45] : sleep ? [9, -3.5, .1] : [10, -8, 0]; if (!sleep) ay += drop;
       return [
@@ -292,7 +300,7 @@ export const NATIVE = [null, 'fox', 'lynx', 'tortoise', 'otter', 'ram', 'crab', 
 const made = new Map();
 export const WALK_FRAMES = 8;
 // How far, in texels, one full stride carries each animal, so its feet stay planted as it moves.
-export const strideOf = name => 2 * (CRITTERS[name].stride ?? 2.4) / STANCE / SCALE;
+export const strideOf = name => 4 * (CRITTERS[name].stride ?? 2) / SCALE;
 // pose: stand, walk, graze or sleep; ph is the frame of the walk, 0 to 7.
 export function critterCanvas(name, pose, ph, flip) {
   const key = `${name}:${pose}:${ph}:${flip ? 1 : 0}`;

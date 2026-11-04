@@ -1,9 +1,9 @@
 // Everything above the ground: flora, the dead-and-revived objects, spirits, wildlife, weather and fog.
-import { TW, TH, LW, LH, CW, CH, CELL, ZONES, LANDS, SEA, hash, fbm, FC, FCOLS, FROWS, landAtTexel } from './world.mjs?v=13';
-import { GREEN, brushRadius, SPIRITS, gladeBuyable, gladePrice } from './sim.mjs?v=13';
-import { pixelize, newFrame, shadowOf, skirtOf, apronOf } from './pixel.mjs?v=13';
-import { critterCanvas, spiritCanvas, NATIVE, SCALE, WALK_FRAMES, strideOf } from './critters.mjs?v=13';
-import { steer, standable, overWater, escape } from './nav.mjs?v=13';
+import { TW, TH, LW, LH, CW, CH, CELL, ZONES, LANDS, SEA, hash, fbm, FC, FCOLS, FROWS, landAtTexel } from './world.mjs?v=14';
+import { GREEN, brushRadius, SPIRITS, gladeBuyable, gladePrice } from './sim.mjs?v=14';
+import { pixelize, newFrame, shadowOf, skirtOf, apronOf } from './pixel.mjs?v=14';
+import { critterCanvas, spiritCanvas, NATIVE, SCALE, WALK_FRAMES, strideOf } from './critters.mjs?v=14';
+import { steer, standable, overWater, escape } from './nav.mjs?v=14';
 const money = n => n >= 1e9 ? (n / 1e9).toFixed(2) + 'b' : n >= 1e6 ? (n / 1e6).toFixed(2) + 'm' : n >= 1e4 ? (n / 1e3).toFixed(1) + 'k' : Math.floor(n).toLocaleString();
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -341,9 +341,9 @@ export function createRenderer(canvas, world, land, images) {
     const land = ZONES[c.zone].land, name = c.kind === 'rabbit' ? 'rabbit' : land ? NATIVE[land] : c.kind;
     // The walk is driven by distance covered, not time, so feet stay planted on the ground as the body passes.
     // Rabbits bound instead: one hop per four texels, and every animal bounds over a stream.
-    const cyc = (c.dist || 0) / strideOf(name), hop = walking && c.kind === 'rabbit' ? Math.sin((c.dist / 4 % 1) * Math.PI) : 0;
+    const rabbit = c.kind === 'rabbit', cyc = (c.dist || 0) / strideOf(name), q = c.dist / 5 % 1, hop = walking && rabbit && q > .15 && q < .9 ? Math.sin((q - .15) / .75 * Math.PI) : 0;
     c.air += ((world.nav && overWater(world, c.x / CELL, c.y / CELL) ? 1 : 0) - c.air) * Math.min(1, (1 / 60) * 14);
-    const pose = c.state === 'sleep' ? 'sleep' : c.state === 'graze' ? 'graze' : walking ? 'walk' : 'stand', ph = c.kind === 'rabbit' ? (hop > .2 ? 1 : 0) : Math.floor(cyc * WALK_FRAMES) % WALK_FRAMES;
+    const pose = c.state === 'sleep' ? 'sleep' : c.state === 'graze' ? 'graze' : walking && c.air > .25 ? 'leap' : walking ? 'walk' : 'stand', ph = Math.floor((rabbit ? q : cyc % 1) * WALK_FRAMES) % WALK_FRAMES;
     const size = def.size * z, lift = (hop * 3 + Math.sin(c.air * Math.PI / 2) * 5) * z;
     ctx.globalAlpha = c.alpha;
     const art = critterCanvas(name, pose, pose === 'walk' ? ph : 0, c.dir < 0), k = z / SCALE, aw = art.width * k, ah = art.height * k;
