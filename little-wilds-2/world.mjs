@@ -35,6 +35,13 @@ export function noise(x, y, seed = 0) {
   return (hash(ix, iy, seed) * (1 - u) + hash(ix + 1, iy, seed) * u) * (1 - v)
     + (hash(ix, iy + 1, seed) * (1 - u) + hash(ix + 1, iy + 1, seed) * u) * v;
 }
+// Rolling hills across the continent: broad rises with smaller knolls on them, lit from the upper left. Returns
+// how bright the ground is at (x, y) in texels: above 1 on slopes facing the light and on tops, below 1 in shade.
+const hill = (a, b) => fbm(a / 170, b / 170, 203) * .62 + fbm(a / 58, b / 58, 201) * .38;
+export function hillShade(x, y) {
+  const e = hill(x, y), ex = hill(x + 4, y), ey = hill(x, y + 4);
+  return 1 + Math.max(-.19, Math.min(.19, (e - ex) * 26 + (e - ey) * 34)) + (e - .5) * .2;
+}
 export function fbm(x, y, seed = 0) {
   return noise(x, y, seed) * .55 + noise(x * 2.1, y * 2.1, seed + 1) * .3 + noise(x * 4.3, y * 4.3, seed + 2) * .15;
 }
@@ -235,11 +242,16 @@ export function makeLand(seed = 1, mapId = 0) {
     let cell = y * LCW + x;
     if (blocked[cell]) { cell = -1; for (const [a, b] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]]) { const xx = x + a, yy = y + b; if (xx >= 0 && yy >= 0 && xx < LCW && yy < LCH && !blocked[yy * LCW + xx]) { cell = yy * LCW + xx; break; } } }
     if (cell < 0 || edge[Math.min(LH - 1, Math.floor(ty)) * LW + Math.min(LW - 1, Math.floor(tx))] || road[Math.min(LH - 1, Math.floor(ty)) * LW + Math.min(LW - 1, Math.floor(tx))] || xx0(Math.min(LW - 1, tx), Math.min(LH - 1, ty))) continue;
+    // Tall grass grows in broad, ragged patches; between them lie open lawns of short green turf, with only
+    // the odd tuft or flower. A patch thins out over a few texels at its edge rather than stopping dead.
+    const patch = fbm(tx / 42, ty / 42, seed + 141) * .72 + fbm(tx / 11, ty / 11, seed + 143) * .28, lawn = patch < .46 ? 1 : patch < .53 ? (.53 - patch) / .07 : 0;
+    const flowery = fbm(x / 16, y / 16, seed + 131) > .58;
+    if (lawn && hash(x + k * 5, y - k * 7, seed + 109) < lawn * (flowery ? .7 : .93)) continue;
     let kind, thr;
-    if (r < .46) { kind = 0; thr = .33 + r2 * .12; }       // short tuft
+    if (r < .3) { kind = 0; thr = .33 + r2 * .12; }        // short tuft
     else if (r < .66) { kind = 1; thr = .46 + r2 * .12; }   // tall grass
     else if (r < .9) { // Wildflowers only in drifts, the way they grow in a real meadow; between drifts it is grass.
-      if (fbm(x / 16, y / 16, seed + 131) > .58) { kind = 2 + Math.floor(fbm(x / 13, y / 13, seed + 121) * 7) % 5; thr = .7 + r2 * .28; }
+      if (flowery) { kind = 2 + Math.floor(fbm(x / 13, y / 13, seed + 121) * 7) % 5; thr = .7 + r2 * .28; }
       else if (r < .8) { kind = 1; thr = .46 + r2 * .12; } else { kind = 0; thr = .33 + r2 * .12; }
     }
     else if (r < .935) { kind = 7; thr = .8 + r2 * .18; }  // fern

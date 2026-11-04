@@ -1,9 +1,9 @@
 // Everything above the ground: flora, the dead-and-revived objects, spirits, wildlife, weather and fog.
-import { TW, TH, LW, LH, CW, CH, CELL, ZONES, LANDS, SEA, hash, fbm, FC, FCOLS, FROWS, landAtTexel, SHRINK } from './world.mjs?v=20';
-import { GREEN, brushRadius, SPIRITS, gladeBuyable, gladePrice } from './sim.mjs?v=20';
-import { pixelize, newFrame, shadowOf, skirtOf, apronOf } from './pixel.mjs?v=20';
-import { duckCanvas, critterCanvas, spiritCanvas, NATIVE, SCALE, WALK_FRAMES, strideOf } from './critters.mjs?v=20';
-import { steer, standable, overWater, escape } from './nav.mjs?v=20';
+import { TW, TH, LW, LH, CW, CH, CELL, ZONES, LANDS, SEA, hash, fbm, FC, FCOLS, FROWS, landAtTexel, SHRINK, hillShade } from './world.mjs?v=21';
+import { GREEN, brushRadius, SPIRITS, gladeBuyable, gladePrice } from './sim.mjs?v=21';
+import { pixelize, newFrame, shadowOf, skirtOf, apronOf } from './pixel.mjs?v=21';
+import { duckCanvas, critterCanvas, spiritCanvas, NATIVE, SCALE, WALK_FRAMES, strideOf } from './critters.mjs?v=21';
+import { steer, standable, overWater, escape } from './nav.mjs?v=21';
 const money = n => n >= 1e9 ? (n / 1e9).toFixed(2) + 'b' : n >= 1e6 ? (n / 1e6).toFixed(2) + 'm' : n >= 1e4 ? (n / 1e3).toFixed(1) + 'k' : Math.floor(n).toLocaleString();
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -219,6 +219,21 @@ export function createRenderer(canvas, world, land, images) {
     ctx.drawImage(canvasSource, x0, y0, vw, vh, 0, 0, W, H);
   }
   const F = world.flora;
+  // Plants take the light of the hill they grow on: five shades, darkest on slopes facing away from the light.
+  const TG = 8, tgw = TW / TG, tint = new Uint8Array(tgw * (TH / TG)), tinted = new Map();
+  for (let y = 0, i = 0; y < TH / TG; y++) for (let x = 0; x < tgw; x++, i++) tint[i] = Math.max(0, Math.min(4, Math.round((hillShade(x * TG + 4, y * TG + 4) - 1) / .075) + 2));
+  function plants(px, py) {
+    const b = world.biome[Math.min(TH - 1, py | 0) * TW + (px | 0)], t = tint[Math.min(TH / TG - 1, py / TG | 0) * tgw + Math.min(tgw - 1, px / TG | 0)];
+    if (t === 2) return flora[b].c;
+    const key = b * 5 + t; let c = tinted.get(key);
+    if (!c) {
+      const src = flora[b].c; c = document.createElement('canvas'); c.width = src.width; c.height = src.height;
+      const g = c.getContext('2d'); g.drawImage(src, 0, 0); g.globalCompositeOperation = 'source-atop';
+      g.fillStyle = t < 2 ? `rgba(18,28,44,${(2 - t) * .13})` : `rgba(255,248,214,${(t - 2) * .1})`; g.fillRect(0, 0, c.width, c.height);
+      tinted.set(key, c);
+    }
+    return c;
+  }
   function bakeChunk(index, s) {
     let b = baked.get(index);
     if (!b) { const c = document.createElement('canvas'); c.width = FC + 18; c.height = FC + 14; b = { c, g: c.getContext('2d') }; b.g.imageSmoothingEnabled = false; baked.set(index, b); }
@@ -229,7 +244,7 @@ export function createRenderer(canvas, world, land, images) {
       if (h < F.thr[k] || F.phase[k] < LIVE[grass]) continue;
       b.empty = false;
       const grow = Math.min(1, (h - F.thr[k]) / .07 + .25), dh = Math.round(ch * grow);
-      b.g.drawImage(flora[world.biome[Math.min(TH - 1, F.y[k] | 0) * TW + (F.x[k] | 0)]].c, cw, F.kind[k] * ch, cw, ch, Math.round(F.x[k] - cx + 9 - cw / 2), Math.round(F.y[k] - cy + 14 - dh), cw, dh);
+      b.g.drawImage(plants(F.x[k], F.y[k]), cw, F.kind[k] * ch, cw, ch, Math.round(F.x[k] - cx + 9 - cw / 2), Math.round(F.y[k] - cy + 14 - dh), cw, dh);
     }
   }
   // Most plants are baked into per-chunk images, so a full meadow costs a few draws rather than thousands.
@@ -252,7 +267,7 @@ export function createRenderer(canvas, world, land, images) {
         const h = f[F.cell[k]];
         if (h < F.thr[k]) continue;
         const px = F.x[k], py = F.y[k], gust = t ? gustAt(px, py, t) : 0, pose = gust > .25 + F.phase[k] * 1.4 ? 2 : 1, grow = Math.min(1, (h - F.thr[k]) / .07 + .25), dw = cw * z, dh = ch * z * grow;
-        ctx.drawImage(flora[world.biome[Math.min(TH - 1, py | 0) * TW + (px | 0)]].c, pose * cw, F.kind[k] * ch, cw, ch, sx(px) - dw / 2, sy(py) - dh, dw, dh);
+        ctx.drawImage(plants(px, py), pose * cw, F.kind[k] * ch, cw, ch, sx(px) - dw / 2, sy(py) - dh, dw, dh);
       }
     }
   }
@@ -273,7 +288,7 @@ export function createRenderer(canvas, world, land, images) {
           const grow = Math.min(1, (h - F.thr[k]) / .07 + .25), rows = Math.min(ch, (py - y + cut) / grow), near = Math.abs(d) < half * .75 && py < y + 3;
           if (rows <= 0) continue;
           const pose = near ? (d > 0 ? 2 : 0) : step && Math.sin(step * 9 + px) > .6 ? (d > 0 ? 2 : 0) : 1;
-          ctx.drawImage(flora[world.biome[Math.min(TH - 1, py | 0) * TW + (px | 0)]].c, pose * cw, F.kind[k] * ch + ch - rows, cw, rows, sx(px) - cw * z / 2, sy(py) - rows * grow * z, cw * z, rows * grow * z);
+          ctx.drawImage(plants(px, py), pose * cw, F.kind[k] * ch + ch - rows, cw, rows, sx(px) - cw * z / 2, sy(py) - rows * grow * z, cw * z, rows * grow * z);
         }
       }
   }
@@ -608,7 +623,7 @@ export function createRenderer(canvas, world, land, images) {
     floraCell(i) { floraDirty[Math.floor(Math.floor(i / CW) * CELL / FC) * FCOLS + Math.floor(i % CW * CELL / FC)] = 1; },
     allFlora() { floraDirty.fill(1); },
     get grass() { return grass; },
-    setGrass(style) { if (!GRASS_STYLES[style] || style === grass) return; grass = style; flora = LANDS.map(P => floraAtlas(P, style)); floraDirty.fill(1); },
+    setGrass(style) { if (!GRASS_STYLES[style] || style === grass) return; grass = style; flora = LANDS.map(P => floraAtlas(P, style)); tinted.clear(); floraDirty.fill(1); },
     get quality() { return quality; },
     setQuality(q) { quality = q; resize(); },
     dispose() { removeEventListener('resize', resize); },

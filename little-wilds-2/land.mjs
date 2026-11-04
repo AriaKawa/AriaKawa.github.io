@@ -1,7 +1,7 @@
 // The ground as one pixel canvas for the whole continent. Every texel keeps a small code for its grain,
 // shade and kind of ground; each land turns codes into colours through lookup tables, one per growth stage,
 // so the front line between dead and alive stays crisp and organic without a colour array per stage.
-import { TW, TH, LW, LH, CW, CH, CELL, fbm, noise, hash, LANDS, SEA, BEACH, ROCK, landAtTexel } from './world.mjs?v=20';
+import { TW, TH, LW, LH, CW, CH, CELL, fbm, noise, hash, LANDS, SEA, BEACH, ROCK, landAtTexel, hillShade } from './world.mjs?v=21';
 
 const packed = (r, g, b) => (255 << 24) | (Math.max(0, Math.min(255, b)) << 16) | (Math.max(0, Math.min(255, g)) << 8) | Math.max(0, Math.min(255, r));
 const pack = c => packed(c[0], c[1], c[2]);
@@ -64,8 +64,8 @@ export async function createLand(w, progress = async () => {}) {
     await progress(id);
     const s = 1, ox = LANDS[id].col * LW, oy = LANDS[id].row * LH; // One seed and continent-wide coordinates, so the grain never jumps at a border.
     for (let gy = 0, k = 0; gy < gh; gy++) for (let gx = 0; gx < gw; gx++, k++) {
-      const x = ox + gx * G, y = oy + gy * G, e = fbm(x / 58, y / 58, s + 200), ex = fbm((x + 3) / 58, y / 58, s + 200), ey = fbm(x / 58, (y + 3) / 58, s + 200);
-      shadeG[k] = 1 + Math.max(-.13, Math.min(.13, (e - ex) * 10 + (e - ey) * 14)) + (e - .5) * .12;
+      const x = ox + gx * G, y = oy + gy * G;
+      shadeG[k] = hillShade(x, y); // Rolling hills, lit from the upper left.
       blotchG[k] = fbm(x / 14, y / 14, s + 210); jitG[k] = fbm(x / 7, y / 7, s + 230);
     }
     for (let gy = 0, k = 0; gy < LH / 2 + 2; gy++) for (let gx = 0; gx < cw2; gx++, k++) crackG[k] = noise((ox + gx * 2) / 11, (oy + gy * 2) / 11, s + 240) - noise((ox + gx * 2) / 11, (oy + gy * 2) / 11, s + 241);
