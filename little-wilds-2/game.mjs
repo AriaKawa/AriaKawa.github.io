@@ -1,9 +1,9 @@
-import { makeWorld, ZONES, LANDS, CN, CW, CH, CELL, hash } from './world.mjs?v=15';
-import { newLand, tick, touch, buyGlade, gladeBuyable, gladePrice, landDone, landPct, landTouched, income, upgradeMax, catchUp, encode, decode, buySpirit, buyUpgrade, spiritCost, spiritOpen, upgradeCost, upgradeOpen, zonePct, zoneBloom, doneCount, initObjects, SPIRITS, UPGRADES, SPIRIT_CAP } from './sim.mjs?v=15';
-import { createLand } from './land.mjs?v=15';
-import { createRenderer } from './render.mjs?v=15';
-import { createAudio } from './audio.mjs?v=15';
-import { spiritFace } from './critters.mjs?v=15';
+import { makeWorld, ZONES, LANDS, CN, CW, CH, CELL, hash } from './world.mjs?v=16';
+import { newLand, tick, touch, buyGlade, gladeBuyable, gladePrice, landDone, landPct, landTouched, income, upgradeMax, catchUp, encode, decode, buySpirit, buyUpgrade, spiritCost, spiritOpen, upgradeCost, upgradeOpen, zonePct, zoneBloom, doneCount, initObjects, SPIRITS, UPGRADES, SPIRIT_CAP } from './sim.mjs?v=16';
+import { createLand } from './land.mjs?v=16';
+import { createRenderer } from './render.mjs?v=16';
+import { createAudio } from './audio.mjs?v=16';
+import { spiritFace } from './critters.mjs?v=16';
 
 const KEY = 'little-wilds-2-v2', CARDS_KEY = 'little-wilds-2-postcards', SOUND_KEY = 'little-wilds-2-muted', VOLUME_KEY = 'little-wilds-2-volume';
 const $ = id => document.getElementById(id);
@@ -254,7 +254,7 @@ addEventListener('blur', () => { pointers.clear(); releaseAll(); });
 /* Events from the simulation: the game's big moments. */
 function handle(ev, now, quiet = false) {
   for (const e of ev) {
-    if (e.t === 'revive' && !quiet) { view.revived(e.o, now); audio.pop(); view.reward(e.o.x * CELL, e.o.y * CELL - e.o.size * .7, e.reward, e.o.size > 40 ? 10 : 5); pulseSeeds(); s.revivedAny = true; }
+    if (e.t === 'revive' && !quiet) { view.revived(e.o, now); audio.pop(); view.reward(e.o.x * CELL, e.o.y * CELL - e.o.size * .7, e.reward, (e.o.worth ?? e.o.size) > 40 ? 10 : 5); pulseSeeds(); s.revivedAny = true; }
     if (e.t === 'water' && !quiet) { audio.water(); toast(`Water finds its way to ${ZONES[e.zone].name}.`); }
     if (e.t === 'zone') {
       land.markZone(e.zone);

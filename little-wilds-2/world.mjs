@@ -240,7 +240,7 @@ export function makeLand(seed = 1, mapId = 0) {
     const list = cellsOf[z.id];
     const quota = map.village ? [[KIND.deadTree, hash(z.id, 21, seed) > .5 ? KIND.blossom : KIND.tree, 34, 4], [KIND.boulder, KIND.mossy, 18, 2], [KIND.bramble, KIND.flowering, 15, 8]] : [[KIND.deadTree, hash(z.id, 21, seed) > .5 ? KIND.blossom : KIND.tree, 34, 7], [KIND.boulder, KIND.mossy, 18, 8], [KIND.bramble, KIND.flowering, 15, 11], map.carved ? [KIND.bramble, KIND.flowering, 15, 2] : [KIND.column, KIND.ruin, 24, 2]];
     let tries = 0;
-    for (const [dead, live, size, count] of quota) for (let n = 0; n < count && tries < 900;) {
+    for (const [dead, live, size, full] of quota) for (let n = 0, count = dead === KIND.bramble ? full : Math.floor(full * .9 + hash(z.id, dead + 7, seed + 9)); n < count && tries < 900;) {
       tries++;
       const c = list[Math.floor(hash(tries, z.id * 13 + dead, seed + 3) * list.length)], x = c % LCW * CELL + 2, y = Math.floor(c / LCW) * CELL + 2;
       if (x < 20 || y < 34 || x > LW - 20 || y > LH - 10 || blockedAt(x, y, 6) || nearWater(x, y, 10) || !clear(x, y, 22) || roadNear(x, y, 9, 4, 4) || (map.village && !roomy(x, y, size))) continue;
@@ -357,6 +357,7 @@ export async function makeWorld(progress = async () => {}) {
   }
   // A last look over the whole continent: nothing stands in water, on a road or crop row, on rock or sand, or on
   // top of something else. A misplaced tree or stone shuffles a little way over, or is left out.
+  for (const o of objects) { o.worth = o.size; o.size *= SHRINK; }
   const solid = (x, y) => { x |= 0; y |= 0; if (x < 0 || y < 0 || x >= TW || y >= TH) return true; const i = y * TW + x; return edge[i] || road[i] || waterT[i] < 255; };
   const scanClear = (x, y, half, deep, step) => { for (let yy = y - deep; yy <= y + 4; yy += step) for (let xx = x - half; xx <= x + half; xx += step) if (solid(xx, yy)) return false; return true; };
   const footClear = (x, y, half, deep = 6) => scanClear(x, y, half, deep, 3) && scanClear(x, y, half, deep, 1); // A quick look first, then every texel.
@@ -379,7 +380,7 @@ export async function makeWorld(progress = async () => {}) {
   objects.length = 0; kept.forEach((o, i) => { o.id = i; objects.push(o); });
   LANDS.forEach((_, id) => { const i = objects.findIndex(o => o.land === id); objStart[id] = i < 0 ? objects.length : i; });
   // Planted trees ask the same question: is this a clear patch of ground?
-  const free = (x, y, size = 38) => footClear(x, y, ...base(size)) && !crowded(x, y, size);
+  const free = (x, y, size = TREE) => footClear(x, y, ...base(size)) && !crowded(x, y, size);
   // Village buildings keep their own land's art; trees and stones take the look of the ground they stand on.
   for (const o of objects) { o.zone = zone[Math.min(CN - 1, Math.floor(o.y) * CW + Math.floor(o.x))]; o.art = o.local ? o.land : biome[Math.min(N - 1, Math.floor(o.y * CELL) * TW + Math.floor(o.x * CELL))]; }
   // Neighbouring glades: they touch, or face each other across a ridge of rock.
@@ -396,6 +397,8 @@ export async function makeWorld(progress = async () => {}) {
   return { free, biome, edge, edgeD, road, waterT, waterZ, blocked, near, zone, cellsOf, order, ponds, streams, objects, objStart, count: cellsOf.map(l => l.length), pend: new Float32Array(CN), active: [], dirty: () => {},
     flora: { x: sub(fx), y: sub(fy), cell: sub(fcell), kind: sub(fkind), thr: sub(fthr), phase: sub(fphase), start: fstart, count: fcount } };
 }
+// Trees, stones and buildings are drawn at this share of the size the land was laid out for.
+export const SHRINK = .7, TREE = 38 * SHRINK; // TREE: a grown planted tree.
 export const landOfCell = (w, i) => ZONES[w.zone[i]].land;
 export const landAtTexel = (x, y) => LAND_GRID[Math.min(2, Math.max(0, Math.floor(y / LH))) * 3 + Math.min(2, Math.max(0, Math.floor(x / LW)))];
 const LAND_GRID = [];

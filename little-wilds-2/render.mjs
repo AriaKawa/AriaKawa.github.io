@@ -1,9 +1,9 @@
 // Everything above the ground: flora, the dead-and-revived objects, spirits, wildlife, weather and fog.
-import { TW, TH, LW, LH, CW, CH, CELL, ZONES, LANDS, SEA, hash, fbm, FC, FCOLS, FROWS, landAtTexel } from './world.mjs?v=15';
-import { GREEN, brushRadius, SPIRITS, gladeBuyable, gladePrice } from './sim.mjs?v=15';
-import { pixelize, newFrame, shadowOf, skirtOf, apronOf } from './pixel.mjs?v=15';
-import { critterCanvas, spiritCanvas, NATIVE, SCALE, WALK_FRAMES, strideOf } from './critters.mjs?v=15';
-import { steer, standable, overWater, escape } from './nav.mjs?v=15';
+import { TW, TH, LW, LH, CW, CH, CELL, ZONES, LANDS, SEA, hash, fbm, FC, FCOLS, FROWS, landAtTexel, SHRINK } from './world.mjs?v=16';
+import { GREEN, brushRadius, SPIRITS, gladeBuyable, gladePrice } from './sim.mjs?v=16';
+import { pixelize, newFrame, shadowOf, skirtOf, apronOf } from './pixel.mjs?v=16';
+import { critterCanvas, spiritCanvas, NATIVE, SCALE, WALK_FRAMES, strideOf } from './critters.mjs?v=16';
+import { steer, standable, overWater, escape } from './nav.mjs?v=16';
 const money = n => n >= 1e9 ? (n / 1e9).toFixed(2) + 'b' : n >= 1e6 ? (n / 1e6).toFixed(2) + 'm' : n >= 1e4 ? (n / 1e3).toFixed(1) + 'k' : Math.floor(n).toLocaleString();
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -221,7 +221,7 @@ export function createRenderer(canvas, world, land, images) {
           if (o.live === 11 && !o.mark && !reduced) { const b = .5 + Math.sin(tNow * 2 + o.x) * .5; ctx.globalAlpha = .18 + b * .2; ctx.fillStyle = '#b8ffe6'; ctx.beginPath(); ctx.arc(x, y - size * .55, size * .32, 0, 7); ctx.fill(); ctx.globalAlpha = 1; }
         }
       } else if (it.t) {
-        const t = it.t, g = Math.min(1, (s.age - t.born) / 9), x = sx(t.x * CELL), y = sy(t.y * CELL), size = (10 + 28 * g) * z;
+        const t = it.t, g = Math.min(1, (s.age - t.born) / 9), x = sx(t.x * CELL), y = sy(t.y * CELL), size = (10 + 28 * g) * SHRINK * z;
         const land = world.biome[Math.min(TH - 1, Math.floor(t.y * CELL)) * TW + Math.floor(t.x * CELL)], tb = images.biomes[land], src = tb ? [tb, 96, 0, 96, 96] : [atlas, (t.blossom ? 2 : 1) * SIZE, 0, SIZE, SIZE];
         const foot = z > .9 ? underfoot(src, size / z, land, x, y, false) : null;
         tone = land; blit(...src, x, y, size, size); tone = -1;
@@ -239,7 +239,7 @@ export function createRenderer(canvas, world, land, images) {
         const hop = walking && !still ? Math.abs(Math.sin((a.anim || 0) * 8)) : 0, q = still ? 0 : walking ? (hop - .45) * .13 : a.working ? Math.sin(tNow * 5 + a.x) * .05 : Math.sin(tNow * 2 + a.x) * .018;
         const frame = still ? 0 : a.nap > 0 ? 1 : a.working ? 3 : 0, float = (a.type === 2 ? 3 + Math.sin(tNow * 2 + a.x) : 0) + Math.sin(a.air * Math.PI / 2) * 5, size = (a.type === 3 ? 20 : 15) * z;
         ctx.fillStyle = 'rgba(30,24,18,.28)'; ctx.beginPath(); ctx.ellipse(x, y, size * (.28 - hop * .06), size * .09, 0, 0, 7); ctx.fill();
-        { const c = spiritCanvas(a.type, frame, a.dir < 0), k = z / SCALE, w = c.width * k * (1 - q), h = c.height * k * (1 + q); ctx.drawImage(c, snapX(x - w / 2), snapY(y - (float + hop * 2.4) * z - h), w, h); }
+        { const c = spiritCanvas(a.type, frame, a.dir < 0), k = z * SHRINK / SCALE, w = c.width * k * (1 - q), h = c.height * k * (1 + q); ctx.drawImage(c, snapX(x - w / 2), snapY(y - (float + hop * 2.4) * SHRINK * z - h), w, h); }
         if (a.type === 2 && !s.paused && !reduced && quality > 0) { // Rainwisps carry their own little weather.
           const r = SPIRITS[2].r * CELL * z * .75; ctx.fillStyle = 'rgba(170,220,255,.7)';
           for (let n = 0; n < 7; n++) { const q2 = (tNow * 1.5 + n * .37) % 1, px = x + (hash(n, 1, 8) - .5) * r * 2, py = y - z * 2 + (hash(n, 2, 8) - .5) * r - (1 - q2) * 18 * z; ctx.fillRect(px, py, Math.max(1, z * .5), z * 2); }
@@ -336,17 +336,19 @@ export function createRenderer(canvas, world, land, images) {
     if (Math.abs(c.x - x0) > .02) c.dir = c.x < x0 ? -1 : 1;
     if (r !== 'moving') { c.tx = 0; c.state = 'idle'; c.pause = r === 'stuck' ? .5 : 1 + Math.random() * 2; }
   }
+  // Animals are drawn smaller than their art: deer and fawns at 60%, the rest at 70%.
+  const small = kind => kind === 'deer' || kind === 'fawn' ? .6 : SHRINK;
   function drawPet(c, t) {
     const def = petDef(c.kind, c.zone), z = cam.z, x = sx(c.x), y = sy(c.y), walking = c.state === 'walk';
     const land = ZONES[c.zone].land, name = c.kind === 'rabbit' ? 'rabbit' : land ? NATIVE[land] : c.kind;
     // The walk is driven by distance covered, not time, so feet stay planted on the ground as the body passes.
     // Rabbits bound instead: one hop per four texels, and every animal bounds over a stream.
-    const rabbit = c.kind === 'rabbit', cyc = (c.dist || 0) / strideOf(name), q = c.dist / 5 % 1, hop = walking && rabbit && q > .15 && q < .9 ? Math.sin((q - .15) / .75 * Math.PI) : 0;
+    const f = small(c.kind), rabbit = c.kind === 'rabbit', cyc = (c.dist || 0) / (strideOf(name) * f), q = c.dist / (5 * f) % 1, hop = walking && rabbit && q > .15 && q < .9 ? Math.sin((q - .15) / .75 * Math.PI) : 0;
     c.air += ((world.nav && overWater(world, c.x / CELL, c.y / CELL) ? 1 : 0) - c.air) * Math.min(1, (1 / 60) * 14);
     const pose = c.state === 'sleep' ? 'sleep' : c.state === 'graze' ? 'graze' : walking && c.air > .25 ? 'leap' : walking ? 'walk' : 'stand', ph = Math.floor((rabbit ? q : cyc % 1) * WALK_FRAMES) % WALK_FRAMES;
-    const size = def.size * z, lift = (hop * 3 + Math.sin(c.air * Math.PI / 2) * 5) * z;
+    const size = def.size * f * z, lift = (hop * 3 + Math.sin(c.air * Math.PI / 2) * 5) * f * z;
     ctx.globalAlpha = c.alpha;
-    const art = critterCanvas(name, pose, pose === 'walk' ? ph : 0, c.dir < 0), k = z / SCALE, aw = art.width * k, ah = art.height * k;
+    const art = critterCanvas(name, pose, pose === 'walk' ? ph : 0, c.dir < 0), k = z * f / SCALE, aw = art.width * k, ah = art.height * k;
     { const sh = shadowOf(art), left = snapX(x - aw / 2); ctx.drawImage(sh.c, left, snapY(y - ah) + (sh.foot - sh.c.height + 2) * k, sh.c.width * k, sh.c.height * k); }
     ctx.drawImage(art, snapX(x - aw / 2), snapY(y - lift - ah), aw, ah);
     if (def.row === 0 && !reduced && quality > 0) { // Spirit deer shed slow motes of light.

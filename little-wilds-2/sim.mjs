@@ -1,11 +1,11 @@
 // Rules of restoration. No DOM: runs in the game, offline catch-up and the pacing test alike.
 // One field covers the whole continent; glades are bought outward from the middle, and one army of spirits works all of it.
-import { CW, CN, LCW, LCH, LCN, ZONES, LANDS } from './world.mjs?v=15';
-import { buildNav, markTree, steer, standable, escape } from './nav.mjs?v=15';
+import { CW, CN, LCW, LCH, LCN, ZONES, LANDS } from './world.mjs?v=16';
+import { buildNav, markTree, steer, standable, escape } from './nav.mjs?v=16';
 // The ground map spirits and animals walk by, rebuilt when a different set of planted trees is in play.
 export function navOf(s, w) { if (!w.nav || w.navTrees !== s.trees) { buildNav(w); for (const t of s.trees) markTree(w, t); w.navTrees = s.trees; } return w.nav; }
 
-const WORLD_VERSION = 6, FIELD_VERSION = 4; // objects / the shape of the glades
+const WORLD_VERSION = 7, FIELD_VERSION = 4; // objects / the shape of the glades
 export const SPIRIT_CAP = 60;
 export const GREEN = .6;           // the height a cell counts as restored
 export const SPIRITS = [
@@ -105,8 +105,8 @@ function hitObjects(s, w, cx, cy, r, amount, ev) {
 }
 function revive(s, w, o, ev) {
   s.objHp[o.id] = 0;
-  heal(s, w, o.x, o.y, 4 + o.size / 12, GREEN * 2, GREEN);
-  const reward = o.size * 1.5 * seedMult(s, o.zone);
+  heal(s, w, o.x, o.y, 4 + (o.worth ?? o.size) / 12, GREEN * 2, GREEN);
+  const reward = (o.worth ?? o.size) * 1.5 * seedMult(s, o.zone);
   s.seeds += reward;
   ev.push({ t: 'revive', o, reward });
 }

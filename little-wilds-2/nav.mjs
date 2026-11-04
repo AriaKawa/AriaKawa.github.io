@@ -1,7 +1,7 @@
 // How creatures get around: a map of what each ground cell is (open, a stream to hop, a pond to walk
 // around, or something solid like rock, a trunk or a house), and a little steering that walks toward a goal
 // and feels its way round whatever is in the way. Positions are in cells.
-import { CW, CH, CELL, TW } from './world.mjs?v=15';
+import { CW, CH, CELL, TW, TREE } from './world.mjs?v=16';
 
 export const OPEN = 0, STREAM = 1, POND = 2, SOLID = 3;
 const POND_T = 178; // waterT at or above this is a pond; below it is a stream.
@@ -27,7 +27,7 @@ export function markFoot(w, x, y, size, building = false) {
     const i = yy * CW + xx; if (w.nav[i] !== POND) w.nav[i] = SOLID;
   }
 }
-export const markTree = (w, t) => markFoot(w, t.x, t.y, 38);
+export const markTree = (w, t) => markFoot(w, t.x, t.y, TREE);
 export const kindAt = (w, x, y) => { const xi = Math.floor(x), yi = Math.floor(y); return xi < 0 || yi < 0 || xi >= CW || yi >= CH ? SOLID : w.nav[yi * CW + xi]; };
 // Somewhere a walker can stand.
 export const standable = (w, i) => w.nav[i] === OPEN;
