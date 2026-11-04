@@ -1,8 +1,9 @@
 // Everything above the ground: flora, the dead-and-revived objects, spirits, wildlife, weather and fog.
-import { TW, TH, LW, LH, CW, CH, CELL, ZONES, LANDS, SEA, hash, fbm, FC, FCOLS, FROWS, landAtTexel } from './world.mjs?v=12';
-import { GREEN, brushRadius, SPIRITS, gladeBuyable, gladePrice } from './sim.mjs?v=12';
-import { pixelize, newFrame, shadowOf, skirtOf, apronOf } from './pixel.mjs?v=12';
-import { critterCanvas, spiritCanvas, NATIVE, SCALE } from './critters.mjs?v=12';
+import { TW, TH, LW, LH, CW, CH, CELL, ZONES, LANDS, SEA, hash, fbm, FC, FCOLS, FROWS, landAtTexel } from './world.mjs?v=13';
+import { GREEN, brushRadius, SPIRITS, gladeBuyable, gladePrice } from './sim.mjs?v=13';
+import { pixelize, newFrame, shadowOf, skirtOf, apronOf } from './pixel.mjs?v=13';
+import { critterCanvas, spiritCanvas, NATIVE, SCALE, WALK_FRAMES, strideOf } from './critters.mjs?v=13';
+import { steer, standable, overWater, escape } from './nav.mjs?v=13';
 const money = n => n >= 1e9 ? (n / 1e9).toFixed(2) + 'b' : n >= 1e6 ? (n / 1e6).toFixed(2) + 'm' : n >= 1e4 ? (n / 1e3).toFixed(1) + 'k' : Math.floor(n).toLocaleString();
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -234,8 +235,9 @@ export function createRenderer(canvas, world, land, images) {
         if (walking && !s.paused) a.anim = (a.anim || 0) + dt;
         const x = sx(a.rx * CELL), y = sy(a.ry * CELL), still = reduced || s.paused;
         // One pose squashing and stretching in a hop: smooth at any frame rate, with no sprite popping.
+        a.air = (a.air || 0) + (((a.type !== 2 && world.nav && overWater(world, a.rx, a.ry)) ? 1 : 0) - (a.air || 0)) * Math.min(1, dt * 14);
         const hop = walking && !still ? Math.abs(Math.sin((a.anim || 0) * 8)) : 0, q = still ? 0 : walking ? (hop - .45) * .13 : a.working ? Math.sin(tNow * 5 + a.x) * .05 : Math.sin(tNow * 2 + a.x) * .018;
-        const frame = still ? 0 : a.nap > 0 ? 1 : a.working ? 3 : 0, float = a.type === 2 ? 3 + Math.sin(tNow * 2 + a.x) : 0, size = (a.type === 3 ? 20 : 15) * z;
+        const frame = still ? 0 : a.nap > 0 ? 1 : a.working ? 3 : 0, float = (a.type === 2 ? 3 + Math.sin(tNow * 2 + a.x) : 0) + Math.sin(a.air * Math.PI / 2) * 5, size = (a.type === 3 ? 20 : 15) * z;
         ctx.fillStyle = 'rgba(30,24,18,.28)'; ctx.beginPath(); ctx.ellipse(x, y, size * (.28 - hop * .06), size * .09, 0, 0, 7); ctx.fill();
         { const c = spiritCanvas(a.type, frame, a.dir < 0), k = z / SCALE, w = c.width * k * (1 - q), h = c.height * k * (1 + q); ctx.drawImage(c, snapX(x - w / 2), snapY(y - (float + hop * 2.4) * z - h), w, h); }
         if (a.type === 2 && !s.paused && !reduced && quality > 0) { // Rainwisps carry their own little weather.
@@ -288,7 +290,10 @@ export function createRenderer(canvas, world, land, images) {
       const old = critters.find(c => c.zone === zone && c.n === n);
       if (old) return old;
       const P = ZONES[zone], side = hash(zone, n, 35) * 6.28, far = PETS[kind] ? 150 : 0;
-      const c = { kind, zone, n, x: P.px + Math.cos(side) * far + (hash(zone, n, 31) - .5) * 120, y: P.py + Math.sin(side) * far * .7 + (hash(n, zone, 33) - .5) * 90, tx: 0, ty: 0, pause: 0, dir: 1, variant: n % 3, alpha: 0, state: 'walk', step: 0, hearts: 0, seen: hash(zone, n, 39) * 5 };
+      const c = { kind, zone, n, x: P.px + Math.cos(side) * far + (hash(zone, n, 31) - .5) * 120, y: P.py + Math.sin(side) * far * .7 + (hash(n, zone, 33) - .5) * 90, tx: 0, ty: 0, pause: 0, dir: 1, variant: n % 3, alpha: 0, state: 'walk', step: 0, dist: 0, air: 0, hearts: 0, seen: hash(zone, n, 39) * 5 };
+      if (PETS[kind] && world.nav && !standable(world, Math.floor(c.y / CELL) * CW + Math.floor(c.x / CELL))) { // never appear in a pond or a tree
+        const list = world.cellsOf[zone].filter(i => standable(world, i)); if (list.length) { const i = list[Math.floor(hash(zone, n, 37) * list.length)]; c.x = i % CW * CELL + 2; c.y = Math.floor(i / CW) * CELL + 2; }
+      }
       if (PETS[kind] && !announced.has(zone * 16 + n)) { announced.add(zone * 16 + n); api.onPet?.(petDef(kind, zone).label, zone); }
       return c;
     });
@@ -298,9 +303,9 @@ export function createRenderer(canvas, world, land, images) {
     const P = ZONES[c.zone], list = world.cellsOf[c.zone];
     for (let k = 0; k < 12; k++) {
       const i = list[Math.floor(Math.random() * list.length)];
-      if (s.h[i] >= .5) { const x = i % CW * CELL, y = Math.floor(i / CW) * CELL; if (Math.hypot(x - c.x, y - c.y) < 150 || k > 8) { c.tx = x; c.ty = y; return; } }
+      if (s.h[i] >= .5 && (!world.nav || standable(world, i))) { const x = i % CW * CELL + 2, y = Math.floor(i / CW) * CELL + 2; if (Math.hypot(x - c.x, y - c.y) < 150 || k > 8) { c.tx = x; c.ty = y; return; } }
     }
-    c.tx = P.px; c.ty = P.py;
+    c.tx = 0; c.pause = 2 + Math.random() * 3; c.state = 'idle';
   }
   // Away from the heartland, each land's own creature takes the deer's place. Rabbits are everywhere.
   function petDef(kind, zone) { const d = PETS[kind], n = LANDS[ZONES[zone].land].native; return n && d.row === 0 ? { row: 3, label: d.young ? n.label.replace(/^An? /, 'A young ') : n.label, size: d.young ? n.size * .72 : n.size, speed: n.speed } : d; }
@@ -308,6 +313,7 @@ export function createRenderer(canvas, world, land, images) {
     const def = petDef(c.kind, c.zone);
     c.alpha = Math.min(1, c.alpha + dt * .5);
     if (c.hearts > 0) { c.hearts -= dt; c.state = 'idle'; return; }
+    if (world.nav) { const q = c.nav ||= {}; q.x = c.x / CELL; q.y = c.y / CELL; if (escape(world, q, def.speed * dt / CELL)) { const x0 = c.x; c.x = q.x * CELL; c.y = q.y * CELL; c.dist += Math.abs(c.x - x0) + .01; c.dir = q.dir; c.state = 'walk'; c.pause = 0; c.tx = 0; return; } }
     if (c.pause > 0) {
       c.pause -= dt;
       if (c.pause <= 0) c.state = 'walk';
@@ -321,19 +327,28 @@ export function createRenderer(canvas, world, land, images) {
       c.pause = c.state === 'sleep' ? 25 + Math.random() * 30 : c.state === 'graze' ? 4 + Math.random() * 7 : 2 + Math.random() * 3;
       return;
     }
-    c.step += dt; c.dir = c.tx < c.x ? -1 : 1;
-    const v = Math.min(d, def.speed * dt);
-    c.x += (c.tx - c.x) / d * v; c.y += (c.ty - c.y) / d * v;
+    c.step += dt;
+    // Feel the way round trees, stones, houses and ponds; bound across streams.
+    const q = c.nav ||= {}, x0 = c.x, y0 = c.y; q.x = c.x / CELL; q.y = c.y / CELL;
+    const r = world.nav ? steer(world, q, c.tx / CELL, c.ty / CELL, Math.min(d, def.speed * dt) / CELL, dt) : 'moving';
+    if (!world.nav) { const v = Math.min(d, def.speed * dt); q.x += (c.tx - c.x) / d * v / CELL; q.y += (c.ty - c.y) / d * v / CELL; }
+    c.x = q.x * CELL; c.y = q.y * CELL; c.dist += Math.hypot(c.x - x0, c.y - y0);
+    if (Math.abs(c.x - x0) > .02) c.dir = c.x < x0 ? -1 : 1;
+    if (r !== 'moving') { c.tx = 0; c.state = 'idle'; c.pause = r === 'stuck' ? .5 : 1 + Math.random() * 2; }
   }
   function drawPet(c, t) {
-    const def = petDef(c.kind, c.zone), z = cam.z, x = sx(c.x), y = sy(c.y), hopping = c.state === 'walk' && c.kind === 'rabbit', hop = hopping ? Math.abs(Math.sin(c.step * 5)) : 0;
-    const pose = c.state === 'sleep' ? 'sleep' : c.state === 'graze' ? 'graze' : c.state === 'walk' ? 'walk' : 'stand', ph = c.kind === 'rabbit' ? (hop > .25 ? 1 : 0) : Math.floor(c.step * def.speed * .45) % 4;
-    const breath = c.state === 'walk' || reduced ? 0 : Math.sin(t * 1.8 + c.n) * .012, size = def.size * z, lift = hop * 3 * z, walkBob = c.state === 'walk' && c.kind !== 'rabbit' ? Math.abs(Math.sin(c.step * 4.5)) * .5 * z : 0;
+    const def = petDef(c.kind, c.zone), z = cam.z, x = sx(c.x), y = sy(c.y), walking = c.state === 'walk';
+    const land = ZONES[c.zone].land, name = c.kind === 'rabbit' ? 'rabbit' : land ? NATIVE[land] : c.kind;
+    // The walk is driven by distance covered, not time, so feet stay planted on the ground as the body passes.
+    // Rabbits bound instead: one hop per four texels, and every animal bounds over a stream.
+    const cyc = (c.dist || 0) / strideOf(name), hop = walking && c.kind === 'rabbit' ? Math.sin((c.dist / 4 % 1) * Math.PI) : 0;
+    c.air += ((world.nav && overWater(world, c.x / CELL, c.y / CELL) ? 1 : 0) - c.air) * Math.min(1, (1 / 60) * 14);
+    const pose = c.state === 'sleep' ? 'sleep' : c.state === 'graze' ? 'graze' : walking ? 'walk' : 'stand', ph = c.kind === 'rabbit' ? (hop > .2 ? 1 : 0) : Math.floor(cyc * WALK_FRAMES) % WALK_FRAMES;
+    const size = def.size * z, lift = (hop * 3 + Math.sin(c.air * Math.PI / 2) * 5) * z;
     ctx.globalAlpha = c.alpha;
-    // Hand-drawn pixel animals, one art pixel per ground texel. Away from the old valley, the land's own creature stands in for the deer.
-    const land = ZONES[c.zone].land, name = c.kind === 'rabbit' ? 'rabbit' : land ? NATIVE[land] : c.kind, art = critterCanvas(name, pose, pose === 'walk' ? ph : 0, c.dir < 0), k = z / SCALE, aw = art.width * k, ah = art.height * k;
+    const art = critterCanvas(name, pose, pose === 'walk' ? ph : 0, c.dir < 0), k = z / SCALE, aw = art.width * k, ah = art.height * k;
     { const sh = shadowOf(art), left = snapX(x - aw / 2); ctx.drawImage(sh.c, left, snapY(y - ah) + (sh.foot - sh.c.height + 2) * k, sh.c.width * k, sh.c.height * k); }
-    ctx.drawImage(art, snapX(x - aw / 2), snapY(y - lift - walkBob - ah), aw, ah);
+    ctx.drawImage(art, snapX(x - aw / 2), snapY(y - lift - ah), aw, ah);
     if (def.row === 0 && !reduced && quality > 0) { // Spirit deer shed slow motes of light.
       for (let k = 0; k < 3; k++) { const q = (t * .22 + k / 3 + c.n * .13) % 1; ctx.globalAlpha = c.alpha * Math.sin(q * 3.14) * .85; ctx.fillStyle = '#b8fff0'; ctx.fillRect(x + (hash(k, c.n, 41) - .5) * size * .8 + Math.sin(t + k) * z, y - size * (.35 + q * .85), Math.max(1, z * .7), Math.max(1, z * .7)); }
     }
@@ -451,6 +466,7 @@ export function createRenderer(canvas, world, land, images) {
     pet(c) { c.hearts = 1.6; c.dir = c.dir || 1; },
     // Wildlife already on the land arrives quietly, as on a fresh load. Used when the whole state is swapped.
     regreet() { greeted = false; critterAt = -1; },
+    pets: () => critters.filter(c => PETS[c.kind]),
     cam, resize, focusZone, focusAll, focusLand, zoomAt, pan, toCell, toWorld,
     viewBox() { return [cam.x - W / 2 / cam.z, cam.y - H / 2 / cam.z, cam.x + W / 2 / cam.z, cam.y + H / 2 / cam.z]; },
     screenOf(x, y) { return { x: sx(x), y: sy(y) }; },

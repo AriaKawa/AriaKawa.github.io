@@ -12,7 +12,7 @@ function tonesOf(pal) {
   const t = {};
   for (const [k, v] of Object.entries(pal)) {
     const b = hex(v);
-    t[k] = [mix(b.map(x => x * .76), [44, 52, 92], .12), b, mix(b, [255, 249, 228], .3), mix(b.map(x => x * .46), [30, 24, 42], .32)].map(css);
+    t[k] = [mix(b.map(x => x * .8), [52, 60, 96], .1), b, mix(b, [255, 249, 228], .28), mix(b.map(x => x * .6), [50, 40, 56], .2)].map(css);
   }
   return t;
 }
@@ -49,81 +49,94 @@ function raster(W, H, pal, shapes) {
       }
     } else dots.push(sh);
   }
-  // The silhouette takes the line colour of whatever it is made of.
+  // No outline: the silhouette's lower and right edges, away from the light, fall into the shade tone of what they are made of.
   const edge = new Uint8Array(n);
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const i = y * W + x; if (!mat[i] || !lined[i]) continue;
-    if (x === 0 || x === W - 1 || y === 0 || !mat[i - 1] || !mat[i + 1] || !mat[i - W] || (y < H - 1 && !mat[i + W])) edge[i] = 1;
+    if (x === W - 1 || !mat[i + 1] || (y < H - 1 && !mat[i + W])) edge[i] = 1;
   }
   const c = document.createElement('canvas'); c.width = W; c.height = H;
   const g = c.getContext('2d');
-  for (let i = 0; i < n; i++) if (mat[i]) { g.fillStyle = tones[mat[i]][edge[i] ? 3 : tone[i]]; g.fillRect(i % W, (i / W) | 0, 1, 1); }
+  for (let i = 0; i < n; i++) if (mat[i]) { g.fillStyle = tones[mat[i]][edge[i] ? 0 : tone[i]]; g.fillRect(i % W, (i / W) | 0, 1, 1); }
   for (const sh of dots) { const [m, t] = fixed(sh.c); g.fillStyle = tones[m][t < 0 ? 1 : t]; for (const [x, y] of sh.d) g.fillRect(x + ox, y + H, 1, 1); }
   return c;
 }
 
-// A four-legged walker. Legs swing in diagonal pairs through four steps, a lifted foot clearing the grass.
-function legs(list, pose, ph) {
+// A four-legged walk, p running 0 to 1 over one stride. The legs step one after another, a quarter stride
+// apart (near hind, near fore, far hind, far fore), the way a real deer or fox walks: each foot stays planted
+// while the body passes over it, then lifts, swings forward and sets down again. Each leg bends at a knee,
+// forelegs jutting forward and hind legs back, and the body dips a little as the weight changes feet.
+export const STANCE = .62;
+function legs(list, pose, p, bob = 0) {
   const out = [];
   for (const L of list) {
-    const pair = L.pair ? -1 : 1, swing = pose === 'walk' ? Math.sin(ph * Math.PI / 2) * pair : 0, lift = pose === 'walk' && Math.cos(ph * Math.PI / 2) * pair > .5 ? 1.2 : 0;
-    const fx = L.x + swing * (L.stride ?? 2.4), fy = -lift, kx = (L.x + fx) / 2 + (L.knee || 0);
-    const up = { l: [L.x, L.y, kx, (L.y + fy) / 2, L.w], c: L.c, far: L.far }, down = { l: [kx, (L.y + fy) / 2, fx, fy - (L.hoof ? 1 : 0), L.w * .85], c: L.c2 || L.c, far: L.far };
-    out.push(up, down);
-    if (L.hoof) out.push({ l: [fx, fy - 1.2, fx + .3, fy, L.w * .85], c: L.hoof, far: L.far });
+    const front = L.x > 0, A = L.stride ?? 2.4;
+    let fx = L.x, fy = 0;
+    if (pose === 'walk') {
+      const u = (p + (front ? .25 : 0) + (L.far ? .5 : 0)) % 1;
+      if (u < STANCE) fx = L.x + A - 2 * A * u / STANCE;
+      else { const s = (u - STANCE) / (1 - STANCE); fx = L.x - A + 2 * A * s * s * (3 - 2 * s); fy = -Math.sin(Math.PI * s) * (L.lift ?? Math.max(1, -L.y * .14)); }
+    }
+    const hy = L.y + bob, d = Math.hypot(fx - L.x, fy - hy) || 1, half = -L.y * .53, bend = Math.sqrt(Math.max(0, half * half - d * d / 4)) * (front ? 1 : -1);
+    const kx = (L.x + fx) / 2 + (fy - hy) / d * bend, ky = (hy + fy) / 2 - (fx - L.x) / d * bend;
+    out.push({ l: [L.x, hy, kx, ky, L.w], c: L.c, far: L.far }, { l: [kx, ky, fx, fy - (L.hoof ? 1 : 0), L.w * .85], c: L.c2 || L.c, far: L.far });
+    if (L.hoof) out.push({ l: [fx, fy - 1.2, fx + .2, fy, L.w * .85], c: L.hoof, far: L.far });
   }
   return out;
 }
+const bobOf = (pose, p) => pose === 'walk' ? -Math.round(Math.max(0, Math.sin(p * 4 * Math.PI + .6)) * .85) : 0;
 const eye = (x, y, closed, c = 'e') => closed ? { d: [[x - 1, y + 1], [x, y + 1]], c: 'b!' } : { d: [[x, y]], c };
 
 export const CRITTERS = {
-  deer: { // Spirit deer: a red-brown deer with a pale rump and belly, and antlers of glowing mint.
+  deer: { stride: 2.4, // Spirit deer: a red-brown deer with a pale rump and belly, and antlers of glowing mint.
     w: 36, h: 38, pal: { b: '#b9804c', c: '#efdcb8', k: '#8a5c38', h: '#3e2a1c', x: '#a8f2d6', e: '#1e140c', n: '#2a1c14' },
-    build(pose, ph) {
-      const sleep = pose === 'sleep', drop = sleep ? 9 : 0;
+    build(pose, p) {
+      const sleep = pose === 'sleep', drop = sleep ? 9 : bobOf(pose, p);
       const L = [{ x: -4, y: -14, w: 2.4, c: 'k', hoof: 'h', far: 1, pair: 1 }, { x: 4, y: -14, w: 2.4, c: 'k', hoof: 'h', far: 1 }, { x: -6, y: -14, w: 2.6, c: 'b', c2: 'k', hoof: 'h', knee: -.6 }, { x: 6, y: -14, w: 2.4, c: 'b', c2: 'k', hoof: 'h', pair: 1, knee: .5 }];
-      const head = [{ l: [-1, -2, -4.5, -4.2, 2.2], c: 'b', ol: true }, { e: [1, 0, 3.2, 2.7] }, { e: [4.2, 1.1, 2.3, 1.6] }, { d: [[6, 0]], c: 'n' }, eye(1, -1, sleep),
+      const head = [{ e: [-1.4, -3, 1.2, 2.6, -.75], c: 'b', far: 1 }, { e: [-.4, -3.2, 1.2, 2.6, -.35], c: 'b' }, { d: [[-1, -4]], c: 'c' },
+        { e: [.6, 0, 2.8, 2.4] }, { l: [1.5, .5, 4.4, 1.3, 2.8] }, { l: [4.2, 1.3, 5.6, 1.9, 1.9] }, { d: [[3, 2], [4, 2]], c: 'c' }, { d: [[6, 1]], c: 'n' }, eye(1, -1, sleep),
         { l: [0, -2.5, -1, -8, 1.3], c: 'x', ol: false }, { l: [-.6, -5.5, -3.5, -7.4, 1.2], c: 'x', ol: false }, { l: [2, -2.5, 3, -8.6, 1.3], c: 'x', ol: false }, { l: [2.7, -6, 5, -8, 1.2], c: 'x', ol: false },
         { d: [[-2, -9], [3, -10], [5, -9], [-4, -8]], c: 'x^' }].map(s => ({ c: 'b', ...s }));
-      const [ax, ay, ang] = pose === 'graze' ? [12, -7, 1.15] : sleep ? [9, -19, -.1] : [10, -27, 0];
+      let [ax, ay, ang] = pose === 'graze' ? [12, -7, 1.15] : sleep ? [9, -19, -.1] : [10, -27, 0]; if (!sleep) ay += drop;
       return [
-        ...(sleep ? [{ e: [-5, -2, 4, 2], c: 'k' }, { e: [6, -2, 3.5, 2], c: 'k' }] : legs(L.slice(0, 2), pose, ph)),
+        ...(sleep ? [{ e: [-5, -2, 4, 2], c: 'k' }, { e: [6, -2, 3.5, 2], c: 'k' }] : legs(L.slice(0, 2), pose, p, drop)),
         { e: [-9.6, -20 + drop, 1.6, 2.4, -.5], c: 'c' },
         { e: [0, -17 + drop, 9, 5] , c: 'b' }, { e: [-5, -17 + drop, 4.6, 5.4], c: 'b' }, { e: [6, -17.5 + drop, 4.2, 5], c: 'b' },
         { e: [0, -13.3 + drop, 6, 1.5], c: 'c', flat: 1, ol: false }, { d: [[-10, -19 + drop], [-9, -18 + drop]], c: 'c^' },
-        ...(sleep ? [] : legs(L.slice(2), pose, ph)),
-        { l: [6, -19 + drop, ax, ay, 4.6], c: 'b' },
+        ...(sleep ? [] : legs(L.slice(2), pose, p, drop)),
+        { l: [6, -19 + drop, ax - .5, ay + 1, 4], c: 'b' },
         ...rot(ax, ay, ang, head),
       ];
     },
   },
-  fawn: { // A spotted fawn: big ears, long legs, no antlers yet.
+  fawn: { stride: 1.8, // A spotted fawn: big ears, long legs, no antlers yet.
     w: 26, h: 28, pal: { b: '#c48e58', c: '#f6e8cc', k: '#9a6a44', h: '#3e2a1c', e: '#1e140c', n: '#2a1c14' },
-    build(pose, ph) {
-      const sleep = pose === 'sleep', drop = sleep ? 7 : 0;
+    build(pose, p) {
+      const sleep = pose === 'sleep', drop = sleep ? 7 : bobOf(pose, p);
       const L = [{ x: -3, y: -10, w: 2, c: 'k', hoof: 'h', far: 1, pair: 1, stride: 1.8 }, { x: 3, y: -10, w: 2, c: 'k', hoof: 'h', far: 1, stride: 1.8 }, { x: -4.5, y: -10, w: 2.2, c: 'b', c2: 'k', hoof: 'h', stride: 1.8 }, { x: 4.5, y: -10, w: 2, c: 'b', c2: 'k', hoof: 'h', pair: 1, stride: 1.8 }];
-      const head = [{ l: [-1, -2, -4, -4.5, 2.4], c: 'b', ol: true }, { e: [.8, 0, 3, 2.6] }, { e: [3.6, 1, 2, 1.5] }, { d: [[5, 0]], c: 'n' }, eye(1, -1, sleep)].map(s => ({ c: 'b', ...s }));
-      const [ax, ay, ang] = pose === 'graze' ? [9, -5, 1.1] : sleep ? [7, -13, -.1] : [7.5, -19, 0];
+      const head = [{ e: [-1.6, -2.8, 1.3, 2.6, -.8], c: 'b', far: 1 }, { e: [-.5, -3.1, 1.3, 2.7, -.4], c: 'b' }, { d: [[-1, -4]], c: 'c' },
+        { e: [.5, 0, 2.7, 2.4] }, { l: [1.5, .5, 3.8, 1.2, 2.6] }, { l: [3.6, 1.2, 4.8, 1.7, 1.8] }, { d: [[5, 1]], c: 'n' }, eye(1, -1, sleep)].map(s => ({ c: 'b', ...s }));
+      let [ax, ay, ang] = pose === 'graze' ? [9, -5, 1.1] : sleep ? [7, -13, -.1] : [7.5, -19, 0]; if (!sleep) ay += drop;
       return [
-        ...(sleep ? [{ e: [-4, -1.6, 3, 1.6], c: 'k' }, { e: [4, -1.6, 3, 1.6], c: 'k' }] : legs(L.slice(0, 2), pose, ph)),
+        ...(sleep ? [{ e: [-4, -1.6, 3, 1.6], c: 'k' }, { e: [4, -1.6, 3, 1.6], c: 'k' }] : legs(L.slice(0, 2), pose, p, drop)),
         { e: [-6.8, -14 + drop, 1.3, 1.8, -.5], c: 'c' },
         { e: [0, -12.5 + drop, 6.6, 3.8], c: 'b' }, { e: [-3.5, -12.5 + drop, 3.4, 4], c: 'b' },
         { e: [0, -9.8 + drop, 4.5, 1.1], c: 'c', flat: 1, ol: false },
         { d: [[-3, -14 + drop], [0, -15 + drop], [2, -13 + drop], [-1, -12 + drop], [-5, -12 + drop], [3, -15 + drop]], c: 'c' },
-        ...(sleep ? [] : legs(L.slice(2), pose, ph)),
-        { l: [4.5, -14 + drop, ax, ay, 3.6], c: 'b' },
+        ...(sleep ? [] : legs(L.slice(2), pose, p, drop)),
+        { l: [4.5, -14 + drop, ax - .4, ay + 1, 3.2], c: 'b' },
         ...rot(ax, ay, ang, head),
       ];
     },
   },
   rabbit: { // Moss rabbit: a brown-grey cottontail with moss on its back.
     w: 20, h: 22, pal: { b: '#b8a48a', m: '#7fa65a', p: '#e6a2a8', w: '#f6f0e4', e: '#1e140c' },
-    build(pose, ph) {
-      const sleep = pose === 'sleep', stretch = pose === 'walk' && ph % 2 ? 1 : 0;
+    build(pose, p) {
+      const sleep = pose === 'sleep', stretch = pose === 'walk' && (Math.floor(p * 4) % 2) ? 1 : 0, drop = 0;
       const earA = sleep ? -1.25 : pose === 'graze' ? -.5 : -stretch * .3;
       const ears = rot(-.5, -2, earA, [{ l: [0, 0, -1.6, -7, 2.4], c: 'b', far: 1 }, { l: [1.4, 0, .6, -7.2, 2.4], c: 'b' }, { l: [1.1, -2, .7, -6, .9], c: 'p', ol: false }]);
       const head = [...ears, { e: [0, 0, 3, 2.7], c: 'b' }, { e: [1.8, 1.2, 1.6, 1.1], c: 'w', ol: false }, { d: [[3, 0]], c: 'p' }, eye(1, -1, sleep)];
-      const [ax, ay, ang] = pose === 'graze' ? [5.5, -4, .35] : sleep ? [4.5, -6, .1] : [4.5 + stretch, -9, 0];
+      let [ax, ay, ang] = pose === 'graze' ? [5.5, -4, .35] : sleep ? [4.5, -6, .1] : [4.5 + stretch, -9, 0]; if (!sleep) ay += drop;
       return [
         { e: [-2 - stretch, -.8, 3, 1], c: 'b_' },
         { e: [0, -5 + (sleep ? 1 : 0), 5.4 + stretch, 4.3], c: 'b' }, { e: [-2, -4.6 + (sleep ? 1 : 0), 4, 4], c: 'b' },
@@ -134,41 +147,41 @@ export const CRITTERS = {
       ];
     },
   },
-  fox: { // Ember Basin: a cinder fox with dark socks and an ember-tipped brush.
+  fox: { stride: 2, // Ember Basin: a cinder fox with dark socks and an ember-tipped brush.
     w: 38, h: 26, pal: { b: '#d8682a', w: '#f6ead6', k: '#3a2418', x: '#ffcf5a', e: '#1e120c' },
-    build(pose, ph) {
-      const sleep = pose === 'sleep', drop = sleep ? 6 : 0;
+    build(pose, p) {
+      const sleep = pose === 'sleep', drop = sleep ? 6 : bobOf(pose, p);
       const L = [{ x: -4, y: -8, w: 2, c: 'k', far: 1, pair: 1, stride: 2 }, { x: 4, y: -8, w: 2, c: 'k', far: 1, stride: 2 }, { x: -5.5, y: -8, w: 2.2, c: 'b', c2: 'k', stride: 2 }, { x: 5.5, y: -8, w: 2.2, c: 'b', c2: 'k', pair: 1, stride: 2 }];
       const head = [{ l: [-.8, -2, -1.4, -6.4, 2.6], c: 'b', far: 1 }, { l: [1.4, -2, 1.9, -6.6, 2.6], c: 'b' }, { d: [[1, -7], [2, -7]], c: 'k' },
-        { e: [0, 0, 3, 2.6], c: 'b' }, { l: [2, .8, 6, 1.3, 2.2], c: 'b', ol: true }, { e: [1.6, 1.8, 2.4, 1.1], c: 'w', ol: false }, { d: [[6, 1]], c: 'k' }, eye(1, -1, sleep)];
-      const [ax, ay, ang] = pose === 'graze' ? [10, -5, .9] : sleep ? [8, -7, .15] : [9, -14, 0];
+        { e: [0, 0, 3, 2.6], c: 'b' }, { l: [2, .6, 4.6, 1.2, 2.6], c: 'b' }, { l: [4.4, 1.2, 6.2, 1.5, 1.6], c: 'b' }, { e: [1.6, 1.8, 2.4, 1.1], c: 'w', ol: false }, { d: [[6, 1]], c: 'k' }, eye(1, -1, sleep)];
+      let [ax, ay, ang] = pose === 'graze' ? [10, -5, .9] : sleep ? [8, -7, .15] : [9, -14, 0]; if (!sleep) ay += drop;
       const tail = sleep ? [{ e: [-3, -2.5, 7, 2.4, .1], c: 'b' }, { e: [3.5, -2, 2.6, 1.8], c: 'w' }, { d: [[5, -2]], c: 'x' }]
-        : [{ e: [-11, -11 + (pose === 'walk' && ph % 2 ? 1 : 0), 5.4, 2.6, -.38], c: 'b' }, { e: [-15.5, -13.4, 2.4, 1.8, -.4], c: 'w' }, { d: [[-17, -14], [-16, -15]], c: 'x' }];
+        : [{ e: [-11, -11 + (pose === 'walk' && (Math.floor(p * 4) % 2) ? 1 : 0), 5.4, 2.6, -.38], c: 'b' }, { e: [-15.5, -13.4, 2.4, 1.8, -.4], c: 'w' }, { d: [[-17, -14], [-16, -15]], c: 'x' }];
       return [
-        ...(sleep ? [] : legs(L.slice(0, 2), pose, ph)),
+        ...(sleep ? [] : legs(L.slice(0, 2), pose, p, drop)),
         ...(sleep ? [] : tail),
         { e: [0, -10.5 + drop, 8, 3.8], c: 'b' }, { e: [5, -10 + drop, 3.4, 3.4], c: 'b' },
         { e: [5.5, -8.4 + drop, 2.2, 1.4], c: 'w', flat: 1, ol: false },
-        ...(sleep ? tail : legs(L.slice(2), pose, ph)),
+        ...(sleep ? tail : legs(L.slice(2), pose, p, drop)),
         { l: [5, -12 + drop, ax, ay, 4], c: 'b' },
         ...rot(ax, ay, ang, head),
       ];
     },
   },
-  lynx: { // Frostmere: a snow lynx, stocky, with tufted ears, a cheek ruff and a stub of a tail.
+  lynx: { stride: 2.4, // Frostmere: a snow lynx, stocky, with tufted ears, a cheek ruff and a stub of a tail.
     w: 34, h: 28, pal: { b: '#e6e8ee', s: '#9aa2b4', k: '#3c4250', p: '#d48a9a', e: '#2a3a2a' },
-    build(pose, ph) {
-      const sleep = pose === 'sleep', drop = sleep ? 7 : 0;
+    build(pose, p) {
+      const sleep = pose === 'sleep', drop = sleep ? 7 : bobOf(pose, p);
       const L = [{ x: -4, y: -9, w: 2.2, c: 'b', c2: 's', far: 1, pair: 1, knee: -.5 }, { x: 4, y: -9, w: 2.2, c: 'b', c2: 's', far: 1 }, { x: -5.5, y: -9, w: 2.4, c: 'b', c2: 's', knee: -.5 }, { x: 5.5, y: -9, w: 2.4, c: 'b', c2: 's', pair: 1 }];
       const head = [{ l: [-1.6, -2.4, -2, -5, 2.6], c: 'b', far: 1 }, { l: [1.4, -2.4, 1.9, -5.2, 2.6], c: 'b' }, { d: [[-3, -6], [1, -6], [1, -7]], c: 'k' },
         { e: [-.4, 1.6, 3.6, 2.2], c: 'b' }, { e: [0, 0, 3.6, 3.1], c: 'b' }, { e: [2.8, 1, 1.6, 1.3], c: 'b' }, { d: [[4, 0]], c: 'p' }, eye(1, -1, sleep), { d: [[-1, 1], [-2, 2]], c: 's' }];
-      const [ax, ay, ang] = pose === 'graze' ? [9.5, -5, .85] : sleep ? [8, -8, .1] : [8.5, -15, 0];
+      let [ax, ay, ang] = pose === 'graze' ? [9.5, -5, .85] : sleep ? [8, -8, .1] : [8.5, -15, 0]; if (!sleep) ay += drop;
       return [
-        ...(sleep ? [{ e: [6, -1.5, 3, 1.6], c: 'b' }] : legs(L.slice(0, 2), pose, ph)),
+        ...(sleep ? [{ e: [6, -1.5, 3, 1.6], c: 'b' }] : legs(L.slice(0, 2), pose, p, drop)),
         { e: [-9, -13 + drop, 2.2, 1.5, -.6], c: 'b' }, { d: [[-11, -15 + drop]], c: 'k' },
         { e: [0, -12 + drop, 8, 4], c: 'b' }, { e: [-4.5, -11.5 + drop, 4.2, 4.6], c: 'b' }, { e: [5, -12 + drop, 3.6, 4.4], c: 'b' },
         { d: [[-4, -13 + drop], [-1, -14 + drop], [2, -12 + drop], [-6, -11 + drop], [0, -11 + drop], [4, -13 + drop]], c: 's' },
-        ...(sleep ? [] : legs(L.slice(2), pose, ph)),
+        ...(sleep ? [] : legs(L.slice(2), pose, p, drop)),
         { l: [5, -13 + drop, ax, ay, 5], c: 'b' },
         ...rot(ax, ay, ang, head),
       ];
@@ -176,8 +189,8 @@ export const CRITTERS = {
   },
   tortoise: { // Sunfall Coast: a sun tortoise, a high domed shell with a sunburst on it.
     w: 26, h: 16, pal: { b: '#6f9a42', x: '#ffd34d', k: '#c9a46a', e: '#1e160c' },
-    build(pose, ph) {
-      const sleep = pose === 'sleep', step = pose === 'walk' ? (ph % 2 ? 1 : -1) * .8 : 0;
+    build(pose, p) {
+      const sleep = pose === 'sleep', step = pose === 'walk' ? ((Math.floor(p * 4) % 2) ? 1 : -1) * .8 : 0;
       const [ax, ay] = pose === 'graze' ? [10, -2] : sleep ? [7.5, -3] : [10, -5];
       return [
         ...(sleep ? [] : [{ e: [-4 - step, -1, 1.8, 1.4], c: 'k', far: 1 }, { e: [5 + step, -1, 1.8, 1.4], c: 'k', far: 1 }]),
@@ -190,37 +203,37 @@ export const CRITTERS = {
       ];
     },
   },
-  otter: { // Mistfen: a reed otter, long and low, with a pale chin and a tapering tail.
+  otter: { stride: 1.6, // Mistfen: a reed otter, long and low, with a pale chin and a tapering tail.
     w: 36, h: 18, pal: { b: '#7c5232', l: '#e6cfa4', k: '#4a3020', e: '#140c08' },
-    build(pose, ph) {
-      const sleep = pose === 'sleep', drop = sleep ? 2.5 : 0;
+    build(pose, p) {
+      const sleep = pose === 'sleep', drop = sleep ? 2.5 : bobOf(pose, p);
       const L = [{ x: -5, y: -4, w: 2, c: 'k', far: 1, pair: 1, stride: 1.6 }, { x: 4, y: -4, w: 2, c: 'k', far: 1, stride: 1.6 }, { x: -6.5, y: -4, w: 2.2, c: 'b', c2: 'k', stride: 1.6 }, { x: 5.5, y: -4, w: 2.2, c: 'b', c2: 'k', pair: 1, stride: 1.6 }];
       const head = [{ e: [-1.6, -2.2, 1.1, .9], c: 'b' }, { e: [0, 0, 3, 2.4], c: 'b' }, { e: [2.4, 1, 2, 1.4], c: 'l', ol: false }, { d: [[4, 0]], c: 'e' }, eye(1, -1, sleep)];
-      const [ax, ay, ang] = pose === 'graze' ? [11, -3, .45] : sleep ? [9, -3.5, .1] : [10, -8, 0];
+      let [ax, ay, ang] = pose === 'graze' ? [11, -3, .45] : sleep ? [9, -3.5, .1] : [10, -8, 0]; if (!sleep) ay += drop;
       return [
-        ...(sleep ? [] : legs(L.slice(0, 2), pose, ph)),
+        ...(sleep ? [] : legs(L.slice(0, 2), pose, p, drop)),
         { l: [-8, -5 + drop, -13, -3 + drop * .4, 3], c: 'b', ol: true }, { l: [-12.5, -3 + drop * .4, -17, -1.4, 1.8], c: 'b' },
         { e: [-1, -6 + drop, 9, 3.2], c: 'b' }, { e: [5, -5 + drop, 2.6, 1.4], c: 'l', flat: 1, ol: false },
-        ...(sleep ? [] : legs(L.slice(2), pose, ph)),
+        ...(sleep ? [] : legs(L.slice(2), pose, p, drop)),
         { l: [6, -7 + drop, ax, ay, 4.4], c: 'b' },
         ...rot(ax, ay, ang, head),
       ];
     },
   },
-  ram: { // Auric Steppe: a golden-fleeced ram, lumpy wool, a dark face and curled horns.
+  ram: { stride: 2, // Auric Steppe: a golden-fleeced ram, lumpy wool, a dark face and curled horns.
     w: 36, h: 30, pal: { b: '#efe0bc', f: '#7a5a3a', x: '#d9a440', k: '#4a3624', e: '#140c08' },
-    build(pose, ph) {
-      const sleep = pose === 'sleep', drop = sleep ? 7 : 0;
+    build(pose, p) {
+      const sleep = pose === 'sleep', drop = sleep ? 7 : bobOf(pose, p);
       const L = [{ x: -4.5, y: -9, w: 2.4, c: 'f', far: 1, pair: 1, hoof: 'k', stride: 2 }, { x: 4, y: -9, w: 2.4, c: 'f', far: 1, hoof: 'k', stride: 2 }, { x: -6, y: -9, w: 2.6, c: 'f', hoof: 'k', stride: 2 }, { x: 5.5, y: -9, w: 2.6, c: 'f', pair: 1, hoof: 'k', stride: 2 }];
       const head = [{ e: [.6, .6, 2.8, 2.4, .35], c: 'f' }, { e: [3, 2, 1.7, 1.4], c: 'f' }, { d: [[4, 2]], c: 'k' },
         { e: [-1.2, -.4, 2.8, 2.8], c: 'x' }, { e: [-1, -.2, 1.3, 1.3], c: 'x_', ol: false }, { d: [[-2, 2], [-1, 2]], c: 'x!' }, eye(1, -1, sleep)];
-      const [ax, ay, ang] = pose === 'graze' ? [11, -5, .8] : sleep ? [9, -9, .1] : [10, -17, 0];
+      let [ax, ay, ang] = pose === 'graze' ? [11, -5, .8] : sleep ? [9, -9, .1] : [10, -17, 0]; if (!sleep) ay += drop;
       return [
-        ...(sleep ? [] : legs(L.slice(0, 2), pose, ph)),
+        ...(sleep ? [] : legs(L.slice(0, 2), pose, p, drop)),
         { e: [0, -12.5 + drop, 9, 5.4], c: 'b' }, { e: [-5, -14.5 + drop, 4.4, 4], c: 'b' }, { e: [1, -15.5 + drop, 4.4, 3.6], c: 'b' }, { e: [6, -13.5 + drop, 4, 4.2], c: 'b' }, { e: [-8, -12 + drop, 2.6, 3.4], c: 'b' },
         { d: [[-6, -15 + drop], [-2, -16 + drop], [2, -17 + drop], [5, -15 + drop], [-4, -12 + drop], [1, -13 + drop], [-8, -14 + drop]], c: 'b^' },
         { d: [[-3, -10 + drop], [3, -9 + drop], [-7, -9 + drop]], c: 'b_' },
-        ...(sleep ? [] : legs(L.slice(2), pose, ph)),
+        ...(sleep ? [] : legs(L.slice(2), pose, p, drop)),
         { l: [6, -14 + drop, ax, ay, 4.8], c: 'b' },
         ...rot(ax, ay, ang, head),
       ];
@@ -228,8 +241,8 @@ export const CRITTERS = {
   },
   crab: { // Coral Reach: a coral crab, claws up, eyes on stalks. Crabs face you, so they are the same either way.
     w: 26, h: 18, pal: { b: '#e8706e', l: '#ffc8b8', e: '#1e0c0c' },
-    build(pose, ph) {
-      const sleep = pose === 'sleep', k = pose === 'walk' ? (ph % 2 ? 1 : -1) : 0, up = sleep ? 2.5 : pose === 'graze' ? 1 : 0, open = pose === 'idle' || pose === 'stand' ? (ph % 2) : 0;
+    build(pose, p) {
+      const sleep = pose === 'sleep', k = pose === 'walk' ? ((Math.floor(p * 4) % 2) ? 1 : -1) : 0, up = sleep ? 2.5 : pose === 'graze' ? 1 : 0, open = pose === 'idle' || pose === 'stand' ? ((Math.floor(p * 4) % 2)) : 0;
       const legL = [[-4, -3, -7.5, 0], [-3, -3, -5.5, 0], [-2, -3, -3.6, 0]], body = [];
       for (const [x0, y0, x1] of legL) body.push({ l: [x0, y0 + up * .4, x1 + k * .6, -.2, 1.2], c: 'b_' }, { l: [-x0, y0 + up * .4, -x1 - k * .6, -.2, 1.2], c: 'b_' });
       body.push({ e: [0, -4.6 + up * .5, 6, 3.4], c: 'b' }, { d: [[-2, -6 + up], [1, -7 + up], [3, -6 + up]], c: 'b^' });
@@ -243,8 +256,8 @@ export const CRITTERS = {
   },
   toadling: { // Sporewood: a toad wearing a spotted mushroom cap.
     w: 22, h: 22, pal: { b: '#7e9e5e', l: '#e0e8b4', x: '#a46ad8', y: '#f6eaff', k: '#5e7a46', e: '#140c18' },
-    build(pose, ph) {
-      const sleep = pose === 'sleep', hop = pose === 'walk' && ph % 2 ? 1.5 : 0, dip = pose === 'graze' ? 1 : 0;
+    build(pose, p) {
+      const sleep = pose === 'sleep', hop = pose === 'walk' && (Math.floor(p * 4) % 2) ? 1.5 : 0, dip = pose === 'graze' ? 1 : 0;
       return [
         { e: [-3.6, -2 - hop * .4, 3, 2.2], c: 'k', far: 1 },
         { e: [0, -4.6 - hop, 5.6, 4.2], c: 'b' }, { e: [1.8, -3.2 - hop, 3, 2.2], c: 'l', flat: 1, ol: false },
@@ -258,8 +271,8 @@ export const CRITTERS = {
   },
   hedgehog: { // Glimmerdeep: a hedgehog whose quills are glassy crystal.
     w: 24, h: 16, pal: { b: '#9a8070', x: '#8ad8f4', z: '#b8a0ff', k: '#5a4a40', e: '#140c08' },
-    build(pose, ph) {
-      const sleep = pose === 'sleep', step = pose === 'walk' ? (ph % 2 ? .8 : -.8) : 0, nose = pose === 'graze' ? 1.4 : 0;
+    build(pose, p) {
+      const sleep = pose === 'sleep', step = pose === 'walk' ? ((Math.floor(p * 4) % 2) ? .8 : -.8) : 0, nose = pose === 'graze' ? 1.4 : 0;
       const quills = [];
       for (let k = 0; k < 7; k++) { const a = Math.PI * (1.05 + k * .14), x = -1 + Math.cos(a) * 6.4, y = -4.6 + Math.sin(a) * 4.6; quills.push({ l: [x * .8 - .2, y * .8 - .9, x + Math.cos(a) * 1.8, y + Math.sin(a) * 1.8, 1.1], c: k % 3 ? 'x' : 'z', ol: false }); }
       return [
@@ -277,13 +290,16 @@ export const CRITTERS = {
 export const NATIVE = [null, 'fox', 'lynx', 'tortoise', 'otter', 'ram', 'crab', 'toadling', 'hedgehog'];
 
 const made = new Map();
-// pose: stand, walk, graze or sleep; ph is the step of the walk, 0 to 3.
+export const WALK_FRAMES = 8;
+// How far, in texels, one full stride carries each animal, so its feet stay planted as it moves.
+export const strideOf = name => 2 * (CRITTERS[name].stride ?? 2.4) / STANCE / SCALE;
+// pose: stand, walk, graze or sleep; ph is the frame of the walk, 0 to 7.
 export function critterCanvas(name, pose, ph, flip) {
   const key = `${name}:${pose}:${ph}:${flip ? 1 : 0}`;
   let c = made.get(key);
   if (c) return c;
   const C = CRITTERS[name];
-  c = raster(C.w, C.h, C.pal, C.build(pose, ph));
+  c = raster(C.w, C.h, C.pal, C.build(pose, ph / WALK_FRAMES));
   if (flip) { const f = document.createElement('canvas'); f.width = c.width; f.height = c.height; const g = f.getContext('2d'); g.translate(c.width, 0); g.scale(-1, 1); g.drawImage(c, 0, 0); c = f; }
   made.set(key, c);
   return c;

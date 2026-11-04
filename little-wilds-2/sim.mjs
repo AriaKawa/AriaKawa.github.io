@@ -1,6 +1,9 @@
 // Rules of restoration. No DOM: runs in the game, offline catch-up and the pacing test alike.
 // One field covers the whole continent; glades are bought outward from the middle, and one army of spirits works all of it.
-import { CW, CN, LCW, LCH, LCN, ZONES, LANDS } from './world.mjs?v=12';
+import { CW, CN, LCW, LCH, LCN, ZONES, LANDS } from './world.mjs?v=13';
+import { buildNav, markTree, steer, standable, escape } from './nav.mjs?v=13';
+// The ground map spirits and animals walk by, rebuilt when a different set of planted trees is in play.
+export function navOf(s, w) { if (!w.nav || w.navTrees !== s.trees) { buildNav(w); for (const t of s.trees) markTree(w, t); w.navTrees = s.trees; } return w.nav; }
 
 const WORLD_VERSION = 6, FIELD_VERSION = 4; // objects / the shape of the glades
 export const SPIRIT_CAP = 60;
@@ -160,13 +163,16 @@ function seek(s, w, a) {
   if (a.type === 3) {
     let best = null, bd = Infinity;
     for (const o of w.objects) if (s.objHp[o.id] > 0 && s.zones[o.zone].open) { const d = Math.hypot(o.x - a.x, o.y - a.y); if (d < bd) { bd = d; best = o; } }
-    if (best && bd < 160) { a.tx = best.x; a.ty = best.y + .5; return true; }
+    if (best && bd < 160) { // Stands on open ground just in front of it, or beside it.
+      for (const [dx, dy] of [[0, 1.6], [-2.2, 1.2], [2.2, 1.2], [0, 2.6], [-3, .2], [3, .2], [-2, 2.8], [2, 2.8]]) { const x = best.x + dx, y = best.y + dy; if (standable(w, Math.floor(y) * CW + Math.floor(x))) { a.tx = x; a.ty = y; return true; } }
+    }
   }
   const lists = nearLists(s, w, a);
   const test = a.type === 1 ? v => v >= .5 && v < .97 : a.type === 3 ? v => v >= .5 && v < 1 : a.type === 0 ? v => v < .34 : v => v < .5;
   let best = -1, bd = Infinity, thin = -1, td = Infinity;
   for (let k = 0; k < 40 && lists.length; k++) {
     const list = lists[Math.floor(Math.random() * lists.length)], i = list[Math.floor(Math.random() * list.length)], d = Math.hypot(i % CW - a.x, Math.floor(i / CW) - a.y);
+    if (a.type !== 2 && !standable(w, i)) continue; // walkers want ground they can stand on; the Rainwisp floats
     if (test(s.h[i])) { if (d < bd) { bd = d; best = i; } }
     else if (s.h[i] < GREEN * .98 && a.type !== 1 && d < td) { td = d; thin = i; } // Ground that looks green but is not finished, so no glade stalls just short.
   }
@@ -178,16 +184,23 @@ function seek(s, w, a) {
 function stepSpirit(s, w, a, dt, ev) {
   const def = SPIRITS[a.type], pace = 1 + lvl(s, 'feet') * .25;
   if (a.held) return;
+  if (a.type !== 2 && !w.rough && escape(w, a, def.speed * pace * dt)) { a.nap = 0; a.working = false; a.walk = (a.walk || 0) + dt; return; }
   if (a.nap > 0) { a.nap -= dt; if (a.nap > 0) return; }
   if (a.tx < 0) { if (!seek(s, w, a)) return; a.work = 0; }
   const dx = a.tx - a.x, dy = a.ty - a.y, d = Math.hypot(dx, dy), step = def.speed * pace * dt;
   const lift = a.type === 1 ? (s.h[Math.round(a.y) * CW + Math.round(a.x)] >= .5 ? 1 : 0) : 1;
   if (d > .3) {
-    const m = Math.min(1, step / d);
-    a.x += dx * m; a.y += dy * m; a.walk = (a.walk || 0) + dt; a.dir = dx < 0 ? -1 : 1; a.working = false;
-    if (lift) heal(s, w, a.x, a.y, def.r * .75, def.rate * pace * dt * .6, def.cap);
-    return;
+    // Walk round trees, stones, houses and ponds, bounding over streams. The Rainwisp floats over water.
+    const r = w.rough ? (a.x += dx * Math.min(1, step / d), a.y += dy * Math.min(1, step / d), Math.hypot(a.tx - a.x, a.ty - a.y) < .3 ? 'arrived' : 'moving') : steer(w, a, a.tx, a.ty, step, dt, a.type === 2);
+    if (r === 'stuck') { w.stuck = (w.stuck || 0) + 1; a.tx = -1; a.nap = .4 + Math.random() * .8; return; }
+    if (r === 'moving') {
+      a.walk = (a.walk || 0) + dt; a.working = false;
+      if (lift) heal(s, w, a.x, a.y, def.r * .75, def.rate * pace * dt * .6, def.cap);
+      return;
+    }
+    a.tx = a.x; a.ty = a.y;
   }
+  if (!a.working) w.reached = (w.reached || 0) + 1;
   a.working = true;
   a.work += dt * pace;
   if (lift) heal(s, w, a.x, a.y, def.r, def.rate * pace * dt, def.cap);
@@ -195,7 +208,7 @@ function stepSpirit(s, w, a, dt, ev) {
   if (a.work > 1.4) {
     if (a.type === 3 && s.trees.length < 160 && s.h[Math.round(a.y) * CW + Math.round(a.x)] > .7 && Math.random() < .3 && w.free(a.x * 4, a.y * 4) && s.trees.every(q => Math.hypot(q.x - a.x, q.y - a.y) > 6)) {
       const t = { x: a.x, y: a.y, born: s.age, blossom: Math.random() < .35 };
-      s.trees.push(t); ev.push({ t: 'tree', tree: t });
+      s.trees.push(t); markTree(w, t); ev.push({ t: 'tree', tree: t });
     }
     a.tx = -1; a.work = 0;
   }
@@ -239,6 +252,7 @@ export function tick(s, w, dt, ev = [], slice = 0, of = 1) {
   s.seeds += income(s) * dt;
   if (!carries.has(s)) carries.set(s, { v: Math.random() });
   drink(s, w, dt);
+  navOf(s, w);
   for (let n = slice; n < s.spirits.length; n += of) stepSpirit(s, w, s.spirits[n], dt * of, ev);
   creep(s, w, dt, carries.get(s));
   s.zones.forEach((z, id) => {
@@ -291,8 +305,9 @@ export function catchUp(s, w, seconds) {
   if (span < 20) return { seconds: 0, seeds: 0, ev };
   const before = s.seeds, steps = Math.min(600, Math.ceil(span / 2)), dt = span / steps;
   const saved = s.spirits.map(a => a.held); s.spirits.forEach(a => { a.held = false; });
-  for (let i = 0; i < steps; i++) tick(s, w, dt, ev);
-  s.spirits.forEach((a, i) => { a.held = saved[i]; });
+  w.rough = true; // While away, spirits walk straight to their work: nobody is watching, and it keeps this quick.
+  try { for (let i = 0; i < steps; i++) tick(s, w, dt, ev); } finally { w.rough = false; }
+  s.spirits.forEach((a, i) => { a.held = saved[i]; a.goalX = undefined; a.route = null; });
   return { seconds: span, seeds: s.seeds - before, ev };
 }
 
