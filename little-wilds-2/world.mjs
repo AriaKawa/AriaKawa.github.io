@@ -262,7 +262,10 @@ export function makeLand(seed = 1, mapId = 0) {
     let kind, thr;
     if (r < .46) { kind = 0; thr = .33 + r2 * .12; }       // short tuft
     else if (r < .66) { kind = 1; thr = .46 + r2 * .12; }   // tall grass
-    else if (r < .9) { kind = 2 + Math.floor(fbm(x / 13, y / 13, seed + 121) * 7) % 5; thr = .7 + r2 * .28; } // flowers, drifting in colour patches
+    else if (r < .9) { // Wildflowers only in drifts, the way they grow in a real meadow; between drifts it is grass.
+      if (fbm(x / 16, y / 16, seed + 131) > .58) { kind = 2 + Math.floor(fbm(x / 13, y / 13, seed + 121) * 7) % 5; thr = .7 + r2 * .28; }
+      else if (r < .8) { kind = 1; thr = .46 + r2 * .12; } else { kind = 0; thr = .33 + r2 * .12; }
+    }
     else if (r < .935) { kind = 7; thr = .8 + r2 * .18; }  // fern
     else continue;
     flora[Math.floor(ty / FC) * floraCols + Math.floor(tx / FC)].push({ x: tx, y: ty, cell, kind, thr, phase: r2 });
@@ -355,7 +358,10 @@ export async function makeWorld(progress = async () => {}) {
   // A last look over the whole continent: nothing stands in water, on a road or crop row, on rock or sand, or on
   // top of something else. A misplaced tree or stone shuffles a little way over, or is left out.
   const solid = (x, y) => { x |= 0; y |= 0; if (x < 0 || y < 0 || x >= TW || y >= TH) return true; const i = y * TW + x; return edge[i] || road[i] || waterT[i] < 255; };
-  const footClear = (x, y, half) => { for (let yy = y - 6; yy <= y + 3; yy += 2) for (let xx = x - half; xx <= x + half; xx += 2) if (solid(xx, yy)) return false; return true; };
+  const scanClear = (x, y, half, deep, step) => { for (let yy = y - deep; yy <= y + 4; yy += step) for (let xx = x - half; xx <= x + half; xx += step) if (solid(xx, yy)) return false; return true; };
+  const footClear = (x, y, half, deep = 6) => scanClear(x, y, half, deep, 3) && scanClear(x, y, half, deep, 1); // A quick look first, then every texel.
+  // Roots and the lower canopy spread about two fifths of a sprite's size each way; a few texels more keep water at a distance.
+  const base = size => [Math.max(4, Math.round(size * .4)) + 4, Math.max(8, Math.round(size * .5))];
   const BUCKET = 48, buckets = new Map(), bucketAt = (x, y) => Math.floor(x / BUCKET) * 1000 + Math.floor(y / BUCKET);
   const crowded = (x, y, size, skip) => { for (let b = -1; b <= 1; b++) for (let a = -1; a <= 1; a++) for (const q of buckets.get(bucketAt(x + a * BUCKET, y + b * BUCKET)) || []) { if (q === skip) continue; const qx = q.x * CELL, qy = q.y * CELL; if (Math.abs(qx - x) < (q.size + size) * .3 && Math.abs(qy - y) < Math.max(8, (q.size + size) * .16)) return true; } return false; };
   const keep = o => { const k = bucketAt(o.x * CELL, o.y * CELL); if (!buckets.has(k)) buckets.set(k, []); buckets.get(k).push(o); };
@@ -363,9 +369,9 @@ export async function makeWorld(progress = async () => {}) {
   for (const o of objects) if (o.mark) { kept.push(o); keep(o); } // Village buildings were laid out with their roads.
   for (const o of objects) {
     if (o.mark) continue;
-    const half = Math.max(3, Math.round(o.size * .22)), x0 = o.x * CELL, y0 = o.y * CELL;
-    let spot = footClear(x0, y0, half) && !crowded(x0, y0, o.size) ? [x0, y0] : null;
-    for (let r = 6; !spot && r <= 36; r += 6) for (let a = 0; a < 8 && !spot; a++) { const x = x0 + Math.cos(a * .785) * r, y = y0 + Math.sin(a * .785) * r * .7; if (!blocked[Math.floor(y / CELL) * CW + Math.floor(x / CELL)] && footClear(x, y, half) && !crowded(x, y, o.size)) spot = [x, y]; }
+    const [half, deep] = base(o.size), x0 = o.x * CELL, y0 = o.y * CELL, reach = Math.max(36, o.size);
+    let spot = footClear(x0, y0, half, deep) && !crowded(x0, y0, o.size) ? [x0, y0] : null;
+    for (let r = 6; !spot && r <= reach; r += 6) for (let a = 0; a < 12 && !spot; a++) { const x = x0 + Math.cos(a * .524) * r, y = y0 + Math.sin(a * .524) * r * .7; if (!blocked[Math.floor(y / CELL) * CW + Math.floor(x / CELL)] && footClear(x, y, half, deep) && !crowded(x, y, o.size)) spot = [x, y]; }
     if (!spot) continue;
     o.x = spot[0] / CELL; o.y = spot[1] / CELL; kept.push(o); keep(o);
   }
@@ -373,7 +379,7 @@ export async function makeWorld(progress = async () => {}) {
   objects.length = 0; kept.forEach((o, i) => { o.id = i; objects.push(o); });
   LANDS.forEach((_, id) => { const i = objects.findIndex(o => o.land === id); objStart[id] = i < 0 ? objects.length : i; });
   // Planted trees ask the same question: is this a clear patch of ground?
-  const free = (x, y, half = 5) => footClear(x, y, half) && !crowded(x, y, 30);
+  const free = (x, y, size = 38) => footClear(x, y, ...base(size)) && !crowded(x, y, size);
   // Village buildings keep their own land's art; trees and stones take the look of the ground they stand on.
   for (const o of objects) { o.zone = zone[Math.min(CN - 1, Math.floor(o.y) * CW + Math.floor(o.x))]; o.art = o.local ? o.land : biome[Math.min(N - 1, Math.floor(o.y * CELL) * TW + Math.floor(o.x * CELL))]; }
   // Neighbouring glades: they touch, or face each other across a ridge of rock.
