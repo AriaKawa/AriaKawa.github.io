@@ -1,8 +1,9 @@
-import { makeWorld, ZONES, LANDS, CN, CW, CH, CELL, hash } from './world.mjs?v=11';
-import { newLand, tick, touch, buyGlade, gladeBuyable, gladePrice, landDone, landPct, landTouched, income, upgradeMax, catchUp, encode, decode, buySpirit, buyUpgrade, spiritCost, spiritOpen, upgradeCost, upgradeOpen, zonePct, zoneBloom, doneCount, initObjects, SPIRITS, UPGRADES, SPIRIT_CAP } from './sim.mjs?v=11';
-import { createLand } from './land.mjs?v=11';
-import { createRenderer } from './render.mjs?v=11';
-import { createAudio } from './audio.mjs?v=11';
+import { makeWorld, ZONES, LANDS, CN, CW, CH, CELL, hash } from './world.mjs?v=12';
+import { newLand, tick, touch, buyGlade, gladeBuyable, gladePrice, landDone, landPct, landTouched, income, upgradeMax, catchUp, encode, decode, buySpirit, buyUpgrade, spiritCost, spiritOpen, upgradeCost, upgradeOpen, zonePct, zoneBloom, doneCount, initObjects, SPIRITS, UPGRADES, SPIRIT_CAP } from './sim.mjs?v=12';
+import { createLand } from './land.mjs?v=12';
+import { createRenderer } from './render.mjs?v=12';
+import { createAudio } from './audio.mjs?v=12';
+import { spiritFace } from './critters.mjs?v=12';
 
 const KEY = 'little-wilds-2-v2', CARDS_KEY = 'little-wilds-2-postcards', SOUND_KEY = 'little-wilds-2-muted', VOLUME_KEY = 'little-wilds-2-volume';
 const $ = id => document.getElementById(id);
@@ -46,7 +47,7 @@ const firstOpen = () => { const i = s.zones.findIndex(z => z.open && !z.done); r
 const landUnderView = () => ZONES[currentZone].land;
 
 function buildDock() {
-  $('dock').innerHTML = SPIRITS.map((d, i) => `<button class="card" id="card-${i}" data-spirit="${i}" title="${d.job}"><span class="count" id="count-${i}"></span><span class="face" style="background-position:0 ${i * 100 / 7}%"></span><b>${d.name}</b><small id="cost-${i}"></small></button>`).join('') + `<button class="card tend" id="tend" title="Upgrades"><span class="tend-icon">✿</span><b>Tend</b><small id="tend-note"></small></button>`;
+  $('dock').innerHTML = SPIRITS.map((d, i) => `<button class="card" id="card-${i}" data-spirit="${i}" title="${d.job}"><span class="count" id="count-${i}"></span><span class="face" style="background:url(${spiritFace(i)}) center/contain no-repeat"></span><b>${d.name}</b><small id="cost-${i}"></small></button>`).join('') + `<button class="card tend" id="tend" title="Upgrades"><span class="tend-icon">✿</span><b>Tend</b><small id="tend-note"></small></button>`;
 }
 $('hud').addEventListener('click', e => {
   const b = e.target.closest('[data-spirit]'); if (!b) return;
