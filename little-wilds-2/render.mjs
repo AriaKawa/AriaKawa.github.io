@@ -1,9 +1,9 @@
 // Everything above the ground: flora, the dead-and-revived objects, spirits, wildlife, weather and fog.
-import { TW, TH, LW, LH, CW, CH, CELL, ZONES, LANDS, SEA, hash, fbm, FC, FCOLS, FROWS, landAtTexel, SHRINK } from './world.mjs?v=16';
-import { GREEN, brushRadius, SPIRITS, gladeBuyable, gladePrice } from './sim.mjs?v=16';
-import { pixelize, newFrame, shadowOf, skirtOf, apronOf } from './pixel.mjs?v=16';
-import { critterCanvas, spiritCanvas, NATIVE, SCALE, WALK_FRAMES, strideOf } from './critters.mjs?v=16';
-import { steer, standable, overWater, escape } from './nav.mjs?v=16';
+import { TW, TH, LW, LH, CW, CH, CELL, ZONES, LANDS, SEA, hash, fbm, FC, FCOLS, FROWS, landAtTexel, SHRINK } from './world.mjs?v=17';
+import { GREEN, brushRadius, SPIRITS, gladeBuyable, gladePrice } from './sim.mjs?v=17';
+import { pixelize, newFrame, shadowOf, skirtOf, apronOf } from './pixel.mjs?v=17';
+import { critterCanvas, spiritCanvas, NATIVE, SCALE, WALK_FRAMES, strideOf } from './critters.mjs?v=17';
+import { steer, standable, overWater, escape } from './nav.mjs?v=17';
 const money = n => n >= 1e9 ? (n / 1e9).toFixed(2) + 'b' : n >= 1e6 ? (n / 1e6).toFixed(2) + 'm' : n >= 1e4 ? (n / 1e3).toFixed(1) + 'k' : Math.floor(n).toLocaleString();
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -188,6 +188,50 @@ export function createRenderer(canvas, world, land, images) {
       }
     }
   }
+  // Creatures walk in the meadow, not on top of it: the blades just in front of one are drawn again over its
+  // feet, cut to `cut` texels tall, and those nearest it lean away as it pushes through. x, y, half and cut
+  // are in texels; `step` rustles the blades by its feet while it walks.
+  function grassOver(x, y, half, cut, step) {
+    if (cam.z < .75 || !s_) return;
+    const f = shown || s_.h, { cw, ch } = flora[0], z = cam.z;
+    for (let cy = Math.max(0, Math.floor((y - 1) / FC)); cy <= Math.min(FROWS - 1, Math.floor((y + 4) / FC)); cy++)
+      for (let cx = Math.max(0, Math.floor((x - half) / FC)); cx <= Math.min(FCOLS - 1, Math.floor((x + half) / FC)); cx++) {
+        const i = cy * FCOLS + cx;
+        for (let k = F.start[i], end = k + F.count[i]; k < end; k++) {
+          const px = F.x[k], py = F.y[k], d = px - x;
+          if (py <= y - .5 || py > y + 3.5 || Math.abs(d) > half) continue;
+          const h = f[F.cell[k]]; if (h < F.thr[k]) continue;
+          const grow = Math.min(1, (h - F.thr[k]) / .07 + .25), rows = Math.min(ch, cut / grow), near = Math.abs(d) < half * .75;
+          const pose = near ? (d > 0 ? 2 : 0) : step && Math.sin(step * 9 + px) > .6 ? (d > 0 ? 2 : 0) : 1;
+          ctx.drawImage(flora[world.biome[Math.min(TH - 1, py | 0) * TW + (px | 0)]].c, pose * cw, F.kind[k] * ch + ch - rows, cw, rows, sx(px) - cw * z / 2, sy(py) - rows * grow * z, cw * z, rows * grow * z);
+        }
+      }
+  }
+  // A fringe of blades across a creature's feet, a texel to a blade like the meadow itself, with gaps between
+  // them. While it walks the fringe parts: blades by its legs lean out, swapping each step.
+  const fringes = new Map();
+  function fringeOf(w, cut, land, seed, part) {
+    const key = `${w}:${cut}:${land}:${seed}:${part}`;
+    let c = fringes.get(key); if (c) return c;
+    const P = LANDS[land], cols = [P.grass.map(v => v * .72), P.grass, P.lush].map(c => `rgb(${c.map(v => Math.round(Math.min(255, v))).join(',')})`);
+    c = document.createElement('canvas'); c.width = w + 2; c.height = cut + 1; const g = c.getContext('2d');
+    for (let x = 0; x < w + 2; x++) {
+      const r = hash(x, seed, 71); if (r < .42) continue;
+      const tall = Math.max(1, Math.round(cut * (.45 + hash(x, seed, 73) * .55))), top = c.height - tall, side = x < (w + 2) / 2 ? -1 : 1;
+      const lean = part && hash(x, part, 75) > .45 ? side : r > .85 ? 1 : 0;
+      for (let y = top; y < c.height; y++) { g.fillStyle = y === top ? cols[2] : y >= c.height - 1 ? cols[0] : cols[1]; g.fillRect(x + (y === top && tall > 1 ? lean : 0), y, 1, 1); }
+    }
+    if (fringes.size > 400) fringes.clear();
+    fringes.set(key, c);
+    return c;
+  }
+  function fringe(x, y, wT, cut, seed, step) {
+    const cell = Math.floor(y / CELL) * CW + Math.floor(x / CELL);
+    if (cam.z < .75 || !s_ || (shown || s_.h)[cell] < .3) return;
+    const land = world.biome[Math.min(TH - 1, y | 0) * TW + (x | 0)], w = Math.max(2, Math.round(wT)), z = cam.z;
+    const c = fringeOf(w, Math.max(1, Math.round(cut)), land, seed % 5, step ? 1 + (Math.floor(step) & 1) : 0);
+    ctx.drawImage(c, snapX(sx(x) - c.width * z / 2), snapY(sy(y) - c.height * z + z), c.width * z, c.height * z);
+  }
   function drawProps(s, time, dt, carry) {
     s_ = s;
     const items = [], z = cam.z, lx = cam.x - W / 2 / z - 70, hx = cam.x + W / 2 / z + 70, ly = cam.y - H / 2 / z - 10, hy = cam.y + H / 2 / z + 120;
@@ -239,7 +283,7 @@ export function createRenderer(canvas, world, land, images) {
         const hop = walking && !still ? Math.abs(Math.sin((a.anim || 0) * 8)) : 0, q = still ? 0 : walking ? (hop - .45) * .13 : a.working ? Math.sin(tNow * 5 + a.x) * .05 : Math.sin(tNow * 2 + a.x) * .018;
         const frame = still ? 0 : a.nap > 0 ? 1 : a.working ? 3 : 0, float = (a.type === 2 ? 3 + Math.sin(tNow * 2 + a.x) : 0) + Math.sin(a.air * Math.PI / 2) * 5, size = (a.type === 3 ? 20 : 15) * z;
         ctx.fillStyle = 'rgba(30,24,18,.28)'; ctx.beginPath(); ctx.ellipse(x, y, size * (.28 - hop * .06), size * .09, 0, 0, 7); ctx.fill();
-        { const c = spiritCanvas(a.type, frame, a.dir < 0), k = z * SHRINK / SCALE, w = c.width * k * (1 - q), h = c.height * k * (1 + q); ctx.drawImage(c, snapX(x - w / 2), snapY(y - (float + hop * 2.4) * SHRINK * z - h), w, h); }
+        { const c = spiritCanvas(a.type, frame, a.dir < 0), k = z * SHRINK / SCALE, w = c.width * k * (1 - q), h = c.height * k * (1 + q); ctx.drawImage(c, snapX(x - w / 2), snapY(y - (float + hop * 2.4) * SHRINK * z - h), w, h); if (float < 1) grassOver(a.rx * CELL, a.ry * CELL, w / z * .3, Math.max(1.2, h / z * .22 - hop * 2.4 * SHRINK), walking ? a.anim : 0); }
         if (a.type === 2 && !s.paused && !reduced && quality > 0) { // Rainwisps carry their own little weather.
           const r = SPIRITS[2].r * CELL * z * .75; ctx.fillStyle = 'rgba(170,220,255,.7)';
           for (let n = 0; n < 7; n++) { const q2 = (tNow * 1.5 + n * .37) % 1, px = x + (hash(n, 1, 8) - .5) * r * 2, py = y - z * 2 + (hash(n, 2, 8) - .5) * r - (1 - q2) * 18 * z; ctx.fillRect(px, py, Math.max(1, z * .5), z * 2); }
@@ -351,6 +395,7 @@ export function createRenderer(canvas, world, land, images) {
     const art = critterCanvas(name, pose, pose === 'walk' ? ph : 0, c.dir < 0), k = z * f / SCALE, aw = art.width * k, ah = art.height * k;
     { const sh = shadowOf(art), left = snapX(x - aw / 2); ctx.drawImage(sh.c, left, snapY(y - ah) + (sh.foot - sh.c.height + 2) * k, sh.c.width * k, sh.c.height * k); }
     ctx.drawImage(art, snapX(x - aw / 2), snapY(y - lift - ah), aw, ah);
+    if (lift < z * 1.5) { const cut = Math.max(1.6, ah / z * (rabbit ? .2 : .26)) - lift / z; grassOver(c.x, c.y, aw / z * .32, cut, walking ? c.dist : 0); fringe(c.x, c.y, aw / z * .6, cut, c.n | 0, walking ? c.dist / (strideOf(name) * f) * 2 : 0); }
     if (def.row === 0 && !reduced && quality > 0) { // Spirit deer shed slow motes of light.
       for (let k = 0; k < 3; k++) { const q = (t * .22 + k / 3 + c.n * .13) % 1; ctx.globalAlpha = c.alpha * Math.sin(q * 3.14) * .85; ctx.fillStyle = '#b8fff0'; ctx.fillRect(x + (hash(k, c.n, 41) - .5) * size * .8 + Math.sin(t + k) * z, y - size * (.35 + q * .85), Math.max(1, z * .7), Math.max(1, z * .7)); }
     }

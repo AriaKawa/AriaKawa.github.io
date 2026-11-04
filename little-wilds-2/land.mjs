@@ -1,7 +1,7 @@
 // The ground as one pixel canvas for the whole continent. Every texel keeps a small code for its grain,
 // shade and kind of ground; each land turns codes into colours through lookup tables, one per growth stage,
 // so the front line between dead and alive stays crisp and organic without a colour array per stage.
-import { TW, TH, LW, LH, CW, CH, CELL, fbm, noise, hash, LANDS, SEA, BEACH, ROCK, landAtTexel } from './world.mjs?v=16';
+import { TW, TH, LW, LH, CW, CH, CELL, fbm, noise, hash, LANDS, SEA, BEACH, ROCK, landAtTexel } from './world.mjs?v=17';
 
 const packed = (r, g, b) => (255 << 24) | (Math.max(0, Math.min(255, b)) << 16) | (Math.max(0, Math.min(255, g)) << 8) | Math.max(0, Math.min(255, r));
 const pack = c => packed(c[0], c[1], c[2]);
@@ -45,10 +45,10 @@ function edgeTables(P) {
     else { const k = .95 + b4 * .12; a = P.crack.map(v => v * 1.12 * k); b = mixTo(P.soil, sand, .55).map(v => v * k); }
     t[i] = pack(a); t[i + 1] = pack(b);
   }
-  if (P.road) for (let r = 1; r < 4; r++) for (let rim = 0; rim < 2; rim++) for (let pat = 0; pat < 2; pat++) for (let kq = 0; kq < 4; kq++) for (let grain = 0; grain < 2; grain++) {
+  if (P.road) for (let r = 1; r < 5; r++) for (let rim = 0; rim < 2; rim++) for (let pat = 0; pat < 2; pat++) for (let kq = 0; kq < 4; kq++) for (let grain = 0; grain < 2; grain++) {
     const k = .92 + kq * .05 + (grain ? .12 : 0), i = ((ROAD - EDGE) | r << 8 | rim << 7 | pat << 6 | kq << 4 | grain << 3) * 3;
     let a, b, c;
-    if (r === 2) { const gap = pat ? .62 : 1; a = [104 * gap, 96 * gap, 88 * gap]; b = c = [142 * gap, 100 * gap, 62 * gap]; }
+    if (r === 2 || r === 4) { const gap = pat ? .62 : 1; a = [104 * gap, 96 * gap, 88 * gap]; b = c = [142 * gap, 100 * gap, 62 * gap]; }
     else if (r === 3) { a = (pat ? P.crack : P.dead).map(v => v * k); b = (pat ? P.soil : mixTo(P.soil, P.road, .4)).map(v => v * k); c = (pat ? P.grass : P.soil).map(v => v * k); }
     else { const m = rim ? .8 : 1; a = mixTo(P.dead, P.crack, .4).map(v => v * k * m); b = P.road.map(v => v * k * m); c = b; }
     t[i] = pack(a); t[i + 1] = pack(b.map(v => v * .86)); t[i + 2] = pack(c);
@@ -84,7 +84,7 @@ export async function createLand(w, progress = async () => {}) {
         }
         if (r && LANDS[id].road) {
           const rim = r === 1 && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([p, q]) => { const j = i + q * TW + p; return j >= 0 && j < N && !w.road[j]; }) ? 1 : 0;
-          const pat = r === 2 ? (x % 5 === 0 ? 1 : 0) : r === 3 ? (y % 5 < 2 ? 1 : 0) : 0;
+          const pat = r === 2 ? (x % 5 === 0 ? 1 : 0) : r === 4 ? (y % 5 === 0 ? 1 : 0) : r === 3 ? (y % 5 < 2 ? 1 : 0) : 0;
           code[i] = ROAD | r << 8 | rim << 7 | pat << 6 | Math.min(3, Math.floor(noise(X / 4, Y / 4, s + 260) * 4)) << 4 | (grain > .95 ? 1 : 0) << 3;
           continue;
         }

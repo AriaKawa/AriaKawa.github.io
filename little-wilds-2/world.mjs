@@ -166,24 +166,26 @@ export function makeLand(seed = 1, mapId = 0) {
     const target = LANDS.findIndex(l => l.col === map.col + dc && l.row === map.row + dr);
     if (target >= 0) gates.push({ x, y, target, size: 58 });
   }
-  // Villages: dirt roads link the glades and run out to the gateways. 1 road, 2 plank bridge, 3 crop rows.
+  // Dirt roads link the glades and run out to the gateways. 1 road, 2 and 4 plank bridge (planks running
+  // across a road that heads east-west or north-south), 3 crop rows.
   const road = new Uint8Array(LW * LH), roadPoints = [];
-  const lay = (x, y, r) => {
+  const lay = (x, y, r, plank = 2) => {
     for (let yy = Math.floor(y - r); yy <= y + r; yy++) for (let xx = Math.floor(x - r); xx <= x + r; xx++) {
       if (xx < 0 || yy < 0 || xx >= LW || yy >= LH || (xx - x) ** 2 + (yy - y) ** 2 > r * r) continue;
       const i = yy * LW + xx;
-      if (edge[i] || waterT[i] >= .7) continue;
-      if (waterT[i] >= 0) { waterT[i] = -1; road[i] = 2; } else road[i] ||= 1;
+      if (edge[i]) continue;
+      // Where a road meets a stream it becomes a bridge right across it, so no water shows through the road.
+      if (waterT[i] >= 0) { waterT[i] = -1; road[i] = plank; } else if (road[i] !== 2 && road[i] !== 4) road[i] ||= 1;
     }
   };
   const route = (a, b, id) => {
     const len = Math.hypot(b.x - a.x, b.y - a.y) || 1, nx = -(b.y - a.y) / len, ny = (b.x - a.x) / len;
-    let last = null;
+    let last = null, px = a.x, py = a.y;
     for (let d = 0; d <= len; d++) {
       const t = d / len, sway = (fbm(d / 60, id * 3.1, seed + 51) - .5) * 70 * Math.sin(t * Math.PI);
       let x = a.x + (b.x - a.x) * t + nx * sway, y = a.y + (b.y - a.y) * t + ny * sway;
       for (const p of ponds) { const q = Math.hypot(x - p.x, y - p.y), keep = p.r + 30; if (q < keep && q > 0) { x = p.x + (x - p.x) / q * keep; y = p.y + (y - p.y) / q * keep; } }
-      lay(x, y, 3.6 + noise(d / 14, id, seed + 53) * 1.6);
+      lay(x, y, 3.6 + noise(d / 14, id, seed + 53) * 1.6, Math.abs(x - px) >= Math.abs(y - py) ? 2 : 4); px = x; py = y;
       if (d % 14 === 0) { if (last) roadPoints.push({ x, y, nx: -(y - last.y) / 14, ny: (x - last.x) / 14 }); last = { x, y }; }
     }
   };
@@ -194,41 +196,12 @@ export function makeLand(seed = 1, mapId = 0) {
   if (map.village) {
     GLADES.forEach(z => { if (z.parent >= 0) route(hubs[z.parent], hubs[z.id], z.id); });
     gates.forEach((g, n) => { const hub = hubs.reduce((a, b) => Math.hypot(b.x - g.x, b.y - g.y) < Math.hypot(a.x - g.x, a.y - g.y) ? b : a); route(hub, g, 20 + n); });
-    for (const h of hubs) for (let a = 0; a < 6.28; a += .5) lay(h.x + Math.cos(a) * 12, h.y + Math.sin(a) * 8, 7);
   }
-  // Homes stand beside a road, never on it, each with a footpath to the door. Barns and greenhouses get crop rows.
-  const raiseVillage = id => {
-    const hub = hubs[id], spots = roadPoints.filter(q => zone[(Math.floor(q.y) >> 2) * LCW + (Math.floor(q.x) >> 2)] === id || Math.hypot(q.x - hub.x, q.y - hub.y) < 130).map((q, n) => [q, Math.hypot(q.x - hub.x, q.y - hub.y) + hash(n, id, seed + 57) * 60]).sort((a, b) => a[1] - b[1]).map(e => e[0]);
-    for (const item of map.village[id]) {
-      const [dead, size, own] = item;
-      let done = false;
-      for (const q of spots) {
-        for (const side of [1, -1]) {
-          const dx = q.nx * side, dy = q.ny * side, x = q.x + dx * (8 + size * .42), y = q.y + (dy > 0 ? dy * (8 + size * .95) : dy * 8) - (dy > 0 ? 0 : 3);
-          if (y < size + 8 || y > LH - 8 || x < size * .5 + 8 || x > LW - size * .5 - 8 || blockedAt(x, y, 10) || blockedAt(x, y - size * .6, 10)) continue;
-          if (roadNear(x, y, size * .36, size * .75, 1) || wetNear(x, y, size * .42, size * .8, 4) || !roomy(x, y, size)) continue;
-          place(id, dead, dead + 1, x, y, size);
-          const o = objects[objects.length - 1]; o.mark = true; o.local = !!own;
-          for (let t = 0; t <= 1; t += .1) lay(x + (q.x - x) * t, y + 1 + (q.y - y - 1) * t, 1.2);
-          if (item === BARN || item === GREENHOUSE) for (const way of [1, -1]) {
-            const w = 26, h = 15, fx = x + way * (size * .4 + w + 3), fy = y - h - 1;
-            if (fx < w + 8 || fx > LW - w - 8 || blockedAt(fx, fy, w) || blockedAt(fx, fy, h) || roadNear(fx, fy, w, h, h) || wetNear(fx, fy, w, h, h) || !roomy(fx, fy + h, w * 2)) continue;
-            for (let yy = fy - h; yy <= fy + h; yy++) for (let xx = fx - w; xx <= fx + w; xx++) { const i = Math.floor(yy) * LW + Math.floor(xx); if (!edge[i] && !road[i]) road[i] = 3; }
-            break;
-          }
-          done = true; break;
-        }
-        if (done) break;
-      }
-    }
-  };
   for (const z of GLADES) {
     const pond = ponds[z.id];
     const shrineSide = blockedAt(pond.x + pond.r + 18, pond.y - 4, 8) ? -1 : 1;
-    place(z.id, KIND.shrineDead, KIND.shrine, pond.x + shrineSide * (pond.r + 18), pond.y - 4, 30);
-    if (z.id === FINALE && !map.village) { const side = blockedAt(pond.x - shrineSide * (pond.r + 34), pond.y + 6, 24) ? shrineSide : -shrineSide; place(z.id, KIND.deadTree, KIND.blossom, pond.x + side * (pond.r + 34), pond.y + 6, 110); }
-    if (map.village) raiseVillage(z.id);
-    else { // The wild lands have no buildings: each glade's landmark is a great old tree or outcrop.
+    if (z.id === FINALE) { const side = blockedAt(pond.x - shrineSide * (pond.r + 34), pond.y + 6, 24) ? shrineSide : -shrineSide; place(z.id, KIND.deadTree, KIND.blossom, pond.x + side * (pond.r + 34), pond.y + 6, 110); }
+    { // No buildings anywhere: each glade's landmark is a great old tree or outcrop.
       const big = z.id % 2 === 0, size = big ? 62 : 50;
       for (let k = 0; k < 16; k++) {
         const a = 1.2 + k * .79, x = pond.x + Math.cos(a) * (pond.r + size * .9), y = pond.y + Math.sin(a) * (pond.r + size * .55) + size * .3;
@@ -238,7 +211,7 @@ export function makeLand(seed = 1, mapId = 0) {
       }
     }
     const list = cellsOf[z.id];
-    const quota = map.village ? [[KIND.deadTree, hash(z.id, 21, seed) > .5 ? KIND.blossom : KIND.tree, 34, 4], [KIND.boulder, KIND.mossy, 18, 2], [KIND.bramble, KIND.flowering, 15, 8]] : [[KIND.deadTree, hash(z.id, 21, seed) > .5 ? KIND.blossom : KIND.tree, 34, 7], [KIND.boulder, KIND.mossy, 18, 8], [KIND.bramble, KIND.flowering, 15, 11], map.carved ? [KIND.bramble, KIND.flowering, 15, 2] : [KIND.column, KIND.ruin, 24, 2]];
+    const quota = [[KIND.deadTree, hash(z.id, 21, seed) > .5 ? KIND.blossom : KIND.tree, 34, 7], [KIND.boulder, KIND.mossy, 18, 8], [KIND.bramble, KIND.flowering, 15, 13]];
     let tries = 0;
     for (const [dead, live, size, full] of quota) for (let n = 0, count = dead === KIND.bramble ? full : Math.floor(full * .9 + hash(z.id, dead + 7, seed + 9)); n < count && tries < 900;) {
       tries++;
