@@ -235,7 +235,7 @@ export function makeLand(seed = 1, mapId = 0) {
   // Flora appear when their cell passes a threshold. They are stored per chunk for culling.
   const FC = 64, floraCols = Math.ceil(LW / FC), floraRows = Math.ceil(LH / FC), flora = Array.from({ length: floraCols * floraRows }, () => []);
   for (let y = 0; y < LCH; y++) for (let x = 0; x < LCW; x++) for (let k = 0; k < 2; k++) {
-    const r = hash(x * 3 + k, y * 5 - k, seed + 101), r2 = hash(x + k * 9, y + k * 3, seed + 107);
+    let r = hash(x * 3 + k, y * 5 - k, seed + 101); const r2 = hash(x + k * 9, y + k * 3, seed + 107);
     const tx = (x + hash(x, y + k, seed + 103)) * CELL, ty = (y + hash(x + k, y, seed + 105)) * CELL;
     // A blade whose cell is just inside rock or shore still grows if its own spot is ground, taking its growth
     // from an open neighbour, so the meadow runs right up to the stone instead of stopping a cell short.
@@ -244,9 +244,16 @@ export function makeLand(seed = 1, mapId = 0) {
     if (cell < 0 || edge[Math.min(LH - 1, Math.floor(ty)) * LW + Math.min(LW - 1, Math.floor(tx))] || road[Math.min(LH - 1, Math.floor(ty)) * LW + Math.min(LW - 1, Math.floor(tx))] || xx0(Math.min(LW - 1, tx), Math.min(LH - 1, ty))) continue;
     // Tall grass grows in broad, ragged patches; between them lie open lawns of short green turf, with only
     // the odd tuft or flower. A patch thins out over a few texels at its edge rather than stopping dead.
-    const patch = fbm(tx / 42, ty / 42, seed + 141) * .72 + fbm(tx / 11, ty / 11, seed + 143) * .28, lawn = patch < .46 ? 1 : patch < .53 ? (.53 - patch) / .07 : 0;
-    const flowery = fbm(x / 16, y / 16, seed + 131) > .58;
-    if (lawn && hash(x + k * 5, y - k * 7, seed + 109) < lawn * (flowery ? .7 : .93)) continue;
+    // And tall grass only really takes hold in a few broad grassy stretches of each land; elsewhere the ground is
+    // open lawn, and where wildflowers drift the grass gives way to them, so the colourful places stay open.
+    const flowery = fbm(x / 16, y / 16, seed + 131) > .56;
+    const wild = fbm(tx / 140, ty / 140, seed + 151), grassy = wild < .54 ? 0 : wild < .6 ? (wild - .54) / .06 : 1;
+    const patch = fbm(tx / 42, ty / 42, seed + 141) * .72 + fbm(tx / 11, ty / 11, seed + 143) * .28;
+    let lawn = Math.max(patch < .44 ? 1 : patch < .51 ? (.51 - patch) / .07 : 0, 1 - grassy);
+    if (flowery) lawn = Math.max(lawn, .85);
+    if (lawn && hash(x + k * 5, y - k * 7, seed + 109) < lawn * (flowery ? .62 : .97)) continue;
+    // A plant left standing in a flowery lawn is nearly always a flower.
+    if (flowery && lawn > .5 && r < .9) r = .66 + r / .9 * .24;
     let kind, thr;
     if (r < .3) { kind = 0; thr = .33 + r2 * .12; }        // short tuft
     else if (r < .66) { kind = 1; thr = .46 + r2 * .12; }   // tall grass

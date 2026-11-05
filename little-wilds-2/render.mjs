@@ -1,9 +1,9 @@
 // Everything above the ground: flora, the dead-and-revived objects, spirits, wildlife, weather and fog.
-import { TW, TH, LW, LH, CW, CH, CELL, ZONES, LANDS, SEA, hash, fbm, FC, FCOLS, FROWS, landAtTexel, SHRINK, hillShade } from './world.mjs?v=23';
-import { GREEN, brushRadius, SPIRITS, gladeBuyable, gladePrice } from './sim.mjs?v=23';
-import { pixelize, newFrame, shadowOf, skirtOf, apronOf } from './pixel.mjs?v=23';
-import { duckCanvas, critterCanvas, spiritCanvas, NATIVE, SCALE, WALK_FRAMES, strideOf } from './critters.mjs?v=23';
-import { steer, standable, overWater, escape } from './nav.mjs?v=23';
+import { TW, TH, LW, LH, CW, CH, CELL, ZONES, LANDS, SEA, hash, fbm, FC, FCOLS, FROWS, landAtTexel, SHRINK, hillShade } from './world.mjs?v=24';
+import { GREEN, brushRadius, SPIRITS, gladeBuyable, gladePrice } from './sim.mjs?v=24';
+import { pixelize, newFrame, shadowOf, skirtOf, apronOf } from './pixel.mjs?v=24';
+import { duckCanvas, critterCanvas, spiritCanvas, NATIVE, SCALE, WALK_FRAMES, strideOf } from './critters.mjs?v=24';
+import { steer, standable, overWater, escape } from './nav.mjs?v=24';
 const money = n => n >= 1e9 ? (n / 1e9).toFixed(2) + 'b' : n >= 1e6 ? (n / 1e6).toFixed(2) + 'm' : n >= 1e4 ? (n / 1e3).toFixed(1) + 'k' : Math.floor(n).toLocaleString();
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -33,6 +33,7 @@ const CRITTERS = {
   bird: [false, true].map(up => art(up ? ['a...a', '.a.a.', '..b..'] : ['.....', 'aabaa', 'a...a'], { a: '#3d4a55', b: '#2a333b' })),
 };
 // Which cell of a land's 4x4 art sheet stands in for each kind of object.
+const KIND_BLOSSOM = 2; // Frames 0-2 are the dead tree, tree and blossom tree.
 const BIOME = { 0: 0, 1: 1, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 7: 5, 8: 6, 9: 7 };
 const HEART = art(['.a.a.', 'aaaaa', 'aaaaa', '.aaa.', '..a..'], { a: '#ff9dbb' });
 const PETS = { deer: { row: 0, size: 20, speed: 4, label: 'A spirit deer' }, fawn: { row: 0, size: 14, speed: 5, label: 'A spirit fawn', young: true }, rabbit: { row: 1, size: 11, speed: 9, label: 'A moss rabbit' } };
@@ -148,6 +149,23 @@ function lykeAtlas(P, cw, ch) {
   return { c, cw, ch, r: LR, v: LV, strands: { y0: Y0, sw, sh } };
 }
 
+// Trees come in four builds so a wood isn't one tree stamped over and over: the painted tree as it is, a broader,
+// lower one in cooler leaf, a taller, slimmer one in fresh yellow-green, and a rounder one in warm olive, two of
+// them facing the other way. Only the leaves change colour; trunks and blossom stay as painted.
+const TREE_BUILDS = [null, { sx: 1.08, sy: .92, flip: true, tint: [.88, .93, 1.02] }, { sx: .9, sy: 1.08, flip: false, tint: [1.08, 1.07, .86] }, { sx: 1.04, sy: .97, flip: true, tint: [1.07, .97, .84] }];
+const builds = new Map(); let buildIds = 0;
+function treeBuild(src, v) {
+  const [img, fx, fy, fw, fh] = src, B = TREE_BUILDS[v]; if (!B) return src;
+  const key = `${img.__tb ??= ++buildIds}:${fx}:${fy}:${v}`; let c = builds.get(key);
+  if (!c) {
+    c = document.createElement('canvas'); c.width = fw; c.height = fh; const g = c.getContext('2d', { willReadFrequently: true });
+    g.translate(fw / 2, fh); g.scale(B.flip ? -B.sx : B.sx, B.sy); g.drawImage(img, fx, fy, fw, fh, -fw / 2, -fh, fw, fh);
+    const d = g.getImageData(0, 0, fw, fh), p = d.data;
+    for (let i = 0; i < p.length; i += 4) if (p[i + 3] && p[i + 1] > p[i] && p[i + 1] >= p[i + 2] * .9) for (let k = 0; k < 3; k++) p[i + k] = Math.min(255, p[i + k] * B.tint[k]);
+    g.putImageData(d, 0, 0); builds.set(key, c);
+  }
+  return [c, 0, 0, fw, fh];
+}
 export function createRenderer(canvas, world, land, images) {
   const ctx = canvas.getContext('2d'), cam = { x: 160, y: 530, z: 3.4, tx: 160, ty: 530, tz: 3.4 };
   let fogTick = 0, quality = 2, greeted = false, flyers = [], floaters = [], glows = [], W = 0, H = 0, dpr = 1, grass = 'original', flora = LANDS.map(P => floraAtlas(P)), particles = [], rings = [], thenC = null, shown = null, critters = [], glints = [];
@@ -231,7 +249,7 @@ export function createRenderer(canvas, world, land, images) {
     const b = images.biomes[o.art], cell = (img, n) => [img, n % 4 * 96, (n >> 2) * 96, 96, 96];
     if (o.local && b) return cell(b, frame);
     if (o.mark) return cell(images.landmarks, frame);
-    if (b && BIOME[frame] !== undefined) return cell(b, BIOME[frame]);
+    if (b && BIOME[frame] !== undefined) return frame <= KIND_BLOSSOM ? treeBuild(cell(b, BIOME[frame]), Math.imul(o.id + 7, 2654435761) >>> 30) : cell(b, BIOME[frame]);
     return [images.world, frame % 4 * SIZE, Math.floor(frame / 4) * SIZE, SIZE, SIZE];
   }
   function drawArt(o, frame, x, y, w, h = w, base = null, snap = true) {
@@ -480,7 +498,7 @@ export function createRenderer(canvas, world, land, images) {
         }
       } else if (it.t) {
         const t = it.t, g = Math.min(1, (s.age - t.born) / 9), x = sx(t.x * CELL), y = sy(t.y * CELL), size = (10 + 28 * g) * SHRINK * z;
-        const land = world.biome[Math.min(TH - 1, Math.floor(t.y * CELL)) * TW + Math.floor(t.x * CELL)], tb = images.biomes[land], src = tb ? [tb, 96, 0, 96, 96] : [atlas, (t.blossom ? 2 : 1) * SIZE, 0, SIZE, SIZE];
+        const land = world.biome[Math.min(TH - 1, Math.floor(t.y * CELL)) * TW + Math.floor(t.x * CELL)], tb = images.biomes[land], src = tb ? treeBuild([tb, 96, 0, 96, 96], Math.imul(Math.floor(t.x * 7 + t.y * 13), 2654435761) >>> 30) : [atlas, (t.blossom ? 2 : 1) * SIZE, 0, SIZE, SIZE];
         const foot = z > .9 ? underfoot(src, size / z, land, x, y, false) : null;
         tone = land; blit(...src, x, y, size, size); tone = -1;
         grassFoot(foot, land, Math.floor(t.y) * CW + Math.floor(t.x), Math.floor(t.x * 7 + t.y), false);
