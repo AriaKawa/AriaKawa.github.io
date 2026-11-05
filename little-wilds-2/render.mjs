@@ -1,16 +1,16 @@
 // Everything above the ground: flora, the dead-and-revived objects, spirits, wildlife, weather and fog.
-import { TW, TH, LW, LH, CW, CH, CELL, ZONES, LANDS, SEA, hash, fbm, FC, FCOLS, FROWS, landAtTexel, SHRINK, hillShade } from './world.mjs?v=21';
-import { GREEN, brushRadius, SPIRITS, gladeBuyable, gladePrice } from './sim.mjs?v=21';
-import { pixelize, newFrame, shadowOf, skirtOf, apronOf } from './pixel.mjs?v=21';
-import { duckCanvas, critterCanvas, spiritCanvas, NATIVE, SCALE, WALK_FRAMES, strideOf } from './critters.mjs?v=21';
-import { steer, standable, overWater, escape } from './nav.mjs?v=21';
+import { TW, TH, LW, LH, CW, CH, CELL, ZONES, LANDS, SEA, hash, fbm, FC, FCOLS, FROWS, landAtTexel, SHRINK, hillShade } from './world.mjs?v=22';
+import { GREEN, brushRadius, SPIRITS, gladeBuyable, gladePrice } from './sim.mjs?v=22';
+import { pixelize, newFrame, shadowOf, skirtOf, apronOf } from './pixel.mjs?v=22';
+import { duckCanvas, critterCanvas, spiritCanvas, NATIVE, SCALE, WALK_FRAMES, strideOf } from './critters.mjs?v=22';
+import { steer, standable, overWater, escape } from './nav.mjs?v=22';
 const money = n => n >= 1e9 ? (n / 1e9).toFixed(2) + 'b' : n >= 1e6 ? (n / 1e6).toFixed(2) + 'm' : n >= 1e4 ? (n / 1e3).toFixed(1) + 'k' : Math.floor(n).toLocaleString();
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const SIZE = 64;
 // How many plants of each grass style stay live to carry the wind, rather than being baked still.
-const LIVE = { original: .22, meadow: .45, silverwave: .45 };
+const LIVE = { original: .22, meadow: .45, silverwave: .45, lyke: .4 };
 // The air is mostly still. Now and then a gust sweeps across the land as a broad band, a second or so long at
 // any one spot, roughly every ten seconds, some stronger than others. Returns 0 (calm) to 1 (the gust's peak).
 const GUST_SPEED = 110, GUST_GAP = 1100, GUST_WIDTH = 170;
@@ -37,12 +37,13 @@ const BIOME = { 0: 0, 1: 1, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 7: 5, 8: 6, 9: 7 };
 const HEART = art(['.a.a.', 'aaaaa', 'aaaaa', '.aaa.', '..a..'], { a: '#ff9dbb' });
 const PETS = { deer: { row: 0, size: 20, speed: 4, label: 'A spirit deer' }, fawn: { row: 0, size: 14, speed: 5, label: 'A spirit fawn', young: true }, rabbit: { row: 1, size: 11, speed: 9, label: 'A moss rabbit' } };
 
-export const GRASS_STYLES = { original: 'Original', meadow: 'Meadow', silverwave: 'Silverwave' };
+export const GRASS_STYLES = { original: 'Original', meadow: 'Meadow', silverwave: 'Silverwave', lyke: 'Lyke' };
 function floraAtlas(P, style = 'original') {
   // Rows: 0 tuft, 1 tall grass, 2-6 flowers, 7 fern. Columns: three wind poses.
   const cw = 9, ch = 11, c = document.createElement('canvas'); c.width = cw * 3; c.height = ch * 8;
   const g = c.getContext('2d'), tone = (k, a = 0) => `rgb(${P.grass.map((v, i) => clamp(v * k + (i === 1 ? a : 0), 0, 255) | 0).join(',')})`;
   const dot = (x, y, col, w = 1, h = 1) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
+  if (style === 'lyke') return lykeAtlas(P, cw, ch);
   if (style !== 'original') return grassAtlas(P, style, c, g, cw, ch, dot);
   for (let pose = 0; pose < 3; pose++) {
     const lean = pose - 1, X = pose * cw;
@@ -57,7 +58,7 @@ function floraAtlas(P, style = 'original') {
     for (const [dx, dy] of [[-3, 5], [-2, 4], [-1, 3], [3, 5], [2, 4], [1, 3], [0, 2], [-2, 6], [2, 6]]) dot(X + 4 + dx + (dy < 4 ? lean : 0), 7 * ch + dy + 1, tone(.85));
     for (let y = 3; y < ch; y++) dot(X + 4 + (y < 5 ? lean : 0), 7 * ch + y, tone(.66));
   }
-  return { c, cw, ch };
+  return { c, cw, ch, r: 1, v: 1 };
 }
 
 // The other grass styles, drawn into the same rows and wind poses as the original.
@@ -104,7 +105,58 @@ function grassAtlas(P, style, c, g, cw, ch, dot) {
     // The fern row becomes a wider, low clump.
     [[1, 3, -.5], [2, 5, -.3], [4, 6, 0], [6, 5, .3], [7, 3, .5], [3, 4, .15], [5, 4, -.15]].forEach(([x, len, sl]) => blade(X, 7, x, len, sl, lean, lit));
   }
-  return { c, cw, ch };
+  return { c, cw, ch, r: 1, v: 1 };
+}
+
+// Lyke: every clump is a sheaf of separate blades, each a slim flat-coloured spike, broad at the root and
+// tapering to a point, in four sage greens from deep shadow to a pale tip colour. Drawn at three art pixels to a
+// texel so blades are finer than the ground, with six differently built clumps of each kind so no two
+// neighbours match and a patch reads as one thick mat of blades. Wind poses bend the blades from the root up.
+const LR = 3, LV = 6;
+function lykeAtlas(P, cw, ch) {
+  const CW_ = cw * LR, CH_ = ch * LR, c = document.createElement('canvas'); c.width = CW_ * 3 * LV; c.height = CH_ * 8;
+  const g = c.getContext('2d');
+  const mixc = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t), rgb = a => `rgb(${a.map(v => clamp(v, 0, 255) | 0).join(',')})`;
+  const m = (P.grass[0] + P.grass[1] + P.grass[2]) / 3, sage = mixc(P.grass, [m, m + 8, m], .14);
+  const SH = [mixc(sage, [18, 44, 30], .55), sage.map(v => v * .78), sage.map(v => v * .94), mixc(sage, P.lush, .3).map(v => v * 1.04), mixc(mixc(sage, P.lush, .55), [214, 236, 170], .14).map(v => v * 1.08)];
+  const shade = SH.map(rgb), root = SH.map(s => rgb(s.map(v => v * .8)));
+  let seed = 1; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  // One blade, root at (x, bottom), `len` art px long, `w` wide at the root, slanting `slope` per px; `bend`
+  // pushes the tip over (a curve, so the root stays put).
+  const blade = (X, Y, x, len, w, slope, bend, s) => {
+    for (let i = 0; i < len; i++) {
+      const u = i / len, half = Math.max(.5, w * Math.pow(1 - u, .9) / 2), cx = X + x + slope * i + bend * len * u * u, y = Y + CH_ - 1 - Math.round(i * (1 - Math.abs(bend) * u * .35));
+      const a = Math.round(cx - half + .5), b = Math.round(cx + half - .5);
+      g.fillStyle = i < len * .22 ? root[s] : shade[s];
+      g.fillRect(clamp(a, X, X + CW_ - 1), y, Math.max(1, Math.min(X + CW_ - 1, b) - clamp(a, X, X + CW_ - 1) + 1), 1);
+    }
+  };
+  // A clump: n blades spread over `spread` px around the middle, back blades darker, front blades lighter.
+  const clump = (X, Y, n, spread, lo, hi, lean, maxShade = 4) => {
+    const bl = [];
+    for (let k = 0; k < n; k++) {
+      const off = (rnd() - .5) * spread, len = Math.round(lo + rnd() * (hi - lo)) * (1 - Math.abs(off) / spread * .45);
+      bl.push({ x: CW_ / 2 + off, len: Math.max(3, Math.round(len)), w: 2.6 + rnd() * 2, slope: off / spread * .7 + (rnd() - .5) * .45, s: Math.min(maxShade, Math.floor(rnd() * 4.6)), soft: .6 + rnd() * .5 });
+    }
+    bl.sort((a, b) => a.s - b.s);
+    for (const b of bl) blade(X, Y, b.x, b.len, b.w, b.slope, lean * .5 * b.soft, b.s);
+  };
+  for (let v = 0; v < LV; v++) for (let pose = 0; pose < 3; pose++) {
+    const lean = pose - 1, X = (v * 3 + pose) * CW_;
+    seed = 1 + v * 977; clump(X, 0, 13, 17, 6, 11, lean);                 // short tuft
+    seed = 5 + v * 977; clump(X, CH_, 20, 24, 9, 18, lean);           // tall grass
+    P.flowers.forEach((col, f) => {
+      const r = 2 + f, Y = r * CH_;
+      seed = 9 + f * 31 + v * 977; clump(X, Y, 9, 18, 5, 10, lean, 3);
+      // A round little bloom on a slim stem: a ring of petals round a darker heart.
+      const fx = CW_ / 2 + lean * 2 + (v % 3 - 1) * 2, fy = Y + 16;
+      g.fillStyle = shade[1]; g.fillRect(X + Math.round(fx - lean * 2), fy + 2, 1, CH_ - 11);
+      g.fillStyle = col; g.fillRect(X + fx - 2, fy - 1, 5, 3); g.fillRect(X + fx - 1, fy - 2, 3, 5);
+      g.fillStyle = f === 1 ? '#5a3a14' : '#ffc93c'; g.fillRect(X + fx, fy, 1, 1);
+    });
+    seed = 13 + v * 977; clump(X, 7 * CH_, 16, 26, 5, 12, lean);         // low, wide clump
+  }
+  return { c, cw, ch, r: LR, v: LV };
 }
 
 export function createRenderer(canvas, world, land, images) {
@@ -234,17 +286,25 @@ export function createRenderer(canvas, world, land, images) {
     }
     return c;
   }
+  // Which atlas column a plant uses: its wind pose, within one of the style's built variants.
+  const col = (k, pose) => (flora[0].v > 1 ? (Math.imul(k, 2654435761) >>> 20) % flora[0].v * 3 : 0) + pose;
   function bakeChunk(index, s) {
     let b = baked.get(index);
-    if (!b) { const c = document.createElement('canvas'); c.width = FC + 18; c.height = FC + 14; b = { c, g: c.getContext('2d') }; b.g.imageSmoothingEnabled = false; baked.set(index, b); }
-    const cx = index % FCOLS * FC, cy = Math.floor(index / FCOLS) * FC, { cw, ch } = flora[0], f = shown || s.h;
+    const { cw, ch, r } = flora[0];
+    if (b && b.r !== r) { baked.delete(index); b = null; }
+    if (!b) {
+      // Fine-bladed styles bake at their own resolution, so only the most recent chunks are kept.
+      if (r > 1 && baked.size > 260) for (const key of baked.keys()) { baked.delete(key); if (baked.size <= 200) break; }
+      const c = document.createElement('canvas'); c.width = (FC + 18) * r; c.height = (FC + 14) * r; b = { c, g: c.getContext('2d'), r }; b.g.imageSmoothingEnabled = false; baked.set(index, b);
+    }
+    const cx = index % FCOLS * FC, cy = Math.floor(index / FCOLS) * FC, f = shown || s.h;
     b.g.clearRect(0, 0, b.c.width, b.c.height); b.empty = true;
     for (let k = F.start[index], end = k + F.count[index]; k < end; k++) {
       const h = f[F.cell[k]];
       if (h < F.thr[k] || F.phase[k] < LIVE[grass]) continue;
       b.empty = false;
-      const grow = Math.min(1, (h - F.thr[k]) / .07 + .25), dh = Math.round(ch * grow);
-      b.g.drawImage(plants(F.x[k], F.y[k]), cw, F.kind[k] * ch, cw, ch, Math.round(F.x[k] - cx + 9 - cw / 2), Math.round(F.y[k] - cy + 14 - dh), cw, dh);
+      const grow = Math.min(1, (h - F.thr[k]) / .07 + .25), dh = Math.round(ch * r * grow);
+      b.g.drawImage(plants(F.x[k], F.y[k]), col(k, 1) * cw * r, F.kind[k] * ch * r, cw * r, ch * r, Math.round((F.x[k] - cx + 9 - cw / 2) * r), Math.round((F.y[k] - cy + 14) * r - dh), cw * r, dh);
     }
   }
   // Most plants are baked into per-chunk images, so a full meadow costs a few draws rather than thousands.
@@ -258,16 +318,16 @@ export function createRenderer(canvas, world, land, images) {
     for (let cy = Math.max(0, Math.floor(y0 / FC)); cy <= Math.min(FROWS - 1, Math.floor(y1 / FC)); cy++) for (let cx = Math.max(0, Math.floor(x0 / FC)); cx <= Math.min(FCOLS - 1, Math.floor(x1 / FC)); cx++) visible.push(cy * FCOLS + cx);
     const end = performance.now() + 3;
     for (const i of visible) if ((floraDirty[i] || !baked.has(i)) && performance.now() < end) { floraDirty[i] = 0; bakeChunk(i, s); }
-    for (const i of visible) { const b = baked.get(i); if (b && !b.empty) ctx.drawImage(b.c, sx(i % FCOLS * FC - 9), sy(Math.floor(i / FCOLS) * FC - 14), b.c.width * z, b.c.height * z); }
+    for (const i of visible) { const b = baked.get(i); if (b && !b.empty) ctx.drawImage(b.c, sx(i % FCOLS * FC - 9), sy(Math.floor(i / FCOLS) * FC - 14), b.c.width * z / b.r, b.c.height * z / b.r); }
     if (z < 1.7 || quality < 1) return;
     for (const i of visible) {
-      const { cw, ch } = flora[0];
+      const { cw, ch, r } = flora[0];
       for (let k = F.start[i], stop = k + F.count[i]; k < stop; k++) {
         if (F.phase[k] >= LIVE[grass]) continue;
         const h = f[F.cell[k]];
         if (h < F.thr[k]) continue;
         const px = F.x[k], py = F.y[k], gust = t ? gustAt(px, py, t) : 0, pose = gust > .25 + F.phase[k] * 1.4 ? 2 : 1, grow = Math.min(1, (h - F.thr[k]) / .07 + .25), dw = cw * z, dh = ch * z * grow;
-        ctx.drawImage(plants(px, py), pose * cw, F.kind[k] * ch, cw, ch, sx(px) - dw / 2, sy(py) - dh, dw, dh);
+        ctx.drawImage(plants(px, py), col(k, pose) * cw * r, F.kind[k] * ch * r, cw * r, ch * r, sx(px) - dw / 2, sy(py) - dh, dw, dh);
       }
     }
   }
@@ -276,7 +336,7 @@ export function createRenderer(canvas, world, land, images) {
   // are in texels; `step` rustles the blades by its feet while it walks.
   function grassOver(x, y, half, cut, step) {
     if (cam.z < .75 || !s_) return;
-    const f = shown || s_.h, { cw, ch } = flora[0], z = cam.z;
+    const f = shown || s_.h, { cw, ch, r } = flora[0], z = cam.z;
     for (let cy = Math.max(0, Math.floor((y - 1) / FC)); cy <= Math.min(FROWS - 1, Math.floor((y + 9) / FC)); cy++)
       for (let cx = Math.max(0, Math.floor((x - half) / FC)); cx <= Math.min(FCOLS - 1, Math.floor((x + half) / FC)); cx++) {
         const i = cy * FCOLS + cx;
@@ -288,7 +348,7 @@ export function createRenderer(canvas, world, land, images) {
           const grow = Math.min(1, (h - F.thr[k]) / .07 + .25), rows = Math.min(ch, (py - y + cut) / grow), near = Math.abs(d) < half * .75 && py < y + 3;
           if (rows <= 0) continue;
           const pose = near ? (d > 0 ? 2 : 0) : step && Math.sin(step * 9 + px) > .6 ? (d > 0 ? 2 : 0) : 1;
-          ctx.drawImage(plants(px, py), pose * cw, F.kind[k] * ch + ch - rows, cw, rows, sx(px) - cw * z / 2, sy(py) - rows * grow * z, cw * z, rows * grow * z);
+          ctx.drawImage(plants(px, py), col(k, pose) * cw * r, (F.kind[k] * ch + ch - rows) * r, cw * r, rows * r, sx(px) - cw * z / 2, sy(py) - rows * grow * z, cw * z, rows * grow * z);
         }
       }
   }
