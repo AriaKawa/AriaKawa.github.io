@@ -1,0 +1,52 @@
+{
+  "name": "deadroad-io",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "postinstall": "npm run assets",
+    "dev": "concurrently -n server,client -c red,green \"npm run dev -w server\" \"npm run dev -w client\"",
+    "dev:server": "npm run dev -w server",
+    "dev:client": "npm run dev -w client",
+    "build": "npm run build -w server && npm run build -w client",
+    "typecheck": "npm run typecheck -w server && npm run typecheck -w client",
+    "assets": "tsx scripts/generate-assets.ts && tsx scripts/generate-tilesets.ts",
+    "validate:world": "tsx scripts/validate-world.ts",
+    "validate:globe": "tsx scripts/validate-globe.ts",
+    "validate:theater": "tsx scripts/validate-theater.ts",
+    "validate:tactical-borders": "tsx scripts/validate-tactical-borders.ts",
+    "validate:map-repairs": "tsx scripts/validate-map-repairs.ts",
+    "validate:zombie-visuals": "tsx scripts/validate-zombie-visuals.ts",
+    "validate:audio": "tsx scripts/validate-combat-audio.ts",
+    "validate:hud": "tsx scripts/validate-hud.ts",
+    "validate:base-visuals": "tsx scripts/validate-base-visuals.ts",
+    "validate:convoy": "tsx scripts/validate-convoy.ts",
+    "validate:turret-visuals": "tsx scripts/validate-turret-visuals.ts",
+    "validate:lod": "tsx scripts/validate-lod.ts",
+    "validate:road-cleanup": "tsx scripts/validate-road-cleanup.ts",
+    "validate:biomes": "tsx scripts/validate-biomes.ts",
+    "validate:contracts": "tsx scripts/validate-contracts.ts",
+    "validate:balance": "tsx scripts/validate-combat-balance.ts",
+    "validate:loot": "tsx scripts/validate-loot-equipment.ts",
+    "validate:squad": "tsx scripts/validate-squad.ts",
+    "validate:tilesets": "tsx scripts/validate-tilesets.ts",
+    "validate:free-selection": "tsx scripts/validate-free-map-selection.ts",
+    "validate:planet2": "tsx scripts/validate-planet2-missouri.ts",
+    "validate:curated-usa": "tsx scripts/validate-curated-usa.ts",
+    "validate:road-editor": "tsx scripts/validate-road-editor.ts",
+    "validate:road-network": "tsx scripts/validate-road-network.ts",
+    "validate:scenery": "tsx scripts/validate-scenery.ts",
+    "validate:zombie-waves": "tsx scripts/validate-zombie-waves.ts",
+    "validate:ai": "tsx scripts/validate-ai-convoys.ts --scenery",
+    "validate:progression": "tsx scripts/validate-progression.ts"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.3"
+  }
+}

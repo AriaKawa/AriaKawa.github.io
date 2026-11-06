@@ -1,0 +1,22 @@
+{
+  "mode": "built-in imagegen",
+  "reference": "base-camp.png",
+  "prompts": [
+    {
+      "name": "convoy-bay",
+      "prompt": "Use case: stylized-concept. Asset type: game location background. Create a NEW landscape 1536x1024 image using the attached base-camp image as visual reference only. Match its crisp detailed pixel art, chunky pixel clusters, dark teal pine wilderness shadows, weathered survival camp materials and warm amber lantern illumination at dusk. Elevated three-quarter view, much closer than the reference, immersive large readable objects. No text, letters, numbers, UI, labels, watermark or people. Closeup of the reference camp's convoy bay: the same heavy dark armored six-wheel truck with vertical grille armor, forward plow spikes, amber roof lamps and cargo roof crates parked in a corrugated arched garage. Truck dominates the scene. Garage interior contains repair tools, workbenches, spare tires, oil drums and crates. Open front, warm light spills onto worn stone ground."
+    },
+    {
+      "name": "turret-workshop",
+      "prompt": "Use case: stylized-concept. Asset type: game location background. Create a NEW landscape 1536x1024 image using the attached base-camp image as visual reference only. Match its crisp detailed pixel art, chunky pixel clusters, dark teal pine wilderness shadows, weathered survival camp materials and warm amber lantern illumination at dusk. Elevated three-quarter view, much closer than the reference, immersive large readable objects. No text, letters, numbers, UI, labels, watermark or people. Closeup of the reference camp's turret workshop: large single-barrel mechanical defense turret on circular pedestal being serviced next to a broad tool-covered workbench inside an open corrugated-roof workshop. Match the reference turret design and dark metal material. Tool racks, spare gears, ammunition crates, workshop lamps, sandbags and stone flooring."
+    },
+    {
+      "name": "field-upgrades",
+      "prompt": "Use case: stylized-concept. Asset type: game location background. Create a NEW landscape 1536x1024 image using the attached base-camp image as visual reference only. Match its crisp detailed pixel art, chunky pixel clusters, dark teal pine wilderness shadows, weathered survival camp materials and warm amber lantern illumination at dusk. Elevated three-quarter view, much closer than the reference, immersive large readable objects. No text, letters, numbers, UI, labels, watermark or people. Closeup inside the open-front olive canvas medical research tent from the reference camp. A treatment cot, microscope on research workbench, glass bottles, bandages, field equipment and supply crates form a coherent survival upgrade station. Canvas roof and curtains frame the interior, lanterns illuminate weathered wood and stone. No cross emblem or text."
+    },
+    {
+      "name": "player-market",
+      "prompt": "Use case: stylized-concept. Asset type: game location background. Create a NEW landscape 1536x1024 image using the attached base-camp image as visual reference only. Match its crisp detailed pixel art, chunky pixel clusters, dark teal pine wilderness shadows, weathered survival camp materials and warm amber lantern illumination at dusk. Elevated three-quarter view, much closer than the reference, immersive large readable objects. No text, letters, numbers, UI, labels, watermark or people. Closeup of the reference camp's player market: a compact grouping of weathered canvas stalls with muted tan, rust-red and slate-blue awnings, wooden counters displaying salvage wares, mechanical parts, bottled supplies, rolled cloth and metal tools, with stacked crates and rugs. Warm string lanterns under awnings, teal pine silhouettes and camp fence beyond. Stalls dominate the image."
+    }
+  ]
+}
