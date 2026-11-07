@@ -1,9 +1,9 @@
-import { makeWorld, ZONES, LANDS, CN, CW, CH, CELL, hash } from './world.mjs?v=25';
-import { mapsDone, newLand, tick, touch, buyGlade, gladeBuyable, gladePrice, landDone, landPct, landTouched, income, upgradeMax, catchUp, encode, decode, buySpirit, buyUpgrade, spiritCost, spiritOpen, upgradeCost, upgradeOpen, zonePct, zoneBloom, doneCount, initObjects, SPIRITS, UPGRADES, SPIRIT_CAP } from './sim.mjs?v=25';
-import { createLand } from './land.mjs?v=25';
-import { createRenderer, GRASS_STYLES } from './render.mjs?v=25';
-import { createAudio } from './audio.mjs?v=25';
-import { spiritFace } from './critters.mjs?v=25';
+import { makeWorld, ZONES, LANDS, CN, CW, CH, CELL, hash } from './world.mjs?v=26';
+import { mapsDone, newLand, tick, touch, buyGlade, gladeBuyable, gladePrice, landDone, landPct, landTouched, income, upgradeMax, catchUp, encode, decode, buySpirit, buyUpgrade, spiritCost, spiritOpen, upgradeCost, upgradeOpen, zonePct, zoneBloom, doneCount, initObjects, SPIRITS, UPGRADES, SPIRIT_CAP } from './sim.mjs?v=26';
+import { createLand } from './land.mjs?v=26';
+import { createRenderer, GRASS_STYLES } from './render.mjs?v=26';
+import { createAudio } from './audio.mjs?v=26';
+import { spiritFace, useDeerSheet } from './critters.mjs?v=26';
 
 const KEY = 'little-wilds-2-v2', CARDS_KEY = 'little-wilds-2-postcards', SOUND_KEY = 'little-wilds-2-muted', VOLUME_KEY = 'little-wilds-2-volume', GRASS_KEY = 'little-wilds-2-grass';
 const $ = id => document.getElementById(id);
@@ -365,8 +365,9 @@ addEventListener('pagehide', save);
 async function main() {
   try {
     await nextFrame();
-    const [worldImg, spirits, landmarks, pets, ...biomes] = await Promise.all([load('assets/world.png'), load('assets/spirits.png'), load('assets/landmarks.png'), load('assets/pets.png'), ...LANDS.slice(1).map((_, n) => load(`assets/biome-${n + 1}.png`).catch(() => null))]);
-    images = { world: worldImg, spirits, landmarks, pets, biomes: [null, ...biomes] };
+    const [worldImg, spirits, landmarks, pets, flyers, deer, ...biomes] = await Promise.all([load('assets/world.png'), load('assets/spirits.png'), load('assets/landmarks.png'), load('assets/pets.png'), load('assets/flyers.png').catch(() => null), load('assets/deer.png').catch(() => null), ...LANDS.slice(1).map((_, n) => load(`assets/biome-${n + 1}.png`).catch(() => null))]);
+    if (deer) useDeerSheet(deer);
+    images = { world: worldImg, spirits, landmarks, pets, flyers, biomes: [null, ...biomes] };
     await buildWorld();
     let raw = null;
     try { raw = localStorage.getItem(KEY); } catch { raw = null; }

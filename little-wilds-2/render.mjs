@@ -1,9 +1,9 @@
 // Everything above the ground: flora, the dead-and-revived objects, spirits, wildlife, weather and fog.
-import { TW, TH, LW, LH, CW, CH, CELL, ZONES, LANDS, SEA, hash, fbm, FC, FCOLS, FROWS, landAtTexel, SHRINK, hillShade } from './world.mjs?v=25';
-import { GREEN, brushRadius, SPIRITS, gladeBuyable, gladePrice } from './sim.mjs?v=25';
-import { pixelize, newFrame, shadowOf, skirtOf, apronOf } from './pixel.mjs?v=25';
-import { duckCanvas, critterCanvas, spiritCanvas, NATIVE, SCALE, WALK_FRAMES, strideOf } from './critters.mjs?v=25';
-import { steer, standable, overWater, escape } from './nav.mjs?v=25';
+import { TW, TH, LW, LH, CW, CH, CELL, ZONES, LANDS, SEA, hash, fbm, FC, FCOLS, FROWS, landAtTexel, SHRINK, hillShade } from './world.mjs?v=26';
+import { GREEN, brushRadius, SPIRITS, gladeBuyable, gladePrice } from './sim.mjs?v=26';
+import { pixelize, newFrame, shadowOf, skirtOf, apronOf } from './pixel.mjs?v=26';
+import { duckCanvas, critterCanvas, spiritCanvas, NATIVE, SCALE, WALK_FRAMES, strideOf } from './critters.mjs?v=26';
+import { steer, standable, overWater, escape } from './nav.mjs?v=26';
 const money = n => n >= 1e9 ? (n / 1e9).toFixed(2) + 'b' : n >= 1e6 ? (n / 1e6).toFixed(2) + 'm' : n >= 1e4 ? (n / 1e3).toFixed(1) + 'k' : Math.floor(n).toLocaleString();
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -28,10 +28,9 @@ const art = (rows, pal) => {
   rows.forEach((row, y) => [...row].forEach((ch, x) => { if (pal[ch]) { g.fillStyle = pal[ch]; g.fillRect(x, y, 1, 1); } }));
   return c;
 };
-const CRITTERS = {
-  butterfly: ['#ffd166', '#ff9dc4', '#fff'].map(a => [false, true].map(open => art(open ? ['a.a', 'aba', 'a.a'] : ['...', 'aba', '...'], { a, b: '#4a3324' }))),
-  bird: [false, true].map(up => art(up ? ['a...a', '.a.a.', '..b..'] : ['.....', 'aabaa', 'a...a'], { a: '#3d4a55', b: '#2a333b' })),
-};
+// Butterflies and birds come from assets/flyers.png (ChatGPT art cut by tools/build_critter_art.py): rows are a
+// yellow, pink and blue butterfly, a bluebird and a robin; columns are wings up, level, down, level.
+const FLY_W = 18, FLY_H = 16;
 // Which cell of a land's 4x4 art sheet stands in for each kind of object.
 const KIND_BLOSSOM = 2; // Frames 0-2 are the dead tree, tree and blossom tree.
 const BIOME = { 0: 0, 1: 1, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 7: 5, 8: 6, 9: 7 };
@@ -439,31 +438,6 @@ export function createRenderer(canvas, world, land, images) {
         }
       }
   }
-  // A fringe of blades across a creature's feet, a texel to a blade like the meadow itself, with gaps between
-  // them. While it walks the fringe parts: blades by its legs lean out, swapping each step.
-  const fringes = new Map();
-  function fringeOf(w, cut, land, seed, part) {
-    const key = `${w}:${cut}:${land}:${seed}:${part}`;
-    let c = fringes.get(key); if (c) return c;
-    const P = LANDS[land], cols = [P.grass.map(v => v * .72), P.grass, P.lush].map(c => `rgb(${c.map(v => Math.round(Math.min(255, v))).join(',')})`);
-    c = document.createElement('canvas'); c.width = w + 2; c.height = cut + 1; const g = c.getContext('2d');
-    for (let x = 0; x < w + 2; x++) {
-      const r = hash(x, seed, 71); if (r < .42) continue;
-      const tall = Math.max(1, Math.round(cut * (.45 + hash(x, seed, 73) * .55))), top = c.height - tall, side = x < (w + 2) / 2 ? -1 : 1;
-      const lean = part && hash(x, part, 75) > .45 ? side : r > .85 ? 1 : 0;
-      for (let y = top; y < c.height; y++) { g.fillStyle = y === top ? cols[2] : y >= c.height - 1 ? cols[0] : cols[1]; g.fillRect(x + (y === top && tall > 1 ? lean : 0), y, 1, 1); }
-    }
-    if (fringes.size > 400) fringes.clear();
-    fringes.set(key, c);
-    return c;
-  }
-  function fringe(x, y, wT, cut, seed, step) {
-    const cell = Math.floor(y / CELL) * CW + Math.floor(x / CELL);
-    if (cam.z < .75 || !s_ || grass === 'none' || (shown || s_.h)[cell] < .3) return;
-    const land = world.biome[Math.min(TH - 1, y | 0) * TW + (x | 0)], w = Math.max(2, Math.round(wT)), z = cam.z;
-    const c = fringeOf(w, Math.max(1, Math.round(cut)), land, seed % 5, step ? 1 + (Math.floor(step) & 1) : 0);
-    ctx.drawImage(c, snapX(sx(x) - c.width * z / 2), snapY(sy(y) - c.height * z + z), c.width * z, c.height * z);
-  }
   function drawProps(s, time, dt, carry) {
     s_ = s;
     const items = [], z = cam.z, lx = cam.x - W / 2 / z - 70, hx = cam.x + W / 2 / z + 70, ly = cam.y - H / 2 / z - 10, hy = cam.y + H / 2 / z + 120;
@@ -659,7 +633,7 @@ export function createRenderer(canvas, world, land, images) {
     const art = critterCanvas(name, pose, pose === 'walk' ? ph : 0, c.dir < 0), k = z * f / SCALE, aw = art.width * k, ah = art.height * k;
     { const sh = shadowOf(art), left = snapX(x - aw / 2); ctx.drawImage(sh.c, left, snapY(y - ah) + (sh.foot - sh.c.height + 2) * k, sh.c.width * k, sh.c.height * k); }
     ctx.drawImage(art, snapX(x - aw / 2), snapY(y - lift - ah), aw, ah);
-    if (lift < z * 1.5) { const cut = Math.max(1.6, ah / z * (rabbit ? .3 : .4)) - lift / z; grassOver(c.x, c.y, aw / z * .32, cut, walking ? c.dist : 0); fringe(c.x, c.y, aw / z * .6, cut, c.n | 0, walking ? c.dist / (strideOf(name) * f) * 2 : 0); }
+    if (lift < z * 1.5) { const cut = Math.max(1.6, ah / z * (rabbit ? .3 : .4)) - lift / z; grassOver(c.x, c.y, aw / z * .32, cut, walking ? c.dist : 0); }
     if (def.row === 0 && !reduced && quality > 0) { // Spirit deer shed slow motes of light.
       for (let k = 0; k < 3; k++) { const q = (t * .22 + k / 3 + c.n * .13) % 1; ctx.globalAlpha = c.alpha * Math.sin(q * 3.14) * .85; ctx.fillStyle = '#b8fff0'; ctx.fillRect(x + (hash(k, c.n, 41) - .5) * size * .8 + Math.sin(t + k) * z, y - size * (.35 + q * .85), Math.max(1, z * .7), Math.max(1, z * .7)); }
     }
@@ -678,9 +652,12 @@ export function createRenderer(canvas, world, land, images) {
       else { c.x += (c.tx - c.x) / d * speed * dt; c.y += (c.ty - c.y) / d * speed * dt; c.dir = c.tx < c.x ? -1 : 1; }
       const x = sx(c.x), y = sy(c.y);
       if (x < -60 || y < -60 || x > W + 60 || y > H + 60) continue;
-      const im = c.kind === 'butterfly' ? CRITTERS.butterfly[c.variant][Math.sin(t * 11 + c.n) > 0 ? 1 : 0] : CRITTERS.bird[Math.sin(t * 9 + c.n) > 0 ? 1 : 0], lift = c.kind === 'bird' ? 26 : 7 + Math.sin(t * 2 + c.n) * 3, w = im.width * z, h = im.height * z;
+      if (!images.flyers) continue;
+      const beat = Math.floor(t * (c.kind === 'bird' ? 9 : 10) + c.n * 1.7) % 4, row = c.kind === 'butterfly' ? c.variant % 3 : 3 + c.variant % 2, lift = c.kind === 'bird' ? 26 : 7 + Math.sin(t * 2 + c.n) * 3, w = FLY_W * z / 2, h = FLY_H * z / 2;
       ctx.fillStyle = 'rgba(30,24,18,.12)'; ctx.fillRect(x - w / 3, y, w * .66, z);
-      ctx.drawImage(im, x - w / 2, y - lift * z - h, w, h);
+      const fx = beat * FLY_W, fy = row * FLY_H;
+      if (c.kind === 'bird' && c.dir < 0) { ctx.save(); ctx.translate(x, 0); ctx.scale(-1, 1); ctx.drawImage(images.flyers, fx, fy, FLY_W, FLY_H, -w / 2, y - lift * z - h, w, h); ctx.restore(); }
+      else ctx.drawImage(images.flyers, fx, fy, FLY_W, FLY_H, x - w / 2, y - lift * z - h, w, h);
     }
   }
   function addParticle(p) { if (!reduced && particles.length < 340) particles.push(p); }
