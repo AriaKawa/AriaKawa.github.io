@@ -47,3 +47,25 @@ h2{margin:0 26px 3px 0;font-weight:600;font-size:27px}p.sub{margin:0 0 14px;colo
 #modal.wide{width:min(96vw,1120px);max-width:96vw}
 #continent{display:block;width:100%;height:auto;max-height:72vh;object-fit:contain;cursor:pointer;border-radius:6px;image-rendering:pixelated;touch-action:manipulation}
 .vz.wake{border-color:var(--gold)}.vz.wake small{color:var(--gold)}.tools button.can{border-color:var(--gold);color:var(--gold);animation:ready 2.6s ease-in-out infinite}#cont-note button{margin:6px 0 0 8px}#cont-note button:disabled{opacity:.6}
+
+/* Title menu: your own continent drifts by behind it, still growing. */
+body.title #hud,body.title #hint,body.title #banner,body.title #toast{opacity:0;pointer-events:none}body.title #hud>*{pointer-events:none}body.title #world{cursor:default}
+#title{position:fixed;inset:0;z-index:3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:16px;background:radial-gradient(ellipse at center,rgba(28,22,16,.5),rgba(28,22,16,.05) 62%,rgba(28,22,16,.35));animation:title-in .8s ease-out}
+#title[hidden]{display:none}@keyframes title-in{from{opacity:0}}
+.title-sheet{display:flex;flex-direction:column;align-items:center;gap:6px;width:min(340px,100%)}
+.logo{margin:0;font-weight:600;font-size:clamp(48px,11vw,84px);line-height:.95;text-align:center;color:#fff6df;text-shadow:0 4px 0 #3f7535,0 7px 0 #2a2017,0 12px 32px #000a;animation:bob 5s ease-in-out infinite}
+.logo-two{position:relative;margin-left:.14em;font-size:.72em;color:var(--gold);text-shadow:0 3px 0 #8a5f3a,0 6px 0 #2a2017}.logo-two::after{content:'';position:absolute;right:-.42em;top:-.18em;width:.62em;height:.62em;background:url(assets/ui/icon-leaf.png) center/contain no-repeat;image-rendering:pixelated}
+@keyframes bob{50%{transform:translateY(-4px)}}
+.tagline{margin:6px 0 14px;font-size:clamp(17px,2.6vw,21px);color:#ffe9b0;text-shadow:0 2px 0 #2a2017,0 0 12px #000a;text-align:center}
+.title-actions{display:flex;flex-direction:column;gap:8px;width:100%}
+.tbtn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:60px;padding:0 8px;border:18px solid transparent;border-image:url(assets/ui/btn-wood.png) 18 fill/18px;background:none;image-rendering:pixelated;font-size:23px;font-weight:600;color:#fff6df;text-shadow:0 2px 0 #3b2616;transition:transform .1s}
+.tbtn.primary{border-image-source:url(assets/ui/btn-moss.png);text-shadow:0 2px 0 #1f3b19;font-size:26px;min-height:66px}
+.tbtn:hover{border-image-source:url(assets/ui/btn-wood-hover.png);transform:translateY(-1px)}.tbtn.primary:hover{border-image-source:url(assets/ui/btn-moss-hover.png)}
+.tbtn:active{border-image-source:url(assets/ui/btn-wood-press.png);transform:translateY(2px)}.tbtn.primary:active{border-image-source:url(assets/ui/btn-moss-press.png)}
+.tbtn:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.tic{width:30px;height:30px;flex:none;background:var(--ic) center/contain no-repeat;image-rendering:pixelated;margin:-6px 0}
+.title-records{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;max-width:100%}
+.title-records span{display:flex;flex-direction:column;align-items:center;min-width:92px;padding:6px 12px;background:var(--panel);border:2px solid var(--edge);border-radius:7px;box-shadow:0 2px 0 #0005}
+.title-records small{font-size:13px;color:var(--dim)}.title-records b{font-size:20px;font-weight:600}.title-records .ico{margin-right:3px}
+@media(max-height:560px){#title{gap:10px}.logo{font-size:44px}.tagline{margin:2px 0 6px}.tbtn{min-height:50px;font-size:20px}.tbtn.primary{min-height:54px}}
+@media(prefers-reduced-motion:reduce){.logo,#title{animation:none}}

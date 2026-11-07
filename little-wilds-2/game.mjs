@@ -1,9 +1,9 @@
-import { makeWorld, ZONES, LANDS, CN, CW, CH, CELL, hash } from './world.mjs?v=24';
-import { newLand, tick, touch, buyGlade, gladeBuyable, gladePrice, landDone, landPct, landTouched, income, upgradeMax, catchUp, encode, decode, buySpirit, buyUpgrade, spiritCost, spiritOpen, upgradeCost, upgradeOpen, zonePct, zoneBloom, doneCount, initObjects, SPIRITS, UPGRADES, SPIRIT_CAP } from './sim.mjs?v=24';
-import { createLand } from './land.mjs?v=24';
-import { createRenderer, GRASS_STYLES } from './render.mjs?v=24';
-import { createAudio } from './audio.mjs?v=24';
-import { spiritFace } from './critters.mjs?v=24';
+import { makeWorld, ZONES, LANDS, CN, CW, CH, CELL, hash } from './world.mjs?v=25';
+import { mapsDone, newLand, tick, touch, buyGlade, gladeBuyable, gladePrice, landDone, landPct, landTouched, income, upgradeMax, catchUp, encode, decode, buySpirit, buyUpgrade, spiritCost, spiritOpen, upgradeCost, upgradeOpen, zonePct, zoneBloom, doneCount, initObjects, SPIRITS, UPGRADES, SPIRIT_CAP } from './sim.mjs?v=25';
+import { createLand } from './land.mjs?v=25';
+import { createRenderer, GRASS_STYLES } from './render.mjs?v=25';
+import { createAudio } from './audio.mjs?v=25';
+import { spiritFace } from './critters.mjs?v=25';
 
 const KEY = 'little-wilds-2-v2', CARDS_KEY = 'little-wilds-2-postcards', SOUND_KEY = 'little-wilds-2-muted', VOLUME_KEY = 'little-wilds-2-volume', GRASS_KEY = 'little-wilds-2-grass';
 const $ = id => document.getElementById(id);
@@ -22,7 +22,9 @@ function pulseSeeds() { $('seeds').parentElement.classList.add('pulse'); clearTi
 let carry = null, panning = false; const pointers = new Map(); let pinch = 0;
 
 function toast(text) { $('toast').textContent = text; $('toast').classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => $('toast').classList.remove('show'), 3200); }
-function banner(title, sub = '', ms = 5200) { $('banner-title').textContent = title; $('banner-sub').textContent = sub; $('banner').classList.add('show'); clearTimeout(bannerTimer); bannerTimer = setTimeout(() => $('banner').classList.remove('show'), ms); }
+let titleOn = false, tour = 0, tourAt = 0, held = null;
+// While the title menu is up, big moments wait and play once you are back on the land.
+function banner(title, sub = '', ms = 5200) { if (titleOn) { held = [title, sub, ms]; return; } $('banner-title').textContent = title; $('banner-sub').textContent = sub; $('banner').classList.add('show'); clearTimeout(bannerTimer); bannerTimer = setTimeout(() => $('banner').classList.remove('show'), ms); }
 function save() { if (!s || preview) return; try { localStorage.setItem(KEY, encode(s)); } catch { toast('Saving is unavailable in this browser.'); } }
 const loading = text => { $('loading').querySelector('span').textContent = text; return nextFrame(); };
 
@@ -124,13 +126,49 @@ function openValley() {
 }
 $('zonechip').onclick = () => { audio.start(); openValley(); };
 
+/* Title menu: the continent you are growing, drifting by behind a few big buttons. Spirits keep working. */
+function showTitle() {
+  if ($('modal').open) $('modal').close();
+  releaseAll(); thenX = null; $('btn-then').setAttribute('aria-pressed', false); if (preview) togglePreview();
+  titleOn = true; document.body.classList.add('title'); $('title').hidden = false; tourAt = 0;
+  $('title-play').textContent = s.touched ? 'Continue' : 'Begin';
+  $('title-tag').textContent = s.touched ? 'Your continent, quietly growing.' : 'A dead continent, waiting for you.';
+  titleRecords();
+}
+function titleRecords() {
+  const glades = s.zones.filter(z => z.done).length, lands = mapsDone(s);
+  $('title-records').innerHTML = `<span><small>Seeds</small><b><i class="ico ico-seed"></i>${fmt(s.seeds)}</b></span><span><small>Earning</small><b>${rate >= 1 ? fmt(rate) + '/s' : '–'}</b></span><span><small>Glades restored</small><b>${glades} / ${ZONES.length}</b></span><span><small>Lands restored</small><b>${lands} / ${LANDS.length}</b></span>`;
+}
+function hideTitle() {
+  if (!titleOn) return;
+  titleOn = false; document.body.classList.remove('title'); $('title').hidden = true; wake();
+  currentZone = firstOpen(); view.focusZone(currentZone); gliding = performance.now() + 1800;
+  if (held) { const [a, b, c] = held; held = null; banner(a, b, c); } else if (!s.touched) banner('Little Wilds', 'Nothing has grown here in a long time.', 4500);
+  canvas.focus({ preventScroll: true });
+}
+// The camera wanders the glades you have woken, a little wider than play, lingering on each.
+function stepTour(now) {
+  if (now < tourAt) return;
+  const open = s.zones.map((z, i) => z.open ? i : -1).filter(i => i >= 0), z = open.length ? open[tour++ % open.length] : 0;
+  view.focusZone(z); const c = view.cam;
+  view.glide(c.tx + (hash(tour, 1, 9) - .5) * 160, c.ty + (hash(tour, 2, 9) - .5) * 100, c.tz * (.62 + hash(tour, 3, 9) * .2));
+  if (!tourAt) { c.x = c.tx; c.y = c.ty; c.z = c.tz; }
+  tourAt = now + 9000;
+}
+$('title').addEventListener('click', e => {
+  const b = e.target.closest('[data-title]'); if (!b) return;
+  audio.start();
+  ({ play: hideTitle, map() { hideTitle(); toggleMap(true); }, cards: openCards, settings: openSettings })[b.dataset.title]();
+});
+
 /* Menu */
 function openMenu() {
   show('menu', `<h2>Little Wilds 2</h2><p class="sub">Bring a dead continent back to life, one glade at a time.</p>
   <label class="volume">Volume <input id="volume" type="range" min="0" max="100" value="${Math.round(audio.volume * 100)}"></label><label class="volume">Grass style <select id="grass">${Object.entries(GRASS_STYLES).map(([k, v]) => `<option value="${k}"${k === view.grass ? ' selected' : ''}>${v}</option>`).join('')}</select></label><div class="row"><button class="wood" data-act="cards">Postcards</button><button class="wood" data-act="exportSave">Export save</button><button class="wood" data-act="importSave">Import save</button><button class="wood" data-act="reset">Start over</button></div>
   <p class="sub" style="margin-top:14px">Hold and drag: heal the land.<br>Drag a spirit: carry it somewhere.<br>Click a sign on a sleeping glade: wake it with seeds.<br>Click a deer or rabbit: give it a pat.<br>Right-drag, two fingers or arrow keys: look around.<br>Wheel or pinch: zoom. M: the whole map. H: hide the interface.</p><input type="file" id="file" accept=".json,application/json" hidden>`);
 }
-$('btn-menu').onclick = () => { audio.start(); openMenu(); $('volume').oninput = e => { audio.setVolume(e.target.value / 100); try { localStorage.setItem(VOLUME_KEY, audio.volume); } catch {} };
+$('btn-menu').onclick = () => { audio.start(); showTitle(); };
+function openSettings() { openMenu(); $('volume').oninput = e => { audio.setVolume(e.target.value / 100); try { localStorage.setItem(VOLUME_KEY, audio.volume); } catch {} };
   $('grass').onchange = e => { view.setGrass(e.target.value); try { localStorage.setItem(GRASS_KEY, view.grass); } catch {} }; };
 function exportSave() { save(); const a = document.createElement('a'), u = URL.createObjectURL(new Blob([encode(s)], { type: 'application/json' })); a.href = u; a.download = 'little-wilds-2-save.json'; a.click(); setTimeout(() => URL.revokeObjectURL(u), 1000); }
 function importSave() {
@@ -196,7 +234,7 @@ function wake() { lastActive = performance.now(); document.body.classList.remove
 function releaseAll() { pointer.holding = false; pointer.kb = false; if (carry) { carry.held = false; carry = null; } panning = false; }
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 canvas.addEventListener('pointerdown', e => {
-  if (!ready || $('modal').open) return;
+  if (!ready || $('modal').open || titleOn) return;
   audio.start(); wake(); canvas.focus({ preventScroll: true }); canvas.setPointerCapture(e.pointerId);
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY }); pointer.x = e.clientX; pointer.y = e.clientY; pointer.on = true;
   if (thenX != null) { thenX = e.clientX; pointer.id = e.pointerId; return; }
@@ -240,6 +278,8 @@ canvas.addEventListener('pointerleave', () => { if (!pointers.size) pointer.on =
 canvas.addEventListener('wheel', e => { e.preventDefault(); wake(); if (mapFrom) { mapFrom = null; $('btn-map').textContent = 'Map'; } view.zoomAt(Math.exp(-e.deltaY * .0013), e.clientX, e.clientY); }, { passive: false });
 addEventListener('keydown', e => {
   if (!ready || $('modal').open) return;
+  if (titleOn) { if (e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); audio.start(); hideTitle(); } return; }
+  if (e.code === 'Escape') { showTitle(); return; }
   wake();
   const moves = { ArrowLeft: [90, 0], ArrowRight: [-90, 0], ArrowUp: [0, 90], ArrowDown: [0, -90], KeyA: [90, 0], KeyD: [-90, 0], KeyW: [0, 90], KeyS: [0, -90] };
   if (moves[e.code]) { e.preventDefault(); view.pan(...moves[e.code]); }
@@ -295,7 +335,7 @@ function frame(now) {
   if (!ready || document.hidden) return;
   if (!$('modal').open && !timelapse && !preview) {
     const ev = [];
-    if (pointer.holding && !s.paused && thenX == null) {
+    if (pointer.holding && !s.paused && thenX == null && !titleOn) {
       const c = view.toCell(pointer.x, pointer.y), gain = touch(s, world, c.x, c.y, dt, ev);
       if (gain > 0) { view.spark(c.x, c.y, gain * 7, 3); audio.pluck(gain * 25); wake(); }
     }
@@ -310,7 +350,8 @@ function frame(now) {
   if (glideTo >= 0 && now > glideAt) { if (!pointer.holding && !pointers.size && !$('modal').open) { view.focusZone(glideTo); gliding = now + 5000; } glideTo = -1; }
   s.zones.forEach((z, i) => { const q = z.open && !z.done ? Math.floor(zonePct(s, world, i) * 4) : 0; if (quarters[i] !== undefined && q > quarters[i] && i === currentZone) { audio.water(); const c = $('zonechip'); c.classList.remove('pulse'); void c.offsetWidth; c.classList.add('pulse'); view.glow(i, '200,255,170'); } quarters[i] = q; });
   if (now - rateAt > 1000) { const d = s.seeds - rateSeeds; if (d >= 0) rate += (d / ((now - rateAt) / 1000) - rate) * .35; rateSeeds = s.seeds; rateAt = now; $('rate').textContent = rate >= 1 ? '+' + fmt(rate) + '/s' : ''; }
-  view.draw(s, now, dt, { carry, pointer: pointer.on && !carry && view.cam.z >= .9 ? pointer : null, holding: pointer.holding, then: thenX, camSpeed: now < gliding ? 2.2 : 3.2 });
+  if (titleOn) { stepTour(now); if (now - lastUI > 200) titleRecords(); }
+  view.draw(s, now, dt, { carry, pointer: pointer.on && !carry && !titleOn && view.cam.z >= .9 ? pointer : null, holding: pointer.holding, then: thenX, title: titleOn, camSpeed: titleOn ? .35 : now < gliding ? 2.2 : 3.2 });
   if (now - lastUI > 200) { lastUI = now; updateUI(); renderHint(); audio.update(landPct(s, world, landUnderView()), s.zones.some(z => z.water > 0)); if (!pointers.size && !$('modal').open && thenX == null && now - lastActive > 14000) document.body.classList.add('quiet'); }
   if (now - lastSave > 6000) { lastSave = now; save(); }
 }
@@ -335,7 +376,8 @@ async function main() {
     attach();
     if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) window.__lw = { togglePreview, get preview() { return !!preview; }, get s() { return s; }, get w() { return world; }, get v() { return view; }, get land() { return land; }, wakeGlade, toggleMap, celebrate, tick: (n, dt = .5) => { const ev = []; for (let k = 0; k < n; k++) tick(s, world, dt, ev); handle(ev, performance.now()); land.markAll(); view.allFlora(); updateUI(); return ev.length; }, grant: n => { s.seeds += n; updateUI(); } };
     ready = true; $('loading').style.display = 'none'; updateUI();
-    if (raw) returnFrom(away); else banner('Little Wilds', 'Nothing has grown here in a long time.', 4500);
+    showTitle();
+    if (raw) returnFrom(away);
     requestAnimationFrame(frame);
   } catch (e) { console.error(e); $('loading').querySelector('span').textContent = 'The artwork could not load. Refresh to try again.'; }
 }

@@ -165,6 +165,8 @@ export function makeLand(seed = 1, mapId = 0) {
     return xx0(x, y);
   };
   const xx0 = (x, y) => { const i = Math.round(y) * LW + Math.round(x); return waterT[i] >= 0; };
+  // A plant's blades rise a few texels and spread a few more, so it keeps that far back from a stream bed.
+  const bankClear = (x, y) => { for (let yy = Math.round(y) - 7; yy <= Math.round(y) + 1; yy++) for (let xx = Math.round(x) - 4; xx <= Math.round(x) + 4; xx++) if (xx >= 0 && yy >= 0 && xx < LW && yy < LH && waterT[yy * LW + xx] >= 0) return false; return true; };
 
   // Dead things to bring back: each has one withered sprite and one living sprite.
   const objects = [];
@@ -241,7 +243,7 @@ export function makeLand(seed = 1, mapId = 0) {
     // from an open neighbour, so the meadow runs right up to the stone instead of stopping a cell short.
     let cell = y * LCW + x;
     if (blocked[cell]) { cell = -1; for (const [a, b] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]]) { const xx = x + a, yy = y + b; if (xx >= 0 && yy >= 0 && xx < LCW && yy < LCH && !blocked[yy * LCW + xx]) { cell = yy * LCW + xx; break; } } }
-    if (cell < 0 || edge[Math.min(LH - 1, Math.floor(ty)) * LW + Math.min(LW - 1, Math.floor(tx))] || road[Math.min(LH - 1, Math.floor(ty)) * LW + Math.min(LW - 1, Math.floor(tx))] || xx0(Math.min(LW - 1, tx), Math.min(LH - 1, ty))) continue;
+    if (cell < 0 || edge[Math.min(LH - 1, Math.floor(ty)) * LW + Math.min(LW - 1, Math.floor(tx))] || road[Math.min(LH - 1, Math.floor(ty)) * LW + Math.min(LW - 1, Math.floor(tx))] || !bankClear(tx, ty)) continue;
     // Tall grass grows in broad, ragged patches; between them lie open lawns of short green turf, with only
     // the odd tuft or flower. A patch thins out over a few texels at its edge rather than stopping dead.
     // And tall grass only really takes hold in a few broad grassy stretches of each land; elsewhere the ground is

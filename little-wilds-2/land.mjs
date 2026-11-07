@@ -1,7 +1,7 @@
 // The ground as one pixel canvas for the whole continent. Every texel keeps a small code for its grain,
 // shade and kind of ground; each land turns codes into colours through lookup tables, one per growth stage,
 // so the front line between dead and alive stays crisp and organic without a colour array per stage.
-import { TW, TH, LW, LH, CW, CH, CELL, fbm, noise, hash, LANDS, SEA, BEACH, ROCK, landAtTexel, hillShade } from './world.mjs?v=24';
+import { TW, TH, LW, LH, CW, CH, CELL, fbm, noise, hash, LANDS, SEA, BEACH, ROCK, landAtTexel, hillShade } from './world.mjs?v=25';
 
 const packed = (r, g, b) => (255 << 24) | (Math.max(0, Math.min(255, b)) << 16) | (Math.max(0, Math.min(255, g)) << 8) | Math.max(0, Math.min(255, r));
 const pack = c => packed(c[0], c[1], c[2]);
@@ -96,7 +96,17 @@ export async function createLand(w, progress = async () => {}) {
     }
   }
   const ground = LANDS.map(groundTables), edges = LANDS.map(edgeTables);
-  const wetDead = LANDS.map(P => pack(P.crack.map(v => v * .82))), wetSoil = LANDS.map(P => pack(P.soil.map(v => v * .7)));
+  // Stream beds and ponds wait as sunken ravines until their water comes: a shadowed upper wall, a dark floor
+  // with the odd pebble and a sunlit lower lip, lit from the upper left like the hills. They never grow grass;
+  // on restored ground the bed turns to damp mud. Tables per land: [floor, upper wall, deep wall, lip, pebble].
+  const bedOf = (base, k) => [base.map(v => v * .66 * k), base.map(v => v * .4 * k), base.map(v => v * .52 * k), base.map(v => Math.min(255, v * 1.02 * k + 8)), mixTo(base, [170, 162, 150], .5).map(v => v * k)].map(pack);
+  const bedDry = LANDS.map(P => bedOf(mixTo(P.crack, P.dead, .25), 1)), bedMud = LANDS.map(P => bedOf(P.soil, 1.05));
+  const bedPart = new Uint8Array(N); // 0 floor, 1 upper wall, 2 the row below it, 3 lower lip; set only on bed texels
+  for (let i = 0; i < N; i++) {
+    if (w.waterT[i] === 255) continue;
+    const dry = j => j < 0 || j >= N || w.waterT[j] === 255;
+    bedPart[i] = dry(i - TW) || dry(i - 1) ? 1 : dry(i - 2 * TW) || dry(i - 2) ? 2 : dry(i + TW) || dry(i + 1) ? 3 : 0;
+  }
   const canvas = document.createElement('canvas');
   canvas.width = TW; canvas.height = TH;
   const g = canvas.getContext('2d'), image = g.createImageData(TW, TH), out = new Uint32Array(image.data.buffer);
@@ -110,7 +120,7 @@ export async function createLand(w, progress = async () => {}) {
   function colourAt(i, stage, L) {
     const c = code[i], B = w.biome[i];
     if (c >= ROAD) return edges[L][(c - EDGE) * 3 + (stage === DEAD ? 0 : stage === SOIL || stage === RIM_A ? 1 : 2)];
-    if (w.waterT[i] < 255 && (stage === DEAD || stage === SOIL || stage === RIM_A)) return stage === DEAD ? wetDead[B] : wetSoil[B];
+    if (w.waterT[i] < 255) { const p = bedPart[i], t = (stage === DEAD ? bedDry : bedMud)[B]; return p ? t[p] : (c >> 10 & 7) >= 3 ? t[4] : t[0]; }
     return ground[B][stage * STAGE + c];
   }
   function paint(cx, cy, dead = false, target = out) {

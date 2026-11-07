@@ -1,9 +1,9 @@
 // Everything above the ground: flora, the dead-and-revived objects, spirits, wildlife, weather and fog.
-import { TW, TH, LW, LH, CW, CH, CELL, ZONES, LANDS, SEA, hash, fbm, FC, FCOLS, FROWS, landAtTexel, SHRINK, hillShade } from './world.mjs?v=24';
-import { GREEN, brushRadius, SPIRITS, gladeBuyable, gladePrice } from './sim.mjs?v=24';
-import { pixelize, newFrame, shadowOf, skirtOf, apronOf } from './pixel.mjs?v=24';
-import { duckCanvas, critterCanvas, spiritCanvas, NATIVE, SCALE, WALK_FRAMES, strideOf } from './critters.mjs?v=24';
-import { steer, standable, overWater, escape } from './nav.mjs?v=24';
+import { TW, TH, LW, LH, CW, CH, CELL, ZONES, LANDS, SEA, hash, fbm, FC, FCOLS, FROWS, landAtTexel, SHRINK, hillShade } from './world.mjs?v=25';
+import { GREEN, brushRadius, SPIRITS, gladeBuyable, gladePrice } from './sim.mjs?v=25';
+import { pixelize, newFrame, shadowOf, skirtOf, apronOf } from './pixel.mjs?v=25';
+import { duckCanvas, critterCanvas, spiritCanvas, NATIVE, SCALE, WALK_FRAMES, strideOf } from './critters.mjs?v=25';
+import { steer, standable, overWater, escape } from './nav.mjs?v=25';
 const money = n => n >= 1e9 ? (n / 1e9).toFixed(2) + 'b' : n >= 1e6 ? (n / 1e6).toFixed(2) + 'm' : n >= 1e4 ? (n / 1e3).toFixed(1) + 'k' : Math.floor(n).toLocaleString();
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -814,7 +814,7 @@ export function createRenderer(canvas, world, land, images) {
       drawGround(land.canvas); drawWater(s, time); drawDucks(s, time / 1000, dt); drawFlora(s, time, dt); drawProps(s, time, dt, opts.carry); drawCritters(s, time, dt); drawLight(s, time);
       drawParticles(dt);
       if (fogAlpha.some(a => a > 0)) { ctx.imageSmoothingEnabled = true; const drift = reduced || quality < 1 ? 0 : Math.sin(time * .00016) * 7 * cam.z; ctx.globalAlpha = .72; ctx.drawImage(fogSoft, 0, 0, CW, CH, sx(0), sy(0), TW * cam.z, TH * cam.z); ctx.globalAlpha = quality > 1 ? .5 : .35; if (quality > 1) ctx.drawImage(fogSoft, 0, 0, CW, CH, sx(0) + drift, sy(0) - drift * .5, TW * cam.z, TH * cam.z); ctx.globalAlpha = 1; ctx.imageSmoothingEnabled = false; }
-      drawLabels(s);
+      if (!opts.title) drawLabels(s);
       if (opts.then !== null && opts.then !== undefined) {
         thenC ||= land.dayOne();
         ctx.save(); ctx.beginPath(); ctx.rect(0, 0, opts.then, H); ctx.clip(); drawGround(thenC);
