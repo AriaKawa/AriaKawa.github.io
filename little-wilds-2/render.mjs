@@ -1,9 +1,9 @@
 // Everything above the ground: flora, the dead-and-revived objects, spirits, wildlife, weather and fog.
-import { TW, TH, LW, LH, CW, CH, CELL, ZONES, LANDS, SEA, hash, fbm, FC, FCOLS, FROWS, landAtTexel, SHRINK, hillShade } from './world.mjs?v=27';
-import { GREEN, brushRadius, SPIRITS, gladeBuyable, gladePrice } from './sim.mjs?v=27';
-import { pixelize, newFrame, shadowOf, skirtOf, apronOf } from './pixel.mjs?v=27';
-import { duckCanvas, critterCanvas, spiritCanvas, NATIVE, SCALE, WALK_FRAMES, strideOf } from './critters.mjs?v=27';
-import { steer, standable, overWater, escape } from './nav.mjs?v=27';
+import { TW, TH, LW, LH, CW, CH, CELL, ZONES, LANDS, SEA, hash, fbm, FC, FCOLS, FROWS, landAtTexel, SHRINK, hillShade } from './world.mjs?v=28';
+import { GREEN, brushRadius, SPIRITS, gladeBuyable, gladePrice } from './sim.mjs?v=28';
+import { pixelize, newFrame, shadowOf, skirtOf, apronOf } from './pixel.mjs?v=28';
+import { duckCanvas, critterCanvas, spiritCanvas, NATIVE, SCALE, WALK_FRAMES, strideOf } from './critters.mjs?v=28';
+import { steer, standable, overWater, escape } from './nav.mjs?v=28';
 const money = n => n >= 1e9 ? (n / 1e9).toFixed(2) + 'b' : n >= 1e6 ? (n / 1e6).toFixed(2) + 'm' : n >= 1e4 ? (n / 1e3).toFixed(1) + 'k' : Math.floor(n).toLocaleString();
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -544,6 +544,57 @@ export function createRenderer(canvas, world, land, images) {
       ctx.drawImage(c, snapX(x - c.width * k / 2), snapY(y - c.height * k + z * .4 + bob), c.width * k, c.height * k);
     }
   }
+  // Fish: now and then one leaps from a filled pond in view, arcs over and drops back in with a ripple.
+  // assets/fish.png (ChatGPT art cut by tools/build_critter_art.py): swimming, launching, arched, diving.
+  const fish = [], ripples = [];
+  let fishAt = 0;
+  const closeness = () => clamp((cam.z - 1.6) / 2.9, 0, 1); // 0 far out, 1 right down among the animals
+  const heard = (x, y) => ({ pan: (sx(x) - W / 2) / (W / 2), d: Math.min(1, Math.hypot((sx(x) - W / 2) / (W / 2), (sy(y) - H / 2) / (H / 2)) / 1.414) });
+  function drawFish(s, t, dt) {
+    if (reduced || !images.fish) return;
+    const z = cam.z, deep = (x, y) => { x |= 0; y |= 0; return x >= 0 && y >= 0 && x < TW && y < TH && world.waterT[y * TW + x] >= 170 && world.waterT[y * TW + x] < 255; };
+    if (!s.paused && t > fishAt) {
+      fishAt = t + 4 + Math.random() * 8;
+      const [x0, y0, x1, y1] = api.viewBox(), full = world.ponds.map((P, id) => id).filter(id => { const P = world.ponds[id]; return s.zones[id]?.water >= 1 && P.x + P.r > x0 && P.x - P.r < x1 && P.y + P.r > y0 && P.y - P.r < y1; });
+      if (full.length && fish.length < 3) {
+        const P = world.ponds[full[Math.floor(Math.random() * full.length)]];
+        for (let k = 0; k < 30; k++) {
+          const x = P.x + (Math.random() * 2 - 1) * P.r, y = P.y + (Math.random() * 2 - 1) * P.r * .7, dir = Math.random() < .5 ? -1 : 1, len = 7 + Math.random() * 7;
+          if (!deep(x, y) || !deep(x + dir * len, y)) continue;
+          fish.push({ x, y, dir, len, h: 6 + Math.random() * 6, age: 0, life: .75 + Math.random() * .3 });
+          ripples.push({ x, y, age: 0 }); const e = heard(x, y); api.onSplash?.(e.pan, closeness() * (1 - e.d * .5), false);
+          break;
+        }
+      }
+    }
+    const sheet = images.fish, fw = sheet.width / 4, fh = sheet.height, k = z / SCALE;
+    for (let n = ripples.length - 1; n >= 0; n--) { // flat rings spreading on the water
+      const r = ripples[n]; r.age += dt; if (r.age > 1.1) { ripples.splice(n, 1); continue; }
+      const q = r.age / 1.1; ctx.strokeStyle = `rgba(235,248,255,${(1 - q) * .7})`; ctx.lineWidth = Math.max(1, z * .6);
+      for (const m of [1, .55]) { ctx.beginPath(); ctx.ellipse(sx(r.x), sy(r.y), (1.5 + q * 7 * m) * z, (.7 + q * 2.6 * m) * z, 0, 0, 7); ctx.stroke(); }
+    }
+    for (let n = fish.length - 1; n >= 0; n--) {
+      const f = fish[n]; if (!s.paused) f.age += dt;
+      const q = f.age / f.life;
+      if (q >= 1) {
+        fish.splice(n, 1); const x = f.x + f.dir * f.len; ripples.push({ x, y: f.y, age: 0 }); burst(x, f.y, 5, ['#ffffff', '#cdeeff'], 12);
+        const e = heard(x, f.y); api.onSplash?.(e.pan, closeness() * (1 - e.d * .5), true); continue;
+      }
+      const x = f.x + f.dir * f.len * q, y = f.y - 4 * f.h * q * (1 - q), cell = q < .3 ? 1 : q < .62 ? 2 : 3;
+      const w = fw * k, h = fh * k, X = sx(x), Y = sy(y);
+      ctx.save(); ctx.translate(X, Y); if (f.dir < 0) ctx.scale(-1, 1);
+      ctx.drawImage(sheet, cell * fw, 0, fw, fh, -w / 2, -h / 2, w, h); ctx.restore();
+    }
+  }
+  // The animals in view, for the sound: where each is across the screen and how far from the middle.
+  function hearing() {
+    const out = [], near = closeness();
+    if (near <= 0) return { near, sources: out };
+    const [x0, y0, x1, y1] = api.viewBox();
+    for (const c of critters) if (c.alpha > .5 && c.x > x0 && c.x < x1 && c.y > y0 && c.y < y1) out.push({ kind: c.kind, ...heard(c.x, c.y) });
+    for (const d of ducks) if (d.x > x0 && d.x < x1 && d.y > y0 && d.y < y1) out.push({ kind: 'duck', ...heard(d.x, d.y) });
+    return { near, sources: out };
+  }
   // Wildlife arrives as the land heals. Butterflies and birds pass through; pets stay and graze.
   let critterAt = -1;
   const announced = new Set();
@@ -757,6 +808,7 @@ export function createRenderer(canvas, world, land, images) {
     // Wildlife already on the land arrives quietly, as on a fresh load. Used when the whole state is swapped.
     regreet() { greeted = false; critterAt = -1; },
     pets: () => critters.filter(c => PETS[c.kind]),
+    onSplash: null, hearing,
     cam, resize, focusZone, focusAll, focusLand, zoomAt, pan, toCell, toWorld,
     glide(x, y, z) { anchor = null; cam.tx = x; cam.ty = y; cam.tz = z; clampCam(); },
     viewBox() { return [cam.x - W / 2 / cam.z, cam.y - H / 2 / cam.z, cam.x + W / 2 / cam.z, cam.y + H / 2 / cam.z]; },
@@ -788,7 +840,7 @@ export function createRenderer(canvas, world, land, images) {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.imageSmoothingEnabled = false; newFrame();
       updateFog(s); spawnCritters(s, time);
       ctx.fillStyle = '#365568'; ctx.fillRect(0, 0, W, H);
-      drawGround(land.canvas); drawWater(s, time); drawDucks(s, time / 1000, dt); drawFlora(s, time, dt); drawProps(s, time, dt, opts.carry); drawCritters(s, time, dt); drawLight(s, time);
+      drawGround(land.canvas); drawWater(s, time); drawDucks(s, time / 1000, dt); drawFish(s, time / 1000, dt); drawFlora(s, time, dt); drawProps(s, time, dt, opts.carry); drawCritters(s, time, dt); drawLight(s, time);
       drawParticles(dt);
       if (fogAlpha.some(a => a > 0)) { ctx.imageSmoothingEnabled = true; const drift = reduced || quality < 1 ? 0 : Math.sin(time * .00016) * 7 * cam.z; ctx.globalAlpha = .72; ctx.drawImage(fogSoft, 0, 0, CW, CH, sx(0), sy(0), TW * cam.z, TH * cam.z); ctx.globalAlpha = quality > 1 ? .5 : .35; if (quality > 1) ctx.drawImage(fogSoft, 0, 0, CW, CH, sx(0) + drift, sy(0) - drift * .5, TW * cam.z, TH * cam.z); ctx.globalAlpha = 1; ctx.imageSmoothingEnabled = false; }
       if (!opts.title) drawLabels(s);

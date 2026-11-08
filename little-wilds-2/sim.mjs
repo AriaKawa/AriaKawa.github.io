@@ -1,7 +1,7 @@
 // Rules of restoration. No DOM: runs in the game, offline catch-up and the pacing test alike.
 // One field covers the whole continent; glades are bought outward from the middle, and one army of spirits works all of it.
-import { CW, CN, LCW, LCH, LCN, ZONES, LANDS } from './world.mjs?v=27';
-import { buildNav, markTree, steer, standable, escape } from './nav.mjs?v=27';
+import { CW, CN, LCW, LCH, LCN, ZONES, LANDS } from './world.mjs?v=28';
+import { buildNav, markTree, steer, standable, escape } from './nav.mjs?v=28';
 // The ground map spirits and animals walk by, rebuilt when a different set of planted trees is in play.
 export function navOf(s, w) { if (!w.nav || w.navTrees !== s.trees) { buildNav(w); for (const t of s.trees) markTree(w, t); w.navTrees = s.trees; } return w.nav; }
 
@@ -11,7 +11,7 @@ export const GREEN = .6;           // the height a cell counts as restored
 export const SPIRITS = [
   { name: 'Mossling', job: 'Walks to bare ground and wakes the soil.', cost: 30, need: 0, r: 2.2, rate: .05, cap: GREEN, speed: 3.6 },
   { name: 'Petalkin', job: 'Follows the grass and turns it to wildflowers.', cost: 400, need: 1, r: 2.6, rate: .04, cap: 1, speed: 3.2, blooms: true },
-  { name: 'Rainwisp', job: 'Drifts over the land, raining on wide patches.', cost: 2500, need: 2, r: 6.5, rate: .016, cap: GREEN, speed: 6 },
+  { name: 'Rainwisp', job: 'Fills dry riverbeds with water, then drifts over the land raining on wide patches.', cost: 2500, need: 2, r: 6.5, rate: .016, cap: GREEN, speed: 6 },
   { name: 'Elderoot', job: 'Revives dead trees and stones, then plants new trees.', cost: 15000, need: 4, r: 3.4, rate: .07, cap: 1, speed: 2.4 },
 ];
 export const UPGRADES = [
@@ -160,6 +160,12 @@ function nearLists(s, w, a) {
 }
 function seek(s, w, a) {
   const def = SPIRITS[a.type];
+  // Riverbeds stay dry until a Rainwisp comes: it drifts to the head of the nearest dry one and fills it.
+  if (a.type === 2) {
+    let best = -1, bd = Infinity;
+    s.zones.forEach((z, id) => { if (!z.open || z.water >= 0 || !w.streams[id]?.length) return; const p = w.streams[id][0], d = Math.hypot(p[0] / 4 - a.x, p[1] / 4 - a.y); if (d < bd) { bd = d; best = id; } });
+    if (best >= 0) { const p = w.streams[best][0]; a.tx = p[0] / 4; a.ty = p[1] / 4; a.fill = best; return true; }
+  }
   if (a.type === 3) {
     let best = null, bd = Infinity;
     for (const o of w.objects) if (s.objHp[o.id] > 0 && s.zones[o.zone].open) { const d = Math.hypot(o.x - a.x, o.y - a.y); if (d < bd) { bd = d; best = o; } }
@@ -199,6 +205,12 @@ function stepSpirit(s, w, a, dt, ev) {
       return;
     }
     a.tx = a.x; a.ty = a.y;
+  }
+  if (a.fill != null) { // A Rainwisp at the head of a dry riverbed: the water starts here.
+    const z = s.zones[a.fill];
+    if (z.water < 0) { z.water = 0; ev.push({ t: 'water', zone: a.fill }); }
+    a.fill = null; a.tx = -1; a.work = 0; a.nap = 1.5;
+    return;
   }
   if (!a.working) w.reached = (w.reached || 0) + 1;
   a.working = true;
@@ -258,7 +270,6 @@ export function tick(s, w, dt, ev = [], slice = 0, of = 1) {
   s.zones.forEach((z, id) => {
     if (!z.open) return;
     const pct = zonePct(s, w, id);
-    if (z.water < 0 && pct >= .4) { z.water = 0; ev.push({ t: 'water', zone: id }); }
     if (z.water >= 0 && z.water < 1) {
       const before = z.water;
       z.water = Math.min(1, z.water + dt / 9);
@@ -375,7 +386,7 @@ export function decode(text, w) {
     o.v = 4; o.land = L; o.level = L; o.atlas = {};
     for (let n = 0; n < L; n++) o.atlas[n] = { h: '', zones: full(), trees: [], level: n };
   }
-  if (o.v === 4) { if (o.zones.length !== 9) throw Error('Not a Little Wilds 2 save.'); return fromLands(o, w); }
+  if (o.v === 4) { if (o.zones.length !== 9) throw Error('Not a Little Wilds 2 save.'); return dryUnlessWisp(fromLands(o, w)); }
   if (o.zones.length !== ZONES.length) throw Error('Not a Little Wilds 2 save.');
   const raw = atob(o.h);
   if (raw.length !== CN) throw Error('Bad land data.');
@@ -386,5 +397,10 @@ export function decode(text, w) {
   if ((o.wv || 0) < FIELD_VERSION) reshape(o, w, share.map((v, id) => Math.max(v, zonePct(o, w, id))));
   // Trees planted before they had to find clear ground: any in water, on a road or on top of another are gone.
   o.trees = (o.trees || []).filter((q, n, all) => w.free(q.x * 4, q.y * 4) && all.slice(0, n).every(r => Math.hypot(r.x - q.x, r.y - q.y) > 6));
+  return dryUnlessWisp(o);
+}
+// Water only comes with a Rainwisp. Saves from before that rule, with no Rainwisp yet, have their riverbeds dry again.
+function dryUnlessWisp(o) {
+  if (!o.spirits.some(a => a.type === 2)) for (const z of o.zones) z.water = -1;
   return o;
 }
