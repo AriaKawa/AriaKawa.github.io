@@ -1,12 +1,14 @@
 // Rules of restoration. No DOM: runs in the game, offline catch-up and the pacing test alike.
 // One field covers the whole continent; glades are bought outward from the middle, and one army of spirits works all of it.
-import { CW, CN, LCW, LCH, LCN, ZONES, LANDS } from './world.mjs?v=29';
-import { buildNav, markTree, steer, standable, escape } from './nav.mjs?v=29';
+import { CW, CN, LCW, LCH, LCN, ZONES, LANDS } from './world.mjs?v=30';
+import { buildNav, markTree, steer, standable, escape } from './nav.mjs?v=30';
 // The ground map spirits and animals walk by, rebuilt when a different set of planted trees is in play.
 export function navOf(s, w) { if (!w.nav || w.navTrees !== s.trees) { buildNav(w); for (const t of s.trees) markTree(w, t); w.navTrees = s.trees; } return w.nav; }
 
 const WORLD_VERSION = 9, FIELD_VERSION = 4; // objects / the shape of the glades
 export const SPIRIT_CAP = 60;
+// How fast a pond fills (share of a full pond is .3): on its own, in a shower, and per Rainwisp raining into it.
+export const POND_TRICKLE = .00025, POND_RAIN = .0012, POND_WISP = .005;
 export const GREEN = .6;           // the height a cell counts as restored
 export const SPIRITS = [
   { name: 'Mossling', job: 'Walks to bare ground and wakes the soil.', cost: 30, need: 0, r: 2.2, rate: .05, cap: GREEN, speed: 3.6 },
@@ -55,7 +57,7 @@ export function note(s, key) {
   s.journal ||= {};
   if (!JOURNAL_KEYS.has(key) || s.journal[key]) return 0;
   s.journal[key] = 1;
-  const gift = Math.round(25 + LANDS.reduce((a, _, l) => a + landIncome(s, l), 0) * 20 + s.seeds * .01);
+  const gift = Math.round(15 + LANDS.reduce((a, _, l) => a + landIncome(s, l), 0) * 10 + s.seeds * .004);
   s.seeds += gift;
   return gift;
 }
@@ -70,6 +72,15 @@ function weather(s, dt, ev) {
   const season = seasonOf(s); if (s.season !== season) { const first = s.season === undefined; s.season = season; if (!first) ev.push({ t: 'season', season }); }
 }
 export const raining = s => s.wx?.kind || null;
+// A shower greens a few small spots, a little at a time, in glades already woken: a gentle help, nothing more.
+function showerSpots(s, w, dt) {
+  const spots = s.wx.spots ||= [];
+  if (spots.length < 6 && Math.random() < dt * .5) {
+    const open = s.zones.map((z, i) => z.open && !z.done ? i : -1).filter(i => i >= 0);
+    if (open.length) { const list = w.cellsOf[open[Math.floor(Math.random() * open.length)]], i = list[Math.floor(Math.random() * list.length)]; if (!w.blocked[i]) spots.push({ x: i % CW, y: Math.floor(i / CW), left: 8 + Math.random() * 6 }); }
+  }
+  for (let k = spots.length - 1; k >= 0; k--) { const p = spots[k]; heal(s, w, p.x, p.y, 2.6, dt * .03, GREEN); if ((p.left -= dt) <= 0) spots.splice(k, 1); }
+}
 
 // Villagers in the two village lands ask small favours: bring a glade back, or make one flourish.
 const VILLAGE_LANDS = LANDS.map((L, l) => L.village ? l : -1).filter(l => l >= 0);
@@ -91,7 +102,7 @@ function favours(s, ev) {
     const pick = open.length ? ['restore', open] : bloom.length ? ['bloom', bloom] : null;
     if (!pick) continue;
     const zone = pick[1][Math.floor(Math.random() * pick[1].length)], who = FOLK[Math.floor(Math.random() * FOLK.length)];
-    const reward = Math.round(150 + LANDS.reduce((a, _, q) => a + landIncome(s, q), 0) * 90 + (pick[0] === 'bloom' ? 200 : 0));
+    const reward = Math.round(100 + LANDS.reduce((a, _, q) => a + landIncome(s, q), 0) * 45 + (pick[0] === 'bloom' ? 120 : 0));
     s.favours = s.favours.filter(q => q.land !== l).concat({ land: l, zone, want: pick[0], who, reward, done: false, at: s.age });
   }
 }
@@ -237,6 +248,11 @@ function seek(s, w, a) {
     let best = -1, bd = Infinity;
     s.zones.forEach((z, id) => { if (!z.open || z.water >= 0 || !w.streams[id]?.length) return; const p = streamHead(w, id), d = Math.hypot(p[0] / 4 - a.x, p[1] / 4 - a.y); if (d < bd) { bd = d; best = id; } });
     if (best >= 0) { const p = streamHead(w, best); a.tx = p[0] / 4; a.ty = p[1] / 4; a.fill = best; return true; }
+    // No dry beds: most of the time, go and rain into the nearest pond still filling (at most two wisps to a pond).
+    if (Math.random() < .7) {
+      s.zones.forEach((z, id) => { if (!z.open || z.water < .7 || z.water >= 1 || s.spirits.filter(q => q.pour === id).length >= 2) return; const P = w.ponds[id], d = Math.hypot(P.x / 4 - a.x, P.y / 4 - a.y); if (d < bd) { bd = d; best = id; } });
+      if (best >= 0) { const P = w.ponds[best]; a.tx = P.x / 4 + (Math.random() - .5) * P.r / 6; a.ty = P.y / 4 + (Math.random() - .5) * P.r / 8; a.pour = best; a.rain = 0; return true; }
+    }
   }
   if (a.type === 3) {
     let best = null, bd = Infinity;
@@ -277,6 +293,13 @@ function stepSpirit(s, w, a, dt, ev) {
       return;
     }
     a.tx = a.x; a.ty = a.y;
+  }
+  if (a.pour != null) { // A Rainwisp over a filling pond: it rains into it for a while, then drifts on.
+    const z = s.zones[a.pour];
+    a.rain = (a.rain || 0) + dt; a.working = true;
+    if (z.water < 1 && a.rain < 14) { const before = z.water; z.water = Math.min(1, z.water + POND_WISP * dt); if (Math.floor(z.water * 254) !== Math.floor(before * 254)) w.waterMoved?.(a.pour); return; }
+    a.pour = null; a.rain = 0; a.tx = -1; a.work = 0; a.nap = 1; a.working = false;
+    return;
   }
   if (a.fill != null) { // A Rainwisp at the head of a dry riverbed hangs there raining for a few seconds, then the water starts.
     const z = s.zones[a.fill];
@@ -338,19 +361,22 @@ export function tick(s, w, dt, ev = [], slice = 0, of = 1) {
   drink(s, w, dt);
   navOf(s, w);
   for (let n = slice; n < s.spirits.length; n += of) stepSpirit(s, w, s.spirits[n], dt * of, ev);
-  creep(s, w, dt * (s.wx?.kind ? 1.6 : 1), carries.get(s)); // a shower makes the green spread faster
+  creep(s, w, dt, carries.get(s));
+  if (s.wx?.kind) showerSpots(s, w, dt);
   weather(s, dt, ev);
   if (Math.floor(s.age) !== Math.floor(s.age - dt)) favours(s, ev);
   s.zones.forEach((z, id) => {
     if (!z.open) return;
     const pct = zonePct(s, w, id);
     if (z.water >= 0 && z.water < 1) {
+      // The stream runs down its bed in a few seconds. The pond then fills slowly from what water reaches it:
+      // a thin trickle from the stream on its own, more in a shower, and much more under a Rainwisp raining into it.
       const before = z.water;
-      z.water = Math.min(1, z.water + dt / 9);
+      z.water = z.water < .7 ? Math.min(.7, z.water + dt / 9) : Math.min(1, z.water + dt * (POND_TRICKLE + (s.wx?.kind ? POND_RAIN : 0)));
       const path = w.streams[id], p = path[Math.min(path.length - 1, Math.floor(z.water / .7 * path.length))];
       if (z.water < .7) heal(s, w, p[0] / 4, p[1] / 4, 8, dt * 1.4, GREEN); // green runs along behind the water's head
-      else if (before < .7 || z.water < 1) { const pond = w.ponds[id]; heal(s, w, pond.x / 4, pond.y / 4, (pond.r + 14) / 4, dt * .5, GREEN); }
-      w.waterMoved?.(id);
+      else { const pond = w.ponds[id]; heal(s, w, pond.x / 4, pond.y / 4, (pond.r + 14) / 4, (z.water - before) / .3 * 1.35, GREEN); }
+      if (Math.floor(z.water * 254) !== Math.floor(before * 254)) w.waterMoved?.(id);
     }
     if (!z.done && pct >= .97) completeZone(s, w, id, ev);
     if (z.sweep >= 0) { // A wave rolls out from the pond and finishes the stragglers, so nobody hunts for the last pixel.

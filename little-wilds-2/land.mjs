@@ -1,7 +1,7 @@
 // The ground as one pixel canvas for the whole continent. Every texel keeps a small code for its grain,
 // shade and kind of ground; each land turns codes into colours through lookup tables, one per growth stage,
 // so the front line between dead and alive stays crisp and organic without a colour array per stage.
-import { TW, TH, LW, LH, CW, CH, CELL, fbm, noise, hash, LANDS, SEA, BEACH, ROCK, landAtTexel, hillShade } from './world.mjs?v=29';
+import { TW, TH, LW, LH, CW, CH, CELL, fbm, noise, hash, LANDS, SEA, BEACH, ROCK, landAtTexel, hillShade } from './world.mjs?v=30';
 
 const packed = (r, g, b) => (255 << 24) | (Math.max(0, Math.min(255, b)) << 16) | (Math.max(0, Math.min(255, g)) << 8) | Math.max(0, Math.min(255, r));
 const pack = c => packed(c[0], c[1], c[2]);
@@ -120,7 +120,7 @@ export async function createLand(w, progress = async () => {}) {
   function colourAt(i, stage, L) {
     const c = code[i], B = w.biome[i];
     if (c >= ROAD) return edges[L][(c - EDGE) * 3 + (stage === DEAD ? 0 : stage === SOIL || stage === RIM_A ? 1 : 2)];
-    if (w.waterT[i] < 255) { const p = bedPart[i], t = (stage === DEAD ? bedDry : bedMud)[B]; return p ? t[p] : (c >> 10 & 7) >= 3 ? t[4] : t[0]; }
+    if (w.waterT[i] < 255) { const p = bedPart[i], dry = stage === DEAD, t = (dry ? bedDry : bedMud)[B]; return p && (dry || p !== 4) ? t[p] : dry && (c >> 10 & 7) >= 3 ? t[4] : t[0]; } // a woken bed is clean, dark earth: no pebbles
     return ground[B][stage * STAGE + c];
   }
   function paint(cx, cy, dead = false, target = out) {

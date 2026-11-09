@@ -1,9 +1,9 @@
 // Everything above the ground: flora, the dead-and-revived objects, spirits, wildlife, weather and fog.
-import { TW, TH, LW, LH, CW, CH, CELL, ZONES, LANDS, SEA, hash, fbm, FC, FCOLS, FROWS, landAtTexel, SHRINK, hillShade } from './world.mjs?v=29';
-import { GREEN, brushRadius, SPIRITS, gladeBuyable, gladePrice, streamHead } from './sim.mjs?v=29';
-import { pixelize, newFrame, shadowOf, skirtOf, apronOf } from './pixel.mjs?v=29';
-import { duckCanvas, critterCanvas, spiritCanvas, NATIVE, SCALE, WALK_FRAMES, strideOf } from './critters.mjs?v=29';
-import { steer, standable, overWater, escape } from './nav.mjs?v=29';
+import { TW, TH, LW, LH, CW, CH, CELL, ZONES, LANDS, SEA, hash, fbm, FC, FCOLS, FROWS, landAtTexel, SHRINK, hillShade } from './world.mjs?v=30';
+import { GREEN, brushRadius, SPIRITS, gladeBuyable, gladePrice, streamHead } from './sim.mjs?v=30';
+import { pixelize, newFrame, shadowOf, skirtOf, apronOf } from './pixel.mjs?v=30';
+import { duckCanvas, critterCanvas, spiritCanvas, NATIVE, SCALE, WALK_FRAMES, strideOf } from './critters.mjs?v=30';
+import { steer, standable, overWater, escape } from './nav.mjs?v=30';
 const money = n => n >= 1e9 ? (n / 1e9).toFixed(2) + 'b' : n >= 1e6 ? (n / 1e6).toFixed(2) + 'm' : n >= 1e4 ? (n / 1e3).toFixed(1) + 'k' : Math.floor(n).toLocaleString();
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -493,7 +493,7 @@ export function createRenderer(canvas, world, land, images) {
         ctx.fillStyle = 'rgba(30,24,18,.28)'; ctx.beginPath(); ctx.ellipse(x, y, size * (.28 - hop * .06), size * .09, 0, 0, 7); ctx.fill();
         { const c = spiritCanvas(a.type, frame, a.dir < 0), k = z * SHRINK / SCALE, w = c.width * k * (1 - q), h = c.height * k * (1 + q); ctx.drawImage(c, snapX(x - w / 2), snapY(y - (float + hop * 2.4) * SHRINK * z - h), w, h); if (float < 1) grassOver(a.rx * CELL, a.ry * CELL, w / z * .3, Math.max(1.2, h / z * .22 - hop * 2.4 * SHRINK), walking ? a.anim : 0); }
         if (a.type === 2 && !s.paused && !reduced && quality > 0) { // Rainwisps carry their own little weather; filling a riverbed, a downpour.
-          const pour = a.rain > 0, r = SPIRITS[2].r * CELL * z * (pour ? .45 : .75); ctx.fillStyle = pour ? 'rgba(150,205,250,.85)' : 'rgba(170,220,255,.7)';
+          const pour = a.rain > 0 && (a.fill != null || a.pour != null), r = SPIRITS[2].r * CELL * z * (pour ? .45 : .75); ctx.fillStyle = pour ? 'rgba(150,205,250,.85)' : 'rgba(170,220,255,.7)';
           if (pour) { ctx.fillStyle = 'rgba(205,215,228,.5)'; for (let n = 0; n < 5; n++) { ctx.beginPath(); ctx.ellipse(x + (n - 2) * 3.4 * z, y - 30 * z + Math.sin(tNow * 2 + n) * z, 5 * z, 3 * z, 0, 0, 7); ctx.fill(); } ctx.fillStyle = 'rgba(150,205,250,.85)'; }
           for (let n = 0; n < (pour ? 22 : 7); n++) { const q2 = (tNow * 1.5 + n * .37) % 1, px = x + (hash(n, 1, 8) - .5) * r * 2, py = y - z * 2 + (hash(n, 2, 8) - .5) * r - (1 - q2) * 18 * z; ctx.fillRect(px, py, Math.max(1, z * .5), z * 2); }
         }
@@ -517,13 +517,17 @@ export function createRenderer(canvas, world, land, images) {
   }
   // Ducks paddle about the great lake once it has filled: drifting to somewhere well out on the water, resting,
   // now and then dabbling tail-up, each leaving a little wake.
-  const ducks = [];
+  const ducks = []; let duckFirst, duckStart;
   function drawDucks(s, t, dt) {
     const lakeZ = world.ponds.findIndex(p => p.lake);
+    duckStart ??= t;
     if (lakeZ < 0 || !s.zones[lakeZ] || s.zones[lakeZ].water < 1) return;
     const P = world.ponds[lakeZ], deep = (x, y) => { x |= 0; y |= 0; return x >= 0 && y >= 0 && x < TW && y < TH && world.waterT[y * TW + x] >= 200 && world.waterT[y * TW + x] < 255; };
     const spot = () => { for (let k = 0; k < 60; k++) { const x = P.x + (Math.random() * 2 - 1) * P.r, y = P.y + (Math.random() * 2 - 1) * P.r * .7; if (deep(x, y)) return [x, y]; } return [P.x, P.y]; };
-    if (!ducks.length) for (let n = 0; n < 6; n++) { const [x, y] = spot(); ducks.push({ x, y, tx: x, ty: y, rest: Math.random() * 4, dab: 0, dir: 1, hen: n % 3 === 2, ph: Math.random() * 6 }); }
+    // Ducks find a lake that was already full when you came; a lake that fills while you watch gets one at a time.
+    if (duckFirst === undefined) duckFirst = t - duckStart < 3 ? -1e9 : t;
+    const due = duckFirst < 0 ? 6 : Math.min(6, Math.floor((t - duckFirst) / 22));
+    while (ducks.length < due) { const n = ducks.length, [x, y] = spot(); ducks.push({ x, y, tx: x, ty: y, rest: Math.random() * 4, dab: 0, dir: 1, hen: n % 3 === 2, ph: Math.random() * 6, fade: duckFirst < 0 ? 1 : 0 }); }
     const z = cam.z, still = s.paused || reduced;
     for (const d of ducks) {
       let moving = false;
@@ -538,13 +542,15 @@ export function createRenderer(canvas, world, land, images) {
       }
       const x = sx(d.x), y = sy(d.y);
       if (x < -40 || y < -40 || x > W + 40 || y > H + 40) continue;
+      d.fade = Math.min(1, d.fade + dt * .4); ctx.globalAlpha = d.fade;
       const c = duckCanvas(d.hen, d.dab > 0 ? 1 : 0, d.dir < 0), k = z * .85 / SCALE, bob = still ? 0 : Math.round(Math.sin(t * 2.2 + d.ph) * .6) * z * .5;
       // Wake: two pale lines trailing out behind and a soft ring at the waterline.
       ctx.fillStyle = 'rgba(235,248,255,.55)';
       ctx.fillRect(x - c.width * k * .45, y, c.width * k * .9, Math.max(1, z * .5));
       if (moving) for (let n = 1; n <= 3; n++) { const back = -d.dir * n * 2.2 * z; ctx.globalAlpha = .5 - n * .13; ctx.fillRect(x + back - n * z * .6, y - n * z * .5, z * 1.4, Math.max(1, z * .5)); ctx.fillRect(x + back - n * z * .6, y + n * z * .5, z * 1.4, Math.max(1, z * .5)); }
-      ctx.globalAlpha = 1;
+      ctx.globalAlpha = d.fade;
       ctx.drawImage(c, snapX(x - c.width * k / 2), snapY(y - c.height * k + z * .4 + bob), c.width * k, c.height * k);
+      ctx.globalAlpha = 1;
     }
   }
   // Villagers: in Frostmere and Sunfall Coast, once a glade is restored, a few folk come out and stroll its dirt roads.
@@ -708,14 +714,19 @@ export function createRenderer(canvas, world, land, images) {
     if (z.done) out.push(['deer', id, 7], ['rabbit', id, 5], ['bird', id, 6]);
     if (z.bloomed) out.push(['fawn', id, 8], ['rabbit', id, 9], ['butterfly', id, 10]);
   }
+  const arrived = new Map(); // zone * 16 + n: when that animal arrives
   function spawnCritters(s, time) {
     if (time - critterAt < 500) return;
     critterAt = time;
     // The dozen open glades nearest the middle of the screen have wildlife; the rest of the continent rests.
     const near = ZONES.filter(z => s.zones[z.id].open).map(z => [(z.px - cam.x) ** 2 + (z.py - cam.y) ** 2, z.id]).sort((a, b) => a[0] - b[0]).slice(0, 12).map(e => e[1]);
-    const want = [];
-    for (const id of near) wantFor(s, id, want);
-    if (!greeted) { announced.clear(); const all = []; ZONES.forEach(z => wantFor(s, z.id, all)); for (const [kind, zone, n] of all) if (PETS[kind]) announced.add(zone * 16 + n); }
+    // Wildlife comes back a little at a time: each animal a glade has earned turns up some while after the
+    // glade earned it, one after another, instead of all at once. On a fresh load, everyone is already home.
+    const all = []; ZONES.forEach(z => wantFor(s, z.id, all));
+    for (const [, zone, n] of all) if (!arrived.has(zone * 16 + n)) arrived.set(zone * 16 + n, greeted ? time + 5000 + n * 9000 + hash(zone, n, 41) * 8000 : -1);
+    const want = [], nearSet = new Set(near);
+    for (const w of all) if (nearSet.has(w[1]) && time >= arrived.get(w[1] * 16 + w[2])) want.push(w);
+    if (!greeted) { announced.clear(); for (const [kind, zone, n] of all) if (PETS[kind]) announced.add(zone * 16 + n); }
     greeted = true;
     const key = want.map(w => w[1] * 16 + w[2]).join();
     if (key === critters.key) return;
@@ -805,12 +816,14 @@ export function createRenderer(canvas, world, land, images) {
       const x = sx(c.x), y = sy(c.y);
       if (x < -60 || y < -60 || x > W + 60 || y > H + 60) continue;
       if (!images.flyers) continue;
+      c.alpha = Math.min(1, (c.alpha || 0) + dt * .35); ctx.globalAlpha = c.alpha;
       const beat = Math.floor(t * (c.kind === 'bird' ? 9 : 10) + c.n * 1.7) % 4, row = c.kind === 'butterfly' ? c.variant % 3 : 3 + c.variant % 2, lift = (c.kind === 'bird' ? 26 : 7 + Math.sin(t * 2 + c.n) * 3) + (c.spook > 0 ? (1.6 - c.spook) * 12 : 0), w = FLY_W * z / 2, h = FLY_H * z / 2;
       c.sx = x; c.sy = y - lift * z - h / 2; c.sw = Math.max(w, 24);
       ctx.fillStyle = 'rgba(30,24,18,.12)'; ctx.fillRect(x - w / 3, y, w * .66, z);
       const fx = beat * FLY_W, fy = row * FLY_H;
       if (c.kind === 'bird' && c.dir < 0) { ctx.save(); ctx.translate(x, 0); ctx.scale(-1, 1); ctx.drawImage(images.flyers, fx, fy, FLY_W, FLY_H, -w / 2, y - lift * z - h, w, h); ctx.restore(); }
       else ctx.drawImage(images.flyers, fx, fy, FLY_W, FLY_H, x - w / 2, y - lift * z - h, w, h);
+      ctx.globalAlpha = 1;
     }
   }
   function addParticle(p) { if (!reduced && particles.length < 340) particles.push(p); }
@@ -900,6 +913,12 @@ export function createRenderer(canvas, world, land, images) {
       const wisp = s.spirits.some(a => a.type === 2), size = Math.round(clamp(cam.z * 3.2, 11, 15));
       ctx.font = '600 ' + size + 'px "Pixelify Sans",Georgia,serif';
       s.zones.forEach((st, i) => {
+        if (st.open && st.water >= .7 && st.water < 1) { // a pond still filling: how full, and what helps
+          const P = world.ponds[i], x = sx(P.x), y = sy(P.y - P.r * .55); if (x < -80 || y < -20 || x > W + 80 || y > H + 20) return;
+          const text = `Pond ${Math.floor((st.water - .7) / .3 * 100)}% full · rain and Rainwisps fill it`, tw = ctx.measureText(text).width + 14;
+          ctx.globalAlpha = Math.min(1, (cam.z - 1.3) * 3) * .92; ctx.fillStyle = 'rgba(58,46,35,.85)'; ctx.beginPath(); ctx.roundRect(x - tw / 2, y - size * .8, tw, size * 1.6, 5); ctx.fill();
+          ctx.fillStyle = '#d8ecff'; ctx.fillText(text, x, y + 1); ctx.globalAlpha = 1; return;
+        }
         if (!st.open || st.water >= 0 || !world.streams[i]?.length) return;
         const p = streamHead(world, i), x = sx(p[0]), y = sy(p[1]) - 6 * cam.z; if (x < -80 || y < -20 || x > W + 80 || y > H + 20) return;
         const text = s.spirits.some(a => a.fill === i) ? 'Rain is coming' : wisp ? 'Dry riverbed · a Rainwisp will come' : 'Dry riverbed · waits for a Rainwisp', tw = ctx.measureText(text).width + 14;
@@ -921,7 +940,7 @@ export function createRenderer(canvas, world, land, images) {
     hitPet(px, py) { for (const c of critters) { const d = PETS[c.kind]; if (!d) continue; const size = d.size * cam.z, x = sx(c.x), y = sy(c.y); if (Math.abs(px - x) < Math.max(16, size * .45) && py > y - Math.max(24, size) && py < y + 8) return c; } return null; },
     pet(c) { c.hearts = 1.6; c.dir = c.dir || 1; },
     // Wildlife already on the land arrives quietly, as on a fresh load. Used when the whole state is swapped.
-    regreet() { greeted = false; critterAt = -1; },
+    regreet() { greeted = false; critterAt = -1; arrived.clear(); duckFirst = undefined; },
     pets: () => critters.filter(c => PETS[c.kind]),
     onSplash: null, onSeen: null, hearing, keyOf,
     // Butterflies, birds and leaping fish under a tap: the nearest one within reach, or null.

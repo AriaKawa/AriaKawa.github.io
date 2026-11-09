@@ -1,9 +1,9 @@
-import { makeWorld, ZONES, LANDS, CN, CW, CH, CELL, hash } from './world.mjs?v=29';
-import { mapsDone, newLand, tick, touch, buyGlade, gladeBuyable, gladePrice, landDone, landPct, landTouched, income, upgradeMax, catchUp, encode, decode, buySpirit, buyUpgrade, spiritCost, spiritOpen, upgradeCost, upgradeOpen, zonePct, zoneBloom, doneCount, initObjects, SPIRITS, UPGRADES, SPIRIT_CAP, JOURNAL, note, journalLabel, journalPages, journalCount, journalSize, pageDone, favourText, villageLands } from './sim.mjs?v=29';
-import { createLand } from './land.mjs?v=29';
-import { createRenderer, GRASS_STYLES } from './render.mjs?v=29';
-import { createAudio } from './audio.mjs?v=29';
-import { spiritFace, useDeerSheet } from './critters.mjs?v=29';
+import { makeWorld, ZONES, LANDS, CN, CW, CH, CELL, hash } from './world.mjs?v=30';
+import { mapsDone, newLand, tick, touch, buyGlade, gladeBuyable, gladePrice, landDone, landPct, landTouched, income, upgradeMax, catchUp, encode, decode, buySpirit, buyUpgrade, spiritCost, spiritOpen, upgradeCost, upgradeOpen, zonePct, zoneBloom, doneCount, initObjects, SPIRITS, UPGRADES, SPIRIT_CAP, JOURNAL, note, journalLabel, journalPages, journalCount, journalSize, pageDone, favourText, villageLands } from './sim.mjs?v=30';
+import { createLand } from './land.mjs?v=30';
+import { createRenderer, GRASS_STYLES } from './render.mjs?v=30';
+import { createAudio } from './audio.mjs?v=30';
+import { spiritFace, useDeerSheet } from './critters.mjs?v=30';
 
 const KEY = 'little-wilds-2-v2', CARDS_KEY = 'little-wilds-2-postcards', SOUND_KEY = 'little-wilds-2-muted', VOLUME_KEY = 'little-wilds-2-volume', GRASS_KEY = 'little-wilds-2-grass', MUSIC_KEY = 'little-wilds-2-music';
 const $ = id => document.getElementById(id);
@@ -40,6 +40,21 @@ function jot(key) {
 }
 const landBloomed = l => ZONES.filter(z => z.land === l).every(z => s.zones[z.id].bloomed);
 const PAT_KINDS = ['deer', 'fawn', 'rabbit'];
+// Taps are for fun, not farming: an animal gives a small gift at most once in a while, and only a few taps a
+// minute pay at all (a pocket of four that refills one every twenty seconds). Extra taps still get their pat.
+let tapPocket = 4, tapPocketAt = performance.now();
+function tapGift(o, cooldown, amount) {
+  const now = performance.now();
+  tapPocket = Math.min(4, tapPocket + (now - tapPocketAt) / 20000); tapPocketAt = now;
+  if (o.tapped > now - cooldown || tapPocket < 1) return 0;
+  o.tapped = now; tapPocket -= 1;
+  return amount;
+}
+// A pointing hand over anything that can be tapped, a grabbing hand over a spirit you can carry.
+function hoverCursor(x, y) {
+  if (!view || titleOn || $('modal').open) { canvas.style.cursor = ''; return; }
+  canvas.style.cursor = view.hitPet(x, y) || view.hitWild(x, y) || view.hitFolk(x, y) || view.hitSign(x, y) >= 0 ? 'pointer' : view.hitSpirit(s, x, y) ? 'grab' : '';
+}
 // While the title menu is up, big moments wait and play once you are back on the land.
 function banner(title, sub = '', ms = 5200) { if (titleOn) { held = [title, sub, ms]; return; } $('banner-title').textContent = title; $('banner-sub').textContent = sub; $('banner').classList.add('show'); clearTimeout(bannerTimer); bannerTimer = setTimeout(() => $('banner').classList.remove('show'), ms); }
 function save() { if (!s || preview) return; try { localStorage.setItem(KEY, encode(s)); } catch { toast('Saving is unavailable in this browser.'); } }
@@ -278,11 +293,11 @@ canvas.addEventListener('pointerdown', e => {
   if (view.cam.z < .9) { panning = true; pinch = 0; if (!s.zones[zoneAt].open && gladeBuyable(s, zoneAt)) toast(`${ZONES[zoneAt].name}: click its sign to wake it for ${fmt(gladePrice(s, zoneAt))} seeds.`); return; }
   if (!s.zones[zoneAt].open) toast(gladeBuyable(s, zoneAt) ? `${ZONES[zoneAt].name} is asleep. Click its sign to wake it for ${fmt(gladePrice(s, zoneAt))} seeds.` : `${ZONES[zoneAt].name} is asleep. Wake a glade beside it first.`);
   const petted = view.hitPet(e.clientX, e.clientY);
-  if (petted) { view.pet(petted); audio.buy(); const gift = 10 + s.seeds * .002; s.seeds += gift; view.reward(petted.x, petted.y - 12, gift, 3); pulseSeeds(); s.pats ||= {}; s.pats[petted.kind] = 1; if (PAT_KINDS.every(k => s.pats[k])) jot('pat'); return; }
+  if (petted) { view.pet(petted); audio.buy(); const gift = tapGift(petted, 45000, 2 + s.seeds * .0004); if (gift) { s.seeds += gift; view.reward(petted.x, petted.y - 12, gift, 3); pulseSeeds(); } s.pats ||= {}; s.pats[petted.kind] = 1; if (PAT_KINDS.every(k => s.pats[k])) jot('pat'); return; }
   const wild = view.hitWild(e.clientX, e.clientY);
   if (wild) { // A butterfly flutters off, a bird flies up, a fish flashes gold. Each gives a little, once in a while.
     view.startle(wild); audio.poke(wild.kind); jot(wild.key);
-    const now = performance.now(); if (!(wild.o.tapped > now - 15000)) { wild.o.tapped = now; const gift = 4 + s.seeds * .0008; s.seeds += gift; view.reward(wild.x, wild.y, gift, 2); pulseSeeds(); }
+    const gift = tapGift(wild.o, 30000, 1 + s.seeds * .0002); if (gift) { s.seeds += gift; view.reward(wild.x, wild.y, gift, 2); pulseSeeds(); }
     return;
   }
   const villager = view.hitFolk(e.clientX, e.clientY);
@@ -295,7 +310,7 @@ canvas.addEventListener('pointerdown', e => {
 canvas.addEventListener('pointermove', e => {
   wake();
   const prev = pointers.get(e.pointerId); pointer.x = e.clientX; pointer.y = e.clientY; pointer.on = e.pointerType !== 'touch' || !!prev;
-  if (!prev) return;
+  if (!prev) { if (e.pointerType === 'mouse') hoverCursor(e.clientX, e.clientY); return; }
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
   if (thenX != null) { thenX = Math.max(0, Math.min(innerWidth, e.clientX)); return; }
   if (carry) { carry.px = e.clientX; carry.py = e.clientY; return; }
@@ -408,7 +423,7 @@ addEventListener('pagehide', save);
 async function main() {
   try {
     await nextFrame();
-    const [worldImg, spirits, landmarks, pets, flyers, deer, fish, fawn, folk, ...biomes] = await Promise.all([load('assets/world.png'), load('assets/spirits.png'), load('assets/landmarks.png'), load('assets/pets.png'), load('assets/flyers.png').catch(() => null), load('assets/deer.png?v=29').catch(() => null), load('assets/fish.png?v=29').catch(() => null), load('assets/fawn.png?v=29').catch(() => null), load('assets/folk.png?v=29').catch(() => null), ...LANDS.slice(1).map((_, n) => load(`assets/biome-${n + 1}.png`).catch(() => null))]);
+    const [worldImg, spirits, landmarks, pets, flyers, deer, fish, fawn, folk, ...biomes] = await Promise.all([load('assets/world.png'), load('assets/spirits.png'), load('assets/landmarks.png'), load('assets/pets.png'), load('assets/flyers.png').catch(() => null), load('assets/deer.png?v=30').catch(() => null), load('assets/fish.png?v=30').catch(() => null), load('assets/fawn.png?v=30').catch(() => null), load('assets/folk.png?v=30').catch(() => null), ...LANDS.slice(1).map((_, n) => load(`assets/biome-${n + 1}.png`).catch(() => null))]);
     if (deer) useDeerSheet(deer, fawn);
     images = { world: worldImg, spirits, landmarks, pets, flyers, fish, folk, biomes: [null, ...biomes] };
     await buildWorld();
