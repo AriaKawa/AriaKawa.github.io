@@ -607,7 +607,11 @@
 
       sortedPlayers.forEach((player, index) => {
         const li = document.createElement("li");
-        li.innerHTML = `<span>#${index + 1} ${player.name}</span><span>${player.score || 0} pts</span>`;
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = `#${index + 1} ${player.name ?? ""}`;
+        const scoreSpan = document.createElement("span");
+        scoreSpan.textContent = `${Number(player.score) || 0} pts`;
+        li.append(nameSpan, scoreSpan);
         leaderboardList.appendChild(li);
       });
     }

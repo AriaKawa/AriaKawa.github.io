@@ -1118,12 +1118,12 @@ function redrawBets(){
         tr.classList.add('mine');
       }
       const removeCell = canRemoveBet(b)
-        ? `<button class="btn secondary" data-remove="${b.id}" style="padding:.4rem .6rem">×</button>`
+        ? `<button class="btn secondary" data-remove="${escapeHTML(b.id)}" style="padding:.4rem .6rem">×</button>`
         : '—';
       const ownerDetail = formatOwnerMeta(b.owner);
       tr.innerHTML = `
         <td>${escapeHTML(b.name||'—')}${ownerDetail}</td>
-        <td>${ratName(b.ratId)}</td>
+        <td>${escapeHTML(ratName(b.ratId))}</td>
         <td class="right">${fmt(b.amount)}</td>
         <td class="right">${removeCell}</td>`;
       betRows.appendChild(tr);
@@ -1660,7 +1660,7 @@ function endRace(options={}){
     const ownerDetail = formatOwnerMeta(b.owner);
     tr.innerHTML = `
       <td>${escapeHTML(b.name||'—')}${ownerDetail}</td>
-      <td>${ratName(b.ratId)}</td>
+      <td>${escapeHTML(ratName(b.ratId))}</td>
       <td class="right">${fmt(b.amount)}</td>
       <td class="right ${payout? 'ok':''}">${payout? fmt(Math.round(payout)) : '$0'}</td>
       <td class="right ${net>0?'ok':(net<0?'bad':'')}">${net>0? '+'+fmt(Math.round(net)).slice(1): (net<0? '-'+fmt(Math.round(-net)).slice(1): '$0')}</td>

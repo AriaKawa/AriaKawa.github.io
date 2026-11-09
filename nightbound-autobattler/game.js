@@ -618,11 +618,20 @@ function sortedRoomPlayers(room) {
   return Object.values(room?.players || {}).sort((a, b) => (a.joinedAt || 0) - (b.joinedAt || 0));
 }
 
+// Room data is shared through Firebase, so treat every player-supplied value as untrusted text.
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]);
+}
+
+function safeColor(value) {
+  return typeof value === "string" && /^(#[0-9a-f]{3,8}|[a-z]{3,20}|(rgb|hsl)a?\([0-9.,%\s]{5,40}\))$/i.test(value) ? value : "#ffffff";
+}
+
 function renderPlayersList(players, hostId) {
   ui.playersList.innerHTML = "";
   players.forEach((player) => {
     const row = document.createElement("div");
-    row.innerHTML = `<strong style="color:${player.color}">${player.name}</strong><span>${player.id === hostId ? "Host" : "Joined"}</span>`;
+    row.innerHTML = `<strong style="color:${safeColor(player.color)}">${escapeHtml(player.name)}</strong><span>${player.id === hostId ? "Host" : "Joined"}</span>`;
     ui.playersList.appendChild(row);
   });
 }
@@ -1459,9 +1468,9 @@ function updateLoadout(snapshot) {
   snapshot.players.forEach((player) => {
     const panel = document.createElement("article");
     panel.className = "build-card";
-    panel.style.borderColor = player.color;
-    const health = `${Math.ceil(player.health)} / ${Math.ceil(player.maxHealth)}`;
-    panel.innerHTML = `<header><div><span>${player.alive ? "Online" : "Down"}</span><strong>${player.name}</strong></div><b>${health}</b></header>`;
+    panel.style.borderColor = safeColor(player.color);
+    const health = `${Math.ceil(Number(player.health) || 0)} / ${Math.ceil(Number(player.maxHealth) || 0)}`;
+    panel.innerHTML = `<header><div><span>${player.alive ? "Online" : "Down"}</span><strong>${escapeHtml(player.name)}</strong></div><b>${health}</b></header>`;
     const weapons = document.createElement("div");
     weapons.className = "build-chips";
     Object.values(player.weapons || {}).forEach((weapon) => {
@@ -1474,7 +1483,7 @@ function updateLoadout(snapshot) {
       canvas.height = 86;
       chip.appendChild(canvas);
       const body = document.createElement("div");
-      body.innerHTML = `<strong>${weapon.name}</strong><span>Rank ${weapon.level}${weapon.count ? ` · ${weapon.count}x` : ""}</span><p>${weapon.description || weaponCatalog[weapon.key]?.description || "A strange cosmic weapon."}</p>`;
+      body.innerHTML = `<strong>${escapeHtml(weapon.name)}</strong><span>Rank ${escapeHtml(weapon.level)}${weapon.count ? ` · ${escapeHtml(weapon.count)}x` : ""}</span><p>${escapeHtml(weapon.description || weaponCatalog[weapon.key]?.description || "A strange cosmic weapon.")}</p>`;
       chip.appendChild(body);
       drawCardArt(canvas, weapon.key || weapon.name, weapon.color || player.color);
       weapons.appendChild(chip);
@@ -1495,7 +1504,7 @@ function updateLoadout(snapshot) {
         card.appendChild(art);
         const count = passiveList.filter((item) => item === name).length;
         const body = document.createElement("div");
-        body.innerHTML = `<strong>${name}</strong><span>${count} upgrade${count === 1 ? "" : "s"}</span><p>${meta.description}</p>`;
+        body.innerHTML = `<strong>${escapeHtml(name)}</strong><span>${count} upgrade${count === 1 ? "" : "s"}</span><p>${escapeHtml(meta.description)}</p>`;
         card.appendChild(body);
         drawCardArt(art, name, meta.color);
         passiveWrap.appendChild(card);

@@ -319,7 +319,7 @@ function renderPlayers() {
           ${renderRat(player, { small: true })}
           <div>
             <strong>${escapeHtml(player.name)}</strong>
-            <span>$${player.money} / ${player.fightPoints || 0} pts</span>
+            <span>$${Number(player.money) || 0} / ${Number(player.fightPoints) || 0} pts</span>
             <small>${escapeHtml(status)}</small>
           </div>
         </article>
@@ -337,7 +337,7 @@ function renderMyRat(me) {
         <strong>${escapeHtml(rat.name)}</strong>
         <span class="mini-label">${escapeHtml(rat.fur)}</span>
       </div>
-      <strong>$${me.money}</strong>
+      <strong>$${Number(me.money) || 0}</strong>
     </div>
   `;
 
@@ -590,7 +590,7 @@ function renderFight() {
               ${renderRat(player, { focus: true })}
               <div class="combat-caption">
                 <h3>${escapeHtml(player.name)}</h3>
-                <p>#${standing?.rank || "-"} / ${player.fightPoints || 0} pts</p>
+                <p>#${standing?.rank || "-"} / ${Number(player.fightPoints) || 0} pts</p>
               </div>
             </article>
           `;
@@ -614,7 +614,7 @@ function renderFinished() {
           <div class="leader-body">
             <span class="mini-label">#${index + 1}</span>
             <h3>${escapeHtml(player.name)}</h3>
-            <p>${player.fightPoints || 0} pts / $${player.money}</p>
+            <p>${Number(player.fightPoints) || 0} pts / $${Number(player.money) || 0}</p>
           </div>
         </article>
       `).join("")}
