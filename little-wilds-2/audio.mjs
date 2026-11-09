@@ -10,8 +10,24 @@ const CALLS = { bird: .07, deer: .018, fawn: .025, rabbit: .02, duck: .045 };
 
 export function createAudio() {
   let ac, master, soft, room, noise, muted = false, volume = .6;
-  let lastPop = 0, nextGrain = 0, lastDig = -1;
+  let lastPop = 0, nextGrain = 0, lastDig = -1, music = false, nextPhrase = 0, home = 0;
   const level = () => muted ? 0 : volume;
+  // Optional music, off unless chosen in Settings: a slow music box. A short phrase of soft bell notes from the
+  // pentatonic scale, a low note under it now and then, and long rests between, so it never becomes a drone.
+  function stepMusic() {
+    const t = ac.currentTime;
+    if (t < nextPhrase) return;
+    const PENTA = [0, 2, 4, 7, 9, 12, 14, 16], n = 3 + Math.floor(Math.random() * 4);
+    let k = home = Math.max(0, Math.min(PENTA.length - 1, home + Math.floor(Math.random() * 3) - 1)), at = t + .1;
+    for (let i = 0; i < n; i++) {
+      const f = pitch(PENTA[k] + 12);
+      tone(soft, at, f, f * .999, 2.6, .022); tone(soft, at, f * 2, f * 2 * .999, 1.2, .004);
+      at += [.45, .6, .9][Math.floor(Math.random() * 3)];
+      k = Math.max(0, Math.min(PENTA.length - 1, k + (Math.random() < .5 ? -1 : 1) * (1 + (Math.random() < .3))));
+    }
+    if (Math.random() < .5) { const f = pitch(PENTA[home % 5] - 12); tone(soft, t + .1, f, f * .999, 4, .018); }
+    nextPhrase = at + 5 + Math.random() * 7;
+  }
   function start() {
     if (ac) { if (ac.state === 'suspended') ac.resume(); return; }
     const AC = window.AudioContext || window.webkitAudioContext;
@@ -75,10 +91,22 @@ export function createAudio() {
     get volume() { return volume; },
     setMuted(v) { muted = v; if (ac) master.gain.setTargetAtTime(level(), ac.currentTime, .15); },
     setVolume(v) { volume = v; if (ac) master.gain.setTargetAtTime(level(), ac.currentTime, .08); },
+    get music() { return music; },
+    setMusic(v) { music = v; nextPhrase = 0; },
+    // A tap on a butterfly, bird or fish: its own small sound, close and clear.
+    poke(kind) {
+      if (!live()) return;
+      const t = ac.currentTime, d = place(.04, 0, 1);
+      if (kind === 'bird') VOICE.bird(d, t);
+      else if (kind === 'fish') { hiss(d, t, .2, 1, 'bandpass', 1300, .8); tone(d, t, 600, 280, .12, .25); }
+      else { tone(d, t, 1800, 2400, .12, .25); tone(d, t + .08, 2400, 3000, .12, .18); } // a butterfly: a tiny shimmer
+    },
     // Called a few times a second with the animals in view: { kind, pan -1..1, d 0 (middle) to 1 (edge) },
     // how close the camera is, 0 (far out) to 1 (right down among them), and seconds since the last call.
     hear(sources, near, dt) {
-      if (!live() || near <= 0) return;
+      if (!live()) return;
+      if (music) stepMusic();
+      if (near <= 0) return;
       const t = ac.currentTime;
       for (const s of sources) {
         const rate = CALLS[s.kind]; if (!rate || Math.random() > rate * dt) continue;

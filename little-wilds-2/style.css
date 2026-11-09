@@ -69,3 +69,10 @@ body.title #hud,body.title #hint,body.title #banner,body.title #toast{opacity:0;
 .title-records small{font-size:13px;color:var(--dim)}.title-records b{font-size:20px;font-weight:600}.title-records .ico{margin-right:3px}
 @media(max-height:560px){#title{gap:10px}.logo{font-size:44px}.tagline{margin:2px 0 6px}.tbtn{min-height:50px;font-size:20px}.tbtn.primary{min-height:54px}}
 @media(prefers-reduced-motion:reduce){.logo,#title{animation:none}}
+/* Field journal and the music switch */
+.volume.check input{flex:none;width:18px;height:18px;accent-color:#6f9a3e}
+.jpage{margin:12px 0 4px;padding:10px 12px;border-radius:8px;background:rgba(255,246,223,.05);border:2px solid rgba(255,246,223,.12)}.jpage.done{border-color:var(--gold);background:rgba(232,196,96,.1)}
+.jpage h3{margin:0 0 6px;font-size:17px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}.jpage h3 em{font-style:normal;font-size:13.5px;color:var(--dim)}
+.jpage ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:3px 12px}.jpage li{font-size:14px;color:#8a7c66}.jpage li.got{color:inherit}.jpage li.got::before{content:'✿ ';color:#6f9a3e}
+.asks{margin:4px 0 8px;padding-left:18px}.asks li{font-size:14.5px;margin:3px 0}.asks em{font-style:normal;color:var(--gold)}
+@media(max-width:480px){.seeds small{display:none}}

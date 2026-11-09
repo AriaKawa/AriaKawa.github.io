@@ -346,15 +346,16 @@ export const WALK_FRAMES = 8;
 export const strideOf = name => 4 * (CRITTERS[name].stride ?? 2) / SCALE;
 // pose: stand, walk, graze or sleep; ph is the frame of the walk, 0 to 7.
 // The deer and fawn are painted (ChatGPT art cut by tools/build_critter_art.py into assets/deer.png: walk
-// frames 0-7, then stand, graze, sleep and leap). The fawn is the deer smaller, without antlers.
-let deerSheet = null;
-export function useDeerSheet(img) { deerSheet = img; made.clear(); }
+// frames 0-7, then stand, graze, sleep and leap). The fawn has its own sheet in the same layout (assets/fawn.png);
+// without it, the fawn is the deer smaller, without antlers.
+let deerSheet = null, fawnSheet = null;
+export function useDeerSheet(img, fawn = null) { deerSheet = img; fawnSheet = fawn; made.clear(); }
 const SHEET_POSE = { stand: 8, graze: 9, sleep: 10, leap: 11 };
 function fromSheet(cell, fawn) {
-  const cw = deerSheet.width / 12, ch = deerSheet.height, k = fawn ? .72 : 1, c = document.createElement('canvas');
+  const own = fawn && fawnSheet, sheet = own ? fawnSheet : deerSheet, cw = sheet.width / 12, ch = sheet.height, k = fawn && !own ? .72 : 1, c = document.createElement('canvas');
   c.width = Math.round(cw * k); c.height = Math.round(ch * k);
-  const g = c.getContext('2d'); g.imageSmoothingEnabled = false; g.drawImage(deerSheet, cell * cw, 0, cw, ch, 0, 0, c.width, c.height);
-  if (fawn) { const im = g.getImageData(0, 0, c.width, c.height), d = im.data; for (let i = 0; i < d.length; i += 4) if (d[i + 2] > d[i] + 15 && d[i + 1] > d[i]) d[i + 3] = 0; g.putImageData(im, 0, 0); }
+  const g = c.getContext('2d'); g.imageSmoothingEnabled = false; g.drawImage(sheet, cell * cw, 0, cw, ch, 0, 0, c.width, c.height);
+  if (fawn && !own) { const im = g.getImageData(0, 0, c.width, c.height), d = im.data; for (let i = 0; i < d.length; i += 4) if (d[i + 2] > d[i] + 15 && d[i + 1] > d[i]) d[i + 3] = 0; g.putImageData(im, 0, 0); }
   return c;
 }
 export function critterCanvas(name, pose, ph, flip) {

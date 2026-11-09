@@ -1,7 +1,7 @@
 // Rules of restoration. No DOM: runs in the game, offline catch-up and the pacing test alike.
 // One field covers the whole continent; glades are bought outward from the middle, and one army of spirits works all of it.
-import { CW, CN, LCW, LCH, LCN, ZONES, LANDS } from './world.mjs?v=28';
-import { buildNav, markTree, steer, standable, escape } from './nav.mjs?v=28';
+import { CW, CN, LCW, LCH, LCN, ZONES, LANDS } from './world.mjs?v=29';
+import { buildNav, markTree, steer, standable, escape } from './nav.mjs?v=29';
 // The ground map spirits and animals walk by, rebuilt when a different set of planted trees is in play.
 export function navOf(s, w) { if (!w.nav || w.navTrees !== s.trees) { buildNav(w); for (const t of s.trees) markTree(w, t); w.navTrees = s.trees; } return w.nav; }
 
@@ -30,7 +30,72 @@ export const landTouched = (s, l) => s.levels[l] !== undefined;
 export const upgradeMax = (s, u) => u.max + (u.more || 0) * mapsDone(s);
 // Restored lands keep earning on their own.
 export const landIncome = (s, l) => landDone(s, l) ? 40 * Math.pow(1.6, s.levels[l] || 0) : 0;
-export const income = s => LANDS.reduce((a, _, l) => a + landIncome(s, l), 0);
+export const income = s => LANDS.reduce((a, _, l) => a + landIncome(s, l), 0) * journalBoost(s);
+
+// The field journal: creatures met, lands brought back and small moments. Each new entry gives a little gift of
+// seeds; each finished page adds 10% to everything the restored lands earn, for good.
+export const JOURNAL = [
+  { name: 'Creatures', entries: [['deer', 'A spirit deer'], ['fawn', 'A spirit fawn'], ['rabbit', 'A moss rabbit'],
+    ...LANDS.map((L, l) => L.native ? ['native' + l, L.native.label] : null).filter(Boolean),
+    ['butterfly0', 'A sun butterfly'], ['butterfly1', 'A rose butterfly'], ['butterfly2', 'A sky butterfly'], ['bird0', 'A bluebird'], ['bird1', 'A robin'],
+    ['duck', 'Ducks on the great lake'], ['fish', 'A leaping carp'], ['folk', 'A villager']] },
+  { name: 'Lands', entries: [...LANDS.map((L, l) => ['land' + l, `${L.name} restored`]), ...LANDS.map((L, l) => ['bloom' + l, `${L.name} flourishing`])] },
+  { name: 'Moments', entries: [['rainwisp', 'A riverbed filled'], ['rain', 'A passing shower'], ['snow', 'Snowfall'], ['fireflies', 'Fireflies at night'],
+    ['spring', 'Spring blossom'], ['summer', 'High summer'], ['autumn', 'Autumn leaves'], ['winter', 'A winter frost'], ['favour', 'A favour for a villager'], ['pat', 'A pat for every kind of animal']] },
+];
+const JOURNAL_KEYS = new Map(JOURNAL.flatMap(p => p.entries.map(([k, label]) => [k, label])));
+export const journalLabel = key => JOURNAL_KEYS.get(key);
+export const pageDone = (s, p) => JOURNAL[p].entries.every(([k]) => s.journal?.[k]);
+export const journalPages = s => JOURNAL.filter((_, p) => pageDone(s, p)).length;
+export const journalCount = s => JOURNAL_KEYS.size && [...JOURNAL_KEYS.keys()].filter(k => s.journal?.[k]).length;
+export const journalSize = () => JOURNAL_KEYS.size;
+function journalBoost(s) { return 1 + .1 * journalPages(s); }
+// Writes an entry. Returns the gift of seeds for a new one (0 if it was already there or is not a journal entry).
+export function note(s, key) {
+  s.journal ||= {};
+  if (!JOURNAL_KEYS.has(key) || s.journal[key]) return 0;
+  s.journal[key] = 1;
+  const gift = Math.round(25 + LANDS.reduce((a, _, l) => a + landIncome(s, l), 0) * 20 + s.seeds * .01);
+  s.seeds += gift;
+  return gift;
+}
+
+// The year turns every twenty minutes of play, and every so often a shower passes over (snow in winter).
+export const SEASONS = ['spring', 'summer', 'autumn', 'winter'], SEASON_LENGTH = 1200;
+export const seasonOf = s => SEASONS[Math.floor((s.age || 0) / SEASON_LENGTH) % 4];
+function weather(s, dt, ev) {
+  const wx = s.wx ||= { next: (s.age || 0) + 240 + Math.random() * 240, until: 0, kind: null };
+  if (wx.kind && s.age > wx.until) { wx.kind = null; wx.next = s.age + 300 + Math.random() * 420; }
+  if (!wx.kind && s.age > wx.next) { wx.kind = seasonOf(s) === 'winter' ? 'snow' : 'rain'; wx.until = s.age + 45 + Math.random() * 40; ev.push({ t: 'weather', kind: wx.kind }); }
+  const season = seasonOf(s); if (s.season !== season) { const first = s.season === undefined; s.season = season; if (!first) ev.push({ t: 'season', season }); }
+}
+export const raining = s => s.wx?.kind || null;
+
+// Villagers in the two village lands ask small favours: bring a glade back, or make one flourish.
+const VILLAGE_LANDS = LANDS.map((L, l) => L.village ? l : -1).filter(l => l >= 0);
+const FOLK = ['Mara', 'Tobin', 'Wren', 'Ilse', 'Hobb', 'Pell', 'Rowan', 'Nessa', 'Calder', 'Fern', 'Oskar', 'Juniper'];
+export const villageLands = () => VILLAGE_LANDS;
+function favours(s, ev) {
+  s.favours ||= [];
+  for (const l of VILLAGE_LANDS) {
+    if (!landTouched(s, l)) continue;
+    let f = s.favours.find(q => q.land === l);
+    if (f && !f.done) {
+      const z = s.zones[f.zone];
+      if (f.want === 'restore' ? z.done : z.bloomed) { f.done = true; f.at = s.age; s.seeds += f.reward; ev.push({ t: 'favour', favour: f }); }
+      continue;
+    }
+    if (f && s.age - f.at < 90) continue;
+    // A glade in this land that is open but not restored, else one restored but not yet flourishing.
+    const zs = landZones(l), open = zs.filter(z => s.zones[z].open && !s.zones[z].done), bloom = zs.filter(z => s.zones[z].done && !s.zones[z].bloomed);
+    const pick = open.length ? ['restore', open] : bloom.length ? ['bloom', bloom] : null;
+    if (!pick) continue;
+    const zone = pick[1][Math.floor(Math.random() * pick[1].length)], who = FOLK[Math.floor(Math.random() * FOLK.length)];
+    const reward = Math.round(150 + LANDS.reduce((a, _, q) => a + landIncome(s, q), 0) * 90 + (pick[0] === 'bloom' ? 200 : 0));
+    s.favours = s.favours.filter(q => q.land !== l).concat({ land: l, zone, want: pick[0], who, reward, done: false, at: s.age });
+  }
+}
+export const favourText = f => f.want === 'restore' ? `Could you bring ${ZONES[f.zone].name} back to life?` : `Could you make ${ZONES[f.zone].name} flourish with flowers?`;
 export const doneCount = s => s.zones.filter(z => z.done).length;
 export const spiritCost = (s, t) => Math.floor(SPIRITS[t].cost * Math.pow(1.6, s.spirits.filter(a => a.type === t).length - (t === 0 ? 1 : 0)));
 export const spiritOpen = (s, t) => doneCount(s) >= SPIRITS[t].need;
@@ -66,7 +131,7 @@ export function newLand() {
   return {
     v: 5, levels: { 0: 0 }, seeds: 0, upgrades: {}, h: new Float32Array(CN),
     spirits: [firstSpirit()], zones: freshZones(),
-    objHp: null, trees: [], age: 0, played: 0, last: Date.now(), touched: false, paused: false,
+    objHp: null, trees: [], age: 0, played: 0, last: Date.now(), touched: false, paused: false, journal: {}, favours: [],
   };
 }
 export const initObjects = (s, w) => { if (s.objHp?.length !== w.objects.length || s.wv !== WORLD_VERSION) { s.objHp = w.objects.map(o => s.zones[o.zone].done ? 0 : o.hp); if (s.wv !== WORLD_VERSION) s.zones.forEach(z => { if (z.done) z.sweep = 0; }); s.wv = WORLD_VERSION; } };
@@ -158,13 +223,20 @@ function nearLists(s, w, a) {
   near.sort((p, q) => p[0] - q[0]);
   return near.slice(0, 3).map(p => w.cellsOf[p[1]]);
 }
+// Where a riverbed first runs inside its own glade (its true head can sit out in the mist at the glade's edge).
+const heads = new WeakMap();
+export function streamHead(w, id) {
+  let m = heads.get(w); if (!m) heads.set(w, m = new Map());
+  if (!m.has(id)) { const path = w.streams[id] || [], k = path.findIndex(([x, y]) => w.zone[Math.floor(y / 4) * CW + Math.floor(x / 4)] === id); m.set(id, path[Math.max(0, Math.min(path.length - 1, (k < 0 ? 0 : k) + 6))]); }
+  return m.get(id);
+}
 function seek(s, w, a) {
   const def = SPIRITS[a.type];
   // Riverbeds stay dry until a Rainwisp comes: it drifts to the head of the nearest dry one and fills it.
   if (a.type === 2) {
     let best = -1, bd = Infinity;
-    s.zones.forEach((z, id) => { if (!z.open || z.water >= 0 || !w.streams[id]?.length) return; const p = w.streams[id][0], d = Math.hypot(p[0] / 4 - a.x, p[1] / 4 - a.y); if (d < bd) { bd = d; best = id; } });
-    if (best >= 0) { const p = w.streams[best][0]; a.tx = p[0] / 4; a.ty = p[1] / 4; a.fill = best; return true; }
+    s.zones.forEach((z, id) => { if (!z.open || z.water >= 0 || !w.streams[id]?.length) return; const p = streamHead(w, id), d = Math.hypot(p[0] / 4 - a.x, p[1] / 4 - a.y); if (d < bd) { bd = d; best = id; } });
+    if (best >= 0) { const p = streamHead(w, best); a.tx = p[0] / 4; a.ty = p[1] / 4; a.fill = best; return true; }
   }
   if (a.type === 3) {
     let best = null, bd = Infinity;
@@ -206,10 +278,10 @@ function stepSpirit(s, w, a, dt, ev) {
     }
     a.tx = a.x; a.ty = a.y;
   }
-  if (a.fill != null) { // A Rainwisp at the head of a dry riverbed: the water starts here.
+  if (a.fill != null) { // A Rainwisp at the head of a dry riverbed hangs there raining for a few seconds, then the water starts.
     const z = s.zones[a.fill];
-    if (z.water < 0) { z.water = 0; ev.push({ t: 'water', zone: a.fill }); }
-    a.fill = null; a.tx = -1; a.work = 0; a.nap = 1.5;
+    if (z.water < 0) { a.rain = (a.rain || 0) + dt; a.working = true; if (a.rain < 3) return; z.water = 0; ev.push({ t: 'water', zone: a.fill }); }
+    a.fill = null; a.rain = 0; a.tx = -1; a.work = 0; a.nap = 1.5; a.working = false;
     return;
   }
   if (!a.working) w.reached = (w.reached || 0) + 1;
@@ -266,7 +338,9 @@ export function tick(s, w, dt, ev = [], slice = 0, of = 1) {
   drink(s, w, dt);
   navOf(s, w);
   for (let n = slice; n < s.spirits.length; n += of) stepSpirit(s, w, s.spirits[n], dt * of, ev);
-  creep(s, w, dt, carries.get(s));
+  creep(s, w, dt * (s.wx?.kind ? 1.6 : 1), carries.get(s)); // a shower makes the green spread faster
+  weather(s, dt, ev);
+  if (Math.floor(s.age) !== Math.floor(s.age - dt)) favours(s, ev);
   s.zones.forEach((z, id) => {
     if (!z.open) return;
     const pct = zonePct(s, w, id);
@@ -401,6 +475,7 @@ export function decode(text, w) {
 }
 // Water only comes with a Rainwisp. Saves from before that rule, with no Rainwisp yet, have their riverbeds dry again.
 function dryUnlessWisp(o) {
+  o.journal ||= {}; o.favours ||= [];
   if (!o.spirits.some(a => a.type === 2)) for (const z of o.zones) z.water = -1;
   return o;
 }

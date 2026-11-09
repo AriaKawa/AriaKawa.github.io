@@ -1,9 +1,9 @@
 // Everything above the ground: flora, the dead-and-revived objects, spirits, wildlife, weather and fog.
-import { TW, TH, LW, LH, CW, CH, CELL, ZONES, LANDS, SEA, hash, fbm, FC, FCOLS, FROWS, landAtTexel, SHRINK, hillShade } from './world.mjs?v=28';
-import { GREEN, brushRadius, SPIRITS, gladeBuyable, gladePrice } from './sim.mjs?v=28';
-import { pixelize, newFrame, shadowOf, skirtOf, apronOf } from './pixel.mjs?v=28';
-import { duckCanvas, critterCanvas, spiritCanvas, NATIVE, SCALE, WALK_FRAMES, strideOf } from './critters.mjs?v=28';
-import { steer, standable, overWater, escape } from './nav.mjs?v=28';
+import { TW, TH, LW, LH, CW, CH, CELL, ZONES, LANDS, SEA, hash, fbm, FC, FCOLS, FROWS, landAtTexel, SHRINK, hillShade } from './world.mjs?v=29';
+import { GREEN, brushRadius, SPIRITS, gladeBuyable, gladePrice, streamHead } from './sim.mjs?v=29';
+import { pixelize, newFrame, shadowOf, skirtOf, apronOf } from './pixel.mjs?v=29';
+import { duckCanvas, critterCanvas, spiritCanvas, NATIVE, SCALE, WALK_FRAMES, strideOf } from './critters.mjs?v=29';
+import { steer, standable, overWater, escape } from './nav.mjs?v=29';
 const money = n => n >= 1e9 ? (n / 1e9).toFixed(2) + 'b' : n >= 1e6 ? (n / 1e6).toFixed(2) + 'm' : n >= 1e4 ? (n / 1e3).toFixed(1) + 'k' : Math.floor(n).toLocaleString();
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -446,6 +446,7 @@ export function createRenderer(canvas, world, land, images) {
     const night = clamp((Math.cos((s.age / 480) % 1 * 6.283) * -1 - .35) / .65, 0, 1) > .4;
     for (const c of critters) if (PETS[c.kind]) { if (!s.paused) stepPet(s, c, dt, night); const x = c.x, y = c.y; if (x > lx && x < hx && y > ly && y < hy) items.push({ y, c }); }
     for (const t of s.trees) { const y = t.y * CELL; if (t.x * CELL > lx && t.x * CELL < hx && y > ly && y < hy) items.push({ y, t }); }
+    for (const f of folk) { if (!s.paused) stepFolk(f, dt); if (f.x > lx && f.x < hx && f.y > ly && f.y < hy) items.push({ y: f.y, f }); }
     items.sort((a, b) => a.y - b.y);
     const atlas = images.world, spirits = images.spirits, tNow = time / 1000;
     const art = drawArt;
@@ -476,6 +477,7 @@ export function createRenderer(canvas, world, land, images) {
         const foot = z > .9 ? underfoot(src, size / z, land, x, y, false) : null;
         tone = land; blit(...src, x, y, size, size); tone = -1;
         grassFoot(foot, land, Math.floor(t.y) * CW + Math.floor(t.x), Math.floor(t.x * 7 + t.y), false);
+      } else if (it.f) { drawFolk(s, it.f, tNow);
       } else if (it.c) { drawPet(it.c, tNow);
       } else {
         const a = it.a, k = 1 - Math.exp(-dt * 11);
@@ -490,9 +492,10 @@ export function createRenderer(canvas, world, land, images) {
         const frame = still ? 0 : a.nap > 0 ? 1 : a.working ? 3 : 0, float = (a.type === 2 ? 3 + Math.sin(tNow * 2 + a.x) : 0) + Math.sin(a.air * Math.PI / 2) * 5, size = (a.type === 3 ? 20 : 15) * z;
         ctx.fillStyle = 'rgba(30,24,18,.28)'; ctx.beginPath(); ctx.ellipse(x, y, size * (.28 - hop * .06), size * .09, 0, 0, 7); ctx.fill();
         { const c = spiritCanvas(a.type, frame, a.dir < 0), k = z * SHRINK / SCALE, w = c.width * k * (1 - q), h = c.height * k * (1 + q); ctx.drawImage(c, snapX(x - w / 2), snapY(y - (float + hop * 2.4) * SHRINK * z - h), w, h); if (float < 1) grassOver(a.rx * CELL, a.ry * CELL, w / z * .3, Math.max(1.2, h / z * .22 - hop * 2.4 * SHRINK), walking ? a.anim : 0); }
-        if (a.type === 2 && !s.paused && !reduced && quality > 0) { // Rainwisps carry their own little weather.
-          const r = SPIRITS[2].r * CELL * z * .75; ctx.fillStyle = 'rgba(170,220,255,.7)';
-          for (let n = 0; n < 7; n++) { const q2 = (tNow * 1.5 + n * .37) % 1, px = x + (hash(n, 1, 8) - .5) * r * 2, py = y - z * 2 + (hash(n, 2, 8) - .5) * r - (1 - q2) * 18 * z; ctx.fillRect(px, py, Math.max(1, z * .5), z * 2); }
+        if (a.type === 2 && !s.paused && !reduced && quality > 0) { // Rainwisps carry their own little weather; filling a riverbed, a downpour.
+          const pour = a.rain > 0, r = SPIRITS[2].r * CELL * z * (pour ? .45 : .75); ctx.fillStyle = pour ? 'rgba(150,205,250,.85)' : 'rgba(170,220,255,.7)';
+          if (pour) { ctx.fillStyle = 'rgba(205,215,228,.5)'; for (let n = 0; n < 5; n++) { ctx.beginPath(); ctx.ellipse(x + (n - 2) * 3.4 * z, y - 30 * z + Math.sin(tNow * 2 + n) * z, 5 * z, 3 * z, 0, 0, 7); ctx.fill(); } ctx.fillStyle = 'rgba(150,205,250,.85)'; }
+          for (let n = 0; n < (pour ? 22 : 7); n++) { const q2 = (tNow * 1.5 + n * .37) % 1, px = x + (hash(n, 1, 8) - .5) * r * 2, py = y - z * 2 + (hash(n, 2, 8) - .5) * r - (1 - q2) * 18 * z; ctx.fillRect(px, py, Math.max(1, z * .5), z * 2); }
         }
       }
     }
@@ -544,6 +547,99 @@ export function createRenderer(canvas, world, land, images) {
       ctx.drawImage(c, snapX(x - c.width * k / 2), snapY(y - c.height * k + z * .4 + bob), c.width * k, c.height * k);
     }
   }
+  // Villagers: in Frostmere and Sunfall Coast, once a glade is restored, a few folk come out and stroll its dirt roads.
+  // assets/folk.png (ChatGPT art): rows are a farmer, a fisher and a snow villager; four stepping frames, then a wave.
+  const folk = []; let folkAt = 0;
+  const roadsOf = new Map();
+  const isRoad = (x, y) => { x |= 0; y |= 0; if (x < 0 || y < 0 || x >= TW || y >= TH) return false; const r = world.road[y * TW + x]; return r === 1 || r === 2 || r === 4; };
+  function roadsIn(zone) { // road texels in a glade, sampled
+    if (roadsOf.has(zone)) return roadsOf.get(zone);
+    const L = LANDS[ZONES[zone].land], ox = L.col * LW, oy = L.row * LH, list = [];
+    for (let y = oy; y < oy + LH; y += 3) for (let x = ox; x < ox + LW; x += 3) if (isRoad(x, y) && world.zone[Math.floor(y / CELL) * CW + Math.floor(x / CELL)] === zone) list.push([x, y]);
+    roadsOf.set(zone, list); return list;
+  }
+  function spawnFolk(s, time) {
+    if (time - folkAt < 1000) return; folkAt = time;
+    const want = [];
+    for (const z of ZONES) if (LANDS[z.land].village && s.zones[z.id].done && Math.hypot(z.px - cam.x, z.py - cam.y) < 900) for (let n = 0; n < 2; n++) want.push([z.id, n]);
+    for (let k = folk.length - 1; k >= 0; k--) if (!want.some(([z, n]) => folk[k].zone === z && folk[k].n === n)) folk.splice(k, 1);
+    for (const [zone, n] of want) {
+      if (folk.some(f => f.zone === zone && f.n === n)) continue;
+      const roads = roadsIn(zone); if (!roads.length) continue;
+      const [x, y] = roads[Math.floor(hash(zone, n, 61) * roads.length)], land = ZONES[zone].land;
+      folk.push({ zone, n, land, x, y, hx: 1, hy: 0, dir: 1, dist: 0, pause: 1 + n * 2, wave: 0, alpha: 0, row: n === 1 && hash(zone, 7, 63) > .5 ? 0 : land === 2 ? 2 : 1 });
+    }
+  }
+  const HEAD = [[1, 0], [.7, .7], [0, 1], [-.7, .7], [-1, 0], [-.7, -.7], [0, -1], [.7, -.7]];
+  function stepFolk(f, dt) {
+    f.alpha = Math.min(1, f.alpha + dt * .6);
+    if (f.wave > 0) { f.wave -= dt; return; }
+    if (f.pause > 0) { f.pause -= dt; return; }
+    if (Math.random() < dt * .08) { f.pause = 2 + Math.random() * 4; return; }
+    const ahead = (hx, hy) => isRoad(f.x + hx * 3, f.y + hy * 3) && isRoad(f.x + hx * 6, f.y + hy * 6);
+    if (!ahead(f.hx, f.hy) || Math.random() < dt * .15) { // turn: the nearest heading that stays on the road, never straight back unless stuck
+      const opts = HEAD.filter(([hx, hy]) => ahead(hx, hy) && hx * f.hx + hy * f.hy > -.9).sort((a, b) => (b[0] * f.hx + b[1] * f.hy) - (a[0] * f.hx + a[1] * f.hy) + (Math.random() - .5) * 1.2);
+      const h = opts[0] || [-f.hx, -f.hy]; f.hx = h[0]; f.hy = h[1];
+      if (!opts.length) { f.pause = 1; return; }
+    }
+    const v = 6 * dt; f.x += f.hx * v; f.y += f.hy * v; f.dist += v; if (Math.abs(f.hx) > .3) f.dir = f.hx > 0 ? 1 : -1;
+  }
+  function drawFolk(s, f, tNow) {
+    const sheet = images.folk; if (!sheet) return;
+    const fw = sheet.width / 5, fh = sheet.height / 3, k = cam.z / SCALE, w = fw * k, h = fh * k, x = sx(f.x), y = sy(f.y);
+    const cell = f.wave > 0 ? 4 : f.pause > 0 ? 0 : Math.floor(f.dist / 2.2) % 4;
+    ctx.globalAlpha = f.alpha;
+    ctx.fillStyle = 'rgba(30,24,18,.25)'; ctx.beginPath(); ctx.ellipse(x, y, w * .26, h * .07, 0, 0, 7); ctx.fill();
+    ctx.save(); ctx.translate(snapX(x), 0); if (f.dir < 0) ctx.scale(-1, 1); ctx.drawImage(sheet, cell * fw, f.row * fh, fw, fh, -w / 2, snapY(y - h + cam.z * .5), w, h); ctx.restore();
+    f.sx = x; f.sy = y - h / 2; f.sh = h;
+    // A villager with a favour to ask carries a little speech bubble.
+    const ask = s.favours?.find(q => q.land === f.land && !q.done);
+    if (ask && f.n === 0 && ZONES[ask.zone] && f.zone === folk.filter(q => q.land === f.land && q.n === 0).map(q => q.zone).sort((a, b) => a - b)[0]) {
+      const by = y - h - 7 * cam.z + Math.sin(tNow * 3) * cam.z, r = Math.max(7, 3.2 * cam.z);
+      ctx.fillStyle = '#fff6df'; ctx.strokeStyle = '#3a2e23'; ctx.lineWidth = Math.max(1.5, cam.z * .5);
+      ctx.beginPath(); ctx.roundRect(x - r, by - r, r * 2, r * 1.8, r * .5); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#d8902a'; ctx.font = `700 ${Math.round(r * 1.3)}px "Pixelify Sans",Georgia,serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('!', x, by - r * .05);
+      f.asks = true;
+    } else f.asks = false;
+    ctx.globalAlpha = 1;
+  }
+  // Weather and the seasons, laid over the land: a tint for the time of year, a shower or snowfall now and then,
+  // blossom in spring and drifting leaves in autumn.
+  const SEASON_TINT = { spring: [255, 226, 238, .1], summer: [255, 242, 200, .08], autumn: [255, 172, 98, .26], winter: [196, 212, 255, .3] };
+  const ORDER = ['spring', 'summer', 'autumn', 'winter'];
+  let wxAmt = 0, wxKind = 'rain';
+  function drawWeather(s, time, dt) {
+    const t = time / 1000, age = s.age || 0, len = 1200, at = (age / len) % 4, cur = ORDER[Math.floor(at)], next = ORDER[(Math.floor(at) + 1) % 4], f = clamp((at % 1 - .92) / .08, 0, 1);
+    const a = SEASON_TINT[cur], b = SEASON_TINT[next], c = a.map((v, i) => v + (b[i] - v) * f);
+    ctx.globalCompositeOperation = 'multiply'; ctx.fillStyle = `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${c[3]})`; ctx.fillRect(0, 0, W, H);
+    const kind = s.wx?.kind;
+    wxAmt += ((kind ? 1 : 0) - wxAmt) * Math.min(1, dt * .6); if (kind) wxKind = kind;
+    const frost = LANDS[landAtTexel(clamp(cam.x | 0, 0, TW - 1), clamp(cam.y | 0, 0, TH - 1))]?.name === 'Frostmere';
+    const snow = wxKind === 'snow' || frost;
+    if (wxAmt > .01 && !snow) { ctx.fillStyle = `rgba(118,134,162,${wxAmt * .38})`; ctx.fillRect(0, 0, W, H); }
+    ctx.globalCompositeOperation = 'source-over';
+    const frostLight = winterGlow(cur, f, next) * .12 + (wxAmt > .01 && snow ? wxAmt * .14 : 0);
+    if (frostLight > 0) { ctx.fillStyle = `rgba(240,246,255,${frostLight})`; ctx.fillRect(0, 0, W, H); }
+    if (reduced || quality < 1) return;
+    if (wxAmt > .01) {
+      if (snow) { // flakes drifting down and sideways
+        ctx.fillStyle = '#ffffff';
+        for (let n = 0; n < 240 * wxAmt; n++) { const sp = 26 + hash(n, 3, 91) * 40, x = ((hash(n, 1, 91) * W + Math.sin(t * .8 + n) * 18 + t * 12) % W + W) % W, y = (hash(n, 2, 91) * H + t * sp) % H, r = 2 + Math.floor(hash(n, 4, 91) * 3); ctx.globalAlpha = .7 + hash(n, 5, 91) * .3; ctx.fillRect(x | 0, y | 0, r, r); }
+      } else { // slanted streaks of rain
+        ctx.strokeStyle = 'rgba(214,232,252,.75)'; ctx.lineWidth = 2; ctx.beginPath();
+        for (let n = 0; n < 260 * wxAmt; n++) { const sp = 480 + hash(n, 3, 92) * 260, x = ((hash(n, 1, 92) * W - t * 80) % W + W) % W, y = (hash(n, 2, 92) * H + t * sp) % H; ctx.moveTo(x, y); ctx.lineTo(x - 4, y + 16); }
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(225,238,255,.6)'; ctx.lineWidth = 1.5; // little splashes where drops land
+        for (let n = 0; n < 50 * wxAmt; n++) { const q = (t * 2.2 + hash(n, 6, 92)) % 1, x = hash(n, 7, 92 + Math.floor(t * 2.2 + hash(n, 6, 92))) * W, y = hash(n, 8, 92 + Math.floor(t * 2.2 + hash(n, 6, 92))) * H; ctx.globalAlpha = (1 - q) * .8; ctx.beginPath(); ctx.ellipse(x, y, 2 + q * 7, 1 + q * 2.5, 0, 0, 7); ctx.stroke(); }
+      }
+      ctx.globalAlpha = 1;
+    }
+    if (cam.z > .9 && (cur === 'autumn' || cur === 'spring') && wxAmt < .5) { // drifting leaves or petals
+      const cols = cur === 'autumn' ? ['#d8742a', '#e8a33c', '#b8502a'] : ['#ffd6e6', '#ffffff', '#ffc0d8'];
+      for (let n = 0; n < 28; n++) { const x = ((hash(n, 1, 93) * W + t * (14 + n % 5 * 4) + Math.sin(t * 1.3 + n) * 20) % W + W) % W, y = ((hash(n, 2, 93) * H + t * (18 + n % 4 * 5)) % H), r = Math.max(3, cam.z * 1.2); ctx.fillStyle = cols[n % 3]; ctx.fillRect(x | 0, y | 0, Math.round(r * (1 + Math.abs(Math.sin(t * 3 + n)))), Math.round(r)); }
+    }
+  }
+  const winterGlow = (cur, f, next) => (cur === 'winter' ? 1 - f : 0) + (next === 'winter' ? f : 0);
   // Fish: now and then one leaps from a filled pond in view, arcs over and drops back in with a ripple.
   // assets/fish.png (ChatGPT art cut by tools/build_critter_art.py): swimming, launching, arched, diving.
   const fish = [], ripples = [];
@@ -582,17 +678,21 @@ export function createRenderer(canvas, world, land, images) {
       }
       const x = f.x + f.dir * f.len * q, y = f.y - 4 * f.h * q * (1 - q), cell = q < .3 ? 1 : q < .62 ? 2 : 3;
       const w = fw * k, h = fh * k, X = sx(x), Y = sy(y);
+      f.sx = X; f.sy = Y; f.sw = Math.max(w, 24); if (closeness() > .3) api.onSeen?.('fish');
       ctx.save(); ctx.translate(X, Y); if (f.dir < 0) ctx.scale(-1, 1);
       ctx.drawImage(sheet, cell * fw, 0, fw, fh, -w / 2, -h / 2, w, h); ctx.restore();
     }
   }
+  const keyOf = c => c.kind === 'butterfly' ? 'butterfly' + c.variant % 3 : c.kind === 'bird' ? 'bird' + c.variant % 2 : c.kind !== 'rabbit' && LANDS[ZONES[c.zone].land].native ? 'native' + ZONES[c.zone].land : c.kind;
   // The animals in view, for the sound: where each is across the screen and how far from the middle.
   function hearing() {
     const out = [], near = closeness();
     if (near <= 0) return { near, sources: out };
     const [x0, y0, x1, y1] = api.viewBox();
-    for (const c of critters) if (c.alpha > .5 && c.x > x0 && c.x < x1 && c.y > y0 && c.y < y1) out.push({ kind: c.kind, ...heard(c.x, c.y) });
-    for (const d of ducks) if (d.x > x0 && d.x < x1 && d.y > y0 && d.y < y1) out.push({ kind: 'duck', ...heard(d.x, d.y) });
+    for (const c of critters) if ((!PETS[c.kind] || c.alpha > .5) && c.x > x0 && c.x < x1 && c.y > y0 && c.y < y1) out.push({ kind: c.kind, key: keyOf(c), ...heard(c.x, c.y) });
+    for (const d of ducks) if (d.x > x0 && d.x < x1 && d.y > y0 && d.y < y1) out.push({ kind: 'duck', key: 'duck', ...heard(d.x, d.y) });
+    for (const f of folk) if (f.x > x0 && f.x < x1 && f.y > y0 && f.y < y1) out.push({ kind: 'folk', key: 'folk', ...heard(f.x, f.y) });
+    if (near > .35) for (const q of out) if (q.d < .8) api.onSeen?.(q.key);
     return { near, sources: out };
   }
   // Wildlife arrives as the land heals. Butterflies and birds pass through; pets stay and graze.
@@ -697,14 +797,16 @@ export function createRenderer(canvas, world, land, images) {
     for (const c of critters) {
       if (PETS[c.kind]) continue;
       c.pause -= dt;
-      const speed = c.kind === 'bird' ? 34 : 9;
+      if (c.spook > 0) c.spook -= dt;
+      const speed = (c.kind === 'bird' ? 34 : 9) * (c.spook > 0 ? 3 : 1);
       const P = ZONES[c.zone], d = Math.hypot(c.tx - c.x, c.ty - c.y);
       if (d < 2 || !c.tx) { c.tx = P.px + (Math.random() - .5) * 240; c.ty = P.py + (Math.random() - .5) * 150; }
       else { c.x += (c.tx - c.x) / d * speed * dt; c.y += (c.ty - c.y) / d * speed * dt; c.dir = c.tx < c.x ? -1 : 1; }
       const x = sx(c.x), y = sy(c.y);
       if (x < -60 || y < -60 || x > W + 60 || y > H + 60) continue;
       if (!images.flyers) continue;
-      const beat = Math.floor(t * (c.kind === 'bird' ? 9 : 10) + c.n * 1.7) % 4, row = c.kind === 'butterfly' ? c.variant % 3 : 3 + c.variant % 2, lift = c.kind === 'bird' ? 26 : 7 + Math.sin(t * 2 + c.n) * 3, w = FLY_W * z / 2, h = FLY_H * z / 2;
+      const beat = Math.floor(t * (c.kind === 'bird' ? 9 : 10) + c.n * 1.7) % 4, row = c.kind === 'butterfly' ? c.variant % 3 : 3 + c.variant % 2, lift = (c.kind === 'bird' ? 26 : 7 + Math.sin(t * 2 + c.n) * 3) + (c.spook > 0 ? (1.6 - c.spook) * 12 : 0), w = FLY_W * z / 2, h = FLY_H * z / 2;
+      c.sx = x; c.sy = y - lift * z - h / 2; c.sw = Math.max(w, 24);
       ctx.fillStyle = 'rgba(30,24,18,.12)'; ctx.fillRect(x - w / 3, y, w * .66, z);
       const fx = beat * FLY_W, fy = row * FLY_H;
       if (c.kind === 'bird' && c.dir < 0) { ctx.save(); ctx.translate(x, 0); ctx.scale(-1, 1); ctx.drawImage(images.flyers, fx, fy, FLY_W, FLY_H, -w / 2, y - lift * z - h, w, h); ctx.restore(); }
@@ -751,6 +853,7 @@ export function createRenderer(canvas, world, land, images) {
     if (night > 0) { ctx.fillStyle = `rgba(${150 - night * 40},${150 - night * 22},${200},${night * .55})`; ctx.fillRect(0, 0, W, H); }
     if (dusk > 0) { ctx.fillStyle = `rgba(255,190,130,${dusk * .55})`; ctx.fillRect(0, 0, W, H); }
     ctx.globalCompositeOperation = 'source-over';
+    if (night > .5 && cam.z >= 1.2) api.onSeen?.('fireflies');
     if (night > .15 && !reduced && quality > 0) {
       const t = time / 1000;
       const x0 = Math.floor((cam.x - W / 2 / cam.z) / 160), x1 = Math.floor((cam.x + W / 2 / cam.z) / 160), y0 = Math.floor((cam.y - H / 2 / cam.z) / 160), y1 = Math.floor((cam.y + H / 2 / cam.z) / 160);
@@ -792,6 +895,18 @@ export function createRenderer(canvas, world, land, images) {
       } else if (cam.z >= .9) { ctx.fillStyle = '#4b4438'; ctx.font = '600 ' + size + 'px "Pixelify Sans",Georgia,serif'; ctx.fillText(z.name, x, y); }
       ctx.globalAlpha = 1;
     });
+    // A little sign at the head of each dry riverbed in an open glade, so it is clear the bed is waiting for rain.
+    if (cam.z >= 1.3) {
+      const wisp = s.spirits.some(a => a.type === 2), size = Math.round(clamp(cam.z * 3.2, 11, 15));
+      ctx.font = '600 ' + size + 'px "Pixelify Sans",Georgia,serif';
+      s.zones.forEach((st, i) => {
+        if (!st.open || st.water >= 0 || !world.streams[i]?.length) return;
+        const p = streamHead(world, i), x = sx(p[0]), y = sy(p[1]) - 6 * cam.z; if (x < -80 || y < -20 || x > W + 80 || y > H + 20) return;
+        const text = s.spirits.some(a => a.fill === i) ? 'Rain is coming' : wisp ? 'Dry riverbed · a Rainwisp will come' : 'Dry riverbed · waits for a Rainwisp', tw = ctx.measureText(text).width + 14;
+        ctx.globalAlpha = Math.min(1, (cam.z - 1.3) * 3) * .92; ctx.fillStyle = 'rgba(58,46,35,.85)'; ctx.beginPath(); ctx.roundRect(x - tw / 2, y - size * .8, tw, size * 1.6, 5); ctx.fill();
+        ctx.fillStyle = '#d8ecff'; ctx.fillText(text, x, y + 1); ctx.globalAlpha = 1;
+      });
+    }
   }
   const api = {
     onPet: null,
@@ -808,7 +923,17 @@ export function createRenderer(canvas, world, land, images) {
     // Wildlife already on the land arrives quietly, as on a fresh load. Used when the whole state is swapped.
     regreet() { greeted = false; critterAt = -1; },
     pets: () => critters.filter(c => PETS[c.kind]),
-    onSplash: null, hearing,
+    onSplash: null, onSeen: null, hearing, keyOf,
+    // Butterflies, birds and leaping fish under a tap: the nearest one within reach, or null.
+    hitWild(px, py) {
+      let best = null, bd = Infinity;
+      for (const c of critters) if (!PETS[c.kind] && c.sx != null) { const d = Math.hypot(px - c.sx, py - c.sy); if (d < c.sw * 1.2 && d < bd) { bd = d; best = { kind: c.kind, key: keyOf(c), o: c, x: c.x, y: c.y - 20 }; } }
+      for (const f of fish) if (f.sx != null) { const d = Math.hypot(px - f.sx, py - f.sy); if (d < f.sw * 1.2 && d < bd) { bd = d; best = { kind: 'fish', key: 'fish', o: f, x: f.x, y: f.y - 8 }; } }
+      return best;
+    },
+    startle(w) { if (w.kind === 'fish') { burst(w.o.x + w.o.dir * w.o.len * .5, w.o.y - 8, 8, ['#ffd36b', '#fff'], 16); return; } w.o.spook = 1.6; w.o.tx = w.o.x + (Math.random() - .5) * 300; w.o.ty = w.o.y + (Math.random() - .5) * 200; burst(w.o.x, w.o.y - 14, 6, ['#fff', '#ffe28a'], 14); },
+    hitFolk(px, py) { for (const f of folk) if (f.sx != null && Math.abs(px - f.sx) < Math.max(14, f.sh * .35) && Math.abs(py - f.sy) < Math.max(18, f.sh * .6)) return f; return null; },
+    cheer(land) { for (const f of folk) if (f.land === land) { f.wave = 3; f.pause = 3; } },
     cam, resize, focusZone, focusAll, focusLand, zoomAt, pan, toCell, toWorld,
     glide(x, y, z) { anchor = null; cam.tx = x; cam.ty = y; cam.tz = z; clampCam(); },
     viewBox() { return [cam.x - W / 2 / cam.z, cam.y - H / 2 / cam.z, cam.x + W / 2 / cam.z, cam.y + H / 2 / cam.z]; },
@@ -838,9 +963,9 @@ export function createRenderer(canvas, world, land, images) {
         if (Math.abs(cam.x - cam.tx) + Math.abs(cam.y - cam.ty) < .05 && Math.abs(tl - lz) < .002) { cam.x = cam.tx; cam.y = cam.ty; cam.z = cam.tz; }
       }
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.imageSmoothingEnabled = false; newFrame();
-      updateFog(s); spawnCritters(s, time);
+      updateFog(s); spawnCritters(s, time); spawnFolk(s, time);
       ctx.fillStyle = '#365568'; ctx.fillRect(0, 0, W, H);
-      drawGround(land.canvas); drawWater(s, time); drawDucks(s, time / 1000, dt); drawFish(s, time / 1000, dt); drawFlora(s, time, dt); drawProps(s, time, dt, opts.carry); drawCritters(s, time, dt); drawLight(s, time);
+      drawGround(land.canvas); drawWater(s, time); drawDucks(s, time / 1000, dt); drawFish(s, time / 1000, dt); drawFlora(s, time, dt); drawProps(s, time, dt, opts.carry); drawCritters(s, time, dt); drawLight(s, time); drawWeather(s, time, dt);
       drawParticles(dt);
       if (fogAlpha.some(a => a > 0)) { ctx.imageSmoothingEnabled = true; const drift = reduced || quality < 1 ? 0 : Math.sin(time * .00016) * 7 * cam.z; ctx.globalAlpha = .72; ctx.drawImage(fogSoft, 0, 0, CW, CH, sx(0), sy(0), TW * cam.z, TH * cam.z); ctx.globalAlpha = quality > 1 ? .5 : .35; if (quality > 1) ctx.drawImage(fogSoft, 0, 0, CW, CH, sx(0) + drift, sy(0) - drift * .5, TW * cam.z, TH * cam.z); ctx.globalAlpha = 1; ctx.imageSmoothingEnabled = false; }
       if (!opts.title) drawLabels(s);

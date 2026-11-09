@@ -1,11 +1,11 @@
-import { makeWorld, ZONES, LANDS, CN, CW, CH, CELL, hash } from './world.mjs?v=28';
-import { mapsDone, newLand, tick, touch, buyGlade, gladeBuyable, gladePrice, landDone, landPct, landTouched, income, upgradeMax, catchUp, encode, decode, buySpirit, buyUpgrade, spiritCost, spiritOpen, upgradeCost, upgradeOpen, zonePct, zoneBloom, doneCount, initObjects, SPIRITS, UPGRADES, SPIRIT_CAP } from './sim.mjs?v=28';
-import { createLand } from './land.mjs?v=28';
-import { createRenderer, GRASS_STYLES } from './render.mjs?v=28';
-import { createAudio } from './audio.mjs?v=28';
-import { spiritFace, useDeerSheet } from './critters.mjs?v=28';
+import { makeWorld, ZONES, LANDS, CN, CW, CH, CELL, hash } from './world.mjs?v=29';
+import { mapsDone, newLand, tick, touch, buyGlade, gladeBuyable, gladePrice, landDone, landPct, landTouched, income, upgradeMax, catchUp, encode, decode, buySpirit, buyUpgrade, spiritCost, spiritOpen, upgradeCost, upgradeOpen, zonePct, zoneBloom, doneCount, initObjects, SPIRITS, UPGRADES, SPIRIT_CAP, JOURNAL, note, journalLabel, journalPages, journalCount, journalSize, pageDone, favourText, villageLands } from './sim.mjs?v=29';
+import { createLand } from './land.mjs?v=29';
+import { createRenderer, GRASS_STYLES } from './render.mjs?v=29';
+import { createAudio } from './audio.mjs?v=29';
+import { spiritFace, useDeerSheet } from './critters.mjs?v=29';
 
-const KEY = 'little-wilds-2-v2', CARDS_KEY = 'little-wilds-2-postcards', SOUND_KEY = 'little-wilds-2-muted', VOLUME_KEY = 'little-wilds-2-volume', GRASS_KEY = 'little-wilds-2-grass';
+const KEY = 'little-wilds-2-v2', CARDS_KEY = 'little-wilds-2-postcards', SOUND_KEY = 'little-wilds-2-muted', VOLUME_KEY = 'little-wilds-2-volume', GRASS_KEY = 'little-wilds-2-grass', MUSIC_KEY = 'little-wilds-2-music';
 const $ = id => document.getElementById(id);
 const fmt = n => n >= 1e9 ? (n / 1e9).toFixed(2) + 'b' : n >= 1e6 ? (n / 1e6).toFixed(2) + 'm' : n >= 1e4 ? (n / 1e3).toFixed(1) + 'k' : Math.floor(n).toLocaleString();
 const load = src => new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = src; });
@@ -21,8 +21,25 @@ let glideTo = -1, glideAt = 0, gliding = 0, quarters = [], rateAt = 0, rateSeeds
 function pulseSeeds() { $('seeds').parentElement.classList.add('pulse'); clearTimeout(pulseTimer); pulseTimer = setTimeout(() => $('seeds').parentElement.classList.remove('pulse'), 170); }
 let carry = null, panning = false; const pointers = new Map(); let pinch = 0;
 
-function toast(text) { $('toast').textContent = text; $('toast').classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => $('toast').classList.remove('show'), 3200); }
+// A soft toast (a journal note) waits its turn rather than covering something the player just asked about.
+let toastUntil = 0; const softToasts = [];
+function toast(text, soft = false) {
+  if (soft && performance.now() < toastUntil) { if (softToasts.length < 4) softToasts.push(text); return; }
+  $('toast').textContent = text; $('toast').classList.add('show'); clearTimeout(toastTimer); toastUntil = performance.now() + 3200;
+  toastTimer = setTimeout(() => { $('toast').classList.remove('show'); if (softToasts.length) setTimeout(() => toast(softToasts.shift(), true), 350); }, 3200);
+}
 let titleOn = false, tour = 0, tourAt = 0, held = null;
+// A new journal entry: a little gift of seeds, and a toast. Finishing a page raises all land income for good.
+function jot(key) {
+  if (!s || preview || !journalLabel(key) || s.journal?.[key]) return;
+  const pages = journalPages(s), gift = note(s, key);
+  if (!gift) return;
+  pulseSeeds(); save();
+  if (journalPages(s) > pages) { audio.chime(true); banner('A journal page is complete', 'Every restored land now earns 10% more, for good.'); }
+  else toast(`New in your journal: ${journalLabel(key)} · +${fmt(gift)} seeds`, true);
+}
+const landBloomed = l => ZONES.filter(z => z.land === l).every(z => s.zones[z.id].bloomed);
+const PAT_KINDS = ['deer', 'fawn', 'rabbit'];
 // While the title menu is up, big moments wait and play once you are back on the land.
 function banner(title, sub = '', ms = 5200) { if (titleOn) { held = [title, sub, ms]; return; } $('banner-title').textContent = title; $('banner-sub').textContent = sub; $('banner').classList.add('show'); clearTimeout(bannerTimer); bannerTimer = setTimeout(() => $('banner').classList.remove('show'), ms); }
 function save() { if (!s || preview) return; try { localStorage.setItem(KEY, encode(s)); } catch { toast('Saving is unavailable in this browser.'); } }
@@ -43,6 +60,9 @@ function attach() {
   view = createRenderer($('world'), world, land, images); try { view.setGrass(localStorage.getItem(GRASS_KEY)); } catch {}
   view.onPet = (label, zone) => toast(`${label} has come back to ${ZONES[zone].name}.`);
   view.onSplash = (pan, near, big) => audio.splash(pan, near, big);
+  view.onSeen = key => jot(key);
+  // Lands already restored or flourishing before the journal existed are written in quietly.
+  LANDS.forEach((_, l) => { if (landDone(s, l)) s.journal['land' + l] = 1; if (landBloomed(l)) s.journal['bloom' + l] = 1; });
   buildDock();
   currentZone = firstOpen(); view.focusZone(currentZone, true);
 }
@@ -92,6 +112,7 @@ function renderHint() {
   else if (!s.revivedAny && s.age > 10 && !s.zones[0].done) text = 'Hold on a dead tree or stone to bring it back';
   else if (s.spirits.length === 1 && s.seeds >= spiritCost(s, 0)) text = 'Those seeds can wake another Mossling';
   else if (!s.bought && s.seeds >= cheapestGlade()) text = 'You can afford to wake a new glade. Click its sign';
+  else if (!s.spirits.some(a => a.type === 2) && s.zones.some(z => z.done && z.water < 0) ) text = spiritOpen(s, 2) ? 'Riverbeds stay dry until a Rainwisp brings water' : `Riverbeds stay dry until a Rainwisp comes, after ${SPIRITS[2].need} restored glades`;
   if (preview) text = '';
   h.hidden = !text; if (text) h.textContent = text;
 }
@@ -115,7 +136,7 @@ $('modal-body').addEventListener('click', e => {
   const f = e.target.closest('[data-focus]');
   if (f) { const z = +f.dataset.focus; if (gladeBuyable(s, z)) wakeGlade(z); view.focusZone(z); $('modal').close(); return; }
   const a = e.target.closest('[data-act]'); if (!a) return;
-  ({ land() { view.focusLand(landUnderView()); $('modal').close(); }, map() { $('modal').close(); toggleMap(true); }, exportSave, importSave, reset: resetSave, cards: openCards, valley: openValley })[a.dataset.act]?.();
+  ({ land() { view.focusLand(landUnderView()); $('modal').close(); }, map() { $('modal').close(); toggleMap(true); }, exportSave, importSave, reset: resetSave, cards: openCards, journal: openJournal, valley: openValley })[a.dataset.act]?.();
 });
 
 /* The land under the camera, glade by glade */
@@ -159,18 +180,19 @@ function stepTour(now) {
 $('title').addEventListener('click', e => {
   const b = e.target.closest('[data-title]'); if (!b) return;
   audio.start();
-  ({ play: hideTitle, map() { hideTitle(); toggleMap(true); }, cards: openCards, settings: openSettings })[b.dataset.title]();
+  ({ play: hideTitle, map() { hideTitle(); toggleMap(true); }, cards: openCards, journal: openJournal, settings: openSettings })[b.dataset.title]();
 });
 
 /* Menu */
 function openMenu() {
   show('menu', `<h2>Little Wilds 2</h2><p class="sub">Bring a dead continent back to life, one glade at a time.</p>
-  <label class="volume">Volume <input id="volume" type="range" min="0" max="100" value="${Math.round(audio.volume * 100)}"></label><label class="volume">Grass style <select id="grass">${Object.entries(GRASS_STYLES).map(([k, v]) => `<option value="${k}"${k === view.grass ? ' selected' : ''}>${v}</option>`).join('')}</select></label><div class="row"><button class="wood" data-act="cards">Postcards</button><button class="wood" data-act="exportSave">Export save</button><button class="wood" data-act="importSave">Import save</button><button class="wood" data-act="reset">Start over</button></div>
-  <p class="sub" style="margin-top:14px">Hold and drag: heal the land.<br>Drag a spirit: carry it somewhere.<br>Click a sign on a sleeping glade: wake it with seeds.<br>Click a deer or rabbit: give it a pat.<br>Right-drag, two fingers or arrow keys: look around.<br>Wheel or pinch: zoom. M: the whole map. H: hide the interface.</p><input type="file" id="file" accept=".json,application/json" hidden>`);
+  <label class="volume">Volume <input id="volume" type="range" min="0" max="100" value="${Math.round(audio.volume * 100)}"></label><label class="volume check"><input id="music" type="checkbox"${audio.music ? ' checked' : ''}> Quiet music</label><label class="volume">Grass style <select id="grass">${Object.entries(GRASS_STYLES).map(([k, v]) => `<option value="${k}"${k === view.grass ? ' selected' : ''}>${v}</option>`).join('')}</select></label><div class="row"><button class="wood" data-act="cards">Postcards</button><button class="wood" data-act="journal">Journal</button><button class="wood" data-act="exportSave">Export save</button><button class="wood" data-act="importSave">Import save</button><button class="wood" data-act="reset">Start over</button></div>
+  <p class="sub" style="margin-top:14px">Hold and drag: heal the land.<br>Drag a spirit: carry it somewhere.<br>Click a sign on a sleeping glade: wake it with seeds.<br>Click a deer or rabbit: give it a pat. Butterflies, birds, fish and villagers like a tap too.<br>Right-drag, two fingers or arrow keys: look around.<br>Wheel or pinch: zoom. M: the whole map. H: hide the interface.</p><input type="file" id="file" accept=".json,application/json" hidden>`);
 }
 $('btn-menu').onclick = () => { audio.start(); showTitle(); };
 function openSettings() { openMenu(); $('volume').oninput = e => { audio.setVolume(e.target.value / 100); try { localStorage.setItem(VOLUME_KEY, audio.volume); } catch {} };
-  $('grass').onchange = e => { view.setGrass(e.target.value); try { localStorage.setItem(GRASS_KEY, view.grass); } catch {} }; };
+  $('grass').onchange = e => { view.setGrass(e.target.value); try { localStorage.setItem(GRASS_KEY, view.grass); } catch {} };
+  $('music').onchange = e => { audio.start(); audio.setMusic(e.target.checked); try { localStorage.setItem(MUSIC_KEY, e.target.checked ? '1' : ''); } catch {} }; };
 function exportSave() { save(); const a = document.createElement('a'), u = URL.createObjectURL(new Blob([encode(s)], { type: 'application/json' })); a.href = u; a.download = 'little-wilds-2-save.json'; a.click(); setTimeout(() => URL.revokeObjectURL(u), 1000); }
 function importSave() {
   const f = $('file'); f.onchange = async () => { try { const file = f.files[0]; if (!file || file.size > 4e6) throw 0; const text = await file.text(); const next = decode(text, world); if (!confirm('Replace your whole continent?')) return; s = next; attach(); save(); $('modal').close(); } catch { toast('That is not a Little Wilds 2 save.'); } }; f.click();
@@ -178,6 +200,14 @@ function importSave() {
 function resetSave() { if (!confirm('Start again from barren ground? This erases your progress.')) return; s = newLand(); attach(); try { localStorage.removeItem(CARDS_KEY); } catch {} save(); $('modal').close(); }
 const readCards = () => { try { return JSON.parse(localStorage.getItem(CARDS_KEY) || '[]'); } catch { return []; } };
 function openCards() { const list = readCards(); show('cards', `<h2>Postcards</h2><p class="sub">The lands you have brought back.</p>` + (list.length ? `<div class="cards">${list.map(c => `<figure><img src="${c.now}" alt="${c.name} restored"><figcaption>${c.name}</figcaption></figure>`).join('')}</div>` : '<p>Finish a whole land to keep its postcard here.</p>')); }
+function openJournal() {
+  const pages = JOURNAL.map((p, n) => {
+    const got = p.entries.filter(([k]) => s.journal?.[k]).length, done = pageDone(s, n);
+    return `<section class="jpage${done ? ' done' : ''}"><h3>${p.name} <em>${got} / ${p.entries.length}${done ? ' · +10% income' : ''}</em></h3><ul>${p.entries.map(([k, label]) => `<li class="${s.journal?.[k] ? 'got' : ''}">${s.journal?.[k] ? label : '???'}</li>`).join('')}</ul></section>`;
+  }).join('');
+  const asks = (s.favours || []).filter(f => !f.done).map(f => `<li><b>${f.who}</b> in ${LANDS[f.land].name}: ${favourText(f)} <em>${fmt(f.reward)} seeds</em></li>`).join('');
+  show('journal', `<h2>Field journal</h2><p class="sub">${journalCount(s)} of ${journalSize()} found. Each new entry brings a gift of seeds; every finished page makes all restored land earn 10% more.</p>${asks ? `<h3>Favours asked</h3><ul class="asks">${asks}</ul>` : villageLands().some(l => landTouched(s, l)) ? '' : '<p class="sub">Villagers in Frostmere and Sunfall Coast will ask small favours once you reach them.</p>'}${pages}`);
+}
 function celebrate(l) {
   const then = view.snapshot(true, l), now = view.snapshot(false, l), name = LANDS[l].name;
   const list = readCards(); if (!list.some(c => c.land === l)) { list.push({ land: l, name, now }); try { localStorage.setItem(CARDS_KEY, JSON.stringify(list.slice(-9))); } catch {} }
@@ -227,7 +257,7 @@ $('btn-map').onclick = () => { audio.start(); toggleMap(); };
 $('btn-then').onclick = () => { $('banner').classList.remove('show'); thenX = thenX == null ? innerWidth / 2 : null; $('btn-then').setAttribute('aria-pressed', thenX != null); if (thenX != null) toast('Drag across the land to compare. Press again to finish.'); };
 const syncSound = () => { $('btn-sound').textContent = audio.muted ? 'Muted' : 'Sound'; $('btn-sound').setAttribute('aria-pressed', audio.muted); };
 $('btn-sound').onclick = () => { audio.start(); audio.setMuted(!audio.muted); try { localStorage.setItem(SOUND_KEY, audio.muted ? '1' : ''); } catch {} syncSound(); };
-try { if (localStorage.getItem(SOUND_KEY)) audio.setMuted(true); const v = parseFloat(localStorage.getItem(VOLUME_KEY)); if (v >= 0 && v <= 1) audio.setVolume(v); } catch {} syncSound();
+try { if (localStorage.getItem(MUSIC_KEY)) audio.setMusic(true); if (localStorage.getItem(SOUND_KEY)) audio.setMuted(true); const v = parseFloat(localStorage.getItem(VOLUME_KEY)); if (v >= 0 && v <= 1) audio.setVolume(v); } catch {} syncSound();
 
 /* Input */
 const canvas = $('world');
@@ -248,11 +278,19 @@ canvas.addEventListener('pointerdown', e => {
   if (view.cam.z < .9) { panning = true; pinch = 0; if (!s.zones[zoneAt].open && gladeBuyable(s, zoneAt)) toast(`${ZONES[zoneAt].name}: click its sign to wake it for ${fmt(gladePrice(s, zoneAt))} seeds.`); return; }
   if (!s.zones[zoneAt].open) toast(gladeBuyable(s, zoneAt) ? `${ZONES[zoneAt].name} is asleep. Click its sign to wake it for ${fmt(gladePrice(s, zoneAt))} seeds.` : `${ZONES[zoneAt].name} is asleep. Wake a glade beside it first.`);
   const petted = view.hitPet(e.clientX, e.clientY);
-  if (petted) { view.pet(petted); audio.buy(); const gift = 10 + s.seeds * .002; s.seeds += gift; view.reward(petted.x, petted.y - 12, gift, 3); pulseSeeds(); return; }
+  if (petted) { view.pet(petted); audio.buy(); const gift = 10 + s.seeds * .002; s.seeds += gift; view.reward(petted.x, petted.y - 12, gift, 3); pulseSeeds(); s.pats ||= {}; s.pats[petted.kind] = 1; if (PAT_KINDS.every(k => s.pats[k])) jot('pat'); return; }
+  const wild = view.hitWild(e.clientX, e.clientY);
+  if (wild) { // A butterfly flutters off, a bird flies up, a fish flashes gold. Each gives a little, once in a while.
+    view.startle(wild); audio.poke(wild.kind); jot(wild.key);
+    const now = performance.now(); if (!(wild.o.tapped > now - 15000)) { wild.o.tapped = now; const gift = 4 + s.seeds * .0008; s.seeds += gift; view.reward(wild.x, wild.y, gift, 2); pulseSeeds(); }
+    return;
+  }
+  const villager = view.hitFolk(e.clientX, e.clientY);
+  if (villager) { jot('folk'); villager.wave = 2; villager.pause = 2.5; const f = s.favours?.find(q => q.land === villager.land && !q.done); toast(f ? `${f.who}: ${favourText(f)} (reward ${fmt(f.reward)} seeds)` : ['Thank you for bringing the land back!', 'The fields have never looked so green.', 'Lovely day for a walk, isn\'t it?', 'Did you see the fish in the pond?'][Math.floor(Math.random() * 4)]); return; }
   const hit = view.hitSpirit(s, e.clientX, e.clientY);
   pointer.id = e.pointerId;
   if (hit) { carry = hit; hit.held = true; hit.tx = -1; hit.px = e.clientX; hit.py = e.clientY; return; }
-  pointer.holding = true;
+  pointer.holding = true; pointer.since = e.pointerType === 'touch' ? performance.now() + 90 : 0; // a beat for a second finger, so a pinch never plants
 });
 canvas.addEventListener('pointermove', e => {
   wake();
@@ -297,7 +335,10 @@ addEventListener('blur', () => { pointers.clear(); releaseAll(); });
 function handle(ev, now, quiet = false) {
   for (const e of ev) {
     if (e.t === 'revive' && !quiet) { view.revived(e.o, now); audio.pop(); view.reward(e.o.x * CELL, e.o.y * CELL - e.o.size * .7, e.reward, (e.o.worth ?? e.o.size) > 40 ? 10 : 5); pulseSeeds(); s.revivedAny = true; }
-    if (e.t === 'water' && !quiet) { audio.water(); toast(`The Rainwisp fills the dry riverbed in ${ZONES[e.zone].name}.`); }
+    if (e.t === 'water' && !quiet) { audio.water(); toast(`The Rainwisp fills the dry riverbed in ${ZONES[e.zone].name}.`); jot('rainwisp'); }
+    if (e.t === 'weather' && !quiet) { toast(e.kind === 'snow' ? 'Snow is falling. The land rests under it, growing all the same.' : 'A shower passes over. The green spreads faster in the rain.'); jot(e.kind); }
+    if (e.t === 'season' && !quiet) { banner({ spring: 'Spring', summer: 'Summer', autumn: 'Autumn', winter: 'Winter' }[e.season], { spring: 'Blossom drifts over the wilds.', summer: 'Long, warm days.', autumn: 'The leaves turn gold.', winter: 'Frost settles on the land.' }[e.season], 4200); jot(e.season); }
+    if (e.t === 'favour') { pulseSeeds(); view.cheer(e.favour.land); if (!quiet) { audio.chime(); banner(`${e.favour.who} is delighted`, `A favour done in ${LANDS[e.favour.land].name} · +${fmt(e.favour.reward)} seeds`); } jot('favour'); }
     if (e.t === 'zone') {
       land.markZone(e.zone);
       if (quiet) continue;
@@ -307,8 +348,9 @@ function handle(ev, now, quiet = false) {
       const justOpened = SPIRITS.find(d => d.need === doneCount(s));
       if (justOpened) setTimeout(() => toast(`A new spirit has come: ${justOpened.name}.`), 5400);
     }
+    if (e.t === 'bloom') { const l = ZONES[e.zone].land; if (landBloomed(l)) jot('bloom' + l); }
     if (e.t === 'bloom' && !quiet) { audio.chime(); view.sweep(e.zone, '#ffc6dd'); view.glow(e.zone, '255,190,220'); banner(`${ZONES[e.zone].name} is flourishing`, 'New life has come to graze.'); }
-    if (e.t === 'valley') { save(); if (!quiet) setTimeout(() => { if (!$('modal').open) celebrate(e.land); }, 7000); }
+    if (e.t === 'valley') { jot('land' + e.land); save(); if (!quiet) setTimeout(() => { if (!$('modal').open) celebrate(e.land); }, 7000); }
   }
 }
 function returnFrom(seconds) {
@@ -336,7 +378,7 @@ function frame(now) {
   if (!ready || document.hidden) return;
   if (!$('modal').open && !timelapse && !preview) {
     const ev = [];
-    if (pointer.holding && !s.paused && thenX == null && !titleOn) {
+    if (pointer.holding && performance.now() >= (pointer.since || 0) && !s.paused && thenX == null && !titleOn) {
       const c = view.toCell(pointer.x, pointer.y), gain = touch(s, world, c.x, c.y, dt, ev);
       if (gain > 0) { view.spark(c.x, c.y, gain * 7, 3); audio.dig(gain * 25); wake(); }
     }
@@ -366,9 +408,9 @@ addEventListener('pagehide', save);
 async function main() {
   try {
     await nextFrame();
-    const [worldImg, spirits, landmarks, pets, flyers, deer, fish, ...biomes] = await Promise.all([load('assets/world.png'), load('assets/spirits.png'), load('assets/landmarks.png'), load('assets/pets.png'), load('assets/flyers.png').catch(() => null), load('assets/deer.png?v=28').catch(() => null), load('assets/fish.png?v=28').catch(() => null), ...LANDS.slice(1).map((_, n) => load(`assets/biome-${n + 1}.png`).catch(() => null))]);
-    if (deer) useDeerSheet(deer);
-    images = { world: worldImg, spirits, landmarks, pets, flyers, fish, biomes: [null, ...biomes] };
+    const [worldImg, spirits, landmarks, pets, flyers, deer, fish, fawn, folk, ...biomes] = await Promise.all([load('assets/world.png'), load('assets/spirits.png'), load('assets/landmarks.png'), load('assets/pets.png'), load('assets/flyers.png').catch(() => null), load('assets/deer.png?v=29').catch(() => null), load('assets/fish.png?v=29').catch(() => null), load('assets/fawn.png?v=29').catch(() => null), load('assets/folk.png?v=29').catch(() => null), ...LANDS.slice(1).map((_, n) => load(`assets/biome-${n + 1}.png`).catch(() => null))]);
+    if (deer) useDeerSheet(deer, fawn);
+    images = { world: worldImg, spirits, landmarks, pets, flyers, fish, folk, biomes: [null, ...biomes] };
     await buildWorld();
     let raw = null;
     try { raw = localStorage.getItem(KEY); } catch { raw = null; }
@@ -378,6 +420,7 @@ async function main() {
     attach();
     if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) window.__lw = { togglePreview, get preview() { return !!preview; }, get s() { return s; }, get w() { return world; }, get v() { return view; }, get land() { return land; }, wakeGlade, toggleMap, celebrate, tick: (n, dt = .5) => { const ev = []; for (let k = 0; k < n; k++) tick(s, world, dt, ev); handle(ev, performance.now()); land.markAll(); view.allFlora(); updateUI(); return ev.length; }, grant: n => { s.seeds += n; updateUI(); } };
     ready = true; $('loading').style.display = 'none'; updateUI();
+    if (s.touched && s.season) jot(s.season);
     showTitle();
     if (raw) returnFrom(away);
     requestAnimationFrame(frame);
