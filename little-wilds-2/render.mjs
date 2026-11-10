@@ -1,9 +1,9 @@
 // Everything above the ground: flora, the dead-and-revived objects, spirits, wildlife, weather and fog.
-import { TW, TH, LW, LH, CW, CH, CELL, ZONES, LANDS, SEA, hash, fbm, FC, FCOLS, FROWS, landAtTexel, SHRINK, hillShade } from './world.mjs?v=30';
-import { GREEN, brushRadius, SPIRITS, gladeBuyable, gladePrice, streamHead } from './sim.mjs?v=30';
-import { pixelize, newFrame, shadowOf, skirtOf, apronOf } from './pixel.mjs?v=30';
-import { duckCanvas, critterCanvas, spiritCanvas, NATIVE, SCALE, WALK_FRAMES, strideOf } from './critters.mjs?v=30';
-import { steer, standable, overWater, escape } from './nav.mjs?v=30';
+import { TW, TH, LW, LH, CW, CH, CELL, ZONES, LANDS, SEA, hash, fbm, FC, FCOLS, FROWS, landAtTexel, SHRINK, hillShade } from './world.mjs?v=31';
+import { GREEN, brushRadius, SPIRITS, gladeBuyable, gladePrice } from './sim.mjs?v=31';
+import { pixelize, newFrame, shadowOf, skirtOf, apronOf } from './pixel.mjs?v=31';
+import { duckCanvas, critterCanvas, spiritCanvas, NATIVE, SCALE, WALK_FRAMES, strideOf } from './critters.mjs?v=31';
+import { steer, standable, overWater, escape } from './nav.mjs?v=31';
 const money = n => n >= 1e9 ? (n / 1e9).toFixed(2) + 'b' : n >= 1e6 ? (n / 1e6).toFixed(2) + 'm' : n >= 1e4 ? (n / 1e3).toFixed(1) + 'k' : Math.floor(n).toLocaleString();
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -494,8 +494,11 @@ export function createRenderer(canvas, world, land, images) {
         { const c = spiritCanvas(a.type, frame, a.dir < 0), k = z * SHRINK / SCALE, w = c.width * k * (1 - q), h = c.height * k * (1 + q); ctx.drawImage(c, snapX(x - w / 2), snapY(y - (float + hop * 2.4) * SHRINK * z - h), w, h); if (float < 1) grassOver(a.rx * CELL, a.ry * CELL, w / z * .3, Math.max(1.2, h / z * .22 - hop * 2.4 * SHRINK), walking ? a.anim : 0); }
         if (a.type === 2 && !s.paused && !reduced && quality > 0) { // Rainwisps carry their own little weather; filling a riverbed, a downpour.
           const pour = a.rain > 0 && (a.fill != null || a.pour != null), r = SPIRITS[2].r * CELL * z * (pour ? .45 : .75); ctx.fillStyle = pour ? 'rgba(150,205,250,.85)' : 'rgba(170,220,255,.7)';
-          if (pour) { ctx.fillStyle = 'rgba(205,215,228,.5)'; for (let n = 0; n < 5; n++) { ctx.beginPath(); ctx.ellipse(x + (n - 2) * 3.4 * z, y - 30 * z + Math.sin(tNow * 2 + n) * z, 5 * z, 3 * z, 0, 0, 7); ctx.fill(); } ctx.fillStyle = 'rgba(150,205,250,.85)'; }
-          for (let n = 0; n < (pour ? 22 : 7); n++) { const q2 = (tNow * 1.5 + n * .37) % 1, px = x + (hash(n, 1, 8) - .5) * r * 2, py = y - z * 2 + (hash(n, 2, 8) - .5) * r - (1 - q2) * 18 * z; ctx.fillRect(px, py, Math.max(1, z * .5), z * 2); }
+          if (pour && images.raincloud) { // its own little rain cloud overhead (assets/raincloud.png, ChatGPT art): four frames, puffing and raining
+            const c = images.raincloud, fw = c.width / 4, fh = c.height, k = z / SCALE * 1.15, w = fw * k, h = fh * k, f = Math.floor(tNow * 6 + a.x) % 4;
+            ctx.globalAlpha = Math.min(1, a.rain * 1.5); ctx.drawImage(c, f * fw, 0, fw, fh, snapX(x - w / 2), snapY(y - 10 * z - h + Math.sin(tNow * 1.6) * z * .6), w, h); ctx.globalAlpha = 1;
+          }
+          for (let n = 0; n < (pour ? 10 : 7); n++) { const q2 = (tNow * 1.5 + n * .37) % 1, px = x + (hash(n, 1, 8) - .5) * r * 2, py = y - z * 2 + (hash(n, 2, 8) - .5) * r - (1 - q2) * 18 * z; ctx.fillRect(px, py, Math.max(1, z * .5), z * 2); }
         }
       }
     }
@@ -908,24 +911,6 @@ export function createRenderer(canvas, world, land, images) {
       } else if (cam.z >= .9) { ctx.fillStyle = '#4b4438'; ctx.font = '600 ' + size + 'px "Pixelify Sans",Georgia,serif'; ctx.fillText(z.name, x, y); }
       ctx.globalAlpha = 1;
     });
-    // A little sign at the head of each dry riverbed in an open glade, so it is clear the bed is waiting for rain.
-    if (cam.z >= 1.3) {
-      const wisp = s.spirits.some(a => a.type === 2), size = Math.round(clamp(cam.z * 3.2, 11, 15));
-      ctx.font = '600 ' + size + 'px "Pixelify Sans",Georgia,serif';
-      s.zones.forEach((st, i) => {
-        if (st.open && st.water >= .7 && st.water < 1) { // a pond still filling: how full, and what helps
-          const P = world.ponds[i], x = sx(P.x), y = sy(P.y - P.r * .55); if (x < -80 || y < -20 || x > W + 80 || y > H + 20) return;
-          const text = `Pond ${Math.floor((st.water - .7) / .3 * 100)}% full · rain and Rainwisps fill it`, tw = ctx.measureText(text).width + 14;
-          ctx.globalAlpha = Math.min(1, (cam.z - 1.3) * 3) * .92; ctx.fillStyle = 'rgba(58,46,35,.85)'; ctx.beginPath(); ctx.roundRect(x - tw / 2, y - size * .8, tw, size * 1.6, 5); ctx.fill();
-          ctx.fillStyle = '#d8ecff'; ctx.fillText(text, x, y + 1); ctx.globalAlpha = 1; return;
-        }
-        if (!st.open || st.water >= 0 || !world.streams[i]?.length) return;
-        const p = streamHead(world, i), x = sx(p[0]), y = sy(p[1]) - 6 * cam.z; if (x < -80 || y < -20 || x > W + 80 || y > H + 20) return;
-        const text = s.spirits.some(a => a.fill === i) ? 'Rain is coming' : wisp ? 'Dry riverbed · a Rainwisp will come' : 'Dry riverbed · waits for a Rainwisp', tw = ctx.measureText(text).width + 14;
-        ctx.globalAlpha = Math.min(1, (cam.z - 1.3) * 3) * .92; ctx.fillStyle = 'rgba(58,46,35,.85)'; ctx.beginPath(); ctx.roundRect(x - tw / 2, y - size * .8, tw, size * 1.6, 5); ctx.fill();
-        ctx.fillStyle = '#d8ecff'; ctx.fillText(text, x, y + 1); ctx.globalAlpha = 1;
-      });
-    }
   }
   const api = {
     onPet: null,

@@ -68,7 +68,10 @@ export const SEA = 1, BEACH = 2, ROCK = 3, PATH = 4;
 export let edgeDepth = 0;
 export function terrain(col, row, x, y, pad = 0) {
   const gx = col * LW + x, gy = row * LH + y;
-  const inset = coastInset(gx, gy);
+  let inset = coastInset(gx, gy);
+  // Sunfall Coast's own bay: the continent's southern shore lies past the edge of the map there, so the land gets a
+  // wide bay of sea along the middle of its southern side, for its river to run out into.
+  if (col === 1 && row === 2) { const bx = (x - LW * .5) / 300, by = (y - LH - 70) / 190; inset = Math.min(inset, 44 + (Math.hypot(bx, by) - 1) * 190 + (fbm(gx / 70, gy / 70, 75) - .5) * 50); }
   if (inset < 100) {
     const shore = 44 + (fbm(gx / 85, gy / 85, 71) - .5) * 70 + (fbm(gx / 24, gy / 24, 72) - .5) * 16;
     if (inset < shore - pad) { edgeDepth = Math.min(1, (shore - inset) / 40); return SEA; }
@@ -137,17 +140,61 @@ export function makeLand(seed = 1, mapId = 0) {
       if (waterT[i] < 0 && !edge[i]) { waterT[i] = t; waterZ[i] = z; }
     }
   };
-  const streams = GLADES.map(z => {
-    const end = ponds[z.id], p = z.parent >= 0 ? ponds[z.parent] : { x: flipX ? LW + 6 : -6, y: end.y + 30 };
-    const len = Math.hypot(end.x - p.x, end.y - p.y), nx = -(end.y - p.y) / len, ny = (end.x - p.x) / len, path = [];
+  const village = !!map.village;
+  // The wild lands: a stream runs to each glade's pond from its parent's pond. The first glade's stream rises from a
+  // little spring pool of its own, rather than starting abruptly at the edge of the land.
+  // The village lands are different: one broad river runs from a spring lake across the land and out into the sea.
+  // Each glade owns the stretch of river inside it (its "stream"), and a glade the river misses has its pond alone.
+  let river = null;
+  let streams = village ? null : GLADES.map(z => {
+    const end = ponds[z.id], spring = z.parent < 0;
+    const p = spring ? { x: Math.max(30, Math.min(LW - 30, end.x + (flipX ? 130 : -130))), y: end.y + 30 } : ponds[z.parent];
+    if (spring) for (let k = 0; k < 30 && blockedAt(p.x, p.y, 14); k++) { p.x += (end.x - p.x) * .08; p.y += (end.y - p.y) * .08; }
+    if (spring) stamp(p.x, p.y, 6 + hash(z.id, 61, seed) * 2, 0, z.id);
+    const len = Math.hypot(end.x - p.x, end.y - p.y) || 1, nx = -(end.y - p.y) / len, ny = (end.x - p.x) / len, path = [];
     for (let d = 0; d <= len; d += 1) {
       const t = d / len, sway = (fbm(d / 46, z.id * 7.3, seed + 41) - .5) * 110 * Math.sin(t * Math.PI);
       const x = p.x + (end.x - p.x) * t + nx * sway, y = p.y + (end.y - p.y) * t + ny * sway;
       path.push([x, y]);
-      stamp(x, y, 1.4 + noise(d / 18, z.id, seed + 5) * 1.5 + t, t * .7, z.id);
+      stamp(x, y, 1.4 + noise(d / 18, z.id, seed + 5) * 1.5 + t + (spring && t < .12 ? (1 - t / .12) * 2.5 : 0), t * .7, z.id);
     }
     return path;
   });
+  if (village) {
+    // Where the sea lies: the middle of the sea texels. The spring lake is the pond of the glade farthest from it,
+    // and the river reaches the sea at the shore nearest the land's middle on that side.
+    let sx = 0, sy = 0, sn = 0;
+    for (let y = 0; y < LH; y += 4) for (let x = 0; x < LW; x += 4) if (edge[y * LW + x] === SEA) { sx += x; sy += y; sn++; }
+    sx /= sn || 1; sy /= sn || 1;
+    const src = ponds.reduce((a, b) => Math.hypot(b.x - sx, b.y - sy) > Math.hypot(a.x - sx, a.y - sy) ? b : a);
+    src.r = Math.max(src.r, 24); src.spring = true;
+    let mouth = null, md = Infinity;
+    for (let y = 0; y < LH; y += 2) for (let x = 0; x < LW; x += 2) if (edge[y * LW + x] === SEA) { const d = Math.hypot(x - LW / 2, (y - sy) * .2) + Math.hypot(x - src.x, y - src.y) * .35; if (d < md) { md = d; mouth = { x, y }; } }
+    if (!mouth) mouth = { x: LW / 2, y: map.row === 0 ? 4 : LH - 4 };
+    river = [];
+    const len = Math.hypot(mouth.x - src.x, mouth.y - src.y), nx = -(mouth.y - src.y) / len, ny = (mouth.x - src.x) / len;
+    for (let d = 0; d <= len + 30; d += 1) {
+      const t = Math.min(1, d / len), sway = (fbm(d / 90, 3.7, seed + 43) - .5) * 160 * Math.sin(t * Math.PI);
+      const x = src.x + (mouth.x - src.x) * (d / len) + nx * sway, y = src.y + (mouth.y - src.y) * (d / len) + ny * sway;
+      const w = 4.2 + t * 2.4 + noise(d / 30, 1, seed + 7) * 1.2 + (t > .85 ? (t - .85) / .15 * 5 : 0); // widening into a little delta at the sea
+      river.push([x, y, w]);
+    }
+    // Each glade owns the river texels inside it, and fills them in order down the river.
+    const zoneAtT = (x, y) => zone[Math.max(0, Math.min(LCH - 1, Math.floor(y / CELL))) * LCW + Math.max(0, Math.min(LCW - 1, Math.floor(x / CELL)))];
+    const owned = GLADES.map(() => []);
+    for (const p of river) owned[zoneAtT(p[0], p[1])].push(p);
+    river.forEach(([x, y, w]) => {
+      const z = zoneAtT(x, y), list = owned[z], k = list.findIndex(q => q[0] === x && q[1] === y);
+      // The river runs right out across the beach into the sea, so it never stops short at the sand.
+      // The river cuts its own way: through any rock in its path, and right out across the beach into the sea.
+      const cut = w + 3;
+      for (let yy = Math.floor(y - cut); yy <= y + cut; yy++) for (let xx = Math.floor(x - cut); xx <= x + cut; xx++) { if (xx < 0 || yy < 0 || xx >= LW || yy >= LH || (xx - x) ** 2 + (yy - y) ** 2 > cut * cut) continue; const i = yy * LW + xx; if (edge[i] === BEACH || edge[i] === ROCK) edge[i] = 0; }
+      stamp(x, y, w, list.length > 1 ? k / (list.length - 1) * .7 : 0, z);
+    });
+    streams = GLADES.map(z => owned[z.id].length ? owned[z.id].map(([x, y]) => [x, y]) : [[ponds[z.id].x, ponds[z.id].y]]);
+    // Village ponds are small: a duck pond or a well-fed pool, not a lake on every corner.
+    ponds.forEach(p => { if (!p.spring) p.r = Math.min(p.r, 11); });
+  }
   ponds.forEach((p, id) => {
     const R = p.r + 4, sq = p.lake ? LAKE.squash : 1; // The lake is a broad oval with a wandering shore.
     for (let y = Math.floor(p.y - R); y <= p.y + R; y++) for (let x = Math.floor(p.x - R); x <= p.x + R; x++) {
@@ -190,13 +237,17 @@ export function makeLand(seed = 1, mapId = 0) {
       if (waterT[i] >= 0) { waterT[i] = -1; road[i] = plank; } else if (road[i] !== 2 && road[i] !== 4) road[i] ||= 1;
     }
   };
-  const route = (a, b, id) => {
+  // The river point nearest (x, y), and which bank (x, y) is on.
+  const nearRiver = (x, y) => { let best = 0, bd = Infinity; for (let k = 0; k < river.length; k += 2) { const d = (river[k][0] - x) ** 2 + (river[k][1] - y) ** 2; if (d < bd) { bd = d; best = k; } } return best; };
+  const bank = (x, y) => { const k = nearRiver(x, y), a = river[Math.max(0, k - 3)], b = river[Math.min(river.length - 1, k + 3)]; return Math.sign((b[0] - a[0]) * (y - river[k][1]) - (b[1] - a[1]) * (x - river[k][0])) || 1; };
+  const route = (a, b, id, straight = false) => {
     const len = Math.hypot(b.x - a.x, b.y - a.y) || 1, nx = -(b.y - a.y) / len, ny = (b.x - a.x) / len;
     let last = null, px = a.x, py = a.y;
     for (let d = 0; d <= len; d++) {
-      const t = d / len, sway = (fbm(d / 60, id * 3.1, seed + 51) - .5) * 70 * Math.sin(t * Math.PI);
+      const t = d / len, sway = straight ? 0 : (fbm(d / 60, id * 3.1, seed + 51) - .5) * 70 * Math.sin(t * Math.PI);
       let x = a.x + (b.x - a.x) * t + nx * sway, y = a.y + (b.y - a.y) * t + ny * sway;
       for (const p of ponds) { const q = Math.hypot(x - p.x, y - p.y), keep = p.r + 30; if (q < keep && q > 0) { x = p.x + (x - p.x) / q * keep; y = p.y + (y - p.y) / q * keep; } }
+      if (river && !straight) { const k = nearRiver(x, y), [rx, ry, rw] = river[k], q = Math.hypot(x - rx, y - ry), keep = rw + 16; if (q < keep && q > 0) { x = rx + (x - rx) / q * keep; y = ry + (y - ry) / q * keep; } }
       lay(x, y, 3.6 + noise(d / 14, id, seed + 53) * 1.6, Math.abs(x - px) >= Math.abs(y - py) ? 2 : 4); px = x; py = y;
       if (d % 14 === 0) { if (last) roadPoints.push({ x, y, nx: -(y - last.y) / 14, ny: (x - last.x) / 14 }); last = { x, y }; }
     }
@@ -205,15 +256,65 @@ export function makeLand(seed = 1, mapId = 0) {
   const roadNear = (...box) => scan(i => road[i], ...box), wetNear = (...box) => scan(i => waterT[i] >= 0, ...box);
   const roomy = (x, y, size) => !objects.some(o => Math.abs(o.x * CELL - x) < (o.size + size) * .4 && y - size * .8 < o.y * CELL && o.y * CELL - o.size * .8 < y);
   const hubs = GLADES.map(z => { const p = ponds[z.id]; let x = p.x, y = p.y + p.r + 32; for (let k = 0; k < 40 && blockedAt(x, y, 18); k++) { const d = Math.hypot(LW / 2 - x, LH / 2 - y); x += (LW / 2 - x) / d * 6; y += (LH / 2 - y) / d * 6; } return { x, y }; });
-  if (map.village) {
-    GLADES.forEach(z => { if (z.parent >= 0) route(hubs[z.parent], hubs[z.id], z.id); });
-    gates.forEach((g, n) => { const hub = hubs.reduce((a, b) => Math.hypot(b.x - g.x, b.y - g.y) < Math.hypot(a.x - g.x, a.y - g.y) ? b : a); route(hub, g, 20 + n); });
+  if (village) {
+    // Glades on the same bank are joined by the shortest set of roads (a spanning tree); the two banks meet at a
+    // single plank bridge across the middle of the river; each gateway joins the nearest village on its own bank.
+    for (const h of hubs) { const [rx, ry, rw] = river[nearRiver(h.x, h.y)], q = Math.hypot(h.x - rx, h.y - ry), keep = rw + 30; if (q < keep) { const d = q || 1; h.x = rx + (h.x - rx) / d * keep; h.y = ry + (h.y - ry) / d * keep; } } // squares stand back from the bank
+    hubs.forEach(h => { h.bank = bank(h.x, h.y); });
+    for (const side of [1, -1]) {
+      const list = hubs.filter(h => h.bank === side); if (!list.length) continue;
+      const inTree = [list[0]];
+      // A road may only join two squares if the way between them stays on this bank, clear of the river.
+      const dry = (a, b) => { const n = Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / 6); for (let k = 0; k <= n; k++) { const x = a.x + (b.x - a.x) * k / n, y = a.y + (b.y - a.y) * k / n, [rx, ry, rw] = river[nearRiver(x, y)]; if (bank(x, y) !== side || Math.hypot(x - rx, y - ry) < rw + 6) return false; } return true; };
+      while (inTree.length < list.length) {
+        let best = null, bd = Infinity;
+        for (const a of inTree) for (const b of list) if (!inTree.includes(b) && dry(a, b)) { const d = Math.hypot(a.x - b.x, a.y - b.y); if (d < bd) { bd = d; best = [a, b]; } }
+        if (!best) break; // the rest are cut off by a bend in the river; they join through the bridge below
+        route(best[0], best[1], hubs.indexOf(best[1])); inTree.push(best[1]);
+      }
+      for (const h of list) h.linked = inTree.includes(h);
+    }
+    let m = Math.floor(river.length * .45); // the bridge: a calm, straight stretch near the middle, clear of the ponds
+    for (let k = Math.floor(river.length * .3); k < river.length * .7; k++) { const turn = Math.abs(Math.atan2(river[k + 6][1] - river[k][1], river[k + 6][0] - river[k][0]) - Math.atan2(river[k][1] - river[k - 6][1], river[k][0] - river[k - 6][0])); if (turn < .05 && ponds.every(p => Math.hypot(p.x - river[k][0], p.y - river[k][1]) > p.r + 40)) { m = k; break; } }
+    const [bx, by, bw] = river[m], ta = river[Math.max(0, m - 4)], tb = river[Math.min(river.length - 1, m + 4)], tl = Math.hypot(tb[0] - ta[0], tb[1] - ta[1]) || 1, ux = -(tb[1] - ta[1]) / tl, uy = (tb[0] - ta[0]) / tl, reach = bw + 14;
+    const endA = { x: bx + ux * reach, y: by + uy * reach }, endB = { x: bx - ux * reach, y: by - uy * reach };
+    route(endA, endB, 40, true);
+    for (const e of [endA, endB]) { const side = bank(e.x, e.y), mine = hubs.filter(h => h.bank === side && h.linked); if (mine.length) route(e, mine.reduce((a, b) => Math.hypot(b.x - e.x, b.y - e.y) < Math.hypot(a.x - e.x, a.y - e.y) ? b : a), 41); }
+    gates.forEach((g, n) => { const side = bank(g.x, g.y), mine = hubs.filter(h => h.bank === side); if (mine.length) route(mine.reduce((a, b) => Math.hypot(b.x - g.x, b.y - g.y) < Math.hypot(a.x - g.x, a.y - g.y) ? b : a), g, 20 + n); });
+    for (const h of hubs) for (let a = 0; a < 6.28; a += .5) lay(h.x + Math.cos(a) * 12, h.y + Math.sin(a) * 8, 7); // a little square at each glade's heart
   }
+  // Homes stand beside a road, never on it, each with a footpath to the door. Barns and greenhouses get crop rows.
+  const zoneOfT = (x, y) => zone[Math.max(0, Math.min(LCH - 1, Math.floor(y / CELL))) * LCW + Math.max(0, Math.min(LCW - 1, Math.floor(x / CELL)))];
+  const raiseVillage = id => {
+    const hub = hubs[id], spots = roadPoints.filter(q => zoneOfT(q.x, q.y) === id || Math.hypot(q.x - hub.x, q.y - hub.y) < 130).map((q, n) => [q, Math.hypot(q.x - hub.x, q.y - hub.y) + hash(n, id, seed + 57) * 60]).sort((a, b) => a[1] - b[1]).map(e => e[0]);
+    for (const item of map.village[id]) {
+      const [dead, size, own] = item;
+      let done = false;
+      for (const q of spots) {
+        for (const side of [1, -1]) {
+          const dx = q.nx * side, dy = q.ny * side, x = q.x + dx * (8 + size * .42), y = q.y + (dy > 0 ? dy * (8 + size * .95) : dy * 8) - (dy > 0 ? 0 : 3);
+          if (y < size + 8 || y > LH - 8 || x < size * .5 + 8 || x > LW - size * .5 - 8 || blockedAt(x, y, 10) || blockedAt(x, y - size * .6, 10)) continue;
+          if (roadNear(x, y, size * .36, size * .75, 1) || wetNear(x, y, size * .5, size * .85, 8) || !roomy(x, y, size)) continue;
+          place(id, dead, dead + 1, x, y, size);
+          const o = objects[objects.length - 1]; o.mark = true; o.local = !!own;
+          for (let t = 0; t <= 1; t += .1) lay(x + (q.x - x) * t, y + 1 + (q.y - y - 1) * t, 1.2);
+          if (item === BARN || item === GREENHOUSE) for (const way of [1, -1]) {
+            const w = 26, h = 15, fx = x + way * (size * .4 + w + 3), fy = y - h - 1;
+            if (fx < w + 8 || fx > LW - w - 8 || blockedAt(fx, fy, w) || blockedAt(fx, fy, h) || roadNear(fx, fy, w, h, h) || wetNear(fx, fy, w, h, h) || !roomy(fx, fy + h, w * 2)) continue;
+            for (let yy = fy - h; yy <= fy + h; yy++) for (let xx = fx - w; xx <= fx + w; xx++) { const i = Math.floor(yy) * LW + Math.floor(xx); if (!edge[i] && !road[i]) road[i] = 3; }
+            break;
+          }
+          done = true; break;
+        }
+        if (done) break;
+      }
+    }
+  };
   for (const z of GLADES) {
     const pond = ponds[z.id];
     const shrineSide = blockedAt(pond.x + pond.r + 18, pond.y - 4, 8) ? -1 : 1;
-    if (z.id === FINALE) { const side = blockedAt(pond.x - shrineSide * (pond.r + 34), pond.y + 6, 24) ? shrineSide : -shrineSide; place(z.id, KIND.deadTree, KIND.blossom, pond.x + side * (pond.r + 34), pond.y + 6, 110); }
-    { // No buildings anywhere: each glade's landmark is a great old tree or outcrop.
+    if (village) { raiseVillage(z.id); } else if (z.id === FINALE) { const side = blockedAt(pond.x - shrineSide * (pond.r + 34), pond.y + 6, 24) ? shrineSide : -shrineSide; place(z.id, KIND.deadTree, KIND.blossom, pond.x + side * (pond.r + 34), pond.y + 6, 110); }
+    if (!village) { // The wild lands have no buildings: each glade's landmark is a great old tree or outcrop.
       const big = z.id % 2 === 0, size = big ? 62 : 50;
       for (let k = 0; k < 16; k++) {
         const a = 1.2 + k * .79, x = pond.x + Math.cos(a) * (pond.r + size * .9), y = pond.y + Math.sin(a) * (pond.r + size * .55) + size * .3;
